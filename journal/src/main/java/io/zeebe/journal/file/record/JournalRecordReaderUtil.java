@@ -18,7 +18,6 @@ package io.zeebe.journal.file.record;
 import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalRecord;
 import io.zeebe.journal.file.ChecksumGenerator;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -41,50 +40,49 @@ public final class JournalRecordReaderUtil {
     buffer.mark();
 
     if (buffer.position() + serializer.getMetadataLength() > buffer.limit()) {
-      // Reached end of the segment
-      return null;
+      // This should never happen as this method is invoked always after hasNext() returns true
+      throw new CorruptedLogException(
+          "Expected to read a record, but reached the end of the segment.");
     }
 
     final int startPosition = buffer.position();
-    try {
-      final UnsafeBuffer directBuffer = new UnsafeBuffer(buffer.slice());
 
-      final RecordMetadata metadata = serializer.readMetadata(directBuffer, 0);
+    final UnsafeBuffer directBuffer = new UnsafeBuffer(buffer.slice());
 
-      final int metadataLength = serializer.getMetadataLength(directBuffer, 0);
-      final var recordLength = metadata.length();
-      if (buffer.position() + metadataLength + recordLength > buffer.limit()) {
-        // There is no valid record here. This should not happen, if we have magic headers before
-        // each record.
-        return null;
-      }
+    final RecordMetadata metadata = serializer.readMetadata(directBuffer, 0);
 
-      // verify checksum
-      final long checksum =
-          checksumGenerator.compute(buffer, startPosition + metadataLength, recordLength);
-
-      if (checksum != metadata.checksum()) {
-        buffer.reset();
-        throw new CorruptedLogException(
-            "Record doesn't match checksum. Log segment may be corrupted.");
-      }
-
-      // Read record
-      final RecordData record = serializer.readData(directBuffer, metadataLength, recordLength);
-
-      if (record != null && expectedIndex != record.index()) {
-        buffer.reset();
-        throw new InvalidIndex(
-            String.format(
-                "Expected to read a record with next index %d, but found %d",
-                expectedIndex, record.index()));
-      }
-      buffer.position(startPosition + metadataLength + recordLength);
-      return new PersistedJournalRecord(metadata, record);
-
-    } catch (final BufferUnderflowException e) {
-      buffer.reset();
+    final int metadataLength = serializer.getMetadataLength(directBuffer, 0);
+    final var recordLength = metadata.length();
+    if (buffer.position() + metadataLength + recordLength > buffer.limit()) {
+      // There is no valid record here. This should not happen, if we have magic headers before
+      // each record.
+      throw new CorruptedLogException(
+          String.format(
+              "Expected to read a record at position %d, with metadata %s, but reached the end of the segment.",
+              buffer.position(), metadata));
     }
-    return null;
+
+    // verify checksum
+    final long checksum =
+        checksumGenerator.compute(buffer, startPosition + metadataLength, recordLength);
+
+    if (checksum != metadata.checksum()) {
+      buffer.reset();
+      throw new CorruptedLogException(
+          "Record doesn't match checksum. Log segment may be corrupted.");
+    }
+
+    // Read record
+    final RecordData record = serializer.readData(directBuffer, metadataLength, recordLength);
+
+    if (record != null && expectedIndex != record.index()) {
+      buffer.reset();
+      throw new InvalidIndex(
+          String.format(
+              "Expected to read a record with next index %d, but found %d",
+              expectedIndex, record.index()));
+    }
+    buffer.position(startPosition + metadataLength + recordLength);
+    return new PersistedJournalRecord(metadata, record);
   }
 }
