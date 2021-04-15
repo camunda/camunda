@@ -59,9 +59,9 @@ public final class ProcessInstanceStateTransitionGuard {
     // processors in the processor. this means that ELEMENT_COMPLETING of a migrated processor will
     // set the element state to ELEMENT_COMPLETING on replay, but ELEMENT_COMPLETING of a non
     // migrated will expect its state to ALREADY be ELEMENT_COMPLETING. To avoid too much
-    // complexity, when reprocessing events for non migrated processors, just set their state as
-    // expected; this could in the future be a source of error, but as its only temporary until
-    // all processors are migrated, it's OK for now
+    // complexity, when reprocessing events for non migrated processors, just allow allow the
+    // transition as well; this could in the future be a source of error, but as its only
+    // temporary until all processors are migrated, it's OK for now
     // TODO(npepinpe): remove as part of https://github.com/camunda-cloud/zeebe/issues/6202
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       if (context.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETING) {

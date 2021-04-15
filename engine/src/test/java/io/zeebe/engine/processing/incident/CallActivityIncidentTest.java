@@ -198,6 +198,7 @@ public final class CallActivityIncidentTest {
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
+                .onlyEvents()
                 .withRecordKey(incident.getValue().getElementInstanceKey())
                 .limit(2))
         .extracting(Record::getIntent)

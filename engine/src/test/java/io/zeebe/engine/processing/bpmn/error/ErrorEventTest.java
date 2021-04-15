@@ -224,7 +224,7 @@ public class ErrorEventTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),

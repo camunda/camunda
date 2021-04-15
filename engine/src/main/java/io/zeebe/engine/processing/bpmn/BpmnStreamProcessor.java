@@ -114,29 +114,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var processor = processors.getProcessor(bpmnElementType);
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
-    // On migrating processors we saw issues on replay, where element instances are not existing on
-    // replay/reprocessing. You need to know that migrated processors are only replayed, which means
-    // the events are applied to the state and non migrated are reprocessed, so the processor is
-    // called.
-    //
-    // If we have a non migrated type and reprocess that, we expect an existing element instance.
-    // On normal processing this element instance was created by using the state writer of the
-    // previous command/event most likely by an already migrated type. On replay this state writer
-    // is not called which causes issues, like non existing element instance.
-    //
-    // To cover the gap between migrated and non migrated processors we need to re-create an element
-    // instance here, such that we can continue in migrate the processors individually and still
-    // are able to run the replay tests.
-    final var instance = elementInstanceState.getInstance(context.getElementInstanceKey());
-    if (instance == null
-        && context.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
-        && !MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      elementInstanceState.newInstance(
-          flowScopeInstance,
-          context.getElementInstanceKey(),
-          context.getRecordValue(),
-          ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      relieveReprocessingStateProblems();
     }
 
     // process the record
@@ -144,6 +123,57 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       LOGGER.trace("Process process instance event [context: {}]", context);
 
       processEvent(intent, processor, element);
+    }
+  }
+
+  /**
+   * On migrating processors we saw issues on replay, where element instances are not existing on
+   * replay/reprocessing. You need to know that migrated processors are only replayed, which means
+   * the events are applied to the state and non migrated are reprocessed, so the processor is
+   * called.
+   *
+   * <p>If we have a non migrated type and reprocess that, we expect an existing element instance.
+   * On normal processing this element instance was created by using the state writer of the
+   * previous command/event most likely by an already migrated type. On replay this state writer is
+   * not called which causes issues, like non existing element instance.
+   *
+   * <p>To cover the gap between migrated and non migrated processors we need to re-create an
+   * element instance here, such that we can continue in migrate the processors individually and
+   * still are able to run the replay tests.
+   */
+  private void relieveReprocessingStateProblems() {
+    final var instance = elementInstanceState.getInstance(context.getElementInstanceKey());
+    if (instance == null) {
+      if (context.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
+        // only create new instance for elements that are activating
+        return;
+      }
+
+      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
+      final var elementInstance =
+          elementInstanceState.newInstance(
+              flowScopeInstance,
+              context.getElementInstanceKey(),
+              context.getRecordValue(),
+              ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+      final var parentElementInstance =
+          elementInstanceState.getInstance(context.getRecordValue().getParentElementInstanceKey());
+      if (parentElementInstance == null
+          || context.getBpmnElementType() != BpmnElementType.PROCESS) {
+        // only connect to call activity for child processes
+        return;
+      }
+
+      parentElementInstance.setCalledChildInstanceKey(elementInstance.getKey());
+      elementInstanceState.updateInstance(parentElementInstance);
+      return;
+    }
+
+    if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+        && context.getBpmnElementType() == BpmnElementType.PROCESS) {
+      instance.setState(ProcessInstanceIntent.ELEMENT_TERMINATING);
+      elementInstanceState.updateInstance(instance);
     }
   }
 

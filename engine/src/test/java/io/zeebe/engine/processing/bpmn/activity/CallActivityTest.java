@@ -82,6 +82,7 @@ public final class CallActivityTest {
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
+                .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("call")
                 .limit(2))
@@ -392,7 +393,7 @@ public final class CallActivityTest {
                 .processInstanceRecords())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),

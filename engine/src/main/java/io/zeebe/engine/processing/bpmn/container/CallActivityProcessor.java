@@ -56,7 +56,7 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onActivating(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public void onActivate(final ExecutableCallActivity element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
@@ -65,16 +65,12 @@ public final class CallActivityProcessor
         .flatMap(this::checkProcessHasNoneStartEvent)
         .ifRightOrLeft(
             process -> {
-              stateTransitionBehavior.transitionToActivated(context);
+              final var activated = stateTransitionBehavior.transitionToActivated(context);
 
               final var childProcessInstanceKey =
                   stateTransitionBehavior.createChildProcessInstance(process, context);
 
-              final var callActivityInstance = stateBehavior.getElementInstance(context);
-              callActivityInstance.setCalledChildInstanceKey(childProcessInstanceKey);
-              stateBehavior.updateElementInstance(callActivityInstance);
-
-              final var callActivityInstanceKey = context.getElementInstanceKey();
+              final var callActivityInstanceKey = activated.getElementInstanceKey();
               stateBehavior.copyVariablesToProcessInstance(
                   callActivityInstanceKey, childProcessInstanceKey, process);
             },
@@ -82,46 +78,25 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onActivated(final ExecutableCallActivity element, final BpmnElementContext context) {
-    // Nothing to do but wait until the child process has completed
-  }
-
-  @Override
-  public void onCompleting(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public void onComplete(final ExecutableCallActivity element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
+              final var completed =
+                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                      element, context);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onCompleted(final ExecutableCallActivity element, final BpmnElementContext context) {
-    if (element.getOutgoing().isEmpty()) {
-      /* can be dropped during migration; after migration this is done as part of
-      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
-      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
-    }
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onTerminating(
-      final ExecutableCallActivity element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateChildProcessInstance(context);
+  public void onTerminate(final ExecutableCallActivity element, final BpmnElementContext context) {
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
-  }
-
-  @Override
-  public void onTerminated(final ExecutableCallActivity element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
     incidentBehavior.resolveIncidents(context);
-    stateTransitionBehavior.onElementTerminated(element, context);
-    stateBehavior.removeElementInstance(context);
+    stateTransitionBehavior.terminateChildProcessInstance(this, element, context);
   }
 
   @Override
@@ -144,7 +119,7 @@ public final class CallActivityProcessor
     final var currentState = callActivityContext.getIntent();
     switch (currentState) {
       case ELEMENT_ACTIVATED:
-        stateTransitionBehavior.transitionToCompleting(callActivityContext);
+        // nothing to do any more
         break;
       case ELEMENT_TERMINATING:
         // the call activity is already terminating, it doesn't matter that the child completed
@@ -159,8 +134,10 @@ public final class CallActivityProcessor
   @Override
   public void afterExecutionPathCompleted(
       final ExecutableCallActivity element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
+      final BpmnElementContext callActivityContext,
+      final BpmnElementContext childContext) {
+    stateTransitionBehavior.completeElement(callActivityContext);
+  }
 
   @Override
   public void onChildTerminated(
@@ -168,12 +145,24 @@ public final class CallActivityProcessor
       final BpmnElementContext callActivityContext,
       final BpmnElementContext childContext) {
     final var currentState = callActivityContext.getIntent();
-    if (currentState == ProcessInstanceIntent.ELEMENT_TERMINATING) {
-      stateTransitionBehavior.transitionToTerminated(callActivityContext);
-    } else {
+    if (currentState != ProcessInstanceIntent.ELEMENT_TERMINATING) {
       final var message = String.format(UNABLE_TO_TERMINATE_FROM_STATE_MESSAGE, currentState);
       throw new BpmnProcessingException(callActivityContext, message);
     }
+
+    eventSubscriptionBehavior
+        .findEventTrigger(callActivityContext)
+        .ifPresentOrElse(
+            eventTrigger -> {
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(callActivityContext);
+              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+            },
+            () -> {
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(callActivityContext);
+              stateTransitionBehavior.onElementTerminated(element, terminated);
+            });
   }
 
   private Either<Failure, DirectBuffer> evaluateProcessId(

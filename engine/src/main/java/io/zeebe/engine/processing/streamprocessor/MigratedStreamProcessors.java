@@ -44,6 +44,7 @@ public final class MigratedStreamProcessors {
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.END_EVENT);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.BOUNDARY_EVENT);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.PROCESS);
+    MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.CALL_ACTIVITY);
 
     MIGRATED_VALUE_TYPES.put(ValueType.JOB, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.JOB_BATCH, MIGRATED);
