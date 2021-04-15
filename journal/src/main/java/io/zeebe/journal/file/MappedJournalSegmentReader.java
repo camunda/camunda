@@ -125,8 +125,4 @@ class MappedJournalSegmentReader {
 
     nextEntry = recordReader.read(buffer, expectedIndex);
   }
-
-  long getCurrentIndex() {
-    return currentEntry != null ? currentEntry.index() : 0;
-  }
 }

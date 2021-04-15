@@ -26,7 +26,6 @@ class SegmentedJournalReader implements JournalReader {
 
   private final SegmentedJournal journal;
   private JournalSegment currentSegment;
-  private JournalRecord previousEntry;
   private MappedJournalSegmentReader currentReader;
 
   SegmentedJournalReader(final SegmentedJournal journal) {
@@ -38,25 +37,6 @@ class SegmentedJournalReader implements JournalReader {
   private void initialize() {
     currentSegment = journal.getFirstSegment();
     currentReader = currentSegment.createReader();
-  }
-
-  public long getCurrentIndex() {
-    final long currentIndex = currentReader.getCurrentIndex();
-    if (currentIndex != 0) {
-      return currentIndex;
-    }
-    if (previousEntry != null) {
-      return previousEntry.index();
-    }
-    return 0;
-  }
-
-  public JournalRecord getCurrentEntry() {
-    final var currentEntry = currentReader.getCurrentEntry();
-    if (currentEntry != null) {
-      return currentEntry;
-    }
-    return previousEntry;
   }
 
   public long getNextIndex() {
@@ -73,14 +53,12 @@ class SegmentedJournalReader implements JournalReader {
     if (!currentReader.hasNext()) {
       final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
       if (nextSegment != null && nextSegment.index() == getNextIndex()) {
-        previousEntry = currentReader.getCurrentEntry();
         replaceCurrentSegment(nextSegment);
         return currentReader.next();
       } else {
         throw new NoSuchElementException();
       }
     } else {
-      previousEntry = currentReader.getCurrentEntry();
       return currentReader.next();
     }
   }
@@ -106,7 +84,6 @@ class SegmentedJournalReader implements JournalReader {
   @Override
   public long seekToFirst() {
     replaceCurrentSegment(journal.getFirstSegment());
-    previousEntry = null;
     return journal.getFirstIndex();
   }
 
@@ -180,7 +157,6 @@ class SegmentedJournalReader implements JournalReader {
     }
 
     currentReader.seek(index);
-    previousEntry = currentReader.getCurrentEntry();
   }
 
   /** Fast forwards the journal to the given index. */
@@ -194,14 +170,12 @@ class SegmentedJournalReader implements JournalReader {
     }
 
     currentReader.seek(index);
-    previousEntry = currentReader.getCurrentEntry();
   }
 
   private boolean hasNextEntry() {
     if (!currentReader.hasNext()) {
       final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
       if (nextSegment != null && nextSegment.index() == getNextIndex()) {
-        previousEntry = currentReader.getCurrentEntry();
         replaceCurrentSegment(nextSegment);
         return currentReader.hasNext();
       }
