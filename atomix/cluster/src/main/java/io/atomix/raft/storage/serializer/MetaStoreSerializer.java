@@ -144,7 +144,7 @@ public class MetaStoreSerializer {
     return metaDecoder.votedFor();
   }
 
-  public long readFlushedIndex(final MutableDirectBuffer buffer, final int offset) {
+  public long readLastWrittenIndex(final MutableDirectBuffer buffer, final int offset) {
     headerDecoder.wrap(buffer, offset);
     metaDecoder.wrap(
         buffer,
@@ -152,10 +152,10 @@ public class MetaStoreSerializer {
         headerDecoder.blockLength(),
         headerDecoder.version());
 
-    return metaDecoder.flushedIndex();
+    return metaDecoder.lastWrittenIndex();
   }
 
-  public void writeFlushedIndex(
+  public void writeLastWrittenIndex(
       final long index, final MutableDirectBuffer buffer, final int offset) {
     headerEncoder
         .wrap(buffer, offset)
@@ -165,6 +165,6 @@ public class MetaStoreSerializer {
         .version(metaEncoder.sbeSchemaVersion());
 
     metaEncoder.wrap(buffer, headerEncoder.encodedLength());
-    metaEncoder.flushedIndex(index);
+    metaEncoder.lastWrittenIndex(index);
   }
 }

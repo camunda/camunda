@@ -562,7 +562,7 @@ public class PassiveRole extends InactiveRole {
   private void flush(final long lastWrittenIndex, final long previousEntryIndex) {
     if (raft.getLog().shouldFlushExplicitly() && lastWrittenIndex > previousEntryIndex) {
       raft.getLog().flush();
-      raft.setFlushedIndex(lastWrittenIndex);
+      raft.setLastWrittenIndex(lastWrittenIndex);
     }
   }
 

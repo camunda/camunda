@@ -154,7 +154,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldStoreLastFlushedIndex() {
+  public void shouldStoreLastWrittenIndex() {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
@@ -167,11 +167,11 @@ public class PassiveRoleTest {
     role.handleAppend(request).join();
 
     // then
-    verify(ctx).setFlushedIndex(eq(1L));
+    verify(ctx).setLastWrittenIndex(eq(1L));
   }
 
   @Test
-  public void shouldStoreLastFlushedWithSomeFailure() {
+  public void shouldStoreLastWrittenEvenWithFailure() {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(
@@ -190,6 +190,6 @@ public class PassiveRoleTest {
     role.handleAppend(request).join();
 
     // then
-    verify(ctx).setFlushedIndex(eq(2L));
+    verify(ctx).setLastWrittenIndex(eq(2L));
   }
 }

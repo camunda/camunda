@@ -220,22 +220,22 @@ public class MetaStoreTest {
   @Test
   public void shouldStoreAndLastFlushedIndex() {
     // given
-    metaStore.storeFlushedIndex(5L);
+    metaStore.storeLastWrittenIndex(5L);
 
     // when/then
-    assertThat(metaStore.loadFlushedIndex()).isEqualTo(5L);
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
   }
 
   @Test
   public void shouldStoreAndLoadLastFlushedIndexAfterRestart() throws IOException {
     // given
-    metaStore.storeFlushedIndex(5L);
+    metaStore.storeLastWrittenIndex(5L);
 
     // when
     metaStore.close();
     metaStore = new MetaStore(storage);
 
     // then
-    assertThat(metaStore.loadFlushedIndex()).isEqualTo(5L);
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
   }
 }
