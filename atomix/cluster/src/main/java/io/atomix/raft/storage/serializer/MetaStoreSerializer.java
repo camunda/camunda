@@ -148,7 +148,7 @@ public class MetaStoreSerializer {
     headerDecoder.wrap(buffer, offset);
     metaDecoder.wrap(
         buffer,
-        headerDecoder.encodedLength(),
+        offset + headerDecoder.encodedLength(),
         headerDecoder.blockLength(),
         headerDecoder.version());
 
@@ -164,7 +164,7 @@ public class MetaStoreSerializer {
         .schemaId(metaEncoder.sbeSchemaId())
         .version(metaEncoder.sbeSchemaVersion());
 
-    metaEncoder.wrap(buffer, headerEncoder.encodedLength());
+    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
     metaEncoder.lastWrittenIndex(index);
   }
 }
