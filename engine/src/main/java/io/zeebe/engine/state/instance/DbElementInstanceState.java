@@ -14,12 +14,14 @@ import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -154,14 +156,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
         if (parentInstance == null) {
-          /// todo(zell): bring it back https://github.com/camunda-cloud/zeebe/issues/6202
-          // For now it is fine that parents might be not existing since they are already deleted,
-          // due to the migration
+          handleMissingParentInstance(instance.getValue().getBpmnElementType(), parentKey);
           return;
-          //          final var errorMsg =
-          //              "Expected to find parent instance for element instance with key %d, but
-          // none was found.";
-          //          throw new IllegalStateException(String.format(errorMsg, parentKey));
         }
         parentInstance.decrementChildCount();
         updateInstance(parentInstance);
@@ -210,6 +206,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(processInstanceKey);
     awaitProcessInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
+  }
+
+  private void handleMissingParentInstance(
+      final BpmnElementType elementType, final long parentKey) {
+    if (MigratedStreamProcessors.isMigrated(elementType)) {
+      final var errorMsg =
+          "Expected to find parent instance for element instance with key %d, but none was found.";
+      throw new IllegalStateException(String.format(errorMsg, parentKey));
+    } else {
+      /// todo(zell): bring it back https://github.com/camunda-cloud/zeebe/issues/6202
+      // For now it is fine that parents might be not existing since they are already deleted,
+      // due to the migration - should only be the case for non migrated elements.
+      return;
+    }
   }
 
   private void writeElementInstance(final ElementInstance instance) {

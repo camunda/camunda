@@ -53,19 +53,7 @@ public final class ProcessProcessor
         .subscribeToEvents(element, context)
         .map(o -> stateTransitionBehavior.transitionToActivated(context))
         .ifRightOrLeft(
-            activated -> {
-              if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
-                eventSubscriptionBehavior
-                    .getEventTriggerForProcessDefinition(context.getProcessDefinitionKey())
-                    .ifPresentOrElse(
-                        eventTrigger ->
-                            eventSubscriptionBehavior.activateTriggeredStartEvent(
-                                context, eventTrigger),
-                        () -> activateNoneStartEvent(element, context));
-              } else {
-                activateNoneStartEvent(element, context);
-              }
-            },
+            activated -> activateStartEvent(element, activated),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -125,6 +113,20 @@ public final class ProcessProcessor
 
     if (element.hasMessageStartEvent()) {
       bufferedMessageStartEventBehavior.correlateMessage(context);
+    }
+  }
+
+  private void activateStartEvent(
+      final ExecutableFlowElementContainer element, final BpmnElementContext activated) {
+    if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
+      eventSubscriptionBehavior
+          .getEventTriggerForProcessDefinition(activated.getProcessDefinitionKey())
+          .ifPresentOrElse(
+              eventTrigger ->
+                  eventSubscriptionBehavior.activateTriggeredStartEvent(activated, eventTrigger),
+              () -> activateNoneStartEvent(element, activated));
+    } else {
+      activateNoneStartEvent(element, activated);
     }
   }
 

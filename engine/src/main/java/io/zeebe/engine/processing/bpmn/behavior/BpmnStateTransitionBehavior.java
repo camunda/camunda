@@ -545,8 +545,8 @@ public final class BpmnStateTransitionBehavior {
         .filter(ElementInstance::canTerminate)
         .map(instance -> context.copy(instance.getKey(), instance.getValue(), instance.getState()))
         .ifPresentOrElse(
-            childInstanceContext -> terminate(childInstanceContext) /* TERMINATING */,
-            () -> transitionToTerminated(context) /* TERMINATED */);
+            childInstanceContext -> terminate(childInstanceContext),
+            () -> transitionToTerminated(context));
   }
 
   @FunctionalInterface
