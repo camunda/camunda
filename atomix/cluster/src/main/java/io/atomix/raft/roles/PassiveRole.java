@@ -586,6 +586,7 @@ public class PassiveRole extends InactiveRole {
 
         final boolean failedToAppend = tryToAppend(future, writer, reader, entry, index, lastEntry);
         if (failedToAppend) {
+          flush(lastLogIndex - 1, request.prevLogIndex());
           return;
         }
 
@@ -608,12 +609,16 @@ public class PassiveRole extends InactiveRole {
     }
 
     // Make sure all entries are flushed before ack to ensure we have persisted what we acknowledge
-    if (raft.getLog().shouldFlushExplicitly()) {
-      raft.getLogWriter().flush();
-    }
+    flush(lastLogIndex, request.prevLogIndex());
 
     // Return a successful append response.
     succeedAppend(lastLogIndex, future);
+  }
+
+  private void flush(final long lastWrittenIndex, final long previousEntryIndex) {
+    if (raft.getLog().shouldFlushExplicitly() && lastWrittenIndex > previousEntryIndex) {
+      raft.getLogWriter().flush();
+    }
   }
 
   private boolean tryToAppend(
