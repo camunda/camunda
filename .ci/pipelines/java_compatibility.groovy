@@ -42,7 +42,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 2
+        value: 4
       - name: TZ
         value: Europe/Berlin
     resources:
