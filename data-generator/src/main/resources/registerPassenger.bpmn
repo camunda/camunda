@@ -41,6 +41,11 @@
               "key": "registered",
               "label": "Registered successfully",
               "type": "textfield"
+            },
+            {
+              "key": "button1",
+              "label": "Save",
+              "type": "button"
             }
           ],
           "type": "default"
@@ -64,6 +69,11 @@
               "validate": {
                 "required": true
               }
+            },
+            {
+              "key": "button1",
+              "label": "Save",
+              "type": "button"
             }
           ],
           "type": "default"
