@@ -81,7 +81,7 @@ public class ReplayStateRandomizedPropertyTest {
     final ExecutionPath path = record.getExecutionPath();
 
     for (final ScheduledExecutionStep scheduledStep : path.getSteps()) {
-
+      record.setCurrentStep(scheduledStep);
       processExecutor.applyStep(scheduledStep.getStep());
 
       stopAndRestartEngineAndCompareStates();

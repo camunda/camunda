@@ -70,6 +70,7 @@ public class ProcessExecutionRandomizedPropertyTest {
     final ExecutionPath path = record.getExecutionPath();
 
     path.getSteps().stream()
+        .peek(scheduledExecutionStep -> record.setCurrentStep(scheduledExecutionStep))
         .map(ScheduledExecutionStep::getStep)
         .forEach(processExecutor::applyStep);
 
