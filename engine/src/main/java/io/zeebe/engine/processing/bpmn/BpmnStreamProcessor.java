@@ -27,6 +27,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -210,6 +211,28 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
         // legacy behavior for not migrated processors
       case ELEMENT_ACTIVATING:
+        // manage the multi-instance loop counter and input variable BEFORE calling the non migrated
+        // processor, otherwise these will not be available for IO mapping
+        if (context.getFlowScopeKey() > 0) {
+          final ElementInstance flowScopeInstance =
+              elementInstanceState.getInstance(context.getFlowScopeKey());
+          if (flowScopeInstance.getValue().getBpmnElementType()
+              == BpmnElementType.MULTI_INSTANCE_BODY) {
+            // update the loop counter of the multi-instance body (starting by 1)
+            flowScopeInstance.incrementMultiInstanceLoopCounter();
+            elementInstanceState.updateInstance(flowScopeInstance);
+
+            // set the loop counter of the inner instance
+            final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
+            elementInstanceState.updateInstance(
+                context.getElementInstanceKey(),
+                instance -> instance.setMultiInstanceLoopCounter(loopCounter));
+
+            // will call onChildActivating of the multi instance, thereby setting the loop variables
+            stateTransitionBehavior.onElementActivating(element, context);
+          }
+        }
+
         processor.onActivating(element, context);
         break;
       case ELEMENT_ACTIVATED:
