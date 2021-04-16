@@ -7,8 +7,11 @@
  */
 package io.zeebe.engine.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -85,9 +88,16 @@ public class ProcessExecutor {
   }
 
   private void timeotBPMNElement(final StepTimeoutBPMNElement timeoutElement) {
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
-        .withHandlerNodeId(timeoutElement.getBoundaryTimerEventId())
-        .await();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withHandlerNodeId(timeoutElement.getBoundaryTimerEventId())
+            .getFirst();
+
+    Awaitility.await("await the timer to be processed")
+        .untilAsserted(
+            () ->
+                assertThat(engineRule.getLastProcessedPosition())
+                    .isGreaterThanOrEqualTo(timerCreated.getPosition()));
 
     engineRule.getClock().addTime(timeoutElement.getDeltaTime());
 
@@ -97,9 +107,16 @@ public class ProcessExecutor {
   }
 
   private void timeoutServiceTask(final StepTimeoutBPMNElement timeoutServiceTask) {
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
-        .withHandlerNodeId(timeoutServiceTask.getBoundaryTimerEventId())
-        .await();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withHandlerNodeId(timeoutServiceTask.getBoundaryTimerEventId())
+            .getFirst();
+
+    Awaitility.await("await timer created to be processed")
+        .untilAsserted(
+            () ->
+                assertThat(engineRule.getLastProcessedPosition())
+                    .isGreaterThanOrEqualTo(timerCreated.getPosition()));
 
     engineRule.getClock().addTime(timeoutServiceTask.getDeltaTime());
 
@@ -168,6 +185,17 @@ public class ProcessExecutor {
     waitForJobToBeCreated(activateAndTimeoutJob.getJobType());
 
     engineRule.jobs().withType(activateAndTimeoutJob.getJobType()).withTimeout(100).activate();
+
+    final var activatedJobBatch =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType(activateAndTimeoutJob.getJobType())
+            .getFirst();
+
+    Awaitility.await("await job batch to be processed")
+        .untilAsserted(
+            () ->
+                assertThat(engineRule.getLastProcessedPosition())
+                    .isGreaterThanOrEqualTo(activatedJobBatch.getPosition()));
 
     engineRule.getClock().addTime(activateAndTimeoutJob.getDeltaTime());
 

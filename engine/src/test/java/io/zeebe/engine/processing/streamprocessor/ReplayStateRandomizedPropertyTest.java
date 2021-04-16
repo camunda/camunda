@@ -43,14 +43,8 @@ public class ReplayStateRandomizedPropertyTest {
   public TestWatcher failedTestDataPrinter =
       new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
 
+  @Rule public final EngineRule engineRule = EngineRule.singlePartition();
   private long lastProcessedPosition = -1L;
-
-  @Rule
-  public final EngineRule engineRule =
-      EngineRule.singlePartition()
-          .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
-          .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
-
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
   @Before
@@ -97,7 +91,9 @@ public class ReplayStateRandomizedPropertyTest {
     final var position = result.getPosition();
 
     Awaitility.await("await the last process record to be processed")
-        .untilAsserted(() -> assertThat(lastProcessedPosition).isGreaterThanOrEqualTo(position));
+        .untilAsserted(
+            () ->
+                assertThat(engineRule.getLastProcessedPosition()).isGreaterThanOrEqualTo(position));
 
     stopAndRestartEngineAndCompareStates();
   }
@@ -160,7 +156,8 @@ public class ReplayStateRandomizedPropertyTest {
     Awaitility.await("await the last written record to be processed")
         .untilAsserted(
             () ->
-                assertThat(lastProcessedPosition).isEqualTo(engineRule.getLastWrittenPosition(1)));
+                assertThat(engineRule.getLastProcessedPosition())
+                    .isEqualTo(engineRule.getLastWrittenPosition(1)));
   }
 
   @Parameters(name = "{0}")
