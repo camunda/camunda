@@ -11,6 +11,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventE
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
@@ -188,12 +189,20 @@ final class ProcessInstanceElementActivatingApplier
 
   private void createEventScope(
       final long elementInstanceKey, final ProcessInstanceRecord elementRecord) {
+    Class<? extends ExecutableFlowNode> flowElementClass = ExecutableFlowNode.class;
+
+    // in the case of the multi instance body, it shares the same element ID as that of its
+    // contained activity; this means when doing a processState.getFlowElement, you don't know which
+    // you will get, and the boundary events will only be bound to the multi instance
+    if (elementRecord.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      flowElementClass = ExecutableMultiInstanceBody.class;
+    }
 
     final var flowElement =
         processState.getFlowElement(
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getElementIdBuffer(),
-            ExecutableFlowNode.class);
+            flowElementClass);
 
     if (flowElement instanceof ExecutableCatchEventSupplier) {
       final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;
