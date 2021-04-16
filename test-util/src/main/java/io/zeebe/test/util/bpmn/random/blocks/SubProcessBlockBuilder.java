@@ -117,11 +117,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
 
     final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(random);
 
-    if (internalExecutionPath.getScheduledSteps().isEmpty()) {
-      return result;
-    }
-
-    if (!hasBoundaryEvents || random.nextBoolean()) {
+    if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
       result.append(internalExecutionPath);
     } else {
       final int cutOffPoint =

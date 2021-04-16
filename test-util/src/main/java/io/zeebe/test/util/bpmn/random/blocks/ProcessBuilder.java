@@ -148,8 +148,8 @@ public final class ProcessBuilder {
     // happen on triggering the event sub process and completing the process instance.
     final var size = followingPath.getSteps().size() - 1;
 
-    if (size < 1) {
-      // empty execution path
+    if (size < 1 || !followingPath.canBeInterrupted()) {
+      // empty execution path or path which cannot be interrupted
       // We will not add here an event sub process execution, since the likelihood that the event
       // sub process is triggered in time, before the process is completed, is quite low.
       // This can cause flaky tests.
