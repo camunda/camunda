@@ -65,6 +65,7 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
       // attach incoming and outgoing sequence flows to the multi-instance body
       innerActivity.getIncoming().forEach(flow -> flow.setTarget(multiInstanceBody));
+      innerActivity.getOutgoing().forEach(flow -> flow.setSource(multiInstanceBody));
 
       multiInstanceBody
           .getOutgoing()
