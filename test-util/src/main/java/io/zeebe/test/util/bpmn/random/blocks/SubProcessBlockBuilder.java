@@ -81,7 +81,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
 
     AbstractFlowNodeBuilder result = subProcessBuilderDone;
     if (hasBoundaryEvents) {
-      final String joinGatewayId = "join_" + subProcessId;
+      final String joinGatewayId = "boundary_join_" + subProcessId;
       final ExclusiveGatewayBuilder exclusiveGatewayBuilder =
           subProcessBuilderDone.exclusiveGateway(joinGatewayId);
 

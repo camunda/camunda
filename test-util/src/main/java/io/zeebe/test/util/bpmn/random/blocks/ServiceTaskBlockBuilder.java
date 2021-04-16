@@ -69,7 +69,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     AbstractFlowNodeBuilder<?, ?> result = serviceTaskBuilder;
 
     if (hasBoundaryEvents) {
-      final String joinGatewayId = "join_" + serviceTaskId;
+      final String joinGatewayId = "boundary_join_" + serviceTaskId;
       final ExclusiveGatewayBuilder exclusiveGatewayBuilder =
           serviceTaskBuilder.exclusiveGateway(joinGatewayId);
 
