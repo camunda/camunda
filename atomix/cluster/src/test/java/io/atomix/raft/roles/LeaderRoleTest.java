@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.storage.RaftStorage;
@@ -46,7 +45,6 @@ import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -54,7 +52,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 public class LeaderRoleTest {
@@ -345,32 +342,6 @@ public class LeaderRoleTest {
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
-  }
-
-  @Test
-  public void shouldSetCommitIndexOnSingleNode() throws InterruptedException {
-    // given
-    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
-    final CountDownLatch latch = new CountDownLatch(1);
-    final var cluster = mock(RaftClusterContext.class);
-    when(cluster.getActiveMemberStates()).thenReturn(Collections.emptyList());
-    when(context.getCluster()).thenReturn(cluster);
-
-    // when
-    leaderRole.appendEntry(
-        1,
-        1,
-        data,
-        new AppendListener() {
-          @Override
-          public void onCommit(final IndexedRaftLogEntry indexed) {
-            latch.countDown();
-          }
-        });
-
-    // then
-    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-    verify(context).setCommitIndex(ArgumentMatchers.eq(1L));
   }
 
   private static class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
