@@ -20,6 +20,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -257,6 +258,156 @@ public final class ReplayStateTest {
                       .withProcessInstanceKey(piKey)
                       .withElementType(BpmnElementType.END_EVENT)
                       .withElementId("end")
+                      .getFirst();
+                }),
+        testCase("parallel multi-instance service task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t ->
+                            t.zeebeJobType("type")
+                                .multiInstance(
+                                    m ->
+                                        m.parallel()
+                                            .zeebeInputElement("item")
+                                            .zeebeInputCollectionExpression("items")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("items", List.of(1, 2, 3))
+                          .create();
+                  Awaitility.await("until there are 3 jobs ready to be activated")
+                      .pollInSameThread()
+                      .until(
+                          () ->
+                              RecordingExporter.jobRecords(JobIntent.CREATED).limit(3).count()
+                                  >= 3);
+                  final JobBatchRecordValue jobs =
+                      engine.jobs().withMaxJobsToActivate(3).withType("type").activate().getValue();
+                  jobs.getJobKeys()
+                      .forEach(
+                          key -> engine.job().withKey(key).withVariable("result", 0).complete());
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("sequential multi-instance service task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t ->
+                            t.zeebeJobType("type")
+                                .multiInstance(
+                                    m ->
+                                        m.sequential()
+                                            .zeebeInputElement("item")
+                                            .zeebeInputCollectionExpression("items")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("items", List.of(1, 2, 3))
+                          .create();
+                  for (int i = 0; i < 3; i++) {
+                    final int expectedJobCount = i + 1;
+                    Awaitility.await(
+                            "until there are " + expectedJobCount + " jobs ready to be activated")
+                        .pollInSameThread()
+                        .until(
+                            () ->
+                                RecordingExporter.jobRecords(JobIntent.CREATED)
+                                        .limit(expectedJobCount)
+                                        .count()
+                                    >= expectedJobCount);
+                    final JobBatchRecordValue jobs =
+                        engine
+                            .jobs()
+                            .withMaxJobsToActivate(1)
+                            .withType("type")
+                            .activate()
+                            .getValue();
+                    jobs.getJobKeys()
+                        .forEach(
+                            key -> engine.job().withKey(key).withVariable("result", 0).complete());
+                  }
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("interrupting parallel multi-instance service task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t ->
+                            t.zeebeJobType("type")
+                                .multiInstance(
+                                    m ->
+                                        m.parallel()
+                                            .zeebeInputElement("item")
+                                            .zeebeInputCollectionExpression("items")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results"))
+                                .boundaryEvent(
+                                    "event",
+                                    b ->
+                                        b.cancelActivity(true)
+                                            .message(
+                                                m ->
+                                                    m.name("message")
+                                                        .zeebeCorrelationKey("=\"key\"")))
+                                .endEvent())
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("items", List.of(1, 2, 3))
+                          .create();
+                  Awaitility.await("until there are 3 jobs ready to be activated")
+                      .pollInSameThread()
+                      .until(
+                          () ->
+                              RecordingExporter.jobRecords(JobIntent.CREATED).limit(3).count()
+                                  >= 2);
+                  final JobBatchRecordValue jobs =
+                      engine.jobs().withMaxJobsToActivate(2).withType("type").activate().getValue();
+                  jobs.getJobKeys()
+                      .forEach(
+                          key -> engine.job().withKey(key).withVariable("result", 0).complete());
+                  engine.message().withName("message").withCorrelationKey("key").publish();
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
                       .getFirst();
                 }));
   }
