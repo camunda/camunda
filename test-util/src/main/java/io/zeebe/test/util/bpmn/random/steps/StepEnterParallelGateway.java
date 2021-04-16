@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 public final class StepEnterParallelGateway extends AbstractExecutionStep {
 
@@ -15,6 +16,12 @@ public final class StepEnterParallelGateway extends AbstractExecutionStep {
 
   public StepEnterParallelGateway(final String forkingGatewayId) {
     this.forkingGatewayId = forkingGatewayId;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

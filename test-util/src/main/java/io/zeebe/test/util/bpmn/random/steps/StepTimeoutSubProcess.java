@@ -8,32 +8,30 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
-public final class StepStartProcessInstance extends AbstractExecutionStep
-    implements ProcessStartStep {
+public final class StepTimeoutSubProcess extends AbstractExecutionStep {
 
-  private final String processId;
+  private final String subProcessId;
+  private final String subProcessBoundaryTimerEventId;
 
-  public StepStartProcessInstance(final String processId, final Map<String, Object> variables) {
-    this.processId = processId;
-    this.variables.putAll(variables);
+  public StepTimeoutSubProcess(
+      final String subProcessId, final String subProcessBoundaryTimerEventId) {
+    this.subProcessId = subProcessId;
+    this.subProcessBoundaryTimerEventId = subProcessBoundaryTimerEventId;
+  }
+
+  public String getSubProcessBoundaryTimerEventId() {
+    return subProcessBoundaryTimerEventId;
   }
 
   @Override
-  public Map<String, Object> getProcessVariables() {
-    return Collections.unmodifiableMap(variables);
-  }
-
-  public String getProcessId() {
-    return processId;
-  }
-
-  @Override
-  protected Map<String, Object> updateVariables(
+  public Map<String, Object> updateVariables(
       final Map<String, Object> variables, final Duration activationDuration) {
-    return variables;
+    final var result = new HashMap<>(variables);
+    result.put(subProcessBoundaryTimerEventId, activationDuration.toString());
+    return result;
   }
 
   @Override
@@ -43,13 +41,13 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
 
   @Override
   public Duration getDeltaTime() {
-    return VIRTUALLY_NO_TIME;
+    return DEFAULT_DELTA;
   }
 
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + processId.hashCode();
+    result = 31 * result + subProcessId.hashCode();
     return result;
   }
 
@@ -65,8 +63,8 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
       return false;
     }
 
-    final StepStartProcessInstance that = (StepStartProcessInstance) o;
+    final StepTimeoutSubProcess that = (StepTimeoutSubProcess) o;
 
-    return processId.equals(that.processId);
+    return subProcessId.equals(that.subProcessId);
   }
 }

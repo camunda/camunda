@@ -8,37 +8,31 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 
-public final class StepStartProcessInstance extends AbstractExecutionStep
-    implements ProcessStartStep {
+public final class StepEnterSubProcess extends AbstractExecutionStep {
 
-  private final String processId;
+  private final String subProcessId;
 
-  public StepStartProcessInstance(final String processId, final Map<String, Object> variables) {
-    this.processId = processId;
-    this.variables.putAll(variables);
+  public StepEnterSubProcess(
+      final String subProcessId, final String subProcessBoundaryTimerEventId) {
+    this.subProcessId = subProcessId;
+    /* temporary value to have a timer that will not fire in normal execution; if the execution
+     * path includes a StepTimeoutSubProcess, then the value will be overwritten with the correct
+     * time for that execution path
+     */
+    variables.put(subProcessBoundaryTimerEventId, VIRTUALLY_INFINITE.toString());
   }
 
   @Override
-  public Map<String, Object> getProcessVariables() {
-    return Collections.unmodifiableMap(variables);
-  }
-
-  public String getProcessId() {
-    return processId;
-  }
-
-  @Override
-  protected Map<String, Object> updateVariables(
+  public Map<String, Object> updateVariables(
       final Map<String, Object> variables, final Duration activationDuration) {
     return variables;
   }
 
   @Override
   public boolean isAutomatic() {
-    return false;
+    return true;
   }
 
   @Override
@@ -49,7 +43,7 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + processId.hashCode();
+    result = 31 * result + subProcessId.hashCode();
     return result;
   }
 
@@ -65,8 +59,8 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
       return false;
     }
 
-    final StepStartProcessInstance that = (StepStartProcessInstance) o;
+    final StepEnterSubProcess that = (StepEnterSubProcess) o;
 
-    return processId.equals(that.processId);
+    return subProcessId.equals(that.subProcessId);
   }
 }

@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 public final class StepActivateAndFailJob extends AbstractExecutionStep {
 
@@ -25,6 +26,12 @@ public final class StepActivateAndFailJob extends AbstractExecutionStep {
 
   public boolean isUpdateRetries() {
     return updateRetries;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

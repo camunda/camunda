@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 public final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
 
@@ -19,6 +20,12 @@ public final class StepActivateAndTimeoutJob extends AbstractExecutionStep {
 
   public String getJobType() {
     return jobType;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

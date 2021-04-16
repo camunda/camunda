@@ -25,6 +25,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.zeebe.test.util.bpmn.random.steps.StepTimeoutSubProcess;
 import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -75,9 +76,24 @@ public class ProcessExecutor {
     } else if (step instanceof StepTriggerTimerStartEvent) {
       final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
       triggerTimerStartEvent(timerStep);
+    } else if (step instanceof StepTimeoutSubProcess) {
+      final var timeoutSubProcess = (StepTimeoutSubProcess) step;
+      timeoutSubProcess(timeoutSubProcess);
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
+  }
+
+  private void timeoutSubProcess(final StepTimeoutSubProcess timeoutProcess) {
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withHandlerNodeId(timeoutProcess.getSubProcessBoundaryTimerEventId())
+        .await();
+
+    engineRule.getClock().addTime(timeoutProcess.getDeltaTime());
+
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+        .withHandlerNodeId(timeoutProcess.getSubProcessBoundaryTimerEventId())
+        .await();
   }
 
   private void activateAndCompleteJob(final StepActivateAndCompleteJob activateAndCompleteJob) {
@@ -206,7 +222,7 @@ public class ProcessExecutor {
         .message()
         .withName(publishMessage.getMessageName())
         .withCorrelationKey("")
-        .withVariables(publishMessage.getVariables())
+        .withVariables(publishMessage.getProcessVariables())
         .publish();
 
     RecordingExporter.messageStartEventSubscriptionRecords(
@@ -219,7 +235,7 @@ public class ProcessExecutor {
     engineRule
         .processInstance()
         .ofBpmnProcessId(startProcess.getProcessId())
-        .withVariables(startProcess.getVariables())
+        .withVariables(startProcess.getProcessVariables())
         .create();
   }
 

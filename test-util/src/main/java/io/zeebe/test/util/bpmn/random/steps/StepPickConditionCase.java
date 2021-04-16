@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 // this class could also be called "Set variables when starting the process so that the engine
 // will select a certain condition"
@@ -21,6 +22,12 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
     this.forkingGatewayId = forkingGatewayId;
     this.edgeId = edgeId;
     variables.put(gatewayConditionVariable, edgeId);
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

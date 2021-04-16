@@ -29,6 +29,7 @@ public abstract class AbstractExecutionStep {
 
   public static final Duration VIRTUALLY_NO_TIME = Duration.ofMillis(0);
   public static final Duration DEFAULT_DELTA = Duration.ofHours(1);
+  public static final Duration VIRTUALLY_INFINITE = Duration.ofDays(365);
 
   protected final Map<String, Object> variables = new HashMap<>();
 
@@ -37,10 +38,13 @@ public abstract class AbstractExecutionStep {
     return Collections.unmodifiableMap(variables);
   }
 
-  public Map<String, Object> getVariables(final Duration activationDuration) {
-    // TODO
-    return Collections.unmodifiableMap(variables);
+  public final Map<String, Object> getVariables(final Duration activationDuration) {
+    return updateVariables(Collections.unmodifiableMap(variables), activationDuration);
   }
+
+  /** Update the variables to reflect the {@code activationDuration} in this execution path */
+  protected abstract Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration);
 
   /**
    * Returns {@code true} if the execution step runs automatically. A step runs automatically if it

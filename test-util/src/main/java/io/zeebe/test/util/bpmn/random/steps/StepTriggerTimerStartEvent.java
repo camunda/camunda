@@ -8,13 +8,27 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 
-public final class StepTriggerTimerStartEvent extends AbstractExecutionStep {
+public final class StepTriggerTimerStartEvent extends AbstractExecutionStep
+    implements ProcessStartStep {
 
   private final Duration timeToAdd;
 
   public StepTriggerTimerStartEvent(final Duration timeToAdd) {
     this.timeToAdd = timeToAdd;
+  }
+
+  @Override
+  public Map<String, Object> getProcessVariables() {
+    return Collections.unmodifiableMap(variables);
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

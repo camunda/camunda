@@ -29,6 +29,12 @@ public final class StepActivateAndCompleteJob extends AbstractExecutionStep {
   }
 
   @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
   public boolean isAutomatic() {
     return false;
   }

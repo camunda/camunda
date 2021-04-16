@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 // This class does not provide the edge variable at start to make sure an incident is
 // raised. This same variable can later be provided (through variable update) and the incident can
@@ -23,6 +24,12 @@ public final class StepRaiseIncidentThenResolveAndPickConditionCase extends Abst
     this.forkingGatewayId = forkingGatewayId;
     this.edgeId = edgeId;
     this.gatewayConditionVariable = gatewayConditionVariable;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

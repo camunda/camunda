@@ -8,9 +8,11 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 
-public final class StepPublishStartMessage extends AbstractExecutionStep {
+public final class StepPublishStartMessage extends AbstractExecutionStep
+    implements ProcessStartStep {
 
   private final String messageName;
 
@@ -19,8 +21,19 @@ public final class StepPublishStartMessage extends AbstractExecutionStep {
     this.variables.putAll(variables);
   }
 
+  @Override
+  public Map<String, Object> getProcessVariables() {
+    return Collections.unmodifiableMap(variables);
+  }
+
   public String getMessageName() {
     return messageName;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

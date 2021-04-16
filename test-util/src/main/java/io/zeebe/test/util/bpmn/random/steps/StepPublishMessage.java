@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 public final class StepPublishMessage extends AbstractExecutionStep {
 
@@ -30,6 +31,12 @@ public final class StepPublishMessage extends AbstractExecutionStep {
 
   public String getCorrelationKeyValue() {
     return correlationKeyValue;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

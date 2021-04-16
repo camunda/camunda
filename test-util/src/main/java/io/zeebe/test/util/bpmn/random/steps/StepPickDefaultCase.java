@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 public final class StepPickDefaultCase extends AbstractExecutionStep {
 
@@ -16,6 +17,12 @@ public final class StepPickDefaultCase extends AbstractExecutionStep {
   public StepPickDefaultCase(final String forkingGatewayId, final String gatewayConditionVariable) {
     this.forkingGatewayId = forkingGatewayId;
     variables.put(gatewayConditionVariable, "default-case");
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override

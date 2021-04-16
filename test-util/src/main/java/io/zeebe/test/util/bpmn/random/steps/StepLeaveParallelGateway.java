@@ -8,6 +8,7 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.Map;
 
 public final class StepLeaveParallelGateway extends AbstractExecutionStep {
 
@@ -15,6 +16,12 @@ public final class StepLeaveParallelGateway extends AbstractExecutionStep {
 
   public StepLeaveParallelGateway(final String joiningGatewayId) {
     this.joiningGatewayId = joiningGatewayId;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
   }
 
   @Override
