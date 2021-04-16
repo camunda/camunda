@@ -209,6 +209,7 @@ class MappedJournalSegmentWriter {
         }
         lastEntry = nextEntry;
         nextIndex++;
+        this.index.index(lastEntry, position);
         buffer.mark();
         position = buffer.position();
       }
