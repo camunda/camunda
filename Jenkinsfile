@@ -417,6 +417,7 @@ pipeline {
           post {
             always {
               junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.log', onlyIfSuccessful: false
             }
             failure {
               archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json', allowEmptyArchive: false
@@ -439,6 +440,7 @@ pipeline {
           post {
             always {
               junit testResults: 'qa/upgrade-tests/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.log', allowEmptyArchive: false, onlyIfSuccessful: false
             }
           }
         }

@@ -303,9 +303,8 @@ pipeline {
                   cp -R --parents /ssd-storage/es-logs-old /ssd-storage/es-logs-new .
                   chown -R 10000:1000 ./ssd-storage/
                 ''')
-                archiveArtifacts artifacts: 'ssd-storage/es-logs-*/*', onlyIfSuccessful: false
-                archiveArtifacts artifacts: 'qa/upgrade-tests/target/optimize-upgrade.log', onlyIfSuccessful: false
-                archiveArtifacts artifacts: 'qa/upgrade-tests/target/optimize-startup.log', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'ssd-storage/es-logs-*/*', allowEmptyArchive: true, onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.log', allowEmptyArchive: false, onlyIfSuccessful: false
               }
             }
           }

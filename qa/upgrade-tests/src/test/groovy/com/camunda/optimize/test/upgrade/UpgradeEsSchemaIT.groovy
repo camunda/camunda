@@ -19,6 +19,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 class UpgradeEsSchemaIT extends BaseUpgradeIT {
   private static final Logger log = LoggerFactory.getLogger(UpgradeEsSchemaIT.class);
 
+  @Override
+  def getLogFileKey() {
+    return "update-schema";
+  }
+
   @Test
   void upgradeAndVerifySchemaIntegrityTest() {
     // clean new elastic and clean old elastic
@@ -28,9 +33,10 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
     newElasticClient.cleanIndicesAndTemplates()
     def oldOptimize = new OptimizeWrapper(previousVersion, buildDirectory, oldElasticPort)
     def newOptimize = new OptimizeWrapper(currentVersion, buildDirectory, newElasticPort)
+
     try {
       // start new optimize to obtain expected schema and settings
-      newOptimize.start().consumeProcessOutput()
+      newOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
       newOptimize.waitForImportToFinish()
       newElasticClient.refreshAll()
       def expectedSettings = newElasticClient.getSettings()
@@ -41,7 +47,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       newElasticClient.cleanIndicesAndTemplates()
 
       // start old optimize to prepare for upgrade
-      oldOptimize.start().consumeProcessOutput()
+      oldOptimize.start().consumeProcessOutputStream(oldOptimizeOutputWriter)
       oldOptimize.waitForImportToFinish()
       oldElasticClient.refreshAll()
       oldOptimize.stop()
@@ -55,24 +61,18 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
 
       // start a new async snapshot operation to ensure the upgrade is resilient to concurrently running snapshots
       newElasticClient.createSnapshot(false)
+
       // run the upgrade
-      def upgradeLogPath = buildDirectory + "/optimize-upgrade.log"
-      def optimizeUpgradeOutputWriter = new FileWriter(upgradeLogPath)
-      newOptimize.startUpgrade().consumeProcessOutputStream(optimizeUpgradeOutputWriter)
+      newOptimize.startUpgrade().consumeProcessOutputStream(upgradeOutputWriter)
       newOptimize.waitForUpgradeToFinish(360)
+
       // stop/delete async snapshot operation as upgrade completed already
       newElasticClient.deleteSnapshot()
 
       // start new optimize
-      def newOptimizeLogPath = buildDirectory + "/optimize-startup.log"
-      def newOptimizeStartupOutputWriter = new FileWriter(newOptimizeLogPath)
-      newOptimize.start().consumeProcessOutputStream(newOptimizeStartupOutputWriter)
-
+      newOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
       newOptimize.waitForImportToFinish()
       newOptimize.stop()
-
-      optimizeUpgradeOutputWriter.flush()
-      newOptimizeStartupOutputWriter.flush()
 
       log.info("Asserting expected index metadata...")
       assertThat(newElasticClient.getSettings()).isEqualTo(expectedSettings)
@@ -107,7 +107,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
       log.info("Finished asserting expected instance data doc counts...")
 
       log.info("Asserting on startup and upgrade errors...")
-      new File(upgradeLogPath).eachLine { line ->
+      new File(getOptimizeUpdateLogPath()).eachLine { line ->
         // warns about snapshots in progress are fine
         def matcherWarn = line =~ /WARN(?!.*snapshot_in_progress_exception.*)/
         def matcherError = line =~ /ERROR/
@@ -116,7 +116,7 @@ class UpgradeEsSchemaIT extends BaseUpgradeIT {
         assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line)
           .isFalse()
       }
-      new File(newOptimizeLogPath).eachLine { line ->
+      new File(getNewOptimizeOutputLogPath()).eachLine { line ->
         def matcherWarn = line =~ /WARN/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
