@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.9.0</version.agrona>
+    <version.agrona>1.10.0</version.agrona>
     <version.animal-sniffer>1.20</version.animal-sniffer>
     <version.assertj>3.19.0</version.assertj>
     <version.awaitility>4.0.3</version.awaitility>
@@ -89,7 +89,7 @@
     <version.feel-scala>1.13.1</version.feel-scala>
     <version.rest-assured>4.3.3</version.rest-assured>
     <version.spring>5.3.6</version.spring>
-    <version.spring-boot>2.4.4</version.spring-boot>
+    <version.spring-boot>2.4.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>5.1.0</version.kryo>
