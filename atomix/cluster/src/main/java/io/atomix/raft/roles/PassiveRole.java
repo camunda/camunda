@@ -95,8 +95,11 @@ public class PassiveRole extends InactiveRole {
 
   /** Truncates uncommitted entries from the log. */
   private void truncateUncommittedEntries() {
-    if (role() == RaftServer.Role.PASSIVE) {
+    if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > raft.getCommitIndex()) {
       raft.getLog().deleteAfter(raft.getCommitIndex());
+
+      raft.getLog().flush();
+      raft.setLastWrittenIndex(raft.getCommitIndex());
     }
 
     // to fix the edge case where we might have been stopped
@@ -586,6 +589,9 @@ public class PassiveRole extends InactiveRole {
         // the log and append the leader's entry.
         if (lastEntry.term() != entry.term()) {
           raft.getLog().deleteAfter(index - 1);
+          raft.getLog().flush();
+          raft.setLastWrittenIndex(index - 1);
+
           failedToAppend = !appendEntry(index, entry, future);
         }
       } else { // Otherwise, this entry is being appended at the end of the log.
@@ -635,9 +641,10 @@ public class PassiveRole extends InactiveRole {
     // the log and append the leader's entry.
     if (existingEntry.term() != entry.term()) {
       raft.getLog().deleteAfter(index - 1);
-      if (!appendEntry(index, entry, future)) {
-        return false;
-      }
+      raft.getLog().flush();
+      raft.setLastWrittenIndex(index - 1);
+
+      return appendEntry(index, entry, future);
     }
     return true;
   }

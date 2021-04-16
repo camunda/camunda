@@ -41,7 +41,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>{@code maxSegmentSize} (32-bit unsigned integer) - The maximum number of bytes allowed in the
  * segment.
  */
-final class JournalSegmentDescriptor {
+public final class JournalSegmentDescriptor {
 
   private static final byte VERSION = 1;
   private static final int VERSION_LENGTH = Byte.BYTES;

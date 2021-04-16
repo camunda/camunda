@@ -35,6 +35,7 @@ import org.agrona.IoUtil;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 class JournalSegment implements AutoCloseable {
+
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
   private final JournalSegmentFile file;
@@ -49,6 +50,7 @@ class JournalSegment implements AutoCloseable {
       final JournalSegmentFile file,
       final JournalSegmentDescriptor descriptor,
       final int maxEntrySize,
+      final long maxWrittenIndex,
       final JournalIndex journalIndex) {
     this.file = file;
     this.descriptor = descriptor;
@@ -57,7 +59,7 @@ class JournalSegment implements AutoCloseable {
         IoUtil.mapExistingFile(
             file.file(), MapMode.READ_WRITE, file.name(), 0, descriptor.maxSegmentSize());
     buffer.order(ENDIANNESS);
-    writer = createWriter(maxEntrySize);
+    writer = createWriter(maxEntrySize, maxWrittenIndex);
   }
 
   /**
@@ -144,8 +146,9 @@ class JournalSegment implements AutoCloseable {
         buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
   }
 
-  private MappedJournalSegmentWriter createWriter(final int maxEntrySize) {
-    return new MappedJournalSegmentWriter(buffer, this, maxEntrySize, index);
+  private MappedJournalSegmentWriter createWriter(
+      final int maxEntrySize, final long lastWrittenIndex) {
+    return new MappedJournalSegmentWriter(buffer, this, maxEntrySize, index, lastWrittenIndex);
   }
 
   /**

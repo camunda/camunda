@@ -23,6 +23,7 @@ import io.zeebe.journal.JournalException.InvalidChecksum;
 import io.zeebe.journal.JournalException.InvalidIndex;
 import io.zeebe.journal.JournalReader;
 import io.zeebe.journal.JournalRecord;
+import io.zeebe.journal.file.record.CorruptedLogException;
 import io.zeebe.journal.file.record.PersistedJournalRecord;
 import io.zeebe.journal.file.record.RecordData;
 import io.zeebe.journal.file.record.RecordMetadata;
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -563,10 +565,10 @@ class JournalTest {
   }
 
   @Test
-  public void shouldTruncateCorruptedEntriesOnStartup() throws Exception {
+  public void shouldDetectCorruptedEntry() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
-    final var firstRecord = copyRecord(journal.append(data));
+    journal.append(data);
     final var secondRecord = copyRecord(journal.append(data));
     assertThat(directory.toFile().listFiles()).hasSize(1);
     assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
@@ -575,17 +577,15 @@ class JournalTest {
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
-    journal = openJournal();
-    final var reader = journal.openReader();
 
     // then
-    assertThat(journal.getLastIndex()).isEqualTo(firstRecord.index());
-    assertThat(reader.seekToLast()).isEqualTo(firstRecord.index());
-    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThatThrownBy(
+            () -> journal = openJournal(b -> b.withLastWrittenIndex(secondRecord.index())))
+        .isInstanceOf(CorruptedLogException.class);
   }
 
   @Test
-  public void shouldWriteEntriesAfterTruncatedCorruptedEntries() throws Exception {
+  public void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
     final var firstRecord = copyRecord(journal.append(data));
@@ -597,7 +597,7 @@ class JournalTest {
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
-    journal = openJournal();
+    journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
     data.wrap("111".getBytes(StandardCharsets.UTF_8));
     final var lastRecord = journal.append(data);
     final var reader = journal.openReader();
@@ -620,9 +620,16 @@ class JournalTest {
   }
 
   private SegmentedJournal openJournal() {
-    return SegmentedJournal.builder()
-        .withDirectory(directory.resolve("data").toFile())
-        .withJournalIndexDensity(5)
-        .build();
+    return openJournal(b -> {});
+  }
+
+  private SegmentedJournal openJournal(final Consumer<SegmentedJournalBuilder> option) {
+    final var builder =
+        SegmentedJournal.builder()
+            .withDirectory(directory.resolve("data").toFile())
+            .withJournalIndexDensity(5);
+    option.accept(builder);
+
+    return builder.build();
   }
 }
