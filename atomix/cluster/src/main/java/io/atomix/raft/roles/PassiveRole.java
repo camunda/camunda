@@ -522,9 +522,8 @@ public class PassiveRole extends InactiveRole {
       }
 
       // Iterate through entries and append them.
-      for (int i = 0; i < request.entries().size(); ++i) {
+      for (final PersistedRaftRecord entry : request.entries()) {
         final long index = ++lastLogIndex;
-        final PersistedRaftRecord entry = request.entries().get(i);
 
         // Get the last entry written to the log by the writer.
         final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
@@ -563,6 +562,7 @@ public class PassiveRole extends InactiveRole {
   private void flush(final long lastWrittenIndex, final long previousEntryIndex) {
     if (raft.getLog().shouldFlushExplicitly() && lastWrittenIndex > previousEntryIndex) {
       raft.getLog().flush();
+      raft.setLastWrittenIndex(lastWrittenIndex);
     }
   }
 

@@ -143,4 +143,28 @@ public class MetaStoreSerializer {
 
     return metaDecoder.votedFor();
   }
+
+  public long readLastWrittenIndex(final MutableDirectBuffer buffer, final int offset) {
+    headerDecoder.wrap(buffer, offset);
+    metaDecoder.wrap(
+        buffer,
+        offset + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+
+    return metaDecoder.lastWrittenIndex();
+  }
+
+  public void writeLastWrittenIndex(
+      final long index, final MutableDirectBuffer buffer, final int offset) {
+    headerEncoder
+        .wrap(buffer, offset)
+        .blockLength(metaEncoder.sbeBlockLength())
+        .templateId(metaEncoder.sbeTemplateId())
+        .schemaId(metaEncoder.sbeSchemaId())
+        .version(metaEncoder.sbeSchemaVersion());
+
+    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    metaEncoder.lastWrittenIndex(index);
+  }
 }

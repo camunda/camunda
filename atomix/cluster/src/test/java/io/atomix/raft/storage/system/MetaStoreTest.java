@@ -44,7 +44,7 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadConfiguration() throws IOException {
+  public void shouldStoreAndLoadConfiguration() {
     // given
     final Configuration config = getConfiguration(1, 2);
     metaStore.storeConfiguration(config);
@@ -82,7 +82,7 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadVote() throws IOException {
+  public void shouldStoreAndLoadVote() {
     // when
     metaStore.storeVote(new MemberId("id"));
 
@@ -178,7 +178,7 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreConfigurationMultipleTimes() throws IOException {
+  public void shouldStoreConfigurationMultipleTimes() {
     // given
     final Configuration firstConfig = getConfiguration(1, 2);
     metaStore.storeConfiguration(firstConfig);
@@ -215,5 +215,61 @@ public class MetaStoreTest {
     assertThat(readConfig.time()).isEqualTo(secondConfig.time());
     assertThat(readConfig.members())
         .containsExactlyInAnyOrder(secondConfig.members().toArray(new RaftMember[0]));
+  }
+
+  @Test
+  public void shouldStoreAndLoadLastWrittenIndex() {
+    // given
+    metaStore.storeLastWrittenIndex(5L);
+
+    // when/then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldStoreAndLoadLastWrittenIndexAfterRestart() throws IOException {
+    // given
+    metaStore.storeLastWrittenIndex(5L);
+
+    // when
+    metaStore.close();
+    metaStore = new MetaStore(storage);
+
+    // then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldLoadLatestWrittenIndex() throws IOException {
+    // given
+    metaStore.storeLastWrittenIndex(5L);
+
+    // when
+    metaStore.storeLastWrittenIndex(7L);
+
+    // then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(7L);
+
+    // when
+    metaStore.storeLastWrittenIndex(8L);
+
+    metaStore.close();
+    metaStore = new MetaStore(storage);
+
+    // then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(8L);
+  }
+
+  @Test
+  public void shouldStoreAndLoadAllMetadata() {
+    // when
+    metaStore.storeTerm(1L);
+    metaStore.storeLastWrittenIndex(2L);
+    metaStore.storeVote(MemberId.from("a"));
+
+    // then
+    assertThat(metaStore.loadTerm()).isEqualTo(1L);
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(2L);
+    assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
   }
 }
