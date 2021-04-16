@@ -47,7 +47,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     boundaryTimerEventId = "boundary_timer_" + serviceTaskId;
 
     hasBoundaryErrorEvent =
-        random.nextInt(100) < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
+        random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
     hasBoundaryTimerEvent =
         random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_TIMER_EVENT;
 

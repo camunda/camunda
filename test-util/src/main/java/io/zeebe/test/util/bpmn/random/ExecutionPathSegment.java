@@ -28,37 +28,38 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public final class ExecutionPathSegment {
 
-  private final List<ScheduledExecutionStep> steps = new ArrayList<>();
-  private final Map<String, Object> variables = new HashMap<>();
+  private final List<ScheduledExecutionStep> scheduledSteps = new ArrayList<>();
+  private final Map<String, Object> variableDefaults = new HashMap<>();
 
   public void append(final AbstractExecutionStep executionStep) {
     final ScheduledExecutionStep predecessor;
-    if (steps.isEmpty()) {
+    if (scheduledSteps.isEmpty()) {
       predecessor = null;
     } else {
-      predecessor = steps.get(steps.size() - 1);
+      predecessor = scheduledSteps.get(scheduledSteps.size() - 1);
     }
 
-    steps.add(new ScheduledExecutionStep(predecessor, predecessor, executionStep));
+    scheduledSteps.add(new ScheduledExecutionStep(predecessor, predecessor, executionStep));
   }
 
   public void append(
       final AbstractExecutionStep executionStep,
       final AbstractExecutionStep logicalPredecessorStep) {
     final ScheduledExecutionStep executionPredecessor;
-    if (steps.isEmpty()) {
+    if (scheduledSteps.isEmpty()) {
       executionPredecessor = null;
     } else {
-      executionPredecessor = steps.get(steps.size() - 1);
+      executionPredecessor = scheduledSteps.get(scheduledSteps.size() - 1);
     }
 
     final var logicalPredecessor =
-        steps.stream()
+        scheduledSteps.stream()
             .filter(scheduledStep -> scheduledStep.getStep() == logicalPredecessorStep)
             .findFirst()
             .orElseThrow();
 
-    steps.add(new ScheduledExecutionStep(logicalPredecessor, executionPredecessor, executionStep));
+    scheduledSteps.add(
+        new ScheduledExecutionStep(logicalPredecessor, executionPredecessor, executionStep));
   }
 
   public void append(final ExecutionPathSegment pathToAdd) {
@@ -78,11 +79,11 @@ public final class ExecutionPathSegment {
   }
 
   public boolean canBeInterrupted() {
-    if (steps.isEmpty()) {
+    if (scheduledSteps.isEmpty()) {
       return false;
     }
 
-    return steps.stream()
+    return scheduledSteps.stream()
             .map(ScheduledExecutionStep::getStep)
             .filter(Predicate.not(AbstractExecutionStep::isAutomatic))
             .collect(Collectors.toList())
@@ -95,11 +96,11 @@ public final class ExecutionPathSegment {
    * path taken. The default value can be overwritten by any step
    */
   public void setVariableDefault(final String key, final Object value) {
-    variables.put(key, value);
+    variableDefaults.put(key, value);
   }
 
   public void mergeVariableDefaults(final ExecutionPathSegment other) {
-    variables.putAll(other.variables);
+    variableDefaults.putAll(other.variableDefaults);
   }
 
   /**
@@ -113,7 +114,7 @@ public final class ExecutionPathSegment {
       throw new IllegalArgumentException("This execution flow cannot be interrupted");
     }
 
-    steps.subList(findCutOffPoint(random), steps.size()).clear();
+    scheduledSteps.subList(findCutOffPoint(random), scheduledSteps.size()).clear();
   }
 
   /**
@@ -127,8 +128,8 @@ public final class ExecutionPathSegment {
     Integer firstCutOffPoint = null;
     Integer lastCutOffPoint = null;
 
-    for (int index = 0; index < steps.size(); index++) {
-      final var step = steps.get(index).getStep();
+    for (int index = 0; index < scheduledSteps.size(); index++) {
+      final var step = scheduledSteps.get(index).getStep();
 
       if (!step.isAutomatic()) {
         if (firstCutOffPoint == null) {
@@ -145,7 +146,7 @@ public final class ExecutionPathSegment {
 
     // skip automatic steps
     int finalCutOffPoint = initialCutOffPoint;
-    while (steps.get(finalCutOffPoint).getStep().isAutomatic()) {
+    while (scheduledSteps.get(finalCutOffPoint).getStep().isAutomatic()) {
       finalCutOffPoint++;
     }
 
@@ -154,7 +155,7 @@ public final class ExecutionPathSegment {
 
   @Deprecated // use interruptAtRandomPosition instead
   public void replace(final int index, final AbstractExecutionStep executionStep) {
-    steps.subList(index, steps.size()).clear();
+    scheduledSteps.subList(index, scheduledSteps.size()).clear();
     append(executionStep);
   }
 
@@ -171,30 +172,32 @@ public final class ExecutionPathSegment {
    */
   @Deprecated
   public void insert(final int index, final StepPublishMessage stepPublishMessage) {
-    final var tail = steps.subList(index, steps.size());
+    final var tail = scheduledSteps.subList(index, scheduledSteps.size());
     replace(index, stepPublishMessage);
     tail.forEach(scheduledStep -> append(scheduledStep));
   }
 
   public List<ScheduledExecutionStep> getScheduledSteps() {
-    return Collections.unmodifiableList(steps);
+    return Collections.unmodifiableList(scheduledSteps);
   }
 
   public List<AbstractExecutionStep> getSteps() {
-    return steps.stream().map(ScheduledExecutionStep::getStep).collect(Collectors.toList());
+    return scheduledSteps.stream()
+        .map(ScheduledExecutionStep::getStep)
+        .collect(Collectors.toList());
   }
 
   public Map<String, Object> collectVariables() {
-    final Map<String, Object> result = new HashMap<>(variables);
+    final Map<String, Object> result = new HashMap<>(variableDefaults);
 
-    steps.forEach(step -> result.putAll(step.getVariables()));
+    scheduledSteps.forEach(scheduledStep -> result.putAll(scheduledStep.getVariables()));
 
     return result;
   }
 
   @Override
   public int hashCode() {
-    return steps.hashCode();
+    return scheduledSteps.hashCode();
   }
 
   @Override
@@ -208,7 +211,7 @@ public final class ExecutionPathSegment {
 
     final ExecutionPathSegment that = (ExecutionPathSegment) o;
 
-    return steps.equals(that.steps);
+    return scheduledSteps.equals(that.scheduledSteps);
   }
 
   @Override
