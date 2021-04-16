@@ -14,14 +14,8 @@ public final class StepEnterSubProcess extends AbstractExecutionStep {
 
   private final String subProcessId;
 
-  public StepEnterSubProcess(
-      final String subProcessId, final String subProcessBoundaryTimerEventId) {
+  public StepEnterSubProcess(final String subProcessId) {
     this.subProcessId = subProcessId;
-    /* temporary value to have a timer that will not fire in normal execution; if the execution
-     * path includes a StepTimeoutSubProcess, then the value will be overwritten with the correct
-     * time for that execution path
-     */
-    variables.put(subProcessBoundaryTimerEventId, VIRTUALLY_INFINITE.toString());
   }
 
   @Override

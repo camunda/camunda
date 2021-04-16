@@ -16,11 +16,9 @@ import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.steps.StepEnterParallelGateway;
-import io.zeebe.test.util.bpmn.random.steps.StepLeaveParallelGateway;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 /**
  * Generates a block with a forking parallel gateway, a random number of branches, and a joining
@@ -84,13 +82,11 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     final var branchPointers =
         blockBuilders.stream()
             .map(
-                blockBuilder ->
-                    new BranchPointer(
-                        forkingGateway, blockBuilder.findRandomExecutionPath(random).getSteps()))
-            .collect(Collectors.toList());
-    shuffleStepsFromDifferentLists(random, result, branchPointers);
-
-    result.append(new StepLeaveParallelGateway(forkGatewayId));
+                blockBuilder -> {
+                  final var branchExecutionPath = blockBuilder.findRandomExecutionPath(random);
+                  result.mergeVariableDefaults(branchExecutionPath);
+                  return new BranchPointer(forkingGateway, branchExecutionPath.getSteps());
+                });
 
     return result;
   }

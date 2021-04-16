@@ -20,7 +20,9 @@ import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
+import io.zeebe.test.util.bpmn.random.steps.StepTimeoutServiceTask;
 import java.util.Random;
 
 /** Generates a service task. The service task may have boundary events */
@@ -29,19 +31,29 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
   private final String serviceTaskId;
   private final String jobType;
   private final String errorCode;
+  private final String boundaryErrorEventId;
+  private final String boundaryTimerEventId;
 
   private final boolean hasBoundaryEvents;
   private final boolean hasBoundaryErrorEvent;
+  private final boolean hasBoundaryTimerEvent;
 
   public ServiceTaskBlockBuilder(final IDGenerator idGenerator, final Random random) {
     serviceTaskId = idGenerator.nextId();
     jobType = "job_" + serviceTaskId;
     errorCode = "error_" + serviceTaskId;
 
+    boundaryErrorEventId = "boundary_error_" + serviceTaskId;
+    boundaryTimerEventId = "boundary_timer_" + serviceTaskId;
+
     hasBoundaryErrorEvent =
         random.nextInt(100) < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
+    hasBoundaryTimerEvent =
+        random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_TIMER_EVENT;
 
-    hasBoundaryEvents = hasBoundaryErrorEvent; // extend here for additional boundary events
+    hasBoundaryEvents =
+        hasBoundaryErrorEvent
+            || hasBoundaryTimerEvent; // extend here for additional boundary events
   }
 
   @Override
@@ -64,7 +76,15 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
       if (hasBoundaryErrorEvent) {
         result =
             ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(serviceTaskId))
-                .boundaryEvent("boundary_error_" + serviceTaskId, b -> b.error(errorCode))
+                .boundaryEvent(boundaryErrorEventId, b -> b.error(errorCode))
+                .connectTo(joinGatewayId);
+      }
+
+      if (hasBoundaryTimerEvent) {
+        result =
+            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(serviceTaskId))
+                .boundaryEvent(
+                    boundaryTimerEventId, b -> b.timerWithDurationExpression(boundaryTimerEventId))
                 .connectTo(joinGatewayId);
       }
     }
@@ -80,9 +100,18 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
+    final var activateStep = new StepActivateBPMNElement(serviceTaskId);
+    result.append(activateStep);
+
+    if (hasBoundaryTimerEvent) {
+      // set an infinite timer as default; this can be overwritten by the execution path chosen
+      result.setVariableDefault(
+          boundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+    }
+
     result.append(buildStepsForFailedExecutions(random));
 
-    result.append(buildStepForSuccessfulExecution(random));
+    result.append(buildStepForSuccessfulExecution(random), activateStep);
 
     return result;
   }
@@ -113,6 +142,8 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result = new StepActivateJobAndThrowError(jobType, errorCode);
+    } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
+      result = new StepTimeoutServiceTask(jobType, boundaryTimerEventId);
     } else {
       result = new StepActivateAndCompleteJob(jobType);
     }

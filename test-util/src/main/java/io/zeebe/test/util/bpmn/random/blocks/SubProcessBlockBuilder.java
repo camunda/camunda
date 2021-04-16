@@ -16,6 +16,7 @@ import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
 import io.zeebe.test.util.bpmn.random.RandomProcessGenerator;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.zeebe.test.util.bpmn.random.steps.StepEnterSubProcess;
 import io.zeebe.test.util.bpmn.random.steps.StepTimeoutSubProcess;
 import java.util.Random;
@@ -101,8 +102,12 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final var enterSubProcessStep =
-        new StepEnterSubProcess(subProcessId, subProcessBoundaryTimerEventId);
+    if (hasBoundaryTimerEvent) {
+      // set an infinite timer as default; this can be overwritten by the execution path chosen
+      result.setVariableDefault(
+          subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+    }
+    final var enterSubProcessStep = new StepEnterSubProcess(subProcessId);
 
     result.append(enterSubProcessStep);
 

@@ -25,6 +25,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.zeebe.test.util.bpmn.random.steps.StepTimeoutServiceTask;
 import io.zeebe.test.util.bpmn.random.steps.StepTimeoutSubProcess;
 import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -66,6 +67,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepActivateAndTimeoutJob) {
       final StepActivateAndTimeoutJob activateAndTimeoutJob = (StepActivateAndTimeoutJob) step;
       activateAndTimeoutJob(activateAndTimeoutJob);
+    } else if (step instanceof StepTimeoutServiceTask) {
+      final StepTimeoutServiceTask timeoutServiceTask = (StepTimeoutServiceTask) step;
+      timeoutServiceTask(timeoutServiceTask);
     } else if (step instanceof StepActivateJobAndThrowError) {
       final StepActivateJobAndThrowError activateJobAndThrowError =
           (StepActivateJobAndThrowError) step;
@@ -93,6 +97,18 @@ public class ProcessExecutor {
 
     RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
         .withHandlerNodeId(timeoutProcess.getSubProcessBoundaryTimerEventId())
+        .await();
+  }
+
+  private void timeoutServiceTask(final StepTimeoutServiceTask timeoutServiceTask) {
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withHandlerNodeId(timeoutServiceTask.getBoundaryTimerEventId())
+        .await();
+
+    engineRule.getClock().addTime(timeoutServiceTask.getDeltaTime());
+
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+        .withHandlerNodeId(timeoutServiceTask.getBoundaryTimerEventId())
         .await();
   }
 
