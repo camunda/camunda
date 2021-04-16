@@ -17,8 +17,8 @@ import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
 import io.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
-import io.zeebe.test.util.bpmn.random.steps.StepEnterSubProcess;
-import io.zeebe.test.util.bpmn.random.steps.StepTimeoutSubProcess;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
+import io.zeebe.test.util.bpmn.random.steps.StepTimeoutBPMNElement;
 import java.util.Random;
 
 /**
@@ -107,9 +107,9 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       result.setVariableDefault(
           subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
     }
-    final var enterSubProcessStep = new StepEnterSubProcess(subProcessId);
+    final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
 
-    result.append(enterSubProcessStep);
+    result.append(activateSubProcess);
 
     if (embeddedSubProcessBuilder == null) {
       return result;
@@ -133,8 +133,8 @@ public class SubProcessBlockBuilder implements BlockBuilder {
 
       if (hasBoundaryTimerEvent) {
         result.append(
-            new StepTimeoutSubProcess(subProcessId, subProcessBoundaryTimerEventId),
-            enterSubProcessStep);
+            new StepTimeoutBPMNElement(subProcessId, subProcessBoundaryTimerEventId),
+            activateSubProcess);
       } // extend here for other boundary events
     }
     return result;

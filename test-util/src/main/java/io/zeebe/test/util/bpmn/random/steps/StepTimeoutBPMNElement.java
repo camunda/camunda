@@ -8,37 +8,41 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-public final class StepEnterParallelGateway extends AbstractExecutionStep {
+public final class StepTimeoutBPMNElement extends AbstractExecutionStep {
 
-  private final String forkingGatewayId;
+  private final String jobType;
+  private final String boundaryTimerEventId;
 
-  public StepEnterParallelGateway(final String forkingGatewayId) {
-    this.forkingGatewayId = forkingGatewayId;
+  public StepTimeoutBPMNElement(final String jobType, final String boundaryTimerEventId) {
+    this.jobType = jobType;
+    this.boundaryTimerEventId = boundaryTimerEventId;
   }
 
   @Override
   protected Map<String, Object> updateVariables(
       final Map<String, Object> variables, final Duration activationDuration) {
-    return variables;
+    final var result = new HashMap<>(variables);
+    result.put(boundaryTimerEventId, activationDuration.toString());
+    return result;
   }
 
   @Override
   public boolean isAutomatic() {
-    return true;
+    return false;
   }
 
   @Override
   public Duration getDeltaTime() {
-    return VIRTUALLY_NO_TIME;
+    return DEFAULT_DELTA;
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + forkingGatewayId.hashCode();
-    return result;
+    return Objects.hash(super.hashCode(), jobType, boundaryTimerEventId);
   }
 
   @Override
@@ -52,9 +56,11 @@ public final class StepEnterParallelGateway extends AbstractExecutionStep {
     if (!super.equals(o)) {
       return false;
     }
+    final StepTimeoutBPMNElement that = (StepTimeoutBPMNElement) o;
+    return jobType.equals(that.jobType) && boundaryTimerEventId.equals(that.boundaryTimerEventId);
+  }
 
-    final StepEnterParallelGateway that = (StepEnterParallelGateway) o;
-
-    return forkingGatewayId.equals(that.forkingGatewayId);
+  public String getBoundaryTimerEventId() {
+    return boundaryTimerEventId;
   }
 }

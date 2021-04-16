@@ -22,7 +22,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
-import io.zeebe.test.util.bpmn.random.steps.StepTimeoutServiceTask;
+import io.zeebe.test.util.bpmn.random.steps.StepTimeoutBPMNElement;
 import java.util.Random;
 
 /** Generates a service task. The service task may have boundary events */
@@ -143,7 +143,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result = new StepActivateJobAndThrowError(jobType, errorCode);
     } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
-      result = new StepTimeoutServiceTask(jobType, boundaryTimerEventId);
+      result = new StepTimeoutBPMNElement(jobType, boundaryTimerEventId);
     } else {
       result = new StepActivateAndCompleteJob(jobType);
     }
