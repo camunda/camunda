@@ -120,13 +120,8 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
       result.append(internalExecutionPath);
     } else {
-      final int cutOffPoint =
-          Math.min(1, random.nextInt(internalExecutionPath.getScheduledSteps().size()));
-
-      for (int i = 0; i < cutOffPoint; i++) {
-        result.append(internalExecutionPath.getSteps().get(i));
-      }
-
+      internalExecutionPath.cutAtRandomPosition(random);
+      result.append(internalExecutionPath);
       if (hasBoundaryTimerEvent) {
         result.append(
             new StepTimeoutBPMNElement(subProcessId, subProcessBoundaryTimerEventId),

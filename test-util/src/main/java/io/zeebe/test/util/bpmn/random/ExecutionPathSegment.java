@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -101,17 +102,78 @@ public final class ExecutionPathSegment {
     variables.putAll(other.variables);
   }
 
-  // TODO pihme modify index position to consider automatic steps
+  /**
+   * Cuts the execution path at a random position at which the process can be interrupted
+   *
+   * @param random random generator
+   */
+  public void cutAtRandomPosition(final Random random) {
+
+    if (!canBeInterrupted()) {
+      throw new IllegalArgumentException("This execution flow cannot be interrupted");
+    }
+
+    steps.subList(findCutOffPoint(random), steps.size()).clear();
+  }
+
+  /**
+   * This method finds a cutoff point. We can cut only at a position where we have a non-automatic
+   * step
+   *
+   * @return index of cutoff point
+   */
+  private int findCutOffPoint(final Random random) {
+    // find the first and last point where a cutoff is possible
+    Integer firstCutOffPoint = null;
+    Integer lastCutOffPoint = null;
+
+    for (int index = 0; index < steps.size(); index++) {
+      final var step = steps.get(index).getStep();
+
+      if (!step.isAutomatic()) {
+        if (firstCutOffPoint == null) {
+          firstCutOffPoint = index;
+        }
+
+        lastCutOffPoint = index;
+      }
+    }
+
+    // find a random position between these two cutoff points
+    final int initialCutOffPoint =
+        firstCutOffPoint + random.nextInt(lastCutOffPoint - firstCutOffPoint);
+
+    // skip automatic steps
+    int finalCutOffPoint = initialCutOffPoint;
+    while (steps.get(finalCutOffPoint).getStep().isAutomatic()) {
+      finalCutOffPoint++;
+    }
+
+    return finalCutOffPoint;
+  }
+
+  @Deprecated // use interruptAtRandomPosition instead
   public void replace(final int index, final AbstractExecutionStep executionStep) {
     steps.subList(index, steps.size()).clear();
     append(executionStep);
   }
 
-  // TODO pihme modify index position to consider automatic steps
+  /**
+   * Deprecated for several reasons:
+   *
+   * <p>a) not clear why a specific step is part of the signature; should be a more general class
+   *
+   * <p>b) overall, not clear what the method should achieve.
+   *
+   * <p>It might be better to have a look at
+   * ParallelGatewayBlockBuilder#shuffleStepsFromDifferentLists(...) which demonstrates how to merge
+   * different parallel execution paths into a single execution path
+   */
+  @Deprecated
   public void insert(final int index, final StepPublishMessage stepPublishMessage) {
     final var tail = steps.subList(index, steps.size());
     replace(index, stepPublishMessage);
-    tail.forEach(scheduledStep -> append(scheduledStep.getStep()));
+    tail.forEach(scheduledStep -> append(scheduledStep));
   }
 
   public List<ScheduledExecutionStep> getScheduledSteps() {
