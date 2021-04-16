@@ -22,6 +22,13 @@ import java.util.Random;
 /** Class to generate random processes and execution paths for those processes */
 public final class RandomProcessGenerator {
 
+  public static final int MAX_BLOCKS = 5;
+  public static final int MAX_DEPTH = 3;
+  public static final int MAX_BRANCHES = 3;
+
+  public static final double PROBABILITY_BOUNDARY_TIMER_EVENT = 0.2;
+  public static final double PROBABILITY_BOUNDARY_ERROR_EVENT = 0.2;
+
   private static final BlockSequenceBuilderFactory FACTORY = new BlockSequenceBuilderFactory();
 
   private final ProcessBuilder processBuilder;
@@ -46,9 +53,9 @@ public final class RandomProcessGenerator {
             random,
             idGenerator,
             FACTORY,
-            Optional.ofNullable(maxBlocks).orElse(5),
-            Optional.ofNullable(maxDepth).orElse(3),
-            Optional.ofNullable(maxBranches).orElse(3),
+            Optional.ofNullable(maxBlocks).orElse(MAX_BLOCKS),
+            Optional.ofNullable(maxDepth).orElse(MAX_DEPTH),
+            Optional.ofNullable(maxBranches).orElse(MAX_BRANCHES),
             0);
 
     processBuilder = new ProcessBuilder(context);
