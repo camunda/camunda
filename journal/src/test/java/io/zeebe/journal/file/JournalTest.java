@@ -299,6 +299,66 @@ class JournalTest {
   }
 
   @Test
+  void shouldNotReadTruncatedEntriesWhenReaderPastTruncateIndex() {
+    // given
+    final var reader = journal.openReader();
+    assertThat(journal.getLastIndex()).isEqualTo(0);
+    journal.append(1, data);
+    journal.append(2, data);
+    journal.append(3, data);
+    reader.next();
+    reader.next();
+    assertThat(reader.hasNext()).isTrue();
+
+    // when
+    journal.deleteAfter(1);
+
+    // then
+    assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldNotReadTruncatedEntriesWhenReaderAtTruncateIndex() {
+    // given
+    final var reader = journal.openReader();
+    assertThat(journal.getLastIndex()).isEqualTo(0);
+    journal.append(1, data);
+    journal.append(2, data);
+    journal.append(3, data);
+    reader.next();
+    reader.next();
+    assertThat(reader.hasNext()).isTrue();
+
+    // when
+    journal.deleteAfter(2);
+
+    // then
+    assertThat(journal.getLastIndex()).isEqualTo(2);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldNotReadTruncatedEntriesWhenReaderBeforeTruncateIndex() {
+    // given
+    final var reader = journal.openReader();
+    assertThat(journal.getLastIndex()).isEqualTo(0);
+    journal.append(1, data);
+    journal.append(2, data);
+    journal.append(3, data);
+    reader.next();
+    assertThat(reader.hasNext()).isTrue();
+
+    // when
+    journal.deleteAfter(2);
+
+    // then
+    assertThat(journal.getLastIndex()).isEqualTo(2);
+    reader.next();
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
   void shouldAppendJournalRecord() {
     // given
     final var receiverJournal =

@@ -79,21 +79,15 @@ class SegmentedJournalWriter {
   }
 
   public void deleteAfter(final long index) {
-    journalMetrics.observeSegmentTruncation(
-        () -> {
-          // Delete all segments with first indexes greater than the given index.
-          while (index < currentSegment.index() && currentSegment != journal.getFirstSegment()) {
-            journal.removeSegment(currentSegment);
-            currentSegment = journal.getLastSegment();
-            currentWriter = currentSegment.writer();
-          }
+    // Delete all segments with first indexes greater than the given index.
+    while (index < currentSegment.index() && currentSegment != journal.getFirstSegment()) {
+      journal.removeSegment(currentSegment);
+      currentSegment = journal.getLastSegment();
+      currentWriter = currentSegment.writer();
+    }
 
-          // Truncate the current index.
-          currentWriter.truncate(index);
-
-          // Reset segment readers.
-          journal.resetTail(index + 1);
-        });
+    // Truncate the current index.
+    currentWriter.truncate(index);
   }
 
   public void flush() {

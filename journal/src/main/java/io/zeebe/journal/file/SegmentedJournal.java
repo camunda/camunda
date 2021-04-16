@@ -106,7 +106,12 @@ public class SegmentedJournal implements Journal {
 
   @Override
   public void deleteAfter(final long indexExclusive) {
-    writer.deleteAfter(indexExclusive);
+    journalMetrics.observeSegmentTruncation(
+        () -> {
+          writer.deleteAfter(indexExclusive);
+          // Reset segment readers.
+          resetAdvancedReaders(indexExclusive + 1);
+        });
   }
 
   @Override
@@ -545,17 +550,14 @@ public class SegmentedJournal implements Journal {
   }
 
   /**
-   * Resets journal readers to the given tail.
+   * Resets journal readers to the given index, if they are at a larger index.
    *
    * @param index The index at which to reset readers.
    */
-  void resetTail(final long index) {
+  void resetAdvancedReaders(final long index) {
     for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() >= index) {
+      if (reader.getNextIndex() > index) {
         reader.seek(index);
-      } else {
-        // This is not thread safe https://github.com/zeebe-io/zeebe/issues/4198
-        reader.seek(reader.getNextIndex());
       }
     }
   }
