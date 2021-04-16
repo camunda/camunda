@@ -125,10 +125,10 @@ public final class MultiInstanceActivityTest {
   private static List<Tuple> parallelLifecycle() {
     return Arrays.asList(
         tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-        tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+        tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
         tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
         tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-        tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+        tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
         tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
         tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
         tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -176,7 +176,7 @@ public final class MultiInstanceActivityTest {
                 .limitToProcessInstanceCompleted()
                 .withElementId(ELEMENT_ID))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(expectedLifecycle);
+        .containsSubsequence(expectedLifecycle);
   }
 
   @Test
@@ -421,7 +421,7 @@ public final class MultiInstanceActivityTest {
                 .limitToProcessInstanceTerminated()
                 .withElementId(ELEMENT_ID))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),

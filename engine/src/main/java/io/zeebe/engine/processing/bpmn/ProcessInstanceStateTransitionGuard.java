@@ -82,7 +82,12 @@ public final class ProcessInstanceStateTransitionGuard {
 
     switch (context.getIntent()) {
       case COMPLETE_ELEMENT:
-        return hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        // an incident is resolved by writing a COMPLETE command when the element instance is in
+        // state COMPLETING
+        return hasElementInstanceWithState(
+                context,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                ProcessInstanceIntent.ELEMENT_COMPLETING)
             .flatMap(ok -> hasActiveFlowScopeInstance(context));
       case TERMINATE_ELEMENT:
         return hasElementInstanceWithState(

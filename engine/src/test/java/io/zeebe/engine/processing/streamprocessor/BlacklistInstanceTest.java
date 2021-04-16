@@ -89,7 +89,6 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       //////////////// JOBS //////////////////
       ////////////////////////////////////////
-      {ValueType.JOB, JobIntent.CREATE, true},
       {ValueType.JOB, JobIntent.CREATED, true},
       {ValueType.JOB, JobIntent.COMPLETED, true},
       {ValueType.JOB, JobIntent.TIME_OUT, true},

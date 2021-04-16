@@ -120,7 +120,7 @@ public final class EventHandle {
 
       } else {
         eventTriggerBehavior.activateTriggeredEvent(
-            catchEvent, eventScopeKey, elementRecord, variables);
+            catchEvent, elementRecord.getFlowScopeKey(), elementRecord, variables);
       }
 
     } else {

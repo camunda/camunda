@@ -18,6 +18,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
@@ -138,10 +139,15 @@ public final class ActivityTest {
                         && r.getIntent() == ELEMENT_ACTIVATED)
             .asList();
 
-    assertThat(records).hasSize(4);
+    assertThat(records).hasSize(5);
     assertThat(records)
         .extracting(Record::getIntent)
-        .contains(ELEMENT_ACTIVATING, TimerIntent.CREATE, TimerIntent.CREATE, ELEMENT_ACTIVATED);
+        .contains(
+            ELEMENT_ACTIVATING,
+            TimerIntent.CREATE,
+            TimerIntent.CREATE,
+            JobIntent.CREATED,
+            ELEMENT_ACTIVATED);
   }
 
   @Test
