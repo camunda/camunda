@@ -45,11 +45,25 @@ class SegmentedJournalReader implements JournalReader {
 
   @Override
   public boolean hasNext() {
-    return hasNextEntry();
+    final var stamp = journal.acquireReadlock();
+    try {
+      return unsafeHasNext();
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
   }
 
   @Override
   public JournalRecord next() {
+    final var stamp = journal.acquireReadlock();
+    try {
+      return unsafeNext();
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  private JournalRecord unsafeNext() throws NoSuchElementException {
     if (!currentReader.hasNext()) {
       final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
       if (nextSegment != null && nextSegment.index() == getNextIndex()) {
@@ -65,13 +79,94 @@ class SegmentedJournalReader implements JournalReader {
 
   @Override
   public long seek(final long index) {
-    // If the current segment is not open, it has been replaced. Reset the segments.
-    if (!currentSegment.isOpen()) {
-      seekToFirst();
+    final var stamp = journal.acquireReadlock();
+    try {
+      // If the current segment is not open, it has been replaced. Reset the segments.
+      return unsafeSeek(index);
+    } finally {
+      journal.releaseReadlock(stamp);
     }
+  }
 
-    if (currentReader.getNextIndex() == index) {
-      return index;
+  @Override
+  public long seekToFirst() {
+    final var stamp = journal.acquireReadlock();
+    try {
+      return unsafeSeekToFirst();
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  @Override
+  public long seekToLast() {
+    final var stamp = journal.acquireReadlock();
+    try {
+      return unsafeSeekToLast();
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  @Override
+  public long seekToAsqn(final long asqn) {
+    return seekToAsqn(asqn, journal.getLastIndex());
+  }
+
+  @Override
+  public long seekToAsqn(final long asqn, final long indexUpperBound) {
+    final var stamp = journal.acquireReadlock();
+    try {
+      final var journalIndex = journal.getJournalIndex();
+      final var index = journalIndex.lookupAsqn(asqn, indexUpperBound);
+
+      // depending on the type of index, it's possible there is no ASQN indexed, in which case start
+      // from the beginning
+      if (index == null) {
+        unsafeSeekToFirst();
+      } else {
+        unsafeSeek(index);
+      }
+
+      // potential beneficiary of a peek() call, which would avoid the duplicate seek or
+      // being at the second position if the first entry has a greater ASQN
+      JournalRecord record = null;
+      while (unsafeHasNext()) {
+        final var currentRecord = next();
+        if (currentRecord.index() > indexUpperBound) {
+          break;
+        }
+        if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
+          record = currentRecord;
+        } else if (currentRecord.asqn() >= asqn) {
+          break;
+        }
+      }
+
+      // if the journal was empty, the reader will be at the beginning of the log
+      // if the journal only contained entries with ASQN greater than the one requested, then seek
+      // back to the beginning
+      if (record == null) {
+        return unsafeSeekToFirst();
+      }
+
+      // This is needed so that the next() returns the correct record
+      // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
+      return unsafeSeek(record.index());
+    } finally {
+      journal.releaseReadlock(stamp);
+    }
+  }
+
+  @Override
+  public void close() {
+    currentReader.close();
+    journal.closeReader(this);
+  }
+
+  long unsafeSeek(final long index) {
+    if (!currentSegment.isOpen()) {
+      unsafeSeekToFirst();
     }
 
     if (index < currentReader.getNextIndex()) {
@@ -85,69 +180,16 @@ class SegmentedJournalReader implements JournalReader {
     return getNextIndex();
   }
 
-  @Override
-  public long seekToFirst() {
+  private long unsafeSeekToFirst() {
     replaceCurrentSegment(journal.getFirstSegment());
     return journal.getFirstIndex();
   }
 
-  @Override
-  public long seekToLast() {
+  private long unsafeSeekToLast() {
     replaceCurrentSegment(journal.getLastSegment());
-    seek(journal.getLastIndex());
+    unsafeSeek(journal.getLastIndex());
 
     return journal.getLastIndex();
-  }
-
-  @Override
-  public long seekToAsqn(final long asqn) {
-    return seekToAsqn(asqn, journal.getLastIndex());
-  }
-
-  @Override
-  public long seekToAsqn(final long asqn, final long indexUpperBound) {
-    final var journalIndex = journal.getJournalIndex();
-    final var index = journalIndex.lookupAsqn(asqn, indexUpperBound);
-
-    // depending on the type of index, it's possible there is no ASQN indexed, in which case start
-    // from the beginning
-    if (index == null) {
-      seekToFirst();
-    } else {
-      seek(index);
-    }
-
-    // potential beneficiary of a peek() call, which would avoid the duplicate seek or
-    // being at the second position if the first entry has a greater ASQN
-    JournalRecord record = null;
-    while (hasNext()) {
-      final var currentRecord = next();
-      if (currentRecord.index() > indexUpperBound) {
-        break;
-      }
-      if (currentRecord.asqn() <= asqn && currentRecord.asqn() != ASQN_IGNORE) {
-        record = currentRecord;
-      } else if (currentRecord.asqn() >= asqn) {
-        break;
-      }
-    }
-
-    // if the journal was empty, the reader will be at the beginning of the log
-    // if the journal only contained entries with ASQN greater than the one requested, then seek
-    // back to the beginning
-    if (record == null) {
-      return seekToFirst();
-    }
-
-    // This is needed so that the next() returns the correct record
-    // TODO: Remove the duplicate seek. https://github.com/zeebe-io/zeebe/issues/6223
-    return seek(record.index());
-  }
-
-  @Override
-  public void close() {
-    currentReader.close();
-    journal.closeReader(this);
   }
 
   /** Rewinds the journal to the given index. */
@@ -176,7 +218,7 @@ class SegmentedJournalReader implements JournalReader {
     currentReader.seek(index);
   }
 
-  private boolean hasNextEntry() {
+  private boolean unsafeHasNext() {
     if (!currentReader.hasNext()) {
       final JournalSegment nextSegment = journal.getNextSegment(currentSegment.index());
       if (nextSegment != null && nextSegment.index() == getNextIndex()) {

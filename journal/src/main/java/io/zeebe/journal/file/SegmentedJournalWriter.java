@@ -75,7 +75,6 @@ class SegmentedJournalWriter {
   public void reset(final long index) {
     currentSegment = journal.resetSegments(index);
     currentWriter = currentSegment.writer();
-    journal.resetHead(index);
   }
 
   public void deleteAfter(final long index) {
