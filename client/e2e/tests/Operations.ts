@@ -80,7 +80,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
     .expect(screen.queryByTestId('operations-list').visible)
     .notOk()
     .click(screen.queryByRole('button', {name: 'Expand Operations'}))
-    .expect(screen.findByTestId('operations-list').visible)
+    .expect(screen.queryByTestId('operations-list').visible)
     .ok();
 
   const operationItem = within(screen.queryByTestId('operations-list'))
@@ -93,7 +93,7 @@ test.skip('Retry and Cancel single instance ', async (t) => {
   // wait for instance to disappear from instances list
   await t
     .expect(
-      screen.findByText('There are no Instances matching this filter set')
+      screen.queryByText('There are no Instances matching this filter set')
         .exists
     )
     .ok();
@@ -185,7 +185,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
     .expect(screen.queryByTestId('operations-list').visible)
     .notOk()
     .click(screen.queryByRole('button', {name: 'Apply'}))
-    .expect(screen.findByTestId('operations-list').visible)
+    .expect(screen.queryByTestId('operations-list').visible)
     .ok()
     .expect(screen.getAllByTitle(/has scheduled operations/i).count)
     .eql(instances.length);
@@ -264,7 +264,7 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
       })
     )
     .click(screen.queryByRole('button', {name: 'Apply'}))
-    .expect(screen.findByTestId('operations-list').visible)
+    .expect(screen.queryByTestId('operations-list').visible)
     .ok()
     .expect(screen.getAllByTitle(/has scheduled operations/i).count)
     .eql(instances.length);

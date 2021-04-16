@@ -4,90 +4,40 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useEffect, useState, useCallback} from 'react';
+import React, {useEffect, useRef} from 'react';
 
-import {isValidJSON} from 'modules/utils';
-import {isRunning} from 'modules/utils/instance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {useNotifications} from 'modules/notifications';
 
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {Skeleton} from './Skeleton';
-import {VARIABLE_MODE} from './constants';
 import {Table, TH, TR} from './VariablesTable';
-import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {Warning} from 'modules/components/Warning';
+import {ExistingVariable} from './ExistingVariable';
+import {NewVariable} from './NewVariable';
+import {useForm, useFormState} from 'react-final-form';
 
 const Variables: React.FC = observer(() => {
   const {
     state: {items: variables, status},
     hasNoVariables,
     displayStatus,
+    scopeId,
   } = variablesStore;
-  const {processInstanceId} = useInstancePageParams();
-  const notifications = useNotifications();
-
-  const [editMode, setEditMode] = useState('');
-  const [name, setName] = useState('');
-  const [value, setValue] = useState('');
-  const [errorMessage, setErrorMessage] = useState<string>();
 
   const variablesContentRef = useRef<HTMLDivElement>(null);
-  const editInputTDRef = useRef<HTMLTableDataCellElement>(null);
 
-  const validateName = useCallback(() => {
-    if (value.trim() !== '' && !name) {
-      return 'Name has to be filled';
-    }
-
-    if (name.includes('"') || (name.length > 0 && name.trim() === '')) {
-      return 'Name is invalid';
-    }
-
-    if (editMode === VARIABLE_MODE.ADD) {
-      const isVariableDuplicate =
-        variables
-          .map((variable) => variable.name)
-          .filter((variableName) => variableName === name).length > 0;
-
-      if (isVariableDuplicate) {
-        return 'Name should be unique';
-      }
-    }
-  }, [name, value, editMode, variables]);
-
-  const validateValue = useCallback(() => {
-    if ((value !== '' || name !== '') && !isValidJSON(value)) {
-      return 'Value has to be JSON';
-    }
-  }, [name, value]);
-
-  useEffect(() => {
-    const errorMessageForVariable = validateName();
-    const errorMessageForValue = validateValue();
-
-    if (
-      errorMessageForVariable !== undefined &&
-      errorMessageForValue !== undefined
-    ) {
-      return setErrorMessage(
-        `${errorMessageForVariable} and ${errorMessageForValue}`
-      );
-    }
-    setErrorMessage(errorMessageForVariable || errorMessageForValue);
-  }, [validateName, validateValue]);
-
-  function isTextareaOutOfBounds() {
-    const inputTD = editInputTDRef.current;
+  const isTextareaOutOfBounds = (
+    itemRef: React.RefObject<HTMLTableDataCellElement>
+  ) => {
+    const inputTD = itemRef.current;
 
     const theadHeight = 45;
 
-    if (inputTD && variablesContentRef.current) {
+    if (inputTD && variablesContentRef?.current) {
       const container = variablesContentRef.current.children[0];
       // distance from top edge of container to bottom edge of td
       const tdPosition =
@@ -98,233 +48,27 @@ const Variables: React.FC = observer(() => {
 
       return tdPosition > container.clientHeight;
     }
-  }
+  };
 
-  function handleHeightChange() {
-    if (isTextareaOutOfBounds()) {
-      scrollToBottom();
+  const scrollToItem = (itemRef: React.RefObject<HTMLTableDataCellElement>) => {
+    if (isTextareaOutOfBounds(itemRef)) {
+      itemRef.current?.scrollIntoView();
     }
-  }
+  };
+  const form = useForm();
 
-  function closeEdit() {
-    setEditMode('');
-    setName('');
-    setValue('');
-  }
+  useEffect(() => {
+    form.reset({});
+  }, [form, scopeId]);
 
-  function handleError() {
-    notifications.displayNotification('error', {
-      headline: 'Variable could not be saved',
-    });
-  }
+  const {initialValues} = useFormState();
 
-  function saveVariable() {
-    if (editMode === VARIABLE_MODE.ADD) {
-      variablesStore.addVariable({
-        id: processInstanceId,
-        name,
-        value,
-        onError: handleError,
-      });
-    } else if (editMode === VARIABLE_MODE.EDIT) {
-      variablesStore.updateVariable({
-        id: processInstanceId,
-        name,
-        value,
-        onError: handleError,
-      });
-    }
+  const isViewMode =
+    initialValues === undefined || Object.values(initialValues).length === 0;
 
-    closeEdit();
-  }
-
-  function handleOpenEditVariable(name: string, value: string) {
-    setEditMode(VARIABLE_MODE.EDIT);
-    setName(name);
-    setValue(value);
-  }
-
-  function scrollToBottom() {
-    if (variablesContentRef !== null && variablesContentRef.current !== null) {
-      const scrollableElement = variablesContentRef.current.children[0];
-      scrollableElement.scrollTop = scrollableElement.scrollHeight;
-    }
-  }
-
-  function renderEditButtons(
-    errorMessage?: string,
-    isValueChangedOnEdit?: boolean
-  ) {
-    return (
-      <>
-        <Styled.Warning>
-          {errorMessage !== undefined && <Warning title={errorMessage} />}
-        </Styled.Warning>
-
-        <Styled.EditButton
-          title="Exit edit mode"
-          onClick={closeEdit}
-          size="large"
-          iconButtonTheme="default"
-          icon={<Styled.CloseIcon />}
-        />
-
-        <Styled.EditButton
-          title="Save variable"
-          disabled={
-            (editMode === VARIABLE_MODE.EDIT && !isValueChangedOnEdit) ||
-            errorMessage !== undefined ||
-            name.trim() === '' ||
-            value.trim() === ''
-          }
-          onClick={saveVariable}
-          size="large"
-          iconButtonTheme="default"
-          icon={<Styled.CheckIcon />}
-        />
-      </>
-    );
-  }
-
-  function renderInlineEdit(propValue: string) {
-    return (
-      <>
-        <Styled.EditInputTD ref={editInputTDRef}>
-          <Styled.EditTextarea
-            autoFocus
-            hasAutoSize
-            minRows={1}
-            maxRows={4}
-            data-testid="edit-value"
-            placeholder="Value"
-            value={value}
-            $hasError={errorMessage !== undefined}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setValue(e.target.value)
-            }
-            onHeightChange={handleHeightChange}
-          />
-        </Styled.EditInputTD>
-        <Styled.EditButtonsTD>
-          {renderEditButtons(errorMessage, propValue !== value)}
-        </Styled.EditButtonsTD>
-      </>
-    );
-  }
-
-  function renderInlineAdd() {
-    return (
-      <TR data-testid="add-key-row">
-        <Styled.EditInputTD>
-          <Styled.TextInput
-            autoFocus
-            type="text"
-            placeholder="Name"
-            value={name}
-            $hasError={validateName() !== undefined}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
-          />
-        </Styled.EditInputTD>
-        <Styled.EditInputTD>
-          <Styled.AddTextarea
-            placeholder="Value"
-            hasAutoSize
-            minRows={1}
-            maxRows={4}
-            value={value}
-            $hasError={validateValue() !== undefined}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setValue(e.target.value)
-            }
-            onHeightChange={scrollToBottom}
-          />
-        </Styled.EditInputTD>
-        <Styled.AddButtonsTD>
-          {renderEditButtons(errorMessage)}
-        </Styled.AddButtonsTD>
-      </TR>
-    );
-  }
-
-  function renderContent() {
-    const {instance} = currentInstanceStore.state;
-    const isCurrentInstanceRunning =
-      instance && isRunning({state: instance.state});
-
-    const isVariableHeaderVisible =
-      (editMode !== '' || !hasNoVariables) &&
-      variablesStore.state.status === 'fetched';
-
-    return (
-      <Styled.TableScroll>
-        <Table data-testid="variables-list">
-          <Styled.THead isVariableHeaderVisible={isVariableHeaderVisible}>
-            <TR>
-              <Styled.TH>Variables</Styled.TH>
-            </TR>
-            {isVariableHeaderVisible && (
-              <TR>
-                <TH>Name</TH>
-                <TH>Value</TH>
-                <TH />
-              </TR>
-            )}
-          </Styled.THead>
-          <tbody>
-            {variables.map(
-              ({name: variableName, value: propValue, hasActiveOperation}) => (
-                <TR
-                  key={variableName}
-                  data-testid={variableName}
-                  hasActiveOperation={hasActiveOperation}
-                >
-                  <Styled.TD isBold={true}>
-                    <Styled.VariableName title={variableName}>
-                      {variableName}
-                    </Styled.VariableName>
-                  </Styled.TD>
-                  {name === variableName &&
-                  editMode === VARIABLE_MODE.EDIT &&
-                  isCurrentInstanceRunning ? (
-                    renderInlineEdit(propValue)
-                  ) : (
-                    <>
-                      <Styled.DisplayTextTD>
-                        <Styled.DisplayText>{propValue}</Styled.DisplayText>
-                      </Styled.DisplayTextTD>
-                      {isCurrentInstanceRunning && (
-                        <Styled.EditButtonsTD>
-                          {hasActiveOperation ? (
-                            <Styled.Spinner data-testid="edit-variable-spinner" />
-                          ) : (
-                            <Styled.EditButton
-                              title="Enter edit mode"
-                              data-testid="edit-variable-button"
-                              onClick={() =>
-                                handleOpenEditVariable(variableName, propValue)
-                              }
-                              size="large"
-                              iconButtonTheme="default"
-                              icon={<Styled.EditIcon />}
-                            />
-                          )}
-                        </Styled.EditButtonsTD>
-                      )}
-                    </>
-                  )}
-                </TR>
-              )
-            )}
-            {editMode === VARIABLE_MODE.ADD &&
-              isCurrentInstanceRunning &&
-              renderInlineAdd()}
-          </tbody>
-        </Table>
-      </Styled.TableScroll>
-    );
-  }
+  const isVariableHeaderVisible =
+    !isViewMode ||
+    (!hasNoVariables && variablesStore.state.status === 'fetched');
 
   return (
     <>
@@ -336,22 +80,105 @@ const Variables: React.FC = observer(() => {
             Skeleton={SpinnerSkeleton}
           />
         )}
-        {editMode === '' && displayStatus === 'skeleton' && (
+
+        {isViewMode && displayStatus === 'skeleton' && (
           <Skeleton type="skeleton" rowHeight={32} />
         )}
-        {editMode === '' && displayStatus === 'no-variables' && (
+        {isViewMode && displayStatus === 'no-variables' && (
           <Skeleton type="info" label="The Flow Node has no Variables" />
         )}
-        {(editMode !== '' || displayStatus === 'variables') && renderContent()}
+        {(!isViewMode || displayStatus === 'variables') && (
+          <Styled.TableScroll>
+            <Table data-testid="variables-list">
+              <Styled.THead isVariableHeaderVisible={isVariableHeaderVisible}>
+                <TR>
+                  <Styled.TH>Variables</Styled.TH>
+                </TR>
+                {isVariableHeaderVisible && (
+                  <TR>
+                    <TH>Name</TH>
+                    <TH>Value</TH>
+                    <TH />
+                  </TR>
+                )}
+              </Styled.THead>
+              <tbody>
+                {variables.map(
+                  ({
+                    name: variableName,
+                    value: variableValue,
+                    hasActiveOperation,
+                  }) => (
+                    <TR
+                      key={variableName}
+                      data-testid={variableName}
+                      hasActiveOperation={hasActiveOperation}
+                    >
+                      {initialValues?.name === variableName &&
+                      currentInstanceStore.isRunning ? (
+                        <ExistingVariable
+                          variableName={variableName}
+                          variableValue={variableValue}
+                          onHeightChange={scrollToItem}
+                        />
+                      ) : (
+                        <>
+                          <Styled.TD isBold={true}>
+                            <Styled.VariableName title={variableName}>
+                              {variableName}
+                            </Styled.VariableName>
+                          </Styled.TD>
+                          <Styled.DisplayTextTD>
+                            <Styled.DisplayText>
+                              {variableValue}
+                            </Styled.DisplayText>
+                          </Styled.DisplayTextTD>
+                          {currentInstanceStore.isRunning && (
+                            <Styled.EditButtonsTD>
+                              {hasActiveOperation ? (
+                                <Styled.Spinner data-testid="edit-variable-spinner" />
+                              ) : (
+                                <Styled.EditButton
+                                  title="Enter edit mode"
+                                  data-testid="edit-variable-button"
+                                  onClick={() => {
+                                    form.reset({
+                                      name: variableName,
+                                      value: variableValue,
+                                    });
+                                  }}
+                                  size="large"
+                                  iconButtonTheme="default"
+                                  icon={<Styled.EditIcon />}
+                                />
+                              )}
+                            </Styled.EditButtonsTD>
+                          )}
+                        </>
+                      )}
+                    </TR>
+                  )
+                )}
+                {initialValues?.name === '' &&
+                  initialValues?.value === '' &&
+                  currentInstanceStore.isRunning && (
+                    <NewVariable onHeightChange={scrollToItem} />
+                  )}
+              </tbody>
+            </Table>
+          </Styled.TableScroll>
+        )}
       </Styled.VariablesContent>
       <Styled.Footer>
         <Styled.Button
           title="Add variable"
           size="small"
-          onClick={() => setEditMode(VARIABLE_MODE.ADD)}
+          onClick={() => {
+            form.reset({name: '', value: ''});
+          }}
           disabled={
             status === 'first-fetch' ||
-            editMode !== '' ||
+            !isViewMode ||
             (flowNodeSelectionStore.isRootNodeSelected
               ? !currentInstanceStore.isRunning
               : !flowNodeMetaDataStore.isSelectedInstanceRunning)

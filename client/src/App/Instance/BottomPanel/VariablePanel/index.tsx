@@ -10,8 +10,14 @@ import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
+import {Form} from 'react-final-form';
 
 import * as Styled from './styled';
+
+type FormValues = {
+  name?: string;
+  value?: string;
+};
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId} = useInstancePageParams();
@@ -38,7 +44,15 @@ const VariablePanel = observer(function VariablePanel() {
           Instance History.
         </StatusMessage>
       ) : (
-        <Variables />
+        <Form<FormValues> onSubmit={() => {}}>
+          {({handleSubmit}) => {
+            return (
+              <form onSubmit={handleSubmit}>
+                <Variables />
+              </form>
+            );
+          }}
+        </Form>
       )}
     </Styled.VariablesPanel>
   );

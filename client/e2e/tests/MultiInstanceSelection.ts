@@ -91,7 +91,7 @@ test('Should select multi instance flow nodes', async (t) => {
     .click(
       screen.queryByRole('button', {name: /view 25 incidents in instance/i})
     )
-    .expect(withinIncidentsTable.findByRole('row', {selected: true}).exists)
+    .expect(withinIncidentsTable.queryByRole('row', {selected: true}).exists)
     .notOk();
 
   await t

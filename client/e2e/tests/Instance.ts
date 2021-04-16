@@ -352,7 +352,7 @@ test('Instance with an incident - incident bar', async (t) => {
     .eql(3)
     .expect(withinIncidentsTable.getAllByText(/extract value error/i).count)
     .eql(2)
-    .expect(withinIncidentsTable.findByText(/i\/o mapping error/i).exists)
+    .expect(withinIncidentsTable.queryByText(/i\/o mapping error/i).exists)
     .notOk();
 
   await t.click(screen.queryByRole('button', {name: /extract value error/i})); // deselect pill
@@ -363,7 +363,7 @@ test('Instance with an incident - incident bar', async (t) => {
     .eql(2)
     .expect(withinIncidentsTable.queryByText(/i\/o mapping error/i).exists)
     .ok()
-    .expect(withinIncidentsTable.findByText(/extract value error/i).exists)
+    .expect(withinIncidentsTable.queryByText(/extract value error/i).exists)
     .notOk();
 
   // clear filter pills

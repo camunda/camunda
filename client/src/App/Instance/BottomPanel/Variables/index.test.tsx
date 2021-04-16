@@ -24,6 +24,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {createInstance} from 'modules/testUtils';
+import {Form} from 'react-final-form';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -37,7 +38,14 @@ const Wrapper = ({children}: Props) => {
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/instances/1`]}>
-        <Route path="/instances/:processInstanceId">{children} </Route>
+        <Route path="/instances/:processInstanceId">
+          <Form onSubmit={() => {}}>
+            {({handleSubmit}) => {
+              return <form onSubmit={handleSubmit}>{children} </form>;
+            }}
+          </Form>
+          ,
+        </Route>
       </MemoryRouter>
     </ThemeProvider>
   );

@@ -23,7 +23,7 @@ import {Input} from 'modules/components/Input';
 import {CheckboxGroup} from './CheckboxGroup';
 import Button from 'modules/components/Button';
 import {AutoSubmit} from './AutoSubmit';
-import {isFieldValid} from './isFieldValid';
+import {isFieldValid} from 'modules/utils/isFieldValid';
 import {Error, VariableError} from './Error';
 import {
   submissionValidator,

@@ -6,7 +6,7 @@
 
 import {useField} from 'react-final-form';
 
-import {isFieldValid} from './isFieldValid';
+import {isFieldValid} from 'modules/utils/isFieldValid';
 import {Container, WarningIcon} from './Error.styled';
 
 type ErrorProps = {
