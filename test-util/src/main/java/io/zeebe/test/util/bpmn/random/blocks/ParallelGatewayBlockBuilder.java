@@ -20,6 +20,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepLeaveParallelGateway;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * Generates a block with a forking parallel gateway, a random number of branches, and a joining
@@ -77,19 +78,17 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    result.append(new StepEnterParallelGateway(forkGatewayId));
+    final var forkingGateway = new StepEnterParallelGateway(forkGatewayId);
+    result.append(forkingGateway);
 
-    final List<List<AbstractExecutionStep>> stepsOfParallelPaths = new ArrayList<>();
-
-    blockBuilders.forEach(
-        blockBuilder ->
-            stepsOfParallelPaths.add(
-                new ArrayList<>(blockBuilder.findRandomExecutionPath(random).getSteps())));
-
-    final List<AbstractExecutionStep> shuffledSteps =
-        shuffleStepsFromDifferentLists(random, stepsOfParallelPaths);
-
-    shuffledSteps.forEach(result::append);
+    final var branchPointers =
+        blockBuilders.stream()
+            .map(
+                blockBuilder ->
+                    new BranchPointer(
+                        forkingGateway, blockBuilder.findRandomExecutionPath(random).getSteps()))
+            .collect(Collectors.toList());
+    shuffleStepsFromDifferentLists(random, result, branchPointers);
 
     result.append(new StepLeaveParallelGateway(forkGatewayId));
 
@@ -97,25 +96,52 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
   }
 
   // shuffles the lists together by iteratively taking the first item from one of the lists
-  private List<AbstractExecutionStep> shuffleStepsFromDifferentLists(
-      final Random random, final List<List<AbstractExecutionStep>> sources) {
-    final List<AbstractExecutionStep> result = new ArrayList<>();
+  private void shuffleStepsFromDifferentLists(
+      final Random random,
+      final ExecutionPathSegment executionPath,
+      final List<BranchPointer> branchPointers) {
 
-    purgeEmptyLists(sources);
+    purgeEmptyBranches(branchPointers);
 
-    while (!sources.isEmpty()) {
-      final List<AbstractExecutionStep> source = sources.get(random.nextInt(sources.size()));
+    branchPointers.forEach(branch -> copyAutomaticSteps(branch, executionPath));
 
-      final AbstractExecutionStep step = source.remove(0);
-      result.add(step);
-      purgeEmptyLists(sources);
+    purgeEmptyBranches(branchPointers);
+
+    while (!branchPointers.isEmpty()) {
+      final var tuple = branchPointers.get(random.nextInt(branchPointers.size()));
+
+      takeNextItemAndAppendToExecutionPath(executionPath, tuple);
+      copyAutomaticSteps(tuple, executionPath);
+      purgeEmptyBranches(branchPointers);
     }
-
-    return result;
   }
 
-  private void purgeEmptyLists(final List<List<AbstractExecutionStep>> sources) {
-    sources.removeIf(List::isEmpty);
+  private void takeNextItemAndAppendToExecutionPath(
+      final ExecutionPathSegment executionPath, final BranchPointer branchPointer) {
+    final var remainingSteps = branchPointer.getRemainingSteps();
+    final var logicalPredecessor = branchPointer.getLogicalPredecessor();
+
+    final AbstractExecutionStep nextStep = remainingSteps.remove(0);
+
+    executionPath.append(nextStep, logicalPredecessor);
+
+    branchPointer.setLogicalPredecessor(nextStep);
+  }
+
+  /**
+   * Copies a sequence of automatic steps. These steps cannot be scheduled explicitly. So whenever a
+   * non-automatic step is added, all its succeeding automatic steps need to be copied as well.
+   */
+  private void copyAutomaticSteps(
+      final BranchPointer branchPointer, final ExecutionPathSegment executionPath) {
+    while (branchPointer.remainingSteps.size() > 0
+        && branchPointer.remainingSteps.get(0).isAutomatic()) {
+      takeNextItemAndAppendToExecutionPath(executionPath, branchPointer);
+    }
+  }
+
+  private void purgeEmptyBranches(final List<BranchPointer> branchPointers) {
+    branchPointers.removeIf(BranchPointer::isEmpty);
   }
 
   public static class Factory implements BlockBuilderFactory {
@@ -128,6 +154,36 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     @Override
     public boolean isAddingDepth() {
       return true;
+    }
+  }
+
+  private static final class BranchPointer {
+
+    private AbstractExecutionStep logicalPredecessor;
+
+    private final List<AbstractExecutionStep> remainingSteps;
+
+    private BranchPointer(
+        final AbstractExecutionStep logicalPredecessor,
+        final List<AbstractExecutionStep> remainingSteps) {
+      this.logicalPredecessor = logicalPredecessor;
+      this.remainingSteps = remainingSteps;
+    }
+
+    private List<AbstractExecutionStep> getRemainingSteps() {
+      return remainingSteps;
+    }
+
+    private AbstractExecutionStep getLogicalPredecessor() {
+      return logicalPredecessor;
+    }
+
+    private void setLogicalPredecessor(final AbstractExecutionStep logicalPredecessor) {
+      this.logicalPredecessor = logicalPredecessor;
+    }
+
+    private boolean isEmpty() {
+      return remainingSteps.isEmpty();
     }
   }
 }
