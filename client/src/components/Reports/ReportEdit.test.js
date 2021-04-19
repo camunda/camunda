@@ -178,7 +178,7 @@ it('should use original data as result data if report cant be evaluated on cance
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 
-  const mightFail = (promise, cb, err) => err({status: 409, json: () => ({conflictedItems})});
+  const mightFail = (promise, cb, err) => err({status: 409, conflictedItems});
 
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
 
@@ -250,7 +250,7 @@ it('should only resolve the save promise if a decision for conflicts has been ma
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
 
   mightFail.mockImplementationOnce((promise, cb, err) =>
-    err({status: 409, json: () => ({conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})})
+    err({status: 409, conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})
   );
 
   let promiseResolved = false;
@@ -320,11 +320,11 @@ it('should show loading indicator if specified by children components', () => {
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {message: 'testError', reportDefinition: report};
-  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+  const testError = {status: 400, message: 'testError', reportDefinition: report};
+  const mightFail = (promise, cb, err) => err(testError);
 
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
   await node.instance().loadReport(undefined, report);
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
+  expect(node.find(ReportRenderer).prop('error')).toEqual(testError);
 });

@@ -21,7 +21,6 @@ import {
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
-import {parseError} from 'services';
 
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -59,8 +58,7 @@ export class Sharing extends React.Component {
           loading: false,
         });
       },
-      async (e) => {
-        const error = await parseError(e);
+      (error) => {
         this.setState({
           evaluationResult: error.reportDefinition,
           error,

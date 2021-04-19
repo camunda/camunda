@@ -9,7 +9,7 @@ import React from 'react';
 import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
-import {evaluateReport, parseError} from 'services';
+import {evaluateReport} from 'services';
 import {newReport} from 'config';
 
 import ReportEdit from './ReportEdit';
@@ -81,8 +81,7 @@ export class Report extends React.Component {
           report: response,
         });
       },
-      async (e) => {
-        const serverError = await parseError(e);
+      async (serverError) => {
         this.setState({
           report: serverError.reportDefinition,
           serverError,

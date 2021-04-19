@@ -6,7 +6,7 @@
 
 import React from 'react';
 import update from 'immutability-helper';
-import {getRandomId, parseError} from 'services';
+import {getRandomId} from 'services';
 
 import Notification from './Notification';
 
@@ -60,5 +60,7 @@ export function addNotification(config) {
 }
 
 export async function showError(error) {
-  addNotification({type: 'error', text: (await parseError(error)).message});
+  const text = typeof error === 'string' ? error : error.message;
+
+  addNotification({type: 'error', text});
 }

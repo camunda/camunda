@@ -14,7 +14,6 @@ import {login} from './service';
 import {ReactComponent as Logo} from './logo.svg';
 
 import './Login.scss';
-import {parseError} from 'services';
 
 export function Login({onLogin, mightFail}) {
   const [username, setUsername] = useState('');
@@ -38,14 +37,11 @@ export function Login({onLogin, mightFail}) {
         if (token) {
           onLogin(token);
         }
-        setWaitingForServer(false);
       },
-      async (e) => {
-        const {message} = await parseError(e, t('login.error'));
-        setError(message);
-        setWaitingForServer(false);
-      }
+      ({message}) => setError(message || t('login.error'))
     );
+
+    setWaitingForServer(false);
 
     if (passwordField.current) {
       passwordField.current.focus();

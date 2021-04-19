@@ -20,7 +20,6 @@ export {incompatibleFilters} from './incompatibleFilters';
 export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
-export {default as parseError} from './parseError';
 export {
   loadEntity,
   loadReports,

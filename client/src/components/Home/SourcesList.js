@@ -10,7 +10,7 @@ import {t} from 'translation';
 import {Button, EntityList, Deleter, Modal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
-import {formatters, parseError} from 'services';
+import {formatters} from 'services';
 
 import {
   getSources,
@@ -73,12 +73,11 @@ export default withErrorHandling(
             this.props.onChange();
           }
         },
-        async (error) => {
-          if (error.status === 409) {
-            const {conflictedItems} = await parseError(error);
+        (error) => {
+          if (error.status === 409 && error.conflictedItems) {
             this.setState({
               editLoading: false,
-              conflict: conflictedItems,
+              conflict: error.conflictedItems,
               tenants,
             });
           } else {

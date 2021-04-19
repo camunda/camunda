@@ -137,7 +137,7 @@ it('should pass conflict to confirmation modal if update failed', async () => {
   const conflictedItems = [{id: 'reportId', type: 'report', name: 'Report Name'}];
   const mightFail = (promise, cb, err) => {
     if (err) {
-      err({status: 409, json: () => ({conflictedItems})});
+      err({status: 409, conflictedItems});
     }
   };
 

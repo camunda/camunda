@@ -32,6 +32,6 @@ function formatError({status, message}) {
   return {
     type: 'error',
     title: t('report.errorNotice'),
-    message,
+    message: message || t('apiErrors.reportEvaluationError'),
   };
 }

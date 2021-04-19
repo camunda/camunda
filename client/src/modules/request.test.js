@@ -12,7 +12,7 @@ const successResponse = {
 };
 const failedResponse = {
   status: 401,
-  content: 'FAILED',
+  message: 'FAILED',
 };
 
 global.fetch = jest.fn();
@@ -122,7 +122,7 @@ describe('request', () => {
         method,
       });
     } catch (e) {
-      expect(e).toBe(failedResponse);
+      expect(e).toEqual(failedResponse);
     }
   });
 });

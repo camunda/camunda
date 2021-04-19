@@ -12,14 +12,7 @@ import {Redirect, withRouter} from 'react-router-dom';
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {ReportRenderer, LoadingIndicator, EntityNameForm, InstanceCount} from 'components';
-import {
-  updateEntity,
-  createEntity,
-  evaluateReport,
-  getCollection,
-  reportConfig,
-  parseError,
-} from 'services';
+import {updateEntity, createEntity, evaluateReport, getCollection, reportConfig} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
@@ -67,12 +60,11 @@ export class ReportEdit extends React.Component {
       this.props.mightFail(
         updateEntity(endpoint, id, {name, data}, {query: {force: this.state.conflict !== null}}),
         () => resolve(id),
-        async (error) => {
-          if (error.status === 409) {
-            const {conflictedItems} = await parseError(error);
+        (error) => {
+          if (error.status === 409 && error.conflictedItems) {
             this.setState({
               report: update(this.state.report, {name: {$set: name}}),
-              conflict: conflictedItems.reduce(
+              conflict: error.conflictedItems.reduce(
                 (obj, conflict) => {
                   obj[conflict.type].push(conflict);
                   return obj;
@@ -218,8 +210,7 @@ export class ReportEdit extends React.Component {
             },
             resolve
           ),
-        async (e) => {
-          const serverError = await parseError(e, t('apiErrors.reportEvaluationError'));
+        (serverError) => {
           if (serverError.reportDefinition) {
             this.setState(
               {
