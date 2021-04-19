@@ -63,7 +63,8 @@ public final class EventBasedGatewayProcessor
     // transition to completed and continue on the event of the gateway that was triggered
     // - according to the BPMN specification, the sequence flow to this event is not taken
     final var completed = stateTransitionBehavior.transitionToCompleted(context);
-    eventSubscriptionBehavior.activateTriggeredEvent(completed, eventTrigger);
+    eventSubscriptionBehavior.activateTriggeredEvent(
+        completed.getFlowScopeKey(), completed, eventTrigger);
   }
 
   @Override

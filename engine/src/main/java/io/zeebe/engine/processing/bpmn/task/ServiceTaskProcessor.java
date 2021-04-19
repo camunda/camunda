@@ -111,7 +111,8 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
-              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  terminated.getFlowScopeKey(), terminated, eventTrigger);
             },
             () -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);

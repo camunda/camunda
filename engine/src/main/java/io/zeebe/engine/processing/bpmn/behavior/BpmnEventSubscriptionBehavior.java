@@ -213,13 +213,18 @@ public final class BpmnEventSubscriptionBehavior {
 
   /**
    * Activates the element that was triggered by an event and pass in the variables of the event.
-   * Should be called after {@link #findEventTrigger(BpmnElementContext)}.
+   * Should be called after {@link #findEventTrigger(BpmnElementContext)}. Depending on the event
+   * type we need to give different flow scope key, e. g. for EventSubProcess the container
+   * triggers/activates the EventSubProcess, while for boundary events the attached element triggers
+   * that event which is not the flow scope.
    *
-   * @param context the element instance that was triggered
+   * @param flowScopeKey the flow scope of event element to activate, which can be different based
+   *     on the event type
+   * @param context the current processing context
    * @param eventTrigger the event data returned by {@link #findEventTrigger(BpmnElementContext)}
    */
   public void activateTriggeredEvent(
-      final BpmnElementContext context, final EventTrigger eventTrigger) {
+      final long flowScopeKey, final BpmnElementContext context, final EventTrigger eventTrigger) {
 
     final var triggeredEvent =
         processState.getFlowElement(
@@ -228,10 +233,7 @@ public final class BpmnEventSubscriptionBehavior {
             ExecutableFlowElement.class);
 
     eventTriggerBehavior.activateTriggeredEvent(
-        triggeredEvent,
-        context.getFlowScopeKey(),
-        context.getRecordValue(),
-        eventTrigger.getVariables());
+        triggeredEvent, flowScopeKey, context.getRecordValue(), eventTrigger.getVariables());
   }
 
   private void publishTriggeredEvent(
