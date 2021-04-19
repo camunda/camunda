@@ -282,23 +282,50 @@ public class EventTriggerBehavior {
     if (eventElementInstanceKey > 0 && eventVariables != null && eventVariables.capacity() > 0) {
       variablesState.setTemporaryVariables(eventElementInstanceKey, eventVariables);
     }
-
-    eventScopeInstanceState.deleteTrigger(
-        context.getElementInstanceKey(), eventTrigger.getEventKey());
   }
 
   public void activateTriggeredEvent(
-      final ExecutableFlowElement catchEvent,
-      final long eventScopeKey,
+      final ExecutableFlowElement triggeredEvent,
+      final long flowScopeKey,
       final ProcessInstanceRecord elementRecord,
       final DirectBuffer variables) {
 
     eventRecord.reset();
     eventRecord.wrap(elementRecord);
+    eventRecord.setFlowScopeKey(flowScopeKey);
+
+    final var flowScope = triggeredEvent.getFlowScope();
+    if (flowScope == null) {
+      throw new IllegalStateException(
+          "Expected to activate triggered event, but flow scope is null");
+    }
+
+    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+
+      // first activate the event sub process
+      eventRecord
+          .setBpmnElementType(BpmnElementType.EVENT_SUB_PROCESS)
+          .setElementId(flowScope.getId());
+
+      final var eventSubProcessKey = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(
+          eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+
+      // event sub process is not yet migrated
+      // todo(#6196): on migration of event sub process we want immediately move activated for the
+      // event sub process
+      //      stateWriter.appendFollowUpEvent(
+      //          eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
+      //      eventRecord.setFlowScopeKey(eventSubProcessKey);
+
+      // event sub process will activate start event
+      return; // todo(#6196) remove this line after migrating event sub process
+      // now we can trigger the start event
+    }
+
     eventRecord
-        .setBpmnElementType(catchEvent.getElementType())
-        .setElementId(catchEvent.getId())
-        .setFlowScopeKey(eventScopeKey);
+        .setBpmnElementType(triggeredEvent.getElementType())
+        .setElementId(triggeredEvent.getId());
 
     final var eventInstanceKey = keyGenerator.nextKey();
     // transition to activating and activated directly to pass the variables to this instance

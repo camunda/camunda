@@ -390,7 +390,8 @@ public final class BpmnStateTransitionBehavior {
               childInstanceContext.getRecordValue());
         }
 
-      } else if (childInstanceContext.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
+      } else if (childInstanceContext.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+          && !MigratedStreamProcessors.isMigrated(childInstanceContext.getBpmnElementType())) {
         // clean up the state because the completed event will not be processed
         stateBehavior.removeElementInstance(childInstanceContext);
       }

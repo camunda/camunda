@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn.container;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -17,11 +18,13 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class SubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
+
+  private static final String NO_NONE_START_EVENT_ERROR_MSG =
+      "Expected to activate none start event, but no none start event found in sub process";
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -43,91 +46,53 @@ public final class SubProcessProcessor
   }
 
   @Override
-  public void onActivating(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+  public void onActivate(
+      final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
 
     variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
-        .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
-            failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void onActivated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    final ExecutableStartEvent startEvent;
-    if (element.hasNoneStartEvent()) {
-      // embedded sub-process is activated
-      startEvent = element.getNoneStartEvent();
-    } else {
-      // event sub-process is activated
-      startEvent = element.getStartEvents().get(0);
-    }
-
-    stateTransitionBehavior.activateChildInstance(context, startEvent);
-  }
-
-  @Override
-  public void onCompleting(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    variableMappingBehavior
-        .applyOutputMappings(context, element)
+        .applyInputMappings(activating, element)
+        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
         .ifRightOrLeft(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
+              // todo: take a look if activated should be done after
+              final var activated = stateTransitionBehavior.transitionToActivated(activating);
+              final ExecutableStartEvent startEvent = element.getNoneStartEvent();
+              if (startEvent == null) {
+                throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
+              }
+              stateTransitionBehavior.activateChildInstance(activated, startEvent);
             },
-            failure -> incidentBehavior.createIncident(failure, context));
+            failure -> incidentBehavior.createIncident(failure, activating));
   }
 
   @Override
-  public void onCompleted(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    if (element.getOutgoing().isEmpty()) {
-      /* can be dropped during migration; after migration this is done as part of
-      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
-      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
-    }
-    // call after here (unmigrated processor)
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
+  public void onComplete(
+      final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
 
-    stateBehavior.removeElementInstance(context);
+    variableMappingBehavior
+        .applyOutputMappings(completing, element)
+        .ifRightOrLeft(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
+              final var completed =
+                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                      element, completing);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            },
+            failure -> incidentBehavior.createIncident(failure, completing));
   }
 
   @Override
-  public void onTerminating(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
+    incidentBehavior.resolveIncidents(terminating);
 
-    final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(terminating);
     if (noActiveChildInstances) {
-      stateTransitionBehavior.transitionToTerminated(context);
+      onChildTerminated(element, terminating, null);
     }
-  }
-
-  @Override
-  public void onTerminated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
-
-    incidentBehavior.resolveIncidents(context);
-
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
   }
 
   @Override
@@ -148,23 +113,38 @@ public final class SubProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     if (stateBehavior.canBeCompleted(childContext)) {
-      stateTransitionBehavior.transitionToCompleting(flowScopeContext);
+      stateTransitionBehavior.completeElement(flowScopeContext);
     }
   }
 
   @Override
   public void onChildTerminated(
       final ExecutableFlowElementContainer element,
-      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext subProcessContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.canBeTerminated(childContext)) {
-      stateTransitionBehavior.transitionToTerminated(flowScopeContext);
-
-    } else {
-      eventSubscriptionBehavior.publishTriggeredEventSubProcess(
-          MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
-    }
+    eventSubscriptionBehavior
+        .findEventTrigger(subProcessContext)
+        .ifPresentOrElse(
+            eventTrigger -> {
+              if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+                  && stateBehavior.canBeTerminated(childContext)) {
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                eventSubscriptionBehavior.activateTriggeredEvent(
+                    subProcessContext.getFlowScopeKey(), terminated, eventTrigger);
+              } else {
+                eventSubscriptionBehavior.activateTriggeredEvent(
+                    subProcessContext.getElementInstanceKey(), subProcessContext, eventTrigger);
+              }
+            },
+            () -> {
+              if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+                  && stateBehavior.canBeTerminated(childContext)) {
+                final var terminated =
+                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                stateTransitionBehavior.onElementTerminated(element, terminated);
+              }
+            });
   }
 }
