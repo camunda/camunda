@@ -91,11 +91,11 @@ spec:
         add: ["IPC_LOCK"]
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
 """
 }
 
