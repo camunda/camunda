@@ -85,7 +85,7 @@ public final class EmbeddedSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -119,7 +119,7 @@ public final class EmbeddedSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -350,6 +350,7 @@ public final class EmbeddedSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
                 .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -386,6 +387,7 @@ public final class EmbeddedSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
                 .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(

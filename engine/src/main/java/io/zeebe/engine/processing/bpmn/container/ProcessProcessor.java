@@ -18,7 +18,6 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
-import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public final class ProcessProcessor
@@ -189,8 +188,13 @@ public final class ProcessProcessor
             flowScopeContext, parentElementInstanceContext);
       }
     } else {
-      eventSubscriptionBehavior.publishTriggeredEventSubProcess(
-          MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
+
+      eventSubscriptionBehavior
+          .findEventTrigger(flowScopeContext)
+          .ifPresent(
+              eventTrigger ->
+                  eventSubscriptionBehavior.activateTriggeredEvent(
+                      flowScopeContext.getElementInstanceKey(), flowScopeContext, eventTrigger));
     }
   }
 }

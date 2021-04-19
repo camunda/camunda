@@ -156,7 +156,8 @@ public final class CallActivityProcessor
             eventTrigger -> {
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(callActivityContext);
-              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  terminated.getFlowScopeKey(), terminated, eventTrigger);
             },
             () -> {
               final var terminated =

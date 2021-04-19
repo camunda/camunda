@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -52,6 +53,18 @@ public final class BpmnVariableMappingBehavior {
     final long processDefinitionKey = context.getProcessDefinitionKey();
     final long processInstanceKey = context.getProcessInstanceKey();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
+
+    if (context.getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+      // copy temp variables into local scope (necessary for start/boundary event to apply output
+      // mappings)
+      // todo (#6196): move into event applier
+      final var temporaryVariables =
+          variablesState.getTemporaryVariables(context.getFlowScopeKey());
+      if (temporaryVariables != null) {
+        variablesState.setTemporaryVariables(scopeKey, temporaryVariables);
+      }
+    }
+
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey)
@@ -91,7 +104,9 @@ public final class BpmnVariableMappingBehavior {
         variableBehavior.mergeLocalDocument(
             elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
 
-        variablesState.removeTemporaryVariables(elementInstanceKey);
+        if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+          variablesState.removeTemporaryVariables(elementInstanceKey);
+        }
       }
 
       // apply the output mappings
@@ -109,7 +124,9 @@ public final class BpmnVariableMappingBehavior {
       variableBehavior.mergeDocument(
           elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
 
-      variablesState.removeTemporaryVariables(elementInstanceKey);
+      if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+        variablesState.removeTemporaryVariables(elementInstanceKey);
+      }
 
     } else if (isConnectedToEventBasedGateway(element)
         || element.getElementType() == BpmnElementType.BOUNDARY_EVENT) {

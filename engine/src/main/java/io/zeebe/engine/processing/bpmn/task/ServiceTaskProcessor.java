@@ -65,19 +65,6 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
-  private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
-      final ExecutableServiceTask element, final BpmnElementContext context) {
-    final var scopeKey = context.getElementInstanceKey();
-
-    return expressionBehavior
-        .evaluateStringExpression(element.getType(), scopeKey)
-        .flatMap(
-            jobType ->
-                expressionBehavior
-                    .evaluateLongExpression(element.getRetries(), scopeKey)
-                    .map(retries -> new Tuple<>(jobType, retries)));
-  }
-
   @Override
   public void onComplete(final ExecutableServiceTask element, final BpmnElementContext context) {
     variableMappingBehavior
@@ -111,11 +98,25 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
-              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  terminated.getFlowScopeKey(), terminated, eventTrigger);
             },
             () -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+  }
+
+  private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
+      final ExecutableServiceTask element, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
+
+    return expressionBehavior
+        .evaluateStringExpression(element.getType(), scopeKey)
+        .flatMap(
+            jobType ->
+                expressionBehavior
+                    .evaluateLongExpression(element.getRetries(), scopeKey)
+                    .map(retries -> new Tuple<>(jobType, retries)));
   }
 }
