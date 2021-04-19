@@ -25,16 +25,19 @@ final class ProcessInstanceElementCompletedApplier
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
   private final ProcessState processState;
+  private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementCompletedApplier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableVariableState variableState,
-      final ProcessState processState) {
+      final ProcessState processState,
+      final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.variableState = variableState;
     this.processState = processState;
+    this.bufferedStartMessageEventStateApplier = bufferedStartMessageEventStateApplier;
   }
 
   @Override
@@ -61,6 +64,8 @@ final class ProcessInstanceElementCompletedApplier
         variableState.setTemporaryVariables(parentElementInstanceKey, variables);
       }
     }
+
+    bufferedStartMessageEventStateApplier.removeMessageLock(value);
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
