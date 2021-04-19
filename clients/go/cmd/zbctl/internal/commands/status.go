@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"google.golang.org/protobuf/encoding/protojson"
+	"net"
 	"sort"
 )
 
@@ -101,7 +102,7 @@ func printStatus(resp *pb.TopologyResponse) {
 	sort.Sort(ByNodeID(resp.Brokers))
 
 	for _, broker := range resp.Brokers {
-		fmt.Printf("  Broker %d - %s:%d\n", broker.NodeId, broker.Host, broker.Port)
+		fmt.Printf("  Broker %d - %s:%d\n", broker.NodeId, formatHost(broker.Host), broker.Port)
 
 		version := "unavailable"
 		if broker.Version != "" {
@@ -169,4 +170,16 @@ func printTopologyJSON(resp *pb.TopologyResponse) error {
 		fmt.Println(string(valueJSON))
 	}
 	return err
+}
+
+func formatHost(host string) string {
+	ips, err := net.LookupIP(host)
+	if err != nil || len(ips) > 0 {
+		return host
+	}
+	ip := net.ParseIP(host)
+	if ip.To4() != nil {
+		return ip.String()
+	}
+	return fmt.Sprintf("[%s]", ip.String())
 }
