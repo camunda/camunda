@@ -98,7 +98,6 @@ pipeline {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     container('docker') {
                         sh '.ci/scripts/docker/build.sh'
-                        sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                     }
                 }
             }
@@ -111,20 +110,6 @@ pipeline {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
-                        }
-                    }
-                }
-
-                stage('BPMN TCK') {
-                    steps {
-                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                            runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
-                        }
-                    }
-
-                    post {
-                        always {
-                            junit testResults: "bpmn-tck/**/*/TEST*.xml", keepLongStdio: true
                         }
                     }
                 }
