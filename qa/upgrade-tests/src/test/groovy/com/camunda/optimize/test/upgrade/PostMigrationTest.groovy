@@ -241,8 +241,10 @@ class PostMigrationTest {
       def indexCount = eventIndicesForMapping.stream()
         .filter(indexName -> elasticsearchClient.exists(indexName))
         .count();
-      log.info("There are {} Event Process Instance Indices for process mapping with ID {}", indexCount, processMappingId);
+      log.info("There are {} Event Process Instance Indices for process mapping with ID {}. Index names: {}",
+        indexCount, processMappingId, eventIndicesForMapping);
       singleIndexExists = indexCount == 1;
+      Thread.sleep(5000L);
     }
   }
 
