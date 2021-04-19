@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,28 +72,27 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
-    final SearchHit[] processDefinitionHitsAfterUpgrade =
-      getAllDocumentsOfIndex(new ProcessDefinitionIndex().getIndexName());
 
     //then
+    final ProcessDefinitionIndex newIndex = new ProcessDefinitionIndex();
     assertThat(indexExists(new ProcessDefinitionIndexV4Old())).isFalse();
-    assertThat(indexExists(new ProcessDefinitionIndex())).isTrue();
+    assertThat(indexExists(newIndex)).isTrue();
     assertThat(getAllDocumentsOfIndexAs(
-      new ProcessDefinitionIndex().getIndexName(),
+      newIndex.getIndexName(),
       ProcessDefinitionOptimizeDto.class
     )).extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
       .containsExactly(
         instanceWithMixedFlowNodesExpectedFlowNode,
         instanceWithFlowNodesWithSameName,
-        instanceWithEmptyFlowNodesExpectedFlowNode
+        instanceWithEmptyFlowNodesExpectedFlowNode,
+        new ArrayList<>() // The definition with null xml will have no flow node data
       );
-    assertThat(processDefinitionHitsAfterUpgrade)
-      .hasSize(3)
-      .allSatisfy(this::assertProcessDefinitionsHaveBeenUpgraded);
+    assertThat(getAllDocumentsOfIndex(newIndex.getIndexName()))
+      .hasSize(4)
+      .allSatisfy(this::assertFlowNodeNameFieldHasBeenRemoved);
   }
 
-  private void assertProcessDefinitionsHaveBeenUpgraded(final SearchHit processDefinitions) {
-    final Map<String, Object> processDefinition = processDefinitions.getSourceAsMap();
-    assertThat(processDefinition.get("flowNodeNames")).isNull();
+  private void assertFlowNodeNameFieldHasBeenRemoved(final SearchHit processDefinition) {
+    assertThat(processDefinition.getSourceAsMap()).doesNotContainKey("flowNodeNames");
   }
 }

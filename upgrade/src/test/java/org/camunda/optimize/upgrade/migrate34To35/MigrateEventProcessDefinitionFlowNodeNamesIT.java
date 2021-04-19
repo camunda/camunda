@@ -73,28 +73,27 @@ public class MigrateEventProcessDefinitionFlowNodeNamesIT extends AbstractUpgrad
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
-    final SearchHit[] eventProcessDefinitionHitsAfterUpgrade =
-      getAllDocumentsOfIndex(new EventProcessDefinitionIndex().getIndexName());
 
     //then
+    final EventProcessDefinitionIndex newIndex = new EventProcessDefinitionIndex();
     assertThat(indexExists(new EventProcessDefinitionIndexV3Old())).isFalse();
-    assertThat(indexExists(new EventProcessDefinitionIndex())).isTrue();
+    assertThat(indexExists(newIndex)).isTrue();
     assertThat(getAllDocumentsOfIndexAs(
-      new EventProcessDefinitionIndex().getIndexName(),
+      newIndex.getIndexName(),
       EventProcessDefinitionDto.class
     )).extracting(EventProcessDefinitionDto::getFlowNodeData)
       .containsExactly(
         instanceWithMixedFlowNodesExpectedFlowNode,
         instanceWithFlowNodesWithSameName,
-        instanceWithEmptyFlowNodesExpectedFlowNode
+        instanceWithEmptyFlowNodesExpectedFlowNode,
+        new ArrayList<>() // The definition with null xml will have no flow node data
       );
-    assertThat(eventProcessDefinitionHitsAfterUpgrade)
-      .hasSize(3)
-      .allSatisfy(this::assertEventProcessDefinitionsHaveBeenUpgraded);
+    assertThat(getAllDocumentsOfIndex(newIndex.getIndexName()))
+      .hasSize(4)
+      .allSatisfy(this::assertFlowNodeNamesFieldHasBeenRemoved);
   }
 
-  private void assertEventProcessDefinitionsHaveBeenUpgraded(final SearchHit eventProcessDefinitions) {
-    final Map<String, Object> processDefinition = eventProcessDefinitions.getSourceAsMap();
-    assertThat(processDefinition.get("flowNodeNames")).isNull();
+  private void assertFlowNodeNamesFieldHasBeenRemoved(final SearchHit eventProcessDefinition) {
+    assertThat(eventProcessDefinition.getSourceAsMap()).doesNotContainKey("flowNodeNames");
   }
 }

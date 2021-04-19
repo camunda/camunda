@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
@@ -56,14 +57,11 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       esClient
     );
 
+    //@formatter:off
     String script =
-      "def flowNodeList = new ArrayList();\n" +
-      "def flowNodes = params.get(ctx._source.id);\n" +
-      "for (flowNodeKey in flowNodes.keySet()) {\n" +
-      "    flowNodeList.add(flowNodes.get(flowNodeKey)); \n" +
-      "}\n" +
-      "ctx._source.flowNodeData = flowNodeList;\n" +
+      "ctx._source.flowNodeData = ((Map) params.get(ctx._source.id)).values();\n" +
       "ctx._source.remove(\"flowNodeNames\");\n";
+    //@formatter:on
 
     return Arrays.asList(
       new UpdateIndexStep(
@@ -83,32 +81,32 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
 
   private static Map<String, Object> getAllExistingDataForFlowNodes(final String indexName,
                                                                     final OptimizeElasticsearchClient esClient) {
-
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().fetchSource(true);
-
     final SearchRequest searchRequest =
-      new SearchRequest(indexName).source(searchSourceBuilder);
+      new SearchRequest(indexName)
+        .source(new SearchSourceBuilder().fetchSource(true));
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new UpgradeRuntimeException(String.format(
-        "Was not able to retrieve entries of index with name  %s",
-        ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME
-      ), e);
+        "Was not able to retrieve entries of index with name  %s", indexName), e);
     }
-    Map<String, Object> flowNodeKeyToKeyMap = new HashMap<>();
+    Map<String, Object> flowNodeDataByDefinitionId = new HashMap<>();
 
     // get hits from elastic search query and convert them to JSON
     Arrays.stream(response.getHits().getHits())
       .map(hit -> (JSONObject) JSONValue.parse(hit.toString()))
       .map(jsonObject -> (JSONObject) JSONValue.parse(jsonObject.get("_source").toString()))
-      .forEach(entry -> flowNodeKeyToKeyMap.put(
-        entry.get(DefinitionOptimizeResponseDto.Fields.id).toString(),
-        extractFlowNodeIdToFlowNodeData(entry.get(ProcessDefinitionOptimizeDto.Fields.bpmn20Xml).toString())
-      ));
-
-    return flowNodeKeyToKeyMap;
+      .forEach(entry -> {
+        final Object bpmnXml = entry.get(ProcessDefinitionOptimizeDto.Fields.bpmn20Xml);
+        flowNodeDataByDefinitionId.put(
+          entry.get(DefinitionOptimizeResponseDto.Fields.id).toString(),
+          Optional.ofNullable(bpmnXml)
+            .map(xml -> extractFlowNodeIdToFlowNodeData(xml.toString()))
+            .orElse(Collections.emptyMap())
+        );
+      });
+    return flowNodeDataByDefinitionId;
   }
 
   private static Map<String, FlowNodeDataDto> extractFlowNodeIdToFlowNodeData(final String bpmn20Xml) {
