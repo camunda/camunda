@@ -144,6 +144,7 @@ public final class BpmnEventSubscriptionBehavior {
     } else {
       // copy temporary variables here because they are read in publishActivatingEvent()
       if (eventTrigger.getVariables() != null && eventTrigger.getVariables().capacity() > 0) {
+        // todo (@korthout/zell): look at this again
         variablesState.setTemporaryVariables(
             boundaryElementInstanceKey, eventTrigger.getVariables());
       }

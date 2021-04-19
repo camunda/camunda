@@ -83,11 +83,9 @@ public class EventTriggerBehavior {
     sideEffectQueue.flush();
   }
 
-  private void publishActivatingEvent(
-      final long elementInstanceKey, final ProcessInstanceRecord eventRecord) {
-
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+  private void publishActivatingEvent(final ProcessInstanceRecord eventRecord) {
+    final var key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
   }
 
   private void deferActivatingEvent(
@@ -135,40 +133,37 @@ public class EventTriggerBehavior {
                   .setFlowScopeKey(flowScopeElementInstanceKey)
                   .setElementId(eventSubProcessElementId);
 
-          final long eventElementInstanceKey = keyGenerator.nextKey();
           if (startEvent.interrupting()) {
-
-            triggerInterruptingEventSubProcess(flowScopeContext, record, eventElementInstanceKey);
-
+            unsubscribeFromEvents(flowScopeContext);
+            triggerInterruptingEventSubProcess(flowScopeContext, record);
           } else {
+            eventScopeInstanceState.deleteTrigger(
+                flowScopeContext.getElementInstanceKey(), eventTrigger.getEventKey());
             // activate non-interrupting event sub-process
-            publishActivatingEvent(eventElementInstanceKey, record);
+            publishActivatingEvent(record);
           }
-
-          return eventElementInstanceKey;
+          // the key is used to set temporary variables on
+          // we moved that logic for event sub process already, but not for boundary events
+          // we still need to return a key until they are migrated; -1 is ignored.
+          return -1L;
         });
   }
 
   private void triggerInterruptingEventSubProcess(
-      final BpmnElementContext flowScopeContext,
-      final ProcessInstanceRecord eventRecord,
-      final long eventElementInstanceKey) {
+      final BpmnElementContext flowScopeContext, final ProcessInstanceRecord eventRecord) {
 
     unsubscribeFromEvents(flowScopeContext);
 
     final var noActiveChildInstances = terminateChildInstances(flowScopeContext);
     if (noActiveChildInstances) {
       // activate interrupting event sub-process
-      publishActivatingEvent(eventElementInstanceKey, eventRecord);
-
-    } else {
-      // wait until child instances are terminated
-      deferActivatingEvent(
-          flowScopeContext.getElementInstanceKey(), eventElementInstanceKey, eventRecord);
+      publishActivatingEvent(eventRecord);
     }
   }
 
   private boolean terminateChildInstances(final BpmnElementContext flowScopeContext) {
+    // we need to go to the parent and delete all childs to trigger the interrupting event sub
+    // process
     final var childInstances =
         elementInstanceState.getChildren(flowScopeContext.getElementInstanceKey()).stream()
             .map(
