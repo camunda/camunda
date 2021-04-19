@@ -114,8 +114,7 @@ public final class TimerCatchEventTest {
     assertThat(
             RecordingExporter.records().limitToProcessInstance(processInstanceKey).timerRecords())
         .extracting(Record::getIntent)
-        .containsSubsequence(
-            TimerIntent.CREATE, TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+        .containsSubsequence(TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
   }
 
   @Test

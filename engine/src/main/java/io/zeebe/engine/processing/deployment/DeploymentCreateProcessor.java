@@ -121,7 +121,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private void createTimerIfTimerStartEvent(
       final TypedRecord<DeploymentRecord> record,
       final TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffects) {
+      final Consumer<SideEffectProducer> sideEffects) {
     for (final ProcessRecord processRecord : record.getValue().processes()) {
       final List<ExecutableStartEvent> startEvents =
           processState.getProcessByKey(processRecord.getKey()).getProcess().getStartEvents();
@@ -146,7 +146,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
               processRecord.getKey(),
               startEvent.getId(),
               timerOrError.get(),
-              streamWriter);
+              streamWriter,
+              sideEffects::accept);
         }
       }
     }

@@ -7,9 +7,16 @@
  */
 package io.zeebe.engine.processing.streamprocessor.sideeffect;
 
+import java.util.function.Consumer;
+
 /** A chain of side effects that are executed/flushed together at the end of the processing. */
-public interface SideEffects {
+public interface SideEffects extends Consumer<SideEffectProducer> {
 
   /** Chain the given side effect. It will be executed/flushed at the end of the processing. */
   void add(SideEffectProducer sideEffect);
+
+  @Override
+  default void accept(final SideEffectProducer sideEffectProducer) {
+    add(sideEffectProducer);
+  }
 }

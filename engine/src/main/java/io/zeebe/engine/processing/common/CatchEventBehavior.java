@@ -23,6 +23,8 @@ import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.message.ProcessMessageSubscription;
@@ -60,12 +62,15 @@ public final class CatchEventBehavior {
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
   private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
+  private final DueDateTimerChecker timerChecker;
+  private final KeyGenerator keyGenerator;
 
   public CatchEventBehavior(
       final MutableZeebeState zeebeState,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
       final StateWriter stateWriter,
+      final DueDateTimerChecker timerChecker,
       final int partitionsCount) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
@@ -75,6 +80,10 @@ public final class CatchEventBehavior {
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     timerInstanceState = zeebeState.getTimerState();
     processMessageSubscriptionState = zeebeState.getProcessMessageSubscriptionState();
+
+    keyGenerator = zeebeState.getKeyGenerator();
+
+    this.timerChecker = timerChecker;
   }
 
   public void unsubscribeFromEvents(
@@ -120,7 +129,8 @@ public final class CatchEventBehavior {
             context.getProcessDefinitionKey(),
             event.getId(),
             evaluatedTimers.get(event.getId()),
-            commandWriter);
+            commandWriter,
+            sideEffects);
       } else if (event.isMessage()) {
         subscribeToMessageEvent(
             context,
@@ -144,7 +154,8 @@ public final class CatchEventBehavior {
       final long processDefinitionKey,
       final DirectBuffer handlerNodeId,
       final Timer timer,
-      final TypedCommandWriter commandWriter) {
+      final TypedCommandWriter commandWriter,
+      final SideEffects sideEffects) {
     final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
     timerRecord.reset();
     timerRecord
@@ -155,7 +166,13 @@ public final class CatchEventBehavior {
         .setTargetElementId(handlerNodeId)
         .setProcessDefinitionKey(processDefinitionKey);
 
-    commandWriter.appendNewCommand(TimerIntent.CREATE, timerRecord);
+    sideEffects.add(
+        () -> {
+          timerChecker.scheduleTimer(dueDate);
+          return true;
+        });
+
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), TimerIntent.CREATED, timerRecord);
   }
 
   private void unsubscribeFromTimerEvents(
