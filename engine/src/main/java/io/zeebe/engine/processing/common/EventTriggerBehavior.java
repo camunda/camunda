@@ -111,7 +111,10 @@ public class EventTriggerBehavior {
     final var flowScopeElementInstance =
         elementInstanceState.getInstance(flowScopeElementInstanceKey);
 
-    if (flowScopeElementInstance.getInterruptingEventKey() > 0) {
+    if (flowScopeElementInstance.isInterrupted()
+        && !flowScopeElementInstance
+            .getInterruptingElementId()
+            .equals(startEvent.getEventSubProcess())) {
       // the flow scope is already interrupted - discard this event
       return;
     }
@@ -163,10 +166,6 @@ public class EventTriggerBehavior {
       deferActivatingEvent(
           flowScopeContext.getElementInstanceKey(), eventElementInstanceKey, eventRecord);
     }
-
-    elementInstanceState.updateInstance(
-        flowScopeContext.getElementInstanceKey(),
-        flowScopeInstance -> flowScopeInstance.setInterruptingEventKey(eventElementInstanceKey));
   }
 
   private boolean terminateChildInstances(final BpmnElementContext flowScopeContext) {

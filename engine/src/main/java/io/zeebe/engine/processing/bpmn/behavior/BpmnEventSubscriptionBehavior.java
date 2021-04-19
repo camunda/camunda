@@ -314,7 +314,12 @@ public final class BpmnEventSubscriptionBehavior {
 
     if (isInterrupted(isChildMigrated, elementInstance)) {
       elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
-          .filter(record -> record.getKey() == elementInstance.getInterruptingEventKey())
+          .filter(
+              record ->
+                  record
+                      .getValue()
+                      .getElementIdBuffer()
+                      .equals(elementInstance.getInterruptingElementId()))
           .filter(
               record -> record.getValue().getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS)
           .findFirst()

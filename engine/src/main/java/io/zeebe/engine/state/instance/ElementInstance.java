@@ -13,8 +13,10 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.ObjectProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
 
@@ -23,8 +25,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final LongProperty jobKeyProp = new LongProperty("jobKey", 0L);
   private final IntegerProperty multiInstanceLoopCounterProp =
       new IntegerProperty("multiInstanceLoopCounter", 0);
-  private final LongProperty interruptingEventKeyProp =
-      new LongProperty("interruptingEventKey", -1L);
+  private final StringProperty interruptingEventKeyProp =
+      new StringProperty("interruptingElementId", "");
   private final LongProperty calledChildInstanceKeyProp =
       new LongProperty("calledChildInstanceKey", -1L);
   private final ObjectProperty<IndexedRecord> recordProp =
@@ -141,16 +143,16 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     calledChildInstanceKeyProp.setValue(calledChildInstanceKey);
   }
 
-  public long getInterruptingEventKey() {
+  public DirectBuffer getInterruptingElementId() {
     return interruptingEventKeyProp.getValue();
   }
 
-  public void setInterruptingEventKey(final long key) {
-    interruptingEventKeyProp.setValue(key);
+  public void setInterruptingElementId(final DirectBuffer elementId) {
+    interruptingEventKeyProp.setValue(elementId);
   }
 
   public boolean isInterrupted() {
-    return getInterruptingEventKey() > 0;
+    return getInterruptingElementId().capacity() > 0;
   }
 
   public long getParentKey() {

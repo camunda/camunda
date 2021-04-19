@@ -14,6 +14,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import org.slf4j.Logger;
 
@@ -193,12 +194,13 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private Either<String, ElementInstance> hasNonInterruptedFlowScope(
       final ElementInstance flowScopeInstance, final BpmnElementContext context) {
-    final var interruptingEventKey = flowScopeInstance.getInterruptingEventKey();
-    if (interruptingEventKey > 0 && interruptingEventKey != context.getElementInstanceKey()) {
+    final var interruptingElementId = flowScopeInstance.getInterruptingElementId();
+    if (flowScopeInstance.isInterrupted()
+        && !interruptingElementId.equals(context.getElementId())) {
       return Either.left(
           String.format(
-              "Expected flow scope instance to be not interrupted but was interrupted by an event with key '%d'.",
-              interruptingEventKey));
+              "Expected flow scope instance to be not interrupted but was interrupted by an event with id '%s'.",
+              BufferUtil.bufferAsString(interruptingElementId)));
 
     } else {
       return Either.right(flowScopeInstance);

@@ -8,7 +8,9 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -19,9 +21,15 @@ final class ProcessEventTriggeredApplier
     implements TypedEventApplier<ProcessEventIntent, ProcessEventRecord> {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
   private final MutableEventScopeInstanceState eventScopeState;
+  private final EventSubProcessInterruptionMarker eventSubProcessInterruptionMarker;
 
-  public ProcessEventTriggeredApplier(final MutableEventScopeInstanceState eventScopeState) {
+  public ProcessEventTriggeredApplier(
+      final MutableEventScopeInstanceState eventScopeState,
+      final MutableElementInstanceState elementInstanceState,
+      final MutableProcessState processState) {
     this.eventScopeState = eventScopeState;
+    eventSubProcessInterruptionMarker =
+        new EventSubProcessInterruptionMarker(processState, elementInstanceState);
   }
 
   @Override
@@ -32,7 +40,11 @@ final class ProcessEventTriggeredApplier
       variables = NO_VARIABLES;
     }
 
-    eventScopeState.triggerEvent(
-        value.getScopeKey(), key, value.getTargetElementIdBuffer(), variables);
+    final var targetElementIdBuffer = value.getTargetElementIdBuffer();
+    final var scopeKey = value.getScopeKey();
+
+    eventScopeState.triggerEvent(scopeKey, key, targetElementIdBuffer, variables);
+    eventSubProcessInterruptionMarker.markInstanceIfInterrupted(
+        scopeKey, value.getProcessDefinitionKey(), targetElementIdBuffer);
   }
 }
