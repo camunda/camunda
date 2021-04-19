@@ -120,7 +120,7 @@
     <plugin.version.versions>2.8.1</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
-    <plugin.version.spotbugs>4.2.2</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.2.3</plugin.version.spotbugs>
     <plugin.version.sonar>3.8.0.2131</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
@@ -1221,7 +1221,7 @@
         <plugin>
           <groupId>io.zeebe</groupId>
           <artifactId>flaky-test-extractor-maven-plugin</artifactId>
-          <version>2.0.2</version>
+          <version>2.0.3</version>
           <executions>
             <execution>
               <phase>post-integration-test</phase>
