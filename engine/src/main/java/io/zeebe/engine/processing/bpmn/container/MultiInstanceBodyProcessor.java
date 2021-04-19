@@ -67,53 +67,22 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void onActivating(
+  public void onActivate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
     // verify that the input collection variable is present and valid
     readInputCollectionVariable(element, context)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(
+            inputCollection ->
+                eventSubscriptionBehavior
+                    .subscribeToEvents(element, context)
+                    .map(ok -> inputCollection))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
+            inputCollection -> activate(element, context, inputCollection),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onActivated(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
-    final var inputCollectionOrFailure = readInputCollectionVariable(element, context);
-    if (inputCollectionOrFailure.isLeft()) {
-      incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), context);
-      return;
-    }
-
-    final var inputCollection = inputCollectionOrFailure.get();
-
-    final var loopCharacteristics = element.getLoopCharacteristics();
-    loopCharacteristics
-        .getOutputCollection()
-        .ifPresent(
-            variableName ->
-                initializeOutputCollection(context, variableName, inputCollection.size()));
-
-    if (inputCollection.isEmpty()) {
-      // complete the multi-instance body immediately
-      stateTransitionBehavior.transitionToCompleting(context);
-      return;
-    }
-
-    if (loopCharacteristics.isSequential()) {
-      final var firstItem = inputCollection.get(0);
-      createInnerInstance(element, context, firstItem);
-
-    } else {
-      inputCollection.forEach(item -> createInnerInstance(element, context, item));
-    }
-  }
-
-  @Override
-  public void onCompleting(
+  public void onComplete(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -123,51 +92,21 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
-    stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
+    final var completed =
+        stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
+    stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
   }
 
   @Override
-  public void onCompleted(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-    if (element.getOutgoing().isEmpty()) {
-      /* can be dropped during migration; after migration this is done as part of
-      stateTransitionBehavior.transitionToCompletedWithParentNotification(...)*/
-      stateTransitionBehavior.afterExecutionPathCompleted(element, context);
-    }
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onTerminating(
+  public void onTerminate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
     if (noActiveChildInstances) {
-      stateTransitionBehavior.transitionToTerminated(context);
+      terminate(element, context);
     }
-  }
-
-  @Override
-  public void onTerminated(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
-
-    incidentBehavior.resolveIncidents(context);
-
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.removeElementInstance(context);
-  }
-
-  @Override
-  public void onEventOccurred(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
   }
 
   @Override
@@ -210,7 +149,6 @@ public final class MultiInstanceBodyProcessor
     final var updatedOrFailure = updateOutputCollection(element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
       incidentBehavior.createIncident(updatedOrFailure.getLeft(), childContext);
-      return;
     }
   }
 
@@ -232,14 +170,11 @@ public final class MultiInstanceBodyProcessor
       }
 
       final var inputCollection = inputCollectionOrFailure.get();
-
       final var loopCounter =
           stateBehavior.getElementInstance(flowScopeContext).getMultiInstanceLoopCounter();
 
       if (loopCounter < inputCollection.size()) {
-
-        final var item = inputCollection.get(loopCounter);
-        createInnerInstance(element, flowScopeContext, item);
+        createInnerInstance(element, flowScopeContext);
 
         // canBeCompleted() doesn't take the created child instance into account because
         // it wrote just a ACTIVATE command that create no new instance immediately
@@ -248,7 +183,7 @@ public final class MultiInstanceBodyProcessor
     }
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
-      stateTransitionBehavior.transitionToCompleting(flowScopeContext);
+      stateTransitionBehavior.completeElement(flowScopeContext);
     }
   }
 
@@ -260,12 +195,56 @@ public final class MultiInstanceBodyProcessor
 
     if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
         && stateBehavior.canBeTerminated(childContext)) {
-      stateTransitionBehavior.transitionToTerminated(flowScopeContext);
-
+      terminate(element, flowScopeContext);
     } else {
       eventSubscriptionBehavior.publishTriggeredEventSubProcess(
           MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
     }
+  }
+
+  private void activate(
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
+      final List<DirectBuffer> inputCollection) {
+    final BpmnElementContext activated = stateTransitionBehavior.transitionToActivated(context);
+    final var loopCharacteristics = element.getLoopCharacteristics();
+    loopCharacteristics
+        .getOutputCollection()
+        .ifPresent(
+            variableName ->
+                initializeOutputCollection(activated, variableName, inputCollection.size()));
+
+    if (inputCollection.isEmpty()) {
+      // complete the multi-instance body immediately
+      stateTransitionBehavior.completeElement(activated);
+      return;
+    }
+
+    if (loopCharacteristics.isSequential()) {
+      createInnerInstance(element, activated);
+    } else {
+      inputCollection.forEach(item -> createInnerInstance(element, activated));
+    }
+  }
+
+  private void terminate(
+      final ExecutableMultiInstanceBody element, final BpmnElementContext flowScopeContext) {
+    incidentBehavior.resolveIncidents(flowScopeContext);
+
+    eventSubscriptionBehavior
+        .findEventTrigger(flowScopeContext)
+        .ifPresentOrElse(
+            eventTrigger -> {
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+              stateTransitionBehavior.onElementTerminated(element, terminated);
+            },
+            () -> {
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+              stateTransitionBehavior.onElementTerminated(element, terminated);
+            });
   }
 
   private void setLoopVariables(
@@ -304,34 +283,9 @@ public final class MultiInstanceBodyProcessor
   }
 
   private void createInnerInstance(
-      final ExecutableMultiInstanceBody multiInstanceBody,
-      final BpmnElementContext context,
-      final DirectBuffer item) {
-
-    final var innerInstanceKey =
-        stateTransitionBehavior.activateChildInstanceWithKey(
-            context, multiInstanceBody.getInnerActivity());
-
-    // for migrated processors, the state changes happens on the ACTIVATING event applier
-    // and on processing the ACTIVATE command by calling onChildActivating()
-    if (!MigratedStreamProcessors.isMigrated(
-        multiInstanceBody.getInnerActivity().getElementType())) {
-
-      final var innerInstance = stateBehavior.getElementInstance(innerInstanceKey);
-      final var innerInstanceContext =
-          context.copy(innerInstanceKey, innerInstance.getValue(), innerInstance.getState());
-
-      // update loop counters
-      final var bodyInstance = stateBehavior.getElementInstance(context);
-      bodyInstance.incrementMultiInstanceLoopCounter();
-      stateBehavior.updateElementInstance(bodyInstance);
-
-      final var loopCounter = bodyInstance.getMultiInstanceLoopCounter();
-      innerInstance.setMultiInstanceLoopCounter(loopCounter);
-      stateBehavior.updateElementInstance(innerInstance);
-
-      setLoopVariables(multiInstanceBody, innerInstanceContext, loopCounter, item);
-    }
+      final ExecutableMultiInstanceBody multiInstanceBody, final BpmnElementContext context) {
+    stateTransitionBehavior.activateChildInstanceWithKey(
+        context, multiInstanceBody.getInnerActivity());
   }
 
   private DirectBuffer wrapLoopCounter(final int loopCounter) {

@@ -260,6 +260,7 @@ public final class MultiInstanceActivityTest {
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -445,11 +446,13 @@ public final class MultiInstanceActivityTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(ELEMENT_ID)
-                .limit(4))
+                .limit(6))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsExactly(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
@@ -977,7 +980,7 @@ public final class MultiInstanceActivityTest {
             tuple(
                 ELEMENT_ID,
                 BpmnElementType.MULTI_INSTANCE_BODY,
-                ProcessInstanceIntent.EVENT_OCCURRED),
+                ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(
                 ELEMENT_ID,
                 BpmnElementType.MULTI_INSTANCE_BODY,
@@ -1056,10 +1059,6 @@ public final class MultiInstanceActivityTest {
                 tuple(
                     r.getValue().getElementId(), r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(
-                ELEMENT_ID,
-                BpmnElementType.MULTI_INSTANCE_BODY,
-                ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(
                 "to-notified",
                 BpmnElementType.SEQUENCE_FLOW,
