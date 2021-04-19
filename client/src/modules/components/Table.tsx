@@ -39,6 +39,7 @@ const ColumnTH = styled.th`
 const TD = styled.td`
   padding: 12px;
   color: ${({theme}) => theme.colors.ui06};
+  word-break: break-all;
 `;
 
 const TR = styled.tr<TRProps>`
