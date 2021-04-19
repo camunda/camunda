@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
@@ -408,6 +409,40 @@ public final class ReplayStateTest {
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withProcessInstanceKey(piKey)
                       .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("correlate buffered message to start event")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .message("start")
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final var messageCommand =
+                      engine
+                          .message()
+                          .withName("start")
+                          .withCorrelationKey("go")
+                          .withTimeToLive(Duration.ofMinutes(5));
+
+                  messageCommand.withVariables(Map.of("x", 1)).publish();
+                  messageCommand.withVariables(Map.of("x", 2)).publish();
+
+                  final var firstJobKey =
+                      RecordingExporter.jobRecords(JobIntent.CREATED).getFirst().getKey();
+                  engine.job().withKey(firstJobKey).complete();
+
+                  final var secondJobKey =
+                      RecordingExporter.jobRecords(JobIntent.CREATED).skip(1).getFirst().getKey();
+                  engine.job().withKey(secondJobKey).complete();
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .skip(1) // await until the second process instance is completed
                       .getFirst();
                 }));
   }
