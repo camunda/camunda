@@ -177,11 +177,14 @@ public final class CancelProcessInstanceTest {
             .asList();
 
     assertThat(processEvents)
+        .hasSize(10)
         .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
         .containsSubsequence(
             tuple("", ProcessInstanceIntent.CANCEL),
             tuple("SUB_PROCESS_PROCESS", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("subProcess", ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple("subProcess", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", ELEMENT_TERMINATED),
             tuple("subProcess", ELEMENT_TERMINATED),

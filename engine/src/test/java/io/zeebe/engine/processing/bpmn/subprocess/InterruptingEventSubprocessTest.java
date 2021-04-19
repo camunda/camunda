@@ -237,7 +237,7 @@ public class InterruptingEventSubprocessTest {
 
     // then
     final Record<ProcessInstanceRecordValue> subProcess =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETING)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
             .withProcessInstanceKey(wfInstanceKey)
             .withElementId("sub_proc")
             .getFirst();
