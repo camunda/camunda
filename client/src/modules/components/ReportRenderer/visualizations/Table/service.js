@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {NoDataNotice} from 'components';
 import {reportConfig, formatters} from 'services';
 import {t} from 'translation';
 
@@ -198,4 +199,44 @@ function flatten(head) {
   }, []);
 
   return flattendHead;
+}
+
+export const getNoDataMessage = () => ({
+  head: [],
+  body: [],
+  noData: <NoDataNotice type="info">{t('report.table.noData')}</NoDataNotice>,
+});
+
+export function cockpitLink(endpoints, instance, type) {
+  const content = instance[type + 'InstanceId'];
+  const {endpoint, engineName} = endpoints[instance.engineName] || {};
+  if (endpoint) {
+    return (
+      <a
+        href={`${endpoint}/app/cockpit/${engineName}/#/${type}-instance/${content}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {content}
+      </a>
+    );
+  }
+  return content;
+}
+
+export function isVisibleColumn(column, {excludedColumns, includedColumns, includeNewVariables}) {
+  if (includeNewVariables) {
+    return !excludedColumns.includes(column);
+  } else {
+    return includedColumns.includes(column);
+  }
+}
+
+export function getLabelWithType(name, type) {
+  return (
+    <>
+      <span className="variableExtension">{t('report.table.rawData.' + type)}: </span>
+      {name}
+    </>
+  );
 }

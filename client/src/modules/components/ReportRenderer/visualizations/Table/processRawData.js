@@ -10,8 +10,13 @@ import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
 
-import {sortColumns} from '../service';
-import {cockpitLink, getNoDataMessage, isVisibleColumn, getLabelWithType} from './service';
+import {
+  cockpitLink,
+  getNoDataMessage,
+  isVisibleColumn,
+  getLabelWithType,
+  sortColumns,
+} from './service';
 
 const {duration} = formatters;
 
@@ -100,9 +105,9 @@ export default function processRawData(
 
     return [
       ...row,
+      ...getVariableValues(variableNames, instance.variables),
       ...getVariableValues(inputVariables, instance.inputVariables),
       ...getVariableValues(outputVariables, instance.outputVariables),
-      ...getVariableValues(variableNames, instance.variables),
     ];
   });
 
