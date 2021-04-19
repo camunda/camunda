@@ -46,6 +46,10 @@
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-snapshots</artifactId>
       <scope>test</scope>
     </dependency>
