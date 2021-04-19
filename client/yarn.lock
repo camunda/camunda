@@ -8041,10 +8041,10 @@ http-proxy-middleware@0.19.1:
     lodash "^4.17.11"
     micromatch "^3.1.10"
 
-http-proxy-middleware@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/http-proxy-middleware/-/http-proxy-middleware-1.1.2.tgz#38d062ce4182b2931442efc2d9a0c429cab634f8"
-  integrity sha512-YRFUeOG3q85FJjAaYVJUoNRW9a73SDlOtAyQOS5PHLr18QeZ/vEhxywNoOPiEO8BxCegz4RXzTHcvyLEGB78UA==
+http-proxy-middleware@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/http-proxy-middleware/-/http-proxy-middleware-1.2.0.tgz#87776ea3d4d8dda3dc2594a076787bbc6fe4d995"
+  integrity sha512-vNw+AxT0+6VTM1rCJw1bpiIaUQ1Ww/vTyIEOUzdW9kNX4yuhhqV3jLSKDJo/Y/lqEIshaKCDujtvEqWiD9Dn6Q==
   dependencies:
     "@types/http-proxy" "^1.17.5"
     http-proxy "^1.18.1"
