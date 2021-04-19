@@ -106,7 +106,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
         eventTriggerScopeKey,
         (key, value) -> {
           next[0] = new EventTrigger(value);
-          eventTriggerColumnFamily.delete(key);
+          deleteTrigger(key);
           return false;
         });
 
