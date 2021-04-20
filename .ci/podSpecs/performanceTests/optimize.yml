@@ -69,7 +69,7 @@ spec:
             memory: 5Gi
           requests:
             cpu: 4
-            memory: 5Gi
+            memory: 6Gi
         volumeMounts:
           - name: configuration
             mountPath: /optimize/config/environment-config.yaml
