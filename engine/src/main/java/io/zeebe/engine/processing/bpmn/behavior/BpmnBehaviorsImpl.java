@@ -91,7 +91,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
-        new BpmnBufferedMessageStartEventBehavior(zeebeState, eventTriggerBehavior, writers);
+        new BpmnBufferedMessageStartEventBehavior(
+            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
     jobBehavior =
         new BpmnJobBehavior(zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers);
   }

@@ -18,8 +18,11 @@ import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -33,6 +36,8 @@ public final class EventHandle {
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
   private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
   private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
+  private final MessageStartEventSubscriptionRecord startEventSubscriptionRecord =
+      new MessageStartEventSubscriptionRecord();
 
   private final KeyGenerator keyGenerator;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
@@ -155,22 +160,30 @@ public final class EventHandle {
     }
   }
 
-  public long triggerStartEvent(
-      final long processDefinitionKey, final DirectBuffer elementId, final DirectBuffer variables) {
+  public void triggerMessageStartEvent(
+      final long processDefinitionKey,
+      final DirectBuffer startEventElementId,
+      final long messageKey,
+      final MessageRecord message) {
 
-    final var newElementInstanceKey = keyGenerator.nextKey();
-    final var triggered =
-        eventScopeInstanceState.triggerEvent(
-            processDefinitionKey, newElementInstanceKey, elementId, variables);
+    final var newProcessInstanceKey = keyGenerator.nextKey();
+    final var bpmnProcessId = processState.getProcessByKey(processDefinitionKey).getBpmnProcessId();
 
-    if (triggered) {
-      final var processInstanceKey = keyGenerator.nextKey();
-      activateProcessInstanceForStartEvent(processDefinitionKey, processInstanceKey);
-      return processInstanceKey;
+    startEventSubscriptionRecord
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setBpmnProcessId(bpmnProcessId)
+        .setStartEventId(startEventElementId)
+        .setProcessInstanceKey(newProcessInstanceKey)
+        .setCorrelationKey(message.getCorrelationKeyBuffer())
+        .setMessageKey(messageKey)
+        .setMessageName(message.getNameBuffer())
+        .setVariables(message.getVariablesBuffer());
 
-    } else {
-      return -1L;
-    }
+    // TODO (saig0): the subscription should have a key (#2805)
+    stateWriter.appendFollowUpEvent(
+        -1L, MessageStartEventSubscriptionIntent.CORRELATED, startEventSubscriptionRecord);
+
+    activateProcessInstanceForStartEvent(processDefinitionKey, newProcessInstanceKey);
   }
 
   public void activateProcessInstanceForStartEvent(
