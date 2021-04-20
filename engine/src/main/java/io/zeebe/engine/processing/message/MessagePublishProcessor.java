@@ -30,7 +30,6 @@ import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
 
@@ -98,14 +97,13 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
-      handleNewMessage(command, responseWriter, streamWriter, sideEffect);
+      handleNewMessage(command, responseWriter, sideEffect);
     }
   }
 
   private void handleNewMessage(
       final TypedRecord<MessageRecord> command,
       final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     messageKey = keyGenerator.nextKey();
 
@@ -117,7 +115,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
     correlateToSubscriptions(messageKey, messageRecord);
-    correlateToMessageStartEvents(messageRecord, streamWriter);
+    correlateToMessageStartEvents(messageRecord);
 
     sideEffect.accept(this::sendCorrelateCommand);
 
@@ -156,8 +154,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
         });
   }
 
-  private void correlateToMessageStartEvents(
-      final MessageRecord messageRecord, final TypedStreamWriter streamWriter) {
+  private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
 
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageRecord.getNameBuffer(),
@@ -174,20 +171,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
             correlatingSubscriptions.add(subscription);
 
-            final var processInstanceKey = keyGenerator.nextKey();
-
-            subscription
-                .setProcessInstanceKey(processInstanceKey)
-                .setCorrelationKey(correlationKeyBuffer)
-                .setMessageKey(messageKey)
-                .setVariables(messageRecord.getVariablesBuffer());
-
-            // TODO (saig0): the subscription should have a key (#2805)
-            stateWriter.appendFollowUpEvent(
-                -1L, MessageStartEventSubscriptionIntent.CORRELATED, subscription);
-
-            eventHandle.activateProcessInstanceForStartEvent(
-                subscription.getProcessDefinitionKey(), processInstanceKey);
+            eventHandle.triggerMessageStartEvent(
+                subscription.getProcessDefinitionKey(),
+                subscription.getStartEventIdBuffer(),
+                messageKey,
+                messageRecord);
           }
         });
   }
