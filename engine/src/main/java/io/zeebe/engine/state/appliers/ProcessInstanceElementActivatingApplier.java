@@ -12,15 +12,19 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventS
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.instance.IndexedRecord;
+import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
@@ -47,6 +51,7 @@ final class ProcessInstanceElementActivatingApplier
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
 
     createEventScope(elementInstanceKey, value);
+    cleanupSequenceFlowsTaken(value);
 
     final var processDefinitionKey = value.getProcessDefinitionKey();
     final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
@@ -108,6 +113,46 @@ final class ProcessInstanceElementActivatingApplier
       elementInstanceState.updateInstance(
           elementInstanceKey, instance -> instance.setMultiInstanceLoopCounter(loopCounter));
     }
+  }
+
+  private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
+    if (value.getBpmnElementType() != BpmnElementType.PARALLEL_GATEWAY) {
+      return;
+    }
+
+    final var target =
+        processState.getFlowElement(
+            value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
+
+    final var tokensBySequenceFlow =
+        elementInstanceState.getDeferredRecords(value.getFlowScopeKey()).stream()
+            .filter(record -> record.getState() == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .filter(record -> isIncomingSequenceFlow(record, target))
+            .collect(Collectors.groupingBy(record -> record.getValue().getElementIdBuffer()));
+
+    // cleanup deferred records for sequence flow taken to this parallel gateway
+    tokensBySequenceFlow.forEach(
+        (sequenceFlow, tokens) -> {
+          // before a parallel gateway is activated, each incoming sequence flow of the gateway must
+          // be taken (at least once). if a sequence flow is taken more than once then the redundant
+          // token remains for the next activation of the gateway (Tetris principle)
+          final var firstToken = tokens.get(0);
+          elementInstanceState.removeStoredRecord(
+              value.getFlowScopeKey(), firstToken.getKey(), Purpose.DEFERRED);
+        });
+  }
+
+  // copied from BpmnStateTransitionBehavior
+  private boolean isIncomingSequenceFlow(
+      final IndexedRecord record, final ExecutableFlowNode parallelGateway) {
+    final var elementId = record.getValue().getElementIdBuffer();
+
+    for (final ExecutableSequenceFlow incomingSequenceFlow : parallelGateway.getIncoming()) {
+      if (elementId.equals(incomingSequenceFlow.getId())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void decrementActiveSequenceFlow(

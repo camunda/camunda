@@ -29,9 +29,7 @@ import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.util.collection.ListUtil;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -269,16 +267,6 @@ public final class BpmnStateTransitionBehavior {
         .setElementId(sequenceFlow.getId())
         .setBpmnElementType(sequenceFlow.getElementType());
 
-    final Map<DirectBuffer, List<IndexedRecord>> tokensBySequenceFlow = new HashMap<>();
-    if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
-      // Determine the sequence flows taken, before actually taking this sequence flow.
-      // Taking this sequence flow will store that it was taken in state, unless all incoming
-      // sequence flows have been taken, in which case they are all removed immediately. However, we
-      // also need this information later in this method, to join on parallel gateway, so we need to
-      // look it up now, while we have not yet taken this sequence flow.
-      tokensBySequenceFlow.putAll(determineSequenceFlowsTaken(target, context));
-    }
-
     // take the sequence flow
     final var sequenceFlowKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -287,27 +275,16 @@ public final class BpmnStateTransitionBehavior {
         context.copy(
             sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    // activate the target element
+    final boolean shouldActivateTargetElement;
     if (target.getElementType() != BpmnElementType.PARALLEL_GATEWAY) {
-      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
-      return;
+      shouldActivateTargetElement = true;
+    } else {
+      // if all incoming sequence flows are taken at least once, the gateway can be activated
+      final var tokensBySequenceFlow = determineSequenceFlowsTaken(target, context);
+      shouldActivateTargetElement = tokensBySequenceFlow.size() == target.getIncoming().size();
     }
 
-    // keep track of this taken sequence flow as well
-    tokensBySequenceFlow.merge(
-        sequenceFlowTaken.getElementId(),
-        List.of(
-            new IndexedRecord(
-                sequenceFlowKey,
-                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-                followUpInstanceRecord)),
-        ListUtil::concat);
-
-    // before the parallel gateway is activated, each incoming sequence flow of the gateway must
-    // be taken (at least once). if a sequence flow is taken more than once then the redundant
-    // token remains for the next activation of the gateway (Tetris principle)
-    if (tokensBySequenceFlow.size() == target.getIncoming().size()) {
-      // all incoming sequence flows are taken, so the gateway can be activated
+    if (shouldActivateTargetElement) {
       activateElementInstanceInFlowScope(sequenceFlowTaken, target);
     }
   }
