@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.state.analyzers;
 
+import io.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -44,16 +44,11 @@ public final class SequenceFlowAnalyzer {
         .collect(Collectors.groupingBy(record -> record.getValue().getElementIdBuffer()));
   }
 
-  // copied from BpmnStateTransitionBehavior
   private boolean isIncomingSequenceFlow(
       final IndexedRecord record, final ExecutableFlowNode targetElement) {
     final var elementId = record.getValue().getElementIdBuffer();
-
-    for (final ExecutableSequenceFlow incomingSequenceFlow : targetElement.getIncoming()) {
-      if (elementId.equals(incomingSequenceFlow.getId())) {
-        return true;
-      }
-    }
-    return false;
+    return targetElement.getIncoming().stream()
+        .map(AbstractFlowElement::getId)
+        .anyMatch(elementId::equals);
   }
 }
