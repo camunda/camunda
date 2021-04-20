@@ -108,12 +108,6 @@ public final class ProcessInstanceStateTransitionGuard {
       case ELEMENT_TERMINATED:
         return hasElementInstanceWithState(context, context.getIntent());
 
-      case EVENT_OCCURRED:
-        if (context.getBpmnElementType() == BpmnElementType.START_EVENT) {
-          return Either.right(null);
-        }
-        return hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
       case ACTIVATE_ELEMENT:
       case SEQUENCE_FLOW_TAKEN:
         return hasActiveFlowScopeInstance(context);

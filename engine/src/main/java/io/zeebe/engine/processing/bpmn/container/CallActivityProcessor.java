@@ -100,12 +100,6 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onEventOccurred(
-      final ExecutableCallActivity element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
-  }
-
-  @Override
   public void onChildActivating(
       final ExecutableCallActivity element,
       final BpmnElementContext flowScopeContext,

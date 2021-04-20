@@ -13,7 +13,6 @@ import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMP
 import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
 import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATING;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.EVENT_OCCURRED;
 import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -50,7 +49,6 @@ public final class ProcessInstanceLifecycle {
     TRANSITION_RULES.put(ELEMENT_TERMINATING, EnumSet.of(ELEMENT_TERMINATED));
     TRANSITION_RULES.put(ELEMENT_COMPLETED, EnumSet.of(SEQUENCE_FLOW_TAKEN));
     TRANSITION_RULES.put(ELEMENT_TERMINATED, Collections.emptySet());
-    TRANSITION_RULES.put(EVENT_OCCURRED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(SEQUENCE_FLOW_TAKEN, EnumSet.of(ELEMENT_ACTIVATING));
   }
 

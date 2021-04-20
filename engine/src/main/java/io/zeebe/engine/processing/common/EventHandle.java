@@ -31,7 +31,6 @@ public final class EventHandle {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
-  private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
   private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
 
   private final KeyGenerator keyGenerator;
@@ -121,21 +120,6 @@ public final class EventHandle {
       } else {
         eventTriggerBehavior.activateTriggeredEvent(
             catchEvent, elementRecord.getFlowScopeKey(), elementRecord, variables);
-      }
-
-    } else {
-      // --- legacy behavior ---
-      if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
-        final var executableStartEvent = (ExecutableStartEvent) catchEvent;
-
-        eventTriggerBehavior.triggerEventSubProcess(
-            executableStartEvent, eventScopeKey, elementRecord);
-      } else {
-        eventOccurredRecord.wrap(elementRecord);
-
-        // TODO (saig0): don't write EVENT_OCCURRED when processors are migrated (#6187/#6196)
-        stateWriter.appendFollowUpEvent(
-            eventScopeKey, ProcessInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
       }
     }
   }
