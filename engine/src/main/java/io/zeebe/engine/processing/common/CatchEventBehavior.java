@@ -168,6 +168,8 @@ public final class CatchEventBehavior {
 
     sideEffects.add(
         () -> {
+          /* timerChecker implements onRecovered to recover from restart, so no need to schedule
+          this in TimerCreatedApplier.*/
           timerChecker.scheduleTimer(dueDate);
           return true;
         });
