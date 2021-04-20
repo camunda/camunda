@@ -300,7 +300,7 @@ public final class BoundaryEventTest {
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
-            tuple(ValueType.TIMER, TimerIntent.CREATE),
+            tuple(ValueType.TIMER, TimerIntent.CREATED),
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(ValueType.TIMER, TimerIntent.CANCEL),

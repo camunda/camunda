@@ -234,7 +234,7 @@ public class ProcessExecutor {
 
   private void triggerTimerStartEvent(final StepTriggerTimerStartEvent timerStep) {
     final Record<TimerRecordValue> timerSchedulingRecord =
-        RecordingExporter.timerRecords(TimerIntent.CREATE).getFirst();
+        RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
     waitUntilRecordIsProcessed("until start timer is scheduled", timerSchedulingRecord);
 
     engineRule.increaseTime(timerStep.getTimeToAdd());

@@ -72,6 +72,7 @@ public final class EngineProcessors {
             expressionProcessor,
             subscriptionCommandSender,
             writers.state(),
+            timerChecker,
             partitionsCount);
 
     final var eventTriggerBehavior =

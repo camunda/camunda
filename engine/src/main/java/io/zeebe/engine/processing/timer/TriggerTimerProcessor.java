@@ -121,7 +121,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     }
 
     if (shouldReschedule(timer)) {
-      rescheduleTimer(timer, catchEvent, streamWriter);
+      rescheduleTimer(timer, catchEvent, streamWriter, sideEffects);
     }
   }
 
@@ -141,7 +141,10 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   }
 
   private void rescheduleTimer(
-      final TimerRecord record, final ExecutableCatchEvent event, final TypedCommandWriter writer) {
+      final TimerRecord record,
+      final ExecutableCatchEvent event,
+      final TypedCommandWriter writer,
+      final Consumer<SideEffectProducer> sideEffects) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
     if (timer.isLeft()) {
@@ -166,6 +169,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         record.getProcessDefinitionKey(),
         event.getId(),
         repeatingInterval,
-        writer);
+        writer,
+        sideEffects::accept);
   }
 }

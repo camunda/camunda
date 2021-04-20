@@ -144,8 +144,8 @@ public final class ActivityTest {
         .extracting(Record::getIntent)
         .contains(
             ELEMENT_ACTIVATING,
-            TimerIntent.CREATE,
-            TimerIntent.CREATE,
+            TimerIntent.CREATED,
+            TimerIntent.CREATED,
             JobIntent.CREATED,
             ELEMENT_ACTIVATED);
   }
