@@ -224,28 +224,4 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   default void onTerminated(final T element, final BpmnElementContext context) {
     throw new UnsupportedOperationException("This method is replaced by onTerminate");
   }
-
-  /**
-   * An event subscription of the element is triggered. Leave the element if it waited for this
-   * event to continue. Terminate the element if the event belongs to an interrupting boundary
-   * event. Or, continue with the boundary event if it is a non-interrupting one.
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>activate the triggered boundary event - if any
-   * </ul>
-   *
-   * Next step: completing or terminating.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated handle the event on the caller side and continue with the element by write a
-   *     activate/complete/terminate command
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onEventOccurred(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException(
-        "event-occurred is deprecated. Instead, handle the event on the caller side. Continue with the element by writing a activate/complete/terminate command.");
-  }
 }

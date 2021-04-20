@@ -124,13 +124,6 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onEventOccurred(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
-  }
-
-  @Override
   public void onChildActivating(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,

@@ -78,12 +78,6 @@ public final class SequenceFlowProcessor implements BpmnElementProcessor<Executa
     throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
   }
 
-  @Override
-  public void onEventOccurred(
-      final ExecutableSequenceFlow element, final BpmnElementContext context) {
-    throw new BpmnProcessingException(context, UNSUPPORTED_OPERATION_MESSAGE);
-  }
-
   private void onSequenceFlowTaken(
       final ExecutableSequenceFlow element, final BpmnElementContext context) {
 

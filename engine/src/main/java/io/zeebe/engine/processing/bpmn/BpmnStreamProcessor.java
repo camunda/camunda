@@ -238,9 +238,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       case ELEMENT_ACTIVATED:
         processor.onActivated(element, context);
         break;
-      case EVENT_OCCURRED:
-        processor.onEventOccurred(element, context);
-        break;
       case ELEMENT_COMPLETING:
         processor.onCompleting(element, context);
         break;
