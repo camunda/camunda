@@ -20,7 +20,6 @@ import io.zeebe.engine.processing.bpmn.event.StartEventProcessor;
 import io.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
 import io.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
 import io.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
-import io.zeebe.engine.processing.bpmn.sequenceflow.SequenceFlowProcessor;
 import io.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
 import io.zeebe.engine.processing.bpmn.task.ServiceTaskProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -60,9 +59,6 @@ public final class BpmnElementProcessors {
         new IntermediateCatchEventProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.END_EVENT, new EndEventProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.BOUNDARY_EVENT, new BoundaryEventProcessor(bpmnBehaviors));
-
-    // others
-    processors.put(BpmnElementType.SEQUENCE_FLOW, new SequenceFlowProcessor(bpmnBehaviors));
   }
 
   public <T extends ExecutableFlowElement> BpmnElementProcessor<T> getProcessor(

@@ -131,7 +131,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementTerminatedApplier(elementInstanceState, eventScopeInstanceState));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-        new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState));
+        new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
   }
 
   private void registerJobIntentEventAppliers(final MutableZeebeState state) {

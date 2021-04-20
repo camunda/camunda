@@ -64,11 +64,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
     variableMappingBehavior =
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
+    deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
             streamWriter,
             zeebeState.getKeyGenerator(),
             stateBehavior,
+            deferredRecordsBehavior,
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
             stateTransitionGuard,
             processorLookup,
@@ -86,7 +88,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             sideEffects,
             zeebeState);
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, commandWriter, stateWriter);
-    deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);

@@ -24,12 +24,19 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.collection.ListUtil;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 
 public final class BpmnStateTransitionBehavior {
 
@@ -44,6 +51,7 @@ public final class BpmnStateTransitionBehavior {
   private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnDeferredRecordsBehavior deferredRecordsBehavior;
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
       processorLookUp;
 
@@ -57,6 +65,7 @@ public final class BpmnStateTransitionBehavior {
       final TypedStreamWriter streamWriter,
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
+      final BpmnDeferredRecordsBehavior deferredRecordsBehavior,
       final ProcessEngineMetrics metrics,
       final ProcessInstanceStateTransitionGuard stateTransitionGuard,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
@@ -67,6 +76,7 @@ public final class BpmnStateTransitionBehavior {
     this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
+    this.deferredRecordsBehavior = deferredRecordsBehavior;
     this.metrics = metrics;
     this.stateTransitionGuard = stateTransitionGuard;
     this.processorLookUp = processorLookUp;
@@ -252,25 +262,77 @@ public final class BpmnStateTransitionBehavior {
   public void takeSequenceFlow(
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+    final var target = sequenceFlow.getTarget();
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
         .setElementId(sequenceFlow.getId())
         .setBpmnElementType(sequenceFlow.getElementType());
 
-    final var sequenceFlowKey = keyGenerator.nextKey();
-
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      flowScopeInstance.incrementActiveSequenceFlows();
-      elementInstanceState.updateInstance(flowScopeInstance);
-
-      streamWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
-    } else {
-      stateWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+    final Map<DirectBuffer, List<IndexedRecord>> tokensBySequenceFlow = new HashMap<>();
+    if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
+      // Determine the sequence flows taken, before actually taking this sequence flow.
+      // Taking this sequence flow will store that it was taken in state, unless all incoming
+      // sequence flows have been taken, in which case they are all removed immediately. However, we
+      // also need this information later in this method, to join on parallel gateway, so we need to
+      // look it up now, while we have not yet taken this sequence flow.
+      tokensBySequenceFlow.putAll(determineSequenceFlowsTaken(target, context));
     }
+
+    // take the sequence flow
+    final var sequenceFlowKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+    final BpmnElementContext sequenceFlowTaken =
+        context.copy(
+            sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+
+    // activate the target element
+    if (target.getElementType() != BpmnElementType.PARALLEL_GATEWAY) {
+      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
+      return;
+    }
+
+    // keep track of this taken sequence flow as well
+    tokensBySequenceFlow.merge(
+        sequenceFlowTaken.getElementId(),
+        List.of(
+            new IndexedRecord(
+                sequenceFlowKey,
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
+                followUpInstanceRecord)),
+        ListUtil::concat);
+
+    // before the parallel gateway is activated, each incoming sequence flow of the gateway must
+    // be taken (at least once). if a sequence flow is taken more than once then the redundant
+    // token remains for the next activation of the gateway (Tetris principle)
+    if (tokensBySequenceFlow.size() == target.getIncoming().size()) {
+      // all incoming sequence flows are taken, so the gateway can be activated
+      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
+    }
+  }
+
+  // copied from old SequenceFlowProcessor
+  private Map<DirectBuffer, List<IndexedRecord>> determineSequenceFlowsTaken(
+      final ExecutableFlowNode parallelGateway, final BpmnElementContext context) {
+    final var flowScopeContext = stateBehavior.getFlowScopeContext(context);
+    return deferredRecordsBehavior.getDeferredRecords(flowScopeContext).stream()
+        .filter(record -> record.getState() == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+        .filter(record -> isIncomingSequenceFlow(record, parallelGateway))
+        .collect(Collectors.groupingBy(record -> record.getValue().getElementIdBuffer()));
+  }
+
+  // copied from old SequenceFlowProcessor
+  private boolean isIncomingSequenceFlow(
+      final IndexedRecord record, final ExecutableFlowNode parallelGateway) {
+    final var elementId = record.getValue().getElementIdBuffer();
+
+    for (final ExecutableSequenceFlow incomingSequenceFlow : parallelGateway.getIncoming()) {
+      if (elementId.equals(incomingSequenceFlow.getId())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public void completeElement(final BpmnElementContext context) {
