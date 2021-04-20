@@ -20,13 +20,11 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.immutable.MessageSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableProcessState;
+import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
@@ -53,14 +51,14 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
 
   public MessagePublishProcessor(
-      final MutableMessageState messageState,
-      final MutableMessageSubscriptionState subscriptionState,
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
-      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final EventScopeInstanceState eventScopeInstanceState,
       final SubscriptionCommandSender commandSender,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final MutableProcessState processState,
+      final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;

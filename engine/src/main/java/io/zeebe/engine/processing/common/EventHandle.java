@@ -15,9 +15,9 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
@@ -40,25 +40,24 @@ public final class EventHandle {
       new MessageStartEventSubscriptionRecord();
 
   private final KeyGenerator keyGenerator;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
+  private final ProcessState processState;
 
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
-  private final ProcessState processState;
   private final EventTriggerBehavior eventTriggerBehavior;
 
-  // TODO (saig0): use immutable states only (#6200)
   public EventHandle(
       final KeyGenerator keyGenerator,
-      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final EventScopeInstanceState eventScopeInstanceState,
       final Writers writers,
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    this.processState = processState;
     commandWriter = writers.command();
     stateWriter = writers.state();
-    this.processState = processState;
     this.eventTriggerBehavior = eventTriggerBehavior;
   }
 
