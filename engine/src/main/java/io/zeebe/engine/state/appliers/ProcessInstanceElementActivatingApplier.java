@@ -12,11 +12,10 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventS
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -24,7 +23,6 @@ import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
@@ -35,6 +33,7 @@ final class ProcessInstanceElementActivatingApplier
   private final MutableVariableState variableState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final SequenceFlowAnalyzer sequenceFlowAnalyzer;
 
   public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
@@ -45,6 +44,7 @@ final class ProcessInstanceElementActivatingApplier
     this.processState = processState;
     this.variableState = variableState;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    sequenceFlowAnalyzer = new SequenceFlowAnalyzer(elementInstanceState);
   }
 
   @Override
@@ -120,15 +120,12 @@ final class ProcessInstanceElementActivatingApplier
       return;
     }
 
-    final var target =
+    final var parallelGateway =
         processState.getFlowElement(
             value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
 
     final var tokensBySequenceFlow =
-        elementInstanceState.getDeferredRecords(value.getFlowScopeKey()).stream()
-            .filter(record -> record.getState() == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-            .filter(record -> isIncomingSequenceFlow(record, target))
-            .collect(Collectors.groupingBy(record -> record.getValue().getElementIdBuffer()));
+        sequenceFlowAnalyzer.determineTakenIncomingFlows(value.getFlowScopeKey(), parallelGateway);
 
     // cleanup deferred records for sequence flow taken to this parallel gateway
     tokensBySequenceFlow.forEach(
@@ -140,19 +137,6 @@ final class ProcessInstanceElementActivatingApplier
           elementInstanceState.removeStoredRecord(
               value.getFlowScopeKey(), firstToken.getKey(), Purpose.DEFERRED);
         });
-  }
-
-  // copied from BpmnStateTransitionBehavior
-  private boolean isIncomingSequenceFlow(
-      final IndexedRecord record, final ExecutableFlowNode parallelGateway) {
-    final var elementId = record.getValue().getElementIdBuffer();
-
-    for (final ExecutableSequenceFlow incomingSequenceFlow : parallelGateway.getIncoming()) {
-      if (elementId.equals(incomingSequenceFlow.getId())) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private void decrementActiveSequenceFlow(

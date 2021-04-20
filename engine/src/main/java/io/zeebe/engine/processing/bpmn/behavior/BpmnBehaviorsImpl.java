@@ -70,7 +70,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             streamWriter,
             zeebeState.getKeyGenerator(),
             stateBehavior,
-            deferredRecordsBehavior,
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
             stateTransitionGuard,
             processorLookup,
