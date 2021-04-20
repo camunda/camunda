@@ -83,8 +83,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     final var activated = stateTransitionBehavior.transitionToActivated(activating);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    final var completed = stateTransitionBehavior.transitionToCompleted(completing);
 
-    stateTransitionBehavior.onElementCompleted(element, completed);
+    stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
   }
 }

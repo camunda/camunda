@@ -18,7 +18,7 @@ public class RaftLogReaderPartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> open(final PartitionContext context) {
-    final var reader = context.getRaftPartition().getServer().openReader(-1, Mode.COMMITS);
+    final var reader = context.getRaftPartition().getServer().openReader(Mode.COMMITS);
     context.setRaftLogReader(reader);
     return CompletableActorFuture.completed(null);
   }
@@ -30,6 +30,7 @@ public class RaftLogReaderPartitionStep implements PartitionStep {
     } catch (final Exception e) {
       Loggers.SYSTEM_LOGGER.error(
           "Unexpected error closing Raft log reader for partition {}", context.getPartitionId(), e);
+      return CompletableActorFuture.completedExceptionally(e);
     } finally {
       context.setRaftLogReader(null);
     }

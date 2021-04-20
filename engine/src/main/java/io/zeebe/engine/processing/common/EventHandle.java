@@ -24,8 +24,11 @@ import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class EventHandle {
+
+  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
   private final ProcessInstanceRecord eventOccurredRecord = new ProcessInstanceRecord();
@@ -91,20 +94,33 @@ public final class EventHandle {
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord) {
+    activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES);
+  }
+
+  public void activateElement(
+      final ExecutableFlowElement catchEvent,
+      final long eventScopeKey,
+      final ProcessInstanceRecord elementRecord,
+      final DirectBuffer variables) {
 
     if (MigratedStreamProcessors.isMigrated(elementRecord.getBpmnElementType())) {
 
       if (isElementActivated(catchEvent)) {
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
+      } else if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+        final var executableStartEvent = (ExecutableStartEvent) catchEvent;
 
+        eventTriggerBehavior.triggerEventSubProcess(
+            executableStartEvent, eventScopeKey, elementRecord);
       } else if (isInterrupting(catchEvent)) {
         // terminate the activated element and then activate the triggered catch event
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.TERMINATE_ELEMENT, elementRecord);
 
       } else {
-        activateCatchEvent(catchEvent, eventScopeKey, elementRecord);
+        eventTriggerBehavior.activateTriggeredEvent(
+            catchEvent, elementRecord.getFlowScopeKey(), elementRecord, variables);
       }
 
     } else {
@@ -139,20 +155,6 @@ public final class EventHandle {
     }
   }
 
-  private void activateCatchEvent(
-      final ExecutableFlowElement catchEvent,
-      final long eventScopeKey,
-      final ProcessInstanceRecord elementRecord) {
-
-    elementRecord
-        .setBpmnElementType(catchEvent.getElementType())
-        .setElementId(catchEvent.getId())
-        .setFlowScopeKey(eventScopeKey);
-
-    // TODO (saig0): pass message variables for output mappings (temp/as local vars) (#6187)
-    commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
-  }
-
   public long triggerStartEvent(
       final long processDefinitionKey, final DirectBuffer elementId, final DirectBuffer variables) {
 
@@ -174,9 +176,6 @@ public final class EventHandle {
   public void activateProcessInstanceForStartEvent(
       final long processDefinitionKey, final long processInstanceKey) {
 
-    // todo: after migrating Process Processor we can write here the ACTIVATE command
-    // https://github.com/camunda-cloud/zeebe/issues/6194
-
     final var process = processState.getProcessByKey(processDefinitionKey);
 
     recordForPICreation
@@ -187,7 +186,7 @@ public final class EventHandle {
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType());
 
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, recordForPICreation);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
   }
 }

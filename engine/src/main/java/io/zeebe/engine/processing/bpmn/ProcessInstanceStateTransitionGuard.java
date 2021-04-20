@@ -14,6 +14,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import org.slf4j.Logger;
 
@@ -59,9 +60,9 @@ public final class ProcessInstanceStateTransitionGuard {
     // processors in the processor. this means that ELEMENT_COMPLETING of a migrated processor will
     // set the element state to ELEMENT_COMPLETING on replay, but ELEMENT_COMPLETING of a non
     // migrated will expect its state to ALREADY be ELEMENT_COMPLETING. To avoid too much
-    // complexity, when reprocessing events for non migrated processors, just set their state as
-    // expected; this could in the future be a source of error, but as its only temporary until
-    // all processors are migrated, it's OK for now
+    // complexity, when reprocessing events for non migrated processors, just allow allow the
+    // transition as well; this could in the future be a source of error, but as its only
+    // temporary until all processors are migrated, it's OK for now
     // TODO(npepinpe): remove as part of https://github.com/camunda-cloud/zeebe/issues/6202
     if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
       if (context.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
@@ -82,7 +83,12 @@ public final class ProcessInstanceStateTransitionGuard {
 
     switch (context.getIntent()) {
       case COMPLETE_ELEMENT:
-        return hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        // an incident is resolved by writing a COMPLETE command when the element instance is in
+        // state COMPLETING
+        return hasElementInstanceWithState(
+                context,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                ProcessInstanceIntent.ELEMENT_COMPLETING)
             .flatMap(ok -> hasActiveFlowScopeInstance(context));
       case TERMINATE_ELEMENT:
         return hasElementInstanceWithState(
@@ -188,12 +194,13 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private Either<String, ElementInstance> hasNonInterruptedFlowScope(
       final ElementInstance flowScopeInstance, final BpmnElementContext context) {
-    final var interruptingEventKey = flowScopeInstance.getInterruptingEventKey();
-    if (interruptingEventKey > 0 && interruptingEventKey != context.getElementInstanceKey()) {
+    final var interruptingElementId = flowScopeInstance.getInterruptingElementId();
+    if (flowScopeInstance.isInterrupted()
+        && !interruptingElementId.equals(context.getElementId())) {
       return Either.left(
           String.format(
-              "Expected flow scope instance to be not interrupted but was interrupted by an event with key '%d'.",
-              interruptingEventKey));
+              "Expected flow scope instance to be not interrupted but was interrupted by an event with id '%s'.",
+              BufferUtil.bufferAsString(interruptingElementId)));
 
     } else {
       return Either.right(flowScopeInstance);

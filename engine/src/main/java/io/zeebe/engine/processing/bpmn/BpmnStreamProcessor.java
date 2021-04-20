@@ -17,6 +17,7 @@ import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -26,6 +27,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -48,6 +50,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final MutableElementInstanceState elementInstanceState;
+
+  private boolean reprocessingMode = true;
 
   public BpmnStreamProcessor(
       final ExpressionProcessor expressionProcessor,
@@ -83,6 +87,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    reprocessingMode = false;
+  }
+
+  @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
       final TypedResponseWriter responseWriter,
@@ -100,34 +109,14 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final var recordValue = record.getValue();
 
     context.init(record.getKey(), recordValue, intent);
+    context.setReprocessingMode(reprocessingMode);
 
     final var bpmnElementType = recordValue.getBpmnElementType();
     final var processor = processors.getProcessor(bpmnElementType);
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
-    // On migrating processors we saw issues on replay, where element instances are not existing on
-    // replay/reprocessing. You need to know that migrated processors are only replayed, which means
-    // the events are applied to the state and non migrated are reprocessed, so the processor is
-    // called.
-    //
-    // If we have a non migrated type and reprocess that, we expect an existing element instance.
-    // On normal processing this element instance was created by using the state writer of the
-    // previous command/event most likely by an already migrated type. On replay this state writer
-    // is not called which causes issues, like non existing element instance.
-    //
-    // To cover the gap between migrated and non migrated processors we need to re-create an element
-    // instance here, such that we can continue in migrate the processors individually and still
-    // are able to run the replay tests.
-    final var instance = elementInstanceState.getInstance(context.getElementInstanceKey());
-    if (instance == null
-        && context.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING
-        && !MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      elementInstanceState.newInstance(
-          flowScopeInstance,
-          context.getElementInstanceKey(),
-          context.getRecordValue(),
-          ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+      relieveReprocessingStateProblems();
     }
 
     // process the record
@@ -135,6 +124,57 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       LOGGER.trace("Process process instance event [context: {}]", context);
 
       processEvent(intent, processor, element);
+    }
+  }
+
+  /**
+   * On migrating processors we saw issues on replay, where element instances are not existing on
+   * replay/reprocessing. You need to know that migrated processors are only replayed, which means
+   * the events are applied to the state and non migrated are reprocessed, so the processor is
+   * called.
+   *
+   * <p>If we have a non migrated type and reprocess that, we expect an existing element instance.
+   * On normal processing this element instance was created by using the state writer of the
+   * previous command/event most likely by an already migrated type. On replay this state writer is
+   * not called which causes issues, like non existing element instance.
+   *
+   * <p>To cover the gap between migrated and non migrated processors we need to re-create an
+   * element instance here, such that we can continue in migrate the processors individually and
+   * still are able to run the replay tests.
+   */
+  private void relieveReprocessingStateProblems() {
+    final var instance = elementInstanceState.getInstance(context.getElementInstanceKey());
+    if (instance == null) {
+      if (context.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
+        // only create new instance for elements that are activating
+        return;
+      }
+
+      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
+      final var elementInstance =
+          elementInstanceState.newInstance(
+              flowScopeInstance,
+              context.getElementInstanceKey(),
+              context.getRecordValue(),
+              ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+      final var parentElementInstance =
+          elementInstanceState.getInstance(context.getRecordValue().getParentElementInstanceKey());
+      if (parentElementInstance == null
+          || context.getBpmnElementType() != BpmnElementType.PROCESS) {
+        // only connect to call activity for child processes
+        return;
+      }
+
+      parentElementInstance.setCalledChildInstanceKey(elementInstance.getKey());
+      elementInstanceState.updateInstance(parentElementInstance);
+      return;
+    }
+
+    if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+        && context.getBpmnElementType() == BpmnElementType.PROCESS) {
+      instance.setState(ProcessInstanceIntent.ELEMENT_TERMINATING);
+      elementInstanceState.updateInstance(instance);
     }
   }
 
@@ -171,6 +211,28 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
         // legacy behavior for not migrated processors
       case ELEMENT_ACTIVATING:
+        // manage the multi-instance loop counter and input variable BEFORE calling the non migrated
+        // processor, otherwise these will not be available for IO mapping
+        if (context.getFlowScopeKey() > 0) {
+          final ElementInstance flowScopeInstance =
+              elementInstanceState.getInstance(context.getFlowScopeKey());
+          if (flowScopeInstance.getValue().getBpmnElementType()
+              == BpmnElementType.MULTI_INSTANCE_BODY) {
+            // update the loop counter of the multi-instance body (starting by 1)
+            flowScopeInstance.incrementMultiInstanceLoopCounter();
+            elementInstanceState.updateInstance(flowScopeInstance);
+
+            // set the loop counter of the inner instance
+            final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
+            elementInstanceState.updateInstance(
+                context.getElementInstanceKey(),
+                instance -> instance.setMultiInstanceLoopCounter(loopCounter));
+
+            // will call onChildActivating of the multi instance, thereby setting the loop variables
+            stateTransitionBehavior.onElementActivating(element, context);
+          }
+        }
+
         processor.onActivating(element, context);
         break;
       case ELEMENT_ACTIVATED:

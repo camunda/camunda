@@ -89,7 +89,8 @@ public class ZeebeTestHelper {
 
   public boolean containsIndexed(
       final RaftPartitionServer partition, final IndexedRaftLogEntry indexed) {
-    try (final RaftLogReader reader = partition.openReader(indexed.index(), Mode.COMMITS)) {
+    try (final RaftLogReader reader = partition.openReader(Mode.COMMITS)) {
+      reader.seek(indexed.index());
 
       if (reader.hasNext()) {
         final IndexedRaftLogEntry entry = reader.next();

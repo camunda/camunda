@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.collect.Sets;
 import io.zeebe.journal.JournalException;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
@@ -34,6 +35,7 @@ import org.agrona.IoUtil;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 class JournalSegment implements AutoCloseable {
+  private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
   private final JournalSegmentFile file;
   private final JournalSegmentDescriptor descriptor;
@@ -54,6 +56,7 @@ class JournalSegment implements AutoCloseable {
     buffer =
         IoUtil.mapExistingFile(
             file.file(), MapMode.READ_WRITE, file.name(), 0, descriptor.maxSegmentSize());
+    buffer.order(ENDIANNESS);
     writer = createWriter(maxEntrySize);
   }
 
@@ -64,15 +67,6 @@ class JournalSegment implements AutoCloseable {
    */
   public long id() {
     return descriptor.id();
-  }
-
-  /**
-   * Returns the segment version.
-   *
-   * @return The segment version.
-   */
-  public long version() {
-    return descriptor.version();
   }
 
   /**
@@ -146,7 +140,8 @@ class JournalSegment implements AutoCloseable {
    */
   MappedJournalSegmentReader createReader() {
     checkOpen();
-    return new MappedJournalSegmentReader(buffer.asReadOnlyBuffer().position(0), this, index);
+    return new MappedJournalSegmentReader(
+        buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
   }
 
   private MappedJournalSegmentWriter createWriter(final int maxEntrySize) {
@@ -196,10 +191,6 @@ class JournalSegment implements AutoCloseable {
 
   @Override
   public String toString() {
-    return toStringHelper(this)
-        .add("id", id())
-        .add("version", version())
-        .add("index", index())
-        .toString();
+    return toStringHelper(this).add("id", id()).add("index", index()).toString();
   }
 }

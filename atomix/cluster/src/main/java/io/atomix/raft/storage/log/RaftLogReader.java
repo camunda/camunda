@@ -66,7 +66,7 @@ public class RaftLogReader implements java.util.Iterator<IndexedRaftLogEntry>, A
     return nextIndex;
   }
 
-  public long reset(final long index) {
+  public long seek(final long index) {
     if (nextIndex == index) {
       return nextIndex;
     }
@@ -87,7 +87,7 @@ public class RaftLogReader implements java.util.Iterator<IndexedRaftLogEntry>, A
     if (mode == Mode.ALL) {
       nextIndex = journalReader.seekToLast();
     } else {
-      reset(log.getCommitIndex());
+      seek(log.getCommitIndex());
     }
 
     return nextIndex;

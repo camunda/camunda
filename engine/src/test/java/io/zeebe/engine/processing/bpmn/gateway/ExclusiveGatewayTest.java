@@ -248,6 +248,7 @@ public final class ExclusiveGatewayTest {
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
+            ProcessInstanceIntent.COMPLETE_ELEMENT,
             ProcessInstanceIntent.ELEMENT_COMPLETING,
             ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -308,14 +309,14 @@ public final class ExclusiveGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(completedEvents)
-        .extracting(Record::getIntent)
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            ProcessInstanceIntent.ELEMENT_COMPLETING,
-            ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.ELEMENT_COMPLETING,
-            ProcessInstanceIntent.ELEMENT_COMPLETED);
+            tuple(BpmnElementType.EXCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.EXCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EXCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.EXCLUSIVE_GATEWAY, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test

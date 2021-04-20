@@ -5,17 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util;
+package io.zeebe.util.exception;
 
-import java.net.InetSocketAddress;
+public class UnrecoverableException extends RuntimeException {
 
-public final class SocketUtil {
-  private static final String HOST_PORT_FORMAT = "%s:%d";
-
-  private SocketUtil() {}
-
-  public static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
-    return String.format(
-        HOST_PORT_FORMAT, inetSocketAddress.getHostString(), inetSocketAddress.getPort());
+  public UnrecoverableException(final String message) {
+    super(message);
   }
 }

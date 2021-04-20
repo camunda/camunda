@@ -193,9 +193,8 @@ class SegmentedJournalReader implements JournalReader {
       }
     }
 
-    while (getNextIndex() < index && hasNext()) {
-      next();
-    }
+    currentReader.seek(index);
+    previousEntry = currentReader.getCurrentEntry();
   }
 
   private boolean hasNextEntry() {

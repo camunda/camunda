@@ -20,6 +20,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -154,12 +155,14 @@ public final class ReplayStateTest {
                     .startEvent()
                     .callActivity("call-child", b -> b.zeebeProcessId(PROCESS_CHILD_ID))
                     .boundaryEvent("timer", b -> b.cancelActivity(true))
-                    .timerWithDuration("PT0S")
+                    .timerWithDuration("PT1M")
                     .endEvent("end")
                     .done())
             .withExecution(
                 engine -> {
                   final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  RecordingExporter.jobRecords(JobIntent.CREATED).await();
+                  engine.getClock().addTime(Duration.ofMinutes(1));
                   return RecordingExporter.processInstanceRecords(
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withProcessInstanceKey(piKey)
@@ -212,6 +215,200 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.PROCESS)
                       .withRecordKey(piKey)
                       .getFirst();
+                }),
+        testCase("interrupting message boundary event on receive task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .receiveTask(
+                        "task",
+                        t -> t.message(m -> m.name("task").zeebeCorrelationKeyExpression("1")))
+                    .boundaryEvent(
+                        "event",
+                        b ->
+                            b.cancelActivity(true)
+                                .message(m -> m.name("event").zeebeCorrelationKeyExpression("1")))
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  engine.message().withName("event").withCorrelationKey("1").publish();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("non-interrupting timer boundary event on receive task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .receiveTask(
+                        "task",
+                        t -> t.message(m -> m.name("task").zeebeCorrelationKeyExpression("1")))
+                    .boundaryEvent("event", b -> b.cancelActivity(false).timerWithDuration("PT0S"))
+                    .endEvent("end")
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.END_EVENT)
+                      .withElementId("end")
+                      .getFirst();
+                }),
+        testCase("parallel multi-instance service task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t ->
+                            t.zeebeJobType("type")
+                                .multiInstance(
+                                    m ->
+                                        m.parallel()
+                                            .zeebeInputElement("item")
+                                            .zeebeInputCollectionExpression("items")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("items", List.of(1, 2, 3))
+                          .create();
+                  Awaitility.await("until there are 3 jobs ready to be activated")
+                      .pollInSameThread()
+                      .until(
+                          () ->
+                              RecordingExporter.jobRecords(JobIntent.CREATED).limit(3).count()
+                                  >= 3);
+                  final JobBatchRecordValue jobs =
+                      engine.jobs().withMaxJobsToActivate(3).withType("type").activate().getValue();
+                  jobs.getJobKeys()
+                      .forEach(
+                          key -> engine.job().withKey(key).withVariable("result", 0).complete());
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("sequential multi-instance service task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t ->
+                            t.zeebeJobType("type")
+                                .multiInstance(
+                                    m ->
+                                        m.sequential()
+                                            .zeebeInputElement("item")
+                                            .zeebeInputCollectionExpression("items")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results")))
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("items", List.of(1, 2, 3))
+                          .create();
+                  for (int i = 0; i < 3; i++) {
+                    final int expectedJobCount = i + 1;
+                    Awaitility.await(
+                            "until there are " + expectedJobCount + " jobs ready to be activated")
+                        .pollInSameThread()
+                        .until(
+                            () ->
+                                RecordingExporter.jobRecords(JobIntent.CREATED)
+                                        .limit(expectedJobCount)
+                                        .count()
+                                    >= expectedJobCount);
+                    final JobBatchRecordValue jobs =
+                        engine
+                            .jobs()
+                            .withMaxJobsToActivate(1)
+                            .withType("type")
+                            .activate()
+                            .getValue();
+                    jobs.getJobKeys()
+                        .forEach(
+                            key -> engine.job().withKey(key).withVariable("result", 0).complete());
+                  }
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
+                }),
+        testCase("interrupting parallel multi-instance service task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        t ->
+                            t.zeebeJobType("type")
+                                .multiInstance(
+                                    m ->
+                                        m.parallel()
+                                            .zeebeInputElement("item")
+                                            .zeebeInputCollectionExpression("items")
+                                            .zeebeOutputElementExpression("result")
+                                            .zeebeOutputCollection("results"))
+                                .boundaryEvent(
+                                    "event",
+                                    b ->
+                                        b.cancelActivity(true)
+                                            .message(
+                                                m ->
+                                                    m.name("message")
+                                                        .zeebeCorrelationKey("=\"key\"")))
+                                .endEvent())
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("items", List.of(1, 2, 3))
+                          .create();
+                  Awaitility.await("until there are 3 jobs ready to be activated")
+                      .pollInSameThread()
+                      .until(
+                          () ->
+                              RecordingExporter.jobRecords(JobIntent.CREATED).limit(3).count()
+                                  >= 2);
+                  final JobBatchRecordValue jobs =
+                      engine.jobs().withMaxJobsToActivate(2).withType("type").activate().getValue();
+                  jobs.getJobKeys()
+                      .forEach(
+                          key -> engine.job().withKey(key).withVariable("result", 0).complete());
+                  engine.message().withName("message").withCorrelationKey("key").publish();
+
+                  return RecordingExporter.processInstanceRecords(
+                          ProcessInstanceIntent.ELEMENT_COMPLETED)
+                      .withProcessInstanceKey(piKey)
+                      .withElementType(BpmnElementType.PROCESS)
+                      .getFirst();
                 }));
   }
 
@@ -246,32 +443,39 @@ public final class ReplayStateTest {
                     .isEqualTo(Phase.PROCESSING));
 
     // then
-    final var replayState = engine.collectState();
+    Awaitility.await("await that the replay state is equal to the processing state")
+        .untilAsserted(
+            () -> {
+              final var replayState = engine.collectState();
 
-    final var softly = new SoftAssertions();
+              final var softly = new SoftAssertions();
 
-    processingState.entrySet().stream()
-        .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
-        .forEach(
-            entry -> {
-              final var column = entry.getKey();
-              final var processingEntries = entry.getValue();
-              final var replayEntries = replayState.get(column);
+              processingState.entrySet().stream()
+                  .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
+                  .forEach(
+                      entry -> {
+                        final var column = entry.getKey();
+                        final var processingEntries = entry.getValue();
+                        final var replayEntries = replayState.get(column);
 
-              if (processingEntries.isEmpty()) {
-                softly
-                    .assertThat(replayEntries)
-                    .describedAs("The state column '%s' should be empty after replay", column)
-                    .isEmpty();
-              } else {
-                softly
-                    .assertThat(replayEntries)
-                    .describedAs("The state column '%s' has different entries after replay", column)
-                    .containsExactlyInAnyOrderEntriesOf(processingEntries);
-              }
+                        if (processingEntries.isEmpty()) {
+                          softly
+                              .assertThat(replayEntries)
+                              .describedAs(
+                                  "The state column '%s' should be empty after replay", column)
+                              .isEmpty();
+                        } else {
+                          softly
+                              .assertThat(replayEntries)
+                              .describedAs(
+                                  "The state column '%s' has different entries after replay",
+                                  column)
+                              .containsExactlyInAnyOrderEntriesOf(processingEntries);
+                        }
+                      });
+
+              softly.assertAll();
             });
-
-    softly.assertAll();
   }
 
   private static TestCase testCase(final String description) {

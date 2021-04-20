@@ -16,7 +16,6 @@ import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -45,12 +44,10 @@ class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
       if (scopeInstance != null && scopeInstance.isActive()) {
 
-        // TODO (#6172) move to somewhere else
-        elementInstance.setState(ProcessInstanceIntent.ELEMENT_COMPLETING);
         elementInstance.setJobKey(-1);
         elementInstanceState.updateInstance(elementInstance);
-        // TODO move to somewhere else
 
+        // no event should be triggered for the element instance afterward
         eventScopeInstanceState.shutdownInstance(elementInstanceKey);
 
         variableState.setTemporaryVariables(elementInstanceKey, value.getVariablesBuffer());

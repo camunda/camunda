@@ -32,11 +32,13 @@ class MappedJournalSegmentReader {
   private JournalRecord currentEntry;
   private JournalRecord nextEntry;
   private final JournalRecordReaderUtil recordReader;
+  private final int descriptorLength;
 
   MappedJournalSegmentReader(
       final ByteBuffer buffer, final JournalSegment segment, final JournalIndex index) {
     this.index = index;
     this.segment = segment;
+    descriptorLength = segment.descriptor().length();
     recordReader = new JournalRecordReaderUtil(new SBESerializer());
     this.buffer = buffer;
     reset();
@@ -77,7 +79,7 @@ class MappedJournalSegmentReader {
   }
 
   public void reset() {
-    buffer.position(JournalSegmentDescriptor.BYTES);
+    buffer.position(descriptorLength);
     currentEntry = null;
     nextEntry = null;
     readNext(getNextIndex());

@@ -11,6 +11,7 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.partitions.PartitionContext;
 import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.broker.system.partitions.PartitionTransition;
+import io.zeebe.util.exception.UnrecoverableException;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
@@ -59,7 +60,6 @@ public class PartitionTransitionImpl implements PartitionTransition {
    * order. Previous we had the issue that all transitions have subscribe to the current transition,
    * which lead to undefined behavior.
    *
-   * @param currentTerm
    * @param partitionStepList the steps which should be installed on the transition
    */
   private ActorFuture<Void> enqueueTransition(
@@ -78,7 +78,13 @@ public class PartitionTransitionImpl implements PartitionTransition {
       final List<PartitionStep> steps) {
     closePartition()
         .onComplete(
-            (nothing, err) -> installPartition(currentTerm, future, new ArrayList<>(steps)));
+            (nothing, err) -> {
+              if (err instanceof UnrecoverableException) {
+                future.completeExceptionally(err);
+              } else {
+                installPartition(currentTerm, future, new ArrayList<>(steps));
+              }
+            });
   }
 
   private void installPartition(
@@ -95,18 +101,24 @@ public class PartitionTransitionImpl implements PartitionTransition {
     }
 
     final PartitionStep step = steps.remove(0);
-    step.open(currentTerm, context)
-        .onComplete(
-            (value, err) -> {
-              if (err != null) {
-                LOG.error("Expected to open step '{}' but failed with", step.getName(), err);
-                tryCloseStep(step);
-                future.completeExceptionally(err);
-              } else {
-                openedSteps.add(step);
-                installPartition(currentTerm, future, steps);
-              }
-            });
+    try {
+      step.open(currentTerm, context)
+          .onComplete(
+              (value, err) -> {
+                if (err != null) {
+                  LOG.error("Expected to open step '{}' but failed with", step.getName(), err);
+                  tryCloseStep(step);
+                  future.completeExceptionally(err);
+                } else {
+                  openedSteps.add(step);
+                  installPartition(currentTerm, future, steps);
+                }
+              });
+    } catch (final Exception e) {
+      LOG.error("Expected to open step '{}' but failed with", step.getName(), e);
+      tryCloseStep(step);
+      future.completeExceptionally(e);
+    }
   }
 
   private void tryCloseStep(final PartitionStep step) {
@@ -127,11 +139,11 @@ public class PartitionTransitionImpl implements PartitionTransition {
 
   private CompletableActorFuture<Void> closeSteps(final List<PartitionStep> steps) {
     final var closingPartitionFuture = new CompletableActorFuture<Void>();
-    stepByStepClosing(closingPartitionFuture, steps, null);
+    closeNextStep(closingPartitionFuture, steps, null);
     return closingPartitionFuture;
   }
 
-  private void stepByStepClosing(
+  private void closeNextStep(
       final CompletableActorFuture<Void> future,
       final List<PartitionStep> steps,
       final Throwable throwable) {
@@ -150,24 +162,34 @@ public class PartitionTransitionImpl implements PartitionTransition {
     final PartitionStep step = steps.remove(0);
     LOG.debug("Closing Zeebe-Partition-{}: {}", context.getPartitionId(), step.getName());
 
-    final ActorFuture<Void> closeFuture = step.close(context);
-    closeFuture.onComplete(
-        (v, closingError) -> {
-          if (closingError == null) {
-            LOG.debug(
-                "Closing Zeebe-Partition-{}: {} closed successfully",
-                context.getPartitionId(),
-                step.getName());
-          } else {
-            LOG.error(
-                "Closing Zeebe-Partition-{}: {} failed to close. Closing remaining steps",
-                context.getPartitionId(),
-                step.getName(),
-                closingError);
-          }
+    try {
+      step.close(context)
+          .onComplete(
+              (v, closingError) -> {
+                if (closingError == null) {
+                  LOG.debug(
+                      "Closing Zeebe-Partition-{}: {} closed successfully",
+                      context.getPartitionId(),
+                      step.getName());
+                } else {
+                  LOG.error(
+                      "Closing Zeebe-Partition-{}: {} failed to close. Closing remaining steps",
+                      context.getPartitionId(),
+                      step.getName(),
+                      closingError);
+                }
 
-          openedSteps.remove(step);
-          stepByStepClosing(future, steps, throwable != null ? throwable : closingError);
-        });
+                openedSteps.remove(step);
+                closeNextStep(future, steps, throwable != null ? throwable : closingError);
+              });
+    } catch (final Exception e) {
+      LOG.error(
+          "Zeebe-Partition-{}: Step {} failed to close with uncaught exception",
+          context.getPartitionId(),
+          step.getName(),
+          e);
+      openedSteps.remove(step);
+      closeNextStep(future, steps, e);
+    }
   }
 }

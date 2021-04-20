@@ -18,6 +18,7 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.util.exception.UnrecoverableException;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
@@ -307,8 +308,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     if (!openFuture.isDone()) {
       openFuture.completeExceptionally(throwable);
     }
+
     if (failureListener != null) {
-      failureListener.onFailure();
+      if (throwable instanceof UnrecoverableException) {
+        failureListener.onUnrecoverableFailure();
+      } else {
+        failureListener.onFailure();
+      }
     }
   }
 

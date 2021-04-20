@@ -9,9 +9,17 @@ package io.zeebe.engine.metrics;
 
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
 public final class ProcessEngineMetrics {
+
+  private static final String ORGANIZATION_ID =
+      System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
+
+  private static final String ACTION_ACTIVATED = "activated";
+  private static final String ACTION_COMPLETED = "completed";
+  private static final String ACTION_TERMINATED = "terminated";
 
   private static final Counter ELEMENT_INSTANCE_EVENTS =
       Counter.build()
@@ -27,6 +35,14 @@ public final class ProcessEngineMetrics {
           .name("running_process_instances_total")
           .help("Number of running process instances")
           .labelNames("partition")
+          .register();
+
+  private static final Counter EXECUTED_INSTANCES =
+      Counter.build()
+          .namespace("zeebe")
+          .name("executed_instances_total")
+          .help("Number of executed instances")
+          .labelNames("organizationId", "type", "action", "partition")
           .register();
 
   private final String partitionIdLabel;
@@ -47,31 +63,57 @@ public final class ProcessEngineMetrics {
     RUNNING_PROCESS_INSTANCES.labels(partitionIdLabel).dec();
   }
 
-  public void elementInstanceActivated(final BpmnElementType elementType) {
-    elementInstanceEvent("activated", elementType);
+  private void increaseRootProcessInstance(final String action) {
+    EXECUTED_INSTANCES
+        .labels(ORGANIZATION_ID, "ROOT_PROCESS_INSTANCE", action, partitionIdLabel)
+        .inc();
+  }
+
+  public void elementInstanceActivated(final BpmnElementContext context) {
+    final BpmnElementType elementType = context.getBpmnElementType();
+    elementInstanceEvent(ACTION_ACTIVATED, elementType);
 
     if (isProcessInstance(elementType)) {
       processInstanceCreated();
     }
+
+    if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
+      increaseRootProcessInstance(ACTION_ACTIVATED);
+    }
   }
 
-  public void elementInstanceCompleted(final BpmnElementType elementType) {
-    elementInstanceEvent("completed", elementType);
+  public void elementInstanceCompleted(final BpmnElementContext context) {
+    final BpmnElementType elementType = context.getBpmnElementType();
+    elementInstanceEvent(ACTION_COMPLETED, elementType);
 
     if (isProcessInstance(elementType)) {
       processInstanceFinished();
     }
+
+    if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
+      increaseRootProcessInstance(ACTION_COMPLETED);
+    }
   }
 
-  public void elementInstanceTerminated(final BpmnElementType elementType) {
-    elementInstanceEvent("terminated", elementType);
+  public void elementInstanceTerminated(final BpmnElementContext context) {
+    final BpmnElementType elementType = context.getBpmnElementType();
+    elementInstanceEvent(ACTION_TERMINATED, elementType);
 
     if (isProcessInstance(elementType)) {
       processInstanceFinished();
+    }
+
+    if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
+      increaseRootProcessInstance(ACTION_TERMINATED);
     }
   }
 
   private boolean isProcessInstance(final BpmnElementType elementType) {
     return BpmnElementType.PROCESS == elementType;
+  }
+
+  private boolean isRootProcessInstance(
+      final BpmnElementType elementType, final long parentProcessInstanceKey) {
+    return isProcessInstance(elementType) && parentProcessInstanceKey == -1;
   }
 }

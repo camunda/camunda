@@ -47,11 +47,11 @@ import io.atomix.raft.roles.PassiveRole;
 import io.atomix.raft.roles.PromotableRole;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.storage.StorageException;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
@@ -153,7 +153,7 @@ public class RaftContext implements AutoCloseable {
 
     // Construct the core log, reader, writer, and compactor.
     raftLog = storage.openLog();
-    logReader = raftLog.openReader(1, RaftLogReader.Mode.ALL);
+    logReader = raftLog.openReader(RaftLogReader.Mode.ALL);
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -373,6 +373,7 @@ public class RaftContext implements AutoCloseable {
       if (raftLog.shouldFlushExplicitly() && isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
+        setLastWrittenIndex(commitIndex);
       }
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
@@ -898,6 +899,10 @@ public class RaftContext implements AutoCloseable {
       meta.storeVote(lastVotedFor);
       log.debug("Set term {}", term);
     }
+  }
+
+  public void setLastWrittenIndex(final long index) {
+    meta.storeLastWrittenIndex(index);
   }
 
   /**

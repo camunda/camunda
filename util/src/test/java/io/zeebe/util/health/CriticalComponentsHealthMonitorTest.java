@@ -133,6 +133,28 @@ public class CriticalComponentsHealthMonitorTest {
     assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
+  @Test
+  public void shouldMonitorComponentDeath() {
+    // given
+    final ControllableComponent component1 = new ControllableComponent();
+    final ControllableComponent component2 = new ControllableComponent();
+
+    monitor.registerComponent("comp1", component1);
+    monitor.registerComponent("comp2", component2);
+    waitUntilAllDone();
+
+    // when/then
+    component1.setHealthStatus(HealthStatus.UNHEALTHY);
+    component2.setHealthStatus(HealthStatus.DEAD);
+    waitUntilAllDone();
+    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.DEAD);
+
+    // when/then
+    component1.setHealthStatus(HealthStatus.HEALTHY);
+    waitUntilAllDone();
+    assertThat(monitor.getHealthStatus()).isEqualTo(HealthStatus.DEAD);
+  }
+
   private void waitUntilAllDone() {
     actorControl.call(() -> null).join();
   }
@@ -156,6 +178,9 @@ public class CriticalComponentsHealthMonitorTest {
               break;
             case UNHEALTHY:
               failureListener.onFailure();
+              break;
+            case DEAD:
+              failureListener.onUnrecoverableFailure();
               break;
             default:
               break;

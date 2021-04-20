@@ -115,9 +115,8 @@ public final class CancelProcessInstanceTest {
             .asList();
 
     assertThat(processEvents)
-        .hasSize(5)
         .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
-        .containsSequence(
+        .containsSubsequence(
             tuple("", CANCEL),
             tuple("PROCESS", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
@@ -178,12 +177,14 @@ public final class CancelProcessInstanceTest {
             .asList();
 
     assertThat(processEvents)
-        .hasSize(7)
+        .hasSize(10)
         .extracting(e -> e.getValue().getElementId(), e -> e.getIntent())
-        .containsSequence(
+        .containsSubsequence(
             tuple("", ProcessInstanceIntent.CANCEL),
             tuple("SUB_PROCESS_PROCESS", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("subProcess", ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple("subProcess", ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple("task", ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", ELEMENT_TERMINATED),
             tuple("subProcess", ELEMENT_TERMINATED),
@@ -316,7 +317,7 @@ public final class CancelProcessInstanceTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
-            .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATING)
+            .withIntent(ProcessInstanceIntent.TERMINATE_ELEMENT)
             .getFirst();
 
     final Record<JobRecordValue> jobCancelCmd =

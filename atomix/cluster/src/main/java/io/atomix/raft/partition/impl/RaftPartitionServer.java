@@ -30,10 +30,10 @@ import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.StorageException;
 import io.atomix.utils.Managed;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
@@ -192,8 +192,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     server.getContext().getLogCompactor().setCompactableIndex(index);
   }
 
-  public RaftLogReader openReader(final long index, final Mode mode) {
-    return server.getContext().getLog().openReader(index, mode);
+  public RaftLogReader openReader(final Mode mode) {
+    return server.getContext().getLog().openReader(mode);
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {

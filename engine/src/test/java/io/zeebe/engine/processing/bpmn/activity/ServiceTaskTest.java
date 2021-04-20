@@ -16,6 +16,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -61,7 +62,7 @@ public final class ServiceTaskTest {
 
     // then
     final Record<JobRecordValue> job =
-        RecordingExporter.jobRecords(JobIntent.CREATE)
+        RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -81,7 +82,7 @@ public final class ServiceTaskTest {
 
     // then
     final Record<JobRecordValue> job =
-        RecordingExporter.jobRecords(JobIntent.CREATE)
+        RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -101,10 +102,12 @@ public final class ServiceTaskTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(2))
-        .extracting(Record::getIntent)
+                .limit(3))
+        .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+            tuple(RecordType.COMMAND, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
     final Record<ProcessInstanceRecordValue> serviceTask =
         RecordingExporter.processInstanceRecords()
@@ -141,7 +144,7 @@ public final class ServiceTaskTest {
             .getFirst();
 
     final Record<JobRecordValue> job =
-        RecordingExporter.jobRecords(JobIntent.CREATE)
+        RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -170,7 +173,7 @@ public final class ServiceTaskTest {
 
     // then
     final Record<JobRecordValue> job =
-        RecordingExporter.jobRecords(JobIntent.CREATE)
+        RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 

@@ -35,10 +35,19 @@ public interface BpmnElementContext {
 
   BpmnElementType getBpmnElementType();
 
+  // TODO (saig0): use an immutable interface for the record value (#6800)
+  /**
+   * Caution! Don't modify the value to avoid unexpected side-effects.
+   *
+   * @return the value of the record that is currently processed
+   */
   ProcessInstanceRecord getRecordValue();
 
   ProcessInstanceIntent getIntent();
 
   BpmnElementContext copy(
       long elementInstanceKey, ProcessInstanceRecord recordValue, ProcessInstanceIntent intent);
+
+  // TODO (saig0): remove when all processors are migrated (#6202)
+  boolean isInReprocessingMode();
 }

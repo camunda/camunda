@@ -16,11 +16,14 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -35,6 +38,8 @@ public final class MultiInstanceReceiveTaskTest {
   private static final String MESSAGE_NAME = "test";
   private static final String INPUT_COLLECTION = "items";
   private static final String INPUT_ELEMENT = "item";
+  private static final String OUTPUT_ELEMENT = "result";
+  private static final String OUTPUT_COLLECTION = "results";
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -46,7 +51,9 @@ public final class MultiInstanceReceiveTaskTest {
                       .multiInstance(
                           b ->
                               b.zeebeInputCollectionExpression(INPUT_COLLECTION)
-                                  .zeebeInputElement(INPUT_ELEMENT)))
+                                  .zeebeInputElement(INPUT_ELEMENT)
+                                  .zeebeOutputElementExpression(OUTPUT_ELEMENT)
+                                  .zeebeOutputCollection(OUTPUT_COLLECTION)))
           .endEvent()
           .done();
 
@@ -156,5 +163,47 @@ public final class MultiInstanceReceiveTaskTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .hasSize(3);
+  }
+
+  @Test
+  public void shouldCollectOutputFromChildInstance() {
+    // given
+    final var inputCollection = Arrays.asList(10, 20, 30);
+    ENGINE.deployment().withXmlResource(PROCESS).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION, inputCollection)
+            .create();
+
+    // when
+    inputCollection.stream()
+        .map(Objects::toString)
+        .forEach(
+            element ->
+                ENGINE
+                    .message()
+                    .withName(MESSAGE_NAME)
+                    .withCorrelationKey(element)
+                    .withTimeToLive(Duration.ofSeconds(3).toMillis())
+                    .withVariables(Map.of(OUTPUT_ELEMENT, element))
+                    .publish());
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+        .await();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withName("results")
+                .withScopeKey(processInstanceKey))
+        .extracting(r -> r.getValue().getValue())
+        .containsExactly("[\"10\",\"20\",\"30\"]");
   }
 }

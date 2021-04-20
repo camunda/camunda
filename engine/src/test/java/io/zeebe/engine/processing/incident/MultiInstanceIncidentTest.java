@@ -187,7 +187,7 @@ public final class MultiInstanceIncidentTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withRecordKey(incident.getValue().getElementInstanceKey())
-                .limit(2))
+                .limit(3))
         .extracting(Record::getIntent)
         .contains(ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }

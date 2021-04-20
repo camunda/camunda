@@ -18,6 +18,8 @@ run the command: `mvn clean install -DskipTests` in the root folder.
 
 > NOTE: The Go client and zbctl are built and tested with Go 1.15
 
+> NOTE: The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
+
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 ```
 dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.tar.gz

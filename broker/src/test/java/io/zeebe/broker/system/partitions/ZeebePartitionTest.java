@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.zeebe.util.exception.UnrecoverableException;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthStatus;
@@ -108,7 +109,7 @@ public class ZeebePartitionTest {
     verify(failureListener, only()).onRecovered();
   }
 
-  @Test()
+  @Test
   public void shouldStepDownAfterFailedLeaderTransition() throws InterruptedException {
     // given
     final ZeebePartition partition = new ZeebePartition(ctx, transition);
@@ -175,6 +176,36 @@ public class ZeebePartitionTest {
     order.verify(transition).toFollower(0L);
     order.verify(raft).goInactive();
     order.verify(transition).toInactive();
+  }
+
+  @Test
+  public void shouldGoInactiveIfTransitionHasUnrecoverableFailure() throws InterruptedException {
+    // given
+    final ZeebePartition partition = new ZeebePartition(ctx, transition);
+    schedulerRule.submitActor(partition);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    when(transition.toLeader(anyLong()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new UnrecoverableException("expected")));
+    when(transition.toInactive())
+        .then(
+            invocation -> {
+              latch.countDown();
+              return CompletableActorFuture.completed(null);
+            });
+    when(raft.getRole()).thenReturn(Role.LEADER);
+
+    // when
+    schedulerRule.workUntilDone();
+    assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+
+    // then
+    final InOrder order = inOrder(transition, raft);
+    order.verify(transition).toLeader(0L);
+    order.verify(transition).toInactive();
+    order.verify(raft).goInactive();
+    order.verifyNoMoreInteractions();
   }
 
   private static class NoopTransition implements PartitionTransition {

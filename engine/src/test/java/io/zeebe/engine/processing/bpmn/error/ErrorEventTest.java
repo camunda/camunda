@@ -75,20 +75,20 @@ public class ErrorEventTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSequence(
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EVENT_OCCURRED),
+        .containsSubsequence(
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -160,8 +160,7 @@ public class ErrorEventTest {
     // then
     assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey).jobRecords())
         .extracting(Record::getIntent)
-        .containsExactly(
-            JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
+        .containsExactly(JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
   }
 
   @Test
@@ -222,7 +221,7 @@ public class ErrorEventTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -320,7 +319,6 @@ public class ErrorEventTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
@@ -359,11 +357,11 @@ public class ErrorEventTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.EVENT_OCCURRED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATED),

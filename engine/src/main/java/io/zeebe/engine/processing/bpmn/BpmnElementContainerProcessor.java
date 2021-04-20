@@ -35,14 +35,27 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
       final BpmnElementContext childContext);
 
   /**
-   * A child element is completed. Leave the element container if it has no more active child
-   * elements.
+   * The execution path of a child element is about to be completed.
    *
    * @param element the instance of the BPMN element container
    * @param flowScopeContext process instance-related data of the element container
-   * @param childContext process instance-related data of the child element that is completed
+   * @param childContext process instance-related data of the child element that is completed. At
+   *     this point in time the element is still present in the state
    */
-  void onChildCompleted(
+  void beforeExecutionPathCompleted(
+      final T element,
+      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext childContext);
+
+  /**
+   * The execution path of a child element has completed.
+   *
+   * @param element the instance of the BPMN element container
+   * @param flowScopeContext process instance-related data of the element container
+   * @param childContext process instance-related data of the child element that is completed. At
+   *     this point in time the element has already been removed from the state.
+   */
+  void afterExecutionPathCompleted(
       final T element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext);

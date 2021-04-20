@@ -15,6 +15,7 @@ import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
+import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -38,6 +39,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final TypedStreamWriter streamWriter;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
+  private final BpmnJobBehavior jobBehavior;
+  private final StateWriter stateWriter;
 
   public BpmnBehaviorsImpl(
       final ExpressionProcessor expressionBehavior,
@@ -52,7 +55,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
           processorLookup,
       final Writers writers) {
 
-    final var stateWriter = writers.state();
+    stateWriter = writers.state();
     final var commandWriter = writers.command();
     this.streamWriter = streamWriter;
     this.expressionBehavior = expressionBehavior;
@@ -89,6 +92,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(zeebeState, eventTriggerBehavior, writers);
+    jobBehavior =
+        new BpmnJobBehavior(zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers);
   }
 
   @Override
@@ -149,5 +154,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior() {
     return bufferedMessageStartEventBehavior;
+  }
+
+  @Override
+  public BpmnJobBehavior jobBehavior() {
+    return jobBehavior;
   }
 }

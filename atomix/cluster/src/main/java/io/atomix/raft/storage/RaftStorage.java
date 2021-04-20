@@ -22,13 +22,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
-import io.atomix.storage.StorageException;
-import io.atomix.storage.buffer.FileBuffer;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
 import org.agrona.IoUtil;
 
@@ -130,15 +129,11 @@ public final class RaftStorage {
     final File file = new File(directory, String.format(".%s.lock", prefix));
     try {
       if (file.createNewFile()) {
-        try (final FileBuffer buffer = FileBuffer.allocate(file)) {
-          buffer.writeString(id).flush();
-        }
+        Files.writeString(file.toPath(), id, StandardOpenOption.WRITE);
         return true;
       } else {
-        try (final FileBuffer buffer = FileBuffer.allocate(file)) {
-          final String lock = buffer.readString();
-          return lock != null && lock.equals(id);
-        }
+        final String lock = Files.readString(file.toPath());
+        return lock != null && lock.equals(id);
       }
     } catch (final IOException e) {
       throw new StorageException("Failed to acquire storage lock");

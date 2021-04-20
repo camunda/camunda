@@ -11,12 +11,14 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
@@ -29,6 +31,7 @@ import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
@@ -40,6 +43,8 @@ public class EventTriggerBehavior {
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variablesState;
+
+  private final VariableBehavior variableBehavior;
 
   public EventTriggerBehavior(
       final KeyGenerator keyGenerator,
@@ -54,6 +59,8 @@ public class EventTriggerBehavior {
     elementInstanceState = zeebeState.getElementInstanceState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     variablesState = zeebeState.getVariableState();
+
+    variableBehavior = new VariableBehavior(variablesState, writers.state(), keyGenerator);
   }
 
   private ProcessInstanceRecord getEventRecord(
@@ -76,11 +83,9 @@ public class EventTriggerBehavior {
     sideEffectQueue.flush();
   }
 
-  private void publishActivatingEvent(
-      final long elementInstanceKey, final ProcessInstanceRecord eventRecord) {
-
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+  private void publishActivatingEvent(final ProcessInstanceRecord eventRecord) {
+    final var key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
   }
 
   private void deferActivatingEvent(
@@ -104,7 +109,10 @@ public class EventTriggerBehavior {
     final var flowScopeElementInstance =
         elementInstanceState.getInstance(flowScopeElementInstanceKey);
 
-    if (flowScopeElementInstance.getInterruptingEventKey() > 0) {
+    if (flowScopeElementInstance.isInterrupted()
+        && !flowScopeElementInstance
+            .getInterruptingElementId()
+            .equals(startEvent.getEventSubProcess())) {
       // the flow scope is already interrupted - discard this event
       return;
     }
@@ -125,44 +133,37 @@ public class EventTriggerBehavior {
                   .setFlowScopeKey(flowScopeElementInstanceKey)
                   .setElementId(eventSubProcessElementId);
 
-          final long eventElementInstanceKey = keyGenerator.nextKey();
           if (startEvent.interrupting()) {
-
-            triggerInterruptingEventSubProcess(flowScopeContext, record, eventElementInstanceKey);
-
+            unsubscribeFromEvents(flowScopeContext);
+            triggerInterruptingEventSubProcess(flowScopeContext, record);
           } else {
+            eventScopeInstanceState.deleteTrigger(
+                flowScopeContext.getElementInstanceKey(), eventTrigger.getEventKey());
             // activate non-interrupting event sub-process
-            publishActivatingEvent(eventElementInstanceKey, record);
+            publishActivatingEvent(record);
           }
-
-          return eventElementInstanceKey;
+          // the key is used to set temporary variables on
+          // we moved that logic for event sub process already, but not for boundary events
+          // we still need to return a key until they are migrated; -1 is ignored.
+          return -1L;
         });
   }
 
   private void triggerInterruptingEventSubProcess(
-      final BpmnElementContext flowScopeContext,
-      final ProcessInstanceRecord eventRecord,
-      final long eventElementInstanceKey) {
+      final BpmnElementContext flowScopeContext, final ProcessInstanceRecord eventRecord) {
 
     unsubscribeFromEvents(flowScopeContext);
 
     final var noActiveChildInstances = terminateChildInstances(flowScopeContext);
     if (noActiveChildInstances) {
       // activate interrupting event sub-process
-      publishActivatingEvent(eventElementInstanceKey, eventRecord);
-
-    } else {
-      // wait until child instances are terminated
-      deferActivatingEvent(
-          flowScopeContext.getElementInstanceKey(), eventElementInstanceKey, eventRecord);
+      publishActivatingEvent(eventRecord);
     }
-
-    elementInstanceState.updateInstance(
-        flowScopeContext.getElementInstanceKey(),
-        flowScopeInstance -> flowScopeInstance.setInterruptingEventKey(eventElementInstanceKey));
   }
 
   private boolean terminateChildInstances(final BpmnElementContext flowScopeContext) {
+    // we need to go to the parent and delete all childs to trigger the interrupting event sub
+    // process
     final var childInstances =
         elementInstanceState.getChildren(flowScopeContext.getElementInstanceKey()).stream()
             .map(
@@ -273,11 +274,72 @@ public class EventTriggerBehavior {
     final var eventElementInstanceKey = eventHandler.applyAsLong(eventTrigger);
 
     final var eventVariables = eventTrigger.getVariables();
-    if (eventVariables != null && eventVariables.capacity() > 0) {
+    if (eventElementInstanceKey > 0 && eventVariables != null && eventVariables.capacity() > 0) {
       variablesState.setTemporaryVariables(eventElementInstanceKey, eventVariables);
     }
+  }
 
-    eventScopeInstanceState.deleteTrigger(
-        context.getElementInstanceKey(), eventTrigger.getEventKey());
+  public void activateTriggeredEvent(
+      final ExecutableFlowElement triggeredEvent,
+      final long flowScopeKey,
+      final ProcessInstanceRecord elementRecord,
+      final DirectBuffer variables) {
+
+    eventRecord.reset();
+    eventRecord.wrap(elementRecord);
+    eventRecord.setFlowScopeKey(flowScopeKey);
+
+    final var flowScope = triggeredEvent.getFlowScope();
+    if (flowScope == null) {
+      throw new IllegalStateException(
+          "Expected to activate triggered event, but flow scope is null");
+    }
+
+    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+
+      // first activate the event sub process
+      eventRecord
+          .setBpmnElementType(BpmnElementType.EVENT_SUB_PROCESS)
+          .setElementId(flowScope.getId());
+
+      final var eventSubProcessKey = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(
+          eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+
+      // event sub process is not yet migrated
+      // todo(#6196): on migration of event sub process we want immediately move activated for the
+      // event sub process
+      //      stateWriter.appendFollowUpEvent(
+      //          eventSubProcessKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
+      //      eventRecord.setFlowScopeKey(eventSubProcessKey);
+
+      // event sub process will activate start event
+      return; // todo(#6196) remove this line after migrating event sub process
+      // now we can trigger the start event
+    }
+
+    eventRecord
+        .setBpmnElementType(triggeredEvent.getElementType())
+        .setElementId(triggeredEvent.getId());
+
+    final var eventInstanceKey = keyGenerator.nextKey();
+    // transition to activating and activated directly to pass the variables to this instance
+    stateWriter.appendFollowUpEvent(
+        eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
+    stateWriter.appendFollowUpEvent(
+        eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
+
+    if (variables.capacity() > 0) {
+      // set as local variables of the element instance to use them for the variable output
+      // mapping
+      variableBehavior.mergeLocalDocument(
+          eventInstanceKey,
+          elementRecord.getProcessDefinitionKey(),
+          elementRecord.getProcessInstanceKey(),
+          variables);
+    }
+
+    commandWriter.appendFollowUpCommand(
+        eventInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, eventRecord);
   }
 }

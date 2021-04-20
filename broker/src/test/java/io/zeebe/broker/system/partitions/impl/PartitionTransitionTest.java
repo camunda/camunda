@@ -14,6 +14,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.system.partitions.PartitionContext;
+import io.zeebe.util.exception.UnrecoverableException;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.Collections;
@@ -175,6 +176,74 @@ public class PartitionTransitionTest {
     order.verify(failStep).close(ctx);
     order.verify(leaderStep).close(ctx);
     order.verify(followerStep).open(ctx);
+    order.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldHandleExceptionThrownByStepOpen() {
+    // given
+    final TestPartitionStep leaderStep = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep failStep =
+        spy(
+            TestPartitionStep.builder()
+                .throwOnOpen(new UnrecoverableException("expected"))
+                .build());
+    final PartitionTransitionImpl transition =
+        new PartitionTransitionImpl(ctx, List.of(leaderStep, failStep), List.of());
+
+    // when
+    final Actor actor =
+        Actor.wrap(
+            actorCtrl ->
+                transition
+                    .toLeader(1)
+                    .onComplete(
+                        (none, err) -> assertThat(err).isInstanceOf(UnrecoverableException.class)));
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder order = inOrder(leaderStep, failStep);
+    order.verify(leaderStep).open(ctx);
+    order.verify(failStep).open(ctx);
+    order.verify(failStep).close(ctx);
+    order.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldHandleExceptionThrownInClose() {
+    // given
+    final TestPartitionStep leaderStep = spy(TestPartitionStep.builder().build());
+    final TestPartitionStep failStep =
+        spy(
+            TestPartitionStep.builder()
+                .throwOnClose(new UnrecoverableException("expected"))
+                .build());
+    final PartitionTransitionImpl transition =
+        new PartitionTransitionImpl(ctx, List.of(leaderStep, failStep), List.of());
+
+    // when
+    final Actor actor =
+        Actor.wrap(
+            actorCtrl -> {
+              transition.toLeader(1).onComplete((none, err) -> assertThat(err).isNull());
+              transition
+                  .toFollower(2)
+                  .onComplete(
+                      (n, err) -> assertThat(err).isInstanceOf(UnrecoverableException.class));
+            });
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder order = inOrder(leaderStep, failStep);
+    order.verify(leaderStep).open(ctx);
+    order.verify(failStep).open(ctx);
+    order.verify(failStep).close(ctx);
+    order.verify(leaderStep).close(ctx);
+    order.verify(leaderStep).getName();
     order.verifyNoMoreInteractions();
   }
 }

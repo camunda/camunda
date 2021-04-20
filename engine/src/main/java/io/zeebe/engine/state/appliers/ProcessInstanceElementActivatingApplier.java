@@ -11,10 +11,10 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventE
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -48,12 +48,34 @@ final class ProcessInstanceElementActivatingApplier
 
     createEventScope(elementInstanceKey, value);
 
+    final var processDefinitionKey = value.getProcessDefinitionKey();
+    final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
+    if (eventTrigger != null && value.getElementIdBuffer().equals(eventTrigger.getElementId())) {
+      variableState.setTemporaryVariables(elementInstanceKey, eventTrigger.getVariables());
+      eventScopeInstanceState.deleteTrigger(processDefinitionKey, eventTrigger.getEventKey());
+    }
+
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
     elementInstanceState.newInstance(
         flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     if (flowScopeInstance == null) {
       // process instance level
+      final var parentElementInstance =
+          elementInstanceState.getInstance(value.getParentElementInstanceKey());
+      if (parentElementInstance == null) {
+        // root process (not a child process)
+        return;
+      }
+
+      // this check is not really necessary: if parentElementInstance exists,
+      // it should always be a call-activity, but let's try to be safe
+      final var parentElementType = parentElementInstance.getValue().getBpmnElementType();
+      if (parentElementType == BpmnElementType.CALL_ACTIVITY) {
+        parentElementInstance.setCalledChildInstanceKey(elementInstanceKey);
+        elementInstanceState.updateInstance(parentElementInstance);
+      }
+
       return;
     }
 
@@ -78,8 +100,8 @@ final class ProcessInstanceElementActivatingApplier
     if (flowScopeElementType == BpmnElementType.MULTI_INSTANCE_BODY
         && MigratedStreamProcessors.isMigrated(currentElementType)) {
       // update the loop counter of the multi-instance body (starting by 1)
-      elementInstanceState.updateInstance(
-          value.getFlowScopeKey(), ElementInstance::incrementMultiInstanceLoopCounter);
+      flowScopeInstance.incrementMultiInstanceLoopCounter();
+      elementInstanceState.updateInstance(flowScopeInstance);
 
       // set the loop counter of the inner instance
       final var loopCounter = flowScopeInstance.getMultiInstanceLoopCounter();
@@ -167,12 +189,20 @@ final class ProcessInstanceElementActivatingApplier
 
   private void createEventScope(
       final long elementInstanceKey, final ProcessInstanceRecord elementRecord) {
+    Class<? extends ExecutableFlowNode> flowElementClass = ExecutableFlowNode.class;
+
+    // in the case of the multi instance body, it shares the same element ID as that of its
+    // contained activity; this means when doing a processState.getFlowElement, you don't know which
+    // you will get, and the boundary events will only be bound to the multi instance
+    if (elementRecord.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      flowElementClass = ExecutableMultiInstanceBody.class;
+    }
 
     final var flowElement =
         processState.getFlowElement(
             elementRecord.getProcessDefinitionKey(),
             elementRecord.getElementIdBuffer(),
-            ExecutableFlowNode.class);
+            flowElementClass);
 
     if (flowElement instanceof ExecutableCatchEventSupplier) {
       final var eventSupplier = (ExecutableCatchEventSupplier) flowElement;

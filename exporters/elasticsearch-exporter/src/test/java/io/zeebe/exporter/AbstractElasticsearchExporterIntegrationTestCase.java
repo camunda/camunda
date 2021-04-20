@@ -23,6 +23,7 @@ import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +49,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   @Before
   public void setUp() {
-    elastic = new ElasticsearchContainer();
+    elastic = new ElasticsearchContainer().withEnv("ES_JAVA_OPTS", "-Xms750m -Xmx750m");
   }
 
   @After
@@ -89,11 +90,17 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   }
 
   protected void assertRecordExported(final Record<?> record) {
-    final Map<String, Object> source = esClient.getDocument(record);
-    assertThat(source)
-        .withFailMessage("Failed to fetch record %s from elasticsearch", record)
-        .isNotNull()
-        .isEqualTo(recordToMap(record));
+    Awaitility.await("Expected the record to be exported: " + record.toJson())
+        .ignoreExceptionsInstanceOf(ElasticsearchExporterException.class)
+        .untilAsserted(
+            () -> {
+              final Map<String, Object> source = esClient.getDocument(record);
+
+              assertThat(source)
+                  .withFailMessage("Failed to fetch record %s from elasticsearch", record)
+                  .isNotNull()
+                  .isEqualTo(recordToMap(record));
+            });
   }
 
   protected ElasticsearchTestClient createElasticsearchClient(

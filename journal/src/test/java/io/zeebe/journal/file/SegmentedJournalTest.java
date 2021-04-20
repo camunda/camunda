@@ -331,6 +331,36 @@ class SegmentedJournalTest {
     assertThat(reader.hasNext()).isFalse();
   }
 
+  @Test
+  void shouldUpdateIndexMappingsAfterRestart() {
+    // given
+    final int entriesPerSegment = 10;
+    long asqn = 1;
+    SegmentedJournal journal = openJournal(entriesPerSegment);
+    for (int i = 0; i < 2 * journalIndexDensity; i++) {
+      journal.append(asqn++, data);
+    }
+    final var indexBeforeClose = journal.getJournalIndex();
+
+    // when
+    journal.close();
+    journal = openJournal(entriesPerSegment);
+
+    // then
+    final var firstIndexedPosition = journalIndexDensity;
+    final var secondIndexedPosition = 2 * journalIndexDensity;
+    final JournalIndex indexAfterRestart = journal.getJournalIndex();
+
+    assertThat(indexAfterRestart.lookup(firstIndexedPosition).index())
+        .isEqualTo(firstIndexedPosition);
+    assertThat(indexAfterRestart.lookup(secondIndexedPosition).index())
+        .isEqualTo(secondIndexedPosition);
+    assertThat(indexAfterRestart.lookup(firstIndexedPosition).position())
+        .isEqualTo(indexBeforeClose.lookup(firstIndexedPosition).position());
+    assertThat(indexAfterRestart.lookup(secondIndexedPosition).position())
+        .isEqualTo(indexBeforeClose.lookup(secondIndexedPosition).position());
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
@@ -338,7 +368,8 @@ class SegmentedJournalTest {
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
-        .withMaxSegmentSize((int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.BYTES)
+        .withMaxSegmentSize(
+            (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
         .withMaxEntrySize(entrySize)
         .withJournalIndexDensity(journalIndexDensity)
         .build();

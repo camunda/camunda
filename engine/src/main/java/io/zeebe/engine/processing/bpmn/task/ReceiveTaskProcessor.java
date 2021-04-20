@@ -54,7 +54,9 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              final var completed = stateTransitionBehavior.transitionToCompleted(context);
+              final var completed =
+                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                      element, context);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));
@@ -71,7 +73,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
-              eventSubscriptionBehavior.activateTriggeredEvent(terminated, eventTrigger);
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  terminated.getFlowScopeKey(), terminated, eventTrigger);
             },
             () -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);

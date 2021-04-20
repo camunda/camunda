@@ -85,7 +85,7 @@ public final class EmbeddedSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -119,7 +119,7 @@ public final class EmbeddedSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -186,7 +186,7 @@ public final class EmbeddedSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
@@ -231,8 +231,7 @@ public final class EmbeddedSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
-            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.EVENT_OCCURRED),
+        .containsSubsequence(
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
@@ -351,14 +350,15 @@ public final class EmbeddedSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
                 .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
@@ -387,9 +387,10 @@ public final class EmbeddedSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
                 .limitToProcessInstanceTerminated())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),

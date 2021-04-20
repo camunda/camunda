@@ -12,39 +12,34 @@ import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.immutable.JobState.State;
-import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.Either;
+import io.zeebe.util.collection.Tuple;
 
 public final class ServiceTaskProcessor implements BpmnElementProcessor<ExecutableServiceTask> {
 
-  private final JobRecord jobCommand = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
-
   private final ExpressionProcessor expressionBehavior;
-  private final TypedCommandWriter commandWriter;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public ServiceTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
     expressionBehavior = behaviors.expressionBehavior();
-    commandWriter = behaviors.commandWriter();
     incidentBehavior = behaviors.incidentBehavior();
-    stateBehavior = behaviors.stateBehavior();
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
     variableMappingBehavior = behaviors.variableMappingBehavior();
+    stateBehavior = behaviors.stateBehavior();
+    jobBehavior = behaviors.jobBehavior();
   }
 
   @Override
@@ -53,113 +48,75 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivating(final ExecutableServiceTask element, final BpmnElementContext context) {
-
+  public void onActivate(final ExecutableServiceTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(ok -> evaluateJobExpressions(element, context))
         .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
-            failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void onActivated(final ExecutableServiceTask element, final BpmnElementContext context) {
-
-    final var scopeKey = context.getElementInstanceKey();
-    final Either<Failure, String> jobTypeOrFailure =
-        expressionBehavior.evaluateStringExpression(element.getType(), scopeKey);
-    jobTypeOrFailure
-        .flatMap(
-            jobType -> expressionBehavior.evaluateLongExpression(element.getRetries(), scopeKey))
-        .ifRightOrLeft(
-            retries -> createNewJob(context, element, jobTypeOrFailure.get(), retries.intValue()),
-            failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void onCompleting(final ExecutableServiceTask element, final BpmnElementContext context) {
-
-    // TODO have a look at JobCompletedEventApplier. It contains some logic that probably needs to
-    // be moved to this methods event applier
-    variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .ifRightOrLeft(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              stateTransitionBehavior.transitionToCompleted(context);
+            jobTypeAndRetries -> {
+              jobBehavior.createNewJob(
+                  context,
+                  element,
+                  jobTypeAndRetries.getLeft(),
+                  jobTypeAndRetries.getRight().intValue());
+              stateTransitionBehavior.transitionToActivated(context);
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onCompleted(final ExecutableServiceTask element, final BpmnElementContext context) {
-
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-
-    stateBehavior.removeElementInstance(context);
+  public void onComplete(final ExecutableServiceTask element, final BpmnElementContext context) {
+    variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .ifRightOrLeft(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              final var completed =
+                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
+                      element, context);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            },
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onTerminating(final ExecutableServiceTask element, final BpmnElementContext context) {
+  public void onTerminate(final ExecutableServiceTask element, final BpmnElementContext context) {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
     final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
-      cancelJob(jobKey);
+      jobBehavior.cancelJob(jobKey);
       incidentBehavior.resolveJobIncident(jobKey);
     }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
-
-    stateTransitionBehavior.transitionToTerminated(context);
-  }
-
-  @Override
-  public void onTerminated(final ExecutableServiceTask element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
-
     incidentBehavior.resolveIncidents(context);
 
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.removeElementInstance(context);
+    eventSubscriptionBehavior
+        .findEventTrigger(context)
+        .ifPresentOrElse(
+            eventTrigger -> {
+              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  terminated.getFlowScopeKey(), terminated, eventTrigger);
+            },
+            () -> {
+              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
+              stateTransitionBehavior.onElementTerminated(element, terminated);
+            });
   }
 
-  @Override
-  public void onEventOccurred(
+  private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
       final ExecutableServiceTask element, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
 
-    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
-  }
-
-  private void createNewJob(
-      final BpmnElementContext context,
-      final ExecutableServiceTask serviceTask,
-      final String jobType,
-      final int retries) {
-
-    jobCommand
-        .setType(jobType)
-        .setRetries(retries)
-        .setCustomHeaders(serviceTask.getEncodedHeaders())
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(serviceTask.getId())
-        .setElementInstanceKey(context.getElementInstanceKey());
-
-    commandWriter.appendNewCommand(JobIntent.CREATE, jobCommand);
-  }
-
-  private void cancelJob(final long jobKey) {
-    final State state = stateBehavior.getJobState().getState(jobKey);
-
-    if (state == State.ACTIVATABLE || state == State.ACTIVATED || state == State.FAILED) {
-      final JobRecord job = stateBehavior.getJobState().getJob(jobKey);
-      commandWriter.appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
-    }
+    return expressionBehavior
+        .evaluateStringExpression(element.getType(), scopeKey)
+        .flatMap(
+            jobType ->
+                expressionBehavior
+                    .evaluateLongExpression(element.getRetries(), scopeKey)
+                    .map(retries -> new Tuple<>(jobType, retries)));
   }
 }

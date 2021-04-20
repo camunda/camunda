@@ -44,9 +44,9 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadConfiguration() throws IOException {
+  public void shouldStoreAndLoadConfiguration() {
     // given
-    final Configuration config = getConfiguration();
+    final Configuration config = getConfiguration(1, 2);
     metaStore.storeConfiguration(config);
 
     // when
@@ -60,10 +60,10 @@ public class MetaStoreTest {
         .containsExactlyInAnyOrder(config.members().toArray(new RaftMember[0]));
   }
 
-  private Configuration getConfiguration() {
+  private Configuration getConfiguration(final long index, final long term) {
     return new Configuration(
-        1,
-        2,
+        index,
+        term,
         1234L,
         new ArrayList<>(
             Set.of(
@@ -82,7 +82,7 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadVote() throws IOException {
+  public void shouldStoreAndLoadVote() {
     // when
     metaStore.storeVote(new MemberId("id"));
 
@@ -93,7 +93,7 @@ public class MetaStoreTest {
   @Test
   public void shouldLoadExistingConfiguration() throws IOException {
     // given
-    final Configuration config = getConfiguration();
+    final Configuration config = getConfiguration(1, 2);
     metaStore.storeConfiguration(config);
 
     // when
@@ -158,5 +158,118 @@ public class MetaStoreTest {
   public void shouldLoadEmptyConfig() {
     // when -then
     assertThat(metaStore.loadConfiguration()).isNull();
+  }
+
+  @Test
+  public void shouldLoadLatestTermAndVoteAfterRestart() throws IOException {
+    //  given
+    metaStore.storeTerm(2L);
+    metaStore.storeVote(MemberId.from("0"));
+    metaStore.storeTerm(3L);
+    metaStore.storeVote(MemberId.from("1"));
+
+    // when
+    metaStore.close();
+    metaStore = new MetaStore(storage);
+
+    // then
+    assertThat(metaStore.loadTerm()).isEqualTo(3L);
+    assertThat(metaStore.loadVote().id()).isEqualTo("1");
+  }
+
+  @Test
+  public void shouldStoreConfigurationMultipleTimes() {
+    // given
+    final Configuration firstConfig = getConfiguration(1, 2);
+    metaStore.storeConfiguration(firstConfig);
+    final Configuration secondConfig = getConfiguration(3, 4);
+    metaStore.storeConfiguration(secondConfig);
+
+    // when
+    final Configuration readConfig = metaStore.loadConfiguration();
+
+    // then
+    assertThat(readConfig.index()).isEqualTo(secondConfig.index());
+    assertThat(readConfig.term()).isEqualTo(secondConfig.term());
+    assertThat(readConfig.time()).isEqualTo(secondConfig.time());
+    assertThat(readConfig.members())
+        .containsExactlyInAnyOrder(secondConfig.members().toArray(new RaftMember[0]));
+  }
+
+  @Test
+  public void shouldLoadLatestConfigurationAfterRestart() throws IOException {
+    // given
+    final Configuration firstConfig = getConfiguration(1, 2);
+    metaStore.storeConfiguration(firstConfig);
+    final Configuration secondConfig = getConfiguration(3, 4);
+    metaStore.storeConfiguration(secondConfig);
+
+    // when
+    metaStore.close();
+    metaStore = new MetaStore(storage);
+    final Configuration readConfig = metaStore.loadConfiguration();
+
+    // then
+    assertThat(readConfig.index()).isEqualTo(secondConfig.index());
+    assertThat(readConfig.term()).isEqualTo(secondConfig.term());
+    assertThat(readConfig.time()).isEqualTo(secondConfig.time());
+    assertThat(readConfig.members())
+        .containsExactlyInAnyOrder(secondConfig.members().toArray(new RaftMember[0]));
+  }
+
+  @Test
+  public void shouldStoreAndLoadLastWrittenIndex() {
+    // given
+    metaStore.storeLastWrittenIndex(5L);
+
+    // when/then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldStoreAndLoadLastWrittenIndexAfterRestart() throws IOException {
+    // given
+    metaStore.storeLastWrittenIndex(5L);
+
+    // when
+    metaStore.close();
+    metaStore = new MetaStore(storage);
+
+    // then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldLoadLatestWrittenIndex() throws IOException {
+    // given
+    metaStore.storeLastWrittenIndex(5L);
+
+    // when
+    metaStore.storeLastWrittenIndex(7L);
+
+    // then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(7L);
+
+    // when
+    metaStore.storeLastWrittenIndex(8L);
+
+    metaStore.close();
+    metaStore = new MetaStore(storage);
+
+    // then
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(8L);
+  }
+
+  @Test
+  public void shouldStoreAndLoadAllMetadata() {
+    // when
+    metaStore.storeTerm(1L);
+    metaStore.storeLastWrittenIndex(2L);
+    metaStore.storeVote(MemberId.from("a"));
+
+    // then
+    assertThat(metaStore.loadTerm()).isEqualTo(1L);
+    assertThat(metaStore.loadLastWrittenIndex()).isEqualTo(2L);
+    assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
   }
 }

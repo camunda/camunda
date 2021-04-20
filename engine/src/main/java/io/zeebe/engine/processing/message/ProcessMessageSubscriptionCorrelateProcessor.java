@@ -114,7 +114,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
         final var catchEvent =
             getCatchEvent(elementInstance.getValue(), subscriptionRecord.getElementIdBuffer());
-        eventHandle.activateElement(catchEvent, elementInstanceKey, elementInstance.getValue());
+        eventHandle.activateElement(
+            catchEvent,
+            elementInstanceKey,
+            elementInstance.getValue(),
+            subscriptionRecord.getVariablesBuffer());
 
         sendAcknowledgeCommand(subscriptionRecord);
       }

@@ -50,7 +50,7 @@ public final class LogCompactor {
     final CompletableFuture<Void> result = new CompletableFuture<>();
     try {
       final var startTime = System.currentTimeMillis();
-      raft.getLog().compact(compactableIndex);
+      raft.getLog().deleteUntil(compactableIndex);
       metrics.compactionTime(System.currentTimeMillis() - startTime);
       result.complete(null);
     } catch (final Exception e) {

@@ -95,7 +95,8 @@ public final class RaftMemberContext {
   }
 
   private void openReaderAtEndOfLog(final RaftLog log, final Mode all) {
-    reader = log.openReader(log.getLastIndex(), all);
+    reader = log.openReader(all);
+    reader.seekToLast();
     if (reader.hasNext()) {
       currentEntry = reader.next();
     }
@@ -437,7 +438,7 @@ public final class RaftMemberContext {
   }
 
   public void reset(final long index) {
-    final var nextIndex = reader.reset(index - 1);
+    final var nextIndex = reader.seek(index - 1);
     if (nextIndex == index - 1) {
       currentEntry = reader.next();
     } else {
