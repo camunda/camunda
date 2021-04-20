@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Transport</name>
   <artifactId>zeebe-transport</artifactId>
-  <version>1.0.0-alpha6</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.0.0-alpha6</version>
+    <version>1.0.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
