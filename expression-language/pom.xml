@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-root</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-alpha6</version>
   </parent>
 
   <groupId>io.zeebe</groupId>
