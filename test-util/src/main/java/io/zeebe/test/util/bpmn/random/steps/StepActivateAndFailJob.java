@@ -7,6 +7,9 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Map;
+
 public final class StepActivateAndFailJob extends AbstractExecutionStep {
 
   private final String jobType;
@@ -26,11 +29,38 @@ public final class StepActivateAndFailJob extends AbstractExecutionStep {
   }
 
   @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + jobType.hashCode();
+    result = 31 * result + (updateRetries ? 1 : 0);
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
     if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
       return false;
     }
 
@@ -39,17 +69,6 @@ public final class StepActivateAndFailJob extends AbstractExecutionStep {
     if (updateRetries != that.updateRetries) {
       return false;
     }
-    if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = jobType != null ? jobType.hashCode() : 0;
-    result = 31 * result + (updateRetries ? 1 : 0);
-    result = 31 * result + variables.hashCode();
-    return result;
+    return jobType.equals(that.jobType);
   }
 }

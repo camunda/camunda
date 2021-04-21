@@ -53,7 +53,7 @@ public class IntermediateMessageCatchEventBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    result.append(
+    result.appendDirectSuccessor(
         new StepPublishMessage(messageName, CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE));
 
     return result;

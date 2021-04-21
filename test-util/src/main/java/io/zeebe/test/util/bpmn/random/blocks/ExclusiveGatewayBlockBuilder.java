@@ -14,9 +14,9 @@ import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
-import io.zeebe.test.util.bpmn.random.steps.StepExpressionIncidentCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
+import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -94,20 +94,18 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     final int branch = random.nextInt(branchIds.size());
 
     if (branch == 0) {
-      result.append(new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
-    } else {
+      result.appendDirectSuccessor(
+          new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
+    } else if (random.nextBoolean()) {
       // take a non-default branch
-      final var pickConditionCase =
-          new StepPickConditionCase(forkGatewayId, gatewayConditionVariable, branchIds.get(branch));
-
-      if (random.nextBoolean()) {
-        // cause an incident by not removing the variable required to evaluate the branch expression
-        result.append(
-            new StepExpressionIncidentCase(
-                forkGatewayId, gatewayConditionVariable, branchIds.get(branch), pickConditionCase));
-      }
-
-      result.append(pickConditionCase);
+      result.appendDirectSuccessor(
+          new StepPickConditionCase(
+              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
+    } else {
+      // cause an incident then resolve it and set a variable
+      result.appendDirectSuccessor(
+          new StepRaiseIncidentThenResolveAndPickConditionCase(
+              forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
     }
 
     final BlockBuilder blockBuilder = blockBuilders.get(branch);

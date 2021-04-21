@@ -8,26 +8,15 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
-public final class StepStartProcessInstance extends AbstractExecutionStep
-    implements ProcessStartStep {
+public class StepActivateBPMNElement extends AbstractExecutionStep {
 
-  private final String processId;
+  private final String elementId;
 
-  public StepStartProcessInstance(final String processId, final Map<String, Object> variables) {
-    this.processId = processId;
-    this.variables.putAll(variables);
-  }
-
-  @Override
-  public Map<String, Object> getProcessVariables() {
-    return Collections.unmodifiableMap(variables);
-  }
-
-  public String getProcessId() {
-    return processId;
+  public StepActivateBPMNElement(final String elementId) {
+    this.elementId = elementId;
   }
 
   @Override
@@ -38,7 +27,7 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
 
   @Override
   public boolean isAutomatic() {
-    return false;
+    return true;
   }
 
   @Override
@@ -48,9 +37,7 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + processId.hashCode();
-    return result;
+    return Objects.hash(super.hashCode(), elementId);
   }
 
   @Override
@@ -64,9 +51,7 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
     if (!super.equals(o)) {
       return false;
     }
-
-    final StepStartProcessInstance that = (StepStartProcessInstance) o;
-
-    return processId.equals(that.processId);
+    final StepActivateBPMNElement that = (StepActivateBPMNElement) o;
+    return elementId.equals(that.elementId);
   }
 }

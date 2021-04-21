@@ -10,18 +10,20 @@ package io.zeebe.test.util.bpmn.random.steps;
 import java.time.Duration;
 import java.util.Map;
 
-// this class could also be called "Set variables when starting the process so that the engine
-// will select a certain condition"
-public final class StepPickConditionCase extends AbstractExecutionStep {
+// This class does not provide the edge variable at start to make sure an incident is
+// raised. This same variable can later be provided (through variable update) and the incident can
+// then be resolved
+public final class StepRaiseIncidentThenResolveAndPickConditionCase extends AbstractExecutionStep {
 
   private final String forkingGatewayId;
   private final String edgeId;
+  private final String gatewayConditionVariable;
 
-  public StepPickConditionCase(
+  public StepRaiseIncidentThenResolveAndPickConditionCase(
       final String forkingGatewayId, final String gatewayConditionVariable, final String edgeId) {
     this.forkingGatewayId = forkingGatewayId;
     this.edgeId = edgeId;
-    variables.put(gatewayConditionVariable, edgeId);
+    this.gatewayConditionVariable = gatewayConditionVariable;
   }
 
   @Override
@@ -32,7 +34,7 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
 
   @Override
   public boolean isAutomatic() {
-    return true;
+    return false;
   }
 
   @Override
@@ -45,6 +47,7 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
     int result = super.hashCode();
     result = 31 * result + forkingGatewayId.hashCode();
     result = 31 * result + edgeId.hashCode();
+    result = 31 * result + gatewayConditionVariable.hashCode();
     return result;
   }
 
@@ -60,15 +63,27 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
       return false;
     }
 
-    final StepPickConditionCase that = (StepPickConditionCase) o;
+    final StepRaiseIncidentThenResolveAndPickConditionCase that =
+        (StepRaiseIncidentThenResolveAndPickConditionCase) o;
 
     if (!forkingGatewayId.equals(that.forkingGatewayId)) {
       return false;
     }
-    return edgeId.equals(that.edgeId);
+    if (!edgeId.equals(that.edgeId)) {
+      return false;
+    }
+    return gatewayConditionVariable.equals(that.gatewayConditionVariable);
   }
 
-  public void removeVariable(final String variable) {
-    variables.remove(variable);
+  public String getGatewayElementId() {
+    return forkingGatewayId;
+  }
+
+  public String getGatewayConditionVariable() {
+    return gatewayConditionVariable;
+  }
+
+  public String getEdgeId() {
+    return edgeId;
   }
 }

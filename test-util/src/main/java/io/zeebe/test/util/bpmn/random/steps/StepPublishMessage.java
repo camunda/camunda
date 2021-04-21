@@ -7,6 +7,9 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Map;
+
 public final class StepPublishMessage extends AbstractExecutionStep {
 
   private final String messageName;
@@ -31,6 +34,30 @@ public final class StepPublishMessage extends AbstractExecutionStep {
   }
 
   @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + messageName.hashCode();
+    result = 31 * result + correlationKeyValue.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -38,26 +65,15 @@ public final class StepPublishMessage extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepPublishMessage that = (StepPublishMessage) o;
 
-    if (messageName != null ? !messageName.equals(that.messageName) : that.messageName != null) {
+    if (!messageName.equals(that.messageName)) {
       return false;
     }
-    if (correlationKeyValue != null
-        ? !correlationKeyValue.equals(that.correlationKeyValue)
-        : that.correlationKeyValue != null) {
-      return false;
-    }
-
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = messageName != null ? messageName.hashCode() : 0;
-    result = 31 * result + (correlationKeyValue != null ? correlationKeyValue.hashCode() : 0);
-    result = 31 * result + variables.hashCode();
-    return result;
+    return correlationKeyValue.equals(that.correlationKeyValue);
   }
 }

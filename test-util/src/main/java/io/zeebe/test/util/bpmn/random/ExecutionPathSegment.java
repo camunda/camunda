@@ -14,6 +14,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -25,40 +28,196 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public final class ExecutionPathSegment {
 
-  private final List<AbstractExecutionStep> steps = new ArrayList<>();
+  private final List<ScheduledExecutionStep> scheduledSteps = new ArrayList<>();
+  private final Map<String, Object> variableDefaults = new HashMap<>();
 
-  public void append(final AbstractExecutionStep executionStep) {
-    steps.add(executionStep);
+  /**
+   * Appends the next step to the execution path. This next step is a direct successor to the
+   * previous step. This means that the last step in the execution path is both its logical and its
+   * scheduling predecessor.
+   *
+   * @param executionStep direct successor to previous step
+   */
+  public void appendDirectSuccessor(final AbstractExecutionStep executionStep) {
+    final ScheduledExecutionStep predecessor;
+    if (scheduledSteps.isEmpty()) {
+      predecessor = null;
+    } else {
+      predecessor = scheduledSteps.get(scheduledSteps.size() - 1);
+    }
+
+    scheduledSteps.add(new ScheduledExecutionStep(predecessor, predecessor, executionStep));
+  }
+
+  /**
+   * Appends the next step to the execution path. This next step is a scheduling successor to the
+   * previous step. This means that the last step in the execution path is its execution
+   * predecessor. However, the logical predecessor of the next step is the one passed in via {@code
+   * logicalPredecessorStep}
+   *
+   * @param executionStep the next step
+   * @param logicalPredecessorStep the logical predecessor of {@code executionStep}; this step must
+   *     already be part of the execution path or else an exception will be thrown
+   * @throws IllegalStateException thrown is {@code logicalPredecessorStep} is not part of the
+   *     existing execution path
+   */
+  public void appendExecutionSuccessor(
+      final AbstractExecutionStep executionStep,
+      final AbstractExecutionStep logicalPredecessorStep) {
+    final ScheduledExecutionStep executionPredecessor;
+    if (scheduledSteps.isEmpty()) {
+      executionPredecessor = null;
+    } else {
+      executionPredecessor = scheduledSteps.get(scheduledSteps.size() - 1);
+    }
+
+    final var logicalPredecessor =
+        scheduledSteps.stream()
+            .filter(scheduledStep -> scheduledStep.getStep() == logicalPredecessorStep)
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Unable to find step "
+                            + logicalPredecessorStep
+                            + ". This step was passed as a logical predecessor, thus it should already be present in the execution path segment. But it was not found."));
+
+    scheduledSteps.add(
+        new ScheduledExecutionStep(logicalPredecessor, executionPredecessor, executionStep));
   }
 
   public void append(final ExecutionPathSegment pathToAdd) {
-    steps.addAll(pathToAdd.getSteps());
+    mergeVariableDefaults(pathToAdd);
+
+    pathToAdd.getScheduledSteps().forEach(this::append);
   }
 
+  public void append(final ScheduledExecutionStep scheduledExecutionStep) {
+    final var logicalPredecessor = scheduledExecutionStep.getLogicalPredecessor();
+
+    if (logicalPredecessor == null) {
+      appendDirectSuccessor(scheduledExecutionStep.getStep());
+    } else {
+      appendExecutionSuccessor(scheduledExecutionStep.getStep(), logicalPredecessor.getStep());
+    }
+  }
+
+  public boolean canBeInterrupted() {
+    return scheduledSteps.stream()
+        .map(ScheduledExecutionStep::getStep)
+        .anyMatch(Predicate.not(AbstractExecutionStep::isAutomatic));
+  }
+
+  /**
+   * Sets a default value for a variable. The default value must be independent of the execution
+   * path taken. The default value can be overwritten by any step
+   */
+  public void setVariableDefault(final String key, final Object value) {
+    variableDefaults.put(key, value);
+  }
+
+  public void mergeVariableDefaults(final ExecutionPathSegment other) {
+    variableDefaults.putAll(other.variableDefaults);
+  }
+
+  /**
+   * Cuts the execution path at a random position at which the process can be interrupted
+   *
+   * @param random random generator
+   */
+  public void cutAtRandomPosition(final Random random) {
+
+    if (!canBeInterrupted()) {
+      throw new IllegalArgumentException("This execution flow cannot be interrupted");
+    }
+
+    scheduledSteps.subList(findCutOffPoint(random), scheduledSteps.size()).clear();
+  }
+
+  /**
+   * This method finds a cutoff point. We can cut only at a position where we have a non-automatic
+   * step
+   *
+   * @return index of cutoff point
+   */
+  private int findCutOffPoint(final Random random) {
+    // find the first and last point where a cutoff is possible
+    Integer firstCutOffPoint = null;
+    Integer lastCutOffPoint = null;
+
+    for (int index = 0; index < scheduledSteps.size(); index++) {
+      final var step = scheduledSteps.get(index).getStep();
+
+      if (!step.isAutomatic()) {
+        if (firstCutOffPoint == null) {
+          firstCutOffPoint = index;
+        }
+
+        lastCutOffPoint = index;
+      }
+    }
+
+    // find a random position between these two cutoff points
+    final int initialCutOffPoint =
+        firstCutOffPoint + random.nextInt(lastCutOffPoint - firstCutOffPoint);
+
+    /* skip automatic steps; this makes no difference in terms of execution, but it makes the
+    execution path easier to read and debug. E.g. the execution path will not be cut at a point
+    where other steps will be executed by the engine automatically. So when you read the execution
+    path and it is cut somewhere, it is cut at a place that is consistent with the state in the engine*/
+    int finalCutOffPoint = initialCutOffPoint;
+    while (scheduledSteps.get(finalCutOffPoint).getStep().isAutomatic()) {
+      finalCutOffPoint++;
+    }
+
+    return finalCutOffPoint;
+  }
+
+  @Deprecated // use interruptAtRandomPosition instead
   public void replace(final int index, final AbstractExecutionStep executionStep) {
-    steps.subList(index, steps.size()).clear();
-    steps.add(executionStep);
+    scheduledSteps.subList(index, scheduledSteps.size()).clear();
+    appendDirectSuccessor(executionStep);
   }
 
+  /**
+   * Deprecated for several reasons:
+   *
+   * <p>a) not clear why a specific step is part of the signature; should be a more general class
+   *
+   * <p>b) overall, not clear what the method should achieve.
+   *
+   * <p>It might be better to have a look at
+   * ParallelGatewayBlockBuilder#shuffleStepsFromDifferentLists(...) which demonstrates how to merge
+   * different parallel execution paths into a single execution path
+   */
+  @Deprecated
   public void insert(final int index, final StepPublishMessage stepPublishMessage) {
-    steps.add(index, stepPublishMessage);
+    final var tail = scheduledSteps.subList(index, scheduledSteps.size());
+    replace(index, stepPublishMessage);
+    tail.forEach(scheduledStep -> append(scheduledStep));
+  }
+
+  public List<ScheduledExecutionStep> getScheduledSteps() {
+    return Collections.unmodifiableList(scheduledSteps);
   }
 
   public List<AbstractExecutionStep> getSteps() {
-    return Collections.unmodifiableList(steps);
+    return scheduledSteps.stream()
+        .map(ScheduledExecutionStep::getStep)
+        .collect(Collectors.toList());
   }
 
   public Map<String, Object> collectVariables() {
-    final Map<String, Object> result = new HashMap<>();
+    final Map<String, Object> result = new HashMap<>(variableDefaults);
 
-    steps.forEach(step -> result.putAll(step.getVariables()));
+    scheduledSteps.forEach(scheduledStep -> result.putAll(scheduledStep.getVariables()));
 
     return result;
   }
 
   @Override
-  public String toString() {
-    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+  public int hashCode() {
+    return scheduledSteps.hashCode();
   }
 
   @Override
@@ -72,11 +231,11 @@ public final class ExecutionPathSegment {
 
     final ExecutionPathSegment that = (ExecutionPathSegment) o;
 
-    return steps.equals(that.steps);
+    return scheduledSteps.equals(that.scheduledSteps);
   }
 
   @Override
-  public int hashCode() {
-    return steps.hashCode();
+  public String toString() {
+    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
   }
 }

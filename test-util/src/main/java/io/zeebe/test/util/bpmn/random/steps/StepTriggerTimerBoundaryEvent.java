@@ -8,32 +8,26 @@
 package io.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-public final class StepStartProcessInstance extends AbstractExecutionStep
-    implements ProcessStartStep {
+public final class StepTriggerTimerBoundaryEvent extends AbstractExecutionStep {
 
-  private final String processId;
+  private final String jobType;
+  private final String boundaryTimerEventId;
 
-  public StepStartProcessInstance(final String processId, final Map<String, Object> variables) {
-    this.processId = processId;
-    this.variables.putAll(variables);
-  }
-
-  @Override
-  public Map<String, Object> getProcessVariables() {
-    return Collections.unmodifiableMap(variables);
-  }
-
-  public String getProcessId() {
-    return processId;
+  public StepTriggerTimerBoundaryEvent(final String jobType, final String boundaryTimerEventId) {
+    this.jobType = jobType;
+    this.boundaryTimerEventId = boundaryTimerEventId;
   }
 
   @Override
   protected Map<String, Object> updateVariables(
       final Map<String, Object> variables, final Duration activationDuration) {
-    return variables;
+    final var result = new HashMap<>(variables);
+    result.put(boundaryTimerEventId, activationDuration.toString());
+    return result;
   }
 
   @Override
@@ -43,14 +37,12 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
 
   @Override
   public Duration getDeltaTime() {
-    return VIRTUALLY_NO_TIME;
+    return DEFAULT_DELTA;
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + processId.hashCode();
-    return result;
+    return Objects.hash(super.hashCode(), jobType, boundaryTimerEventId);
   }
 
   @Override
@@ -64,9 +56,11 @@ public final class StepStartProcessInstance extends AbstractExecutionStep
     if (!super.equals(o)) {
       return false;
     }
+    final StepTriggerTimerBoundaryEvent that = (StepTriggerTimerBoundaryEvent) o;
+    return jobType.equals(that.jobType) && boundaryTimerEventId.equals(that.boundaryTimerEventId);
+  }
 
-    final StepStartProcessInstance that = (StepStartProcessInstance) o;
-
-    return processId.equals(that.processId);
+  public String getBoundaryTimerEventId() {
+    return boundaryTimerEventId;
   }
 }

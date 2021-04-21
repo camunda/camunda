@@ -7,7 +7,6 @@
  */
 package io.zeebe.test.util.bpmn.random;
 
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,25 +15,27 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 /** Execution path to execute a random process from start to finish. This class is immutable. */
 public final class ExecutionPath {
-  private final List<AbstractExecutionStep> steps = new ArrayList<>();
+  private final List<ScheduledExecutionStep> steps = new ArrayList<>();
   private final String processId;
 
   public ExecutionPath(final String processId, final ExecutionPathSegment pathSegment) {
     this.processId = processId;
-    steps.addAll(pathSegment.getSteps());
+    steps.addAll(pathSegment.getScheduledSteps());
   }
 
   public String getProcessId() {
     return processId;
   }
 
-  public List<AbstractExecutionStep> getSteps() {
+  public List<ScheduledExecutionStep> getSteps() {
     return Collections.unmodifiableList(steps);
   }
 
   @Override
-  public String toString() {
-    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+  public int hashCode() {
+    int result = steps.hashCode();
+    result = 31 * result + processId.hashCode();
+    return result;
   }
 
   @Override
@@ -55,9 +56,7 @@ public final class ExecutionPath {
   }
 
   @Override
-  public int hashCode() {
-    int result = steps.hashCode();
-    result = 31 * result + processId.hashCode();
-    return result;
+  public String toString() {
+    return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
   }
 }

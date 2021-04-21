@@ -8,12 +8,17 @@
 package io.zeebe.test.util.bpmn.random.blocks;
 
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
 import io.zeebe.test.util.bpmn.random.IDGenerator;
+import io.zeebe.test.util.bpmn.random.RandomProcessGenerator;
+import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import java.util.Random;
 
 /**
@@ -26,6 +31,10 @@ public class SubProcessBlockBuilder implements BlockBuilder {
   private final String subProcessId;
   private final String subProcessStartEventId;
   private final String subProcessEndEventId;
+  private final String subProcessBoundaryTimerEventId;
+
+  private final boolean hasBoundaryEvents;
+  private final boolean hasBoundaryTimerEvent;
 
   public SubProcessBlockBuilder(final ConstructionContext context) {
     final Random random = context.getRandom();
@@ -39,37 +48,88 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     subProcessStartEventId = idGenerator.nextId();
     subProcessEndEventId = idGenerator.nextId();
 
+    subProcessBoundaryTimerEventId = "boundary_timer_" + subProcessId;
+
     final boolean goDeeper = random.nextInt(maxDepth) > currentDepth;
 
     if (goDeeper) {
       embeddedSubProcessBuilder =
           factory.createBlockSequenceBuilder(context.withIncrementedDepth());
+      hasBoundaryTimerEvent =
+          random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_TIMER_EVENT;
+    } else {
+      hasBoundaryTimerEvent = false;
     }
+
+    hasBoundaryEvents = hasBoundaryTimerEvent; // extend here
   }
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
-    final SubProcessBuilder subProcessBuilder = nodeBuilder.subProcess(subProcessId);
+    final SubProcessBuilder subProcessBuilderStart = nodeBuilder.subProcess(subProcessId);
 
     AbstractFlowNodeBuilder<?, ?> workInProgress =
-        subProcessBuilder.embeddedSubProcess().startEvent(subProcessStartEventId);
+        subProcessBuilderStart.embeddedSubProcess().startEvent(subProcessStartEventId);
 
     if (embeddedSubProcessBuilder != null) {
       workInProgress = embeddedSubProcessBuilder.buildFlowNodes(workInProgress);
     }
 
-    return workInProgress.endEvent(subProcessEndEventId).subProcessDone();
+    final var subProcessBuilderDone =
+        workInProgress.endEvent(subProcessEndEventId).subProcessDone();
+
+    AbstractFlowNodeBuilder result = subProcessBuilderDone;
+    if (hasBoundaryEvents) {
+      final String joinGatewayId = "boundary_join_" + subProcessId;
+      final ExclusiveGatewayBuilder exclusiveGatewayBuilder =
+          subProcessBuilderDone.exclusiveGateway(joinGatewayId);
+
+      if (hasBoundaryTimerEvent) {
+        result =
+            ((SubProcessBuilder) exclusiveGatewayBuilder.moveToNode(subProcessId))
+                .boundaryEvent(
+                    subProcessBoundaryTimerEventId,
+                    /* the value of that variable will be calculated when the execution flow is
+                    known*/
+                    b -> b.timerWithDurationExpression(subProcessBoundaryTimerEventId))
+                .connectTo(joinGatewayId);
+      }
+    }
+
+    return result;
   }
 
   @Override
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (embeddedSubProcessBuilder != null) {
-      result.append(embeddedSubProcessBuilder.findRandomExecutionPath(random));
+    if (hasBoundaryTimerEvent) {
+      // set an infinite timer as default; this can be overwritten by the execution path chosen
+      result.setVariableDefault(
+          subProcessBoundaryTimerEventId, AbstractExecutionStep.VIRTUALLY_INFINITE.toString());
+    }
+    final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
+
+    result.appendDirectSuccessor(activateSubProcess);
+
+    if (embeddedSubProcessBuilder == null) {
+      return result;
     }
 
+    final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(random);
+
+    if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
+      result.append(internalExecutionPath);
+    } else {
+      internalExecutionPath.cutAtRandomPosition(random);
+      result.append(internalExecutionPath);
+      if (hasBoundaryTimerEvent) {
+        result.appendExecutionSuccessor(
+            new StepTriggerTimerBoundaryEvent(subProcessId, subProcessBoundaryTimerEventId),
+            activateSubProcess);
+      } // extend here for other boundary events
+    }
     return result;
   }
 

@@ -50,8 +50,8 @@ public class TimerStartEventBuilder implements StartEventBlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(
       final String processId, final Map<String, Object> variables) {
     final ExecutionPathSegment pathSegment = new ExecutionPathSegment();
-    pathSegment.append(new StepTriggerTimerStartEvent(timeToAdd));
-    pathSegment.append(
+    pathSegment.appendDirectSuccessor(new StepTriggerTimerStartEvent(timeToAdd));
+    pathSegment.appendDirectSuccessor(
         new StepActivateAndCompleteJob(startEventId + VARIABLES_JOB_TYPE_SUFFIX, variables));
     return pathSegment;
   }

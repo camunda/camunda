@@ -7,9 +7,12 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 
-public final class StepPublishStartMessage extends AbstractExecutionStep {
+public final class StepPublishStartMessage extends AbstractExecutionStep
+    implements ProcessStartStep {
 
   private final String messageName;
 
@@ -18,8 +21,36 @@ public final class StepPublishStartMessage extends AbstractExecutionStep {
     this.variables.putAll(variables);
   }
 
+  @Override
+  public Map<String, Object> getProcessVariables() {
+    return Collections.unmodifiableMap(variables);
+  }
+
   public String getMessageName() {
     return messageName;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + messageName.hashCode();
+    return result;
   }
 
   @Override
@@ -30,19 +61,12 @@ public final class StepPublishStartMessage extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepPublishStartMessage that = (StepPublishStartMessage) o;
 
-    if (messageName != null ? !messageName.equals(that.messageName) : that.messageName != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = messageName != null ? messageName.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
-    return result;
+    return messageName.equals(that.messageName);
   }
 }
