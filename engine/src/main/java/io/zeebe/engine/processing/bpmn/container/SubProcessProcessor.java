@@ -128,7 +128,8 @@ public final class SubProcessProcessor
         .ifPresentOrElse(
             eventTrigger -> {
               if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-                  && stateBehavior.canBeTerminated(childContext)) {
+                  // child context can be null if no child's exist on termination
+                  && (childContext == null || stateBehavior.canBeTerminated(childContext))) {
                 final var terminated =
                     stateTransitionBehavior.transitionToTerminated(subProcessContext);
                 eventSubscriptionBehavior.activateTriggeredEvent(
@@ -140,7 +141,8 @@ public final class SubProcessProcessor
             },
             () -> {
               if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-                  && stateBehavior.canBeTerminated(childContext)) {
+                  // child context can be null if no child's exist on termination
+                  && (childContext == null || stateBehavior.canBeTerminated(childContext))) {
                 final var terminated =
                     stateTransitionBehavior.transitionToTerminated(subProcessContext);
                 stateTransitionBehavior.onElementTerminated(element, terminated);
