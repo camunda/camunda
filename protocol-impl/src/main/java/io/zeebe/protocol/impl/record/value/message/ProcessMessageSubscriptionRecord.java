@@ -63,9 +63,44 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setElementId(record.getElementIdBuffer());
   }
 
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getMessageNameBuffer() {
+    return messageNameProp.getValue();
+  }
+
+  @JsonIgnore
+  public int getSubscriptionPartitionId() {
+    return subscriptionPartitionIdProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
+    subscriptionPartitionIdProp.setValue(partitionId);
+    return this;
+  }
+
   @Override
-  public boolean isInterrupting() {
-    return interruptingProp.getValue();
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setVariables(final DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -108,6 +143,26 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getElementId() {
+    return bufferAsString(getElementIdBuffer());
+  }
+
+  @Override
+  public boolean isInterrupting() {
+    return interruptingProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setInterrupting(final boolean interrupting) {
+    interruptingProp.setValue(interrupting);
+    return this;
+  }
+
+  public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
   public ProcessMessageSubscriptionRecord setMessageName(final DirectBuffer messageName) {
     messageNameProp.setValue(messageName);
     return this;
@@ -118,69 +173,14 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
-  }
-
-  @JsonIgnore
-  public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
-  }
-
-  @JsonIgnore
-  public int getSubscriptionPartitionId() {
-    return subscriptionPartitionIdProp.getValue();
-  }
-
-  public ProcessMessageSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
-    subscriptionPartitionIdProp.setValue(partitionId);
-    return this;
-  }
-
-  @Override
-  public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
-  }
-
-  public ProcessMessageSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
-    return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
   public ProcessMessageSubscriptionRecord setProcessInstanceKey(final long key) {
     processInstanceKeyProp.setValue(key);
-    return this;
-  }
-
-  public ProcessMessageSubscriptionRecord setInterrupting(final boolean interrupting) {
-    interruptingProp.setValue(interrupting);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
     return correlationKeyProp.getValue();
-  }
-
-  @Override
-  public String getElementId() {
-    return bufferAsString(getElementIdBuffer());
-  }
-
-  public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
-    return this;
   }
 
   @JsonIgnore
