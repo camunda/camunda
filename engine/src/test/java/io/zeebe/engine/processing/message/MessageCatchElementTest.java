@@ -311,15 +311,17 @@ public final class MessageCatchElementTest {
     ENGINE_RULE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
-    final Record<ProcessMessageSubscriptionRecordValue> subscription =
-        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.DELETED);
-
-    assertThat(subscription.getRecordType()).isEqualTo(RecordType.EVENT);
-
-    Assertions.assertThat(subscription.getValue())
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasElementInstanceKey(catchEventEntered.getKey())
-        .hasMessageName(MESSAGE_NAME);
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords()
+                .onlyEvents()
+                .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.DELETED)
+                .withMessageName(MESSAGE_NAME)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementInstanceKey(catchEventEntered.getKey())
+                .map(Record::getIntent))
+        .as("the lifecycle of the subscription should end with DELETING and DELETED on close")
+        .containsSubsequence(
+            ProcessMessageSubscriptionIntent.DELETING, ProcessMessageSubscriptionIntent.DELETED);
   }
 
   @Test

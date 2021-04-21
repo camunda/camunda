@@ -10,6 +10,7 @@ package io.zeebe.engine.state.appliers;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -201,23 +202,29 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerProcessMessageSubscriptionEventAppliers(final MutableZeebeState state) {
+    final MutableProcessMessageSubscriptionState subscriptionState =
+        state.getProcessMessageSubscriptionState();
+
     register(
         ProcessMessageSubscriptionIntent.CREATING,
-        new ProcessMessageSubscriptionCreatingApplier(state.getProcessMessageSubscriptionState()));
+        new ProcessMessageSubscriptionCreatingApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CREATED,
-        new ProcessMessageSubscriptionCreatedApplier(state.getProcessMessageSubscriptionState()));
+        new ProcessMessageSubscriptionCreatedApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
         new ProcessMessageSubscriptionCorrelatedApplier(
-            state.getProcessMessageSubscriptionState(),
+            subscriptionState,
             state.getEventScopeInstanceState(),
             state.getVariableState(),
             state.getElementInstanceState(),
             state.getProcessState()));
     register(
+        ProcessMessageSubscriptionIntent.DELETING,
+        new ProcessMessageSubscriptionDeletingApplier(subscriptionState));
+    register(
         ProcessMessageSubscriptionIntent.DELETED,
-        new ProcessMessageSubscriptionDeletedApplier(state.getProcessMessageSubscriptionState()));
+        new ProcessMessageSubscriptionDeletedApplier(subscriptionState));
   }
 
   private void registerProcessEventAppliers(final MutableZeebeState state) {

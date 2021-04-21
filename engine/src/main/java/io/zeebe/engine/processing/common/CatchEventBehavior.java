@@ -25,11 +25,11 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -54,7 +54,7 @@ public final class CatchEventBehavior {
   private final StateWriter stateWriter;
 
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
 
   private final ProcessMessageSubscriptionRecord subscription =
@@ -250,8 +250,9 @@ public final class CatchEventBehavior {
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
 
-    processMessageSubscriptionState.updateToClosingState(
-        subscription.getRecord(), ActorClock.currentTimeMillis());
+    // TODO (npepinpe): the subscription should have a key (#2805)
+    stateWriter.appendFollowUpEvent(
+        -1L, ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sideEffects.add(
         () ->
             sendCloseMessageSubscriptionCommand(
