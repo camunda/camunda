@@ -230,6 +230,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setJobKey(jobKey)
             .setVariableScopeKey(job.getElementInstanceKey());
 
-    commandWriter.appendFollowUpCommand(jobKey, IncidentIntent.CREATE, incidentEvent);
+    stateWriter.appendFollowUpEvent(jobKey, IncidentIntent.CREATED, incidentEvent);
   }
 }
