@@ -133,7 +133,7 @@ public final class ExporterDirectorTest {
     filteringExporter.getController().updateLastExportedRecordPosition(firstRecordPosition);
     // skipped entirely
     final long skippedRecordPosition =
-        rule.writeCommand(IncidentIntent.CREATE, new IncidentRecord());
+        rule.writeCommand(IncidentIntent.CREATED, new IncidentRecord());
     // accepted by both again
     rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
 
