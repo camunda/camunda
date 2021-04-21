@@ -191,3 +191,13 @@ test('task completion with prefilled form', async (t) => {
     .expect(screen.findByLabelText(/age/i).value)
     .eql('21');
 });
+
+test('should rerender forms properly', async (t) => {
+  await t
+    .click(screen.findByText(/user task with form rerender 1/i))
+    .expect(screen.findByDisplayValue(/mary/i).exists)
+    .ok()
+    .click(screen.findByText(/user task with form rerender 2/i))
+    .expect(screen.findByDisplayValue(/stuart/i).exists)
+    .ok();
+});

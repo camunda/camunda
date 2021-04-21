@@ -10,6 +10,8 @@ export async function setup() {
     './e2e/tests/resources/usertask_to_be_completed.bpmn',
     './e2e/tests/resources/user_task_with_form.bpmn',
     './e2e/tests/resources/user_task_with_form_and_vars.bpmn',
+    './e2e/tests/resources/user_task_with_form_rerender_1.bpmn',
+    './e2e/tests/resources/user_task_with_form_rerender_2.bpmn',
   ]);
 
   await Promise.all([
@@ -18,6 +20,14 @@ export async function setup() {
     createInstances('user_registration_with_vars', 1, 1, {
       name: 'Jane',
       age: '50',
+    }),
+    createInstances('user_task_with_form_rerender_1', 1, 1, {
+      name: 'Mary',
+      age: '20',
+    }),
+    createInstances('user_task_with_form_rerender_2', 1, 1, {
+      name: 'Stuart',
+      age: '30',
     }),
   ]);
 }

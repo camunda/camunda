@@ -111,13 +111,17 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
     }
   }, [taskState, variables]);
 
+  useEffect(() => {
+    formRef.current = null;
+  }, [task.id]);
+
   return (
     <Container hasFooter={canCompleteTask} data-testid="embedded-form">
       <PanelHeader>
         <PanelTitle>Embedded Form</PanelTitle>
       </PanelHeader>
       <FormCustomStyling />
-      <FormContainer ref={containerRef} />
+      <FormContainer ref={containerRef} key={task.id} />
       {canCompleteTask && (
         <DetailsFooter>
           <Button
