@@ -4,12 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {IReactionDisposer, makeAutoObservable, reaction} from 'mobx';
+import {
+  action,
+  computed,
+  IReactionDisposer,
+  makeObservable,
+  observable,
+  reaction,
+  override,
+} from 'mobx';
 import {fetchFlowNodeMetaData} from 'modules/api/flowNodeMetaData';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type InstanceMetaData = {
   startDate: string;
@@ -47,12 +56,19 @@ const DEFAULT_STATE: State = {
   metaData: null,
 };
 
-class FlowNodeMetaData {
+class FlowNodeMetaData extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   selectionDisposer: null | IReactionDisposer = null;
 
   constructor() {
-    makeAutoObservable(this, {init: false, fetchMetaData: false});
+    super();
+    makeObservable(this, {
+      state: observable,
+      setMetaData: action,
+      hasMultipleInstances: computed,
+      isSelectedInstanceRunning: computed,
+      reset: override,
+    });
   }
 
   init = () => {
@@ -87,47 +103,50 @@ class FlowNodeMetaData {
     }
   };
 
-  fetchMetaData = async ({
-    flowNodeId,
-    flowNodeInstanceId,
-    flowNodeType,
-  }: {
-    flowNodeId?: string;
-    flowNodeInstanceId?: FlowNodeInstance['id'];
-    flowNodeType?: string;
-  }) => {
-    const processInstanceId = currentInstanceStore.state.instance?.id;
+  fetchMetaData = this.retryOnConnectionLost(
+    async ({
+      flowNodeId,
+      flowNodeInstanceId,
+      flowNodeType,
+    }: {
+      flowNodeId?: string;
+      flowNodeInstanceId?: FlowNodeInstance['id'];
+      flowNodeType?: string;
+    }) => {
+      const processInstanceId = currentInstanceStore.state.instance?.id;
 
-    if (processInstanceId === undefined || flowNodeId === undefined) {
-      return;
-    }
-
-    try {
-      const response = await fetchFlowNodeMetaData({
-        flowNodeId,
-        processInstanceId,
-        flowNodeInstanceId,
-        flowNodeType,
-      });
-
-      if (response.ok) {
-        this.setMetaData(await response.json());
-      } else {
-        this.handleFetchFailure();
+      if (processInstanceId === undefined || flowNodeId === undefined) {
+        return;
       }
-    } catch (error) {
-      this.handleFetchFailure(error);
+
+      try {
+        const response = await fetchFlowNodeMetaData({
+          flowNodeId,
+          processInstanceId,
+          flowNodeInstanceId,
+          flowNodeType,
+        });
+
+        if (response.ok) {
+          this.setMetaData(await response.json());
+        } else {
+          this.handleFetchFailure();
+        }
+      } catch (error) {
+        this.handleFetchFailure(error);
+      }
     }
-  };
+  );
 
   get isSelectedInstanceRunning() {
     return this.state.metaData?.instanceMetadata?.endDate === null;
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {...DEFAULT_STATE};
     this.selectionDisposer?.();
-  };
+  }
 }
 
 export const flowNodeMetaDataStore = new FlowNodeMetaData();

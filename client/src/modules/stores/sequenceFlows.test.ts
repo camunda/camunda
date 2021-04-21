@@ -151,4 +151,58 @@ describe('stores/sequenceFlows', () => {
 
     expect(sequenceFlowsStore.state.items).toEqual([]);
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+        processId: '10',
+      })
+    );
+    sequenceFlowsStore.init();
+
+    await waitFor(() =>
+      expect(sequenceFlowsStore.state.items).toEqual([
+        'SequenceFlow_0drux68',
+        'SequenceFlow_0j6tsnn',
+        'SequenceFlow_1dwqvrt',
+        'SequenceFlow_1fgekwd',
+      ])
+    );
+
+    mockServer.use(
+      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            ...mockSequenceFlows,
+            {
+              processInstanceId: '2251799813685691',
+              activityId: 'SequenceFlow_1sz6737',
+            },
+          ])
+        )
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(sequenceFlowsStore.state.items).toEqual([
+        'SequenceFlow_0drux68',
+        'SequenceFlow_0j6tsnn',
+        'SequenceFlow_1dwqvrt',
+        'SequenceFlow_1fgekwd',
+        'SequenceFlow_1sz6737',
+      ])
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

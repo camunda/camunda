@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {action, makeObservable, observable, override} from 'mobx';
 
 import {fetchIncidentsByError} from 'modules/api/incidents';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type Process = {
   processId: string;
@@ -33,14 +34,21 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class IncidentsByError {
+class IncidentsByError extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
-    makeAutoObservable(this);
+    super();
+    makeObservable(this, {
+      state: observable,
+      startFetching: action,
+      setError: action,
+      setIncidents: action,
+      reset: override,
+    });
   }
 
-  getIncidentsByError = async () => {
+  getIncidentsByError = this.retryOnConnectionLost(async () => {
     this.startFetching();
 
     try {
@@ -54,7 +62,7 @@ class IncidentsByError {
     } catch {
       this.setError();
     }
-  };
+  });
 
   startFetching = () => {
     this.state.status = 'fetching';
@@ -69,9 +77,10 @@ class IncidentsByError {
     this.state.status = 'fetched';
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {...DEFAULT_STATE};
-  };
+  }
 }
 
 export const incidentsByErrorStore = new IncidentsByError();

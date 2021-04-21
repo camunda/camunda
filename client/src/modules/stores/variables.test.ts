@@ -646,4 +646,42 @@ describe('stores/variables', () => {
       },
     ]);
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    variablesStore.init('1');
+
+    await waitFor(() =>
+      expect(variablesStore.state.items).toEqual(mockVariables)
+    );
+
+    const newMockVariables = [
+      ...mockVariables,
+      {
+        hasActiveOperation: false,
+        name: 'test',
+        value: '1',
+        processInstanceId: '1',
+      },
+    ];
+
+    mockServer.use(
+      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(newMockVariables))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(variablesStore.state.items).toEqual(newMockVariables)
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

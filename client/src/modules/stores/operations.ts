@@ -11,11 +11,13 @@ import {
   computed,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import * as operationsApi from 'modules/api/batchOperations';
 import {applyBatchOperation, applyOperation} from 'modules/api/instances';
 import {sortOperations} from './utils/sortOperations';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type Query = Parameters<typeof applyBatchOperation>['1'];
 type OperationPayload = Parameters<typeof applyOperation>['1'];
@@ -36,15 +38,16 @@ const DEFAULT_STATE: State = {
 
 const MAX_OPERATIONS_PER_REQUEST = 20;
 
-class Operations {
+class Operations extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
-      reset: action,
+      reset: override,
       setOperations: action,
       increasePage: action,
       prependOperations: action,
@@ -70,27 +73,29 @@ class Operations {
     });
   }
 
-  fetchOperations = async (searchAfter?: [string, string]) => {
-    this.startFetching();
+  fetchOperations = this.retryOnConnectionLost(
+    async (searchAfter?: [string, string]) => {
+      this.startFetching();
 
-    try {
-      const response = await operationsApi.fetchOperations({
-        pageSize: MAX_OPERATIONS_PER_REQUEST,
-        searchAfter,
-      });
+      try {
+        const response = await operationsApi.fetchOperations({
+          pageSize: MAX_OPERATIONS_PER_REQUEST,
+          searchAfter,
+        });
 
-      if (response.ok) {
-        const operations = await response.json();
-        this.setOperations(operations);
-        this.setHasMoreOperations(operations.length);
-        this.handleFetchSuccess();
-      } else {
-        this.handleFetchError();
+        if (response.ok) {
+          const operations = await response.json();
+          this.setOperations(operations);
+          this.setHasMoreOperations(operations.length);
+          this.handleFetchSuccess();
+        } else {
+          this.handleFetchError();
+        }
+      } catch (error) {
+        this.handleFetchError(error);
       }
-    } catch (error) {
-      this.handleFetchError(error);
     }
-  };
+  );
 
   fetchNextOperations = async (searchAfter: [string, string]) => {
     this.increasePage();
@@ -226,11 +231,12 @@ class Operations {
     );
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
-  };
+  }
 }
 
 export const operationsStore = new Operations();

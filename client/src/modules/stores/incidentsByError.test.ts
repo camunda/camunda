@@ -7,6 +7,7 @@
 import {incidentsByErrorStore} from './incidentsByError';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {waitFor} from '@testing-library/dom';
 
 describe('stores/incidentsByError', () => {
   const mockIncidentsByError = [
@@ -93,5 +94,45 @@ describe('stores/incidentsByError', () => {
     incidentsByErrorStore.reset();
     expect(incidentsByErrorStore.state.status).toBe('initial');
     expect(incidentsByErrorStore.state.incidents).toEqual([]);
+  });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    incidentsByErrorStore.getIncidentsByError();
+
+    await waitFor(() =>
+      expect(incidentsByErrorStore.state.incidents).toEqual(
+        mockIncidentsByError
+      )
+    );
+
+    const newMockIncidentsByError = [
+      ...mockIncidentsByError,
+      {
+        errorMessage: 'some other error',
+        instancesWithErrorCount: 100,
+        processes: [],
+      },
+    ];
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json(newMockIncidentsByError))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(incidentsByErrorStore.state.incidents).toEqual(
+        newMockIncidentsByError
+      )
+    );
+
+    window.addEventListener = originalEventListener;
   });
 });

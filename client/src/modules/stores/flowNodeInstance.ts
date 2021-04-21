@@ -11,10 +11,12 @@ import {
   computed,
   when,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type FlowNodeInstanceType = {
   id: string;
@@ -44,13 +46,14 @@ const DEFAULT_STATE: State = {
   flowNodeInstances: {},
 };
 
-class FlowNodeInstance {
+class FlowNodeInstance extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   instanceExecutionHistoryDisposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
       handleFetchSuccess: action,
@@ -58,7 +61,7 @@ class FlowNodeInstance {
       handlePollSuccess: action,
       removeSubTree: action,
       startFetch: action,
-      reset: action,
+      reset: override,
       isInstanceExecutionHistoryAvailable: computed,
       instanceExecutionHistory: computed,
     });
@@ -151,14 +154,14 @@ class FlowNodeInstance {
     delete this.state.flowNodeInstances[treePath];
   };
 
-  fetchInstanceExecutionHistory = async (
-    processInstanceId: ProcessInstanceEntity['id']
-  ) => {
-    this.startFetch();
-    this.fetchSubTree({
-      treePath: processInstanceId,
-    });
-  };
+  fetchInstanceExecutionHistory = this.retryOnConnectionLost(
+    async (processInstanceId: ProcessInstanceEntity['id']) => {
+      this.startFetch();
+      this.fetchSubTree({
+        treePath: processInstanceId,
+      });
+    }
+  );
 
   startFetch = () => {
     if (this.state.status === 'initial') {
@@ -212,12 +215,13 @@ class FlowNodeInstance {
     }
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
     this.instanceExecutionHistoryDisposer?.();
-  };
+  }
 
   get isInstanceExecutionHistoryAvailable() {
     const {status} = this.state;

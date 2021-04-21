@@ -223,4 +223,34 @@ describe('stores/statistics', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    statisticsStore.init();
+
+    await waitFor(() => expect(statisticsStore.state.running).toBe(936));
+
+    mockServer.use(
+      rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            running: 1000,
+            active: 725,
+            withIncidents: 211,
+          })
+        )
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() => expect(statisticsStore.state.running).toBe(1000));
+
+    window.addEventListener = originalEventListener;
+  });
 });

@@ -12,6 +12,7 @@ import {
   when,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {fetchVariables, applyOperation} from 'modules/api/instances';
 import {differenceWith, differenceBy} from 'lodash';
@@ -21,6 +22,7 @@ import {STATE} from 'modules/constants';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   items: VariableEntity[];
@@ -32,7 +34,7 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class Variables {
+class Variables extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
@@ -43,9 +45,10 @@ class Variables {
   fetchVariablesDisposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
-      reset: action,
+      reset: override,
       setItems: action,
       handleFetchSuccess: action,
       startFetch: action,
@@ -169,30 +172,32 @@ class Variables {
     this.handleFetchSuccess();
   };
 
-  fetchVariables = async (instanceId: ProcessInstanceEntity['id']) => {
-    this.startFetch();
+  fetchVariables = this.retryOnConnectionLost(
+    async (instanceId: ProcessInstanceEntity['id']) => {
+      this.startFetch();
 
-    try {
-      const response = await fetchVariables({
-        instanceId,
-        scopeId: this.scopeId ?? instanceId,
-      });
+      try {
+        const response = await fetchVariables({
+          instanceId,
+          scopeId: this.scopeId ?? instanceId,
+        });
 
-      if (this.shouldCancelOngoingRequests) {
-        this.shouldCancelOngoingRequests = false;
-        return;
+        if (this.shouldCancelOngoingRequests) {
+          this.shouldCancelOngoingRequests = false;
+          return;
+        }
+
+        if (response.ok) {
+          this.handleResponse(await response.json());
+          this.handleFetchSuccess();
+        } else {
+          this.handleFetchFailure();
+        }
+      } catch (error) {
+        this.handleFetchFailure(error);
       }
-
-      if (response.ok) {
-        this.handleResponse(await response.json());
-        this.handleFetchSuccess();
-      } else {
-        this.handleFetchFailure();
-      }
-    } catch (error) {
-      this.handleFetchFailure(error);
     }
-  };
+  );
 
   setSingleVariable = (variable: VariableEntity) => {
     const {items} = this.state;
@@ -343,7 +348,8 @@ class Variables {
     return 'error';
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     if (['first-fetch', 'fetching'].includes(this.state.status)) {
       this.shouldCancelOngoingRequests = true;
     }
@@ -352,7 +358,7 @@ class Variables {
     this.disposer?.();
     this.variablesWithActiveOperationsDisposer?.();
     this.fetchVariablesDisposer?.();
-  };
+  }
 }
 
 export const variablesStore = new Variables();

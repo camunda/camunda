@@ -127,4 +127,41 @@ describe('stores/singleInstanceDiagram', () => {
     expect(singleInstanceDiagramStore.state.status).toBe('initial');
     expect(singleInstanceDiagramStore.state.diagramModel).toEqual(null);
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+        processId: '10',
+      })
+    );
+    singleInstanceDiagramStore.init();
+
+    await waitFor(() =>
+      expect(singleInstanceDiagramStore.state.status).toEqual('fetched')
+    );
+
+    mockServer.use(
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      )
+    );
+
+    eventListeners.online();
+
+    expect(singleInstanceDiagramStore.state.status).toEqual('fetching');
+
+    await waitFor(() =>
+      expect(singleInstanceDiagramStore.state.status).toEqual('fetched')
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

@@ -188,4 +188,53 @@ describe('stores/processStatistics', () => {
 
     expect(processStatisticsStore.state.statistics).toEqual([]);
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    mockServer.use(
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockProcessStatistics))
+      )
+    );
+
+    processStatisticsStore.init();
+    processStatisticsStore.fetchProcessStatistics();
+
+    await waitFor(() =>
+      expect(processStatisticsStore.state.statistics).toEqual(
+        mockProcessStatistics
+      )
+    );
+
+    const newStatisticsResponse = [
+      ...mockProcessStatistics,
+      {
+        activityId: 'ServiceTask_0kt6c5i_new',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ];
+    mockServer.use(
+      rest.post('/api/process-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(newStatisticsResponse))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(processStatisticsStore.state.statistics).toEqual(
+        newStatisticsResponse
+      )
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

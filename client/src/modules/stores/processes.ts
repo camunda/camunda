@@ -4,11 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {makeObservable, action, observable, computed, override} from 'mobx';
 import {fetchGroupedProcesses} from 'modules/api/instances';
 import {getFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type ProcessVersion = {
   bpmnProcessId: string;
@@ -33,18 +34,25 @@ const INITIAL_STATE: State = {
   status: 'initial',
 };
 
-class Processes {
+class Processes extends NetworkReconnectionHandler {
   state: State = INITIAL_STATE;
   retryCount: number = 0;
   retryProcessesFetchTimeout: NodeJS.Timeout | null = null;
 
   constructor() {
-    makeAutoObservable(this, {
-      fetchProcesses: false,
+    super();
+    makeObservable(this, {
+      state: observable,
+      startFetching: action,
+      handleFetchError: action,
+      handleFetchSuccess: action,
+      processes: computed,
+      versionsByProcess: computed,
+      reset: override,
     });
   }
 
-  fetchProcesses = async () => {
+  fetchProcesses = this.retryOnConnectionLost(async () => {
     this.startFetching();
 
     const {process} = getFilters(getSearchString());
@@ -71,7 +79,7 @@ class Processes {
     } catch (error) {
       this.handleFetchError(error);
     }
-  };
+  });
 
   startFetching = () => {
     this.state.status = 'fetching';
@@ -151,10 +159,11 @@ class Processes {
     this.retryCount = 0;
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = INITIAL_STATE;
     this.resetRetryProcessesFetch();
-  };
+  }
 }
 
 const processesStore = new Processes();

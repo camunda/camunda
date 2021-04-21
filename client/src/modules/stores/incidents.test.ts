@@ -173,4 +173,46 @@ describe('stores/incidents', () => {
 
     expect(incidentsStore.incidentsCount).toBe(1);
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: '123',
+        state: 'INCIDENT',
+      })
+    );
+    incidentsStore.init();
+
+    await waitFor(() =>
+      expect(incidentsStore.state.response).toEqual(mockIncidents)
+    );
+
+    mockServer.use(
+      rest.get('/api/process-instances/123/incidents', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            ...mockIncidents,
+            count: 3,
+          })
+        )
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(incidentsStore.state.response).toEqual({
+        ...mockIncidents,
+        count: 3,
+      })
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

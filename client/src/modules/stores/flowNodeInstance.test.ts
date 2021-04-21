@@ -79,4 +79,31 @@ describe('stores/flowNodeInstance', () => {
       mockFlowNodeInstances.level1
     );
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    flowNodeInstanceStore.init();
+
+    await waitFor(() =>
+      expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
+        mockFlowNodeInstances.level1
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
+        ...mockFlowNodeInstances.level1,
+        ...mockFlowNodeInstances.level2,
+      })
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

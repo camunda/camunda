@@ -698,4 +698,53 @@ describe('stores/instances', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    const mockedProcessInstances = {
+      processInstances: [instance],
+      totalCount: 1,
+    };
+
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockedProcessInstances))
+      )
+    );
+
+    instancesStore.init();
+    instancesStore.fetchInstancesFromFilters();
+
+    await waitFor(() =>
+      expect(instancesStore.state.processInstances).toEqual(
+        mockedProcessInstances.processInstances
+      )
+    );
+
+    const newProcessInstancesResponse = {
+      processInstances: [instance, {...instance, id: '123'}],
+      totalCount: 2,
+    };
+
+    mockServer.use(
+      rest.post('/api/process-instances', (_, res, ctx) =>
+        res.once(ctx.json(newProcessInstancesResponse))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(instancesStore.state.processInstances).toEqual(
+        newProcessInstancesResponse.processInstances
+      )
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

@@ -11,6 +11,7 @@ import {
   computed,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {fetchProcessInstance} from 'modules/api/instances';
 import {getProcessName} from 'modules/utils/instance';
@@ -21,6 +22,7 @@ import {logger} from 'modules/logger';
 import {History} from 'history';
 import {Locations} from 'modules/routes';
 import {NotificationContextType} from 'modules/notifications';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   instance: null | ProcessInstanceEntity;
@@ -32,7 +34,7 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class CurrentInstance {
+class CurrentInstance extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
@@ -44,9 +46,10 @@ class CurrentInstance {
   notifications: NotificationContextType | undefined;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
-      reset: action,
+      reset: override,
       setCurrentInstance: action,
       activateOperation: action,
       deactivateOperation: action,
@@ -78,25 +81,27 @@ class CurrentInstance {
     });
   }
 
-  fetchCurrentInstance = async (id: ProcessInstanceEntity['id']) => {
-    this.startFetch();
-    try {
-      const response = await fetchProcessInstance(id);
+  fetchCurrentInstance = this.retryOnConnectionLost(
+    async (id: ProcessInstanceEntity['id']) => {
+      this.startFetch();
+      try {
+        const response = await fetchProcessInstance(id);
 
-      if (response.ok) {
-        this.handleFetchSuccess(await response.json());
-        this.resetRefetch();
-      } else {
-        if (response.status === 404) {
-          this.handleRefetch(id);
+        if (response.ok) {
+          this.handleFetchSuccess(await response.json());
+          this.resetRefetch();
         } else {
-          this.handleFetchFailure();
+          if (response.status === 404) {
+            this.handleRefetch(id);
+          } else {
+            this.handleFetchFailure();
+          }
         }
+      } catch (error) {
+        this.handleFetchFailure(error);
       }
-    } catch (error) {
-      this.handleFetchFailure(error);
     }
-  };
+  );
 
   setCurrentInstance = (currentInstance: ProcessInstanceEntity | null) => {
     this.state.instance = currentInstance;
@@ -216,12 +221,13 @@ class CurrentInstance {
     this.retryCount = 0;
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
     this.resetRefetch();
-  };
+  }
 }
 
 export const currentInstanceStore = new CurrentInstance();

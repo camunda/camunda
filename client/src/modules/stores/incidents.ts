@@ -11,11 +11,13 @@ import {
   observable,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {fetchProcessInstanceIncidents} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {addFlowNodeName, mapify} from './mappers';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type FlowNode = {
   flowNodeId: string;
@@ -52,16 +54,17 @@ const DEFAULT_STATE: State = {
   isLoaded: false,
 };
 
-class Incidents {
+class Incidents extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
       setIncidents: action,
-      reset: action,
+      reset: override,
       incidents: computed,
       flowNodes: computed,
       errorTypes: computed,
@@ -88,12 +91,12 @@ class Incidents {
     }, 5000);
   };
 
-  fetchIncidents = async (id: string) => {
+  fetchIncidents = this.retryOnConnectionLost(async (id: string) => {
     const response = await fetchProcessInstanceIncidents(id);
     if (response.ok) {
       this.setIncidents(await response.json());
     }
-  };
+  });
 
   stopPolling = () => {
     const {intervalId} = this;
@@ -116,11 +119,12 @@ class Incidents {
     this.state.isLoaded = true;
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
-  };
+  }
 
   get incidents() {
     if (this.state.response === null) {

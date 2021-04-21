@@ -40,19 +40,16 @@ describe('stores/flowNodeStates', () => {
       )
     );
 
-    jest.useFakeTimers();
     currentInstanceStore.fetchCurrentInstance(PROCESS_INSTANCE_ID);
-    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
   });
 
   afterEach(() => {
     flowNodeStatesStore.reset();
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should fetch and store flow node status', async () => {
+    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
+
     await waitFor(() => {
       expect(flowNodeStatesStore.state.flowNodes).toEqual(
         mockFlowNodeStatesActive
@@ -61,6 +58,8 @@ describe('stores/flowNodeStates', () => {
   });
 
   it('should return selectable flow nodes', async () => {
+    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
+
     await waitFor(() => {
       expect(flowNodeStatesStore.selectableFlowNodes).toEqual([
         'startEvent1',
@@ -70,6 +69,10 @@ describe('stores/flowNodeStates', () => {
   });
 
   it('should start polling', async () => {
+    jest.useFakeTimers();
+
+    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
+
     mockServer.use(
       // first poll
       rest.get(
@@ -85,9 +88,16 @@ describe('stores/flowNodeStates', () => {
         mockFlowNodeStatesIncident
       );
     });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should stop polling when all flow nodes are completed', async () => {
+    jest.useFakeTimers();
+
+    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
+
     mockServer.use(
       // first poll
       rest.get(
@@ -105,5 +115,41 @@ describe('stores/flowNodeStates', () => {
     });
 
     expect(flowNodeStatesStore.intervalId).toBeNull();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    flowNodeStatesStore.init(PROCESS_INSTANCE_ID);
+
+    await waitFor(() =>
+      expect(flowNodeStatesStore.state.flowNodes).toEqual(
+        mockFlowNodeStatesActive
+      )
+    );
+
+    mockServer.use(
+      rest.get(
+        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-states`,
+        (_, res, ctx) => res.once(ctx.json(mockFlowNodeStatesIncident))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(flowNodeStatesStore.state.flowNodes).toEqual(
+        mockFlowNodeStatesIncident
+      )
+    );
+
+    window.addEventListener = originalEventListener;
   });
 });

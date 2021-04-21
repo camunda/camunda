@@ -11,6 +11,7 @@ import {
   action,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 import {
@@ -19,6 +20,7 @@ import {
 } from 'modules/api/instances';
 import {logger} from 'modules/logger';
 import {getRequestFilters, getSorting} from 'modules/utils/filter';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type Payload = Parameters<typeof fetchProcessInstances>['0'];
 
@@ -51,7 +53,7 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class Instances {
+class Instances extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
@@ -65,9 +67,10 @@ class Instances {
   retryCount: number = 0;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
-      reset: action,
+      reset: override,
       startFetching: action,
       startFetchingNext: action,
       startFetchingPrev: action,
@@ -205,7 +208,7 @@ class Instances {
     });
   };
 
-  fetchInstancesFromFilters = async () => {
+  fetchInstancesFromFilters = this.retryOnConnectionLost(async () => {
     this.resetRetryInstancesFetch();
     this.startFetching();
     this.fetchInstances({
@@ -218,7 +221,7 @@ class Instances {
         searchAfter: undefined,
       },
     });
-  };
+  });
 
   fetchInstances = async ({
     fetchType,
@@ -472,7 +475,8 @@ class Instances {
     }
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {
       ...DEFAULT_STATE,
       filteredInstancesCount: this.state.filteredInstancesCount,
@@ -483,7 +487,7 @@ class Instances {
     this.instancesPollingDisposer?.();
     this.completedOperationsHandlers = [];
     this.resetRetryInstancesFetch();
-  };
+  }
 }
 
 export const instancesStore = new Instances();

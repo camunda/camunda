@@ -10,11 +10,13 @@ import {
   action,
   computed,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   diagramModel: unknown;
@@ -32,14 +34,15 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class InstancesDiagram {
+class InstancesDiagram extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   disposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
-      reset: action,
+      reset: override,
       resetDiagramModel: action,
       startFetching: action,
       handleFetchSuccess: action,
@@ -49,20 +52,23 @@ class InstancesDiagram {
     });
   }
 
-  fetchProcessXml = async (processId: ProcessInstanceEntity['processId']) => {
-    this.startFetching();
-    try {
-      const response = await fetchProcessXML(processId);
+  fetchProcessXml = this.retryOnConnectionLost(
+    async (processId: ProcessInstanceEntity['processId']) => {
+      this.startFetching();
 
-      if (response.ok) {
-        this.handleFetchSuccess(await parseDiagramXML(await response.text()));
-      } else {
-        this.handleFetchError();
+      try {
+        const response = await fetchProcessXML(processId);
+
+        if (response.ok) {
+          this.handleFetchSuccess(await parseDiagramXML(await response.text()));
+        } else {
+          this.handleFetchError();
+        }
+      } catch (error) {
+        this.handleFetchError(error);
       }
-    } catch (error) {
-      this.handleFetchError(error);
     }
-  };
+  );
 
   get selectableFlowNodes(): Node[] {
     // @ts-expect-error ts-migrate(2339) FIXME: Property 'bpmnElements' does not exist on type 'ne... Remove this comment to see the full error message
@@ -87,6 +93,7 @@ class InstancesDiagram {
   };
 
   handleFetchError = (error?: Error) => {
+    this.resetDiagramModel();
     this.state.status = 'error';
 
     logger.error('Diagram failed to fetch');
@@ -116,11 +123,12 @@ class InstancesDiagram {
       });
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {...DEFAULT_STATE};
 
     this.disposer?.();
-  };
+  }
 }
 
 export const instancesDiagramStore = new InstancesDiagram();

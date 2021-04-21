@@ -7,6 +7,7 @@
 import {instancesByProcessStore} from './instancesByProcess';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {waitFor} from '@testing-library/dom';
 
 describe('stores/instancesByProcess', () => {
   const mockInstancesByProcess = [
@@ -96,5 +97,47 @@ describe('stores/instancesByProcess', () => {
     instancesByProcessStore.reset();
     expect(instancesByProcessStore.state.status).toBe('initial');
     expect(instancesByProcessStore.state.instances).toEqual([]);
+  });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    instancesByProcessStore.getInstancesByProcess();
+
+    await waitFor(() =>
+      expect(instancesByProcessStore.state.instances).toEqual(
+        mockInstancesByProcess
+      )
+    );
+
+    const newMockInstancesByProcess = [
+      ...mockInstancesByProcess,
+      {
+        bpmnProcessId: 'anotherProcess',
+        processName: 'Another Process',
+        instancesWithActiveIncidentsCount: 5,
+        activeInstancesCount: 30,
+        processes: [],
+      },
+    ];
+    mockServer.use(
+      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
+        res.once(ctx.json(newMockInstancesByProcess))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(instancesByProcessStore.state.instances).toEqual(
+        newMockInstancesByProcess
+      )
+    );
+
+    window.addEventListener = originalEventListener;
   });
 });

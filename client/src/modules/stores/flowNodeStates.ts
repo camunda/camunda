@@ -4,10 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable, when, IReactionDisposer} from 'mobx';
+import {
+  makeObservable,
+  when,
+  IReactionDisposer,
+  override,
+  action,
+  computed,
+  observable,
+} from 'mobx';
 import {fetchFlowNodeStates} from 'modules/api/flowNodeStates';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   flowNodes: {
@@ -20,18 +29,21 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class FlowNodeStates {
+class FlowNodeStates extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   flowNodeStatesDisposer: null | IReactionDisposer = null;
   completedFlowNodesDisposer: null | IReactionDisposer = null;
 
   constructor() {
-    makeAutoObservable(this, {
-      init: false,
-      fetchFlowNodeStates: false,
-      startPolling: false,
-      stopPolling: false,
+    super();
+    makeObservable(this, {
+      state: observable,
+      handleFetchSuccess: action,
+      handleFetchFailure: action,
+      areAllFlowNodesCompleted: computed,
+      selectableFlowNodes: computed,
+      reset: override,
     });
   }
 
@@ -50,18 +62,20 @@ class FlowNodeStates {
     );
   };
 
-  fetchFlowNodeStates = async (processInstanceId: string) => {
-    try {
-      const response = await fetchFlowNodeStates(processInstanceId);
-      if (response.ok) {
-        this.handleFetchSuccess(await response.json());
-      } else {
-        this.handleFetchFailure();
+  fetchFlowNodeStates = this.retryOnConnectionLost(
+    async (processInstanceId: string) => {
+      try {
+        const response = await fetchFlowNodeStates(processInstanceId);
+        if (response.ok) {
+          this.handleFetchSuccess(await response.json());
+        } else {
+          this.handleFetchFailure();
+        }
+      } catch (error) {
+        this.handleFetchFailure(error);
       }
-    } catch (error) {
-      this.handleFetchFailure(error);
     }
-  };
+  );
 
   handleFetchSuccess = (flowNodes: State['flowNodes']) => {
     this.state.flowNodes = flowNodes;
@@ -105,12 +119,13 @@ class FlowNodeStates {
     return Object.keys(this.state.flowNodes);
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
     this.flowNodeStatesDisposer?.();
     this.completedFlowNodesDisposer?.();
-  };
+  }
 }
 
 export const flowNodeStatesStore = new FlowNodeStates();

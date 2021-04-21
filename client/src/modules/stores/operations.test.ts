@@ -355,4 +355,40 @@ describe('stores/operations', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    mockServer.use(
+      rest.post('/api/batch-operations', (_, res, ctx) =>
+        res.once(ctx.json(operations))
+      )
+    );
+
+    operationsStore.init();
+
+    await waitFor(() =>
+      expect(operationsStore.state.status).toEqual('fetched')
+    );
+
+    mockServer.use(
+      rest.post('/api/batch-operations', (_, res, ctx) =>
+        res.once(ctx.json(operations))
+      )
+    );
+
+    eventListeners.online();
+
+    expect(operationsStore.state.status).toEqual('fetching');
+
+    await waitFor(() =>
+      expect(operationsStore.state.status).toEqual('fetched')
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

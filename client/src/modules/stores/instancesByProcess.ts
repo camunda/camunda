@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {action, makeObservable, observable, override} from 'mobx';
 
 import {fetchInstancesByProcess} from 'modules/api/incidents';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type Process = {
   processId: string;
@@ -34,14 +35,21 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class InstancesByProcess {
+class InstancesByProcess extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
-    makeAutoObservable(this);
+    super();
+    makeObservable(this, {
+      state: observable,
+      startFetching: action,
+      setError: action,
+      setInstances: action,
+      reset: override,
+    });
   }
 
-  getInstancesByProcess = async () => {
+  getInstancesByProcess = this.retryOnConnectionLost(async () => {
     this.startFetching();
     try {
       const response = await fetchInstancesByProcess();
@@ -54,7 +62,7 @@ class InstancesByProcess {
     } catch {
       this.setError();
     }
-  };
+  });
 
   startFetching = () => {
     this.state.status = 'fetching';
@@ -69,9 +77,10 @@ class InstancesByProcess {
     this.state.status = 'fetched';
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {...DEFAULT_STATE};
-  };
+  }
 }
 
 export const instancesByProcessStore = new InstancesByProcess();

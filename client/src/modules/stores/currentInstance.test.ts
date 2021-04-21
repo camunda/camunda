@@ -150,4 +150,35 @@ describe('stores/currentInstance', () => {
     currentInstanceStore.deactivateOperation();
     expect(currentInstanceStore.state.instance?.hasActiveOperation).toBe(false);
   });
+
+  it('should retry fetch on network reconnection', async () => {
+    const eventListeners: any = {};
+    const originalEventListener = window.addEventListener;
+    window.addEventListener = jest.fn((event: string, cb: any) => {
+      eventListeners[event] = cb;
+    });
+
+    currentInstanceStore.init('1');
+
+    await waitFor(() =>
+      expect(currentInstanceStore.state.instance).toEqual(currentInstanceMock)
+    );
+
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json({...currentInstanceMock, state: 'INCIDENT'}))
+      )
+    );
+
+    eventListeners.online();
+
+    await waitFor(() =>
+      expect(currentInstanceStore.state.instance).toEqual({
+        ...currentInstanceMock,
+        state: 'INCIDENT',
+      })
+    );
+
+    window.addEventListener = originalEventListener;
+  });
 });

@@ -11,12 +11,14 @@ import {
   when,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {fetchSequenceFlows} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {
   items: string[];
@@ -26,17 +28,18 @@ const DEFAULT_STATE: State = {
   items: [],
 };
 
-class SequenceFlows {
+class SequenceFlows extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   processSeqenceFlowsDisposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
       setItems: action,
-      reset: action,
+      reset: override,
     });
   }
 
@@ -64,22 +67,22 @@ class SequenceFlows {
     });
   }
 
-  fetchProcessSequenceFlows = async (
-    instanceId: ProcessInstanceEntity['id']
-  ) => {
-    try {
-      const response = await fetchSequenceFlows(instanceId);
+  fetchProcessSequenceFlows = this.retryOnConnectionLost(
+    async (instanceId: ProcessInstanceEntity['id']) => {
+      try {
+        const response = await fetchSequenceFlows(instanceId);
 
-      if (response.ok) {
-        this.setItems(getProcessedSequenceFlows(await response.json()));
-      } else {
+        if (response.ok) {
+          this.setItems(getProcessedSequenceFlows(await response.json()));
+        } else {
+          logger.error('Failed to fetch Sequence Flows');
+        }
+      } catch (error) {
         logger.error('Failed to fetch Sequence Flows');
+        logger.error(error);
       }
-    } catch (error) {
-      logger.error('Failed to fetch Sequence Flows');
-      logger.error(error);
     }
-  };
+  );
 
   handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
     try {
@@ -117,13 +120,14 @@ class SequenceFlows {
     this.state.items = items;
   }
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
 
     this.disposer?.();
     this.processSeqenceFlowsDisposer?.();
-  };
+  }
 }
 
 export const sequenceFlowsStore = new SequenceFlows();

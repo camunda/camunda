@@ -4,12 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable, when, IReactionDisposer} from 'mobx';
+import {
+  makeObservable,
+  when,
+  IReactionDisposer,
+  action,
+  computed,
+  override,
+  observable,
+} from 'mobx';
 import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {logger} from 'modules/logger';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type FlowNodeMetaData = {
   name: string;
@@ -32,14 +41,22 @@ const DEFAULT_STATE: State = {
   nodeMetaDataMap: undefined,
 };
 
-class SingleInstanceDiagram {
+class SingleInstanceDiagram extends NetworkReconnectionHandler {
   state: State = {
     ...DEFAULT_STATE,
   };
   processXmlDisposer: null | IReactionDisposer = null;
 
   constructor() {
-    makeAutoObservable(this);
+    super();
+    makeObservable(this, {
+      state: observable,
+      startFetch: action,
+      handleFetchSuccess: action,
+      areDiagramDefinitionsAvailable: computed,
+      handleFetchFailure: action,
+      reset: override,
+    });
   }
 
   init() {
@@ -55,20 +72,22 @@ class SingleInstanceDiagram {
     );
   }
 
-  fetchProcessXml = async (processId: ProcessInstanceEntity['processId']) => {
-    this.startFetch();
-    try {
-      const response = await fetchProcessXML(processId);
+  fetchProcessXml = this.retryOnConnectionLost(
+    async (processId: ProcessInstanceEntity['processId']) => {
+      this.startFetch();
+      try {
+        const response = await fetchProcessXML(processId);
 
-      if (response.ok) {
-        this.handleFetchSuccess(await parseDiagramXML(await response.text()));
-      } else {
-        this.handleFetchFailure();
+        if (response.ok) {
+          this.handleFetchSuccess(await parseDiagramXML(await response.text()));
+        } else {
+          this.handleFetchFailure();
+        }
+      } catch (error) {
+        this.handleFetchFailure(error);
       }
-    } catch (error) {
-      this.handleFetchFailure(error);
     }
-  };
+  );
 
   startFetch = () => {
     if (this.state.status === 'initial') {
@@ -112,10 +131,11 @@ class SingleInstanceDiagram {
     }
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {...DEFAULT_STATE};
     this.processXmlDisposer?.();
-  };
+  }
 }
 
 export type {FlowNodeMetaData};

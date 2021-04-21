@@ -10,10 +10,12 @@ import {
   action,
   autorun,
   IReactionDisposer,
+  override,
 } from 'mobx';
 import {fetchProcessCoreStatistics} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {instancesStore} from 'modules/stores/instances';
+import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type StatisticsType = {
   running: number;
@@ -32,18 +34,19 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class Statistics {
+class Statistics extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   intervalId: null | ReturnType<typeof setInterval> = null;
   pollingDisposer: null | IReactionDisposer = null;
 
   constructor() {
+    super();
     makeObservable(this, {
       state: observable,
       setError: action,
       setStatistics: action,
       startFirstFetch: action,
-      reset: action,
+      reset: override,
     });
   }
 
@@ -63,7 +66,7 @@ class Statistics {
     instancesStore.addCompletedOperationsHandler(() => this.fetchStatistics());
   }
 
-  fetchStatistics = async () => {
+  fetchStatistics = this.retryOnConnectionLost(async () => {
     if (this.state.status === 'initial') {
       this.startFirstFetch();
     }
@@ -79,7 +82,7 @@ class Statistics {
     } catch {
       this.setError();
     }
-  };
+  });
 
   startFirstFetch = () => {
     this.state.status = 'first-fetch';
@@ -129,12 +132,13 @@ class Statistics {
     }
   };
 
-  reset = () => {
+  reset() {
+    super.reset();
     this.state = {...DEFAULT_STATE};
 
     this.stopPolling();
     this.pollingDisposer?.();
-  };
+  }
 }
 
 export const statisticsStore = new Statistics();
