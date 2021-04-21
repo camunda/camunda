@@ -26,7 +26,7 @@ import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
-import io.zeebe.test.util.bpmn.random.steps.StepTimeoutBPMNElement;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -63,9 +63,9 @@ public class ProcessExecutor {
     } else if (step instanceof StepActivateAndTimeoutJob) {
       final StepActivateAndTimeoutJob activateAndTimeoutJob = (StepActivateAndTimeoutJob) step;
       activateAndTimeoutJob(activateAndTimeoutJob);
-    } else if (step instanceof StepTimeoutBPMNElement) {
-      final StepTimeoutBPMNElement timeoutElement = (StepTimeoutBPMNElement) step;
-      timeoutBPMNElement(timeoutElement);
+    } else if (step instanceof StepTriggerTimerBoundaryEvent) {
+      final StepTriggerTimerBoundaryEvent timeoutElement = (StepTriggerTimerBoundaryEvent) step;
+      triggerTimerBoundaryEvent(timeoutElement);
     } else if (step instanceof StepActivateJobAndThrowError) {
       final StepActivateJobAndThrowError activateJobAndThrowError =
           (StepActivateJobAndThrowError) step;
@@ -81,7 +81,7 @@ public class ProcessExecutor {
     }
   }
 
-  private void timeoutBPMNElement(final StepTimeoutBPMNElement timeoutElement) {
+  private void triggerTimerBoundaryEvent(final StepTriggerTimerBoundaryEvent timeoutElement) {
     final var timerCreated =
         RecordingExporter.timerRecords(TimerIntent.CREATED)
             .withHandlerNodeId(timeoutElement.getBoundaryTimerEventId())
