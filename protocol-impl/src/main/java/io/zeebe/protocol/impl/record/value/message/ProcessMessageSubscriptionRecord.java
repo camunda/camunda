@@ -21,6 +21,7 @@ import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
+@SuppressWarnings("java:S2160")
 public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     implements ProcessMessageSubscriptionRecordValue {
 
@@ -47,6 +48,19 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(elementIdProp);
+  }
+
+  public void wrap(final ProcessMessageSubscriptionRecord record) {
+    setSubscriptionPartitionId(record.getSubscriptionPartitionId());
+    setProcessInstanceKey(record.getProcessInstanceKey());
+    setElementInstanceKey(record.getElementInstanceKey());
+    setMessageKey(record.getMessageKey());
+    setMessageName(record.getMessageNameBuffer());
+    setVariables(record.getVariablesBuffer());
+    setInterrupting(record.isInterrupting());
+    setBpmnProcessId(record.getBpmnProcessIdBuffer());
+    setCorrelationKey(record.getCorrelationKeyBuffer());
+    setElementId(record.getElementIdBuffer());
   }
 
   @Override
