@@ -70,6 +70,10 @@ class SegmentedJournalReader implements JournalReader {
       seekToFirst();
     }
 
+    if (currentReader.getNextIndex() == index) {
+      return index;
+    }
+
     if (index < currentReader.getNextIndex()) {
       rewind(index);
     } else if (index > currentReader.getNextIndex()) {
