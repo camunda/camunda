@@ -7,19 +7,22 @@
  */
 package io.zeebe.engine.processing.bpmn;
 
-import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
-import org.slf4j.Logger;
 
 /**
- * A check to prevent concurrent state transitions of a process instance.
+ * Checks the preconditions of a state transition command.
  *
  * <p>A process instance can be have concurrent state transitions if a user command is received
  * (e.g. cancel process instance) or if an internal/external event is triggered (e.g. timer boundary
@@ -28,8 +31,6 @@ import org.slf4j.Logger;
  */
 public final class ProcessInstanceStateTransitionGuard {
 
-  private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
-
   private final BpmnStateBehavior stateBehavior;
 
   public ProcessInstanceStateTransitionGuard(final BpmnStateBehavior stateBehavior) {
@@ -37,22 +38,12 @@ public final class ProcessInstanceStateTransitionGuard {
   }
 
   /**
-   * Checks if a process instance event can be processed based on the current state.
+   * Checks if the preconditions of the given command are met.
    *
-   * @return {@code true} if the transition is valid.
+   * @return {@code true} if the preconditions are met and the transition command is valid.
    */
-  public boolean isValidStateTransition(final BpmnElementContext context) {
-    final var result = checkStateTransition(context);
-
-    // log the reason for better debugging
-    result.ifLeft(
-        violation ->
-            LOGGER.debug(
-                "Don't process event because of an illegal state transition: {} [context: {}]",
-                violation,
-                context));
-
-    return result.isRight();
+  public Either<Failure, ?> isValidStateTransition(final BpmnElementContext context) {
+    return checkStateTransition(context).mapLeft(Failure::new);
   }
 
   private Either<String, ?> checkStateTransition(final BpmnElementContext context) {

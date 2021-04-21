@@ -23,6 +23,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -32,6 +33,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.function.Consumer;
@@ -51,6 +53,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final MutableElementInstanceState elementInstanceState;
+  private final TypedRejectionWriter rejectionWriter;
 
   private boolean reprocessingMode = true;
   private final BpmnIncidentBehavior incidentBehavior;
@@ -77,6 +80,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             eventTriggerBehavior,
             this::getContainerProcessor,
             writers);
+    rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processors = new BpmnElementProcessors(bpmnBehaviors);
 
@@ -122,12 +126,16 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       relieveReprocessingStateProblems();
     }
 
-    // process the record
-    if (stateTransitionGuard.isValidStateTransition(context)) {
-      LOGGER.trace("Process process instance event [context: {}]", context);
-
-      processEvent(intent, processor, element);
-    }
+    stateTransitionGuard
+        .isValidStateTransition(context)
+        .ifRightOrLeft(
+            ok -> {
+              LOGGER.trace("Process process instance event [context: {}]", context);
+              processEvent(intent, processor, element);
+            },
+            violation ->
+                rejectionWriter.appendRejection(
+                    record, RejectionType.INVALID_STATE, violation.getMessage()));
   }
 
   /**
