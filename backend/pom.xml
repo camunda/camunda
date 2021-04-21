@@ -12,7 +12,7 @@
 
   <properties>
     <jetty.version>9.4.40.v20210413</jetty.version>
-    <jersey.version>2.32</jersey.version>
+    <jersey.version>2.34</jersey.version>
     <it.test.excludedGroups />
     <test.forkCount />
 
