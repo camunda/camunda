@@ -78,6 +78,35 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
+  public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
+    update(record, s -> s.setRecord(record).setCommandSentTime(0).setOpened());
+  }
+
+  @Override
+  public void updateToClosingState(
+      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+    update(record, s -> s.setRecord(record).setCommandSentTime(commandSentTime).setClosing());
+  }
+
+  @Override
+  public void updateSentTimeInTransaction(
+      final ProcessMessageSubscription subscription, final long commandSentTime) {
+    transactionContext.runInTransaction(
+        () -> update(subscription, s -> s.setCommandSentTime(commandSentTime)));
+  }
+
+  @Override
+  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
+    final ProcessMessageSubscription subscription =
+        getSubscription(elementInstanceKey, messageName);
+    final boolean found = subscription != null;
+    if (found) {
+      remove(subscription);
+    }
+    return found;
+  }
+
+  @Override
   public ProcessMessageSubscription getSubscription(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
@@ -114,40 +143,12 @@ public final class DbProcessMessageSubscriptionState
         });
   }
 
-  public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setCommandSentTime(0).setOpened());
-  }
-
-  @Override
-  public void updateToClosingState(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    update(record, s -> s.setRecord(record).setCommandSentTime(commandSentTime).setClosing());
-  }
-
-  @Override
-  public void updateSentTimeInTransaction(
-      final ProcessMessageSubscription subscription, final long commandSentTime) {
-    transactionContext.runInTransaction(
-        () -> update(subscription, s -> s.setCommandSentTime(commandSentTime)));
-  }
-
   @Override
   public boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
     return subscriptionColumnFamily.exists(elementKeyAndMessageName);
-  }
-
-  @Override
-  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
-    final ProcessMessageSubscription subscription =
-        getSubscription(elementInstanceKey, messageName);
-    final boolean found = subscription != null;
-    if (found) {
-      remove(subscription);
-    }
-    return found;
   }
 
   private void update(
