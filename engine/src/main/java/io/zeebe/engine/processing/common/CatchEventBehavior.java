@@ -245,15 +245,13 @@ public final class CatchEventBehavior {
   private boolean unsubscribeFromMessageEvent(
       final ProcessMessageSubscription subscription, final SideEffects sideEffects) {
 
-    final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
-    final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
-    final long processInstanceKey = subscription.getProcessInstanceKey();
-    final long elementInstanceKey = subscription.getElementInstanceKey();
+    final DirectBuffer messageName = cloneBuffer(subscription.getRecord().getMessageNameBuffer());
+    final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
+    final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
 
-    subscription.setClosing();
     processMessageSubscriptionState.updateToClosingState(
-        subscription, ActorClock.currentTimeMillis());
-
+        subscription.getRecord(), ActorClock.currentTimeMillis());
     sideEffects.add(
         () ->
             sendCloseMessageSubscriptionCommand(

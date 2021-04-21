@@ -25,12 +25,6 @@ public final class ProcessMessageSubscriptionCreatedApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-
-    // TODO (saig0): reuse the subscription record in the state (#6533)
-    final var subscription =
-        subscriptionState.getSubscription(
-            value.getElementInstanceKey(), value.getMessageNameBuffer());
-
-    subscriptionState.updateToOpenedState(subscription, subscription.getSubscriptionPartitionId());
+    subscriptionState.updateToOpenedState(value);
   }
 }

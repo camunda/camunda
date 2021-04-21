@@ -56,7 +56,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
     if (subscription != null && subscription.isOpening()) {
       // TODO (saig0): the subscription should have a key (#2805)
       stateWriter.appendFollowUpEvent(
-          command.getKey(), ProcessMessageSubscriptionIntent.CREATED, subscriptionRecord);
+          command.getKey(), ProcessMessageSubscriptionIntent.CREATED, subscription.getRecord());
 
     } else {
       rejectCommand(command, subscription);
