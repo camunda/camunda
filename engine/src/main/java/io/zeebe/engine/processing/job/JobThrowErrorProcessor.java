@@ -10,7 +10,6 @@ package io.zeebe.engine.processing.job;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
-import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -48,12 +47,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final CatchEventAnalyzer stateAnalyzer;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState eventScopeInstanceState;
-  private final EventTriggerBehavior eventTriggerBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
 
   public JobThrowErrorProcessor(
       final ZeebeState state,
-      final EventTriggerBehavior eventTriggerBehavior,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
@@ -66,7 +63,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
             "throw an error for", jobState, this::acceptCommand);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
-    this.eventTriggerBehavior = eventTriggerBehavior;
     this.eventPublicationBehavior = eventPublicationBehavior;
   }
 
@@ -87,7 +83,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final var serviceTaskInstanceKey = job.getElementId();
 
     if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
-      raiseIncident(jobKey, job, commandWriter);
+      raiseIncident(jobKey, job, stateWriter);
       return;
     }
 
@@ -135,8 +131,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     return serviceTaskInstance != null && serviceTaskInstance.isActive();
   }
 
-  private void raiseIncident(
-      final long key, final JobRecord job, final TypedCommandWriter commandWriter) {
+  private void raiseIncident(final long key, final JobRecord job, final StateWriter stateWriter) {
 
     final DirectBuffer jobErrorMessage = job.getErrorMessageBuffer();
     DirectBuffer incidentErrorMessage =
@@ -159,6 +154,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setJobKey(key)
         .setVariableScopeKey(job.getElementInstanceKey());
 
-    commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
 }

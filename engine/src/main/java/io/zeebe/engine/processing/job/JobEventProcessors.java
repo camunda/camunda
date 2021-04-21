@@ -8,7 +8,6 @@
 package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
-import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -25,7 +24,6 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
-      final EventTriggerBehavior eventTriggerBehavior,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final int maxRecordSize,
       final Writers writers) {
@@ -42,8 +40,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
-            new JobThrowErrorProcessor(
-                zeebeState, eventTriggerBehavior, eventPublicationBehavior, keyGenerator))
+            new JobThrowErrorProcessor(zeebeState, eventPublicationBehavior, keyGenerator))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
