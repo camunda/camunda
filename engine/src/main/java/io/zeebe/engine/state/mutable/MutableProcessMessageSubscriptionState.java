@@ -9,21 +9,18 @@ package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableProcessMessageSubscriptionState extends ProcessMessageSubscriptionState {
 
-  void put(ProcessMessageSubscription subscription);
+  void put(ProcessMessageSubscriptionRecord record, final long commandSentTime);
 
-  void updateToOpenedState(ProcessMessageSubscription subscription, int subscriptionPartitionId);
+  void updateToOpenedState(ProcessMessageSubscriptionRecord record);
 
-  void updateToClosingState(ProcessMessageSubscription subscription, long sentTime);
+  void updateToClosingState(ProcessMessageSubscriptionRecord record, long commandSentTime);
 
-  void updateSentTimeInTransaction(ProcessMessageSubscription subscription, long sentTime);
-
-  void updateSentTime(ProcessMessageSubscription subscription, long sentTime);
+  void updateSentTimeInTransaction(ProcessMessageSubscription subscription, long commandSentTime);
 
   boolean remove(long elementInstanceKey, DirectBuffer messageName);
-
-  void remove(ProcessMessageSubscription subscription);
 }
