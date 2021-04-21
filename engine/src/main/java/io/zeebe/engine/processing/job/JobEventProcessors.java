@@ -35,7 +35,10 @@ public final class JobEventProcessors {
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, writers))
-        .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.FAIL,
+            new JobFailProcessor(zeebeState, zeebeState.getKeyGenerator()))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
