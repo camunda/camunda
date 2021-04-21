@@ -17,8 +17,8 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
-import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 
 public final class EventSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -65,28 +65,15 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onTerminating(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    incidentBehavior.resolveIncidents(terminating);
 
-    final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(terminating);
     if (noActiveChildInstances) {
-      stateTransitionBehavior.transitionToTerminated(context);
+      onChildTerminated(element, terminating, null);
     }
-  }
-
-  @Override
-  public void onTerminated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.publishTriggeredBoundaryEvent(context);
-
-    incidentBehavior.resolveIncidents(context);
-
-    stateTransitionBehavior.onElementTerminated(element, context);
-
-    stateBehavior.removeElementInstance(context);
   }
 
   @Override
@@ -125,13 +112,11 @@ public final class EventSubProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.canBeTerminated(childContext)) {
-      stateTransitionBehavior.transitionToTerminated(flowScopeContext);
-
-    } else {
-      eventSubscriptionBehavior.publishTriggeredEventSubProcess(
-          MigratedStreamProcessors.isMigrated(childContext.getBpmnElementType()), flowScopeContext);
+    if (childContext == null
+        || (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
+            && stateBehavior.canBeTerminated(childContext))) {
+      final var terminated = stateTransitionBehavior.transitionToTerminated(flowScopeContext);
+      stateTransitionBehavior.onElementTerminated(element, terminated);
     }
   }
 }
