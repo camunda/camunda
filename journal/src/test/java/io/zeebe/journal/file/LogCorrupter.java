@@ -16,7 +16,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 public class LogCorrupter {
 
@@ -53,19 +52,18 @@ public class LogCorrupter {
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
     buffer.position(JournalSegmentDescriptor.getEncodingLength());
 
-    Optional<Integer> version = FrameUtil.readVersion(buffer);
-    for (long index = 1; version.isPresent() && version.get() == 1; index++) {
+    for (long index = 1;
+        FrameUtil.hasValidVersion(buffer) && FrameUtil.readVersion(buffer) == 1;
+        index++) {
       final var record = reader.read(buffer, index);
 
-      if (record == null || record.index() > targetIndex) {
+      if (record.index() > targetIndex) {
         break;
       } else if (record.index() == targetIndex) {
         final int lastPos = buffer.position() - 1;
         buffer.put(lastPos, (byte) ~buffer.get(lastPos));
         return true;
       }
-
-      version = FrameUtil.readVersion(buffer);
     }
 
     return false;

@@ -202,12 +202,10 @@ class MappedJournalSegmentWriter {
     buffer.mark();
     int position = buffer.position();
     try {
-      while ((index == 0 || nextIndex <= index) && FrameUtil.readVersion(buffer).isPresent()) {
-        final var nextEntry = recordUtil.read(buffer, nextIndex);
-        if (nextEntry == null) {
-          break;
-        }
-        lastEntry = nextEntry;
+      while ((index == 0 || nextIndex <= index) && FrameUtil.hasValidVersion(buffer)) {
+        // read version so that buffer's position is advanced
+        FrameUtil.readVersion(buffer);
+        lastEntry = recordUtil.read(buffer, nextIndex);
         nextIndex++;
         this.index.index(lastEntry, position);
         buffer.mark();

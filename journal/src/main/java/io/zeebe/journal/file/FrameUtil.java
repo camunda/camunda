@@ -15,9 +15,7 @@
  */
 package io.zeebe.journal.file;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 public final class FrameUtil {
 
@@ -36,25 +34,21 @@ public final class FrameUtil {
   }
 
   /**
-   * If the frame is valid, returns an Optional with the frame version (which can span from 1-255)
-   * and the buffer's position in incremented. If the frame should be ignored, the returned Optional
-   * is empty and the buffer's position is the same.
+   * Reads the version at buffer's current position. The position of the buffer will be advanced.
    */
-  public static Optional<Integer> readVersion(final ByteBuffer buffer) {
-    buffer.mark();
+  public static int readVersion(final ByteBuffer buffer) {
+    return buffer.get();
+  }
 
-    try {
-      final byte val = buffer.get();
-
-      if (val != IGNORE) {
-        return Optional.of((int) val);
-      }
-    } catch (BufferUnderflowException e) {
-      // nothing to read - reset
+  /**
+   * Returns true if there is a valid version at buffer's current position. The position of the
+   * buffer will be unchanged.
+   */
+  public static boolean hasValidVersion(final ByteBuffer buffer) {
+    if (buffer.capacity() < buffer.position() + LENGTH) {
+      return false;
     }
-
-    buffer.reset();
-    return Optional.empty();
+    return buffer.get(buffer.position()) != IGNORE;
   }
 
   public static int getLength() {
