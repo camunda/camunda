@@ -104,8 +104,9 @@ it('should evaluate the report on mount if the config is complete, but the resul
   evaluateReport.mockClear();
   evaluateReport.mockReturnValue(report);
 
-  await shallow(<ReportEdit {...props} report={{...report, result: null}} />);
+  const node = shallow(<ReportEdit {...props} report={{...report, result: null}} />);
 
+  expect(node.find('LoadingIndicator')).toExist();
   expect(evaluateReport).toHaveBeenCalled();
 });
 

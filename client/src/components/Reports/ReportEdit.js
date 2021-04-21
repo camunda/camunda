@@ -39,11 +39,11 @@ export class ReportEdit extends React.Component {
     serverError: this.props.error,
   };
 
-  async componentDidMount() {
+  componentDidMount() {
     const {report} = this.state;
 
     if (this.isReportComplete(report) && !report.result) {
-      this.loadReport(report);
+      this.loadUpdatedReport(report);
       nowDirty(t('report.label'), this.save);
     }
   }
