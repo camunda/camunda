@@ -51,7 +51,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
-            new JobBatchActivateProcessor(writers, zeebeState, maxRecordSize))
+            new JobBatchActivateProcessor(
+                writers, zeebeState, zeebeState.getKeyGenerator(), maxRecordSize))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(
             new StreamProcessorLifecycleAware() {
