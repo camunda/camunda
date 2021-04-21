@@ -23,8 +23,9 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
   CORRELATE((short) 3),
   CORRELATED((short) 4),
 
-  DELETE((short) 5),
-  DELETED((short) 6);
+  DELETING((short) 5),
+  DELETE((short) 6),
+  DELETED((short) 7);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -56,8 +57,10 @@ public enum ProcessMessageSubscriptionIntent implements ProcessInstanceRelatedIn
       case 4:
         return CORRELATED;
       case 5:
-        return DELETE;
+        return DELETING;
       case 6:
+        return DELETE;
+      case 7:
         return DELETED;
       default:
         return Intent.UNKNOWN;
