@@ -184,6 +184,12 @@ public class RaftLog implements Closeable {
   }
 
   public void deleteAfter(final long index) {
+    if (index < commitIndex) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to delete index after %d, but it is lower than the commit index %d. Deleting committed entries can lead to inconsistencies and is prohibited.",
+              index, commitIndex));
+    }
     journal.deleteAfter(index);
     lastAppendedEntry = null;
   }
