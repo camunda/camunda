@@ -48,7 +48,7 @@
     "start-backend": "node scripts/start-backend",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js",
-    "prepare": "husky install"
+    "prepare": "cd .. && husky install client/.husky"
   },
   "lint-staged": {
     "src/**/*.scss": [
