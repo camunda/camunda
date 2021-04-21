@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn.container;
 
 import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -16,7 +17,6 @@ import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
@@ -43,31 +43,12 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onActivating(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
-        .ifRightOrLeft(
-            ok -> stateTransitionBehavior.transitionToActivated(context),
-            failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void onActivated(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    final ExecutableStartEvent startEvent;
-    if (element.hasNoneStartEvent()) {
-      // embedded sub-process is activated
-      startEvent = element.getNoneStartEvent();
-    } else {
-      // event sub-process is activated
-      startEvent = element.getStartEvents().get(0);
-    }
-
-    stateTransitionBehavior.activateChildInstance(context, startEvent);
+  public void onActivate(
+      final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
+    // event sub process is activated by the triggered event. No activate command is written.
+    throw new BpmnProcessingException(
+        activating,
+        "Expected an ACTIVATING and ACTIVATED event for the event sub process but found an ACTIVATE command.");
   }
 
   @Override
@@ -127,7 +108,15 @@ public final class EventSubProcessProcessor
   public void onChildActivating(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
+      final BpmnElementContext childContext) {
+    if (childContext.getBpmnElementType() != BpmnElementType.START_EVENT) {
+      return;
+    }
+
+    variableMappingBehavior
+        .applyInputMappings(flowScopeContext, element)
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, childContext));
+  }
 
   @Override
   public void beforeExecutionPathCompleted(

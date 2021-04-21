@@ -112,15 +112,14 @@ public final class EventHandle {
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
       } else if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
-        final var executableStartEvent = (ExecutableStartEvent) catchEvent;
-
+        final var startEvent = (ExecutableStartEvent) catchEvent;
         eventTriggerBehavior.triggerEventSubProcess(
-            executableStartEvent, eventScopeKey, elementRecord);
+            startEvent, eventScopeKey, elementRecord, variables);
+
       } else if (isInterrupting(catchEvent)) {
         // terminate the activated element and then activate the triggered catch event
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.TERMINATE_ELEMENT, elementRecord);
-
       } else {
         eventTriggerBehavior.activateTriggeredEvent(
             catchEvent, elementRecord.getFlowScopeKey(), elementRecord, variables);
