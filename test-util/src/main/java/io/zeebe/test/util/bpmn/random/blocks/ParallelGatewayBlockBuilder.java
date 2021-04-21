@@ -78,7 +78,7 @@ public class ParallelGatewayBlockBuilder implements BlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     final var forkingGateway = new StepActivateBPMNElement(forkGatewayId);
-    result.append(forkingGateway);
+    result.appendDirectSuccessor(forkingGateway);
 
     final var branchPointers =
         blockBuilders.stream()

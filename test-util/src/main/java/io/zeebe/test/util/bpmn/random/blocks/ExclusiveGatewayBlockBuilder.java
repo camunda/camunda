@@ -94,15 +94,16 @@ public class ExclusiveGatewayBlockBuilder implements BlockBuilder {
     final int branch = random.nextInt(branchIds.size());
 
     if (branch == 0) {
-      result.append(new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
+      result.appendDirectSuccessor(
+          new StepPickDefaultCase(forkGatewayId, gatewayConditionVariable));
     } else if (random.nextBoolean()) {
       // take a non-default branch
-      result.append(
+      result.appendDirectSuccessor(
           new StepPickConditionCase(
               forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
     } else {
       // cause an incident then resolve it and set a variable
-      result.append(
+      result.appendDirectSuccessor(
           new StepRaiseIncidentThenResolveAndPickConditionCase(
               forkGatewayId, gatewayConditionVariable, branchIds.get(branch)));
     }

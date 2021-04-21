@@ -31,7 +31,14 @@ public final class ExecutionPathSegment {
   private final List<ScheduledExecutionStep> scheduledSteps = new ArrayList<>();
   private final Map<String, Object> variableDefaults = new HashMap<>();
 
-  public void append(final AbstractExecutionStep executionStep) {
+  /**
+   * Appends the next step to the execution path. This next step is a direct successor to the
+   * previous step. This means that the last step in the execution path is both its logical and its
+   * scheduling predecessor.
+   *
+   * @param executionStep direct successor to previous step
+   */
+  public void appendDirectSuccessor(final AbstractExecutionStep executionStep) {
     final ScheduledExecutionStep predecessor;
     if (scheduledSteps.isEmpty()) {
       predecessor = null;
@@ -42,7 +49,19 @@ public final class ExecutionPathSegment {
     scheduledSteps.add(new ScheduledExecutionStep(predecessor, predecessor, executionStep));
   }
 
-  public void append(
+  /**
+   * Appends the next step to the execution path. This next step is a scheduling successor to the
+   * previous step. This means that the last step in the execution path is its execution
+   * predecessor. However, the logical predecessor of the next step is the one passed in via {@code
+   * logicalPredecessorStep}
+   *
+   * @param executionStep the next step
+   * @param logicalPredecessorStep the logical predecessor of {@code executionStep}; this step must
+   *     already be part of the execution path or else an exception will be thrown
+   * @throws IllegalStateException thrown is {@code logicalPredecessorStep} is not part of the
+   *     existing execution path
+   */
+  public void appendExecutionSuccessor(
       final AbstractExecutionStep executionStep,
       final AbstractExecutionStep logicalPredecessorStep) {
     final ScheduledExecutionStep executionPredecessor;
@@ -56,7 +75,12 @@ public final class ExecutionPathSegment {
         scheduledSteps.stream()
             .filter(scheduledStep -> scheduledStep.getStep() == logicalPredecessorStep)
             .findFirst()
-            .orElseThrow();
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Unable to find step "
+                            + logicalPredecessorStep
+                            + ". This step was passed as a logical predecessor, thus it should already be present in the execution path segment. But it was not found."));
 
     scheduledSteps.add(
         new ScheduledExecutionStep(logicalPredecessor, executionPredecessor, executionStep));
@@ -72,23 +96,16 @@ public final class ExecutionPathSegment {
     final var logicalPredecessor = scheduledExecutionStep.getLogicalPredecessor();
 
     if (logicalPredecessor == null) {
-      append(scheduledExecutionStep.getStep());
+      appendDirectSuccessor(scheduledExecutionStep.getStep());
     } else {
-      append(scheduledExecutionStep.getStep(), logicalPredecessor.getStep());
+      appendExecutionSuccessor(scheduledExecutionStep.getStep(), logicalPredecessor.getStep());
     }
   }
 
   public boolean canBeInterrupted() {
-    if (scheduledSteps.isEmpty()) {
-      return false;
-    }
-
     return scheduledSteps.stream()
-            .map(ScheduledExecutionStep::getStep)
-            .filter(Predicate.not(AbstractExecutionStep::isAutomatic))
-            .collect(Collectors.toList())
-            .size()
-        > 1;
+        .map(ScheduledExecutionStep::getStep)
+        .anyMatch(Predicate.not(AbstractExecutionStep::isAutomatic));
   }
 
   /**
@@ -144,7 +161,10 @@ public final class ExecutionPathSegment {
     final int initialCutOffPoint =
         firstCutOffPoint + random.nextInt(lastCutOffPoint - firstCutOffPoint);
 
-    // skip automatic steps
+    /* skip automatic steps; this makes no difference in terms of execution, but it makes the
+    execution path easier to read and debug. E.g. the execution path will not be cut at a point
+    where other steps will be executed by the engine automatically. So when you read the execution
+    path and it is cut somewhere, it is cut at a place that is consistent with the state in the engine*/
     int finalCutOffPoint = initialCutOffPoint;
     while (scheduledSteps.get(finalCutOffPoint).getStep().isAutomatic()) {
       finalCutOffPoint++;
@@ -156,7 +176,7 @@ public final class ExecutionPathSegment {
   @Deprecated // use interruptAtRandomPosition instead
   public void replace(final int index, final AbstractExecutionStep executionStep) {
     scheduledSteps.subList(index, scheduledSteps.size()).clear();
-    append(executionStep);
+    appendDirectSuccessor(executionStep);
   }
 
   /**

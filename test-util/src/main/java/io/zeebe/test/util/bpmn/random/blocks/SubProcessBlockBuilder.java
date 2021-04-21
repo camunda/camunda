@@ -90,6 +90,8 @@ public class SubProcessBlockBuilder implements BlockBuilder {
             ((SubProcessBuilder) exclusiveGatewayBuilder.moveToNode(subProcessId))
                 .boundaryEvent(
                     subProcessBoundaryTimerEventId,
+                    /* the value of that variable will be calculated when the execution flow is
+                    known*/
                     b -> b.timerWithDurationExpression(subProcessBoundaryTimerEventId))
                 .connectTo(joinGatewayId);
       }
@@ -109,7 +111,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
     }
     final var activateSubProcess = new StepActivateBPMNElement(subProcessId);
 
-    result.append(activateSubProcess);
+    result.appendDirectSuccessor(activateSubProcess);
 
     if (embeddedSubProcessBuilder == null) {
       return result;
@@ -123,7 +125,7 @@ public class SubProcessBlockBuilder implements BlockBuilder {
       internalExecutionPath.cutAtRandomPosition(random);
       result.append(internalExecutionPath);
       if (hasBoundaryTimerEvent) {
-        result.append(
+        result.appendExecutionSuccessor(
             new StepTriggerTimerBoundaryEvent(subProcessId, subProcessBoundaryTimerEventId),
             activateSubProcess);
       } // extend here for other boundary events

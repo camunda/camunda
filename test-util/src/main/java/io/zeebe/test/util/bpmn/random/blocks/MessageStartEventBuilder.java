@@ -37,7 +37,7 @@ public final class MessageStartEventBuilder implements StartEventBlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(
       final String processId, final Map<String, Object> variables) {
     final var pathSegment = new ExecutionPathSegment();
-    pathSegment.append(new StepPublishStartMessage(messageName, variables));
+    pathSegment.appendDirectSuccessor(new StepPublishStartMessage(messageName, variables));
     return pathSegment;
   }
 }

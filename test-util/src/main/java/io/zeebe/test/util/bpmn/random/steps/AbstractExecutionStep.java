@@ -34,7 +34,6 @@ public abstract class AbstractExecutionStep {
   protected final Map<String, Object> variables = new HashMap<>();
 
   public Map<String, Object> getVariables() {
-    // TODO
     return Collections.unmodifiableMap(variables);
   }
 

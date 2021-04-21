@@ -84,6 +84,8 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
         result =
             ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(serviceTaskId))
                 .boundaryEvent(
+                    /* the value of that variable will be calculated when the execution flow is
+                    known*/
                     boundaryTimerEventId, b -> b.timerWithDurationExpression(boundaryTimerEventId))
                 .connectTo(joinGatewayId);
       }
@@ -101,7 +103,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     final var activateStep = new StepActivateBPMNElement(serviceTaskId);
-    result.append(activateStep);
+    result.appendDirectSuccessor(activateStep);
 
     if (hasBoundaryTimerEvent) {
       // set an infinite timer as default; this can be overwritten by the execution path chosen
@@ -111,7 +113,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
     result.append(buildStepsForFailedExecutions(random));
 
-    result.append(buildStepForSuccessfulExecution(random), activateStep);
+    result.appendExecutionSuccessor(buildStepForSuccessfulExecution(random), activateStep);
 
     return result;
   }
@@ -120,12 +122,12 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
     if (random.nextBoolean()) {
-      result.append(new StepActivateAndTimeoutJob(jobType));
+      result.appendDirectSuccessor(new StepActivateAndTimeoutJob(jobType));
     }
 
     if (random.nextBoolean()) {
       final boolean updateRetries = random.nextBoolean();
-      result.append(new StepActivateAndFailJob(jobType, updateRetries));
+      result.appendDirectSuccessor(new StepActivateAndFailJob(jobType, updateRetries));
     }
 
     return result;

@@ -66,6 +66,23 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
     return joinGateway;
   }
 
+  @Override
+  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
+    final ExecutionPathSegment result = new ExecutionPathSegment();
+
+    final int branchNumber = random.nextInt(branches.size());
+    final var branch = branches.get(branchNumber);
+    final var blockBuilder = branch.getRight();
+
+    final var executionStep =
+        new StepPublishMessage(
+            getMessageName(branch), CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
+    result.appendDirectSuccessor(executionStep);
+    result.append(blockBuilder.findRandomExecutionPath(random));
+
+    return result;
+  }
+
   private AbstractFlowNodeBuilder<?, ?> addBranch(
       final io.zeebe.model.bpmn.builder.EventBasedGatewayBuilder gatewayBuilder,
       final Tuple<String, BlockBuilder> branch) {
@@ -86,23 +103,6 @@ public class EventBasedGatewayBlockBuilder implements BlockBuilder {
   private String getMessageName(final Tuple<String, BlockBuilder> branch) {
     final String branchId = branch.getLeft();
     return MESSAGE_NAME_PREFIX + branchId;
-  }
-
-  @Override
-  public ExecutionPathSegment findRandomExecutionPath(final Random random) {
-    final ExecutionPathSegment result = new ExecutionPathSegment();
-
-    final int branchNumber = random.nextInt(branches.size());
-    final var branch = branches.get(branchNumber);
-    final var blockBuilder = branch.getRight();
-
-    final var executionStep =
-        new StepPublishMessage(
-            getMessageName(branch), CORRELATION_KEY_FIELD, CORRELATION_KEY_VALUE);
-    result.append(executionStep);
-    result.append(blockBuilder.findRandomExecutionPath(random));
-
-    return result;
   }
 
   static class Factory implements BlockBuilderFactory {
