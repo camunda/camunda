@@ -80,12 +80,6 @@ public final class MappingIncidentTest {
             .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
-    final Record createIncidentEvent =
-        RecordingExporter.incidentRecords()
-            .onlyCommands()
-            .withIntent(IncidentIntent.CREATE)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .onlyEvents()
@@ -94,10 +88,7 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(createIncidentEvent.getSourceRecordPosition())
-        .isEqualTo(failureCommand.getPosition());
-    assertThat(incidentEvent.getSourceRecordPosition())
-        .isEqualTo(createIncidentEvent.getPosition());
+    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureCommand.getKey());
 
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
@@ -187,11 +178,6 @@ public final class MappingIncidentTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record createIncidentEvent =
-        RecordingExporter.incidentRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withIntent(IncidentIntent.CREATE)
-            .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withProcessInstanceKey(processInstanceKey)
@@ -199,10 +185,7 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(createIncidentEvent.getSourceRecordPosition())
-        .isEqualTo(failureCommand.getPosition());
-    assertThat(incidentEvent.getSourceRecordPosition())
-        .isEqualTo(createIncidentEvent.getPosition());
+    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
