@@ -29,8 +29,6 @@ public interface BpmnBehaviors {
 
   BpmnStateTransitionBehavior stateTransitionBehavior();
 
-  BpmnDeferredRecordsBehavior deferredRecordsBehavior();
-
   ProcessInstanceStateTransitionGuard stateTransitionGuard();
 
   BpmnProcessResultSenderBehavior processResultSenderBehavior();

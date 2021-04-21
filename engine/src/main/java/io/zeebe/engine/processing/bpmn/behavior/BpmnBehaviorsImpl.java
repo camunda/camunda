@@ -34,7 +34,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
-  private final BpmnDeferredRecordsBehavior deferredRecordsBehavior;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final TypedStreamWriter streamWriter;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
@@ -86,7 +85,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             sideEffects,
             zeebeState);
     incidentBehavior = new BpmnIncidentBehavior(zeebeState, commandWriter, stateWriter);
-    deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
@@ -134,11 +132,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnStateTransitionBehavior stateTransitionBehavior() {
     return stateTransitionBehavior;
-  }
-
-  @Override
-  public BpmnDeferredRecordsBehavior deferredRecordsBehavior() {
-    return deferredRecordsBehavior;
   }
 
   @Override

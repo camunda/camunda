@@ -23,6 +23,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -52,6 +53,7 @@ public final class BpmnStateTransitionBehavior {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final MutableElementInstanceState elementInstanceState;
+  private final SequenceFlowAnalyzer sequenceFlowAnalyzer;
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
@@ -73,6 +75,7 @@ public final class BpmnStateTransitionBehavior {
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.elementInstanceState = elementInstanceState;
+    sequenceFlowAnalyzer = new SequenceFlowAnalyzer(elementInstanceState);
   }
 
   /** @return context with updated intent */
@@ -252,24 +255,33 @@ public final class BpmnStateTransitionBehavior {
   public void takeSequenceFlow(
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+    final var target = sequenceFlow.getTarget();
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
         .setElementId(sequenceFlow.getId())
         .setBpmnElementType(sequenceFlow.getElementType());
 
+    // take the sequence flow
     final var sequenceFlowKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+    final BpmnElementContext sequenceFlowTaken =
+        context.copy(
+            sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      flowScopeInstance.incrementActiveSequenceFlows();
-      elementInstanceState.updateInstance(flowScopeInstance);
-
-      streamWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+    final boolean shouldActivateTargetElement;
+    if (target.getElementType() != BpmnElementType.PARALLEL_GATEWAY) {
+      shouldActivateTargetElement = true;
     } else {
-      stateWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+      // if all incoming sequence flows are taken at least once, the gateway can be activated
+      final var tokensBySequenceFlow =
+          sequenceFlowAnalyzer.determineTakenIncomingFlows(context.getFlowScopeKey(), target);
+      shouldActivateTargetElement = tokensBySequenceFlow.size() == target.getIncoming().size();
+    }
+
+    if (shouldActivateTargetElement) {
+      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
     }
   }
 
