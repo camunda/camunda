@@ -136,8 +136,8 @@ public final class JobTimeOutTest {
         jobRecords(JobIntent.TIMED_OUT)
             .filter(
                 r -> {
-                  final long wfInstanceKey = r.getValue().getProcessInstanceKey();
-                  return wfInstanceKey == instanceKey1 || wfInstanceKey == instanceKey2;
+                  final long processInstanceKey = r.getValue().getProcessInstanceKey();
+                  return processInstanceKey == instanceKey1 || processInstanceKey == instanceKey2;
                 })
             .limit(2)
             .collect(Collectors.toList());

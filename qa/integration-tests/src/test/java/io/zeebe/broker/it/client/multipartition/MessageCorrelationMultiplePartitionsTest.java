@@ -90,16 +90,19 @@ public final class MessageCorrelationMultiplePartitionsTest {
     publishMessage(CORRELATION_KEY_PARTITION_2, Map.of("p", "p2"));
 
     // when
-    final long wfiKey1 = createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_0));
-    final long wfiKey2 = createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_1));
-    final long wfiKey3 = createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_2));
+    final long processInstanceKey1 =
+        createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_0));
+    final long processInstanceKey2 =
+        createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_1));
+    final long processInstanceKey3 =
+        createProcessInstance(Map.of("key", CORRELATION_KEY_PARTITION_2));
 
     // then
     final List<String> correlatedValues =
         Arrays.asList(
-            ProcessInstances.getCurrentVariables(wfiKey1).get("p"),
-            ProcessInstances.getCurrentVariables(wfiKey2).get("p"),
-            ProcessInstances.getCurrentVariables(wfiKey3).get("p"));
+            ProcessInstances.getCurrentVariables(processInstanceKey1).get("p"),
+            ProcessInstances.getCurrentVariables(processInstanceKey2).get("p"),
+            ProcessInstances.getCurrentVariables(processInstanceKey3).get("p"));
 
     assertThat(correlatedValues).contains("\"p0\"", "\"p1\"", "\"p2\"");
   }

@@ -112,31 +112,31 @@ public class NonInterruptingEventSubprocessTest {
   public void shouldTriggerEventSubprocess() {
     // when
     final BpmnModelInstance model = eventSubprocModel(builder);
-    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
     final Record<ProcessInstanceRecordValue> startEventActivate =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .withElementId("event_sub_start")
             .withElementType(BpmnElementType.START_EVENT)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<ProcessInstanceRecordValue> subProcessActivated =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("event_sub_proc")
             .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(startEventActivate.getValue())
         .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
-        .hasProcessInstanceKey(wfInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasBpmnElementType(BpmnElementType.START_EVENT)
         .hasElementId("event_sub_start")
         .hasVersion(currentProcess.getVersion())
         .hasFlowScopeKey(subProcessActivated.getKey());
 
-    assertEventSubprocessLifecycle(wfInstanceKey);
+    assertEventSubprocessLifecycle(processInstanceKey);
   }
 
   @Test
@@ -229,15 +229,15 @@ public class NonInterruptingEventSubprocessTest {
   public void shouldNotInterruptParentProcess() {
     // when
     final BpmnModelInstance model = eventSubprocModel(builder);
-    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
-    assertEventSubprocessLifecycle(wfInstanceKey);
-    ENGINE.job().ofInstance(wfInstanceKey).withType("type").complete();
+    assertEventSubprocessLifecycle(processInstanceKey);
+    ENGINE.job().ofInstance(processInstanceKey).withType("type").complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -252,10 +252,10 @@ public class NonInterruptingEventSubprocessTest {
   public void shouldNotPropagateVariablesToScope() {
     // given
     final BpmnModelInstance model = eventSubProcTaskModel(helper.getJobType(), "sub_type");
-    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
     final long eventSubprocKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
             .getFirst()
             .getKey();
@@ -266,7 +266,7 @@ public class NonInterruptingEventSubprocessTest {
         .withDocument(Map.of("y", 2))
         .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
         .update();
-    ENGINE.job().ofInstance(wfInstanceKey).withType("sub_type").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("sub_type").complete();
 
     // then
     final Record<JobBatchRecordValue> job = ENGINE.jobs().withType(helper.getJobType()).activate();
@@ -315,7 +315,7 @@ public class NonInterruptingEventSubprocessTest {
             .getDeployedProcesses()
             .get(0);
 
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
@@ -323,13 +323,13 @@ public class NonInterruptingEventSubprocessTest {
             .create();
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .describedAs("Expected job to be created")
         .isTrue();
 
-    triggerEventSubprocess.accept(wfInstanceKey);
-    return wfInstanceKey;
+    triggerEventSubprocess.accept(processInstanceKey);
+    return processInstanceKey;
   }
 
   private static BpmnModelInstance eventSubprocModel(
