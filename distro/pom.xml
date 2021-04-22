@@ -76,7 +76,7 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <version>3.2.0</version>
         <executions>
-          <!--Check if the version is alpha or snapshot, use latest if true, else leave docs.version = project.version-->
+          <!--Check if the version is alpha or snapshot, use develop if true, else leave docs.version = project.version-->
           <execution>
             <id>regex-property1</id>
             <goals>
@@ -86,7 +86,7 @@
               <name>docs.version</name>
               <value>${project.version}</value>
               <regex>(^\d\.\d)\.\d-.+$</regex>
-              <replacement>latest</replacement>
+              <replacement>develop</replacement>
               <failIfNoMatch>false</failIfNoMatch>
             </configuration>
           </execution>
