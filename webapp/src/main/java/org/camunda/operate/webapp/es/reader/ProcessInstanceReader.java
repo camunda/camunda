@@ -45,12 +45,12 @@ import org.springframework.stereotype.Component;
 public class ProcessInstanceReader extends AbstractReader {
 
   private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceReader.class);
-  
+
   public static final FilterAggregationBuilder INCIDENTS_AGGREGATION = AggregationBuilders.filter(
       "incidents",
       new HasChildQueryBuilder(
-           ListViewTemplate.ACTIVITIES_JOIN_RELATION, 
-           QueryBuilders.existsQuery(ListViewTemplate.INCIDENT_KEY), 
+           ListViewTemplate.ACTIVITIES_JOIN_RELATION,
+           QueryBuilders.existsQuery(ListViewTemplate.INCIDENT_KEY),
            ScoreMode.None
       )
   );
@@ -58,11 +58,11 @@ public class ProcessInstanceReader extends AbstractReader {
   public static final FilterAggregationBuilder RUNNING_AGGREGATION = AggregationBuilders.filter(
       "running",
       termQuery(
-          ListViewTemplate.STATE, 
+          ListViewTemplate.STATE,
           ProcessInstanceState.ACTIVE
        )
   );
-  
+
   @Autowired
   private ListViewTemplate listViewTemplate;
 
@@ -113,7 +113,7 @@ public class ProcessInstanceReader extends AbstractReader {
       throw new OperateRuntimeException(message, e);
     }
   }
-  
+
   /**
    * Searches for process instance by key.
    * @param processInstanceKey
@@ -138,21 +138,21 @@ public class ProcessInstanceReader extends AbstractReader {
         idsQuery().addIds(String.valueOf(processInstanceKey)),
         termQuery(ListViewTemplate.PROCESS_INSTANCE_KEY,processInstanceKey)
     );
-    
+
     SearchRequest request = ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL)
       .source(new SearchSourceBuilder()
       .query(constantScoreQuery(query)));
-    
+
     final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-    if (response.getHits().totalHits == 1) {
+    if (response.getHits().getTotalHits().value == 1) {
        final ProcessInstanceForListViewEntity processInstance = ElasticsearchUtil
           .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, ProcessInstanceForListViewEntity.class);
         return processInstance;
-    } else if (response.getHits().totalHits > 1) {
+    } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(String.format("Could not find unique process instance with id '%s'.", processInstanceKey));
     } else {
         throw new NotFoundException(String.format("Could not find process instance with id '%s'.", processInstanceKey));
-    } 
+    }
   }
 
   private boolean activityInstanceWithIncidentExists(Long processInstanceKey) throws IOException {
@@ -166,7 +166,7 @@ public class ProcessInstanceReader extends AbstractReader {
         .fetchSource(ListViewTemplate.ID, null));
     final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-    return response.getHits().getTotalHits() > 0;
+    return response.getHits().getTotalHits().value > 0;
   }
 
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {

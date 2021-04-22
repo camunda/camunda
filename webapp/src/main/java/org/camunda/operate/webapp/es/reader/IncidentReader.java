@@ -117,9 +117,9 @@ public class IncidentReader extends AbstractReader {
         .source(new SearchSourceBuilder().query(query));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits == 1) {
+      if (response.getHits().getTotalHits().value == 1) {
         return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, IncidentEntity.class);
-      } else if (response.getHits().totalHits > 1) {
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(String.format("Could not find unique incident with key '%s'.", incidentKey));
       } else {
         throw new NotFoundException(String.format("Could not find incident with key '%s'.", incidentKey));

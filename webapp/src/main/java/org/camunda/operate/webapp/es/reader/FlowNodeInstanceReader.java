@@ -70,7 +70,6 @@ import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -78,7 +77,7 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -487,7 +486,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
   }
 
   private FlowNodeInstanceEntity getFlowNodeInstance(final SearchResponse response) {
-    if (response.getHits().getTotalHits() == 0) {
+    if (response.getHits().getTotalHits().value == 0) {
       throw new OperateRuntimeException("No data found for flow node instance.");
     }
     return fromSearchHit(
@@ -519,7 +518,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   private FlowNodeType getFirstBucketFlowNodeType(final List<? extends Bucket> buckets) {
     final TopHits topHits = buckets.get(0).getAggregations().get(LEVELS_TOP_HITS_AGG_NAME);
-    if (topHits != null && topHits.getHits().getTotalHits() > 0) {
+    if (topHits != null && topHits.getHits().getTotalHits().value > 0) {
       final String type = (String) topHits.getHits().getAt(0).getSourceAsMap().get(TYPE);
       if (type != null) {
         return FlowNodeType.valueOf(type);
@@ -538,8 +537,8 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
     try {
       final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits >= 1) {
-        final EventEntity eventEntity = fromSearchHit(response.getHits().getHits()[(int) (response.getHits().totalHits - 1)]
+      if (response.getHits().getTotalHits().value >= 1) {
+        final EventEntity eventEntity = fromSearchHit(response.getHits().getHits()[(int) (response.getHits().getTotalHits().value - 1)]
                 .getSourceAsString(), objectMapper, EventEntity.class);
         return FlowNodeInstanceMetadataDto.createFrom(flowNodeInstance, eventEntity);
       } else {
@@ -565,7 +564,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
         termQuery(PROCESS_INSTANCE_KEY, processInstanceId));
 
     final AggregationBuilder notCompletedFlowNodesAggs =
-        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE, INCIDENT, TERMINATED))
+        filter(activeFlowNodesAggName, termsQuery(STATE, ACTIVE.name(), INCIDENT.name(), TERMINATED.name()))
         .subAggregation(
           terms(activeFlowNodesBucketsAggName)
           .field(FLOW_NODE_ID)

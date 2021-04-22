@@ -42,8 +42,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.elasticsearch.search.aggregations.metrics.Cardinality;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,17 +69,17 @@ public class IncidentStatisticsReader extends AbstractReader {
 
   @Autowired
   private ListViewTemplate processInstanceTemplate;
-  
+
   @Autowired
   private IncidentTemplate incidentTemplate;
 
   @Autowired
   private ProcessReader processReader;
-  
+
   public static final AggregationBuilder COUNT_PROCESS_KEYS = terms(PROCESS_KEYS)
                                                         .field(ListViewTemplate.PROCESS_KEY)
                                                         .size(ElasticsearchUtil.TERMS_AGG_SIZE);
-  
+
   public static final QueryBuilder INCIDENTS_QUERY =
       joinWithAnd(
           termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
@@ -94,7 +94,7 @@ public class IncidentStatisticsReader extends AbstractReader {
   private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess() {
     Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>();
 
-    
+
     SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(processInstanceTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
             .query(INCIDENTS_QUERY)
@@ -199,10 +199,10 @@ public class IncidentStatisticsReader extends AbstractReader {
 
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError(){
     Set<IncidentsByErrorMsgStatisticsDto> result = new TreeSet<>(IncidentsByErrorMsgStatisticsDto.COMPARATOR);
-    
+
     Map<Long, ProcessEntity> processes = processReader.getProcessesWithFields(
         ProcessIndex.KEY, ProcessIndex.NAME, ProcessIndex.BPMN_PROCESS_ID, ProcessIndex.VERSION);
-    
+
     TermsAggregationBuilder aggregation = terms(GROUP_BY_ERROR_MESSAGE_HASH)
         .field(IncidentTemplate.ERROR_MSG_HASH)
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
@@ -220,7 +220,7 @@ public class IncidentStatisticsReader extends AbstractReader {
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      
+
       Terms errorMessageAggregation = (Terms) searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
       for (Bucket bucket : errorMessageAggregation.getBuckets()) {
         result.add(getIncidentsByErrorMsgStatistic(processes, bucket));
@@ -237,9 +237,9 @@ public class IncidentStatisticsReader extends AbstractReader {
     SearchHits searchHits = ((TopHits)errorMessageBucket.getAggregations().get(ERROR_MESSAGE)).getHits();
     SearchHit searchHit = searchHits.getHits()[0];
     String errorMessage  = (String) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG);
-    
+
     IncidentsByErrorMsgStatisticsDto processStatistics = new IncidentsByErrorMsgStatisticsDto(errorMessage);
-    
+
     Terms processDefinitionKeyAggregation = (Terms) errorMessageBucket.getAggregations().get(GROUP_BY_PROCESS_KEYS);
     for (Bucket processDefinitionKeyBucket : processDefinitionKeyAggregation.getBuckets()) {
       Long processDefinitionKey = (Long)processDefinitionKeyBucket.getKey();

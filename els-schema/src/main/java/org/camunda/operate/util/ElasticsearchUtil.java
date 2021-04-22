@@ -60,7 +60,6 @@ public abstract class ElasticsearchUtil {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static final String ZEEBE_INDEX_DELIMITER = "_";
-  public static final String ES_INDEX_TYPE = "_doc";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
   public static final int TERMS_AGG_SIZE = 10000;
@@ -129,7 +128,7 @@ public abstract class ElasticsearchUtil {
 
     } finally {
       //remove task
-      DeleteRequest deleteRequest = new DeleteRequest(TASKS_INDEX_NAME, ES_INDEX_TYPE, taskId);
+      DeleteRequest deleteRequest = new DeleteRequest().index(TASKS_INDEX_NAME).id(taskId);
       esClient.delete(deleteRequest, RequestOptions.DEFAULT);
     }
   }
@@ -273,8 +272,8 @@ public abstract class ElasticsearchUtil {
     try {
       esClient.update(updateRequest, RequestOptions.DEFAULT);
     } catch (ElasticsearchException | IOException e)  {
-      final String errorMessage = String.format("Update request failed for type [%s] and id [%s] with the message [%s].",
-          updateRequest.type(), updateRequest.id(), e.getMessage());
+      final String errorMessage = String.format("Update request failed for [%s] and id [%s] with the message [%s].",
+          updateRequest.index(), updateRequest.id(), e.getMessage());
       logger.error(errorMessage, e);
       throw new PersistenceException(errorMessage, e);
     }

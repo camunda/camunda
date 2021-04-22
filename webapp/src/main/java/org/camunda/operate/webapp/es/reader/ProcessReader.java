@@ -18,7 +18,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -60,10 +60,10 @@ public class ProcessReader extends AbstractReader {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-      if (response.getHits().totalHits == 1) {
+      if (response.getHits().getTotalHits().value == 1) {
         Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
         return (String) result.get(BPMN_XML);
-      } else if (response.getHits().totalHits > 1) {
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(String.format("Could not find unique process with id '%s'.", processDefinitionKey));
       } else {
         throw new NotFoundException(String.format("Could not find process with id '%s'.", processDefinitionKey));
@@ -87,9 +87,9 @@ public class ProcessReader extends AbstractReader {
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits == 1) {
+      if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().totalHits > 1) {
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(String.format("Could not find unique process with key '%s'.", processDefinitionKey));
       } else {
         throw new NotFoundException(String.format("Could not find process with key '%s'.", processDefinitionKey));
@@ -176,7 +176,7 @@ public class ProcessReader extends AbstractReader {
       throw new OperateRuntimeException(message, e);
     }
   }
-  
+
   /**
    * Returns up to maxSize ProcessEntities only filled with the given field names.
    * @return Map of id -> ProcessEntity
@@ -202,7 +202,7 @@ public class ProcessReader extends AbstractReader {
       throw new OperateRuntimeException(message, e);
     }
   }
-  
+
   /**
    * Returns up to 1000 ProcessEntities only filled with the given field names.
    * @return Map of id -> ProcessEntity

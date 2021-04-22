@@ -1,21 +1,6 @@
 {
 	"mappings": {
-		"dynamic": "strict",
-		"dynamic_templates": [
-			{
-				"string_template": {
-					"path_match": "*",
-					"match_mapping_type": "string",
-					"mapping": {
-						"index_options": "docs",
-						"norms": {
-							"enabled": false
-						},
-						"type": "string"
-					}
-				}
-			}
-		],
+    "dynamic": "strict",
 		"properties": {
 			"bpmnProcessId": {
 				"type": "keyword",

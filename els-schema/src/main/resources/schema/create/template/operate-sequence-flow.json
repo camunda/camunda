@@ -1,22 +1,7 @@
 {
 	"order": 30,
 	"mappings": {
-		"dynamic": "strict",
-		"dynamic_templates": [
-			{
-				"string_template": {
-					"path_match": "*",
-					"mapping": {
-						"norms": {
-							"enabled": false
-						},
-						"type": "string",
-						"index_options": "docs"
-					},
-					"match_mapping_type": "string"
-				}
-			}
-		],
+    "dynamic": "strict",
 		"properties": {
 			"activityId": {
 				"type": "keyword"

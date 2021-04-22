@@ -194,7 +194,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));
     try {
       final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
-      if (hits.getTotalHits() > 0) {
+      if (hits.getTotalHits().value > 0) {
         return (String)hits.getHits()[0].getSourceAsMap().get(FlowNodeInstanceTemplate.TREE_PATH);
       } else if (attemptCount < 1){
         //retry for the case, when ELS has not yet refreshed the indices
@@ -251,7 +251,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return new UpdateRequest(flowNodeInstanceTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest().index(flowNodeInstanceTemplate.getFullQualifiedName()).id(entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(jsonMap)
         .retryOnConflict(UPDATE_RETRY_COUNT);
@@ -267,7 +267,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
 
-      return new UpdateRequest(flowNodeInstanceTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest().index(flowNodeInstanceTemplate.getFullQualifiedName()).id(entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(jsonMap)
         .retryOnConflict(UPDATE_RETRY_COUNT);

@@ -12,7 +12,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
+import org.elasticsearch.search.aggregations.metrics.Cardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
@@ -44,7 +44,7 @@ public abstract class ElasticsearchUtil {
   public static int getDocCount(RestHighLevelClient esClient, String aliasName) throws IOException {
     SearchRequest searchRequest = new SearchRequest(aliasName)
       .source(new SearchSourceBuilder());
-    return (int)esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getTotalHits();
+    return (int)esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getTotalHits().value;
   }
 
   public static List<String> getProcessIds(RestHighLevelClient esClient, String indexAlias, int size) {

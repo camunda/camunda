@@ -63,7 +63,7 @@ public class BasicProcessDataGenerator {
 
   @Autowired
   private RestHighLevelClient esClient;
-  
+
   private Random random = new Random();
 
   private List<Long> processInstanceKeys = new ArrayList<>();
@@ -123,7 +123,7 @@ public class BasicProcessDataGenerator {
 
   private void waitTillSomeInstancesAreArchived() throws IOException {
     waitUntilAllDataAreImported();
-    
+
     int count = 0, maxWait=30;
     logger.info("Waiting for archived data (max: {} sec)",maxWait*10);
     while (!someInstancesAreArchived() && count < maxWait) {
@@ -156,7 +156,7 @@ public class BasicProcessDataGenerator {
     try {
       SearchResponse search = esClient.search(
           new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())), RequestOptions.DEFAULT);
-      return search.getHits().totalHits > 0;
+      return search.getHits().getTotalHits().value > 0;
     } catch (IOException e) {
       throw new RuntimeException("Exception occurred while checking archived indices: " + e.getMessage(), e);
     }
@@ -226,7 +226,7 @@ public class BasicProcessDataGenerator {
     .endEvent()
     .done();
   }
-  
+
   private Long chooseKey(List<Long> keys) {
     return keys.get(random.nextInt(keys.size()));
   }
@@ -234,7 +234,7 @@ public class BasicProcessDataGenerator {
   private long countEntitiesFor(SearchRequest searchRequest) throws IOException{
     searchRequest.source().size(1000);
     SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    return searchResponse.getHits().getTotalHits();
+    return searchResponse.getHits().getTotalHits().value;
   }
 
   private String getAliasFor(String index) {

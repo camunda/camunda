@@ -95,7 +95,7 @@ public class ProcessZeebeRecordProcessor {
     try {
       updateFieldsInInstancesFor(processEntity, bulkRequest);
 
-      bulkRequest.add(new IndexRequest(processIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(processEntity.getKey()))
+      bulkRequest.add(new IndexRequest(processIndex.getFullQualifiedName()).id(ConversionUtils.toStringOrNull(processEntity.getKey()))
           .source(objectMapper.writeValueAsString(processEntity), XContentType.JSON)
       );
     } catch (JsonProcessingException e) {
@@ -110,7 +110,7 @@ public class ProcessZeebeRecordProcessor {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
       updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
-      UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, processInstanceKey.toString())
+      UpdateRequest updateRequest = new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(processInstanceKey.toString())
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT);
       bulkRequest.add(updateRequest);

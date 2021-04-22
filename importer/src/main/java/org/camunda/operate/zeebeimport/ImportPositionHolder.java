@@ -93,7 +93,7 @@ public class ImportPositionHolder {
     updateFields.put(ImportPositionIndex.POSITION, lastProcessedPosition.getPosition());
     updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, lastProcessedPosition.getIndexName());
     try {
-      final UpdateRequest request = new UpdateRequest(importPositionType.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, lastProcessedPosition.getId())
+      final UpdateRequest request = new UpdateRequest().index(importPositionType.getFullQualifiedName()).id(lastProcessedPosition.getId())
           .upsert(objectMapper.writeValueAsString(lastProcessedPosition), XContentType.JSON)
           .doc(updateFields)
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);

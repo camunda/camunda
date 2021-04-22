@@ -101,9 +101,9 @@ public class ElasticsearchManager {
             .size(1));
     try {
       SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits == 1) {
+      if (response.getHits().getTotalHits().value == 1) {
         return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, OperationEntity.class);
-      } else if (response.getHits().totalHits > 1) {
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new OperateRuntimeException(String
             .format("Could not find unique operation for parameters zeebeCommandKey [%d], processInstanceKey [%d], incidentKey [%d], operationType [%s].",
                 zeebeCommandKey, processInstanceKey, incidentKey, operationType.name()));
@@ -117,7 +117,7 @@ public class ElasticsearchManager {
   }
 
   public void completeOperation(String operationId, BulkRequest bulkRequest) {
-    UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, operationId)
+    UpdateRequest updateRequest = new UpdateRequest().index(operationTemplate.getFullQualifiedName()).id(operationId)
         .script(getUpdateOperationScript())
         .retryOnConflict(UPDATE_RETRY_COUNT);
     bulkRequest.add(updateRequest);
@@ -162,9 +162,9 @@ public class ElasticsearchManager {
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits == 1) {
+      if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().totalHits > 1) {
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new OperateRuntimeException(String.format("Could not find unique process with key '%s'.", processDefinitionKey));
       } else {
         throw new OperateRuntimeException(String.format("Could not find process with key '%s'.", processDefinitionKey));

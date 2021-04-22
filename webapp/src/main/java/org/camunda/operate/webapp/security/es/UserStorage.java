@@ -48,9 +48,9 @@ public class UserStorage extends AbstractReader {
           .query(QueryBuilders.termQuery(UserIndex.USERNAME, username)));
       try {
         final SearchResponse response = esClient.search(searchRequest,RequestOptions.DEFAULT);
-        if (response.getHits().totalHits == 1) {
+        if (response.getHits().getTotalHits().value == 1) {
           return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, UserEntity.class);
-        } else if (response.getHits().totalHits > 1) {
+        } else if (response.getHits().getTotalHits().value > 1) {
           throw new NotFoundException(String.format("Could not find unique user with username '%s'.", username));
         } else {
           throw new NotFoundException(String.format("Could not find user with username '%s'.", username));
@@ -63,7 +63,7 @@ public class UserStorage extends AbstractReader {
 
   public void create(UserEntity user) {
     try {
-      IndexRequest request = new IndexRequest(userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
+      IndexRequest request = new IndexRequest(userIndex.getFullQualifiedName()).id(user.getId())
           .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request,RequestOptions.DEFAULT);
     } catch (Exception t) {

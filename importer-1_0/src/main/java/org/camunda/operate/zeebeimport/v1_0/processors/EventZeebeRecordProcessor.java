@@ -258,7 +258,7 @@ public class EventZeebeRecordProcessor {
         entity.getProcessInstanceKey());
 
       //write event
-      bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName()).id(entity.getId())
         .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .version(entity.getDateTime().toInstant().toEpochMilli())
         .versionType(VersionType.EXTERNAL_GTE));

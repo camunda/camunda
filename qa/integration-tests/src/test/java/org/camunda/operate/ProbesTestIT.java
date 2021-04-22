@@ -30,31 +30,32 @@ public class ProbesTestIT{
 
   @Autowired
   private OperateProperties operateProperties;
-  
+
   @Autowired
   private TestElasticsearchSchemaManager schemaManager;
-  
+
   @Autowired
   private ElsIndicesCheck probes;
-  
+
   @Before
   public void before() {
      operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+TestUtil.createRandomString(5));
   }
-  
+
   @After
   public void after() {
     schemaManager.deleteSchemaQuietly();
     operateProperties.getElasticsearch().setDefaultIndexPrefix();
   }
-  
+
   @Test
   public void testIsReady() {
+    assertThat(probes.indicesArePresent()).isFalse();
     enableCreateSchema(true);
     schemaManager.createSchema();
     assertThat(probes.indicesArePresent()).isTrue();
   }
-  
+
   @Test
   public void testIsNotReady() {
     enableCreateSchema(false);

@@ -144,7 +144,7 @@ public class ListViewReader {
 
     try {
       SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      result.setTotalCount(response.getHits().getTotalHits());
+      result.setTotalCount(response.getHits().getTotalHits().value);
 
       List<ProcessInstanceForListViewEntity> processInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(),
           (sh) -> {

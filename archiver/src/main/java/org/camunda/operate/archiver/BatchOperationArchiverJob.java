@@ -33,14 +33,14 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
-import static org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders.bucketSort;
+import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
-  private static final Logger logger = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(BatchOperationArchiverJob.class);
 
   @Autowired
   private BatchOperationTemplate batchOperationTemplate;
@@ -110,7 +110,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
   private AggregationBuilder createFinishedBatchOperationsAggregation(String datesAggName, String instancesAggName) {
     return dateHistogram(datesAggName)
         .field(BatchOperationTemplate.END_DATE)
-        .dateHistogramInterval(new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
+        .calendarInterval(new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
         .format(operateProperties.getArchiver().getElsRolloverDateFormat())
         .keyed(true)      //get result as a map (not an array)
         //we want to get only one bucket at a time

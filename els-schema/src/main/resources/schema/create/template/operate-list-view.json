@@ -13,28 +13,13 @@
 		}
 	},
 	"mappings": {
-		"dynamic": "strict",
-		"dynamic_templates": [
-			{
-				"string_template": {
-					"path_match": "*",
-					"mapping": {
-						"norms": {
-							"enabled": false
-						},
-						"type": "string",
-						"index_options": "docs"
-					},
-					"match_mapping_type": "string"
-				}
-			}
-		],
+    "dynamic": "strict",
 		"properties": {
 			"varName": {
 				"type": "keyword"
 			},
 			"endDate": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"partitionId": {
@@ -101,7 +86,7 @@
 				"type": "keyword"
 			},
 			"startDate": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"key": {

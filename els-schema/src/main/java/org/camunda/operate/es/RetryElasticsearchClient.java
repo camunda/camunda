@@ -5,15 +5,25 @@
  */
 package org.camunda.operate.es;
 
+import static org.camunda.operate.util.CollectionUtil.map;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.RetryOperation;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
@@ -37,32 +47,24 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
-import org.elasticsearch.cluster.health.ClusterIndexHealth;
-import org.elasticsearch.common.bytes.ByteBufferReference;
+import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
-import static org.camunda.operate.util.CollectionUtil.map;
 
 @Component
 public class RetryElasticsearchClient {
@@ -111,14 +113,19 @@ public class RetryElasticsearchClient {
     );
   }
 
-  public ClusterHealthResponse clusterHealth(ClusterHealthRequest request){
-    return executeWithRetries("ClusterHealth ", () -> esClient.cluster().health(request, requestOptions));
-  }
-
-  public Set<String> getIndexNamesFromClusterHealth(String namePattern) {
-    final ClusterHealthResponse clusterHealthResponse = clusterHealth(new ClusterHealthRequest(namePattern));
-    Map<String, ClusterIndexHealth> indicesStatus = clusterHealthResponse.getIndices();
-    return indicesStatus.keySet();
+  public Set<String> getIndexNames(String namePattern) {
+    return executeWithRetries("Get indices for " + namePattern, () -> {
+      try {
+        GetIndexResponse response = esClient.indices().get(
+            new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
+        return Set.of(response.getIndices());
+      } catch (ElasticsearchException e) {
+        if (e.status().equals(RestStatus.NOT_FOUND)) {
+          return Set.of();
+        }
+        throw e;
+      }
+    });
   }
 
   public boolean createIndex(CreateIndexRequest createIndexRequest) {
@@ -133,7 +140,7 @@ public class RetryElasticsearchClient {
   public boolean createOrUpdateDocument(String name, String id, Map source) {
     return executeWithRetries(() -> {
       final IndexResponse response = esClient
-          .index(new IndexRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id)
+          .index(new IndexRequest(name).id(id)
               .source(source, XContentType.JSON), requestOptions);
       DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
@@ -143,7 +150,7 @@ public class RetryElasticsearchClient {
   public boolean createOrUpdateDocument(String name, String id, String source) {
     return executeWithRetries(() -> {
       final IndexResponse response = esClient
-          .index(new IndexRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id)
+          .index(new IndexRequest(name).id(id)
               .source(source, XContentType.JSON), requestOptions);
       DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
@@ -152,13 +159,13 @@ public class RetryElasticsearchClient {
 
   public boolean documentExists(String name, String id) {
     return executeWithGivenRetries(10,String.format("Exists document from %s with id %s", name, id), () -> {
-      return esClient.exists(new GetRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id), requestOptions);
+      return esClient.exists(new GetRequest(name).id(id), requestOptions);
     }, null);
   }
 
   public Map<String, Object> getDocument(String name, String id) {
     return executeWithGivenRetries(10,String.format("Get document from %s with id %s", name, id), () -> {
-      GetRequest request = new GetRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id);
+      GetRequest request = new GetRequest(name).id(id);
       if( esClient.exists(request, requestOptions)) {
         final GetResponse response = esClient.get(request, requestOptions);
         return response.getSourceAsMap();
@@ -170,7 +177,7 @@ public class RetryElasticsearchClient {
 
   public boolean deleteDocument(String name, String id) {
     return executeWithRetries(() -> {
-      final DeleteResponse response = esClient.delete(new DeleteRequest(name, ElasticsearchUtil.ES_INDEX_TYPE, id), requestOptions);
+      final DeleteResponse response = esClient.delete(new DeleteRequest(name).id( id), requestOptions);
       DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.DELETED);
     });
@@ -228,7 +235,7 @@ public class RetryElasticsearchClient {
   }
 
   public boolean addPipeline(String name, String definition) {
-    final BytesReference content = new ByteBufferReference(ByteBuffer.wrap(definition.getBytes()));
+    final BytesReference content = new BytesArray(definition.getBytes());
     return executeWithRetries("AddPipeline " + name, () ->
       esClient.ingest().
           putPipeline(new PutPipelineRequest(name, content, XContentType.JSON), requestOptions)
@@ -300,7 +307,7 @@ public class RetryElasticsearchClient {
         () -> esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions), this::needsToPollAgain);
     if (taskResponse.isPresent()) {
       executeWithRetries("DeleteTask " + taskId,
-          () -> esClient.delete(new DeleteRequest(".tasks", "_doc", taskId), requestOptions));
+          () -> esClient.delete(new DeleteRequest(".tasks").id(taskId), requestOptions));
       final long total = (Integer) getTaskStatusMap(taskResponse.get()).get("total");
       logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
@@ -335,7 +342,7 @@ public class RetryElasticsearchClient {
   }
 
   public <T> List<T> searchWithScroll(SearchRequest searchRequest,  Class<T> resultClass, ObjectMapper objectMapper){
-    long totalHits = executeWithRetries("Count search results",() -> esClient.search(searchRequest,requestOptions).getHits().getTotalHits());
+    long totalHits = executeWithRetries("Count search results",() -> esClient.search(searchRequest,requestOptions).getHits().getTotalHits().value);
     return executeWithRetries("Search with scroll",
         () -> scroll(searchRequest, resultClass, objectMapper),
         resultList -> resultList.size() != totalHits

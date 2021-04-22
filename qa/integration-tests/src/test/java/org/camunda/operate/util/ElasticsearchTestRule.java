@@ -305,8 +305,8 @@ public class ElasticsearchTestRule extends TestWatcher {
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
         }
-        final IndexRequest indexRequest =
-          new IndexRequest(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        final IndexRequest indexRequest = new IndexRequest(alias)
+            .id(entity.getId())
             .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
         if (entity instanceof FlowNodeInstanceForListViewEntity) {
           indexRequest.routing(((FlowNodeInstanceForListViewEntity)entity).getProcessInstanceKey().toString());

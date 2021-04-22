@@ -157,7 +157,7 @@ public class IndexSchemaValidatorTest {
 
   private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {
     Set<String> returnValues = new HashSet<>(givenIndexNames);
-    when(retryElasticsearchClient.getIndexNamesFromClusterHealth(anyString())).thenReturn(returnValues);
+    when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(returnValues);
   }
 
   private List<String> versionsOf(IndexDescriptor index, Set<String> versions) {

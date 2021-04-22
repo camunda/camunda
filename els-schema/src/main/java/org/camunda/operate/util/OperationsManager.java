@@ -45,7 +45,7 @@ public class OperationsManager {
   }
 
   public void updateFinishedInBatchOperation(String batchOperationId, BulkRequest bulkRequest) throws PersistenceException {
-    UpdateRequest updateRequest = new UpdateRequest(batchOperationTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, batchOperationId)
+    UpdateRequest updateRequest = new UpdateRequest().index(batchOperationTemplate.getFullQualifiedName()).id(batchOperationId)
         .script(getIncrementFinishedScript())
         .retryOnConflict(UPDATE_RETRY_COUNT);
     if (bulkRequest == null) {

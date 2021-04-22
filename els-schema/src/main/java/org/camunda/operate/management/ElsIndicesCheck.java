@@ -6,15 +6,11 @@
 package org.camunda.operate.management;
 
 import org.camunda.operate.schema.IndexSchemaValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ElsIndicesCheck {
-
-  private static Logger logger = LoggerFactory.getLogger(ElsIndicesCheck.class);
 
   @Autowired
   private IndexSchemaValidator indexSchemaValidator;
@@ -22,5 +18,4 @@ public class ElsIndicesCheck {
   public boolean indicesArePresent() {
     return indexSchemaValidator.schemaExists();
   }
-
 }

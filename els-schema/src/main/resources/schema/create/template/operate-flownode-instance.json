@@ -16,7 +16,7 @@
 		}
 	},
 	"mappings": {
-		"dynamic": "strict",
+    "dynamic": "strict",
 		"properties": {
 			"flowNodeId": {
 				"type": "keyword"
@@ -25,7 +25,7 @@
 				"type": "integer"
 			},
 			"endDate": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"incidentKey": {
@@ -53,7 +53,7 @@
 				"type": "long"
 			},
 			"startDate": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"treePath": {

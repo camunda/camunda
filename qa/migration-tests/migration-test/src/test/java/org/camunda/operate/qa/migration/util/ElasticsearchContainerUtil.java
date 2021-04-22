@@ -19,7 +19,7 @@ public class ElasticsearchContainerUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchContainerUtil.class);
 
-  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME = "docker.elastic.co/elasticsearch/elasticsearch-oss";
+  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME = "docker.elastic.co/elasticsearch/elasticsearch";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
 

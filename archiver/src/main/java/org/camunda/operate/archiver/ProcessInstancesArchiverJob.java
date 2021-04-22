@@ -39,7 +39,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
-import static org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders.bucketSort;
+import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 @Component
@@ -117,7 +117,7 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   private AggregationBuilder createFinishedInstancesAggregation(String datesAggName, String instancesAggName) {
     return dateHistogram(datesAggName)
         .field(ListViewTemplate.END_DATE)
-        .dateHistogramInterval(new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
+        .calendarInterval(new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
         .format(operateProperties.getArchiver().getElsRolloverDateFormat())
         .keyed(true)      //get result as a map (not an array)
         //we want to get only one bucket at a time

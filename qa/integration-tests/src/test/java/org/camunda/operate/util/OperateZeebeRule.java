@@ -19,7 +19,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
 import org.elasticsearch.client.indices.GetIndexTemplatesResponse;
-import org.elasticsearch.client.indices.IndexTemplateMetaData;
+import org.elasticsearch.client.indices.IndexTemplateMetadata;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.rules.TestWatcher;
@@ -77,7 +77,7 @@ public class OperateZeebeRule extends TestWatcher {
     try {
       GetIndexTemplatesRequest request = new GetIndexTemplatesRequest(prefix);
       GetIndexTemplatesResponse indexTemplate = zeebeEsClient.indices().getIndexTemplate(request, RequestOptions.DEFAULT);
-      IndexTemplateMetaData indexTemplateMetaData = indexTemplate.getIndexTemplates().get(0);
+      IndexTemplateMetadata indexTemplateMetaData = indexTemplate.getIndexTemplates().get(0);
 
       PutIndexTemplateRequest updateTemplateRequest = new PutIndexTemplateRequest(prefix);
       updateTemplateRequest.patterns(indexTemplateMetaData.patterns());

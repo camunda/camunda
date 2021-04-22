@@ -115,7 +115,7 @@ public class DataMultiplicator implements CommandLineRunner {
       results.forEach(item -> {
         item.setId(UUID.randomUUID().toString());
         try {
-          bulkRequest.add(new IndexRequest(templateDescriptor.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, item.getId()).
+          bulkRequest.add(new IndexRequest(templateDescriptor.getFullQualifiedName()).id(item.getId()).
               source(objectMapper.writeValueAsString(item), XContentType.JSON));
         } catch (JsonProcessingException e) {
           logger.error(e.getMessage());
