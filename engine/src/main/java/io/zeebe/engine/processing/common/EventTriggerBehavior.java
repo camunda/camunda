@@ -256,7 +256,7 @@ public class EventTriggerBehavior {
   }
 
   private void activateEventSubProcess(
-      final ExecutableFlowElement triggeredEvent, final ExecutableFlowElement flowScope) {
+      final ExecutableFlowElement triggeredStartEvent, final ExecutableFlowElement flowScope) {
     // First we move the event sub process immediately to ACTIVATED,
     // to make sure that we can copy the temp variables from the flow scope directly to the
     // event sub process scope. This is done in the ACTIVATING applier of the event sub process.
@@ -274,8 +274,8 @@ public class EventTriggerBehavior {
     // we can apply the output mappings.
     eventRecord
         .setFlowScopeKey(eventSubProcessKey)
-        .setBpmnElementType(triggeredEvent.getElementType())
-        .setElementId(triggeredEvent.getId());
+        .setBpmnElementType(triggeredStartEvent.getElementType())
+        .setElementId(triggeredStartEvent.getId());
 
     commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, eventRecord);
   }
