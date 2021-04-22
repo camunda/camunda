@@ -116,13 +116,6 @@ public final class BpmnEventSubscriptionBehavior {
     catchEventBehavior.unsubscribeFromEvents(context, commandWriter, sideEffects);
   }
 
-  // TODO (saig0): replace by findEventTrigger + activateTriggeredEvent (#6202)
-  public void triggerBoundaryEvent(
-      final ExecutableActivity element, final BpmnElementContext context) {
-    eventTriggerBehavior.triggerEvent(
-        context, eventTrigger -> triggerBoundaryEvent(element, context, eventTrigger));
-  }
-
   private long triggerBoundaryEvent(
       final ExecutableActivity element,
       final BpmnElementContext context,

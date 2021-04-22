@@ -20,11 +20,8 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -41,7 +38,6 @@ public class EventTriggerBehavior {
   private final StateWriter stateWriter;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableVariableState variablesState;
 
   private final VariableBehavior variableBehavior;
 
@@ -57,21 +53,9 @@ public class EventTriggerBehavior {
 
     elementInstanceState = zeebeState.getElementInstanceState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
-    variablesState = zeebeState.getVariableState();
 
-    variableBehavior = new VariableBehavior(variablesState, writers.state(), keyGenerator);
-  }
-
-  private ProcessInstanceRecord getEventRecord(
-      final ProcessInstanceRecord value,
-      final EventTrigger event,
-      final BpmnElementType elementType) {
-    eventRecord.reset();
-    eventRecord.wrap(value);
-    eventRecord.setElementId(event.getElementId());
-    eventRecord.setBpmnElementType(elementType);
-
-    return eventRecord;
+    variableBehavior =
+        new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {
@@ -80,24 +64,6 @@ public class EventTriggerBehavior {
 
     // side effect can immediately executed, since on restart we not reprocess anymore the commands
     sideEffectQueue.flush();
-  }
-
-  private void publishActivatingEvent(final ProcessInstanceRecord eventRecord) {
-    final var key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-  }
-
-  private void deferActivatingEvent(
-      final long flowScopeElementInstanceKey,
-      final long eventElementInstanceKey,
-      final ProcessInstanceRecord record) {
-
-    elementInstanceState.storeRecord(
-        eventElementInstanceKey,
-        flowScopeElementInstanceKey,
-        record,
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        Purpose.DEFERRED);
   }
 
   public void triggerEventSubProcess(
@@ -241,25 +207,6 @@ public class EventTriggerBehavior {
       stateWriter.appendFollowUpEvent(key, transition, value);
     }
     return context.copy(key, value, transition);
-  }
-
-  public void triggerEvent(
-      final BpmnElementContext context, final ToLongFunction<EventTrigger> eventHandler) {
-
-    final var eventTrigger =
-        eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey());
-
-    if (eventTrigger == null) {
-      // the activity (i.e. its event scope) is left - discard the event
-      return;
-    }
-
-    final var eventElementInstanceKey = eventHandler.applyAsLong(eventTrigger);
-
-    final var eventVariables = eventTrigger.getVariables();
-    if (eventElementInstanceKey > 0 && eventVariables != null && eventVariables.capacity() > 0) {
-      variablesState.setTemporaryVariables(eventElementInstanceKey, eventVariables);
-    }
   }
 
   public void activateTriggeredEvent(
