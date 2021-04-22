@@ -20,7 +20,7 @@ import io.zeebe.snapshots.PersistedSnapshotListener;
 import io.zeebe.snapshots.ReceivableSnapshotStore;
 import io.zeebe.snapshots.ReceivedSnapshot;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -39,6 +39,9 @@ import org.junit.rules.TemporaryFolder;
 public class FileBasedReceivedSnapshotTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public ActorSchedulerRule senderScheduler = new ActorSchedulerRule();
+  @Rule public ActorSchedulerRule receiverScheduler = new ActorSchedulerRule();
+
   private ConstructableSnapshotStore senderSnapshotStore;
   private ReceivableSnapshotStore receiverSnapshotStore;
   private Path receiverSnapshotsDir;
@@ -50,25 +53,19 @@ public class FileBasedReceivedSnapshotTest {
     final File senderRoot = temporaryFolder.newFolder("sender");
 
     final var senderSnapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+        new FileBasedSnapshotStoreFactory(senderScheduler.get(), 1);
     senderSnapshotStoreFactory.createReceivableSnapshotStore(senderRoot.toPath(), partitiondId);
     senderSnapshotStore = senderSnapshotStoreFactory.getConstructableSnapshotStore(partitiondId);
 
     final var receiverRoot = temporaryFolder.newFolder("received");
     receiverSnapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler(), 2)
+        new FileBasedSnapshotStoreFactory(receiverScheduler.get(), 2)
             .createReceivableSnapshotStore(receiverRoot.toPath(), partitiondId);
 
     receiverSnapshotsDir =
         receiverRoot.toPath().resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY);
     receiverPendingSnapshotsDir =
         receiverRoot.toPath().resolve(FileBasedSnapshotStoreFactory.PENDING_DIRECTORY);
-  }
-
-  private ActorScheduler createActorScheduler() {
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-    return actorScheduler;
   }
 
   @Test
@@ -255,23 +252,13 @@ public class FileBasedReceivedSnapshotTest {
   @Test
   public void shouldNotRemovePendingSnapshotOnCommittingSnapshotWhenHigher() throws Exception {
     // given
-    final var index = 1L;
-    final var term = 0L;
-
-    final FileBasedSnapshotStoreFactory fileBasedSnapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
-    fileBasedSnapshotStoreFactory.createReceivableSnapshotStore(
-        temporaryFolder.newFolder("other").toPath(), 1);
-    final var otherStore = fileBasedSnapshotStoreFactory.getConstructableSnapshotStore(1);
-    final var olderTransient = otherStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
-    olderTransient.take(this::takeSnapshot).join();
-    final var olderPersistedSnapshot = olderTransient.persist().join();
-
-    final PersistedSnapshot newPersistedSnapshot = takeSnapshot(index + 1, term);
-    receiveSnapshot(newPersistedSnapshot);
+    final var olderPersistedSnapshot = takeSnapshot(1L, 0L);
+    final ReceivedSnapshot olderReceivedSnapshot = receiveSnapshot(olderPersistedSnapshot);
+    final var newPersistedSnapshot = takeSnapshot(2L, 0L);
 
     // when
-    receiveSnapshot(olderPersistedSnapshot).persist().join();
+    receiveSnapshot(newPersistedSnapshot);
+    olderReceivedSnapshot.persist().join();
 
     // then
     final var pendingSnapshotDirs = receiverPendingSnapshotsDir.toFile().listFiles();
@@ -284,15 +271,6 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(pendingSnapshotDir.listFiles())
         .extracting(File::getName)
         .containsExactlyInAnyOrder(newPersistedSnapshot.getPath().toFile().list());
-
-    final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).hasSize(1);
-
-    final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(committedSnapshotDir).hasName(olderPersistedSnapshot.getId());
-    assertThat(committedSnapshotDir.listFiles())
-        .extracting(File::getName)
-        .containsExactlyInAnyOrder(olderPersistedSnapshot.getPath().toFile().list());
   }
 
   @Test

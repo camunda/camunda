@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.snapshots.ConstructableSnapshotStore;
 import io.zeebe.snapshots.ReceivableSnapshotStore;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -29,6 +29,8 @@ import org.junit.rules.TemporaryFolder;
 public class ReceivedSnapshotTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public ActorSchedulerRule senderScheduler = new ActorSchedulerRule();
+  @Rule public ActorSchedulerRule receiverScheduler = new ActorSchedulerRule();
 
   private ConstructableSnapshotStore senderSnapshotStore;
   private ReceivableSnapshotStore receiverSnapshotStore;
@@ -37,20 +39,14 @@ public class ReceivedSnapshotTest {
   public void before() throws Exception {
     final int partitionId = 1;
 
-    final var senderFactory = new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+    final var senderFactory = new FileBasedSnapshotStoreFactory(senderScheduler.get(), 1);
     senderFactory.createReceivableSnapshotStore(
         temporaryFolder.newFolder("sender").toPath(), partitionId);
     senderSnapshotStore = senderFactory.getConstructableSnapshotStore(partitionId);
     receiverSnapshotStore =
-        new FileBasedSnapshotStoreFactory(createActorScheduler(), 2)
+        new FileBasedSnapshotStoreFactory(receiverScheduler.get(), 2)
             .createReceivableSnapshotStore(
                 temporaryFolder.newFolder("received").toPath(), partitionId);
-  }
-
-  private ActorScheduler createActorScheduler() {
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-    return actorScheduler;
   }
 
   @Test

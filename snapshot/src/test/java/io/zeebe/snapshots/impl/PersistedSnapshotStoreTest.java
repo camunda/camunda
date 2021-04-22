@@ -10,7 +10,7 @@ package io.zeebe.snapshots.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.snapshots.ReceivableSnapshotStore;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,23 +19,19 @@ import org.junit.rules.TemporaryFolder;
 public class PersistedSnapshotStoreTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
+
   private ReceivableSnapshotStore persistedSnapshotStore;
 
   @Before
   public void before() {
     final FileBasedSnapshotStoreFactory factory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+        new FileBasedSnapshotStoreFactory(scheduler.get(), 1);
 
     final var partitionId = 1;
     final var root = temporaryFolder.getRoot();
 
     persistedSnapshotStore = factory.createReceivableSnapshotStore(root.toPath(), partitionId);
-  }
-
-  private ActorScheduler createActorScheduler() {
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-    return actorScheduler;
   }
 
   @Test

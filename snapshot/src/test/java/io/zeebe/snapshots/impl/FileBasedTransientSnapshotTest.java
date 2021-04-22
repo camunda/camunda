@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.zeebe.snapshots.ConstructableSnapshotStore;
 import io.zeebe.snapshots.PersistedSnapshotListener;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,6 +32,8 @@ import org.junit.rules.TemporaryFolder;
 public class FileBasedTransientSnapshotTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
+
   private ConstructableSnapshotStore persistedSnapshotStore;
   private Path snapshotsDir;
   private Path pendingSnapshotsDir;
@@ -39,7 +41,7 @@ public class FileBasedTransientSnapshotTest {
   @Before
   public void before() {
     final FileBasedSnapshotStoreFactory factory =
-        new FileBasedSnapshotStoreFactory(createActorScheduler(), 1);
+        new FileBasedSnapshotStoreFactory(scheduler.get(), 1);
     final int partitionId = 1;
     final File root = temporaryFolder.getRoot();
 
@@ -53,12 +55,6 @@ public class FileBasedTransientSnapshotTest {
             .resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY);
     pendingSnapshotsDir =
         temporaryFolder.getRoot().toPath().resolve(FileBasedSnapshotStoreFactory.PENDING_DIRECTORY);
-  }
-
-  private ActorScheduler createActorScheduler() {
-    final var actorScheduler = ActorScheduler.newActorScheduler().build();
-    actorScheduler.start();
-    return actorScheduler;
   }
 
   @Test
