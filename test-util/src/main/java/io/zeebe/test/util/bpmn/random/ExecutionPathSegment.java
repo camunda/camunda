@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -158,6 +159,10 @@ public final class ExecutionPathSegment {
     }
 
     // find a random position between these two cutoff points
+    if (Objects.equals(firstCutOffPoint, lastCutOffPoint)) {
+      return firstCutOffPoint;
+    }
+
     final int initialCutOffPoint =
         firstCutOffPoint + random.nextInt(lastCutOffPoint - firstCutOffPoint);
 
