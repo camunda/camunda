@@ -28,7 +28,7 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
   public void migrateProcessDefinitionAddFlowNodeDataFieldAndDeleteFlowNodeNamesField() {
     // given
     executeBulk("steps/3.4/process/34-process-definition.json");
-    final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(prefixAwareClient);
+    final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(upgradeDependencies);
 
     List<FlowNodeDataDto> instanceWithMixedFlowNodesExpectedFlowNode = Arrays.asList(
       new FlowNodeDataDto("invoice_approved", "Invoice approved?", "exclusiveGateway"),
@@ -85,10 +85,18 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
         instanceWithMixedFlowNodesExpectedFlowNode,
         instanceWithFlowNodesWithSameName,
         instanceWithEmptyFlowNodesExpectedFlowNode,
-        new ArrayList<>() // The definition with null xml will have no flow node data
+        // The definitions with null xml will have no flow node data
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new ArrayList<>(),
+        new ArrayList<>()
       );
     assertThat(getAllDocumentsOfIndex(newIndex.getIndexName()))
-      .hasSize(4)
+      .hasSize(11)
       .allSatisfy(this::assertFlowNodeNameFieldHasBeenRemoved);
   }
 

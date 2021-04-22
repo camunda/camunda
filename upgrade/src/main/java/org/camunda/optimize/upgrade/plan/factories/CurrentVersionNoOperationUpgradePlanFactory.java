@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
+import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 
@@ -21,7 +21,7 @@ public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanF
   }
 
   @Override
-  public UpgradePlan createUpgradePlan(final OptimizeElasticsearchClient esClient) {
+  public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return createUpgradePlan();
   }
 }

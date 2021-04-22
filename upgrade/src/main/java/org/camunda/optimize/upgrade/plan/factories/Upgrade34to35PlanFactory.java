@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
-import net.minidev.json.JSONObject;
-import net.minidev.json.JSONValue;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
@@ -35,27 +35,27 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
 
   @Override
-  public UpgradePlan createUpgradePlan(final OptimizeElasticsearchClient esClient) {
+  public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.4.0")
       .toVersion("3.5.0")
-      .addUpgradeSteps(migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(esClient))
+      .addUpgradeSteps(migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(dependencies))
       .build();
   }
 
-  private static List<UpgradeStep> migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(OptimizeElasticsearchClient esClient) {
+  private static List<UpgradeStep> migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(
+    UpgradeExecutionDependencies dependencies) {
     final Map<String, Object> processDefinitionIdsToFlowNodeDataProcessDefinition = getAllExistingDataForFlowNodes(
-      ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME,
-      esClient
-    );
+      ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME, dependencies);
     final Map<String, Object> processDefinitionIdsToFlowNodeDataEventProcessDefinition = getAllExistingDataForFlowNodes(
-      ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME,
-      esClient
-    );
+      ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME, dependencies);
 
     //@formatter:off
     String script =
@@ -80,10 +80,12 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
   }
 
   private static Map<String, Object> getAllExistingDataForFlowNodes(final String indexName,
-                                                                    final OptimizeElasticsearchClient esClient) {
+                                                                    final UpgradeExecutionDependencies dependencies) {
+    final OptimizeElasticsearchClient esClient = dependencies.getEsClient();
     final SearchRequest searchRequest =
       new SearchRequest(indexName)
-        .source(new SearchSourceBuilder().fetchSource(true));
+        .source(new SearchSourceBuilder().query(matchAllQuery()).size(LIST_FETCH_LIMIT))
+        .scroll(timeValueSeconds(dependencies.getConfigurationService().getEsScrollTimeoutInSeconds()));
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -91,16 +93,21 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       throw new UpgradeRuntimeException(String.format(
         "Was not able to retrieve entries of index with name  %s", indexName), e);
     }
+
+    final List<Map> existingDefinitionMaps = ElasticsearchReaderUtil.retrieveAllScrollResults(
+      response,
+      Map.class,
+      dependencies.getObjectMapper(),
+      esClient,
+      dependencies.getConfigurationService().getEsScrollTimeoutInSeconds()
+    );
     Map<String, Object> flowNodeDataByDefinitionId = new HashMap<>();
 
-    // get hits from elastic search query and convert them to JSON
-    Arrays.stream(response.getHits().getHits())
-      .map(hit -> (JSONObject) JSONValue.parse(hit.toString()))
-      .map(jsonObject -> (JSONObject) JSONValue.parse(jsonObject.get("_source").toString()))
-      .forEach(entry -> {
-        final Object bpmnXml = entry.get(ProcessDefinitionOptimizeDto.Fields.bpmn20Xml);
+    existingDefinitionMaps
+      .forEach(definition -> {
+        final Object bpmnXml = definition.get(ProcessDefinitionOptimizeDto.Fields.bpmn20Xml);
         flowNodeDataByDefinitionId.put(
-          entry.get(DefinitionOptimizeResponseDto.Fields.id).toString(),
+          definition.get(DefinitionOptimizeResponseDto.Fields.id).toString(),
           Optional.ofNullable(bpmnXml)
             .map(xml -> extractFlowNodeIdToFlowNodeData(xml.toString()))
             .orElse(Collections.emptyMap())
