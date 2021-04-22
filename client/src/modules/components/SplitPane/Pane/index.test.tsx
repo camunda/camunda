@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
@@ -129,7 +129,7 @@ describe('Pane', () => {
           {wrapper: ThemeProvider}
         );
 
-        fireEvent.click(screen.getByRole('button', {name: 'Expand Top'}));
+        userEvent.click(screen.getByRole('button', {name: 'Expand Top'}));
 
         expect(mockHandleExpand).toHaveBeenCalledWith(PANE_ID.TOP);
       });
@@ -145,7 +145,7 @@ describe('Pane', () => {
           {wrapper: ThemeProvider}
         );
 
-        fireEvent.click(screen.getByRole('button', {name: 'Expand Bottom'}));
+        userEvent.click(screen.getByRole('button', {name: 'Expand Bottom'}));
 
         expect(mockHandleExpand).toHaveBeenCalledWith(PANE_ID.BOTTOM);
       });

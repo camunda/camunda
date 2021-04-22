@@ -4,14 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
@@ -134,7 +129,7 @@ describe('<FlowNodeInstancesTree />', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-    fireEvent.click(
+    userEvent.click(
       screen.getByRole('button', {
         name: 'Unfold Filter-Map Sub Process (Multi Instance)',
       })
@@ -152,7 +147,7 @@ describe('<FlowNodeInstancesTree />', () => {
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-    fireEvent.click(
+    userEvent.click(
       await screen.findByRole('button', {
         name: 'Unfold Filter-Map Sub Process',
       })
@@ -178,7 +173,7 @@ describe('<FlowNodeInstancesTree />', () => {
       })
     ).toBeInTheDocument();
 
-    fireEvent.click(
+    userEvent.click(
       screen.getByRole('button', {
         name: 'Fold Filter-Map Sub Process',
       })

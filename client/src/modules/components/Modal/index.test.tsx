@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import Modal from './index';
@@ -53,7 +54,7 @@ describe('Modal', () => {
   it('should call on modal close', () => {
     render(ModalComponent, {wrapper: ThemeProvider});
 
-    fireEvent.click(screen.getByTestId('cross-button'));
+    userEvent.click(screen.getByTestId('cross-button'));
 
     expect(onModalClose).toBeCalled();
   });

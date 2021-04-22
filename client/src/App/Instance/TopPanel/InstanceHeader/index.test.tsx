@@ -9,8 +9,9 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
-  fireEvent,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {formatDate} from 'modules/utils/date';
 import {getProcessName} from 'modules/utils/instance';
 import {InstanceHeader} from './index';
@@ -143,7 +144,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    userEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
@@ -207,7 +208,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    userEvent.click(screen.getByRole('button', {name: /Cancel Instance/}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));

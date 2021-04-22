@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {ErrorMessageModal} from './index';
 import {mockProps, mockHiddenModalProps} from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -28,13 +29,13 @@ it('should hide modal', () => {
 it('should close modal on modal close click', () => {
   render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
 
-  fireEvent.click(screen.getByText('Close'));
+  userEvent.click(screen.getByText('Close'));
   expect(mockProps.onModalClose).toBeCalled();
 });
 
 it('should close modal on close button click', () => {
   render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
 
-  fireEvent.click(screen.getByTestId('cross-button'));
+  userEvent.click(screen.getByTestId('cross-button'));
   expect(mockProps.onModalClose).toBeCalled();
 });

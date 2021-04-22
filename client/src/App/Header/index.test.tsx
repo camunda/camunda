@@ -11,7 +11,9 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import Header from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createMemoryHistory} from 'history';
-import {render, within, fireEvent, screen} from '@testing-library/react';
+import {render, within, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {instancesStore} from 'modules/stores/instances';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
@@ -287,23 +289,23 @@ describe('Header', () => {
 
     await waitForComponentToLoad();
 
-    fireEvent.click(await screen.findByText('Camunda Operate'));
+    userEvent.click(await screen.findByText('Camunda Operate'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
     expect(MOCK_HISTORY.location.search).toBe('');
 
-    fireEvent.click(await screen.findByText('Running Instances'));
+    userEvent.click(await screen.findByText('Running Instances'));
     expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
 
-    fireEvent.click(await screen.findByText('Dashboard'));
+    userEvent.click(await screen.findByText('Dashboard'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
     expect(MOCK_HISTORY.location.search).toBe('');
 
-    fireEvent.click(await screen.findByText('Filters'));
+    userEvent.click(await screen.findByText('Filters'));
     expect(MOCK_HISTORY.location.search).toBe(
       '?active=true&incidents=true&completed=true'
     );
 
-    fireEvent.click(await screen.findByText('Incidents'));
+    userEvent.click(await screen.findByText('Incidents'));
     expect(MOCK_HISTORY.location.search).toBe('?incidents=true');
   });
 
@@ -324,29 +326,29 @@ describe('Header', () => {
 
     await waitForComponentToLoad();
 
-    fireEvent.click(await screen.findByText('Camunda Operate'));
+    userEvent.click(await screen.findByText('Camunda Operate'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
 
-    fireEvent.click(await screen.findByText('Running Instances'));
+    userEvent.click(await screen.findByText('Running Instances'));
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true'
     );
 
-    fireEvent.click(await screen.findByText('Dashboard'));
+    userEvent.click(await screen.findByText('Dashboard'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'
     );
 
-    fireEvent.click(await screen.findByText('Filters'));
+    userEvent.click(await screen.findByText('Filters'));
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true&incidents=true&completed=true'
     );
 
-    fireEvent.click(await screen.findByText('Incidents'));
+    userEvent.click(await screen.findByText('Incidents'));
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
     );

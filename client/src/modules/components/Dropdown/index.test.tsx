@@ -4,13 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
-  fireEvent,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Dropdown from './index';
 
@@ -39,7 +39,7 @@ describe('Dropdown', () => {
     expect(
       screen.queryByRole('button', {name: 'Create New Selection'})
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('dropdown-toggle'));
+    userEvent.click(screen.getByTestId('dropdown-toggle'));
     expect(mockOnOpen).toHaveBeenCalledTimes(1);
 
     expect(
@@ -93,13 +93,13 @@ describe('Dropdown', () => {
       {wrapper: ThemeProvider}
     );
 
-    fireEvent.click(screen.getByTestId('dropdown-toggle'));
+    userEvent.click(screen.getByTestId('dropdown-toggle'));
 
     expect(
       screen.getByRole('button', {name: 'Create New Selection'})
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('somewhere else'));
+    userEvent.click(screen.getByText('somewhere else'));
 
     await waitForElementToBeRemoved(
       screen.queryByRole('button', {name: 'Create New Selection'})

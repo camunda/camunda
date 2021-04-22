@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {Router} from 'react-router-dom';
-import {render, fireEvent, within, screen} from '@testing-library/react';
+import {render, within, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {createMemoryHistory} from 'history';
 import {InstancesByProcess} from './index';
 import {
@@ -116,7 +117,7 @@ describe('InstancesByProcess', () => {
       'Order process – 201 Instances in 2 Versions'
     );
     expect(processLink).toBeInTheDocument();
-    fireEvent.click(processLink);
+    userEvent.click(processLink);
     expect(historyMock.location.search).toBe(
       '?process=orderProcess&version=all&active=true&incidents=true'
     );
@@ -133,7 +134,7 @@ describe('InstancesByProcess', () => {
     );
 
     expect(expandButton).toBeInTheDocument();
-    fireEvent.click(expandButton);
+    userEvent.click(expandButton);
 
     const firstVersion = screen.getByTitle(
       'View 42 Instances in Version 1 of Process First Version'
@@ -151,7 +152,7 @@ describe('InstancesByProcess', () => {
       )
     ).toBeInTheDocument();
 
-    fireEvent.click(firstVersion);
+    userEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
       '?process=mockProcess&version=1&active=true&incidents=true'
     );
@@ -172,7 +173,7 @@ describe('InstancesByProcess', () => {
       )
     ).toBeInTheDocument();
 
-    fireEvent.click(secondVersion);
+    userEvent.click(secondVersion);
     expect(historyMock.location.search).toBe(
       '?process=mockProcess&version=2&active=true&incidents=true'
     );
@@ -206,7 +207,7 @@ describe('InstancesByProcess', () => {
       'View 138 Instances in 1 Version of Process loanProcess'
     );
     expect(processLink).toBeInTheDocument();
-    fireEvent.click(processLink);
+    userEvent.click(processLink);
     expect(historyMock.location.search).toBe(
       '?process=loanProcess&version=1&active=true&incidents=true'
     );
@@ -242,16 +243,16 @@ describe('InstancesByProcess', () => {
       'Order process – 201 Instances in 2 Versions'
     );
 
-    fireEvent.click(processLink);
+    userEvent.click(processLink);
     expect(historyMock.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=orderProcess&version=all&active=true&incidents=true'
     );
 
-    fireEvent.click(
+    userEvent.click(
       withinIncident.getByTitle('Expand 201 Instances of Process Order process')
     );
 
-    fireEvent.click(
+    userEvent.click(
       screen.getByTitle(
         'View 42 Instances in Version 1 of Process First Version'
       )

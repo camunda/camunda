@@ -4,14 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {
   render,
-  fireEvent,
   screen,
   waitForElementToBeRemoved,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
@@ -116,7 +115,7 @@ describe('User', () => {
 
     expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
 
-    fireEvent.click(await screen.findByText('Michael Jordan'));
+    userEvent.click(await screen.findByText('Michael Jordan'));
 
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
   });
@@ -135,8 +134,8 @@ describe('User', () => {
       wrapper: ThemeProvider,
     });
 
-    fireEvent.click(await screen.findByText('Franz Kafka'));
-    fireEvent.click(await screen.findByText('Logout'));
+    userEvent.click(await screen.findByText('Franz Kafka'));
+    userEvent.click(await screen.findByText('Logout'));
 
     await waitFor(() => expect(mockHandleRedirect).toHaveBeenCalled());
   });

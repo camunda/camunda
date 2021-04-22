@@ -8,10 +8,11 @@ import React from 'react';
 import {
   render,
   screen,
-  fireEvent,
   waitForElementToBeRemoved,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {Router} from 'react-router-dom';
 import {createMemoryHistory, createLocation} from 'history';
 import {rest} from 'msw';
@@ -44,17 +45,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(mockHistory),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() => expect(mockHistory.location.pathname).toBe('/'));
   });
@@ -70,17 +63,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
@@ -89,7 +74,7 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
@@ -115,17 +100,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(mockHistory),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
       expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE.pathname)
@@ -154,17 +131,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(mockHistory),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     await waitFor(() =>
       expect(mockHistory.location.pathname).toBe(INITIAL_ROUTE.pathname)
@@ -173,35 +142,29 @@ describe('<Login />', () => {
   });
 
   it('should disable the login button when any field is empty', () => {
+    const originalConsoleError = global.console.error;
+    global.console.error = jest.fn();
+
     render(<Login />, {
       wrapper: createWrapper(),
     });
 
     expect(screen.getByRole('button', {name: /log in/i})).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
 
     expect(screen.getByRole('button', {name: /log in/i})).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
 
     expect(screen.getByRole('button', {name: /log in/i})).toBeEnabled();
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: '',
-      },
-    });
+    userEvent.clear(screen.getByLabelText(/password/i));
+    userEvent.type(screen.getByLabelText(/username/i), '');
 
     expect(screen.getByRole('button', {name: /log in/i})).toBeDisabled();
+
+    global.console.error = originalConsoleError;
   });
 
   it('should handle wrong credentials', async () => {
@@ -215,17 +178,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'wrong',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'credentials',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'wrong');
+    userEvent.type(screen.getByLabelText(/password/i), 'credentials');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     expect(await screen.findByText(LOGIN_ERROR)).toBeInTheDocument();
   });
@@ -241,17 +196,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
   });
@@ -265,17 +212,9 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    fireEvent.change(screen.getByLabelText(/username/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.change(screen.getByLabelText(/password/i), {
-      target: {
-        value: 'demo',
-      },
-    });
-    fireEvent.click(screen.getByRole('button', {name: /log in/i}));
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /log in/i}));
 
     expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
   });

@@ -10,9 +10,10 @@ import {IncidentOperation} from './index';
 import {
   render,
   screen,
-  fireEvent,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {operationsStore} from 'modules/stores/operations';
 import {mockOperationCreated, mockProps} from './index.setup';
 import {rest} from 'msw';
@@ -63,7 +64,7 @@ describe('IncidentOperation', () => {
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+    userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
@@ -83,7 +84,7 @@ describe('IncidentOperation', () => {
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+    userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
@@ -104,7 +105,7 @@ describe('IncidentOperation', () => {
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
+    userEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));

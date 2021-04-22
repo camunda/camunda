@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import CodeModal from './index';
 
@@ -104,10 +105,10 @@ describe('CodeModal', () => {
       }
     );
 
-    fireEvent.click(screen.getByRole('button', {name: /exit modal/i}));
+    userEvent.click(screen.getByRole('button', {name: /exit modal/i}));
     expect(mockHandleCloseModal).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('button', {name: /close modal/i}));
+    userEvent.click(screen.getByRole('button', {name: /close modal/i}));
     expect(mockHandleCloseModal).toHaveBeenCalledTimes(2);
   });
 

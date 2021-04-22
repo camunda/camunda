@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {fireEvent, render, screen} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from './index';
@@ -73,8 +73,8 @@ describe('CollapsablePanel', () => {
       {wrapper: ThemeProvider}
     );
 
-    fireEvent.click(screen.getByTestId('collapse-button'));
-    fireEvent.click(screen.getByTestId('expand-button'));
+    userEvent.click(screen.getByTestId('collapse-button'));
+    userEvent.click(screen.getByTestId('expand-button'));
 
     expect(toggleMock).toHaveBeenCalledTimes(2);
   });

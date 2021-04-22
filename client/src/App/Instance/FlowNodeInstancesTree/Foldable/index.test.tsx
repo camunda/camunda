@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import noop from 'lodash/noop';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
@@ -50,7 +51,7 @@ describe('<Foldable />', () => {
       {wrapper: ThemeProvider}
     );
 
-    fireEvent.click(screen.getByText(mockContent));
+    userEvent.click(screen.getByText(mockContent));
 
     expect(mockOnSelection).toHaveBeenCalled();
   });

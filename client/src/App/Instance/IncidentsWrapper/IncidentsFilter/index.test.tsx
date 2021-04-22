@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {IncidentsFilter} from './index';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import {
   defaultProps,
@@ -74,7 +74,7 @@ describe('IncidentsFilter', () => {
       screen.queryByRole('button', {name: 'error type 6 1'})
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: /^1 more/}));
+    userEvent.click(screen.getByRole('button', {name: /^1 more/}));
 
     expect(
       screen.getByRole('button', {name: 'error type 6 1'})
@@ -93,12 +93,12 @@ describe('IncidentsFilter', () => {
       wrapper: ThemeProvider,
     });
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', {name: 'Clear All'}));
+    userEvent.click(screen.getByRole('button', {name: 'Clear All'}));
     expect(defaultProps.onClearAll).not.toHaveBeenCalled();
 
     rerender(<IncidentsFilter {...selectedErrorPillProps} />);
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', {name: 'Clear All'}));
+    userEvent.click(screen.getByRole('button', {name: 'Clear All'}));
     expect(defaultProps.onClearAll).toHaveBeenCalled();
   });
 });

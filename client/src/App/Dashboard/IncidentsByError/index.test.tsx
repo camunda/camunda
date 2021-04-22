@@ -7,11 +7,12 @@
 import {Router} from 'react-router-dom';
 import {
   render,
-  fireEvent,
   within,
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {createMemoryHistory} from 'history';
 import {IncidentsByError} from './index';
 import {
@@ -117,7 +118,7 @@ describe('IncidentsByError', () => {
     );
     expect(expandButton).toBeInTheDocument();
 
-    fireEvent.click(
+    userEvent.click(
       withinIncident.getByTitle(
         "View 36 Instances with error JSON path '$.paid' has no result."
       )
@@ -126,7 +127,7 @@ describe('IncidentsByError', () => {
       '?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
 
-    fireEvent.click(expandButton);
+    userEvent.click(expandButton);
 
     const firstVersion = withinIncident.getByTitle(
       "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
@@ -138,7 +139,7 @@ describe('IncidentsByError', () => {
       within(firstVersion).getByText('mockProcess – Version 1')
     ).toBeInTheDocument();
 
-    fireEvent.click(firstVersion);
+    userEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
       '?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );
@@ -167,7 +168,7 @@ describe('IncidentsByError', () => {
       "Expand 36 Instances with error JSON path '$.paid' has no result."
     );
 
-    fireEvent.click(
+    userEvent.click(
       withinIncident.getByTitle(
         "View 36 Instances with error JSON path '$.paid' has no result."
       )
@@ -176,13 +177,13 @@ describe('IncidentsByError', () => {
       `?gseUrl=https%3A%2F%2Fwww.testUrl.com&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true`
     );
 
-    fireEvent.click(expandButton);
+    userEvent.click(expandButton);
 
     const firstVersion = withinIncident.getByTitle(
       "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess"
     );
 
-    fireEvent.click(firstVersion);
+    userEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
     );

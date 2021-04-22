@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import {IncidentsWrapper} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -86,7 +87,7 @@ describe('IncidentsWrapper', () => {
     });
     expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();
     expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
-    fireEvent.click(
+    userEvent.click(
       screen.getByRole('button', {
         name: 'View 2 Incidents in Instance 1',
       })
@@ -99,7 +100,7 @@ describe('IncidentsWrapper', () => {
     render(<IncidentsWrapper {...testData.props.default} />, {
       wrapper: Wrapper,
     });
-    fireEvent.click(
+    userEvent.click(
       screen.getByRole('button', {
         name: 'View 2 Incidents in Instance 1',
       })
@@ -129,7 +130,7 @@ describe('IncidentsWrapper', () => {
     render(<IncidentsWrapper {...testData.props.default} />, {
       wrapper: Wrapper,
     });
-    fireEvent.click(
+    userEvent.click(
       screen.getByRole('button', {
         name: 'View 2 Incidents in Instance 1',
       })
@@ -159,7 +160,7 @@ describe('IncidentsWrapper', () => {
         wrapper: Wrapper,
       });
       rerender = wrapper.rerender;
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {
           name: 'View 2 Incidents in Instance 1',
         })
@@ -179,7 +180,7 @@ describe('IncidentsWrapper', () => {
         screen.getByRole('row', {name: /Extract value errortype/})
       ).toBeInTheDocument();
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^Condition errortype/})
       );
 
@@ -201,7 +202,7 @@ describe('IncidentsWrapper', () => {
         screen.getByRole('row', {name: /flowNodeId_alwaysFailingTask/})
       ).toBeInTheDocument();
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
       );
 
@@ -216,16 +217,16 @@ describe('IncidentsWrapper', () => {
 
     it('should filter the incidents when both errorTypes & flowNodes are selected', () => {
       expect(screen.getAllByRole('row').length).toBe(3);
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^Condition errortype/})
       );
       expect(screen.getAllByRole('row').length).toBe(2);
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
       );
       expect(screen.getAllByRole('row').length).toBe(1);
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
       );
       expect(screen.getAllByRole('row').length).toBe(2);
@@ -234,10 +235,10 @@ describe('IncidentsWrapper', () => {
     it('should remove filter when only related incident gets resolved', async () => {
       expect(screen.getAllByRole('row').length).toBe(3);
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
       );
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
       );
       expect(screen.getAllByRole('row').length).toBe(3);
@@ -268,15 +269,15 @@ describe('IncidentsWrapper', () => {
     it('should drop all filters when clicking the clear all button', () => {
       expect(screen.getAllByRole('row').length).toBe(3);
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
       );
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('button', {name: /^Condition errortype/})
       );
       expect(screen.getAllByRole('row').length).toBe(2);
 
-      fireEvent.click(screen.getByRole('button', {name: /^Clear All/}));
+      userEvent.click(screen.getByRole('button', {name: /^Clear All/}));
 
       expect(screen.getAllByRole('row').length).toBe(3);
     });

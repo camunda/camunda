@@ -9,9 +9,10 @@ import {Router} from 'react-router-dom';
 import {
   render,
   waitForElementToBeRemoved,
-  fireEvent,
   screen,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {createMemoryHistory} from 'history';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
@@ -90,7 +91,7 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
-    fireEvent.click(screen.getByText('Instances with Incident'));
+    userEvent.click(screen.getByText('Instances with Incident'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?incidents=true');
@@ -105,21 +106,21 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
-    fireEvent.click(screen.getByText('Instances with Incident'));
+    userEvent.click(screen.getByText('Instances with Incident'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&incidents=true'
     );
 
-    fireEvent.click(screen.getByText('Active Instances'));
+    userEvent.click(screen.getByText('Active Instances'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true'
     );
 
-    fireEvent.click(await screen.findByText('821 Running Instances in total'));
+    userEvent.click(await screen.findByText('821 Running Instances in total'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe(
@@ -133,7 +134,7 @@ describe('<MetricPanel />', () => {
       wrapper: createWrapper(MOCK_HISTORY),
     });
 
-    fireEvent.click(screen.getByText('Active Instances'));
+    userEvent.click(screen.getByText('Active Instances'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?active=true');
@@ -146,7 +147,7 @@ describe('<MetricPanel />', () => {
     });
 
     statisticsStore.fetchStatistics();
-    fireEvent.click(await screen.findByText('821 Running Instances in total'));
+    userEvent.click(await screen.findByText('821 Running Instances in total'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?incidents=true&active=true');

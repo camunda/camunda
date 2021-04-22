@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {Input} from 'modules/components/Input';
 import Textarea from 'modules/components/Textarea';
 import {ValidationTextInput} from './index';
@@ -71,7 +72,7 @@ describe('ValidationTextInput', () => {
     );
 
     // when
-    fireEvent.change(screen.getByRole('textbox'), {target: {value: 'ERROR'}});
+    userEvent.type(screen.getByRole('textbox'), 'ERROR');
 
     // then
     expect(screen.getByTitle('Error')).toBeInTheDocument();
@@ -92,7 +93,7 @@ describe('ValidationTextInput', () => {
     );
 
     // when
-    fireEvent.change(screen.getByRole('textbox'), {target: {value: 'ERROR'}});
+    userEvent.type(screen.getByRole('textbox'), 'ERROR');
 
     // then
     expect(screen.queryByTitle('Error')).not.toBeInTheDocument();

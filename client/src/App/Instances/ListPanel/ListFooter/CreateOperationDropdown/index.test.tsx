@@ -8,10 +8,11 @@ import React from 'react';
 import {
   render,
   screen,
-  fireEvent,
   within,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {mockUseOperationApply} from './index.setup';
@@ -55,7 +56,7 @@ describe('CreateOperationDropdown', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
     expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
@@ -66,9 +67,9 @@ describe('CreateOperationDropdown', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    fireEvent.click(screen.getByRole('button', {name: 'Retry'}));
+    userEvent.click(screen.getByRole('button', {name: 'Retry'}));
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
     expect(screen.getByText('About to retry 2 Instances.')).toBeInTheDocument();
@@ -91,9 +92,9 @@ describe('CreateOperationDropdown', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
     expect(screen.getByText('Apply Operation')).toBeInTheDocument();
     expect(
@@ -118,10 +119,10 @@ describe('CreateOperationDropdown', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    fireEvent.click(
+    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    userEvent.click(
       within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
     );
 
@@ -133,10 +134,10 @@ describe('CreateOperationDropdown', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    fireEvent.click(
+    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    userEvent.click(
       within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
     );
 
@@ -148,10 +149,10 @@ describe('CreateOperationDropdown', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+    userEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-    fireEvent.click(
+    userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    userEvent.click(
       within(screen.getByTestId('modal')).getByRole('button', {
         name: 'Exit Modal',
       })

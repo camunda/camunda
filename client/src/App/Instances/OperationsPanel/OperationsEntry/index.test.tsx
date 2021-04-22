@@ -6,10 +6,11 @@
 
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import userEvent from '@testing-library/user-event';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
@@ -123,7 +124,7 @@ describe('OperationsEntry', () => {
       {wrapper: createWrapper(mockHistory)}
     );
 
-    fireEvent.click(screen.getByText('3 Instances'));
+    userEvent.click(screen.getByText('3 Instances'));
     expect(mockHistory.location.search).toBe(
       '?active=true&incidents=true&completed=true&canceled=true&operationId=df325d44-6a4c-4428-b017-24f923f1d052'
     );

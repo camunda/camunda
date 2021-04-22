@@ -11,7 +11,8 @@ import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';
 import {Route, MemoryRouter} from 'react-router-dom';
-import {render, screen, within, fireEvent} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
@@ -159,7 +160,7 @@ describe('IncidentsTable', () => {
 
     expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
 
-    fireEvent.click(withinSecondRow.getByText('More...'));
+    userEvent.click(withinSecondRow.getByText('More...'));
 
     const modal = screen.getByTestId('modal');
     expect(

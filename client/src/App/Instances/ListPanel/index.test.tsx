@@ -8,11 +8,12 @@ import React from 'react';
 import {
   render,
   screen,
-  fireEvent,
   waitForElementToBeRemoved,
   within,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
@@ -216,7 +217,7 @@ describe('ListPanel', () => {
     expect(
       screen.queryByTitle(/has scheduled operations/i)
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', {name: 'Cancel Instance 1'}));
+    userEvent.click(screen.getByRole('button', {name: 'Cancel Instance 1'}));
     expect(
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
@@ -268,12 +269,12 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
       );
-      fireEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
-      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-      fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+      userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
+      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      userEvent.click(screen.getByRole('button', {name: 'Apply'}));
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
 
       mockServer.use(
@@ -311,12 +312,12 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
       );
-      fireEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
-      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-      fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+      userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
+      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      userEvent.click(screen.getByRole('button', {name: 'Apply'}));
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
       await waitFor(() =>
         expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)
@@ -351,12 +352,12 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      fireEvent.click(
+      userEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
       );
-      fireEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
-      fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-      fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+      userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
+      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+      userEvent.click(screen.getByRole('button', {name: 'Apply'}));
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
       await waitFor(() =>
         expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)

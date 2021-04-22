@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Collapse} from './index';
 
@@ -45,11 +45,11 @@ describe('<Collapse />', () => {
       {wrapper: ThemeProvider}
     );
 
-    fireEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
+    userEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
 
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
+    userEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
 
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
