@@ -178,6 +178,33 @@ public class EventSubProcessIncidentTest {
         .await();
   }
 
+  @Test
+  public void shouldRecreateIncidentOnResolveIncidentWithoutUpdateVariables() {
+    // given
+    final BpmnModelInstance model = process(withEventSubprocessAndInputMapping(builder));
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .onlyEvents()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
+
+    // then
+    final var incidentCount =
+        RecordingExporter.incidentRecords()
+            .onlyEvents()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .count();
+    assertThat(incidentCount).isEqualTo(2);
+  }
+
   private long createInstanceAndTriggerEvent(final BpmnModelInstance model) {
     final long wfInstanceKey = createInstanceAndWaitForTask(model);
     triggerEventSubprocess.accept(wfInstanceKey);
