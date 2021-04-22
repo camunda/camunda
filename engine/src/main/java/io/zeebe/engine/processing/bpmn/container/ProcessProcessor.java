@@ -113,12 +113,6 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void onChildActivating(
-      final ExecutableFlowElementContainer element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
-
-  @Override
   public void beforeExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
@@ -141,18 +135,15 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-        && stateBehavior.canBeTerminated(childContext)) {
-
-      transitionTo(element, flowScopeContext, stateTransitionBehavior::transitionToTerminated);
-
-    } else {
+    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING) {
       eventSubscriptionBehavior
           .findEventTrigger(flowScopeContext)
           .ifPresent(
               eventTrigger ->
                   eventSubscriptionBehavior.activateTriggeredEvent(
                       flowScopeContext.getElementInstanceKey(), flowScopeContext, eventTrigger));
+    } else if (stateBehavior.canBeTerminated(childContext)) {
+      transitionTo(element, flowScopeContext, stateTransitionBehavior::transitionToTerminated);
     }
   }
 

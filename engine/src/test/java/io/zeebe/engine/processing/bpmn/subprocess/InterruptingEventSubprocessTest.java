@@ -268,7 +268,7 @@ public class InterruptingEventSubprocessTest {
             .getFirst();
 
     final Record<ProcessInstanceRecordValue> eventSubproc =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("event_sub_proc")
             .getFirst();
@@ -399,8 +399,12 @@ public class InterruptingEventSubprocessTest {
     final List<Record<ProcessInstanceRecordValue>> events =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
+            .onlyEvents()
             .filter(r -> r.getValue().getElementId().startsWith("event_sub_"))
-            .limit(15)
+            .limit(
+                r ->
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                        && r.getValue().getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS)
             .asList();
 
     assertThat(events)
@@ -408,13 +412,10 @@ public class InterruptingEventSubprocessTest {
         .containsExactly(
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_proc"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_proc"),
-            tuple(ProcessInstanceIntent.ACTIVATE_ELEMENT, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_start"),
-            tuple(ProcessInstanceIntent.COMPLETE_ELEMENT, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_COMPLETING, "event_sub_start"),
             tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "event_sub_start"),
-            tuple(ProcessInstanceIntent.ACTIVATE_ELEMENT, "event_sub_end"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, "event_sub_end"),
             tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, "event_sub_end"),
             tuple(ProcessInstanceIntent.ELEMENT_COMPLETING, "event_sub_end"),

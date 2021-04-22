@@ -46,18 +46,16 @@ public final class MultipleEventSubprocessTest {
     triggerMessageStart(processInstanceKey, helper.getMessageName());
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
-                .limit(8))
-        .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
-        .containsSubsequence(
-            tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("event_sub_proc_timer", ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .containsSubsequence(
-            tuple("event_sub_proc_msg", ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("event_sub_proc_msg", ProcessInstanceIntent.ELEMENT_COMPLETED));
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+        .withElementId("event_sub_proc_timer")
+        .await();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+        .withElementId("event_sub_proc_msg")
+        .await();
   }
 
   @Test
@@ -85,6 +83,7 @@ public final class MultipleEventSubprocessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSubsequence(

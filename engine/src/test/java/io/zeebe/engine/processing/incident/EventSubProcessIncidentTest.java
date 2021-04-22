@@ -23,6 +23,7 @@ import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
+import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -119,9 +120,9 @@ public class EventSubProcessIncidentTest {
     final long processInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
-    final Record<?> failureEvent =
+    final Record<ProcessInstanceRecordValue> failureEvent =
         RecordingExporter.processInstanceRecords()
-            .withElementId("event_sub_proc")
+            .withElementId("event_sub_start")
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
@@ -133,17 +134,15 @@ public class EventSubProcessIncidentTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
-
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
     Assertions.assertThat(incidentEventValue)
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
         .hasProcessInstanceKey(processInstanceKey)
-        .hasElementId("event_sub_proc")
+        .hasElementId("event_sub_start")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasVariableScopeKey(failureEvent.getKey());
+        .hasVariableScopeKey(failureEvent.getValue().getFlowScopeKey());
 
     assertThat(incidentEventValue.getErrorMessage())
         .contains("no variable found for name 'source'");
@@ -177,6 +176,33 @@ public class EventSubProcessIncidentTest {
         .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
+  }
+
+  @Test
+  public void shouldRecreateIncidentOnResolveIncidentWithoutUpdateVariables() {
+    // given
+    final BpmnModelInstance model = process(withEventSubprocessAndInputMapping(builder));
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .onlyEvents()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
+
+    // then
+    final var incidentCount =
+        RecordingExporter.incidentRecords()
+            .onlyEvents()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .count();
+    assertThat(incidentCount).isEqualTo(2);
   }
 
   private long createInstanceAndTriggerEvent(final BpmnModelInstance model) {

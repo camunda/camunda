@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -29,6 +30,7 @@ import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -427,9 +429,11 @@ public final class BpmnStateTransitionBehavior {
     invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) ->
-            containerProcessor.beforeExecutionPathCompleted(
-                containerScope, containerContext, childContext));
+        (containerProcessor, containerScope, containerContext) -> {
+          containerProcessor.beforeExecutionPathCompleted(
+              containerScope, containerContext, childContext);
+          return Either.right(null);
+        });
   }
 
   // CALL ACTIVITY SPECIFIC
@@ -456,9 +460,11 @@ public final class BpmnStateTransitionBehavior {
     invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) ->
-            containerProcessor.afterExecutionPathCompleted(
-                containerScope, containerContext, childContext));
+        (containerProcessor, containerScope, containerContext) -> {
+          containerProcessor.afterExecutionPathCompleted(
+              containerScope, containerContext, childContext);
+          return Either.right(null);
+        });
   }
 
   public void onElementTerminated(
@@ -467,21 +473,23 @@ public final class BpmnStateTransitionBehavior {
     invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) ->
-            containerProcessor.onChildTerminated(containerScope, containerContext, childContext));
+        (containerProcessor, containerScope, containerContext) -> {
+          containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
+          return Either.right(null);
+        });
   }
 
-  public void onElementActivating(
+  public Either<Failure, ?> onElementActivating(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
 
-    invokeElementContainerIfPresent(
+    return invokeElementContainerIfPresent(
         element,
         childContext,
         (containerProcessor, containerScope, containerContext) ->
             containerProcessor.onChildActivating(containerScope, containerContext, childContext));
   }
 
-  private void invokeElementContainerIfPresent(
+  private Either<Failure, ?> invokeElementContainerIfPresent(
       final ExecutableFlowElement childElement,
       final BpmnElementContext childContext,
       final ElementContainerProcessorFunction containerFunction) {
@@ -501,11 +509,11 @@ public final class BpmnStateTransitionBehavior {
 
     } else {
       // no flow scope or no parent process
-      return;
+      return Either.right(null);
     }
     final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
 
-    containerFunction.apply(containerProcessor, containerScope, containerContext);
+    return containerFunction.apply(containerProcessor, containerScope, containerContext);
   }
 
   private ExecutableCallActivity getParentProcessScope(
@@ -569,7 +577,7 @@ public final class BpmnStateTransitionBehavior {
 
   @FunctionalInterface
   private interface ElementContainerProcessorFunction {
-    void apply(
+    Either<Failure, ?> apply(
         BpmnElementContainerProcessor<ExecutableFlowElement> containerProcessor,
         ExecutableFlowElement containerScope,
         BpmnElementContext containerContext);

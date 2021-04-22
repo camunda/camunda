@@ -89,6 +89,16 @@ final class ProcessInstanceElementActivatingApplier
 
     decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
 
+    if (currentElementType == BpmnElementType.EVENT_SUB_PROCESS) {
+      // copy temp variables into local scope (necessary for start event to apply output mappings)
+      final var temporaryVariables =
+          variableState.getTemporaryVariables(flowScopeInstance.getKey());
+      if (temporaryVariables != null) {
+        variableState.setTemporaryVariables(elementInstanceKey, temporaryVariables);
+        variableState.removeTemporaryVariables(flowScopeInstance.getKey());
+      }
+    }
+
     if (currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
       // the event variables are stored as temporary variables in the scope of the subprocess
