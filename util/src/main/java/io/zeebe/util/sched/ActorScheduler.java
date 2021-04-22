@@ -11,9 +11,10 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class ActorScheduler {
+public final class ActorScheduler implements AutoCloseable {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
 
@@ -76,6 +77,15 @@ public final class ActorScheduler {
     } else {
       throw new IllegalStateException("Cannot stop scheduler not running");
     }
+  }
+
+  /**
+   * Convenience implementation for blocking stop which can be used with try-with-resources and
+   * other constructs.
+   */
+  @Override
+  public void close() throws Exception {
+    stop().get(10, TimeUnit.SECONDS);
   }
 
   public static ActorSchedulerBuilder newActorScheduler() {

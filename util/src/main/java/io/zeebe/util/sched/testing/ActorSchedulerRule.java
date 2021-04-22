@@ -10,9 +10,9 @@ package io.zeebe.util.sched.testing;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
-import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import org.agrona.LangUtil;
 import org.junit.rules.ExternalResource;
 
 public final class ActorSchedulerRule extends ExternalResource {
@@ -62,7 +62,12 @@ public final class ActorSchedulerRule extends ExternalResource {
 
   @Override
   public void after() {
-    FutureUtil.join(actorScheduler.stop());
+    try {
+      actorScheduler.close();
+    } catch (Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+
     actorScheduler = null;
     builder = null;
   }
