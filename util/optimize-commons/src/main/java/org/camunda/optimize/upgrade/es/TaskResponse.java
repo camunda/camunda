@@ -15,7 +15,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -105,15 +107,27 @@ public class TaskResponse {
     private String type;
     @JsonProperty("reason")
     private String reason;
-    @JsonProperty("phase")
-    private String phase;
+    @JsonProperty("script_stack")
+    private List<String> scriptStack;
+    @JsonProperty("caused_by")
+    private Map<String, Object> causedBy;
 
     @Override
     public String toString() {
+      String scriptStackString = scriptStack == null ? null : scriptStack.stream()
+        .map(stackLine -> "\n" + stackLine)
+        .collect(Collectors.toList())
+        .toString();
+      String causedByString = causedBy == null ? null : causedBy.entrySet()
+        .stream()
+        .map(cause -> "\n" + cause.toString())
+        .collect(Collectors.toList())
+        .toString();
       return "Error{" +
         "type='" + type + '\'' +
         ", reason='" + reason + '\'' +
-        ", phase='" + phase + '\'' +
+        ", script_stack='" + scriptStackString + '\'' +
+        ", caused_by='" + causedByString + '\'' +
         '}';
     }
   }

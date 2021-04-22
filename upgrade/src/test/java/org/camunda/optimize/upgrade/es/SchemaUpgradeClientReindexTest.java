@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
@@ -40,6 +41,7 @@ import org.mockito.stubbing.OngoingStubbing;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -241,7 +243,17 @@ public class SchemaUpgradeClientReindexTest {
     final TaskResponse taskResponseWithError = new TaskResponse(
       true,
       new TaskResponse.Task(taskId, new TaskResponse.Status(1L, 0L, 0L, 0L)),
-      new TaskResponse.Error("error", "failed hard", "reindex"),
+      new TaskResponse.Error(
+        "error",
+        "failed hard",
+        Arrays.asList(
+          "ctx._source.flowNodeData = ((Map) params.get(ctx._source.id)).values();\n",
+          "                                                             ^---- HERE"
+        ),
+        ImmutableMap.of("type", "null_pointer_exception",
+                        "reason", "someReason"
+        )
+      ),
       null
     );
     final Response taskStatusResponse = createEsResponse(taskResponseWithError);

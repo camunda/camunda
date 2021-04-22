@@ -382,7 +382,7 @@ public class ElasticsearchWriterUtil {
 
   private static void validateTaskResponse(final TaskResponse taskResponse) {
     if (taskResponse.getError() != null) {
-      log.error("An Elasticsearch task failed: {}", taskResponse.getError());
+      log.error("An Elasticsearch task failed with error: {}", taskResponse.getError());
       throw new OptimizeRuntimeException(taskResponse.getError().toString());
     }
 
