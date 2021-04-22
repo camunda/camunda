@@ -149,6 +149,31 @@ public class InterruptingEventSubprocessTest {
   }
 
   @Test
+  public void shouldTriggerEventSubprocessAndCreateLocalScopeVariable() {
+    // given
+    final BpmnModelInstance model = process(withEventSubprocessAndLocalScopeVariable(builder));
+
+    // when
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+
+    // then
+    final Record<ProcessInstanceRecordValue> subProcessActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("event_sub_proc")
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertEventSubprocessLifecycle(processInstanceKey);
+
+    RecordingExporter.variableRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withName("localScope")
+        .withScopeKey(subProcessActivated.getKey())
+        .await();
+  }
+
+  @Test
   public void shouldInterruptAndCompleteParent() {
     // given
     final BpmnModelInstance model = process(withEventSubprocess(builder));
@@ -445,6 +470,22 @@ public class InterruptingEventSubprocessTest {
         .apply(
             process
                 .eventSubProcess("event_sub_proc")
+                .startEvent("event_sub_start")
+                .interrupting(true))
+        .endEvent("event_sub_end");
+
+    return process;
+  }
+
+  private static ProcessBuilder withEventSubprocessAndLocalScopeVariable(
+      final Function<StartEventBuilder, StartEventBuilder> builder) {
+    final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);
+
+    builder
+        .apply(
+            process
+                .eventSubProcess("event_sub_proc")
+                .zeebeInputExpression("=null", "localScope")
                 .startEvent("event_sub_start")
                 .interrupting(true))
         .endEvent("event_sub_end");
