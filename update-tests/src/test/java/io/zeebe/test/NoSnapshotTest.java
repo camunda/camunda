@@ -46,7 +46,7 @@ final class NoSnapshotTest {
   void update(final String name, final UpdateTestCase testCase, final ContainerState state) {
     // given
     state.withNetwork(network).broker(LAST_VERSION).start(true);
-    final long wfInstanceKey = testCase.setUp(state.client());
+    final long processInstanceKey = testCase.setUp(state.client());
     final long key = testCase.runBefore(state);
 
     // when
@@ -55,7 +55,7 @@ final class NoSnapshotTest {
     assertThat(state).hasNoSnapshotAvailable(1);
 
     // then
-    testCase.runAfter(state, wfInstanceKey, key);
+    testCase.runAfter(state, processInstanceKey, key);
     assertThat(state).eventuallyHasCompletedProcess(PROCESS_ID);
   }
 }

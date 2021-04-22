@@ -51,13 +51,13 @@ final class OldGatewayTest {
         .broker(CURRENT_VERSION)
         .withStandaloneGateway(LAST_VERSION)
         .start(true);
-    final long wfInstanceKey = testCase.setUp(state.client());
+    final long processInstanceKey = testCase.setUp(state.client());
 
     // when
     final long key = testCase.runBefore(state);
 
     // then
-    testCase.runAfter(state, wfInstanceKey, key);
+    testCase.runAfter(state, processInstanceKey, key);
     assertThat(state).eventuallyHasCompletedProcess(PROCESS_ID);
   }
 }

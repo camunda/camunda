@@ -119,7 +119,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
                 new Tuple<>(childProcess(), CHILD_PROCESS_ID))
             .createInstance()
             .afterUpgrade(
-                (state, wfKey, key) -> {
+                (state, processKey, key) -> {
                   awaitElementInState(state, JOB, "CREATED");
 
                   final var jobsResponse =
@@ -200,7 +200,8 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     return jobsResponse.getJobs().get(0).getKey();
   }
 
-  private void completeJob(final ContainerState state, final long wfInstanceKey, final long key) {
+  private void completeJob(
+      final ContainerState state, final long processInstanceKey, final long key) {
     state.client().newCompleteCommand(key).send().join();
   }
 
@@ -214,7 +215,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
   }
 
   private void publishMessage(
-      final ContainerState state, final long wfInstanceKey, final long key) {
+      final ContainerState state, final long processInstanceKey, final long key) {
     state
         .client()
         .newPublishMessageCommand()
@@ -252,10 +253,10 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
   }
 
   private void resolveIncident(
-      final ContainerState state, final long wfInstanceKey, final long key) {
+      final ContainerState state, final long processInstanceKey, final long key) {
     state
         .client()
-        .newSetVariablesCommand(wfInstanceKey)
+        .newSetVariablesCommand(processInstanceKey)
         .variables(Map.of("foo", "bar"))
         .send()
         .join();
@@ -325,7 +326,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
   }
 
   private void awaitTimerTriggered(
-      final ContainerState state, final long wfInstanceKey, final long key) {
+      final ContainerState state, final long processInstanceKey, final long key) {
     Awaitility.await("until a timer is created")
         .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(200))

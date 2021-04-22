@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.Arguments;
 
 @SuppressWarnings("java:S2187") // false positive due to ending with *TestCase
 final class UpdateTestCase implements Arguments {
-  private TestCaseBuilder builder;
+  private final TestCaseBuilder builder;
 
   private UpdateTestCase(final TestCaseBuilder builder) {
     this.builder = builder;
@@ -45,8 +45,8 @@ final class UpdateTestCase implements Arguments {
     return builder.before.applyAsLong(state);
   }
 
-  void runAfter(final ContainerState state, final long wfInstanceKey, final long key) {
-    builder.after.accept(state, wfInstanceKey, key);
+  void runAfter(final ContainerState state, final long processInstanceKey, final long key) {
+    builder.after.accept(state, processInstanceKey, key);
   }
 
   static class TestCaseBuilder {
@@ -54,7 +54,7 @@ final class UpdateTestCase implements Arguments {
     private Consumer<ZeebeClient> deployProcess = c -> {};
     private ToLongFunction<ZeebeClient> createInstance = c -> -1L;
     private ToLongFunction<ContainerState> before = r -> -1L;
-    private TriConsumer<ContainerState, Long, Long> after = (r, wfKey, k) -> {};
+    private TriConsumer<ContainerState, Long, Long> after = (r, processKey, k) -> {};
 
     TestCaseBuilder name(final String name) {
       this.name = Objects.requireNonNull(name);
