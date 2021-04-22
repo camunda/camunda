@@ -40,15 +40,15 @@ public final class MultipleEventSubprocessTest {
     ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
-    triggerTimerStart(wfInstanceKey);
-    triggerMessageStart(wfInstanceKey, helper.getMessageName());
+    triggerTimerStart(processInstanceKey);
+    triggerMessageStart(processInstanceKey, helper.getMessageName());
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
                 .limit(8))
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
@@ -68,23 +68,23 @@ public final class MultipleEventSubprocessTest {
     ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
-    triggerTimerStart(wfInstanceKey);
+    triggerTimerStart(processInstanceKey);
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId("event_sub_task_timer")
                 .exists())
         .describedAs("Expected service task after timer start event to exist")
         .isTrue();
-    triggerMessageStart(wfInstanceKey, helper.getMessageName());
+    triggerMessageStart(processInstanceKey, helper.getMessageName());
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSubsequence(
@@ -104,21 +104,21 @@ public final class MultipleEventSubprocessTest {
     ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .describedAs("Expected event subprocess message start subscription to be opened.")
         .isTrue();
-    completeJob(wfInstanceKey, "sub_proc_type");
+    completeJob(processInstanceKey, "sub_proc_type");
 
     // then
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(helper.getMessageName())
                 .exists())
         .describedAs("Expected event subprocess start message subscription to be closed.")
@@ -133,15 +133,15 @@ public final class MultipleEventSubprocessTest {
     ENGINE.deployment().withXmlResource(model).deploy();
 
     // when
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
-    triggerMessageStart(wfInstanceKey, helper.getMessageName());
-    triggerMessageStart(wfInstanceKey, helper.getMessageName());
+    triggerMessageStart(processInstanceKey, helper.getMessageName());
+    triggerMessageStart(processInstanceKey, helper.getMessageName());
 
     // then
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(2)
                 .count())
         .isEqualTo(2);
@@ -154,26 +154,26 @@ public final class MultipleEventSubprocessTest {
         twoEventSubprocWithTasksModel(false, false, helper.getMessageName());
     ENGINE.deployment().withXmlResource(model).deploy();
 
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
-    triggerTimerStart(wfInstanceKey);
+    triggerTimerStart(processInstanceKey);
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withType("timerTask")
         .await();
 
     // when
-    completeJob(wfInstanceKey, "type");
+    completeJob(processInstanceKey, "type");
 
     // then
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.END_EVENT)
         .withElementId("end_proc")
         .await();
 
-    completeJob(wfInstanceKey, "timerTask");
+    completeJob(processInstanceKey, "timerTask");
     assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getIntent()))
         .containsSubsequence(
@@ -190,17 +190,17 @@ public final class MultipleEventSubprocessTest {
         twoEventSubprocWithTasksModel(false, false, helper.getMessageName());
     ENGINE.deployment().withXmlResource(model).deploy();
 
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
-    triggerTimerStart(wfInstanceKey);
+    triggerTimerStart(processInstanceKey);
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withType("timerTask")
         .await();
 
     // when
-    ENGINE.processInstance().withInstanceKey(wfInstanceKey).cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
     assertThat(RecordingExporter.processInstanceRecords().limitToProcessInstanceTerminated())
@@ -221,28 +221,28 @@ public final class MultipleEventSubprocessTest {
     final BpmnModelInstance model =
         twoEventSubprocWithTasksModel(true, true, helper.getMessageName());
     ENGINE.deployment().withXmlResource(model).deploy();
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(Map.of("key", 123))
             .create();
 
-    triggerTimerStart(wfInstanceKey);
+    triggerTimerStart(processInstanceKey);
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId("event_sub_start_timer")
         .await();
 
     // when
-    triggerMessageStart(wfInstanceKey, helper.getMessageName());
+    triggerMessageStart(processInstanceKey, helper.getMessageName());
 
-    ENGINE.job().ofInstance(wfInstanceKey).withType("timerTask").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("timerTask").complete();
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted()
                 .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementType(BpmnElementType.EVENT_SUB_PROCESS))
@@ -250,30 +250,30 @@ public final class MultipleEventSubprocessTest {
         .containsExactly("event_sub_proc_timer");
   }
 
-  private void triggerMessageStart(final long wfInstanceKey, final String msgName) {
+  private void triggerMessageStart(final long processInstanceKey, final String msgName) {
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .await();
 
     ENGINE.message().withName(msgName).withCorrelationKey("123").publish();
   }
 
-  private void triggerTimerStart(final long wfInstanceKey) {
+  private void triggerTimerStart(final long processInstanceKey) {
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.SERVICE_TASK)
         .await();
 
     ENGINE.increaseTime(Duration.ofSeconds(60));
   }
 
-  private static void completeJob(final long wfInstanceKey, final String taskType) {
+  private static void completeJob(final long processInstanceKey, final String taskType) {
     RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withType(taskType)
         .await();
 
-    ENGINE.job().ofInstance(wfInstanceKey).withType(taskType).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(taskType).complete();
   }
 
   private BpmnModelInstance twoEventSubprocModel(

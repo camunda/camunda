@@ -121,43 +121,43 @@ public class InterruptingEventSubprocessTest {
   public void shouldTriggerEventSubprocess() {
     // when
     final BpmnModelInstance model = process(withEventSubprocess(builder));
-    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
     final Record<ProcessInstanceRecordValue> startEventActivate =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .withElementId("event_sub_start")
             .withElementType(BpmnElementType.START_EVENT)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     final Record<ProcessInstanceRecordValue> subProcessActivated =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("event_sub_proc")
             .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     Assertions.assertThat(startEventActivate.getValue())
         .hasProcessDefinitionKey(currentProcess.getProcessDefinitionKey())
-        .hasProcessInstanceKey(wfInstanceKey)
+        .hasProcessInstanceKey(processInstanceKey)
         .hasBpmnElementType(BpmnElementType.START_EVENT)
         .hasElementId("event_sub_start")
         .hasVersion(currentProcess.getVersion())
         .hasFlowScopeKey(subProcessActivated.getKey());
 
-    assertEventSubprocessLifecycle(wfInstanceKey);
+    assertEventSubprocessLifecycle(processInstanceKey);
   }
 
   @Test
   public void shouldInterruptAndCompleteParent() {
     // given
     final BpmnModelInstance model = process(withEventSubprocess(builder));
-    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -184,21 +184,21 @@ public class InterruptingEventSubprocessTest {
             .endEvent("end_proc")
             .done();
 
-    final long wfInstanceKey = createInstanceAndWaitForTask(process);
+    final long processInstanceKey = createInstanceAndWaitForTask(process);
 
-    ENGINE.job().ofInstance(wfInstanceKey).withType("task-1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("task-1").complete();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId("task-1-to-join")
         .await();
 
-    triggerEventSubprocess.accept(wfInstanceKey);
+    triggerEventSubprocess.accept(processInstanceKey);
 
     // then
     assertThat(
             RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
@@ -233,27 +233,27 @@ public class InterruptingEventSubprocessTest {
             .endEvent("end_proc")
             .done();
 
-    final long wfInstanceKey = createInstanceAndTriggerEvent(process);
+    final long processInstanceKey = createInstanceAndTriggerEvent(process);
 
     // then
     final Record<ProcessInstanceRecordValue> subProcess =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("sub_proc")
             .getFirst();
 
     final Record<ProcessInstanceRecordValue> eventSubproc =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("event_sub_proc")
             .getFirst();
 
     assertThat(eventSubproc.getValue().getFlowScopeKey()).isEqualTo(subProcess.getKey());
-    assertThat(subProcess.getValue().getFlowScopeKey()).isEqualTo(wfInstanceKey);
+    assertThat(subProcess.getValue().getFlowScopeKey()).isEqualTo(processInstanceKey);
     assertThat(subProcess.getSourceRecordPosition()).isEqualTo(eventSubproc.getPosition());
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withElementId("task")
                 .getFirst())
         .isNotNull();
@@ -263,11 +263,11 @@ public class InterruptingEventSubprocessTest {
   public void shouldHaveScopeVariableIfInterrupting() {
     // given
     final BpmnModelInstance model = process(withEventSubprocessTask(builder, helper.getJobType()));
-    final long wfInstanceKey = createInstanceAndWaitForTask(model);
+    final long processInstanceKey = createInstanceAndWaitForTask(model);
 
     final long procTaskKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementId("task")
             .getFirst()
             .getKey();
@@ -279,10 +279,10 @@ public class InterruptingEventSubprocessTest {
         .update();
 
     // when
-    triggerEventSubprocess.accept(wfInstanceKey);
+    triggerEventSubprocess.accept(processInstanceKey);
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withType(helper.getJobType())
                 .exists())
         .isTrue();
@@ -298,10 +298,10 @@ public class InterruptingEventSubprocessTest {
   public void shouldNotPropagateVariablesToScope() {
     // given
     final BpmnModelInstance model = process(withEventSubprocessTask(builder, helper.getJobType()));
-    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
     final long eventSubprocKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(wfInstanceKey)
+            .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
             .getFirst()
             .getKey();
@@ -313,14 +313,14 @@ public class InterruptingEventSubprocessTest {
         .withDocument(Map.of("y", 2))
         .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
         .update();
-    ENGINE.job().ofInstance(wfInstanceKey).withType(helper.getJobType()).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(helper.getJobType()).complete();
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(wfInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .variableRecords()
-                .withScopeKey(wfInstanceKey))
+                .withScopeKey(processInstanceKey))
         .extracting(r -> r.getValue().getName())
         .doesNotContain("y");
   }
@@ -341,30 +341,30 @@ public class InterruptingEventSubprocessTest {
             "timer-event-subprocess",
             s -> s.startEvent("other-timer").timerWithDuration("P1D").endEvent());
 
-    final long wfInstanceKey = createInstanceAndWaitForTask(process(eventSubprocess));
+    final long processInstanceKey = createInstanceAndWaitForTask(process(eventSubprocess));
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withMessageName("other-message")
         .await();
 
-    triggerEventSubprocess.accept(wfInstanceKey);
+    triggerEventSubprocess.accept(processInstanceKey);
 
     // then
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(wfInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .messageSubscriptionRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("other-message"))
         .extracting(Record::getIntent)
         .contains(MessageSubscriptionIntent.DELETED);
 
     assertThat(
             RecordingExporter.records()
-                .limitToProcessInstance(wfInstanceKey)
+                .limitToProcessInstance(processInstanceKey)
                 .timerRecords()
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .withHandlerNodeId("other-timer"))
         .extracting(Record::getIntent)
         .contains(TimerIntent.CANCELED);
@@ -399,9 +399,9 @@ public class InterruptingEventSubprocessTest {
   }
 
   private long createInstanceAndTriggerEvent(final BpmnModelInstance model) {
-    final long wfInstanceKey = createInstanceAndWaitForTask(model);
-    triggerEventSubprocess.accept(wfInstanceKey);
-    return wfInstanceKey;
+    final long processInstanceKey = createInstanceAndWaitForTask(model);
+    triggerEventSubprocess.accept(processInstanceKey);
+    return processInstanceKey;
   }
 
   private long createInstanceAndWaitForTask(final BpmnModelInstance model) {
@@ -414,7 +414,7 @@ public class InterruptingEventSubprocessTest {
             .getDeployedProcesses()
             .get(0);
 
-    final long wfInstanceKey =
+    final long processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
@@ -422,11 +422,11 @@ public class InterruptingEventSubprocessTest {
             .create();
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(wfInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .describedAs("Expected job to be created")
         .isTrue();
-    return wfInstanceKey;
+    return processInstanceKey;
   }
 
   private static BpmnModelInstance process(final ProcessBuilder processBuilder) {
