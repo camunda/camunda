@@ -472,7 +472,7 @@ eventBasedProcess:
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
     enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
-    maxPageSize: 10000
+    maxPageSize: 5000
   eventIngestion:
     # Secret token to be provided on the Ingestion REST API when ingesting data.
     # If set `null` a random token will be generated with each startup of Optimize and logged.
