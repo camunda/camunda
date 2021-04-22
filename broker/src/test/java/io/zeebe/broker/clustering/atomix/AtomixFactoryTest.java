@@ -14,7 +14,7 @@ import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
+import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.util.Environment;
 import org.junit.Before;
 import org.junit.Rule;

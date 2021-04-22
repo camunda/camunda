@@ -22,8 +22,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.zeebe.snapshots.PersistedSnapshotStore;
+import io.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

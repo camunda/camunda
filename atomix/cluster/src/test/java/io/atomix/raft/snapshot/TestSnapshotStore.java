@@ -15,10 +15,10 @@
  */
 package io.atomix.raft.snapshot;
 
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivedSnapshot;
+import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.PersistedSnapshotListener;
+import io.zeebe.snapshots.ReceivableSnapshotStore;
+import io.zeebe.snapshots.ReceivedSnapshot;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;

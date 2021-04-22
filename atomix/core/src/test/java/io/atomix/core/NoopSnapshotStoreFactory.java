@@ -16,8 +16,8 @@
  */
 package io.atomix.core;
 
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
+import io.zeebe.snapshots.ReceivableSnapshotStore;
+import io.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.nio.file.Path;
 
 class NoopSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {

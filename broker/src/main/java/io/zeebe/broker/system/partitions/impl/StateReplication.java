@@ -13,7 +13,7 @@ import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.zeebe.broker.system.partitions.SnapshotReplication;
 import io.zeebe.engine.Loggers;
-import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.SnapshotChunk;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

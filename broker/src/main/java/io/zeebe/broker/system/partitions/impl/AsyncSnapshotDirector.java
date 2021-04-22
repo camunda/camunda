@@ -11,7 +11,7 @@ import io.zeebe.broker.system.partitions.StateController;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.snapshots.raft.TransientSnapshot;
+import io.zeebe.snapshots.TransientSnapshot;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.SchedulingHints;

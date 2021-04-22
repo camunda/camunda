@@ -14,7 +14,7 @@ import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
+import io.zeebe.snapshots.PersistedSnapshotStore;
 import io.zeebe.util.exception.UnrecoverableException;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
