@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.Map.Entry.comparingByKey;
+
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -118,16 +120,21 @@ public class TaskResponse {
         .map(stackLine -> "\n" + stackLine)
         .collect(Collectors.toList())
         .toString();
-      String causedByString = causedBy == null ? null : causedBy.entrySet()
-        .stream()
-        .map(cause -> "\n" + cause.toString())
-        .collect(Collectors.toList())
-        .toString();
+      final String causedByString = Optional.ofNullable(causedBy)
+        .map(causes -> {
+          final StringBuilder causedByStringBuilder = new StringBuilder("'{");
+          causes.entrySet()
+            .stream()
+            .sorted(comparingByKey())
+            .forEach(entry -> causedByStringBuilder.append(entry.getKey()).append("=").append(entry.getValue()));
+          causedByStringBuilder.append("}'");
+          return causedByStringBuilder.toString();
+        })
+        .orElse(null);
       return "Error{" +
-        "type='" + type + '\'' +
-        ", reason='" + reason + '\'' +
-        ", script_stack='" + scriptStackString + '\'' +
-        ", caused_by='" + causedByString + '\'' +
+        "type='" + type + "\', reason='" + reason + '\'' +
+        ", script_stack='" + scriptStackString + "\'\n" +
+        "caused_by='" + causedByString + '\'' +
         '}';
     }
   }

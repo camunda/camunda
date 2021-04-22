@@ -41,8 +41,10 @@ import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
@@ -51,6 +53,7 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -281,6 +284,19 @@ public abstract class AbstractUpgradeIT {
     return new UpdateDataStep(
       index, termQuery("username", "admin"), "ctx._source.password = ctx._source.password + \"1\""
     );
+  }
+
+  protected void insertTestDocuments(final int amount) throws IOException {
+    final String indexName = TEST_INDEX_V1.getIndexName();
+    final BulkRequest bulkRequest = new BulkRequest();
+    for (int i = 0; i < amount; i++) {
+      bulkRequest.add(
+        new IndexRequest(indexName)
+          .source(String.format("{\"password\" : \"admin\",\"username\" : \"admin%d\"}", i), XContentType.JSON)
+      );
+    }
+    prefixAwareClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+    prefixAwareClient.refresh(new RefreshRequest(indexName));
   }
 
 }

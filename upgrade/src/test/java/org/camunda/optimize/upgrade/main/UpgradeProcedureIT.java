@@ -9,11 +9,21 @@ import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+import org.camunda.optimize.upgrade.UpgradeStepsIT;
+import org.camunda.optimize.upgrade.es.TaskResponse;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -81,6 +91,48 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
     // then
     logCapturer.assertContains("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
+  }
+
+  @Test
+  public void upgradeExceptionIncludesTaskInformationOnFailure() {
+    // given
+    setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
+
+    final UpgradePlan upgradePlan =
+      UpgradePlanBuilder.createUpgradePlan()
+        .fromVersion(PreviousVersion.PREVIOUS_VERSION)
+        .toVersion(Version.VERSION)
+        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
+        .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
+        .addUpgradeStep(new UpdateIndexStep(
+          TEST_INDEX_V2,
+          "params.get(ctx._source.someNonExistentField).values();",
+          Collections.emptyMap(),
+          Collections.emptySet()
+        ))
+        .build();
+
+    // when
+    assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
+      // then
+      .isInstanceOf(UpgradeRuntimeException.class)
+      .getCause()
+      .hasMessageContaining(getExpectedTaskErrorString());
+  }
+
+  private String getExpectedTaskErrorString() {
+    final Map<String, Object> reasons = new HashMap<>();
+    reasons.put("type", "null_pointer_exception");
+    reasons.put("reason", null);
+    return new TaskResponse.Error(
+      "script_exception",
+      "runtime error",
+      Arrays.asList(
+        "params.get(ctx._source.someNonExistentField).values();",
+        "                                            ^---- HERE"
+      ),
+      reasons
+    ).toString();
   }
 
 }

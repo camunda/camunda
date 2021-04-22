@@ -18,12 +18,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.matchers.MatchType;
@@ -321,27 +316,14 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
       .build();
   }
 
-  private void createIndex(final IndexMappingCreator testIndexWithTemplateV1) {
+  private void createIndex(final IndexMappingCreator index) {
     upgradeProcedure.performUpgrade(
       UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(INTERMEDIATE_VERSION)
-        .addUpgradeSteps(ImmutableList.of(new CreateIndexStep(testIndexWithTemplateV1)))
+        .addUpgradeSteps(ImmutableList.of(new CreateIndexStep(index)))
         .build()
     );
-  }
-
-  private void insertTestDocuments(final int amount) throws IOException {
-    final String indexName = TEST_INDEX_V1.getIndexName();
-    final BulkRequest bulkRequest = new BulkRequest();
-    for (int i = 0; i < amount; i++) {
-      bulkRequest.add(
-        new IndexRequest(indexName)
-          .source(String.format("{\"password\" : \"admin\",\"username\" : \"admin%d\"}", i), XContentType.JSON)
-      );
-    }
-    prefixAwareClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-    prefixAwareClient.refresh(new RefreshRequest(indexName));
   }
 
   private HttpRequest forwardThrottledReindexRequestWithOneDocPerSecond(final String sourceIndexName,
