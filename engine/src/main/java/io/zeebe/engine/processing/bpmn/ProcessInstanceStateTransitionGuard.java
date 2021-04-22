@@ -133,7 +133,7 @@ public final class ProcessInstanceStateTransitionGuard {
       return Either.left(
           String.format(
               "Expected flow scope instance with key '%d' to be present in state but not found.",
-              context.getElementInstanceKey()));
+              context.getFlowScopeKey()));
     }
   }
 
