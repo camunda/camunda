@@ -11,28 +11,27 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.Either;
 
 public final class EventSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
-  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
 
   public EventSubProcessProcessor(final BpmnBehaviors bpmnBehaviors) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     stateTransitionBehavior = bpmnBehaviors.stateTransitionBehavior();
-    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
   }
@@ -77,17 +76,15 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onChildActivating(
+  public Either<Failure, ?> onChildActivating(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     if (childContext.getBpmnElementType() != BpmnElementType.START_EVENT) {
-      return;
+      return Either.right(null);
     }
 
-    variableMappingBehavior
-        .applyInputMappings(flowScopeContext, element)
-        .ifLeft(failure -> incidentBehavior.createIncident(failure, childContext));
+    return variableMappingBehavior.applyInputMappings(flowScopeContext, element);
   }
 
   @Override

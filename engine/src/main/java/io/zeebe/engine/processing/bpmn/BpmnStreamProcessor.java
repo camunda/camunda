@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.bpmn;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
+import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.zeebe.engine.processing.bpmn.behavior.TypedResponseWriterProxy;
 import io.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
@@ -52,6 +53,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final MutableElementInstanceState elementInstanceState;
 
   private boolean reprocessingMode = true;
+  private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnStreamProcessor(
       final ExpressionProcessor expressionProcessor,
@@ -75,6 +77,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             eventTriggerBehavior,
             this::getContainerProcessor,
             writers);
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
     processors = new BpmnElementProcessors(bpmnBehaviors);
 
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
@@ -187,8 +190,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       case ACTIVATE_ELEMENT:
         if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
           final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
-          stateTransitionBehavior.onElementActivating(element, activatingContext);
-          processor.onActivate(element, activatingContext);
+          stateTransitionBehavior
+              .onElementActivating(element, activatingContext)
+              .ifRightOrLeft(
+                  ok -> processor.onActivate(element, activatingContext),
+                  failure -> incidentBehavior.createIncident(failure, activatingContext));
         } else {
           processor.onActivating(element, context);
         }
