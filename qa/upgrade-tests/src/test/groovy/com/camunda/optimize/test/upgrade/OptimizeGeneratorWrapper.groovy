@@ -9,7 +9,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class OptimizeGeneratorWrapper {
-  private static final Logger log = LoggerFactory.getLogger(OptimizeWrapper.class);
+  private static final Logger log = LoggerFactory.getLogger(OptimizeGeneratorWrapper.class);
 
   String generatorVersion
   String generatorDirectory

@@ -36,7 +36,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class ElasticClient {
-  private static final Logger log = LoggerFactory.getLogger(OptimizeWrapper.class);
+  private static final Logger log = LoggerFactory.getLogger(ElasticClient.class);
   private static final String[] SETTINGS_FILTER = [
     "index.analysis.*", "index.number_of_shards", "index.number_of_replicas",
     "index.max_ngram_diff", "index.mapping.*", "index.refresh_interval"
