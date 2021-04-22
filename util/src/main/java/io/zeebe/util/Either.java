@@ -64,7 +64,7 @@ public interface Either<L, R> {
    * @param <R> the type of the right value
    * @return a {@link Right} of the value
    */
-  static <L, R> Either<L, R> right(R right) {
+  static <L, R> Either<L, R> right(final R right) {
     return new Right<>(right);
   }
 
@@ -76,7 +76,7 @@ public interface Either<L, R> {
    * @param <R> the type of the right value
    * @return a {@link Left} of the value
    */
-  static <L, R> Either<L, R> left(L left) {
+  static <L, R> Either<L, R> left(final L left) {
     return new Left<>(left);
   }
 
