@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ public class NonInterruptingEventSubprocessTest {
     return new Object[][] {
       {
         "timer",
-        eventSubprocess(s -> s.timerWithDuration("PT60S")),
+        eventSubprocess(s -> s.timerWithCycle("R/PT60S")),
         eventTrigger(
             key -> {
               assertThat(
@@ -136,6 +137,92 @@ public class NonInterruptingEventSubprocessTest {
         .hasFlowScopeKey(subProcessActivated.getKey());
 
     assertEventSubprocessLifecycle(wfInstanceKey);
+  }
+
+  @Test
+  public void shouldTriggerEventSubprocessTwice() {
+    // given
+    final BpmnModelInstance model = eventSubprocModel(builder);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("event_sub_start")
+        .withElementType(BpmnElementType.START_EVENT)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    triggerEventSubprocess.accept(processInstanceKey);
+
+    // then
+    final var startEventCount =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("event_sub_start")
+            .withElementType(BpmnElementType.START_EVENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .count();
+    assertThat(startEventCount).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldTriggerEventSubprocessAndCreateLocalScopeVariable() {
+    // given
+    final BpmnModelInstance model = eventSubprocModelWithLocalScopeVariable(builder);
+
+    // when
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+
+    // then
+    final Record<ProcessInstanceRecordValue> subProcessActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("event_sub_proc")
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertEventSubprocessLifecycle(processInstanceKey);
+
+    RecordingExporter.variableRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withName("localScope")
+        .withScopeKey(subProcessActivated.getKey())
+        .await();
+  }
+
+  @Test
+  public void shouldTriggerEventSubprocessTwiceWithOwnLocalScopeVariable() {
+    // given
+    final BpmnModelInstance model = eventSubprocModelWithLocalScopeVariable(builder);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("event_sub_start")
+        .withElementType(BpmnElementType.START_EVENT)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    triggerEventSubprocess.accept(processInstanceKey);
+
+    // then
+    final List<Record<ProcessInstanceRecordValue>> eventSubProcessActivatedList =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("event_sub_proc")
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .collect(Collectors.toList());
+
+    RecordingExporter.variableRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withName("localScope")
+        .withScopeKey(eventSubProcessActivatedList.get(0).getKey())
+        .await();
+
+    RecordingExporter.variableRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withName("localScope")
+        .withScopeKey(eventSubProcessActivatedList.get(1).getKey())
+        .await();
   }
 
   @Test
@@ -252,6 +339,25 @@ public class NonInterruptingEventSubprocessTest {
         .apply(
             builder
                 .eventSubProcess("event_sub_proc")
+                .startEvent("event_sub_start")
+                .interrupting(false))
+        .endEvent("event_sub_end");
+
+    return builder
+        .startEvent("start_proc")
+        .serviceTask("task", t -> t.zeebeJobType("type"))
+        .endEvent("end_proc")
+        .done();
+  }
+
+  private static BpmnModelInstance eventSubprocModelWithLocalScopeVariable(
+      final Function<StartEventBuilder, StartEventBuilder> startBuilder) {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
+    startBuilder
+        .apply(
+            builder
+                .eventSubProcess("event_sub_proc")
+                .zeebeInputExpression("=null", "localScope")
                 .startEvent("event_sub_start")
                 .interrupting(false))
         .endEvent("event_sub_end");
