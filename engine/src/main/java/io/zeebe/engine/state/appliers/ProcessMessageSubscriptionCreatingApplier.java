@@ -8,7 +8,6 @@
 package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -27,21 +26,8 @@ public final class ProcessMessageSubscriptionCreatingApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-    // TODO (saig0): reuse the subscription record in the state (#6533)
-    final var subscription = new ProcessMessageSubscription();
-
-    subscription.setSubscriptionPartitionId(value.getSubscriptionPartitionId());
-    subscription.setMessageName(value.getMessageNameBuffer());
-    subscription.setElementInstanceKey(value.getElementInstanceKey());
-    subscription.setProcessInstanceKey(value.getProcessInstanceKey());
-    subscription.setBpmnProcessId(value.getBpmnProcessIdBuffer());
-    subscription.setCorrelationKey(value.getCorrelationKeyBuffer());
-    subscription.setTargetElementId(value.getElementIdBuffer());
-    subscription.setCloseOnCorrelate(value.isInterrupting());
-
     // TODO (saig0): the send time for the retry should be deterministic (#6364)
     final var sentTime = ActorClock.currentTimeMillis();
-    subscription.setCommandSentTime(sentTime);
 
     if (subscriptionState.existSubscriptionForElementInstance(
         value.getElementInstanceKey(), value.getMessageNameBuffer())) {
@@ -49,6 +35,6 @@ public final class ProcessMessageSubscriptionCreatingApplier
       return;
     }
 
-    subscriptionState.put(subscription);
+    subscriptionState.put(value, sentTime);
   }
 }

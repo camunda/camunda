@@ -42,7 +42,6 @@ public final class ProcessMessageSubscriptionCorrelatedApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-
     if (value.isInterrupting()) {
       subscriptionState.remove(value.getElementInstanceKey(), value.getMessageNameBuffer());
     }
