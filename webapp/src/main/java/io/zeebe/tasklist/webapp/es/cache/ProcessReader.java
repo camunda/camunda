@@ -43,9 +43,9 @@ public class ProcessReader {
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits == 1) {
+      if (response.getHits().getTotalHits().value == 1) {
         return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
-      } else if (response.getHits().totalHits > 1) {
+      } else if (response.getHits().getTotalHits().value > 1) {
         throw new TasklistRuntimeException(
             String.format("Could not find unique process with id '%s'.", processId));
       } else {

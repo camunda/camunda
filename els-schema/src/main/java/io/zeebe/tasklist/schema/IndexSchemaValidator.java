@@ -39,7 +39,7 @@ public class IndexSchemaValidator {
   private Set<String> getAllIndexNamesForIndex(String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
     LOGGER.debug("Getting all indices for {}", indexPattern);
-    return retryElasticsearchClient.getIndexNamesFromClusterHealth(indexPattern);
+    return retryElasticsearchClient.getIndexNames(indexPattern);
   }
 
   private String getIndexPrefix() {
@@ -110,7 +110,7 @@ public class IndexSchemaValidator {
 
   public boolean hasAnyTasklistIndices() {
     final Set<String> indices =
-        retryElasticsearchClient.getIndexNamesFromClusterHealth(
+        retryElasticsearchClient.getIndexNames(
             tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
     return !indices.isEmpty();
   }
@@ -118,7 +118,7 @@ public class IndexSchemaValidator {
   public boolean schemaExists() {
     try {
       final Set<String> indices =
-          retryElasticsearchClient.getIndexNamesFromClusterHealth(
+          retryElasticsearchClient.getIndexNames(
               tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);

@@ -13,7 +13,7 @@
 				"type": "integer"
 			},
 			"completionTime": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"processInstanceId": {
@@ -32,7 +32,7 @@
 				"type": "long"
 			},
 			"creationTime": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"bpmnProcessId": {

@@ -13,7 +13,6 @@ import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.schema.indices.FormIndex;
 import io.zeebe.tasklist.schema.indices.UserIndex;
 import io.zeebe.tasklist.schema.templates.TaskTemplate;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
 import java.io.IOException;
 import java.util.Random;
@@ -107,8 +106,8 @@ public class DevDataGenerator implements DataGenerator {
             .setLastname(lastname);
     try {
       final IndexRequest request =
-          new IndexRequest(
-                  userIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, user.getId())
+          new IndexRequest(userIndex.getFullQualifiedName())
+              .id(user.getId())
               .source(userEntityToJSONString(user), XContentType.JSON);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (Exception t) {

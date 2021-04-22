@@ -12,7 +12,7 @@
 				"type": "long"
 			},
 			"endDate": {
-				"format": "date_time",
+				"format": "date_time || epoch_millis",
 				"type": "date"
 			},
 			"state": {

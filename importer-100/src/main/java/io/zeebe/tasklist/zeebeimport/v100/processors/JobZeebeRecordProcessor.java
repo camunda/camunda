@@ -19,7 +19,6 @@ import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.util.DateUtil;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.JobRecordValueImpl;
 import java.io.IOException;
 import java.time.Instant;
@@ -102,8 +101,9 @@ public class JobZeebeRecordProcessor {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return new UpdateRequest(
-              taskTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest()
+          .index(taskTemplate.getFullQualifiedName())
+          .id(entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);

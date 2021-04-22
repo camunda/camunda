@@ -50,6 +50,7 @@ public class ProbesTestIT {
 
   @Test
   public void testIsReady() {
+    assertThat(probes.indicesArePresent()).isFalse();
     enableCreateSchema(true);
     schemaManager.createSchema();
     assertThat(probes.indicesArePresent()).isTrue();

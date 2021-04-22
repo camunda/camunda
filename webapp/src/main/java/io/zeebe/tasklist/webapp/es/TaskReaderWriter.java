@@ -106,9 +106,9 @@ public class TaskReaderWriter {
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
-    if (response.getHits().totalHits == 1) {
+    if (response.getHits().getTotalHits().value == 1) {
       return response.getHits().getHits()[0];
-    } else if (response.getHits().totalHits > 1) {
+    } else if (response.getHits().getTotalHits().value > 1) {
       throw new NotFoundException(String.format("Unique task with id %s was not found", id));
     } else {
       throw new NotFoundException(String.format("Task with id %s was not found", id));
@@ -352,10 +352,9 @@ public class TaskReaderWriter {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       final UpdateRequest updateRequest =
-          new UpdateRequest(
-                  taskTemplate.getFullQualifiedName(),
-                  ElasticsearchUtil.ES_INDEX_TYPE,
-                  taskBeforeSearchHit.getId())
+          new UpdateRequest()
+              .index(taskTemplate.getFullQualifiedName())
+              .id(taskBeforeSearchHit.getId())
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
@@ -393,8 +392,9 @@ public class TaskReaderWriter {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       final UpdateRequest updateRequest =
-          new UpdateRequest(
-                  taskTemplate.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
+          new UpdateRequest()
+              .index(taskTemplate.getFullQualifiedName())
+              .id(taskId)
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(searchHit.getSeqNo())

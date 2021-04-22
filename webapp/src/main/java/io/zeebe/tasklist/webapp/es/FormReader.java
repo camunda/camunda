@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.schema.indices.FormIndex;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.graphql.entity.FormDTO;
 import java.io.IOException;
 import org.elasticsearch.action.get.GetRequest;
@@ -34,8 +33,7 @@ public class FormReader {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
 
-      final GetRequest getRequest =
-          new GetRequest(formIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, formId);
+      final GetRequest getRequest = new GetRequest(formIndex.getFullQualifiedName()).id(formId);
 
       final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
       if (response.isExists()) {

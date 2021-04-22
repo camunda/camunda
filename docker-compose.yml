@@ -7,9 +7,10 @@ networks:
 services:
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.13
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
     container_name: elasticsearch
     environment:
+      - discovery.type=single-node
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
@@ -25,7 +26,7 @@ services:
     restart: always
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.8.13
+    image: docker.elastic.co/kibana/kibana:7.12.0
     ports:
       - 5601:5601
     environment:

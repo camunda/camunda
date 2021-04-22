@@ -17,7 +17,6 @@ import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.schema.indices.FormIndex;
 import io.zeebe.tasklist.schema.indices.ProcessIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.DeploymentRecordValueImpl;
 import java.util.ArrayList;
@@ -102,10 +101,9 @@ public class ProcessZeebeRecordProcessor {
 
     try {
       bulkRequest.add(
-          new IndexRequest(
-                  processIndex.getFullQualifiedName(),
-                  ElasticsearchUtil.ES_INDEX_TYPE,
-                  ConversionUtils.toStringOrNull(processEntity.getKey()))
+          new IndexRequest()
+              .index(processIndex.getFullQualifiedName())
+              .id(ConversionUtils.toStringOrNull(processEntity.getKey()))
               .source(objectMapper.writeValueAsString(processEntity), XContentType.JSON));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
@@ -147,10 +145,9 @@ public class ProcessZeebeRecordProcessor {
     LOGGER.debug("Form: key {}", formKey);
     try {
       bulkRequest.add(
-          new IndexRequest(
-                  formIndex.getFullQualifiedName(),
-                  ElasticsearchUtil.ES_INDEX_TYPE,
-                  ConversionUtils.toStringOrNull(formEntity.getId()))
+          new IndexRequest()
+              .index(formIndex.getFullQualifiedName())
+              .id(ConversionUtils.toStringOrNull(formEntity.getId()))
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(

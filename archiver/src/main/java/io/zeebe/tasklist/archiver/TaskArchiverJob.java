@@ -11,7 +11,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
-import static org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders.bucketSort;
+import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.micrometer.core.annotation.Timed;
@@ -140,7 +140,7 @@ public class TaskArchiverJob extends AbstractArchiverJob {
       String datesAggName, String instancesAggName) {
     return dateHistogram(datesAggName)
         .field(TaskTemplate.COMPLETION_TIME)
-        .dateHistogramInterval(
+        .calendarInterval(
             new DateHistogramInterval(tasklistProperties.getArchiver().getRolloverInterval()))
         .format(tasklistProperties.getArchiver().getElsRolloverDateFormat())
         .keyed(true) // get result as a map (not an array)

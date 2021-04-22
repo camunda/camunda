@@ -104,10 +104,9 @@ public class VariableReaderWriter {
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
-      return new UpdateRequest(
-              taskVariableTemplate.getFullQualifiedName(),
-              ElasticsearchUtil.ES_INDEX_TYPE,
-              variableEntity.getId())
+      return new UpdateRequest()
+          .index(taskVariableTemplate.getFullQualifiedName())
+          .id(variableEntity.getId())
           .upsert(objectMapper.writeValueAsString(variableEntity), XContentType.JSON)
           .doc(jsonMap)
           .retryOnConflict(UPDATE_RETRY_COUNT);

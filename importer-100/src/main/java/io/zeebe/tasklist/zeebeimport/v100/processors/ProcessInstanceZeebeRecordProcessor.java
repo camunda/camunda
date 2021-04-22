@@ -21,7 +21,6 @@ import io.zeebe.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.zeebe.tasklist.schema.indices.ProcessInstanceIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.DateUtil;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.ProcessInstanceRecordValueImpl;
 import java.io.IOException;
 import java.time.Instant;
@@ -121,10 +120,8 @@ public class ProcessInstanceZeebeRecordProcessor {
     try {
       LOGGER.debug("Flow node instance: id {}", entity.getId());
 
-      return new IndexRequest(
-              flowNodeInstanceIndex.getFullQualifiedName(),
-              ElasticsearchUtil.ES_INDEX_TYPE,
-              entity.getId())
+      return new IndexRequest(flowNodeInstanceIndex.getFullQualifiedName())
+          .id(entity.getId())
           .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
     } catch (IOException e) {
       throw new PersistenceException(
@@ -139,10 +136,9 @@ public class ProcessInstanceZeebeRecordProcessor {
     try {
       LOGGER.debug("Process instance: id {}", entity.getId());
 
-      return new IndexRequest(
-              processInstanceIndex.getFullQualifiedName(),
-              ElasticsearchUtil.ES_INDEX_TYPE,
-              entity.getId())
+      return new IndexRequest()
+          .index(processInstanceIndex.getFullQualifiedName())
+          .id(entity.getId())
           .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
     } catch (IOException e) {
       throw new PersistenceException(

@@ -12,7 +12,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.tasklist.entities.VariableEntity;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.schema.indices.VariableIndex;
-import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.v100.record.Intent;
 import io.zeebe.tasklist.zeebeimport.v100.record.value.VariableRecordValueImpl;
 import java.io.IOException;
@@ -72,8 +71,9 @@ public class VariableZeebeRecordProcessor {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableIndex.VALUE, entity.getValue());
 
-      return new UpdateRequest(
-              variableIndex.getFullQualifiedName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      return new UpdateRequest()
+          .index(variableIndex.getFullQualifiedName())
+          .id(entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT);

@@ -112,7 +112,7 @@ public class ElasticsearchHelper {
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().totalHits >= 1) {
+      if (response.getHits().getTotalHits().value >= 1) {
         return mapSearchHits(response.getHits().getHits(), objectMapper, TaskEntity.class);
       } else {
         throw new NotFoundException(
