@@ -21,10 +21,13 @@ import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.function.Consumer;
 
 public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBuilder<B>>
-    extends AbstractFlowElementBuilder<B, SubProcess> {
+    extends AbstractFlowElementBuilder<B, SubProcess> implements ZeebeVariablesMappingBuilder<B> {
 
   protected AbstractEventSubProcessBuilder(
       final BpmnModelInstance modelInstance, final SubProcess element, final Class<?> selfType) {
@@ -61,5 +64,37 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
     final StartEventBuilder builder = startEvent(id);
     consumer.accept(builder);
     return builder;
+  }
+
+  @Override
+  public B zeebeInputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeInput(expression, target);
+  }
+
+  @Override
+  public B zeebeOutputExpression(final String sourceExpression, final String target) {
+    final String expression = asZeebeExpression(sourceExpression);
+    return zeebeOutput(expression, target);
+  }
+
+  @Override
+  public B zeebeInput(final String source, final String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
+  }
+
+  @Override
+  public B zeebeOutput(final String source, final String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
   }
 }
