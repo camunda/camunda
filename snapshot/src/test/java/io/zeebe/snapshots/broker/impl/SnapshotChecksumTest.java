@@ -9,8 +9,9 @@ package io.zeebe.snapshots.broker.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,33 +21,33 @@ public class SnapshotChecksumTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private File singleFileSnapshot;
-  private File multipleFileSnapshot;
-  private File corruptedSnapshot;
+  private Path singleFileSnapshot;
+  private Path multipleFileSnapshot;
+  private Path corruptedSnapshot;
 
   @Before
   public void setup() throws Exception {
-    singleFileSnapshot = temporaryFolder.newFolder();
-    multipleFileSnapshot = temporaryFolder.newFolder();
-    corruptedSnapshot = temporaryFolder.newFolder();
+    singleFileSnapshot = temporaryFolder.newFolder().toPath();
+    multipleFileSnapshot = temporaryFolder.newFolder().toPath();
+    corruptedSnapshot = temporaryFolder.newFolder().toPath();
 
-    singleFileSnapshot.toPath().resolve("singleFile.txt").toFile().createNewFile();
-    multipleFileSnapshot.toPath().resolve("file1.txt").toFile().createNewFile();
-    multipleFileSnapshot.toPath().resolve("file2.txt").toFile().createNewFile();
-    multipleFileSnapshot.toPath().resolve("file3.txt").toFile().createNewFile();
+    Files.createFile(singleFileSnapshot.resolve("singleFile.txt"));
+    Files.createFile(multipleFileSnapshot.resolve("file1.txt"));
+    Files.createFile(multipleFileSnapshot.resolve("file2.txt"));
+    Files.createFile(multipleFileSnapshot.resolve("file3.txt"));
 
-    corruptedSnapshot.toPath().resolve("file1.txt").toFile().createNewFile();
-    corruptedSnapshot.toPath().resolve("file2.txt").toFile().createNewFile();
-    corruptedSnapshot.toPath().resolve("file3.txt").toFile().createNewFile();
+    Files.createFile(corruptedSnapshot.resolve("file1.txt"));
+    Files.createFile(corruptedSnapshot.resolve("file2.txt"));
+    Files.createFile(corruptedSnapshot.resolve("file3.txt"));
   }
 
   @Test
   public void shouldGenerateTheSameChecksumForOneFile() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot.toPath());
+    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
 
     // when
-    final var actual = SnapshotChecksum.calculate(singleFileSnapshot.toPath());
+    final var actual = SnapshotChecksum.calculate(singleFileSnapshot);
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -55,10 +56,10 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateTheSameChecksumForMultipleFiles() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
+    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
+    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -67,10 +68,10 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateDifferentChecksumForDifferentFiles() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot.toPath());
+    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
+    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
 
     // then
     assertThat(actual).isNotEqualTo(expectedChecksum);
@@ -79,11 +80,11 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldPersistChecksum() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
-    SnapshotChecksum.persist(multipleFileSnapshot.toPath(), expectedChecksum);
+    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    SnapshotChecksum.persist(multipleFileSnapshot, expectedChecksum);
 
     // when
-    final var actual = SnapshotChecksum.read(multipleFileSnapshot.toPath());
+    final var actual = SnapshotChecksum.read(multipleFileSnapshot);
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -92,11 +93,11 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldGenerateTheSameWithPersistedChecksum() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
-    SnapshotChecksum.persist(multipleFileSnapshot.toPath(), expectedChecksum);
+    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    SnapshotChecksum.persist(multipleFileSnapshot, expectedChecksum);
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot.toPath());
+    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -105,13 +106,13 @@ public class SnapshotChecksumTest {
   @Test
   public void shouldDetectCorruptedSnapshot() throws IOException {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot.toPath());
-    SnapshotChecksum.persist(corruptedSnapshot.toPath(), expectedChecksum);
+    final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
+    SnapshotChecksum.persist(corruptedSnapshot, expectedChecksum);
 
     // when
-    corruptedSnapshot.toPath().resolve("file1.txt").toFile().delete();
+    Files.delete(corruptedSnapshot.resolve("file1.txt"));
 
     // then
-    assertThat(SnapshotChecksum.verify(corruptedSnapshot.toPath())).isFalse();
+    assertThat(SnapshotChecksum.verify(corruptedSnapshot)).isFalse();
   }
 }

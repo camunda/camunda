@@ -109,7 +109,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
+  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() {
     // given
     final List<FileBasedSnapshotMetadata> snapshots = new ArrayList<>();
     snapshots.add(new FileBasedSnapshotMetadata(1, 1, 1, 1));
@@ -123,11 +123,11 @@ public class FileBasedSnapshotStoreTest {
         snapshotId -> {
           try {
             final var snapshot = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString()).toFile();
-            snapshot.mkdir();
+            assertThat(snapshot.mkdir()).isTrue();
             createSnapshotDir(snapshot.toPath());
             final var checksum = SnapshotChecksum.calculate(snapshot.toPath());
             SnapshotChecksum.persist(snapshot.toPath(), checksum);
-          } catch (final Exception e) {
+          } catch (final IOException e) {
             fail("Failed to create directory", e);
           }
         });
@@ -141,9 +141,9 @@ public class FileBasedSnapshotStoreTest {
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
     assertThat(currentSnapshotIndex).isEqualTo(10L);
     // should delete older snapshots
-    assertThat(snapshotsDir.toFile().list()).hasSize(1);
     assertThat(snapshotsDir.toFile().list())
-        .containsExactly(snapshotStore.getLatestSnapshot().get().getId());
+        .hasSize(1)
+        .containsExactly(snapshotStore.getLatestSnapshot().orElseThrow().getId());
   }
 
   @Test
@@ -168,7 +168,7 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
-    assertThat(currentSnapshotIndex).isEqualTo(0L);
+    assertThat(currentSnapshotIndex).isZero();
     assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
   }
 

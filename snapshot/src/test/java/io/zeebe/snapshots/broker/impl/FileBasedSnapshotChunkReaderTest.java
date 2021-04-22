@@ -50,7 +50,7 @@ public final class FileBasedSnapshotChunkReaderTest {
     // then
     assertThat(reader).hasNext();
     assertThat(reader.next().getChunkName()).isEqualTo("foo");
-    assertThat(reader.nextId()).isEqualTo(null);
+    assertThat(reader.nextId()).isNull();
   }
 
   @Test
@@ -66,7 +66,7 @@ public final class FileBasedSnapshotChunkReaderTest {
 
     // then
     assertThat(chunks).extracting(SnapshotChunk::getChunkName).containsExactly("a", "b", "c");
-    assertThat(reader.nextId()).isEqualTo(null);
+    assertThat(reader.nextId()).isNull();
     assertThat(reader.hasNext()).isFalse();
   }
 

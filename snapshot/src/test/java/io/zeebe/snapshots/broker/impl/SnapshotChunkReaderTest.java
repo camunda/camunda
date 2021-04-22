@@ -60,7 +60,7 @@ public class SnapshotChunkReaderTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -112,7 +112,7 @@ public class SnapshotChunkReaderTest {
     final var term = 0L;
 
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -148,13 +148,13 @@ public class SnapshotChunkReaderTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnReachingLimit() throws Exception {
+  public void shouldThrowExceptionOnReachingLimit() {
     // given
     final var index = 1L;
     final var term = 0L;
 
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -166,7 +166,6 @@ public class SnapshotChunkReaderTest {
     }
 
     // then
-    assertThat(snapshotChunkReader.hasNext()).isFalse();
     assertThat(snapshotChunkReader.nextId()).isNull();
 
     assertThatThrownBy(snapshotChunkReader::next).isInstanceOf(NoSuchElementException.class);
@@ -195,7 +194,7 @@ public class SnapshotChunkReaderTest {
 
   private boolean takeSnapshot(
       final Path path, final List<String> fileNames, final List<String> fileContents) {
-    assertThat(fileNames).hasSize(fileContents.size());
+    assertThat(fileNames).hasSameSizeAs(fileContents);
 
     try {
       FileUtil.ensureDirectoryExists(path);

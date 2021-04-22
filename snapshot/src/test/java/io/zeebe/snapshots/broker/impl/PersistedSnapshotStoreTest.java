@@ -46,7 +46,7 @@ public class PersistedSnapshotStoreTest {
     final var currentSnapshotIndex = persistedSnapshotStore.getCurrentSnapshotIndex();
 
     // then
-    assertThat(currentSnapshotIndex).isEqualTo(0);
+    assertThat(currentSnapshotIndex).isZero();
   }
 
   @Test
@@ -94,7 +94,6 @@ public class PersistedSnapshotStoreTest {
   public void shouldTakeReceivedSnapshot() {
     // given
     final var index = 1L;
-    final var term = 0L;
 
     // when
     final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123-121");

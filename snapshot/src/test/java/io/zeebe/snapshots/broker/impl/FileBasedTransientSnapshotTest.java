@@ -10,7 +10,6 @@ package io.zeebe.snapshots.broker.impl;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -72,8 +71,8 @@ public class FileBasedTransientSnapshotTest {
     persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0);
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -87,8 +86,8 @@ public class FileBasedTransientSnapshotTest {
     transientSnapshot.orElseThrow().abort();
 
     // then
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -103,9 +102,9 @@ public class FileBasedTransientSnapshotTest {
     transientSnapshot.take(this::createSnapshotDir).join();
 
     // then
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
     final var snapshotDirs = pendingSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var pendingSnapshotDir = snapshotDirs[0];
     final FileBasedSnapshotMetadata pendingSnapshotId =
@@ -115,7 +114,6 @@ public class FileBasedTransientSnapshotTest {
     assertThat(pendingSnapshotId.getProcessedPosition()).isEqualTo(3);
     assertThat(pendingSnapshotId.getExportedPosition()).isEqualTo(4);
     assertThat(pendingSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -132,8 +130,8 @@ public class FileBasedTransientSnapshotTest {
     transientSnapshot.get().abort().join();
 
     // then
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -148,8 +146,8 @@ public class FileBasedTransientSnapshotTest {
     persistedSnapshotStore.purgePendingSnapshots().join();
 
     // then
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -166,14 +164,13 @@ public class FileBasedTransientSnapshotTest {
     persistedSnapshotStore.purgePendingSnapshots().join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var pendingSnapshotDir = snapshotDirs[0];
-    assertThat(pendingSnapshotDir.getName()).isEqualTo(persistSnapshot.getId());
+    assertThat(pendingSnapshotDir).hasName(persistSnapshot.getId());
     assertThat(pendingSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -190,15 +187,14 @@ public class FileBasedTransientSnapshotTest {
     final var persistedSnapshot = transientSnapshot.get().persist().join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
+    assertThat(committedSnapshotDir).hasName(persistedSnapshot.getId());
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -220,10 +216,10 @@ public class FileBasedTransientSnapshotTest {
     newSnapshot.persist().join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(
@@ -232,7 +228,6 @@ public class FileBasedTransientSnapshotTest {
                 .getIndex())
         .isEqualTo(2);
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -253,10 +248,10 @@ public class FileBasedTransientSnapshotTest {
     newSnapshot.persist().join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
     assertThat(
@@ -265,7 +260,6 @@ public class FileBasedTransientSnapshotTest {
                 .getIndex())
         .isEqualTo(2);
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -287,7 +281,7 @@ public class FileBasedTransientSnapshotTest {
 
     // then
     final var pendingSnapshotDirs = pendingSnapshotsDir.toFile().listFiles();
-    assertThat(pendingSnapshotDirs).isNotNull().hasSize(1);
+    assertThat(pendingSnapshotDirs).hasSize(1);
 
     final var pendingSnapshotDir = pendingSnapshotDirs[0];
     assertThat(
@@ -296,17 +290,15 @@ public class FileBasedTransientSnapshotTest {
                 .getIndex())
         .isEqualTo(2);
     assertThat(pendingSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
 
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(committedSnapshotDir.getName()).isEqualTo(newSnapshotId);
+    assertThat(committedSnapshotDir).hasName(newSnapshotId);
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -333,8 +325,8 @@ public class FileBasedTransientSnapshotTest {
         .join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -362,8 +354,8 @@ public class FileBasedTransientSnapshotTest {
         .hasCauseInstanceOf(RuntimeException.class);
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(snapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(snapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -381,9 +373,9 @@ public class FileBasedTransientSnapshotTest {
     final var persistedSnapshot = transientSnapshot.persist().join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
 
-    verify(listener, times(1)).onNewSnapshot(eq(persistedSnapshot));
+    verify(listener, times(1)).onNewSnapshot(persistedSnapshot);
   }
 
   @Test
@@ -402,9 +394,9 @@ public class FileBasedTransientSnapshotTest {
     final var persistedSnapshot = transientSnapshot.persist().join();
 
     // then
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
 
-    verify(listener, times(0)).onNewSnapshot(eq(persistedSnapshot));
+    verify(listener, times(0)).onNewSnapshot(persistedSnapshot);
   }
 
   @Test
@@ -482,13 +474,7 @@ public class FileBasedTransientSnapshotTest {
         persistedSnapshotStore
             .newTransientSnapshot(index, term, processedPosition, exporterPosition)
             .orElseThrow();
-    transientSnapshot
-        .take(
-            p -> {
-              p.toFile().mkdir();
-              return true;
-            })
-        .join();
+    transientSnapshot.take(p -> p.toFile().mkdir()).join();
 
     // when
     final var persisted = transientSnapshot.persist();
@@ -517,12 +503,11 @@ public class FileBasedTransientSnapshotTest {
   }
 
   private void assertSnapshotWasMoved() {
-    assertThat(pendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(pendingSnapshotsDir.toFile()).isEmptyDirectory();
     final var snapshotDirs = snapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
     final var snapshotDir = snapshotDirs[0];
     assertThat(snapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }

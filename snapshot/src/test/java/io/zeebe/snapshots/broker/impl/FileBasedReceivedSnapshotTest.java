@@ -10,7 +10,6 @@ package io.zeebe.snapshots.broker.impl;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -80,8 +79,8 @@ public class FileBasedReceivedSnapshotTest {
     receiverSnapshotStore.newReceivedSnapshot("1-0-123-121");
 
     // then
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(receiverSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -95,18 +94,15 @@ public class FileBasedReceivedSnapshotTest {
     final var snapshotFiles = persistedSnapshot.getPath().toFile().list();
 
     // then
-    assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverSnapshotsDir.toFile()).isEmptyDirectory();
 
     assertThat(receiverPendingSnapshotsDir).exists();
     final var files = receiverPendingSnapshotsDir.toFile().listFiles();
-    assertThat(files).isNotNull().hasSize(1);
+    assertThat(files).hasSize(1);
 
     final var dir = files[0];
     final var snapshotFileList = dir.listFiles();
-    assertThat(snapshotFileList)
-        .isNotNull()
-        .extracting(File::getName)
-        .containsExactlyInAnyOrder(snapshotFiles);
+    assertThat(snapshotFileList).extracting(File::getName).containsExactlyInAnyOrder(snapshotFiles);
   }
 
   @Test
@@ -128,8 +124,8 @@ public class FileBasedReceivedSnapshotTest {
     receivedSnapshot.abort().join();
 
     // then
-    assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -143,8 +139,8 @@ public class FileBasedReceivedSnapshotTest {
     receiverSnapshotStore.purgePendingSnapshots().join();
 
     // then
-    assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -161,18 +157,17 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThat(snapshot).isNotNull();
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     assertThat(receiverSnapshotsDir).exists();
     final var files = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(files).isNotNull().hasSize(1);
+    assertThat(files).hasSize(1);
 
     final var dir = files[0];
     assertThat(dir).hasName(snapshot.getId());
 
     final var snapshotFileList = dir.listFiles();
     assertThat(snapshotFileList)
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshotFiles);
   }
@@ -191,18 +186,17 @@ public class FileBasedReceivedSnapshotTest {
     receiverSnapshotStore.purgePendingSnapshots().join();
 
     // then
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     assertThat(receiverSnapshotsDir).exists();
     final var files = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(files).isNotNull().hasSize(1);
+    assertThat(files).hasSize(1);
 
     final var dir = files[0];
     assertThat(dir).hasName(persistedSnapshot.getId());
 
     final var snapshotFileList = dir.listFiles();
     assertThat(snapshotFileList)
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshotFiles);
   }
@@ -218,17 +212,16 @@ public class FileBasedReceivedSnapshotTest {
     final var committedSnapshot = takeAndReceiveSnapshot(index + 1, term).persist().join();
 
     // then
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(
-            FileBasedSnapshotMetadata.ofFileName(committedSnapshotDir.getName()).get().getIndex())
-        .isEqualTo(2);
+    assertThat(FileBasedSnapshotMetadata.ofFileName(committedSnapshotDir.getName()))
+        .map(FileBasedSnapshotMetadata::getIndex)
+        .hasValue(2L);
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactly(committedSnapshot.getPath().toFile().list());
   }
@@ -245,17 +238,16 @@ public class FileBasedReceivedSnapshotTest {
     final var committedSnapshotFiles = committedSnapshot.getPath().toFile().list();
 
     // then
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
 
     final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(
-            FileBasedSnapshotMetadata.ofFileName(committedSnapshotDir.getName()).get().getIndex())
-        .isEqualTo(2);
+    assertThat(FileBasedSnapshotMetadata.ofFileName(committedSnapshotDir.getName()))
+        .map(FileBasedSnapshotMetadata::getIndex)
+        .hasValue(2L);
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(committedSnapshotFiles);
   }
@@ -283,23 +275,22 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     final var pendingSnapshotDirs = receiverPendingSnapshotsDir.toFile().listFiles();
-    assertThat(pendingSnapshotDirs).isNotNull().hasSize(1);
+    assertThat(pendingSnapshotDirs).hasSize(1);
 
     final var pendingSnapshotDir = pendingSnapshotDirs[0];
-    assertThat(FileBasedSnapshotMetadata.ofFileName(pendingSnapshotDir.getName()).get().getIndex())
-        .isEqualTo(2);
+    assertThat(FileBasedSnapshotMetadata.ofFileName(pendingSnapshotDir.getName()))
+        .map(FileBasedSnapshotMetadata::getIndex)
+        .hasValue(2L);
     assertThat(pendingSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(newPersistedSnapshot.getPath().toFile().list());
 
     final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(committedSnapshotDir.getName()).isEqualTo(olderPersistedSnapshot.getId());
+    assertThat(committedSnapshotDir).hasName(olderPersistedSnapshot.getId());
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(olderPersistedSnapshot.getPath().toFile().list());
   }
@@ -316,7 +307,7 @@ public class FileBasedReceivedSnapshotTest {
     final var persistedSnapshot = takeAndReceiveSnapshot(index, term).persist().join();
 
     // then
-    verify(listener, times(1)).onNewSnapshot(eq(persistedSnapshot));
+    verify(listener, times(1)).onNewSnapshot(persistedSnapshot);
   }
 
   @Test
@@ -332,7 +323,7 @@ public class FileBasedReceivedSnapshotTest {
     final var persistedSnapshot = takeAndReceiveSnapshot(index, term).persist().join();
 
     // then
-    verify(listener, times(0)).onNewSnapshot(eq(persistedSnapshot));
+    verify(listener, times(0)).onNewSnapshot(persistedSnapshot);
   }
 
   @Test
@@ -348,29 +339,25 @@ public class FileBasedReceivedSnapshotTest {
     receiveSnapshot(persistedSnapshot);
 
     // then
-    assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverSnapshotsDir.toFile()).isEmptyDirectory();
 
     assertThat(receiverPendingSnapshotsDir).exists();
     final var fileArray = receiverPendingSnapshotsDir.toFile().listFiles();
     assertThat(fileArray).isNotNull();
     final var files = Arrays.stream(fileArray).sorted().collect(Collectors.toList());
-    assertThat(files).isNotNull().hasSize(2);
+    assertThat(files).hasSize(2);
 
     final var dir = files.get(0);
     assertThat(dir).hasName(persistedSnapshot.getId() + "-1");
 
     final var snapshotFileList = dir.listFiles();
-    assertThat(snapshotFileList)
-        .isNotNull()
-        .extracting(File::getName)
-        .containsExactlyInAnyOrder(snapshotFiles);
+    assertThat(snapshotFileList).extracting(File::getName).containsExactlyInAnyOrder(snapshotFiles);
 
     final var otherDir = files.get(1);
     assertThat(otherDir).hasName(persistedSnapshot.getId() + "-2");
 
     final var otherSnapshotFileList = dir.listFiles();
     assertThat(otherSnapshotFileList)
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(snapshotFiles);
   }
@@ -392,16 +379,15 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(receivedPersisted).isEqualTo(otherReceivedPersisted);
 
     final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
+    assertThat(committedSnapshotDir).hasName(persistedSnapshot.getId());
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshot.getPath().toFile().list());
 
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -421,16 +407,15 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(receivedPersisted).isEqualTo(otherReceivedPersisted);
 
     final var snapshotDirs = receiverSnapshotsDir.toFile().listFiles();
-    assertThat(snapshotDirs).isNotNull().hasSize(1);
+    assertThat(snapshotDirs).hasSize(1);
 
     final var committedSnapshotDir = snapshotDirs[0];
-    assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
+    assertThat(committedSnapshotDir).hasName(persistedSnapshot.getId());
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder(persistedSnapshot.getPath().toFile().list());
 
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -460,8 +445,8 @@ public class FileBasedReceivedSnapshotTest {
     receivedSnapshot.abort().join();
 
     // then
-    assertThat(receiverPendingSnapshotsDir.toFile().listFiles()).isEmpty();
-    assertThat(receiverSnapshotsDir.toFile().listFiles()).isEmpty();
+    assertThat(receiverPendingSnapshotsDir.toFile()).isEmptyDirectory();
+    assertThat(receiverSnapshotsDir.toFile()).isEmptyDirectory();
   }
 
   @Test
@@ -692,7 +677,7 @@ public class FileBasedReceivedSnapshotTest {
 
   private boolean takeSnapshot(
       final Path path, final List<String> fileNames, final List<String> fileContents) {
-    assertThat(fileNames).hasSize(fileContents.size());
+    assertThat(fileNames).hasSameSizeAs(fileContents);
 
     try {
       FileUtil.ensureDirectoryExists(path);
@@ -720,6 +705,6 @@ public class FileBasedReceivedSnapshotTest {
 
   private void deleteSnapshotFile(
       final PersistedSnapshot persistedSnapshot, final String deletedFileName) {
-    persistedSnapshot.getPath().resolve(deletedFileName).toFile().delete();
+    assertThat(persistedSnapshot.getPath().resolve(deletedFileName).toFile().delete()).isTrue();
   }
 }

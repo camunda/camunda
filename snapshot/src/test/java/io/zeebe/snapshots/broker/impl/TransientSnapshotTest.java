@@ -9,8 +9,8 @@ package io.zeebe.snapshots.broker.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,7 +60,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 2L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 3, 4).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 3, 4).orElseThrow();
     final CompletableFuture<Path> transientPath = new CompletableFuture<>();
 
     // when
@@ -72,7 +72,8 @@ public class TransientSnapshotTest {
 
     // then
     final var path = transientPath.join();
-    final var metadata = FileBasedSnapshotMetadata.ofFileName(path.getFileName().toString()).get();
+    final var metadata =
+        FileBasedSnapshotMetadata.ofFileName(path.getFileName().toString()).orElseThrow();
     assertThat(metadata.getIndex()).isEqualTo(1);
     assertThat(metadata.getTerm()).isEqualTo(2);
     assertThat(metadata.getProcessedPosition()).isEqualTo(3);
@@ -94,7 +95,7 @@ public class TransientSnapshotTest {
                 p -> {
                   try {
                     FileUtil.ensureDirectoryExists(p);
-                    p.resolve("file").toFile().createNewFile();
+                    Files.createFile(p.resolve("file"));
                     return true;
                   } catch (final IOException e) {
                     throw new UncheckedIOException(e);
@@ -127,7 +128,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
 
     // when
     final var success =
@@ -148,7 +149,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(p -> true).join();
 
     // when - then
@@ -162,10 +163,10 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
 
     // when - then
-    transientSnapshot.abort();
+    assertThatCode(transientSnapshot::abort).doesNotThrowAnyException();
   }
 
   @Test
@@ -174,7 +175,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(this::takeSnapshot);
 
     // when
@@ -182,17 +183,15 @@ public class TransientSnapshotTest {
 
     // then
     assertThat(persistedSnapshot.getIndex()).isEqualTo(1L);
-    assertThat(persistedSnapshot.getTerm()).isEqualTo(0L);
+    assertThat(persistedSnapshot.getTerm()).isZero();
 
     final var snapshotPath = persistedSnapshot.getPath();
-    assertThat(snapshotPath).exists();
-    assertThat(snapshotPath).isNotEqualTo(lastTransientSnapshotPath);
+    assertThat(snapshotPath).exists().isNotEqualTo(lastTransientSnapshotPath);
     assertThat(lastTransientSnapshotPath).doesNotExist();
 
     final var committedSnapshotDir = snapshotPath.toFile();
-    assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
+    assertThat(committedSnapshotDir).hasName(persistedSnapshot.getId());
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -203,7 +202,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(this::takeSnapshot);
     final var persistedSnapshot = transientSnapshot.persist().join();
 
@@ -222,13 +221,13 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(this::takeSnapshot);
     final var previousSnapshot = transientSnapshot.persist().join();
 
     // when
     final var newTransientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).orElseThrow();
     newTransientSnapshot.take(this::takeSnapshot);
     final var persistedSnapshot = newTransientSnapshot.persist().join();
 
@@ -242,13 +241,13 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(this::takeSnapshot);
     final var previousSnapshot = transientSnapshot.persist().join();
 
     // when
     final var newTransientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).orElseThrow();
     newTransientSnapshot.take(this::takeSnapshot);
     final var persistedSnapshot = newTransientSnapshot.persist().join();
 
@@ -256,13 +255,11 @@ public class TransientSnapshotTest {
     assertThat(previousSnapshot.getPath()).doesNotExist();
 
     final var snapshotPath = persistedSnapshot.getPath();
-    assertThat(snapshotPath).exists();
-    assertThat(snapshotPath).isNotEqualTo(lastTransientSnapshotPath);
+    assertThat(snapshotPath).exists().isNotEqualTo(lastTransientSnapshotPath);
 
     final var committedSnapshotDir = snapshotPath.toFile();
-    assertThat(committedSnapshotDir.getName()).isEqualTo(persistedSnapshot.getId());
+    assertThat(committedSnapshotDir).hasName(persistedSnapshot.getId());
     assertThat(committedSnapshotDir.listFiles())
-        .isNotNull()
         .extracting(File::getName)
         .containsExactlyInAnyOrder("file1.txt", "CHECKSUM");
   }
@@ -273,13 +270,13 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var oldTransientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     oldTransientSnapshot.take(this::takeSnapshot).join();
     final var oldTransientSnapshotPath = lastTransientSnapshotPath;
 
     // when
     final var newSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).orElseThrow();
     newSnapshot.take(this::takeSnapshot).join();
     final var persistedSnapshot = newSnapshot.persist().join();
 
@@ -295,12 +292,13 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var newTransientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index + 1, term, 1, 0).orElseThrow();
     newTransientSnapshot.take(this::takeSnapshot).join();
     final var oldTransientSnapshotPath = lastTransientSnapshotPath;
 
     // when
-    final var oldSnapshot = persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var oldSnapshot =
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     oldSnapshot.take(this::takeSnapshot).join();
     final var persistedSnapshot = oldSnapshot.persist().join();
 
@@ -316,7 +314,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var oldTransientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
 
     // when
     oldTransientSnapshot
@@ -342,7 +340,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var oldTransientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
 
     // when
     final var takenFuture =
@@ -369,7 +367,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     persistedSnapshotStore.addSnapshotListener(listener);
     transientSnapshot.take(this::takeSnapshot);
 
@@ -377,7 +375,7 @@ public class TransientSnapshotTest {
     final var persistedSnapshot = transientSnapshot.persist().join();
 
     // then
-    verify(listener, times(1)).onNewSnapshot(eq(persistedSnapshot));
+    verify(listener, times(1)).onNewSnapshot(persistedSnapshot);
   }
 
   @Test
@@ -387,7 +385,7 @@ public class TransientSnapshotTest {
     final var index = 1L;
     final var term = 0L;
     final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+        persistedSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     persistedSnapshotStore.addSnapshotListener(listener);
     persistedSnapshotStore.removeSnapshotListener(listener);
     transientSnapshot.take(this::takeSnapshot);
@@ -396,7 +394,7 @@ public class TransientSnapshotTest {
     final var persistedSnapshot = transientSnapshot.persist().join();
 
     // then
-    verify(listener, times(0)).onNewSnapshot(eq(persistedSnapshot));
+    verify(listener, times(0)).onNewSnapshot(persistedSnapshot);
   }
 
   private boolean takeSnapshot(final Path path) {

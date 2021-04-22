@@ -79,7 +79,8 @@ public class ReceivedSnapshotTest {
     final var index = 1L;
     final var term = 0L;
 
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -111,7 +112,8 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -133,7 +135,8 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -157,7 +160,8 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -188,7 +192,8 @@ public class ReceivedSnapshotTest {
     // given
     final var index = 1L;
     final var term = 0L;
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -213,8 +218,9 @@ public class ReceivedSnapshotTest {
     final var persistedReceivedSnapshot = receivedSnapshot.persist().join();
 
     // then
-    assertThat(persistedReceivedSnapshot).isEqualTo(alreadyPeristedSnapshot);
-    assertThat(persistedReceivedSnapshot == alreadyPeristedSnapshot).isTrue();
+    assertThat(persistedReceivedSnapshot)
+        .isEqualTo(alreadyPeristedSnapshot)
+        .isSameAs(alreadyPeristedSnapshot);
   }
 
   @Test
@@ -223,7 +229,8 @@ public class ReceivedSnapshotTest {
     final var index = 1L;
     final var term = 0L;
 
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -241,7 +248,8 @@ public class ReceivedSnapshotTest {
     final var index = 1L;
     final var term = 0L;
 
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, term, 1, 0).orElseThrow();
     transientSnapshot.take(
         p -> takeSnapshot(p, List.of("file3", "file1", "file2"), List.of("content", "this", "is")));
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -254,7 +262,7 @@ public class ReceivedSnapshotTest {
 
   private boolean takeSnapshot(
       final Path path, final List<String> fileNames, final List<String> fileContents) {
-    assertThat(fileNames).hasSize(fileContents.size());
+    assertThat(fileNames).hasSameSizeAs(fileContents);
 
     try {
       FileUtil.ensureDirectoryExists(path);
