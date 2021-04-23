@@ -179,6 +179,7 @@ public final class Broker implements AutoCloseable {
     try {
       closeProcess = startProcess.start();
       startFuture.complete(this);
+      healthCheckService.setBrokerStarted();
     } catch (final Exception bootStrapException) {
       final BrokerCfg brokerCfg = getConfig();
       LOG.error(

@@ -92,6 +92,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   private Map<Integer, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
   changed. */
+  private volatile boolean allPartitionsInstalled = false;
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
 
@@ -118,7 +119,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   boolean isBrokerReady() {
-    return brokerStarted;
+    return brokerStarted && allPartitionsInstalled;
   }
 
   @Override
@@ -140,11 +141,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   private ActorFuture<Void> updateBrokerReadyStatus(final int partitionId) {
     return actor.call(
         () -> {
-          if (!brokerStarted) {
+          if (!allPartitionsInstalled) {
             partitionInstallStatus.put(partitionId, true);
-            brokerStarted = !partitionInstallStatus.containsValue(false);
+            allPartitionsInstalled = !partitionInstallStatus.containsValue(false);
 
-            if (brokerStarted) {
+            if (allPartitionsInstalled) {
               LOG.debug("All partitions are installed. Broker is ready!");
             }
           }
@@ -191,5 +192,13 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
       return HealthStatus.UNHEALTHY;
     }
     return healthMonitor.getHealthStatus();
+  }
+
+  public void setBrokerStarted() {
+    actor.run(() -> brokerStarted = true);
+  }
+
+  public boolean isBrokerStarted() {
+    return brokerStarted;
   }
 }
