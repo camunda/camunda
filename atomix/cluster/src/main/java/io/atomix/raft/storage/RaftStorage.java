@@ -216,6 +216,11 @@ public final class RaftStorage {
    * @return The opened log.
    */
   public RaftLog openLog() {
+    final long lastWrittenIndex;
+    try (final MetaStore metaStore = openMetaStore()) {
+      lastWrittenIndex = metaStore.loadLastWrittenIndex();
+    }
+
     return RaftLog.builder()
         .withName(prefix)
         .withDirectory(directory)
@@ -224,6 +229,7 @@ public final class RaftStorage {
         .withFreeDiskSpace(freeDiskSpace)
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
+        .withLastWrittenIndex(lastWrittenIndex)
         .build();
   }
 

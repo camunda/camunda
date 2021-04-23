@@ -19,6 +19,8 @@ import java.nio.ByteBuffer;
 
 public class LogCorrupter {
 
+  private static final int BUFFER_SIZE = 8 * 1024;
+
   /**
    * Corrupts the record associated with the specified index, if it's present in the file.
    *
@@ -27,12 +29,12 @@ public class LogCorrupter {
    * @return true if the specified record was successfully corrupted; otherwise, returns false
    */
   public static boolean corruptRecord(final File file, final long index) throws IOException {
-    final byte[] bytes = new byte[1024];
+    final byte[] bytes = new byte[BUFFER_SIZE];
     int read = 0;
 
     try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
-      while (in.available() > 0 && read < 1024) {
-        read += in.read(bytes, read, Math.min(1024, in.available()) - read);
+      while (in.available() > 0 && read < bytes.length) {
+        read += in.read(bytes, read, Math.min(bytes.length, in.available()) - read);
       }
     }
 

@@ -38,6 +38,7 @@ public class SegmentedJournalBuilder {
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
+  private long lastWrittenIndex = -1L;
 
   protected SegmentedJournalBuilder() {}
 
@@ -131,9 +132,26 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  /**
+   * Writes the last index to have been persisted to the metastore.
+   *
+   * @param lastWrittenIndex last index to have been persisted in the log
+   * @return the storage builder
+   */
+  public SegmentedJournalBuilder withLastWrittenIndex(final long lastWrittenIndex) {
+    this.lastWrittenIndex = lastWrittenIndex;
+    return this;
+  }
+
   public SegmentedJournal build() {
     final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentedJournal(
-        name, directory, maxSegmentSize, maxEntrySize, freeDiskSpace, journalIndex);
+        name,
+        directory,
+        maxSegmentSize,
+        maxEntrySize,
+        freeDiskSpace,
+        journalIndex,
+        lastWrittenIndex);
   }
 }

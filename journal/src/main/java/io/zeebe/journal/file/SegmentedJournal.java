@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 /** A file based journal. The journal is split into multiple segments files. */
 public class SegmentedJournal implements Journal {
+
   public static final long ASQN_IGNORE = -1;
   private static final int SEGMENT_BUFFER_FACTOR = 3;
   private static final int FIRST_SEGMENT_ID = 1;
@@ -61,6 +62,7 @@ public class SegmentedJournal implements Journal {
   private final long minFreeDiskSpace;
   private final JournalIndex journalIndex;
   private final SegmentedJournalWriter writer;
+  private final long lastWrittenIndex;
 
   public SegmentedJournal(
       final String name,
@@ -68,7 +70,8 @@ public class SegmentedJournal implements Journal {
       final int maxSegmentSize,
       final int maxEntrySize,
       final long minFreeSpace,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex,
+      final long lastWrittenIndex) {
     this.name = checkNotNull(name, "name cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
     this.maxSegmentSize = maxSegmentSize;
@@ -76,6 +79,7 @@ public class SegmentedJournal implements Journal {
     journalMetrics = new JournalMetrics(name);
     minFreeDiskSpace = minFreeSpace;
     this.journalIndex = journalIndex;
+    this.lastWrittenIndex = lastWrittenIndex;
     open();
     writer = new SegmentedJournalWriter(this);
   }
@@ -441,7 +445,8 @@ public class SegmentedJournal implements Journal {
    */
   protected JournalSegment newSegment(
       final JournalSegmentFile segmentFile, final JournalSegmentDescriptor descriptor) {
-    return new JournalSegment(segmentFile, descriptor, maxEntrySize, journalIndex);
+    return new JournalSegment(
+        segmentFile, descriptor, maxEntrySize, lastWrittenIndex, journalIndex);
   }
 
   /** Loads a segment. */

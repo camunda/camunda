@@ -192,4 +192,33 @@ public class PassiveRoleTest {
     // then
     verify(ctx).setLastWrittenIndex(eq(2L));
   }
+
+  @Test
+  public void shouldResetLastWrittenIndexAfterTruncating() {
+    // given
+    final List<PersistedRaftRecord> entries =
+        List.of(
+            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
+            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]),
+            new PersistedRaftRecord(1, 3, 3, 1, new byte[1]));
+    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 0);
+
+    when(log.append(any(PersistedRaftRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    when(ctx.getLog()).thenReturn(log);
+    role.handleAppend(request).join();
+    verify(ctx).setLastWrittenIndex(eq(3L));
+
+    // when - force truncation
+    when(log.getLastIndex()).thenReturn(3L);
+    when(ctx.getCommitIndex()).thenReturn(1L);
+
+    role = new PassiveRole(ctx);
+    role.start().join();
+
+    // then
+    verify(ctx).setLastWrittenIndex(eq(1L));
+  }
 }
