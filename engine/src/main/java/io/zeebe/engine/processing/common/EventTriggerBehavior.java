@@ -23,7 +23,9 @@ import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
+import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
+  private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
 
   private final KeyGenerator keyGenerator;
   private final CatchEventBehavior catchEventBehavior;
@@ -106,7 +109,13 @@ public class EventTriggerBehavior {
       }
     }
 
-    activateTriggeredEvent(startEvent, flowScopeElementInstanceKey, recordValue, variables);
+    activateTriggeredEvent(
+        eventTrigger.getEventKey(),
+        startEvent,
+        flowScopeElementInstanceKey,
+        flowScopeElementInstanceKey,
+        recordValue,
+        variables);
   }
 
   private boolean terminateChildInstances(final BpmnElementContext flowScopeContext) {
@@ -209,8 +218,68 @@ public class EventTriggerBehavior {
     return context.copy(key, value, transition);
   }
 
+  /**
+   * Triggers a process by updating the state with a new {@link ProcessEventIntent#TRIGGERING}
+   * event.
+   *
+   * <p>NOTE: this method assumes that the caller already verified that the target can accept new
+   * events!
+   *
+   * @param processDefinitionKey the event's corresponding process definition key
+   * @param processInstanceKey the event's corresponding process instance key
+   * @param eventScopeKey the event's scope key, which used to index the trigger in {@link
+   *     io.zeebe.engine.state.immutable.EventScopeInstanceState}
+   * @param catchEventId the ID of the element which should be triggered by the event
+   * @param variables the variables/payload of the event (can be empty)
+   * @return the key of the process event
+   */
+  public long triggeringProcessEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long eventScopeKey,
+      final DirectBuffer catchEventId,
+      final DirectBuffer variables) {
+    final var eventKey = keyGenerator.nextKey();
+    processEventRecord.reset();
+    processEventRecord
+        .setScopeKey(eventScopeKey)
+        .setTargetElementIdBuffer(catchEventId)
+        .setVariablesBuffer(variables)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey);
+    stateWriter.appendFollowUpEvent(eventKey, ProcessEventIntent.TRIGGERING, processEventRecord);
+    return eventKey;
+  }
+
+  /**
+   * Marks a process to be triggered by updating the state with a new {@link
+   * ProcessEventIntent#TRIGGERED} event.
+   *
+   * @param processDefinitionKey the process instance key of the event trigger
+   * @param processInstanceKey the process instance key of the event trigger
+   * @param eventScopeKey the event's scope key, which is used as identifier for the event trigger
+   * @param catchEventId the ID of the element which was triggered by the event
+   */
+  public void processEventTriggered(
+      final long eventTriggerKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long eventScopeKey,
+      final DirectBuffer catchEventId) {
+    processEventRecord.reset();
+    processEventRecord
+        .setScopeKey(eventScopeKey)
+        .setTargetElementIdBuffer(catchEventId)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey);
+    stateWriter.appendFollowUpEvent(
+        eventTriggerKey, ProcessEventIntent.TRIGGERED, processEventRecord);
+  }
+
   public void activateTriggeredEvent(
+      final long processEventKey,
       final ExecutableFlowElement triggeredEvent,
+      final long eventScopeKey,
       final long flowScopeKey,
       final ProcessInstanceRecord elementRecord,
       final DirectBuffer variables) {
@@ -224,6 +293,13 @@ public class EventTriggerBehavior {
       throw new IllegalStateException(
           "Expected to activate triggered event, but flow scope is null");
     }
+
+    processEventTriggered(
+        processEventKey,
+        elementRecord.getProcessDefinitionKey(),
+        elementRecord.getProcessInstanceKey(),
+        eventScopeKey,
+        triggeredEvent.getId());
 
     if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
       activateEventSubProcess(triggeredEvent, flowScope);

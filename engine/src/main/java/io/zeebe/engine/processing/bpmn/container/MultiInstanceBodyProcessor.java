@@ -239,7 +239,10 @@ public final class MultiInstanceBodyProcessor
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(flowScopeContext);
               eventSubscriptionBehavior.activateTriggeredEvent(
-                  terminated.getFlowScopeKey(), terminated, eventTrigger);
+                  flowScopeContext.getElementInstanceKey(),
+                  terminated.getFlowScopeKey(),
+                  eventTrigger,
+                  terminated);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             },
             () -> {

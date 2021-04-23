@@ -131,7 +131,10 @@ public final class SubProcessProcessor
                   final var terminated =
                       stateTransitionBehavior.transitionToTerminated(subProcessContext);
                   eventSubscriptionBehavior.activateTriggeredEvent(
-                      subProcessContext.getFlowScopeKey(), terminated, eventTrigger);
+                      subProcessContext.getElementInstanceKey(),
+                      subProcessContext.getFlowScopeKey(),
+                      eventTrigger,
+                      terminated);
                 },
                 () -> {
                   final var terminated =
@@ -149,7 +152,10 @@ public final class SubProcessProcessor
           .ifPresent(
               eventTrigger ->
                   eventSubscriptionBehavior.activateTriggeredEvent(
-                      subProcessContext.getElementInstanceKey(), subProcessContext, eventTrigger));
+                      subProcessContext.getElementInstanceKey(),
+                      subProcessContext.getElementInstanceKey(),
+                      eventTrigger,
+                      subProcessContext));
     }
   }
 }

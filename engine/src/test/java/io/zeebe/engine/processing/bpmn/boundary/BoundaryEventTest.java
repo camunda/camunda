@@ -260,6 +260,7 @@ public final class BoundaryEventTest {
             tuple(ValueType.JOB, JobIntent.CANCEL),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(ValueType.PROCESS_EVENT, ProcessEventIntent.TRIGGERED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.COMPLETE_ELEMENT),

@@ -224,6 +224,9 @@ public final class EventAppliers implements EventApplier {
             state.getEventScopeInstanceState(),
             state.getElementInstanceState(),
             state.getProcessState()));
+    register(
+        ProcessEventIntent.TRIGGERED,
+        new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

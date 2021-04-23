@@ -141,7 +141,10 @@ public final class ProcessProcessor
           .ifPresent(
               eventTrigger ->
                   eventSubscriptionBehavior.activateTriggeredEvent(
-                      flowScopeContext.getElementInstanceKey(), flowScopeContext, eventTrigger));
+                      flowScopeContext.getElementInstanceKey(),
+                      flowScopeContext.getElementInstanceKey(),
+                      eventTrigger,
+                      flowScopeContext));
     } else if (stateBehavior.canBeTerminated(childContext)) {
       transitionTo(element, flowScopeContext, stateTransitionBehavior::transitionToTerminated);
     }
