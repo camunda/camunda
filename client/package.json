@@ -71,7 +71,7 @@
   "devDependencies": {
     "@wojtekmaj/enzyme-adapter-react-17": "^0.4.1",
     "ansi-html": "^0.0.7",
-    "chalk": "^4.1.0",
+    "chalk": "^4.1.1",
     "date-fns": "^2.21.1",
     "enzyme": "3.11.0",
     "eslint-plugin-camunda-licensed": "^0.4.2",
