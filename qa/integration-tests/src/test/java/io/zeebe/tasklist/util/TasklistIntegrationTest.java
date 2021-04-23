@@ -25,7 +25,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "graphql.servlet.exception-handlers-enabled = true"
+      "graphql.servlet.exception-handlers-enabled = true",
+      "management.endpoints.web.exposure.include = info,prometheus,loggers"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestExecutionListeners(

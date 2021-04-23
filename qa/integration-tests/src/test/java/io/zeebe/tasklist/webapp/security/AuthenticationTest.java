@@ -25,6 +25,8 @@ import io.zeebe.tasklist.webapp.security.es.UserStorage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -196,6 +199,28 @@ public class AuthenticationTest extends TasklistIntegrationTest {
         testRestTemplate.getForEntity(MetricAssert.ENDPOINT, String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
+  }
+
+  @Test
+  public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
+    ResponseEntity<String> response =
+        testRestTemplate.getForEntity("/actuator/loggers/io.zeebe.tasklist", String.class);
+    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getBody()).contains("\"configuredLevel\" : \"DEBUG\"");
+
+    final HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    final HttpEntity<String> request =
+        new HttpEntity<String>(
+            new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
+    response =
+        testRestTemplate.postForEntity(
+            "/actuator/loggers/io.zeebe.tasklist", request, String.class);
+    assertThat(response.getStatusCodeValue()).isEqualTo(204);
+
+    response = testRestTemplate.getForEntity("/actuator/loggers/io.zeebe.tasklist", String.class);
+    assertThat(response.getStatusCodeValue()).isEqualTo(200);
+    assertThat(response.getBody()).contains("\"configuredLevel\" : \"TRACE\"");
   }
 
   private HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
