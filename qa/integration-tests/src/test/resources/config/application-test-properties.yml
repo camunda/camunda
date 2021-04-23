@@ -17,7 +17,7 @@ camunda.operate:
   importer:
     startLoadingDataOnStartup: false
   zeebe:
-    brokerContactPoint: someZeebeHost:999
+    gatewayAddress: someZeebeHost:999
   operationExecutor:
     batchSize: 555
     workerId: someWorker

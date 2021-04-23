@@ -42,7 +42,7 @@ public class PropertiesTest {
     assertThat(operateProperties.getZeebeElasticsearch().getDateFormat()).isEqualTo("dd-MM-yyyy");
     assertThat(operateProperties.getZeebeElasticsearch().getBatchSize()).isEqualTo(222);
     assertThat(operateProperties.getZeebeElasticsearch().getPrefix()).isEqualTo("somePrefix");
-    assertThat(operateProperties.getZeebe().getBrokerContactPoint()).isEqualTo("someZeebeHost:999");
+    assertThat(operateProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
     assertThat(operateProperties.getOperationExecutor().getBatchSize()).isEqualTo(555);
     assertThat(operateProperties.getOperationExecutor().getWorkerId()).isEqualTo("someWorker");
     assertThat(operateProperties.getOperationExecutor().getLockTimeout()).isEqualTo(15000);

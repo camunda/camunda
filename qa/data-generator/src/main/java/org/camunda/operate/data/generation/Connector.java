@@ -23,9 +23,9 @@ public class Connector {
   private DataGeneratorProperties dataGeneratorProperties;
 
   public ZeebeClient createZeebeClient() {
-    String brokerContactPoint = dataGeneratorProperties.getZeebeBrokerContactPoint();
+    String gatewayAddress = dataGeneratorProperties.getZeebeGatewayAddress();
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
-      .brokerContactPoint(brokerContactPoint)
+      .gatewayAddress(gatewayAddress)
       .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
       .usePlaintext();
     //TODO test the connection?

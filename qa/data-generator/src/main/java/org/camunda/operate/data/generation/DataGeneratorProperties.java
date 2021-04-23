@@ -21,7 +21,7 @@ public class DataGeneratorProperties {
 
   private int incidentCount = 100;
 
-  private String zeebeBrokerContactPoint = "localhost:26500";
+  private String zeebeGatewayAddress = "localhost:26500";
 
   private String elasticsearchHost = "localhost";
 
@@ -57,12 +57,12 @@ public class DataGeneratorProperties {
     this.incidentCount = incidentCount;
   }
 
-  public String getZeebeBrokerContactPoint() {
-    return zeebeBrokerContactPoint;
+  public String getZeebeGatewayAddress() {
+    return zeebeGatewayAddress;
   }
 
-  public void setZeebeBrokerContactPoint(String zeebeBrokerContactPoint) {
-    this.zeebeBrokerContactPoint = zeebeBrokerContactPoint;
+  public void setZeebeGatewayAddress(String gatewayAddress) {
+    this.zeebeGatewayAddress = gatewayAddress;
   }
 
   public String getElasticsearchHost() {

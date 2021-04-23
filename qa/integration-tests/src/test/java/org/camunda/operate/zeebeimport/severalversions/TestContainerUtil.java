@@ -24,7 +24,6 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.MountableFile;
@@ -44,7 +43,7 @@ public class TestContainerUtil {
   private ElasticsearchContainer elsContainer;
   private ZeebeClient client;
 
-  private String contactPoint;
+  private String gatewayAddress;
   private String elsHost;
   private Integer elsPort;
   private RestHighLevelClient esClient;
@@ -57,8 +56,8 @@ public class TestContainerUtil {
     addConfig(broker, version);
     broker.start();
 
-    contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY.getPort());
-    client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
+    gatewayAddress = broker.getExternalAddress(ZeebePort.GATEWAY.getPort());
+    client = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress).usePlaintext().build();
   }
 
   private void addConfig(ZeebeBrokerContainer broker, String version) {
@@ -83,7 +82,7 @@ public class TestContainerUtil {
         PROPERTIES_PREFIX + "zeebeElasticsearch.host=" + elsHost,
         PROPERTIES_PREFIX + "zeebeElasticsearch.port=" + elsPort,
         PROPERTIES_PREFIX + "zeebeElasticsearch.prefix=" + ImportSeveralVersionsInitializer.ZEEBE_PREFIX,
-        PROPERTIES_PREFIX + "zeebe.brokerContactPoint=" + contactPoint,
+        PROPERTIES_PREFIX + "zeebe.gatewayAddress=" + gatewayAddress,
         PROPERTIES_PREFIX + "importer.startLoadingDataOnStartup=false"
     };
   }

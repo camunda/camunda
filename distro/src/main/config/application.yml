@@ -1,7 +1,7 @@
 # Operate configuration file
 
 camunda.operate:
-  # Set operate username and password. 
+  # Set operate username and password.
   # If user with <username> does not exists it will be created.
   # Default: demo/demo
   #username:
@@ -14,8 +14,8 @@ camunda.operate:
     url: http://localhost:9200
   # Zeebe instance
   zeebe:
-    # Broker contact point
-    brokerContactPoint: localhost:26500
+    # Gateway address
+    gatewayAddress: localhost:26500
   # ELS instance to export Zeebe data to
   zeebeElasticsearch:
     # Cluster name

@@ -5,7 +5,7 @@ camunda.operate:
     host: localhost
     port: 9200
   zeebe:
-    brokerContactPoint: localhost:26500
+    gatewayAddress: localhost:26500
   zeebeElasticsearch:
     clusterName: docker-cluster
     host: localhost

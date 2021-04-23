@@ -155,7 +155,7 @@ public class OperateZeebeRule extends TestWatcher {
 
   private Properties newClientProperties() {
     final Properties properties = new Properties();
-    properties.put(ClientProperties.BROKER_CONTACTPOINT, toHostAndPortString(brokerRule.getGatewayAddress()));
+    properties.put(ClientProperties.GATEWAY_ADDRESS, toHostAndPortString(brokerRule.getGatewayAddress()));
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
     properties.setProperty(ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;

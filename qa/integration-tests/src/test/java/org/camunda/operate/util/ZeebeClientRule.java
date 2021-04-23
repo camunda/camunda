@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.util;
 
+import static org.camunda.operate.util.ConversionUtils.toHostAndPortAsString;
+
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.Topology;
 import java.net.InetSocketAddress;
@@ -28,15 +30,9 @@ public class ZeebeClientRule extends ExternalResource {
     final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
       config -> {
-        config.brokerContactPoint(toHostAndPortString(brokerRule.getGatewayAddress()));
+        config.gatewayAddress(toHostAndPortAsString(brokerRule.getGatewayAddress()));
         configurator.accept(config);
       });
-  }
-
-  private static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
-    final String host = inetSocketAddress.getHostString();
-    final int port = inetSocketAddress.getPort();
-    return host + ":" + port;
   }
 
   private ZeebeClientRule(final Consumer<ZeebeClientBuilder> configurator) {

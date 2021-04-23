@@ -23,7 +23,7 @@ data:
         port: 9200
         dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
       zeebe:
-        brokerContactPoint: localhost:26500
+        gatewayAddress: localhost:26500
         worker: operate
       zeebeElasticsearch:
         clusterName: elasticsearch

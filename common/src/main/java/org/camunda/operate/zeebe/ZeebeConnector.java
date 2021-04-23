@@ -26,11 +26,11 @@ public class ZeebeConnector {
   @Bean //will be closed automatically
   public ZeebeClient zeebeClient() {
 
-    final String brokerContactPoint = operateProperties.getZeebe().getBrokerContactPoint();
+    final String gatewayAddress = operateProperties.getZeebe().getGatewayAddress();
 
     return ZeebeClient
       .newClientBuilder()
-      .brokerContactPoint(brokerContactPoint)
+      .gatewayAddress(gatewayAddress)
       .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
       .usePlaintext()
       .build();

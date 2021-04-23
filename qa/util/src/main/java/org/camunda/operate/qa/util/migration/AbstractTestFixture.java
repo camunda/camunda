@@ -76,7 +76,7 @@ public abstract class AbstractTestFixture implements TestFixture {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
 
     if (zeebeContactPoint != null) {
-      operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBE_BROKERCONTACTPOINT", zeebeContactPoint)
+      operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebeContactPoint)
           .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", ZEEBE_PREFIX);
     }
 

@@ -31,7 +31,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     classes = { TestApplication.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-        OperateProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"})
+        OperateProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500"})
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 public class ZeebeConnectorIT extends OperateIntegrationTest {
 

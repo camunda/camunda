@@ -71,7 +71,7 @@ public class BasicProcessDataGenerator {
   private StatefulRestTemplate operateRestClient;
 
   private void init(TestContext testContext) {
-    zeebeClient = ZeebeClient.newClientBuilder().brokerContactPoint(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
+    zeebeClient = ZeebeClient.newClientBuilder().gatewayAddress(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
     operateRestClient = new StatefulRestTemplate(testContext.getExternalOperateHost(), testContext.getExternalOperatePort(), testContext.getExternalOperateContextPath());
     operateRestClient.loginWhenNeeded();
   }

@@ -46,7 +46,7 @@ public class BigProcessDataGenerator {
   private RestHighLevelClient esClient;
 
   private void init(TestContext testContext) {
-    zeebeClient = ZeebeClient.newClientBuilder().brokerContactPoint(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
+    zeebeClient = ZeebeClient.newClientBuilder().gatewayAddress(testContext.getExternalZeebeContactPoint()).usePlaintext().build();
   }
 
   public void createData(TestContext testContext) throws Exception {
