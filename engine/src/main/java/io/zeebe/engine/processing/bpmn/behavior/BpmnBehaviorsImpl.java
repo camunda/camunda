@@ -69,7 +69,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             zeebeState.getKeyGenerator(),
             stateBehavior,
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
-            stateTransitionGuard,
             processorLookup,
             writers,
             zeebeState.getElementInstanceState());

@@ -166,29 +166,4 @@ public final class ProcessInstanceStateTransitionGuard {
           .flatMap(flowScopeInstance -> hasNonInterruptedFlowScope(flowScopeInstance, context));
     }
   }
-
-  public void registerStateTransition(
-      final BpmnElementContext context, final ProcessInstanceIntent newState) {
-    switch (newState) {
-      case ELEMENT_ACTIVATING:
-      case ELEMENT_ACTIVATED:
-      case ELEMENT_COMPLETING:
-      case ELEMENT_COMPLETED:
-      case ELEMENT_TERMINATING:
-      case ELEMENT_TERMINATED:
-        updateElementInstanceState(context, newState);
-        break;
-
-      default:
-        // other transitions doesn't change the state of an element instance
-        break;
-    }
-  }
-
-  private void updateElementInstanceState(
-      final BpmnElementContext context, final ProcessInstanceIntent newState) {
-
-    stateBehavior.updateElementInstance(
-        context, elementInstance -> elementInstance.setState(newState));
-  }
 }

@@ -12,7 +12,6 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
-import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -50,7 +49,6 @@ public final class BpmnStateTransitionBehavior {
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
       processorLookUp;
 
-  private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -62,7 +60,6 @@ public final class BpmnStateTransitionBehavior {
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
       final ProcessEngineMetrics metrics,
-      final ProcessInstanceStateTransitionGuard stateTransitionGuard,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
       final Writers writers,
@@ -72,7 +69,6 @@ public final class BpmnStateTransitionBehavior {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
-    this.stateTransitionGuard = stateTransitionGuard;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -117,10 +113,6 @@ public final class BpmnStateTransitionBehavior {
   public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    }
     metrics.elementInstanceActivated(context);
     return transitionedContext;
   }
@@ -140,12 +132,7 @@ public final class BpmnStateTransitionBehavior {
             ProcessInstanceIntent.ELEMENT_COMPLETING);
       }
     }
-    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_COMPLETING);
-    }
-    return transitionedContext;
+    return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
   }
 
   /**
@@ -191,10 +178,6 @@ public final class BpmnStateTransitionBehavior {
   /** @return context with updated intent */
   public BpmnElementContext transitionToCompleted(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    }
     metrics.elementInstanceCompleted(context);
     return transitionedContext;
   }
@@ -209,22 +192,12 @@ public final class BpmnStateTransitionBehavior {
               context.getBpmnElementType(),
               "#transitionToTerminating"));
     }
-    final var transitionedContext =
-        transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    if (!isMigrated) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    }
-    return transitionedContext;
+    return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
   }
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_TERMINATED);
-    }
     metrics.elementInstanceTerminated(context);
     return transitionedContext;
   }
