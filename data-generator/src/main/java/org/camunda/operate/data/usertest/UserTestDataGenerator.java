@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.data.usertest;
 
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
+
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
@@ -12,7 +14,6 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobHandler;
 import io.zeebe.client.api.worker.JobWorker;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
@@ -23,15 +24,13 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
-import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.util.PayloadUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
-import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component("dataGenerator")
 @Profile("usertest-data")
@@ -63,6 +62,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     createProcessWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
 
     createAndStartProcessWithLargeVariableValue();
+    createAndStartProcessWithLotOfVariables();
 
     deployVersion1();
 
@@ -93,6 +93,25 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     ZeebeTestUtil.deployProcess(client, "usertest/single-task.bpmn");
     String jsonString = payloadUtil.readJSONStringFromClasspath("/usertest/large-payload.json");
     ZeebeTestUtil.startProcessInstance(client, "bigVarProcess", jsonString);
+  }
+
+  private void createAndStartProcessWithLotOfVariables() {
+    StringBuffer vars = new StringBuffer("{");
+    for (char letter1 = 'a'; letter1 <= 'z'; letter1++) {
+      for (char letter2 = 'a'; letter2 <= 'z'; letter2++) {
+        if (vars.length() > 1) {
+          vars.append(",\n");
+        }
+        final String str = Character.toString(letter1) + Character.toString(letter2);
+        vars.append("\"")
+            .append(str)
+            .append("\": \"value_")
+            .append(str)
+            .append("\"");
+      }
+    }
+    vars.append("}");
+    ZeebeTestUtil.startProcessInstance(client, "bigVarProcess", vars.toString());
   }
 
   public void createSpecialDataV1() {

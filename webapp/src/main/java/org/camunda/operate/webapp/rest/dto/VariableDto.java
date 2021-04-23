@@ -5,7 +5,9 @@
  */
 package org.camunda.operate.webapp.rest.dto;
 
+import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,16 +15,22 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.util.ConversionUtils;
 
 public class VariableDto {
 
   private String id;
   private String name;
   private String value;
-  private String scopeId;
-  private String processInstanceId;
   private boolean hasActiveOperation = false;
+
+  @ApiModelProperty(value = "True when variable is the first in current list")
+  private boolean isFirst = false;
+
+  /**
+   * Sort values, define the position of process instance in the list and may be used to search
+   * for previous or following page.
+   */
+  private String[] sortValues;
 
   public String getId() {
     return id;
@@ -48,28 +56,30 @@ public class VariableDto {
     this.value = value;
   }
 
-  public String getScopeId() {
-    return scopeId;
-  }
-
-  public void setScopeId(String scopeId) {
-    this.scopeId = scopeId;
-  }
-
-  public String getProcessInstanceId() {
-    return processInstanceId;
-  }
-
-  public void setProcessInstanceId(String processInstanceId) {
-    this.processInstanceId = processInstanceId;
-  }
-
   public boolean isHasActiveOperation() {
     return hasActiveOperation;
   }
 
   public void setHasActiveOperation(boolean hasActiveOperation) {
     this.hasActiveOperation = hasActiveOperation;
+  }
+
+  public boolean getIsFirst() {
+    return isFirst;
+  }
+
+  public VariableDto setIsFirst(final boolean first) {
+    isFirst = first;
+    return this;
+  }
+
+  public String[] getSortValues() {
+    return sortValues;
+  }
+
+  public VariableDto setSortValues(final String[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
   }
 
   public static VariableDto createFrom(VariableEntity variableEntity, List<OperationEntity> operations) {
@@ -80,8 +90,6 @@ public class VariableDto {
     variable.setId(variableEntity.getId());
     variable.setName(variableEntity.getName());
     variable.setValue(variableEntity.getValue());
-    variable.setScopeId(ConversionUtils.toStringOrNull(variableEntity.getScopeKey()));
-    variable.setProcessInstanceId(ConversionUtils.toStringOrNull(variableEntity.getProcessInstanceKey()));
 
     if (operations != null && operations.size() > 0) {
       List <OperationEntity> activeOperations = CollectionUtil.filter(operations,(o ->
@@ -93,7 +101,12 @@ public class VariableDto {
         variable.setValue(activeOperations.get(activeOperations.size() - 1).getVariableValue());
       }
     }
-
+    //convert to String[]
+    if (variableEntity.getSortValues() != null) {
+      variable.setSortValues(Arrays.stream(variableEntity.getSortValues())
+          .map(String::valueOf)
+          .toArray(String[]::new));
+    }
     return variable;
   }
 
@@ -127,8 +140,6 @@ public class VariableDto {
         VariableDto variable = new VariableDto();
         variable.setName(operation.getVariableName());
         variable.setValue(operation.getVariableValue());
-        variable.setScopeId(ConversionUtils.toStringOrNull(operation.getScopeKey()));
-        variable.setProcessInstanceId(ConversionUtils.toStringOrNull(operation.getProcessInstanceKey()));
         variable.setHasActiveOperation(true);
         return variable;
       }

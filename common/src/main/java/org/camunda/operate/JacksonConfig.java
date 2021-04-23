@@ -8,7 +8,6 @@ package org.camunda.operate;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +15,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,24 +38,26 @@ public class JacksonConfig {
     javaTimeModule.addDeserializer(OffsetDateTime.class, new ElasticsearchConnector.CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
     javaTimeModule.addDeserializer(Instant.class, new ElasticsearchConnector.CustomInstantDeserializer());
 
-//    javaTimeModule.addSerializer(LocalDate.class, new ElasticsearchConnector.CustomLocalDateSerializer(localDateFormatter()));
-//    javaTimeModule.addDeserializer(LocalDate.class, new ElasticsearchConnector.CustomLocalDateDeserializer(localDateFormatter()));
-
-    return Jackson2ObjectMapperBuilder.json().modules(javaTimeModule, new Jdk8Module())
-      .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-      .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT).build();
+    return Jackson2ObjectMapperBuilder.json()
+        .modules(javaTimeModule, new Jdk8Module())
+        .featuresToDisable(
+            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+        .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT)
+        //make sure that Jackson uses setters and getters, not fields
+        .visibility(PropertyAccessor.GETTER, Visibility.ANY)
+        .visibility(PropertyAccessor.IS_GETTER, Visibility.ANY)
+        .visibility(PropertyAccessor.SETTER, Visibility.ANY)
+        .visibility(PropertyAccessor.FIELD, Visibility.NONE)
+        .visibility(PropertyAccessor.CREATOR, Visibility.NONE)
+        .build();
   }
 
   @Bean
   public DateTimeFormatter dateTimeFormatter() {
     return DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getDateFormat());
   }
-
-  @Bean
-  public DateTimeFormatter localDateFormatter() {
-    return DateTimeFormatter.ofPattern(operateProperties.getZeebeElasticsearch().getDateFormat());
-  }
-
 
 }

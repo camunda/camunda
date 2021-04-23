@@ -6,6 +6,7 @@
 package org.camunda.operate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -19,20 +20,23 @@ import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.ProcessEntity;
+import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.ProcessInstanceState;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import org.camunda.operate.schema.templates.VariableTemplate;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.camunda.operate.webapp.es.reader.ProcessReader;
+import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
+import org.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -65,6 +69,9 @@ public class ElasticsearchChecks {
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  @Autowired
+  private VariableTemplate variableTemplate;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -216,7 +223,7 @@ public class ElasticsearchChecks {
             .query(constantScoreQuery(processInstanceKeyQuery))
             .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
-      return ElasticsearchUtil.scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+      return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -229,21 +236,32 @@ public class ElasticsearchChecks {
   @Bean(name = "variableExistsCheck")
   public Predicate<Object[]> getVariableExistsCheck() {
     return objects -> {
-      assertThat(objects).hasSize(3);
+      assertThat(objects).hasSize(2);
       assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(Long.class);
-      assertThat(objects[2]).isInstanceOf(String.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
       Long processInstanceKey = (Long)objects[0];
-      Long scopeKey = (Long)objects[1];
-      String varName = (String)objects[2];
+      String varName = (String)objects[1];
       try {
-        List<VariableDto> variables = variableReader.getVariables(processInstanceKey, scopeKey);
+        List<VariableEntity> variables = getAllVariables(processInstanceKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
       } catch (NotFoundException ex) {
         return false;
       }
     };
   }
+
+  public List<VariableEntity> getAllVariables(Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(processInstanceKeyQuery)));
+    try {
+      return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
 
   /**
    * Checks whether variable of given args[0] processInstanceKey  (Long) and args[1] scopeKey (Long) and args[2] varName (String) with args[3] (String) value exists
@@ -262,12 +280,18 @@ public class ElasticsearchChecks {
       String varName = (String)objects[2];
       String varValue = (String)objects[3];
       try {
-        List<VariableDto> variables = variableReader.getVariables(processInstanceKey, scopeKey);
+        List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
         return variables.stream().anyMatch( v -> v.getName().equals(varName) && v.getValue().equals(varValue));
       } catch (NotFoundException ex) {
         return false;
       }
     };
+  }
+
+  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
+    return variableReader.getVariables(
+        String.valueOf(processInstanceKey),
+        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
   }
 
   /**

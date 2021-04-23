@@ -37,6 +37,7 @@ import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.camunda.operate.webapp.rest.dto.OperationDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
+import org.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -316,7 +317,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshOperateESIndices();
 
     //then variable with new value is returned
-    List<VariableDto> variables = variableReader.getVariables(processInstanceKey, processInstanceKey);
+    List<VariableDto> variables = getVariables(processInstanceKey, processInstanceKey);
     assertThat(variables).hasSize(1);
     assertVariable(variables, varName, newVarValue, true);
 
@@ -345,7 +346,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
 
     //check variables
-    variables = variableReader.getVariables(processInstanceKey, processInstanceKey);
+    variables = getVariables(processInstanceKey, processInstanceKey);
     assertThat(variables).hasSize(1);
     assertVariable(variables, varName, newVarValue, false);
 
@@ -358,6 +359,12 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
     assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
+  }
+
+  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
+    return variableReader.getVariables(
+        String.valueOf(processInstanceKey),
+        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
   }
 
   @Test
@@ -375,7 +382,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshOperateESIndices();
 
     //then new variables are returned
-    List<VariableDto> variables = variableReader.getVariables(processInstanceKey, processInstanceKey);
+    List<VariableDto> variables = getVariables(processInstanceKey, processInstanceKey);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
@@ -385,7 +392,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
     //then new variables are returned
-    variables = variableReader.getVariables(processInstanceKey, processInstanceKey);
+    variables = getVariables(processInstanceKey, processInstanceKey);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
@@ -394,7 +401,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
-    variables = variableReader.getVariables(processInstanceKey, processInstanceKey);
+    variables = getVariables(processInstanceKey, processInstanceKey);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
     assertVariable(variables, newVar2Name, newVar2Value, false);
@@ -416,7 +423,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshOperateESIndices();
 
     //then new variables are returned
-    List<VariableDto> variables = variableReader.getVariables(processInstanceKey, taskAId);
+    List<VariableDto> variables = getVariables(processInstanceKey, taskAId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
@@ -426,7 +433,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
     //then new variables are returned
-    variables = variableReader.getVariables(processInstanceKey, taskAId);
+    variables = getVariables(processInstanceKey, taskAId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, true);
     assertVariable(variables, newVar2Name, newVar2Value, true);
@@ -436,7 +443,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, newVar2Name);
     elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
-    variables = variableReader.getVariables(processInstanceKey, taskAId);
+    variables = getVariables(processInstanceKey, taskAId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
     assertVariable(variables, newVar2Name, newVar2Value, false);
@@ -489,7 +496,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
 
     //check variables
-    final List<VariableDto> variables = variableReader.getVariables(processInstanceKey, taskAId);
+    final List<VariableDto> variables = getVariables(processInstanceKey, taskAId);
     assertThat(variables).hasSize(1);
     assertThat(variables.get(0).getName()).isEqualTo(varName);
     assertThat(variables.get(0).getValue()).isEqualTo(varValue);

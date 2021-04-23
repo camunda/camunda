@@ -106,7 +106,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //when TC 1
     final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, "a");
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
 
     //then we can find the instance by 2 variable values: a = b, foo = b
     assertVariableExists(processInstanceKey, "a", "\"b\"");

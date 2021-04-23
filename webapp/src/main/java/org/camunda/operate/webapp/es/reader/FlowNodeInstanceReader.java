@@ -112,7 +112,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
     return response;
   }
 
-  public FlowNodeInstanceResponseDto getFlowNodeInstances(FlowNodeInstanceQueryDto request) {
+  private FlowNodeInstanceResponseDto getFlowNodeInstances(FlowNodeInstanceQueryDto request) {
     FlowNodeInstanceResponseDto response = queryFlowNodeInstances(request);
 
     //query one additional instance

@@ -6,16 +6,14 @@
 package org.camunda.operate.webapp.rest.dto.listview;
 
 import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Objects;
-import org.camunda.operate.webapp.rest.dto.SortingDto;
+import java.util.Set;
+import org.camunda.operate.webapp.rest.dto.PaginatedQuery;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
 @ApiModel("Process instances request")
-public class ListViewRequestDto {
+public class ListViewRequestDto extends PaginatedQuery<ListViewRequestDto> {
 
   public static final String SORT_BY_ID = "id";
   public static final String SORT_BY_START_DATE = "startDate";
@@ -23,9 +21,9 @@ public class ListViewRequestDto {
   public static final String SORT_BY_PROCESS_NAME = "processName";
   public static final String SORT_BY_WORFLOW_VERSION = "processVersion";
 
-  public static final List<String> VALID_SORT_BY_VALUES;
+  public static final Set<String> VALID_SORT_BY_VALUES;
   static {
-    VALID_SORT_BY_VALUES = new ArrayList<>();
+    VALID_SORT_BY_VALUES = new HashSet<>();
     VALID_SORT_BY_VALUES.add(SORT_BY_ID);
     VALID_SORT_BY_VALUES.add(SORT_BY_START_DATE);
     VALID_SORT_BY_VALUES.add(SORT_BY_END_DATE);
@@ -34,23 +32,6 @@ public class ListViewRequestDto {
   }
 
   private ListViewQueryDto query;
-
-  private SortingDto sorting;
-
-  /**
-   * Search for process instances that goes exactly after the given sort values.
-   */
-  private Object[] searchAfter;
-
-  /**
-   * Search for process instance that goes exactly before the given sort values.
-   */
-  private Object[] searchBefore;
-
-  /**
-   * Page size.
-   */
-  private Integer pageSize = 50;
 
   public ListViewRequestDto() {
   }
@@ -67,43 +48,25 @@ public class ListViewRequestDto {
     this.query = query;
   }
 
-  public SortingDto getSorting() {
-    return sorting;
+  @Override
+  protected Set<String> getValidSortByValues() {
+    return VALID_SORT_BY_VALUES;
   }
 
-  public void setSorting(SortingDto sorting) {
-    if (sorting != null && !VALID_SORT_BY_VALUES.contains(sorting.getSortBy())) {
-      throw new InvalidRequestException("SortBy parameter has invalid value: " + sorting.getSortBy());
+  @Override
+  public ListViewRequestDto setSearchAfterOrEqual(final Object[] searchAfterOrEqual) {
+    if (searchAfterOrEqual != null) {
+      throw new InvalidRequestException("SearchAfterOrEqual is not supported.");
     }
-    this.sorting = sorting;
+    return this;
   }
 
-  @ApiModelProperty(value= "Array of two values: copy/paste of sortValues field from one of the process instances.",
-      example = "[1605160098477, 4629710542312628000]")
-  public Object[] getSearchAfter() {
-    return searchAfter;
-  }
-
-  public void setSearchAfter(final Object[] searchAfter) {
-    this.searchAfter = searchAfter;
-  }
-
-  @ApiModelProperty(value= "Array of two values: copy/paste of sortValues field from one of the process instances.",
-      example = "[1605160098477, 4629710542312628000]")
-  public Object[] getSearchBefore() {
-    return searchBefore;
-  }
-
-  public void setSearchBefore(final Object[] searchBefore) {
-    this.searchBefore = searchBefore;
-  }
-
-  public Integer getPageSize() {
-    return pageSize;
-  }
-
-  public void setPageSize(final Integer pageSize) {
-    this.pageSize = pageSize;
+  @Override
+  public ListViewRequestDto setSearchBeforeOrEqual(final Object[] searchBeforeOrEqual) {
+    if (searchBeforeOrEqual != null) {
+      throw new InvalidRequestException("SearchBeforeOrEqual is not supported.");
+    }
+    return this;
   }
 
   @Override
@@ -114,19 +77,16 @@ public class ListViewRequestDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
     final ListViewRequestDto that = (ListViewRequestDto) o;
-    return Objects.equals(query, that.query) &&
-        Objects.equals(sorting, that.sorting) &&
-        Arrays.equals(searchAfter, that.searchAfter) &&
-        Arrays.equals(searchBefore, that.searchBefore) &&
-        Objects.equals(pageSize, that.pageSize);
+    return Objects.equals(query, that.query);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(query, sorting, pageSize);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    return result;
+    return Objects.hash(super.hashCode(), query);
   }
+
 }

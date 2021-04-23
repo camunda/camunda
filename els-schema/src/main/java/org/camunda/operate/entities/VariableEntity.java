@@ -5,12 +5,19 @@
  */
 package org.camunda.operate.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Arrays;
+import java.util.Objects;
+
 public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   private String name;
   private String value;
   private Long scopeKey;
   private Long processInstanceKey;
+
+  @JsonIgnore
+  private Object[] sortValues;
 
   public String getName() {
     return name;
@@ -44,33 +51,38 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     this.processInstanceKey = processInstanceKey;
   }
 
+  public Object[] getSortValues() {
+    return sortValues;
+  }
+
+  public VariableEntity setSortValues(final Object[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (!super.equals(o))
+    }
+    if (!super.equals(o)) {
       return false;
-
-    VariableEntity that = (VariableEntity) o;
-
-    if (name != null ? !name.equals(that.name) : that.name != null)
-      return false;
-    if (value != null ? !value.equals(that.value) : that.value != null)
-      return false;
-    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
-      return false;
-    return processInstanceKey != null ? processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey == null;
+    }
+    final VariableEntity that = (VariableEntity) o;
+    return Objects.equals(name, that.name) &&
+        Objects.equals(value, that.value) &&
+        Objects.equals(scopeKey, that.scopeKey) &&
+        Objects.equals(processInstanceKey, that.processInstanceKey) &&
+        Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (value != null ? value.hashCode() : 0);
-    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
+    int result = Objects.hash(super.hashCode(), name, value, scopeKey, processInstanceKey);
+    result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 }

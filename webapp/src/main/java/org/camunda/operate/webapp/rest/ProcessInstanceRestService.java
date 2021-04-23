@@ -14,7 +14,6 @@ import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
 import java.util.Collection;
 import java.util.List;
-
 import java.util.Map;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.BatchOperationEntity;
@@ -26,19 +25,20 @@ import org.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
 import org.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
-import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
+import org.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
-import org.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
+import org.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
@@ -160,8 +160,17 @@ public class ProcessInstanceRestService {
 
   @ApiOperation("Get variables by process instance id and scope id")
   @GetMapping("/{processInstanceId}/variables")
+  @Deprecated
   public List<VariableDto> getVariables(@PathVariable String processInstanceId, @RequestParam String scopeId) {
-    return variableReader.getVariables(Long.valueOf(processInstanceId), Long.valueOf(scopeId));
+    return variableReader.getVariablesOld(Long.valueOf(processInstanceId), Long.valueOf(scopeId));
+  }
+
+  @ApiOperation("Get variables by process instance id and scope id")
+  @PostMapping("/{processInstanceId}/variables-new")
+  public List<VariableDto> getVariables(
+      @PathVariable String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
+    validateRequest(variableRequest);
+    return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
   @ApiOperation("Get flow node states by process instance id")
@@ -176,6 +185,12 @@ public class ProcessInstanceRestService {
       @RequestBody FlowNodeMetadataRequestDto request) {
     validateRequest(request);
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
+  }
+
+  private void validateRequest(final VariableRequestDto request) {
+    if (request.getScopeId() == null) {
+      throw new InvalidRequestException("ScopeId must be specifies in the request.");
+    }
   }
 
   private void validateRequest(final FlowNodeMetadataRequestDto request) {

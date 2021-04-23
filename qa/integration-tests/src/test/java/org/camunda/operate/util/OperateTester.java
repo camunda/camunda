@@ -44,6 +44,7 @@ import org.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
+import org.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -375,7 +376,7 @@ public class OperateTester {
   }
 
   public OperateTester variableExists(String name) {
-    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey,name);
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, name);
     return this;
   }
 
@@ -383,13 +384,20 @@ public class OperateTester {
    return getVariable(name,processInstanceKey);
   }
 
-  public String getVariable(String name,Long scopeKey) {
-    List<VariableDto> variables = variableReader.getVariables(processInstanceKey, scopeKey);
-    List<VariableDto> variablesWithGivenName = filter(variables, variable -> variable.getName().equals(name));
-    if(variablesWithGivenName.isEmpty()) {
+  public String getVariable(String name, Long scopeKey) {
+    List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
+    List<VariableDto> variablesWithGivenName =
+        filter(variables, variable -> variable.getName().equals(name));
+    if (variablesWithGivenName.isEmpty()) {
       return null;
     }
     return variablesWithGivenName.get(0).getValue();
+  }
+
+  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
+    return variableReader.getVariables(
+        String.valueOf(processInstanceKey),
+        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
   }
 
   public boolean hasVariable(String name, String value) {

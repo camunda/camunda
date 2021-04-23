@@ -126,7 +126,6 @@ public class FlowNodeInstanceQueryDto {
         .setProcessInstanceId(this.processInstanceId);
   }
 
-
   @Override
   public boolean equals(final Object o) {
     if (this == o) {

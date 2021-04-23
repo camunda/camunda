@@ -9,9 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.TestUtil.createFlowNodeInstance;
 import static org.camunda.operate.util.TestUtil.createFlowNodeInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createIncident;
-import static org.camunda.operate.util.TestUtil.createVariableForListView;
 import static org.camunda.operate.util.TestUtil.createProcessInstance;
+import static org.camunda.operate.util.TestUtil.createVariableForListView;
 import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.time.OffsetDateTime;
@@ -24,23 +26,24 @@ import org.camunda.operate.entities.FlowNodeState;
 import org.camunda.operate.entities.FlowNodeType;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.ProcessInstanceState;
+import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import org.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import org.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 /**
  * Tests Elasticsearch queries for process instances.
@@ -877,6 +880,25 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     sorting.setSortOrder(SortingDto.SORT_ORDER_DESC_VALUE);
 
     testSorting(sorting, comparator);
+  }
+
+  @Test
+  public void testSortingByWrongValue() throws Exception {
+    // when
+    final String wrongSortParameter = "bpmnProcessId";
+    final String query =
+        "{\"query\": {\"running\": true},"
+            + "\"sorting\": { \"sortBy\": \""
+            + wrongSortParameter
+            + "\"}}}";
+    MockHttpServletRequestBuilder request =
+        post(query()).content(query.getBytes()).contentType(mockMvcTestRule.getContentType());
+    final MvcResult mvcResult =
+        mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
+
+    // then
+    assertErrorMessageContains(
+        mvcResult, "SortBy parameter has invalid value: " + wrongSortParameter);
   }
 
   @Test
