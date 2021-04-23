@@ -67,10 +67,6 @@ public class RaftLogReader implements java.util.Iterator<IndexedRaftLogEntry>, A
   }
 
   public long seek(final long index) {
-    if (nextIndex == index) {
-      return nextIndex;
-    }
-
     long boundedIndex = index;
 
     if (mode == Mode.COMMITS) {
