@@ -22,6 +22,8 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -95,8 +97,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     assertThat(result.getInstanceCount()).isEqualTo(5L);
     final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(2);
+    assertThat(resultData).isNotNull().hasSize(2);
     assertThat(resultData.get(0).getValue()).isEqualTo(2.);
     assertThat(resultData.get(1).getValue()).isEqualTo(3.);
   }
@@ -104,7 +105,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @Test
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDayResultIsSortedInDescendingOrder() {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
     // third bucket
@@ -117,7 +118,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
@@ -125,7 +126,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
@@ -153,7 +154,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
     // third bucket
@@ -166,7 +167,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
@@ -174,7 +175,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
@@ -206,7 +207,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
     // third bucket
@@ -218,7 +219,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = LocalDateUtil.getCurrentDateTime();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
@@ -226,7 +227,6 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
@@ -255,7 +255,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @Test
   public void testEmptyBucketsAreReturnedForEvaluationDateFilterPeriod() {
     // given
-    final OffsetDateTime startDate = OffsetDateTime.now();
+    final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
 
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
@@ -315,10 +315,9 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @ParameterizedTest
   @MethodSource("groupByDateUnits")
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDifferentUnitsEmptyBucketBetweenTwoOthers(
-    final AggregateByDateUnit groupByDateUnit
-  ) {
+    final AggregateByDateUnit groupByDateUnit) {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     final ChronoUnit chronoUnit = ChronoUnit.valueOf(groupByDateUnit.name().toUpperCase() + "S");
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
@@ -335,7 +334,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minus(1, chronoUnit);
 
     // first bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = beforeStart;
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
@@ -363,7 +362,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @Test
   public void automaticIntervalSelectionWorks() {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
 
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
