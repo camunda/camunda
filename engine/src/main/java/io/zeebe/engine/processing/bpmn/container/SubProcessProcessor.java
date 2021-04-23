@@ -116,31 +116,40 @@ public final class SubProcessProcessor
       final ExecutableFlowElementContainer element,
       final BpmnElementContext subProcessContext,
       final BpmnElementContext childContext) {
+    if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
 
-    eventSubscriptionBehavior
-        .findEventTrigger(subProcessContext)
-        .ifPresentOrElse(
-            eventTrigger -> {
-              if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-                  // child context can be null if no child's exist on termination
-                  && (childContext == null || stateBehavior.canBeTerminated(childContext))) {
-                final var terminated =
-                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
-                eventSubscriptionBehavior.activateTriggeredEvent(
-                    subProcessContext.getFlowScopeKey(), terminated, eventTrigger);
-              } else {
-                eventSubscriptionBehavior.activateTriggeredEvent(
-                    subProcessContext.getElementInstanceKey(), subProcessContext, eventTrigger);
-              }
-            },
-            () -> {
-              if (subProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING
-                  // child context can be null if no child's exist on termination
-                  && (childContext == null || stateBehavior.canBeTerminated(childContext))) {
-                final var terminated =
-                    stateTransitionBehavior.transitionToTerminated(subProcessContext);
-                stateTransitionBehavior.onElementTerminated(element, terminated);
-              }
-            });
+      if (childContext == null || stateBehavior.canBeTerminated(childContext)) {
+        // if we are able to terminate we try to trigger boundary events
+        eventSubscriptionBehavior
+            .findEventTrigger(subProcessContext)
+            .filter(
+                eventTrigger ->
+                    element.getBoundaryEvents().stream()
+                        .anyMatch(b -> b.getId().equals(eventTrigger.getElementId())))
+            .ifPresentOrElse(
+                eventTrigger -> {
+                  final var terminated =
+                      stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                  eventSubscriptionBehavior.activateTriggeredEvent(
+                      subProcessContext.getFlowScopeKey(), terminated, eventTrigger);
+                },
+                () -> {
+                  final var terminated =
+                      stateTransitionBehavior.transitionToTerminated(subProcessContext);
+                  stateTransitionBehavior.onElementTerminated(element, terminated);
+                });
+      }
+
+    } else {
+      // if the flow scope is not terminating we allow
+      // * interrupting event sub processes
+      // * non interrupting boundary events
+      eventSubscriptionBehavior
+          .findEventTrigger(subProcessContext)
+          .ifPresent(
+              eventTrigger ->
+                  eventSubscriptionBehavior.activateTriggeredEvent(
+                      subProcessContext.getElementInstanceKey(), subProcessContext, eventTrigger));
+    }
   }
 }
