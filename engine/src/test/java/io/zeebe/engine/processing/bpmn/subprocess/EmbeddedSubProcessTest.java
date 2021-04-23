@@ -26,6 +26,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -107,6 +108,7 @@ public final class EmbeddedSubProcessTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda-cloud/zeebe/issues/6850")
   public void shouldTerminateSubProcessWithNonInterruptingBoundaryEvent() {
     // given
     final var model =
