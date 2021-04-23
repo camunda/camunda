@@ -63,7 +63,7 @@ services:
     environment:
       - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
+      - zeebe.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
       - zeebe.tasklist.csrfPreventionEnabled=false
       - graphql.playground.enabled=true
@@ -122,7 +122,7 @@ services:
       - zeebe.tasklist.elasticsearch.indexPrefix=e2etasklist
       - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebeElasticsearch.prefix=e2e
-      - zeebe.tasklist.zeebe.brokerContactPoint=zeebe-e2e:26503
+      - zeebe.tasklist.zeebe.gatewayAddress=zeebe-e2e:26503
       - zeebe.tasklist.importer.readerBackoff=0
       - zeebe.tasklist.importer.schedulerBackoff=0
     volumes:
@@ -143,7 +143,7 @@ services:
     environment:
       - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
+      - zeebe.tasklist.zeebe.gatewayAdress=zeebe:26500
       - spring.profiles.active=dev,dev-data,sso-auth
       - zeebe.tasklist.csrfPreventionEnabled=false
       - zeebe.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com

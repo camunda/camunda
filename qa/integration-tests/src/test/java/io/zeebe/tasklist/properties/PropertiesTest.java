@@ -41,7 +41,6 @@ public class PropertiesTest {
     assertThat(tasklistProperties.getZeebeElasticsearch().getDateFormat()).isEqualTo("dd-MM-yyyy");
     assertThat(tasklistProperties.getZeebeElasticsearch().getBatchSize()).isEqualTo(222);
     assertThat(tasklistProperties.getZeebeElasticsearch().getPrefix()).isEqualTo("somePrefix");
-    assertThat(tasklistProperties.getZeebe().getBrokerContactPoint())
-        .isEqualTo("someZeebeHost:999");
+    assertThat(tasklistProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
   }
 }

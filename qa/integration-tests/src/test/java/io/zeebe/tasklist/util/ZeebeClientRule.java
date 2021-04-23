@@ -5,12 +5,13 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.util.ConversionUtils.toHostAndPortAsString;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.test.EmbeddedBrokerRule;
-import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 
@@ -27,19 +28,13 @@ public class ZeebeClientRule extends ExternalResource {
       final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
         config -> {
-          config.gatewayAddress(toHostAndPortString(brokerRule.getGatewayAddress()));
+          config.gatewayAddress(toHostAndPortAsString(brokerRule.getGatewayAddress()));
           configurator.accept(config);
         });
   }
 
   private ZeebeClientRule(final Consumer<ZeebeClientBuilder> configurator) {
     this.configurator = configurator;
-  }
-
-  private static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
-    final String host = inetSocketAddress.getHostString();
-    final int port = inetSocketAddress.getPort();
-    return host + ":" + port;
   }
 
   @Override

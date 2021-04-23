@@ -126,8 +126,8 @@ public class ElasticsearchConnector {
 
   private HttpAsyncClientBuilder setupAuthentication(
       final HttpAsyncClientBuilder builder, ElasticsearchProperties elsConfig) {
-    if (StringUtils.isEmpty(elsConfig.getUsername())
-        || StringUtils.isEmpty(elsConfig.getPassword())) {
+    if (!StringUtils.hasText(elsConfig.getUsername())
+        || !StringUtils.hasText(elsConfig.getPassword())) {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
       return builder;

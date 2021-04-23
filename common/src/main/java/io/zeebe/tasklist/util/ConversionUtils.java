@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.util;
 
+import java.net.InetSocketAddress;
 import java.util.function.Function;
 
 public class ConversionUtils {
@@ -28,5 +29,9 @@ public class ConversionUtils {
 
   public static Long toLongOrDefault(String aString, Long defaultValue) {
     return aString == null ? defaultValue : Long.valueOf(aString);
+  }
+
+  public static String toHostAndPortAsString(InetSocketAddress address) {
+    return String.format("%s:%d", address.getHostName(), address.getPort());
   }
 }

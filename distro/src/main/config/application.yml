@@ -14,8 +14,8 @@ zeebe.tasklist:
     url: http://localhost:9200
   # Zeebe instance
   zeebe:
-    # Broker contact point
-    brokerContactPoint: localhost:26500
+    # Gateway address
+    gatewayAdress: localhost:26500
   # ELS instance to export Zeebe data to
   zeebeElasticsearch:
     # Cluster name

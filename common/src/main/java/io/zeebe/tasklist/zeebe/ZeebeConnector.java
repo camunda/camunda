@@ -25,10 +25,10 @@ public class ZeebeConnector {
   @Bean // will be closed automatically
   public ZeebeClient zeebeClient() {
 
-    final String brokerContactPoint = tasklistProperties.getZeebe().getBrokerContactPoint();
+    final String gatewayAddress = tasklistProperties.getZeebe().getGatewayAddress();
 
     return ZeebeClient.newClientBuilder()
-        .gatewayAddress(brokerContactPoint)
+        .gatewayAddress(gatewayAddress)
         .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
         .usePlaintext()
         .build();

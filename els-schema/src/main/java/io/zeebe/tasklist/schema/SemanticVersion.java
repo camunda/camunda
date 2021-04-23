@@ -33,7 +33,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
    * @param version The version in one of the following formats: 6, 6.0, 005, 1.2.3.4, 201004200021.
    */
   public SemanticVersion(final String version) {
-    if (StringUtils.isEmpty(version)) {
+    if (!StringUtils.hasText(version)) {
       throw new IllegalArgumentException("version should not be null or empty");
     }
     if (StringUtils.containsWhitespace(version)) {
@@ -187,7 +187,7 @@ public final class SemanticVersion implements Comparable<SemanticVersion> {
   /**
    * Splits this string into list of Long
    *
-   * @param str The string to split.
+   * @param version The string to split.
    * @return The resulting array.
    */
   private List<Integer> tokenize(final String version) {

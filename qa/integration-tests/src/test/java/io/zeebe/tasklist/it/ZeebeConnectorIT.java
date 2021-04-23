@@ -35,7 +35,7 @@ import org.springframework.test.context.ContextConfiguration;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      TasklistProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"
+      TasklistProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)

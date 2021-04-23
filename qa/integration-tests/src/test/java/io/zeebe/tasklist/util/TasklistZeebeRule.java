@@ -5,6 +5,8 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.util.ConversionUtils.toHostAndPortAsString;
+
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -12,7 +14,6 @@ import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -129,17 +130,11 @@ public class TasklistZeebeRule extends TestWatcher {
   private Properties newClientProperties() {
     final Properties properties = new Properties();
     properties.put(
-        ClientProperties.BROKER_CONTACTPOINT, toHostAndPortString(brokerRule.getGatewayAddress()));
+        ClientProperties.GATEWAY_ADDRESS, toHostAndPortAsString(brokerRule.getGatewayAddress()));
     properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, true);
     properties.setProperty(
         ClientProperties.DEFAULT_REQUEST_TIMEOUT, REQUEST_TIMEOUT_IN_MILLISECONDS);
     return properties;
-  }
-
-  private static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
-    final String host = inetSocketAddress.getHostString();
-    final int port = inetSocketAddress.getPort();
-    return host + ":" + port;
   }
 
   public String getPrefix() {

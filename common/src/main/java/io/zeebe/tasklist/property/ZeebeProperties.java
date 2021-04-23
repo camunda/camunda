@@ -7,13 +7,23 @@ package io.zeebe.tasklist.property;
 
 public class ZeebeProperties {
 
-  private String brokerContactPoint = "localhost:26500";
+  private String gatewayAddress = "localhost:26500";
 
+  @Deprecated
   public String getBrokerContactPoint() {
-    return brokerContactPoint;
+    return gatewayAddress;
   }
 
+  @Deprecated
   public void setBrokerContactPoint(String brokerContactPoint) {
-    this.brokerContactPoint = brokerContactPoint;
+    this.gatewayAddress = brokerContactPoint;
+  }
+
+  public String getGatewayAddress() {
+    return gatewayAddress;
+  }
+
+  public void setGatewayAddress(final String gatewayAddress) {
+    this.gatewayAddress = gatewayAddress;
   }
 }
