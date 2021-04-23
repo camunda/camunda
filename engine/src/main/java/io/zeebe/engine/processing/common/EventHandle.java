@@ -73,23 +73,27 @@ public final class EventHandle {
    * <p>NOTE: this method assumes that the caller already verified that the target can accept new
    * events!
    *
-   * @param eventScope the event's scope, whose key is used to index the trigger in {@link
+   * @param processDefinitionKey the event's corresponding process definition key
+   * @param processInstanceKey the event's corresponding process instance key
+   * @param eventScopeKey the event's scope key, which used to index the trigger in {@link
    *     io.zeebe.engine.state.immutable.EventScopeInstanceState}
    * @param catchEventId the ID of the element which should be triggered by the event
    * @param variables the variables/payload of the event (can be empty)
    */
-  public void triggerProcessEvent(
-      final ElementInstance eventScope,
+  public void triggeringProcessEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
     final var newElementInstanceKey = keyGenerator.nextKey();
     processEventRecord.reset();
     processEventRecord
-        .setScopeKey(eventScope.getKey())
+        .setScopeKey(eventScopeKey)
         .setTargetElementIdBuffer(catchEventId)
         .setVariablesBuffer(variables)
-        .setProcessDefinitionKey(eventScope.getValue().getProcessDefinitionKey())
-        .setProcessInstanceKey(eventScope.getValue().getProcessInstanceKey());
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey);
     stateWriter.appendFollowUpEvent(
         newElementInstanceKey, ProcessEventIntent.TRIGGERING, processEventRecord);
   }
@@ -106,6 +110,13 @@ public final class EventHandle {
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
       final DirectBuffer variables) {
+
+    triggeringProcessEvent(
+        elementRecord.getProcessDefinitionKey(),
+        elementRecord.getProcessInstanceKey(),
+        eventScopeKey,
+        catchEvent.getId(),
+        variables);
 
     if (MigratedStreamProcessors.isMigrated(elementRecord.getBpmnElementType())) {
 
@@ -166,11 +177,25 @@ public final class EventHandle {
     stateWriter.appendFollowUpEvent(
         -1L, MessageStartEventSubscriptionIntent.CORRELATED, startEventSubscriptionRecord);
 
-    activateProcessInstanceForStartEvent(processDefinitionKey, newProcessInstanceKey);
+    activateProcessInstanceForStartEvent(
+        processDefinitionKey,
+        newProcessInstanceKey,
+        startEventElementId,
+        message.getVariablesBuffer());
   }
 
   public void activateProcessInstanceForStartEvent(
-      final long processDefinitionKey, final long processInstanceKey) {
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer variablesBuffer) {
+
+    triggeringProcessEvent(
+        processDefinitionKey,
+        processInstanceKey,
+        processDefinitionKey /* The eventScope for the start event is the process definition key */,
+        targetElementId,
+        variablesBuffer);
 
     final var process = processState.getProcessByKey(processDefinitionKey);
 

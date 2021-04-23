@@ -22,6 +22,7 @@ import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -251,6 +252,7 @@ public final class BoundaryEventTest {
         .extracting(Record::getValueType, Record::getIntent)
         .endsWith(
             tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
+            tuple(ValueType.PROCESS_EVENT, ProcessEventIntent.TRIGGERING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.TERMINATE_ELEMENT),
