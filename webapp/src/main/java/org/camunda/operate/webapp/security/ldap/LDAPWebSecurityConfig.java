@@ -27,10 +27,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.camunda.operate.property.LdapProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -67,8 +68,9 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
         if (operateProperties.isCsrfPreventionEnabled()) {
             cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
             http.csrf()
-                .ignoringAntMatchers(LOGIN_RESOURCE).
-                and()
+                .ignoringAntMatchers(LOGIN_RESOURCE)
+                .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class))
+                .and()
                 .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
         }else {
             http.csrf().disable();
@@ -97,87 +99,91 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
         LdapProperties ldapConfig = operateProperties.getLdap();
-        if (!StringUtils.isEmpty(ldapConfig.getDomain())) {
+        if (StringUtils.hasText(ldapConfig.getDomain())) {
             setUpActiveDirectoryLDAP(auth, ldapConfig);
         } else {
             setupStandardLDAP(auth, ldapConfig);
         }
     }
 
-    private void setUpActiveDirectoryLDAP(AuthenticationManagerBuilder auth, LdapProperties ldapConfig) {
-        ActiveDirectoryLdapAuthenticationProvider adLDAPProvider = new ActiveDirectoryLdapAuthenticationProvider(ldapConfig.getDomain(), ldapConfig.getUrl(), ldapConfig.getBaseDn());
-        if (!StringUtils.isEmpty(ldapConfig.getUserSearchFilter())) {
-            adLDAPProvider.setSearchFilter(ldapConfig.getUserSearchFilter());
-        }
-        adLDAPProvider.setConvertSubErrorCodesToExceptions(true);
-        auth.authenticationProvider(adLDAPProvider);
+  private void setUpActiveDirectoryLDAP(AuthenticationManagerBuilder auth, LdapProperties ldapConfig) {
+    ActiveDirectoryLdapAuthenticationProvider adLDAPProvider =
+        new ActiveDirectoryLdapAuthenticationProvider(
+            ldapConfig.getDomain(),
+            ldapConfig.getUrl(),
+            ldapConfig.getBaseDn());
+    if (StringUtils.hasText(ldapConfig.getUserSearchFilter())) {
+      adLDAPProvider.setSearchFilter(ldapConfig.getUserSearchFilter());
     }
+    adLDAPProvider.setConvertSubErrorCodesToExceptions(true);
+    auth.authenticationProvider(adLDAPProvider);
+  }
 
-    private void setupStandardLDAP(AuthenticationManagerBuilder auth, LdapProperties ldapConfig) throws Exception {
-        auth.ldapAuthentication()
-            .userDnPatterns(ldapConfig.getUserDnPatterns())
-            .userSearchFilter(ldapConfig.getUserSearchFilter())
-            .userSearchBase(ldapConfig.getUserSearchBase())
-            .contextSource()
-            .url(ldapConfig.getUrl()+ ldapConfig.getBaseDn())
-            .managerDn(ldapConfig.getManagerDn())
-            .managerPassword(ldapConfig.getManagerPassword());
+  private void setupStandardLDAP(AuthenticationManagerBuilder auth, LdapProperties ldapConfig) throws Exception {
+    auth.ldapAuthentication()
+        .userDnPatterns(ldapConfig.getUserDnPatterns())
+        .userSearchFilter(ldapConfig.getUserSearchFilter())
+        .userSearchBase(ldapConfig.getUserSearchBase())
+        .contextSource()
+        .url(ldapConfig.getUrl() + ldapConfig.getBaseDn())
+        .managerDn(ldapConfig.getManagerDn())
+        .managerPassword(ldapConfig.getManagerPassword());
+  }
+
+  private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    response.setStatus(NO_CONTENT.value());
+  }
+
+  private void failureHandler(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) throws IOException {
+    request.getSession().invalidate();
+    response.reset();
+    response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
+
+    PrintWriter writer = response.getWriter();
+    String jsonResponse = Json.createObjectBuilder()
+        .add("message", ex.getMessage())
+        .build()
+        .toString();
+
+    writer.append(jsonResponse);
+
+    response.setStatus(UNAUTHORIZED.value());
+    response.setContentType(APPLICATION_JSON.getMimeType());
+  }
+
+  private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
+    if (shouldAddCSRF(request)) {
+      CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      if (token != null) {
+        response.setHeader(X_CSRF_HEADER, token.getHeaderName());
+        response.setHeader(X_CSRF_PARAM, token.getParameterName());
+        response.setHeader(X_CSRF_TOKEN, token.getToken());
+        // We need to access the CSRF Token Cookie from JavaScript too:
+        cookieCSRFTokenRepository.setCookieHttpOnly(false);
+        cookieCSRFTokenRepository.saveToken(token, request, response);
+      }
     }
+    return response;
+  }
 
-    private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        response.setStatus(NO_CONTENT.value());
-    }
+  protected boolean shouldAddCSRF(HttpServletRequest request) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String path = request.getRequestURI();
+    return auth != null && auth.isAuthenticated() && (path == null || !path.contains("logout"));
+  }
 
-    private void failureHandler(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex) throws IOException {
-        request.getSession().invalidate();
-        response.reset();
-        response.setCharacterEncoding(RESPONSE_CHARACTER_ENCODING);
+  private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
+  }
 
-        PrintWriter writer = response.getWriter();
-        String jsonResponse = Json.createObjectBuilder()
-            .add("message", ex.getMessage())
-            .build()
-            .toString();
-
-        writer.append(jsonResponse);
-
-        response.setStatus(UNAUTHORIZED.value());
-        response.setContentType(APPLICATION_JSON.getMimeType());
-    }
-
-    private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
-        if(shouldAddCSRF(request)) {
-            CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-            if (token != null) {
-                response.setHeader(X_CSRF_HEADER, token.getHeaderName());
-                response.setHeader(X_CSRF_PARAM, token.getParameterName());
-                response.setHeader(X_CSRF_TOKEN, token.getToken());
-                // We need to access the CSRF Token Cookie from JavaScript too:
-                cookieCSRFTokenRepository.setCookieHttpOnly(false);
-                cookieCSRFTokenRepository.saveToken(token, request, response);
-            }
-        }
-        return response;
-    }
-
-    protected boolean shouldAddCSRF(HttpServletRequest request) {
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String path = request.getRequestURI();
-        return auth!=null && auth.isAuthenticated() && (path==null || !path.contains("logout"));
-    }
-
-    private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
-    }
-
-    protected OncePerRequestFilter getCSRFHeaderFilter() {
-        return new OncePerRequestFilter() {
-            @Override
-            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-                filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
-            }
-        };
-    }
+  protected OncePerRequestFilter getCSRFHeaderFilter() {
+    return new OncePerRequestFilter() {
+      @Override
+      protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
+      }
+    };
+  }
 
   @Bean
   public LdapContextSource contextSource() {

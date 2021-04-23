@@ -21,6 +21,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -57,7 +59,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     if(operateProperties.isCsrfPreventionEnabled()){
       cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
       http.csrf()
-      .ignoringAntMatchers(LOGIN_RESOURCE)
+          .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class))
+          .ignoringAntMatchers(LOGIN_RESOURCE)
       .and()
       .addFilterAfter(getCSRFHeaderFilter(),CsrfFilter.class);
     }else {
