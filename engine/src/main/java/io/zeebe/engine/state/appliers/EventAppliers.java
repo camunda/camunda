@@ -229,8 +229,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerProcessEventAppliers(final MutableZeebeState state) {
     register(
-        ProcessEventIntent.TRIGGERED,
-        new ProcessEventTriggeredApplier(
+        ProcessEventIntent.TRIGGERING,
+        new ProcessEventTriggeringApplier(
             state.getEventScopeInstanceState(),
             state.getElementInstanceState(),
             state.getProcessState()));

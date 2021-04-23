@@ -67,7 +67,8 @@ public final class EventHandle {
   }
 
   /**
-   * Triggers a process by updating the state with a new {@link ProcessEventIntent#TRIGGERED} event.
+   * Triggers a process by updating the state with a new {@link ProcessEventIntent#TRIGGERING}
+   * event.
    *
    * <p>NOTE: this method assumes that the caller already verified that the target can accept new
    * events!
@@ -90,7 +91,7 @@ public final class EventHandle {
         .setProcessDefinitionKey(eventScope.getValue().getProcessDefinitionKey())
         .setProcessInstanceKey(eventScope.getValue().getProcessInstanceKey());
     stateWriter.appendFollowUpEvent(
-        newElementInstanceKey, ProcessEventIntent.TRIGGERED, processEventRecord);
+        newElementInstanceKey, ProcessEventIntent.TRIGGERING, processEventRecord);
   }
 
   public void activateElement(

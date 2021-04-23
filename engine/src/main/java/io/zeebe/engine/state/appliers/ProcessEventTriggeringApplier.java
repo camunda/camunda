@@ -17,13 +17,13 @@ import io.zeebe.protocol.record.intent.ProcessEventIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-final class ProcessEventTriggeredApplier
+final class ProcessEventTriggeringApplier
     implements TypedEventApplier<ProcessEventIntent, ProcessEventRecord> {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
   private final MutableEventScopeInstanceState eventScopeState;
   private final EventSubProcessInterruptionMarker eventSubProcessInterruptionMarker;
 
-  public ProcessEventTriggeredApplier(
+  public ProcessEventTriggeringApplier(
       final MutableEventScopeInstanceState eventScopeState,
       final MutableElementInstanceState elementInstanceState,
       final MutableProcessState processState) {

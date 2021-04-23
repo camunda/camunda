@@ -16,7 +16,7 @@
 package io.zeebe.protocol.record.intent;
 
 public enum ProcessEventIntent implements ProcessInstanceRelatedIntent {
-  TRIGGERED((short) 0);
+  TRIGGERING((short) 0);
 
   private final short value;
 
@@ -34,7 +34,7 @@ public enum ProcessEventIntent implements ProcessInstanceRelatedIntent {
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return TRIGGERED;
+        return TRIGGERING;
       default:
         return Intent.UNKNOWN;
     }
