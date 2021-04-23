@@ -8,30 +8,32 @@ import * as React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {
+  mockGetTaskVariables,
+  mockGetTaskEmptyVariables,
+} from 'modules/queries/get-task-variables';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
-import {
-  claimedTask,
-  claimedTaskWithVariables,
-  unclaimedTaskWithVariables,
-} from 'modules/mock-schema/mocks/task';
+import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
 import userEvent from '@testing-library/user-event';
+import {MockedResponse} from '@apollo/client/testing';
 
-const Wrapper: React.FC = ({children}) => (
-  <MockedApolloProvider mocks={[mockGetCurrentUser]}>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </MockedApolloProvider>
-);
+function createWrapper(mocks: MockedResponse[] = []) {
+  const Wrapper: React.FC = ({children}) => (
+    <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </MockedApolloProvider>
+  );
+
+  return Wrapper;
+}
 
 describe('<Variables />', () => {
   it('should show existing variables for unassigned tasks', async () => {
     render(
-      <Variables
-        task={unclaimedTaskWithVariables()}
-        onSubmit={() => Promise.resolve()}
-      />,
+      <Variables task={unclaimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -47,7 +49,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskEmptyVariables()]),
       },
     );
 
@@ -59,12 +61,9 @@ describe('<Variables />', () => {
 
   it('should edit variable', async () => {
     render(
-      <Variables
-        task={claimedTaskWithVariables()}
-        onSubmit={() => Promise.resolve()}
-      />,
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
     const newVariableValue = '"changedValue"';
@@ -81,12 +80,9 @@ describe('<Variables />', () => {
 
   it('should add two variables and remove one', async () => {
     render(
-      <Variables
-        task={claimedTaskWithVariables()}
-        onSubmit={() => Promise.resolve()}
-      />,
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -172,7 +168,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -199,7 +195,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -224,7 +220,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -249,7 +245,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -275,7 +271,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -313,7 +309,7 @@ describe('<Variables />', () => {
     const {rerender} = render(
       <Variables key="id_0" task={claimedTask()} onSubmit={mockOnSubmit} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -360,11 +356,7 @@ describe('<Variables />', () => {
     expect(mockOnSubmit).toHaveBeenCalledTimes(2);
 
     rerender(
-      <Variables
-        key="id_1"
-        task={claimedTaskWithVariables()}
-        onSubmit={mockOnSubmit}
-      />,
+      <Variables key="id_1" task={claimedTask()} onSubmit={mockOnSubmit} />,
     );
 
     expect(await screen.findByLabelText('myVar')).toBeInTheDocument();
@@ -406,12 +398,9 @@ describe('<Variables />', () => {
   it('should change variable and complete task', async () => {
     const mockOnSubmit = jest.fn();
 
-    render(
-      <Variables task={claimedTaskWithVariables()} onSubmit={mockOnSubmit} />,
-      {
-        wrapper: Wrapper,
-      },
-    );
+    render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
+      wrapper: createWrapper([mockGetTaskVariables()]),
+    });
 
     userEvent.clear(await screen.findByLabelText('myVar'));
     userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
@@ -435,7 +424,7 @@ describe('<Variables />', () => {
     const mockOnSubmit = jest.fn();
 
     render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: Wrapper,
+      wrapper: createWrapper([mockGetTaskVariables()]),
     });
 
     userEvent.click(await screen.findByText('Add Variable'));
@@ -469,12 +458,9 @@ describe('<Variables />', () => {
 
   it('should disable submit button on form errors for existing variables', async () => {
     render(
-      <Variables
-        task={claimedTaskWithVariables()}
-        onSubmit={() => Promise.resolve()}
-      />,
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -497,12 +483,9 @@ describe('<Variables />', () => {
 
   it('should disable submit button on form errors for new variables', async () => {
     render(
-      <Variables
-        task={claimedTaskWithVariables()}
-        onSubmit={() => Promise.resolve()}
-      />,
+      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -533,7 +516,7 @@ describe('<Variables />', () => {
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 

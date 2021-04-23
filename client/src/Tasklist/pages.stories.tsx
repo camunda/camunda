@@ -23,13 +23,14 @@ import {
 import {
   mockGetTaskUnclaimed,
   mockGetTaskCompleted,
-  mockGetTaskUnclaimedWithVariables,
   mockGetTaskUnclaimedWithForm,
-  mockGetTaskUnclaimedWithPrefilledForm,
   mockGetTaskClaimedWithForm,
-  mockGetTaskClaimedWithPrefilledForm,
 } from 'modules/queries/get-task';
 import {mockGetForm} from 'modules/queries/get-form';
+import {
+  mockGetTaskVariables,
+  mockGetTaskEmptyVariables,
+} from 'modules/queries/get-task-variables';
 
 export default {
   title: 'Pages States/Tasklist',
@@ -113,6 +114,7 @@ const Unclaimed: React.FC = () => {
         mockGetCurrentUser,
         mockGetUnclaimed,
         mockGetTaskUnclaimed(),
+        mockGetTaskEmptyVariables(),
         mockGetUnclaimed,
         mockGetUnclaimed,
       ]}
@@ -130,6 +132,7 @@ const Claimed: React.FC = () => {
         mockGetCurrentUser,
         mockGetAllOpenTasks(),
         mockGetTaskUnclaimed(),
+        mockGetTaskEmptyVariables(),
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
@@ -146,6 +149,7 @@ const Completed: React.FC = () => {
         mockGetCurrentUser,
         mockGetCompleted,
         mockGetTaskCompleted(),
+        mockGetTaskEmptyVariables(),
         mockGetCompleted,
       ]}
       initialEntries={['/0?filter=completed']}
@@ -162,6 +166,7 @@ const UnclaimedWithVariables: React.FC = () => {
         mockGetCurrentUser,
         mockGetUnclaimed,
         mockGetTaskUnclaimed(),
+        mockGetTaskVariables(),
         mockGetUnclaimed,
         mockGetUnclaimed,
       ]}
@@ -178,7 +183,8 @@ const ClaimedWithVariables: React.FC = () => {
       mocks={[
         mockGetCurrentUser,
         mockGetAllOpenTasks(),
-        mockGetTaskUnclaimedWithVariables(),
+        mockGetTaskUnclaimed(),
+        mockGetTaskVariables(),
         mockGetAllOpenTasks(),
       ]}
       initialEntries={['/0']}
@@ -195,6 +201,7 @@ const UnclaimedWithForm: React.FC = () => {
         mockGetCurrentUser,
         mockGetUnclaimed,
         mockGetTaskUnclaimedWithForm(),
+        mockGetTaskEmptyVariables(),
         mockGetForm,
         mockGetUnclaimed,
         mockGetUnclaimed,
@@ -212,7 +219,8 @@ const UnclaimedWithPrefilledForm: React.FC = () => {
       mocks={[
         mockGetCurrentUser,
         mockGetUnclaimed,
-        mockGetTaskUnclaimedWithPrefilledForm(),
+        mockGetTaskUnclaimedWithForm(),
+        mockGetTaskVariables(),
         mockGetForm,
         mockGetUnclaimed,
         mockGetUnclaimed,
@@ -231,6 +239,7 @@ const ClaimedWithForm: React.FC = () => {
         mockGetCurrentUser,
         mockGetAllOpenTasks(),
         mockGetTaskClaimedWithForm(),
+        mockGetTaskEmptyVariables(),
         mockGetForm,
         mockGetAllOpenTasks(),
       ]}
@@ -240,13 +249,15 @@ const ClaimedWithForm: React.FC = () => {
     </Wrapper>
   );
 };
+
 const ClaimedWithPrefilledForm: React.FC = () => {
   return (
     <Wrapper
       mocks={[
         mockGetCurrentUser,
         mockGetAllOpenTasks(),
-        mockGetTaskClaimedWithPrefilledForm(),
+        mockGetTaskClaimedWithForm(),
+        mockGetTaskVariables(),
         mockGetForm,
         mockGetAllOpenTasks(),
       ]}

@@ -19,11 +19,10 @@ import {
 import {MockedResponse} from '@apollo/client/testing';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
-  mockGetTaskClaimedWithVariables,
   mockGetTaskClaimed,
-  mockGetTaskCompletedWithVariables,
-  mockGetTaskClaimedWithPrefilledForm,
   mockGetTaskCompletedWithForm,
+  mockGetTaskClaimedWithForm,
+  mockGetTaskCompleted,
 } from 'modules/queries/get-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
@@ -33,6 +32,10 @@ import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import userEvent from '@testing-library/user-event';
 import {mockGetForm} from 'modules/queries/get-form';
+import {
+  mockGetTaskVariables,
+  mockGetTaskEmptyVariables,
+} from 'modules/queries/get-task-variables';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -70,10 +73,11 @@ describe('<Task />', () => {
       wrapper: getWrapper({
         history,
         mocks: [
-          mockGetTaskClaimedWithVariables(),
+          mockGetTaskClaimed(),
           mockGetCurrentUser,
-          mockGetTaskClaimedWithPrefilledForm(),
+          mockGetTaskClaimedWithForm(),
           mockGetForm,
+          mockGetTaskVariables(),
         ],
       }),
     });
@@ -97,8 +101,9 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetCurrentUser,
-          mockGetTaskClaimedWithPrefilledForm(),
+          mockGetTaskClaimedWithForm(),
           mockGetForm,
+          mockGetTaskVariables(),
         ],
       }),
     });
@@ -120,7 +125,11 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskCompletedWithVariables(), mockGetCurrentUser],
+        mocks: [
+          mockGetTaskCompleted(),
+          mockGetCurrentUser,
+          mockGetTaskVariables(),
+        ],
       }),
     });
 
@@ -145,6 +154,7 @@ describe('<Task />', () => {
           mockGetCurrentUser,
           mockGetTaskCompletedWithForm(),
           mockGetForm,
+          mockGetTaskVariables(),
         ],
       }),
     });
@@ -171,6 +181,7 @@ describe('<Task />', () => {
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks(true),
+          mockGetTaskEmptyVariables(),
         ],
       }),
     });
@@ -198,7 +209,11 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskClaimedWithVariables(), mockGetCurrentUser],
+        mocks: [
+          mockGetTaskClaimed(),
+          mockGetCurrentUser,
+          mockGetTaskVariables(),
+        ],
       }),
     });
 
@@ -229,6 +244,7 @@ describe('<Task />', () => {
           mockGetCurrentUser,
           mockCompleteTask,
           mockGetAllOpenTasks(true),
+          mockGetTaskEmptyVariables(),
         ],
       }),
     });
@@ -261,7 +277,11 @@ describe('<Task />', () => {
     render(<Task />, {
       wrapper: getWrapper({
         history,
-        mocks: [mockGetTaskClaimedWithVariables(), mockGetCurrentUser],
+        mocks: [
+          mockGetTaskClaimed(),
+          mockGetCurrentUser,
+          mockGetTaskVariables(),
+        ],
       }),
     });
 
@@ -280,11 +300,13 @@ describe('<Task />', () => {
         mocks: [
           mockGetCurrentUser,
           mockGetTaskClaimed(),
+          mockGetTaskEmptyVariables(),
           mockUnclaimTask,
           mockGetAllOpenTasks(true),
           mockClaimTask,
           mockGetAllOpenTasks(true),
           mockGetTaskClaimed('1'),
+          mockGetTaskEmptyVariables('1'),
         ],
       }),
     });
@@ -353,11 +375,12 @@ describe('<Task />', () => {
         }),
         mocks: [
           mockGetCurrentUser,
-          mockGetTaskClaimedWithVariables(),
+          mockGetTaskClaimed(),
           mockUnclaimTask,
           mockGetAllOpenTasks(true),
           mockClaimTask,
           mockGetAllOpenTasks(true),
+          mockGetTaskVariables(),
         ],
       }),
     });

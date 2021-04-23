@@ -4,36 +4,44 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {MockedResponse} from '@apollo/client/testing';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   claimedTaskWithForm,
-  claimedTaskWithPrefilledForm,
   unclaimedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {mockGetForm} from 'modules/queries/get-form';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
+import {
+  mockGetTaskVariables,
+  mockGetTaskEmptyVariables,
+} from 'modules/queries/get-task-variables';
 
-const Wrapper: React.FC = ({children}) => (
-  <MockedApolloProvider mocks={[mockGetCurrentUser, mockGetForm]}>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </MockedApolloProvider>
-);
+function createWrapper(mocks: MockedResponse[] = []) {
+  const Wrapper: React.FC = ({children}) => (
+    <MockedApolloProvider mocks={[mockGetCurrentUser, mockGetForm, ...mocks]}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </MockedApolloProvider>
+  );
+
+  return Wrapper;
+}
 
 describe('<FormJS />', () => {
   it('should render form for unclaimed task', async () => {
     render(
       <FormJS
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
         task={unclaimedTaskWithForm()}
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -52,13 +60,13 @@ describe('<FormJS />', () => {
   it('should render form for claimed task', async () => {
     render(
       <FormJS
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -77,13 +85,13 @@ describe('<FormJS />', () => {
   it('should render a prefilled form', async () => {
     render(
       <FormJS
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithPrefilledForm()}
+        task={claimedTaskWithForm()}
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -100,13 +108,16 @@ describe('<FormJS />', () => {
     const {rerender} = render(
       <FormJS
         key="0"
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([
+          mockGetTaskEmptyVariables(),
+          mockGetTaskVariables('1'),
+        ]),
       },
     );
 
@@ -121,9 +132,9 @@ describe('<FormJS />', () => {
     rerender(
       <FormJS
         key="1"
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithPrefilledForm()}
+        task={claimedTaskWithForm('1')}
         onSubmit={() => Promise.resolve()}
       />,
     );
@@ -143,13 +154,13 @@ describe('<FormJS />', () => {
     const mockOnSubmit = jest.fn();
     render(
       <FormJS
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithPrefilledForm()}
+        task={claimedTaskWithForm()}
         onSubmit={mockOnSubmit}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 
@@ -177,13 +188,13 @@ describe('<FormJS />', () => {
     const mockOnSubmit = jest.fn();
     render(
       <FormJS
-        id="camunda-forms:bpmn:form-0"
+        id="form-0"
         processDefinitionId="process"
-        task={claimedTaskWithPrefilledForm()}
+        task={claimedTaskWithForm()}
         onSubmit={mockOnSubmit}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper([mockGetTaskVariables()]),
       },
     );
 

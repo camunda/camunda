@@ -26,7 +26,7 @@ const mockGetForm = {
   request: {
     query: GET_FORM,
     variables: {
-      id: 'camunda-forms:bpmn:form-0',
+      id: 'form-0',
       processDefinitionId: 'process',
     },
   },

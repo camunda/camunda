@@ -52,6 +52,7 @@ import {GetTask} from 'modules/queries/get-task';
 import {FormValues} from './types';
 import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
+import {useTaskVariables} from 'modules/queries/get-task-variables';
 
 type Props = {
   onSubmit: (variables: Variable[]) => Promise<void>;
@@ -61,12 +62,13 @@ type Props = {
 const Variables: React.FC<Props> = ({onSubmit, task}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
   const {data: userData, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {variables, loading: areVariablesLoading} = useTaskVariables(task.id);
 
-  if (loading) {
+  if (loading || areVariablesLoading) {
     return null;
   }
 
-  const {assignee, taskState, variables} = task;
+  const {assignee, taskState} = task;
   const canCompleteTask =
     userData?.currentUser.username === assignee?.username &&
     taskState === 'CREATED';

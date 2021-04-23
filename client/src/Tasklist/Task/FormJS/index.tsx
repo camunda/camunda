@@ -20,6 +20,7 @@ import {Button} from 'modules/components/Button';
 import {Container, FormContainer, FormCustomStyling} from './styled';
 import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
+import {useTaskVariables} from 'modules/queries/get-task-variables';
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -46,9 +47,10 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
     },
   });
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {variables, loading: areVariablesLoading} = useTaskVariables(task.id);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const formRef = useRef<ReturnType<typeof createForm> | null>(null);
-  const {variables, assignee, taskState} = task;
+  const {assignee, taskState} = task;
   const {
     form: {schema},
   } = data ?? {
@@ -64,7 +66,12 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   useEffect(() => {
     const container = containerRef.current;
 
-    if (container !== null && schema !== null && formRef.current === null) {
+    if (
+      container !== null &&
+      schema !== null &&
+      formRef.current === null &&
+      !areVariablesLoading
+    ) {
       const data = formatVariablesToFormData(variables);
       const form = createForm({
         schema: JSON.parse(schema),
@@ -96,7 +103,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
       setIsFormValid(Object.keys(form.validateAll(data)).length === 0);
       formRef.current = form;
     }
-  }, [canCompleteTask, onSubmit, schema, variables]);
+  }, [canCompleteTask, onSubmit, schema, variables, areVariablesLoading]);
 
   useLayoutEffect(() => {
     formRef.current?.setProperty('readOnly', !canCompleteTask);
