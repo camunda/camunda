@@ -116,7 +116,6 @@ public final class EngineProcessors {
         typedRecordProcessors,
         zeebeState,
         onJobsAvailableCallback,
-        eventTriggerBehavior,
         eventPublicationBehavior,
         maxFragmentSize,
         writers);

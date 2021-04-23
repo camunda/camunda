@@ -73,7 +73,6 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       ////////////// INCIDENTS ///////////////
       ////////////////////////////////////////
-      {ValueType.INCIDENT, IncidentIntent.CREATE, true},
       {ValueType.INCIDENT, IncidentIntent.CREATED, true},
       {ValueType.INCIDENT, IncidentIntent.RESOLVED, true},
 

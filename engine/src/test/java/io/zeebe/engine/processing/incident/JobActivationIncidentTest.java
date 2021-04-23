@@ -93,7 +93,7 @@ public final class JobActivationIncidentTest {
 
     final var incidentCommand =
         RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATE)
+            .withIntent(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -158,7 +158,7 @@ public final class JobActivationIncidentTest {
     // when
     final var incidentCommand =
         RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATE)
+            .withIntent(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 

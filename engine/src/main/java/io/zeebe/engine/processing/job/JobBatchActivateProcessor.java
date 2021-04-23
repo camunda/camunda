@@ -12,7 +12,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -20,7 +19,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
@@ -45,7 +44,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   private final StateWriter stateWriter;
   private final VariableState variableState;
-  private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
 
@@ -57,16 +55,18 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   public JobBatchActivateProcessor(
-      final Writers writers, final MutableZeebeState state, final long maxRecordLength) {
+      final Writers writers,
+      final ZeebeState state,
+      final KeyGenerator keyGenerator,
+      final long maxRecordLength) {
 
     stateWriter = writers.state();
-    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
 
     jobState = state.getJobState();
     variableState = state.getVariableState();
-    keyGenerator = state.getKeyGenerator();
+    this.keyGenerator = keyGenerator;
 
     this.maxRecordLength = maxRecordLength;
     // we can only add the half of the max record length to the job batch
@@ -230,6 +230,6 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setJobKey(jobKey)
             .setVariableScopeKey(job.getElementInstanceKey());
 
-    commandWriter.appendFollowUpCommand(jobKey, IncidentIntent.CREATE, incidentEvent);
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
 }

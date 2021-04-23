@@ -13,6 +13,7 @@ import io.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.JobState;
 import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -30,9 +31,11 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState jobState;
   private final DefaultJobCommandPreconditionGuard<JobRecord> defaultProcessor;
+  private final KeyGenerator keyGenerator;
 
-  public JobFailProcessor(final ZeebeState state) {
+  public JobFailProcessor(final ZeebeState state, final KeyGenerator keyGenerator) {
     jobState = state.getJobState();
+    this.keyGenerator = keyGenerator;
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard<>("fail", jobState, this::acceptCommand);
   }
@@ -69,7 +72,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
           .setJobKey(key)
           .setVariableScopeKey(value.getElementInstanceKey());
 
-      commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
     }
   }
 

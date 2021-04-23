@@ -22,12 +22,9 @@ public final class IncidentEventProcessors {
       final MutableZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers) {
-    typedRecordProcessors
-        .onCommand(
-            ValueType.INCIDENT, IncidentIntent.CREATE, new CreateIncidentProcessor(zeebeState))
-        .onCommand(
-            ValueType.INCIDENT,
-            IncidentIntent.RESOLVE,
-            new ResolveIncidentProcessor(zeebeState, bpmnStreamProcessor, writers));
+    typedRecordProcessors.onCommand(
+        ValueType.INCIDENT,
+        IncidentIntent.RESOLVE,
+        new ResolveIncidentProcessor(zeebeState, bpmnStreamProcessor, writers));
   }
 }

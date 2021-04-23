@@ -8,7 +8,6 @@
 package io.zeebe.engine.processing.job;
 
 import io.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
-import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -25,7 +24,6 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
-      final EventTriggerBehavior eventTriggerBehavior,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final int maxRecordSize,
       final Writers writers) {
@@ -35,12 +33,14 @@ public final class JobEventProcessors {
 
     typedRecordProcessors
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new JobCompleteProcessor(zeebeState, writers))
-        .onCommand(ValueType.JOB, JobIntent.FAIL, new JobFailProcessor(zeebeState))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.FAIL,
+            new JobFailProcessor(zeebeState, zeebeState.getKeyGenerator()))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
-            new JobThrowErrorProcessor(
-                zeebeState, eventTriggerBehavior, eventPublicationBehavior, keyGenerator))
+            new JobThrowErrorProcessor(zeebeState, eventPublicationBehavior, keyGenerator))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState))
         .onCommand(
             ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
@@ -48,7 +48,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
-            new JobBatchActivateProcessor(writers, zeebeState, maxRecordSize))
+            new JobBatchActivateProcessor(
+                writers, zeebeState, zeebeState.getKeyGenerator(), maxRecordSize))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(
             new StreamProcessorLifecycleAware() {

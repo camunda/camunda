@@ -123,21 +123,15 @@ public final class JobFailIncidentTest {
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .getFirst();
 
-    final Record incidentCommand =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATE)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    assertThat(incidentCommand.getSourceRecordPosition())
-        .isEqualTo(failedEvent.getSourceRecordPosition());
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
+    assertThat(incidentEvent.getSourceRecordPosition())
+        .isEqualTo(failedEvent.getSourceRecordPosition());
 
     assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
@@ -175,20 +169,16 @@ public final class JobFailIncidentTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Record incidentCommand =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATE)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
     final Record<IncidentRecordValue> incidentEvent =
         RecordingExporter.incidentRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withIntent(IncidentIntent.CREATED)
             .getFirst();
 
-    assertThat(incidentCommand.getSourceRecordPosition())
-        .isEqualTo(failEvent.getSourceRecordPosition());
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
+    assertThat(incidentEvent.getSourceRecordPosition())
+        .isEqualTo(failEvent.getSourceRecordPosition());
+
     assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("failed job")

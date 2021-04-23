@@ -84,7 +84,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             commandWriter,
             sideEffects,
             zeebeState);
-    incidentBehavior = new BpmnIncidentBehavior(zeebeState, commandWriter, stateWriter);
+    incidentBehavior =
+        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
