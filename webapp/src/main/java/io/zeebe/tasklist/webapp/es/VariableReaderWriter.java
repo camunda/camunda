@@ -5,7 +5,9 @@
  */
 package io.zeebe.tasklist.webapp.es;
 
+import static io.zeebe.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.scroll;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -148,7 +150,13 @@ public class VariableReaderWriter {
         flowNodeTrees.values().stream()
             .flatMap(f -> f.getFlowNodeInstanceIds().stream())
             .collect(Collectors.toList());
-    final Map<String, VariableMap> variableMaps = buildVariableMaps(flowNodeInstanceIds);
+    final Map<String, VariableMap> variableMaps =
+        buildVariableMaps(
+            flowNodeInstanceIds,
+            requests.stream()
+                .map(GetVariablesRequest::getVarNames)
+                .flatMap(x -> x == null ? null : x.stream())
+                .collect(toList()));
 
     return buildResponse(flowNodeTrees, variableMaps, requests);
   }
@@ -214,12 +222,19 @@ public class VariableReaderWriter {
     }
   }
 
-  private List<VariableEntity> getVariablesByFlowNodeInstanceIds(List<String> flowNodeInstanceIds) {
-    final TermsQueryBuilder flowNodeInstanceKeyQuery =
+  private List<VariableEntity> getVariablesByFlowNodeInstanceIds(
+      List<String> flowNodeInstanceIds, List<String> varNames) {
+    final TermsQueryBuilder flowNodeInstanceKeyQ =
         termsQuery(VariableIndex.SCOPE_FLOW_NODE_ID, flowNodeInstanceIds);
+    TermsQueryBuilder varNamesQ = null;
+    if (isNotEmpty(varNames)) {
+      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+    }
     final SearchRequest searchRequest =
         new SearchRequest(variableIndex.getAlias())
-            .source(new SearchSourceBuilder().query(constantScoreQuery(flowNodeInstanceKeyQuery)));
+            .source(
+                new SearchSourceBuilder()
+                    .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))));
     try {
       return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
     } catch (IOException e) {
@@ -254,9 +269,11 @@ public class VariableReaderWriter {
    * @param flowNodeInstanceIds
    * @return
    */
-  private Map<String, VariableMap> buildVariableMaps(List<String> flowNodeInstanceIds) {
+  private Map<String, VariableMap> buildVariableMaps(
+      List<String> flowNodeInstanceIds, List<String> varNames) {
     // get list of all variables
-    final List<VariableEntity> variables = getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds);
+    final List<VariableEntity> variables =
+        getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames);
 
     return variables.stream()
         .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
@@ -301,6 +318,30 @@ public class VariableReaderWriter {
     return flowNodeTrees.get(processInstanceId);
   }
 
+  public List<VariableDTO> getVariables(String taskId, List<String> variableNames) {
+    final TaskEntity task = taskReaderWriter.getTask(taskId);
+    final List<GetVariablesRequest> requests =
+        Collections.singletonList(GetVariablesRequest.createFrom(task).setVarNames(variableNames));
+    Map<String, List<VariableDTO>> variablesByTaskIds = new HashMap<>();
+    switch (task.getState()) {
+      case CREATED:
+        variablesByTaskIds = getRuntimeVariablesPerTaskId(requests);
+        break;
+      case COMPLETED:
+        variablesByTaskIds = getTaskVariablesPerTaskId(requests);
+        break;
+      default:
+        break;
+    }
+
+    List<VariableDTO> vars = new ArrayList<>();
+    if (variablesByTaskIds.size() > 0) {
+      vars = variablesByTaskIds.values().iterator().next();
+    }
+    vars.sort(Comparator.comparing(VariableDTO::getName));
+    return vars;
+  }
+
   public List<List<VariableDTO>> getVariables(List<GetVariablesRequest> requests) {
     final Map<TaskState, List<GetVariablesRequest>> groupByStates =
         requests.stream().collect(groupingBy(GetVariablesRequest::getState));
@@ -334,13 +375,24 @@ public class VariableReaderWriter {
     if (requests == null || requests.size() == 0) {
       return new HashMap<>();
     }
-    final TermsQueryBuilder taskIdsQuery =
+    final TermsQueryBuilder taskIdsQ =
         termsQuery(
             TaskVariableTemplate.TASK_ID,
             requests.stream().map(GetVariablesRequest::getTaskId).collect(toList()));
+    final List<String> varNames =
+        requests.stream()
+            .map(GetVariablesRequest::getVarNames)
+            .flatMap(x -> x == null ? null : x.stream())
+            .collect(toList());
+    TermsQueryBuilder varNamesQ = null;
+    if (isNotEmpty(varNames)) {
+      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+    }
     final SearchRequest searchRequest =
         new SearchRequest(taskVariableTemplate.getAlias())
-            .source(new SearchSourceBuilder().query(constantScoreQuery(taskIdsQuery)));
+            .source(
+                new SearchSourceBuilder()
+                    .query(constantScoreQuery(joinWithAnd(taskIdsQ, varNamesQ))));
     try {
       final List<TaskVariableEntity> entities =
           scroll(searchRequest, TaskVariableEntity.class, objectMapper, esClient);
@@ -394,6 +446,7 @@ public class VariableReaderWriter {
     private TaskState state;
     private String flowNodeInstanceId;
     private String processInstanceId;
+    private List<String> varNames;
 
     public static GetVariablesRequest createFrom(TaskDTO taskDTO) {
       return new GetVariablesRequest()
@@ -444,6 +497,15 @@ public class VariableReaderWriter {
 
     public GetVariablesRequest setProcessInstanceId(final String processInstanceId) {
       this.processInstanceId = processInstanceId;
+      return this;
+    }
+
+    public List<String> getVarNames() {
+      return varNames;
+    }
+
+    public GetVariablesRequest setVarNames(final List<String> varNames) {
+      this.varNames = varNames;
       return this;
     }
   }

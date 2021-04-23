@@ -165,7 +165,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
     assertThat(count).isGreaterThan(0);
     brokerRule.getClock().setCurrentTime(currentTime);
     for (int i = 0; i < count; i++) {
-      tester.startProcessInstance(processId, "{\"var\": 123}").completeUserTask();
+      tester.startProcessInstance(processId, "{\"var\": 123}").completeUserTaskInZeebe();
     }
     tester.waitUntil().taskIsCompleted(flowNodeBpmnId);
   }

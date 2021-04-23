@@ -14,6 +14,7 @@ import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.webapp.es.cache.ProcessReader;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import java.util.List;
@@ -50,11 +51,15 @@ public class ElasticsearchChecks {
       "taskIsCanceledByFlowNodeBpmnIdCheck";
   public static final String TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK =
       "taskIsCompletedByFlowNodeBpmnIdCheck";
+  public static final String TASK_VARIABLE_EXISTS_CHECK = "variableExistsCheck";
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchChecks.class);
 
   @Autowired private ElasticsearchHelper elasticsearchHelper;
 
   @Autowired private ProcessReader processReader;
+
+  @Autowired private TaskVariableTemplate taskVariableTemplate;
 
   /** Checks whether the process of given args[0] processId (Long) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)
@@ -309,6 +314,31 @@ public class ElasticsearchChecks {
           final ProcessInstanceEntity wfiEntity =
               elasticsearchHelper.getProcessInstance(processInstanceId);
           return ProcessInstanceState.CANCELED.equals(wfiEntity.getState());
+        } catch (NotFoundException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
+  /** Checks whether the task variable exists. */
+  @Bean(name = TASK_VARIABLE_EXISTS_CHECK)
+  public TestCheck getVariableExistsCheck() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return TASK_VARIABLE_EXISTS_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String.class);
+        final String taskId = (String) objects[0];
+        final String varName = (String) objects[1];
+        try {
+          return elasticsearchHelper.checkVariableExists(taskId, varName);
         } catch (NotFoundException ex) {
           return false;
         }

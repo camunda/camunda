@@ -13,6 +13,7 @@ import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_ASSIGNED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_VARIABLE_EXISTS_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -84,6 +85,10 @@ public class TasklistTester {
   @Autowired
   @Qualifier(TASK_IS_ASSIGNED_CHECK)
   private TestCheck taskIsAssignedCheck;
+
+  @Autowired
+  @Qualifier(TASK_VARIABLE_EXISTS_CHECK)
+  private TestCheck taskVariableExists;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -181,6 +186,12 @@ public class TasklistTester {
 
   public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables) throws IOException {
     graphQLResponse = graphQLTestTemplate.perform("graphql/get-tasks-by-query.graphql", variables);
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables) throws IOException {
+    graphQLResponse =
+        graphQLTestTemplate.perform("graphql/variableIT/get-variables.graphql", variables);
     return graphQLResponse;
   }
 
@@ -315,11 +326,18 @@ public class TasklistTester {
   public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
         taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
+    // update taskId
+    resolveTaskId(flowNodeBpmnId, TaskState.COMPLETED);
     return this;
   }
 
   public TasklistTester taskIsAssigned(String taskId) {
     elasticsearchTestRule.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
+    return this;
+  }
+
+  public TasklistTester taskVariableExists(String varName) {
+    elasticsearchTestRule.processAllRecordsAndWait(taskVariableExists, taskId, varName);
     return this;
   }
 
@@ -361,7 +379,7 @@ public class TasklistTester {
     return result;
   }
 
-  public TasklistTester completeUserTask() {
+  public TasklistTester completeUserTaskInZeebe() {
     ZeebeTestUtil.completeTask(
         zeebeClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
     return this;

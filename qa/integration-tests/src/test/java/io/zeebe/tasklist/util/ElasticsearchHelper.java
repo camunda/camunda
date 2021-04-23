@@ -9,6 +9,7 @@ import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.scroll;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -17,7 +18,9 @@ import io.zeebe.tasklist.entities.ProcessInstanceEntity;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.schema.indices.ProcessInstanceIndex;
+import io.zeebe.tasklist.schema.indices.VariableIndex;
 import io.zeebe.tasklist.schema.templates.TaskTemplate;
+import io.zeebe.tasklist.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.util.List;
@@ -27,6 +30,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -42,6 +46,8 @@ public class ElasticsearchHelper {
   @Autowired private TaskTemplate taskTemplate;
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
+
+  @Autowired private TaskVariableTemplate taskVariableTemplate;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -123,6 +129,24 @@ public class ElasticsearchHelper {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public boolean checkVariableExists(final String taskId, final String varName) {
+    final TermQueryBuilder taskIdQ = termQuery(TaskVariableTemplate.TASK_ID, taskId);
+    final TermQueryBuilder varNameQ = termQuery(VariableIndex.NAME, varName);
+    final SearchRequest searchRequest =
+        new SearchRequest(taskVariableTemplate.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(constantScoreQuery(joinWithAnd(taskIdQ, varNameQ))));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value > 0;
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }

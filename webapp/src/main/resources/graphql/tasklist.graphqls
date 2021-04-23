@@ -87,6 +87,8 @@ type Query {
     currentUser: User!
     # Get task form by id and processDefinitionId
     form(id: String!, processDefinitionId: String!): Form
+    # Get a collection of Variables by name
+    variables(taskId: String!, variableNames: [String!]!): [Variable!]!
 }
 # What can be changed.
 type Mutation {

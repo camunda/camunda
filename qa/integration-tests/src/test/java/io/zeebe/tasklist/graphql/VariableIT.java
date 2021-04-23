@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
@@ -32,6 +34,8 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
   @Autowired private TaskMutationResolver taskMutationResolver;
+
+  @Autowired private ObjectMapper objectMapper;
 
   @Before
   public void before() {
@@ -216,6 +220,74 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     assertEquals("1", taskResponse.get("$.data.task.variables.length()"));
     assertEquals("var", taskResponse.get("$.data.task.variables[0].name"));
     assertEquals("111", taskResponse.get("$.data.task.variables[0].value"));
+  }
+
+  @Test
+  public void shouldReturnVariablesWithNames() throws IOException {
+    // having
+    final String taskId =
+        tester
+            .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID, "{\"var1\": 111, \"var2\": 222, \"var3\": 333}")
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .and()
+            .getTaskId();
+
+    // when
+    final ObjectNode variablesQ = objectMapper.createObjectNode();
+    variablesQ.put("taskId", taskId).putArray("variableNames").add("var1").add("var3");
+    final GraphQLResponse response = tester.getVariablesByTaskIdAndNames(variablesQ);
+
+    // then
+    assertThat(response.get("$.data.variables.length()")).isEqualTo("2");
+    assertThat(Arrays.asList(response.get("$.data.variables", Object[].class)))
+        .extracting(o -> ((Map) o).get("name"))
+        .isSorted()
+        .containsExactlyInAnyOrder("var1", "var3");
+    assertThat(Arrays.asList(response.get("$.data.variables", Object[].class)))
+        .extracting(o -> ((Map) o).get("value"))
+        .isSorted()
+        .containsExactlyInAnyOrder("111", "333");
+  }
+
+  @Test
+  public void shouldReturnVariablesWithNamesForCompletedTask() throws IOException {
+    // having
+    final String taskId =
+        tester
+            .createAndDeploySimpleProcess(BPMN_PROCESS_ID, ELEMENT_ID)
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstance(BPMN_PROCESS_ID, "{\"var1\": 111, \"var2\": 222, \"var3\": 333}")
+            .waitUntil()
+            .taskIsCreated(ELEMENT_ID)
+            .claimHumanTask(ELEMENT_ID)
+            .and()
+            .completeHumanTask(ELEMENT_ID)
+            .waitUntil()
+            .taskVariableExists("var1")
+            .getTaskId();
+
+    // when
+    final ObjectNode variablesQ = objectMapper.createObjectNode();
+    variablesQ.put("taskId", taskId).putArray("variableNames").add("var1").add("var3");
+    final GraphQLResponse response = tester.getVariablesByTaskIdAndNames(variablesQ);
+
+    // then
+    assertThat(response.get("$.data.variables.length()")).isEqualTo("2");
+    assertThat(Arrays.asList(response.get("$.data.variables", Object[].class)))
+        .extracting(o -> ((Map) o).get("name"))
+        .isSorted()
+        .containsExactlyInAnyOrder("var1", "var3");
+    assertThat(Arrays.asList(response.get("$.data.variables", Object[].class)))
+        .extracting(o -> ((Map) o).get("value"))
+        .isSorted()
+        .containsExactlyInAnyOrder("111", "333");
   }
 
   @Test
