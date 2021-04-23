@@ -135,7 +135,8 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING) {
+    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING
+        && stateBehavior.isInterrupted(flowScopeContext)) {
       eventSubscriptionBehavior
           .findEventTrigger(flowScopeContext)
           .ifPresent(

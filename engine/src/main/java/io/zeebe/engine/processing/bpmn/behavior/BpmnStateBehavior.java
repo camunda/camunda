@@ -255,4 +255,12 @@ public final class BpmnStateBehavior {
         variablesState.getVariablesAsDocument(sourceContext.getElementInstanceKey());
     variablesState.setTemporaryVariables(targetContext.getElementInstanceKey(), variables);
   }
+
+  public boolean isInterrupted(final BpmnElementContext flowScopeContext) {
+    final var flowScopeInstance =
+        elementInstanceState.getInstance(flowScopeContext.getElementInstanceKey());
+    return flowScopeInstance.getNumberOfActiveElementInstances() == 0
+        && flowScopeInstance.isInterrupted()
+        && flowScopeInstance.isActive();
+  }
 }
