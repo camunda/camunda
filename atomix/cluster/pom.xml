@@ -171,6 +171,13 @@
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-journal</artifactId>
+      <scope>test</scope>
+      <version>${parent.version}</version>
+      <type>test-jar</type>
+    </dependency>
   </dependencies>
 
   <modelVersion>4.0.0</modelVersion>

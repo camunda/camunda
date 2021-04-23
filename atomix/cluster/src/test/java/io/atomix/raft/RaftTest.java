@@ -17,6 +17,7 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.Maps;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.metrics.RaftRoleMetrics;
@@ -49,10 +51,13 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.zeebe.journal.file.LogCorrupter;
+import io.zeebe.journal.file.record.CorruptedLogException;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -474,6 +479,66 @@ public class RaftTest extends ConcurrentTestCase {
     // then
     assertTrue(newLeaderElected.await(30, TimeUnit.SECONDS));
     assertNotEquals(newLeaderId.get(), leaderId);
+  }
+
+  @Test
+  public void shouldDetectCorruptionOnStart() throws Throwable {
+    // given
+    final RaftServer leader = createServers(1).get(0);
+    final long index = appendEntry(leader);
+    final File directory = leader.getContext().getStorage().directory();
+
+    final Optional<File> optLog =
+        Arrays.stream(directory.listFiles()).filter(f -> f.getName().endsWith(".log")).findFirst();
+    assertThat(optLog).isPresent();
+    final File log = optLog.get();
+
+    // when
+    leader.shutdown().join();
+    assertThat(LogCorrupter.corruptRecord(log, index)).isTrue();
+
+    // then
+    final MemberId memberId = members.get(0).memberId();
+    assertThatThrownBy(() -> recreateServer(leader, memberId))
+        .isInstanceOf(CorruptedLogException.class);
+  }
+
+  @Test
+  public void shouldTruncateLogAfterPartialWrite() throws Throwable {
+    // given
+    RaftServer leader = createServers(1).get(0);
+    final long index = appendEntry(leader);
+
+    final File directory = leader.getContext().getStorage().directory();
+    final Optional<File> optLog =
+        Arrays.stream(directory.listFiles()).filter(f -> f.getName().endsWith(".log")).findFirst();
+    assertThat(optLog).isPresent();
+    final File log = optLog.get();
+
+    // when
+    leader.getContext().setLastWrittenIndex(index - 1);
+    leader.shutdown().join();
+    assertThat(LogCorrupter.corruptRecord(log, index)).isTrue();
+
+    final MemberId memberId = members.get(0).memberId();
+    leader = recreateServer(leader, memberId);
+
+    // then
+    final RaftLog raftLog = leader.getContext().getLog();
+    final RaftLogReader raftLogReader = raftLog.openReader(Mode.ALL);
+
+    assertThat(raftLog.getLastIndex()).isEqualTo(index - 1);
+    raftLogReader.seek(raftLog.getLastIndex());
+    assertThat(raftLogReader.next().index()).isEqualTo(index - 1);
+  }
+
+  private RaftServer recreateServer(final RaftServer server, final MemberId memberId) {
+    final Function<RaftStorage.Builder, RaftStorage.Builder> storageConfig =
+        c -> c.withDirectory(server.getContext().getStorage().directory());
+    final RaftStorage storage = createStorage(memberId, storageConfig);
+    final Function<Builder, Builder> serverConfig = b -> b.withStorage(storage);
+
+    return createServer(memberId, serverConfig);
   }
 
   @Test
