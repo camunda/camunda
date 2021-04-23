@@ -76,9 +76,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
             stateBehavior,
-            stateTransitionBehavior,
             catchEventBehavior,
-            variableBehavior,
             eventTriggerBehavior,
             stateWriter,
             commandWriter,

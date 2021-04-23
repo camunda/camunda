@@ -7,33 +7,25 @@
  */
 package io.zeebe.engine.processing.bpmn.behavior;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.common.CatchEventBehavior;
 import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processing.message.MessageNameException;
-import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.processing.variable.VariableBehavior;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -41,7 +33,6 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.Either;
 import java.util.Optional;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BpmnEventSubscriptionBehavior {
 
@@ -51,7 +42,6 @@ public final class BpmnEventSubscriptionBehavior {
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
 
   private final BpmnStateBehavior stateBehavior;
-  private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final CatchEventBehavior catchEventBehavior;
@@ -61,25 +51,19 @@ public final class BpmnEventSubscriptionBehavior {
 
   private final KeyGenerator keyGenerator;
   private final ProcessState processState;
-  private final MutableVariableState variablesState;
   private final TypedCommandWriter commandWriter;
-  private final VariableBehavior variableBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
 
   public BpmnEventSubscriptionBehavior(
       final BpmnStateBehavior stateBehavior,
-      final BpmnStateTransitionBehavior stateTransitionBehavior,
       final CatchEventBehavior catchEventBehavior,
-      final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
       final MutableZeebeState zeebeState) {
     this.stateBehavior = stateBehavior;
-    this.stateTransitionBehavior = stateTransitionBehavior;
     this.catchEventBehavior = catchEventBehavior;
-    this.variableBehavior = variableBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
@@ -89,7 +73,6 @@ public final class BpmnEventSubscriptionBehavior {
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     elementInstanceState = zeebeState.getElementInstanceState();
     keyGenerator = zeebeState.getKeyGenerator();
-    variablesState = zeebeState.getVariableState();
   }
 
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
@@ -116,85 +99,9 @@ public final class BpmnEventSubscriptionBehavior {
     catchEventBehavior.unsubscribeFromEvents(context, commandWriter, sideEffects);
   }
 
-  private long triggerBoundaryEvent(
-      final ExecutableActivity element,
-      final BpmnElementContext context,
-      final EventTrigger eventTrigger) {
-
-    final var record =
-        getEventRecord(context.getRecordValue(), eventTrigger, BpmnElementType.BOUNDARY_EVENT);
-
-    final var boundaryEvent = getBoundaryEvent(element, context, eventTrigger);
-
-    final long boundaryElementInstanceKey = keyGenerator.nextKey();
-    if (boundaryEvent.interrupting()) {
-
-      deferActivatingEvent(context, boundaryElementInstanceKey, record);
-
-      stateTransitionBehavior.transitionToTerminating(context);
-      return boundaryElementInstanceKey;
-
-    } else {
-      // copy temporary variables here because they are read in publishActivatingEvent()
-      if (eventTrigger.getVariables() != null && eventTrigger.getVariables().capacity() > 0) {
-        // todo (@korthout/zell): look at this again
-        variablesState.setTemporaryVariables(
-            boundaryElementInstanceKey, eventTrigger.getVariables());
-      }
-      publishActivatingEvent(context, boundaryElementInstanceKey, record);
-      // avoid creating temporary variables again - variables are already passed in
-      return -1L;
-    }
-  }
-
-  private ProcessInstanceRecord getEventRecord(
-      final ProcessInstanceRecord value,
-      final EventTrigger event,
-      final BpmnElementType elementType) {
-    eventRecord.reset();
-    eventRecord.wrap(value);
-    eventRecord.setElementId(event.getElementId());
-    eventRecord.setBpmnElementType(elementType);
-
-    return eventRecord;
-  }
-
-  private <T extends ExecutableActivity> ExecutableBoundaryEvent getBoundaryEvent(
-      final T element, final BpmnElementContext context, final EventTrigger eventTrigger) {
-
-    return element.getBoundaryEvents().stream()
-        .filter(boundaryEvent -> boundaryEvent.getId().equals(eventTrigger.getElementId()))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new BpmnProcessingException(
-                    context,
-                    String.format(
-                        "Expected boundary event with id '%s' but not found.",
-                        bufferAsString(eventTrigger.getElementId()))));
-  }
-
-  private void deferActivatingEvent(
-      final BpmnElementContext context,
-      final long eventElementInstanceKey,
-      final ProcessInstanceRecord record) {
-
-    elementInstanceState.storeRecord(
-        eventElementInstanceKey,
-        context.getElementInstanceKey(),
-        record,
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        Purpose.DEFERRED);
-  }
-
-  // TODO (saig0): replace by findEventTrigger + activateTriggeredEvent (#6202)
-  public void publishTriggeredBoundaryEvent(final BpmnElementContext context) {
-    publishTriggeredEvent(context, BpmnElementType.BOUNDARY_EVENT);
-  }
-
   /**
    * Checks if the given element instance was triggered by an event. Should be used in combination
-   * with {@link #activateTriggeredEvent(BpmnElementContext, EventTrigger)}.
+   * with {@link #activateTriggeredEvent(long, BpmnElementContext, EventTrigger)}.
    *
    * @param context the element instance to check
    * @return the event data if the element instance was triggered. Otherwise, it returns {@link
@@ -230,50 +137,6 @@ public final class BpmnEventSubscriptionBehavior {
         triggeredEvent, flowScopeKey, context.getRecordValue(), eventTrigger.getVariables());
   }
 
-  private void publishTriggeredEvent(
-      final BpmnElementContext context, final BpmnElementType elementType) {
-    elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
-        .filter(record -> record.getValue().getBpmnElementType() == elementType)
-        .filter(record -> record.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATING)
-        .findFirst()
-        .ifPresent(
-            deferredRecord ->
-                publishActivatingEvent(
-                    context, deferredRecord.getKey(), deferredRecord.getValue()));
-  }
-
-  // TODO (saig0): replace by findEventTrigger + activateTriggeredEvent (#6202)
-  private void publishActivatingEvent(
-      final BpmnElementContext context,
-      final long elementInstanceKey,
-      final ProcessInstanceRecord eventRecord) {
-
-    if (MigratedStreamProcessors.isMigrated(eventRecord.getBpmnElementType())) {
-      if (context.isInReprocessingMode()) {
-        // don't wring events/commands on reprocessing
-        return;
-      }
-
-      final var triggeredEvent =
-          processState.getFlowElement(
-              context.getProcessDefinitionKey(),
-              eventRecord.getElementIdBuffer(),
-              ExecutableFlowElement.class);
-
-      var eventVariables = variablesState.getTemporaryVariables(elementInstanceKey);
-      if (eventVariables == null) {
-        eventVariables = new UnsafeBuffer();
-      }
-
-      eventTriggerBehavior.activateTriggeredEvent(
-          triggeredEvent, context.getFlowScopeKey(), context.getRecordValue(), eventVariables);
-
-    } else {
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);
-    }
-  }
-
   public Optional<EventTrigger> getEventTriggerForProcessDefinition(
       final long processDefinitionKey) {
     final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
@@ -292,8 +155,13 @@ public final class BpmnEventSubscriptionBehavior {
           context, String.format(NO_PROCESS_FOUND_MESSAGE, processDefinitionKey));
     }
 
+    eventRecord.reset();
+    eventRecord.wrap(context.getRecordValue());
+
     final var record =
-        getEventRecord(context.getRecordValue(), triggeredEvent, BpmnElementType.START_EVENT)
+        eventRecord
+            .setElementId(triggeredEvent.getElementId())
+            .setBpmnElementType(BpmnElementType.START_EVENT)
             .setProcessInstanceKey(processInstanceKey)
             .setVersion(process.getVersion())
             .setBpmnProcessId(process.getBpmnProcessId())
