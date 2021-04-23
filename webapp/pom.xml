@@ -92,12 +92,6 @@
       <artifactId>spring-security-ldap</artifactId>
     </dependency>
 
-    <!-- LDAP server - TODO: move later to test module -->
-    <dependency>
-      <groupId>com.unboundid</groupId>
-      <artifactId>unboundid-ldapsdk</artifactId>
-    </dependency>
-
     <!-- ELASTICSEARCH -->
 
     <dependency>
