@@ -66,10 +66,10 @@ spec:
         resources:
           limits:
             cpu: 4
-            memory: 5Gi
+            memory: 6Gi
           requests:
             cpu: 4
-            memory: 6Gi
+            memory: 5Gi
         volumeMounts:
           - name: configuration
             mountPath: /optimize/config/environment-config.yaml
