@@ -253,7 +253,7 @@ public final class ProcessingStateMachine {
 
       processInTransaction(typedEvent);
 
-      metrics.eventProcessed();
+      metrics.commandsProcessed();
 
       writeEvent();
     } catch (final RecoverableException recoverableException) {
@@ -399,7 +399,7 @@ public final class ProcessingStateMachine {
             onError(t, this::writeEvent);
           } else {
             updateState();
-            metrics.eventWritten();
+            metrics.recordsWritten(writtenEventPosition);
           }
         });
   }

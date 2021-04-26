@@ -14,13 +14,21 @@ import io.zeebe.protocol.record.RecordType;
 
 public final class StreamProcessorMetrics {
 
+  private static final String LABEL_NAME_PARTITION = "partition";
+  private static final String LABEL_NAME_RECORD_TYPE = "recordType";
+  private static final String LABEL_NAME_ACTION = "action";
+
+  private static final String LABEL_WRITTEN = "written";
+  private static final String LABEL_SKIPPED = "skipped";
+  private static final String LABEL_PROCESSED = "processed";
   private static final String NAMESPACE = "zeebe";
+
   private static final Counter STREAM_PROCESSOR_EVENTS =
       Counter.build()
           .namespace(NAMESPACE)
-          .name("stream_processor_events_total")
-          .help("Number of events processed by stream processor")
-          .labelNames("action", "partition")
+          .name("stream_processor_records_total")
+          .help("Number of records processed by stream processor")
+          .labelNames(LABEL_NAME_ACTION, LABEL_NAME_PARTITION)
           .register();
 
   private static final Gauge LAST_PROCESSED_POSITION =
@@ -28,7 +36,7 @@ public final class StreamProcessorMetrics {
           .namespace(NAMESPACE)
           .name("stream_processor_last_processed_position")
           .help("The last position the stream processor has processed.")
-          .labelNames("partition")
+          .labelNames(LABEL_NAME_PARTITION)
           .register();
 
   private static final Histogram PROCESSING_LATENCY =
@@ -37,14 +45,14 @@ public final class StreamProcessorMetrics {
           .name("stream_processor_latency")
           .help(
               "Time between a record is written until it is picked up for processing (in seconds)")
-          .labelNames("recordType", "partition")
+          .labelNames(LABEL_NAME_RECORD_TYPE, LABEL_NAME_PARTITION)
           .register();
   private static final Histogram PROCESSING_DURATION =
       Histogram.build()
           .namespace(NAMESPACE)
           .name("stream_processor_processing_duration")
           .help("Time for processing a record (in seconds)")
-          .labelNames("recordType", "partition")
+          .labelNames(LABEL_NAME_RECORD_TYPE, LABEL_NAME_PARTITION)
           .register();
 
   private static final Gauge STARTUP_RECOVERY_TIME =
@@ -52,9 +60,8 @@ public final class StreamProcessorMetrics {
           .namespace(NAMESPACE)
           .name("stream_processor_startup_recovery_time")
           .help("Time taken for startup and recovery of stream processor (in ms)")
-          .labelNames("partition")
+          .labelNames(LABEL_NAME_PARTITION)
           .register();
-
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(final int partitionId) {
@@ -79,16 +86,27 @@ public final class StreamProcessorMetrics {
         .observe((processed - started) / 1000f);
   }
 
-  public void eventProcessed() {
-    event("processed");
+  /** We only process commands. */
+  public void commandsProcessed() {
+    event(LABEL_PROCESSED);
   }
 
-  public void eventWritten() {
-    event("written");
+  /**
+   * We write various type of records. The positions are always increasing and incremented by 1 for
+   * one record.
+   */
+  public void recordsWritten(final long lastWrittenPosition) {
+    final var previousWritten =
+        STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).get();
+    final var diff = lastWrittenPosition - previousWritten;
+    if (diff > 0) {
+      STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).inc(diff);
+    }
   }
 
+  /** We skip events on processing. */
   public void eventSkipped() {
-    event("skipped");
+    event(LABEL_SKIPPED);
   }
 
   public void recoveryTime(final long durationMillis) {
