@@ -31,7 +31,7 @@ const Default: React.FC = () => {
       <form>
         <FormContainer hasError={false}>
           <Logo />
-          <Title>Zeebe Tasklist</Title>
+          <Title>Tasklist</Title>
           <Input placeholder="Username" type="text" required />
           <Input placeholder="Password" type="password" required />
           <Button type="submit">Login</Button>
@@ -48,7 +48,7 @@ const Error: React.FC = () => {
       <form>
         <FormContainer hasError={true}>
           <Logo />
-          <Title>Zeebe Tasklist</Title>
+          <Title>Tasklist</Title>
           <StyledError>Username and Password do not match.</StyledError>
           <Input
             placeholder="Username"
@@ -79,7 +79,7 @@ const Submitting: React.FC = () => {
         <LoadingOverlay />
         <FormContainer hasError={false}>
           <Logo />
-          <Title>Zeebe Tasklist</Title>
+          <Title>Tasklist</Title>
           <Input
             placeholder="Username"
             type="text"

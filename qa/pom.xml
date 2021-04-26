@@ -16,7 +16,7 @@
     <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
   </properties>
 
-  <name>Zeebe Tasklist QA</name>
+  <name>Tasklist QA</name>
   <artifactId>tasklist-qa</artifactId>
   <packaging>pom</packaging>
 

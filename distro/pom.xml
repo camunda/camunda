@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Zeebe Tasklist - Distro</name>
+  <name>Tasklist - Distro</name>
   <artifactId>tasklist-distro</artifactId>
   <packaging>pom</packaging>
 

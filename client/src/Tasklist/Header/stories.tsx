@@ -29,7 +29,7 @@ const Logo: React.FC = () => {
     <BrandInfo>
       <Brand to="/">
         <LogoIcon data-testid="logo" />
-        <div>Zeebe Tasklist</div>
+        <div>Tasklist</div>
       </Brand>
     </BrandInfo>
   );

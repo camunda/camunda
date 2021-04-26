@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Zeebe Tasklist Importer Common</name>
+  <name>Tasklist Importer Common</name>
   <artifactId>tasklist-importer-common</artifactId>
 
   <dependencies>

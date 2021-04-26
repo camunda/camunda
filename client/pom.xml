@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Zeebe Tasklist - Webjar</name>
+  <name>Tasklist - Webjar</name>
   <artifactId>tasklist-webjar</artifactId>
   <packaging>jar</packaging>
 

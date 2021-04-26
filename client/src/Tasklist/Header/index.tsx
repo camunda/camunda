@@ -27,7 +27,7 @@ const Header: React.FC = () => {
           })}
         >
           <LogoIcon data-testid="logo" />
-          <div>Zeebe Tasklist</div>
+          <div>Tasklist</div>
         </Brand>
       </BrandInfo>
       <UserControls />

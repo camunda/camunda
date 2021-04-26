@@ -1,4 +1,4 @@
-# Zeebe Tasklist Backend
+# Tasklist Backend
 
 > **Notice:** Make sure to have [docker](https://docs.docker.com/install/)
 > and [docker-compose](https://docs.docker.com/compose/install/) installed

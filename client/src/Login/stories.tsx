@@ -39,7 +39,7 @@ const Logo: React.FC = () => {
 };
 
 const Title: React.FC = () => {
-  return <Styled.Title>Zeebe Tasklist</Styled.Title>;
+  return <Styled.Title>Tasklist</Styled.Title>;
 };
 
 const Input: React.FC = () => {

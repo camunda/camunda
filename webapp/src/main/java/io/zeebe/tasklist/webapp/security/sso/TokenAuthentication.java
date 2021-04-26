@@ -86,7 +86,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     tryAuthenticateAsListOfMaps(claim);
     if (!authenticated) {
       throw new InsufficientAuthenticationException(
-          "No permission for Zeebe Tasklist - check your organization id");
+          "No permission for Tasklist - check your organization id");
     }
   }
 

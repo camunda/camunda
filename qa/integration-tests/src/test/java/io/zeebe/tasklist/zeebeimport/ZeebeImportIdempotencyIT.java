@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Tests that even if the Zeebe data is imported twice, in Zeebe Tasklist Elasticsearch is is still
+ * Tests that even if the Zeebe data is imported twice, in Tasklist Elasticsearch is is still
  * consistent.
  */
 @SpringBootTest(

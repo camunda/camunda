@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Zeebe Tasklist Integration Tests</name>
+  <name>Tasklist Integration Tests</name>
   <artifactId>tasklist-it-tests</artifactId>
 
   <properties>

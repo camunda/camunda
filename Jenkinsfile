@@ -256,7 +256,7 @@ pipeline {
         if (env.BRANCH_NAME == 'master' && !agentDisconnected()) {
           slackSend(
               channel: "#zeebe-tasklist-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-              message: "Zeebe Tasklist ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+              message: "Tasklist ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
         }
       }
     }

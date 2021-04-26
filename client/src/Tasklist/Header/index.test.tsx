@@ -33,7 +33,7 @@ describe('<Header />', () => {
     render(<Header />, {
       wrapper: createWrapper(),
     });
-    expect(screen.getByText('Zeebe Tasklist')).toBeInTheDocument();
+    expect(screen.getByText('Tasklist')).toBeInTheDocument();
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.getByTestId('logo')).toBeInTheDocument();
     expect(screen.getByTestId('dropdown-icon')).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe('<Header />', () => {
     });
     await screen.findByText('Demo User');
 
-    fireEvent.click(screen.getByText('Zeebe Tasklist'));
+    fireEvent.click(screen.getByText('Tasklist'));
 
     expect(historyMock.location.pathname).toBe('/');
     expect(historyMock.location.search).toBe('');
@@ -63,7 +63,7 @@ describe('<Header />', () => {
     });
     await screen.findByText('Demo User');
 
-    fireEvent.click(screen.getByText('Zeebe Tasklist'));
+    fireEvent.click(screen.getByText('Tasklist'));
 
     expect(historyMock.location.pathname).toBe('/');
     expect(historyMock.location.search).toBe(

@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Zeebe Tasklist Importer</name>
+  <name>Tasklist Importer</name>
   <artifactId>tasklist-importer</artifactId>
 
   <dependencies>

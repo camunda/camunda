@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Zeebe Tasklist Webapp</name>
+  <name>Tasklist Webapp</name>
   <artifactId>tasklist-webapp</artifactId>
 
   <dependencies>

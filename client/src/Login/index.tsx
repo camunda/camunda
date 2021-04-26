@@ -75,7 +75,7 @@ const Login: React.FC = () => {
               )}
               <FormContainer hasError={submitError !== undefined}>
                 <Logo />
-                <Title>Zeebe Tasklist</Title>
+                <Title>Tasklist</Title>
                 {submitError !== undefined && <Error>{submitError}</Error>}
                 <Field<FormValues['username']> name="username" type="text">
                   {({input}) => (
