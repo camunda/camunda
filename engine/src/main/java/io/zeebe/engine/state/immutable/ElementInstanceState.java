@@ -18,12 +18,15 @@ public interface ElementInstanceState {
 
   ElementInstance getInstance(long key);
 
+  @Deprecated
   StoredRecord getStoredRecord(long recordKey);
 
   List<ElementInstance> getChildren(long parentKey);
 
+  @Deprecated
   List<IndexedRecord> getDeferredRecords(long scopeKey);
 
+  @Deprecated
   IndexedRecord getFailedRecord(long key);
 
   AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);

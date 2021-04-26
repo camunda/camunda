@@ -12,6 +12,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.ObjectProperty;
 
+@Deprecated
 public final class StoredRecord extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<IndexedRecord> recordProp =
@@ -46,6 +47,7 @@ public final class StoredRecord extends UnpackedObject implements DbValue {
     return recordProp.getValue().getKey();
   }
 
+  @Deprecated
   public enum Purpose {
     // Order is important, as we use the ordinal for persistence
     DEFERRED,

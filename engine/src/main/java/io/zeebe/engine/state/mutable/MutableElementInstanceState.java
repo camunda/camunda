@@ -29,6 +29,7 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   void updateInstance(long key, Consumer<ElementInstance> modifier);
 
+  @Deprecated
   void storeRecord(
       long key,
       long scopeKey,
@@ -36,6 +37,7 @@ public interface MutableElementInstanceState extends ElementInstanceState {
       ProcessInstanceIntent intent,
       Purpose purpose);
 
+  @Deprecated
   void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose);
 
   void setAwaitResultRequestMetadata(
