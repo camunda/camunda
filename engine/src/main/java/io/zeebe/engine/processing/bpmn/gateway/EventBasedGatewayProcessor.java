@@ -64,7 +64,7 @@ public final class EventBasedGatewayProcessor
     // - according to the BPMN specification, the sequence flow to this event is not taken
     final var completed = stateTransitionBehavior.transitionToCompleted(context);
     eventSubscriptionBehavior.activateTriggeredEvent(
-        completed.getFlowScopeKey(), completed, eventTrigger);
+        context.getElementInstanceKey(), completed.getFlowScopeKey(), eventTrigger, completed);
   }
 
   @Override

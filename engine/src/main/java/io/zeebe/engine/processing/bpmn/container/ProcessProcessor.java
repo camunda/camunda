@@ -135,13 +135,17 @@ public final class ProcessProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING) {
+    if (flowScopeContext.getIntent() != ProcessInstanceIntent.ELEMENT_TERMINATING
+        && stateBehavior.isInterrupted(flowScopeContext)) {
       eventSubscriptionBehavior
           .findEventTrigger(flowScopeContext)
           .ifPresent(
               eventTrigger ->
                   eventSubscriptionBehavior.activateTriggeredEvent(
-                      flowScopeContext.getElementInstanceKey(), flowScopeContext, eventTrigger));
+                      flowScopeContext.getElementInstanceKey(),
+                      flowScopeContext.getElementInstanceKey(),
+                      eventTrigger,
+                      flowScopeContext));
     } else if (stateBehavior.canBeTerminated(childContext)) {
       transitionTo(element, flowScopeContext, stateTransitionBehavior::transitionToTerminated);
     }

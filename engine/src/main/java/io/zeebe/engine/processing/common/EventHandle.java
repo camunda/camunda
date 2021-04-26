@@ -20,7 +20,6 @@ import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -34,7 +33,6 @@ public final class EventHandle {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ProcessInstanceRecord recordForPICreation = new ProcessInstanceRecord();
-  private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
   private final MessageStartEventSubscriptionRecord startEventSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
@@ -67,30 +65,28 @@ public final class EventHandle {
   }
 
   /**
-   * Triggers a process by updating the state with a new {@link ProcessEventIntent#TRIGGERED} event.
+   * Triggers a process by updating the state with a new {@link ProcessEventIntent#TRIGGERING}
+   * event.
    *
    * <p>NOTE: this method assumes that the caller already verified that the target can accept new
    * events!
    *
-   * @param eventScope the event's scope, whose key is used to index the trigger in {@link
+   * @param processDefinitionKey the event's corresponding process definition key
+   * @param processInstanceKey the event's corresponding process instance key
+   * @param eventScopeKey the event's scope key, which used to index the trigger in {@link
    *     io.zeebe.engine.state.immutable.EventScopeInstanceState}
    * @param catchEventId the ID of the element which should be triggered by the event
    * @param variables the variables/payload of the event (can be empty)
+   * @return the key of the process event
    */
-  public void triggerProcessEvent(
-      final ElementInstance eventScope,
+  private long triggeringProcessEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final long eventScopeKey,
       final DirectBuffer catchEventId,
       final DirectBuffer variables) {
-    final var newElementInstanceKey = keyGenerator.nextKey();
-    processEventRecord.reset();
-    processEventRecord
-        .setScopeKey(eventScope.getKey())
-        .setTargetElementIdBuffer(catchEventId)
-        .setVariablesBuffer(variables)
-        .setProcessDefinitionKey(eventScope.getValue().getProcessDefinitionKey())
-        .setProcessInstanceKey(eventScope.getValue().getProcessInstanceKey());
-    stateWriter.appendFollowUpEvent(
-        newElementInstanceKey, ProcessEventIntent.TRIGGERED, processEventRecord);
+    return eventTriggerBehavior.triggeringProcessEvent(
+        processDefinitionKey, processInstanceKey, eventScopeKey, catchEventId, variables);
   }
 
   public void activateElement(
@@ -105,6 +101,14 @@ public final class EventHandle {
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
       final DirectBuffer variables) {
+
+    final var processEventKey =
+        triggeringProcessEvent(
+            elementRecord.getProcessDefinitionKey(),
+            elementRecord.getProcessInstanceKey(),
+            eventScopeKey,
+            catchEvent.getId(),
+            variables);
 
     if (MigratedStreamProcessors.isMigrated(elementRecord.getBpmnElementType())) {
 
@@ -122,7 +126,12 @@ public final class EventHandle {
             eventScopeKey, ProcessInstanceIntent.TERMINATE_ELEMENT, elementRecord);
       } else {
         eventTriggerBehavior.activateTriggeredEvent(
-            catchEvent, elementRecord.getFlowScopeKey(), elementRecord, variables);
+            processEventKey,
+            catchEvent,
+            eventScopeKey,
+            elementRecord.getFlowScopeKey(),
+            elementRecord,
+            variables);
       }
     }
   }
@@ -165,11 +174,25 @@ public final class EventHandle {
     stateWriter.appendFollowUpEvent(
         -1L, MessageStartEventSubscriptionIntent.CORRELATED, startEventSubscriptionRecord);
 
-    activateProcessInstanceForStartEvent(processDefinitionKey, newProcessInstanceKey);
+    activateProcessInstanceForStartEvent(
+        processDefinitionKey,
+        newProcessInstanceKey,
+        startEventElementId,
+        message.getVariablesBuffer());
   }
 
   public void activateProcessInstanceForStartEvent(
-      final long processDefinitionKey, final long processInstanceKey) {
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer variablesBuffer) {
+
+    triggeringProcessEvent(
+        processDefinitionKey,
+        processInstanceKey,
+        processDefinitionKey /* The eventScope for the start event is the process definition key */,
+        targetElementId,
+        variablesBuffer);
 
     final var process = processState.getProcessByKey(processDefinitionKey);
 

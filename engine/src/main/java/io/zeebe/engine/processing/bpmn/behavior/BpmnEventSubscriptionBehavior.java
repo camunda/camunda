@@ -101,7 +101,7 @@ public final class BpmnEventSubscriptionBehavior {
 
   /**
    * Checks if the given element instance was triggered by an event. Should be used in combination
-   * with {@link #activateTriggeredEvent(long, BpmnElementContext, EventTrigger)}.
+   * with {@link #activateTriggeredEvent(long, long, EventTrigger, BpmnElementContext)}.
    *
    * @param context the element instance to check
    * @return the event data if the element instance was triggered. Otherwise, it returns {@link
@@ -119,13 +119,18 @@ public final class BpmnEventSubscriptionBehavior {
    * triggers/activates the EventSubProcess, while for boundary events the attached element triggers
    * that event which is not the flow scope.
    *
+   * @param eventScopeKey the event scope key of the triggered event, can be the same as the flow
+   *     scope key depending of the type of event
    * @param flowScopeKey the flow scope of event element to activate, which can be different based
    *     on the event type
-   * @param context the current processing context
    * @param eventTrigger the event data returned by {@link #findEventTrigger(BpmnElementContext)}
+   * @param context the current processing context
    */
   public void activateTriggeredEvent(
-      final long flowScopeKey, final BpmnElementContext context, final EventTrigger eventTrigger) {
+      final long eventScopeKey,
+      final long flowScopeKey,
+      final EventTrigger eventTrigger,
+      final BpmnElementContext context) {
 
     final var triggeredEvent =
         processState.getFlowElement(
@@ -134,7 +139,12 @@ public final class BpmnEventSubscriptionBehavior {
             ExecutableFlowElement.class);
 
     eventTriggerBehavior.activateTriggeredEvent(
-        triggeredEvent, flowScopeKey, context.getRecordValue(), eventTrigger.getVariables());
+        eventTrigger.getEventKey(),
+        triggeredEvent,
+        eventScopeKey,
+        flowScopeKey,
+        context.getRecordValue(),
+        eventTrigger.getVariables());
   }
 
   public Optional<EventTrigger> getEventTriggerForProcessDefinition(
@@ -154,6 +164,13 @@ public final class BpmnEventSubscriptionBehavior {
       throw new BpmnProcessingException(
           context, String.format(NO_PROCESS_FOUND_MESSAGE, processDefinitionKey));
     }
+
+    eventTriggerBehavior.processEventTriggered(
+        triggeredEvent.getEventKey(),
+        processDefinitionKey,
+        processInstanceKey,
+        processDefinitionKey, /* the event scope for the start event is the process definition */
+        triggeredEvent.getElementId());
 
     eventRecord.reset();
     eventRecord.wrap(context.getRecordValue());
