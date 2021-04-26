@@ -84,6 +84,10 @@ public final class EventSubProcessProcessor
       return Either.right(null);
     }
 
+    // The input mapping for the event sub process need to happen here, since we immediately moved
+    // the event sub process to ACTIVATED on event triggering. This is done to make sure that we
+    // copy temporary variables (for messages) to the correct scope already on triggering the event,
+    // otherwise we will have issues on concurrent incoming events.
     return variableMappingBehavior.applyInputMappings(flowScopeContext, element);
   }
 
