@@ -111,11 +111,6 @@ final class ExporterContainer implements Controller {
   }
 
   @Override
-  public void scheduleTask(final Duration delay, final Runnable task) {
-    actor.runDelayed(delay, task);
-  }
-
-  @Override
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
     final var scheduledTimer = actor.runDelayed(delay, task);
     return scheduledTimer::cancel;
