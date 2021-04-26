@@ -79,7 +79,7 @@ public final class EventHandle {
    * @param variables the variables/payload of the event (can be empty)
    * @return the key of the process event
    */
-  public long triggeringProcessEvent(
+  private long triggeringProcessEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
       final long eventScopeKey,
