@@ -9,7 +9,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Camunda Operate ELS schema</name>
+	<name>Operate ELS schema</name>
 	<artifactId>camunda-operate-els-schema</artifactId>
 	
 	<dependencies>

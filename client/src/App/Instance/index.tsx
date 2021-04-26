@@ -60,7 +60,7 @@ const Instance = observer(() => {
   return (
     <Styled.Instance>
       <VisuallyHiddenH1>
-        {instance && `Camunda Operate Instance ${instance.id}`}
+        {instance && `Operate Instance ${instance.id}`}
       </VisuallyHiddenH1>
       <SplitPane
         titles={{top: 'Process', bottom: 'Instance Details'}}

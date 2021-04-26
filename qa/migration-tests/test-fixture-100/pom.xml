@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Migration tests - test fixture 1.0.0</name>
+  <name>Operate Migration tests - test fixture 1.0.0</name>
   <artifactId>test-fixture-100</artifactId>
 
   <properties>

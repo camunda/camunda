@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Importer</name>
+  <name>Operate Importer</name>
   <artifactId>camunda-operate-importer</artifactId>
 
   <dependencies>

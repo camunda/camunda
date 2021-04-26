@@ -143,11 +143,11 @@ export const ACTIVE_OPERATION_STATES = [
 ];
 
 export const PAGE_TITLE = {
-  LOGIN: 'Camunda Operate: Log In',
-  DASHBOARD: 'Camunda Operate: Dashboard',
-  INSTANCES: 'Camunda Operate: Instances',
+  LOGIN: 'Operate: Log In',
+  DASHBOARD: 'Operate: Dashboard',
+  INSTANCES: 'Operate: Instances',
   INSTANCE: (instanceId: string, processName: string) =>
-    `Camunda Operate: Instance ${instanceId} of Process ${processName}`,
+    `Operate: Instance ${instanceId} of Process ${processName}`,
 };
 
 export const PILL_TYPE = {

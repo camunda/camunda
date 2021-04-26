@@ -10,7 +10,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Disclaimer} from './index';
 
 const DISCLAIMER_TEXT =
-  'This Camunda Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the Terms and Conditions of the Operate Trial Version.';
+  'This Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the Terms and Conditions of the Operate Trial Version.';
 
 describe('<Disclaimer />', () => {
   afterEach(() => {

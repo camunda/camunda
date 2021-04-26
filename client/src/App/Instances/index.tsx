@@ -99,7 +99,7 @@ const Instances: React.FC = observer(() => {
 
   return (
     <Styled.Instances>
-      <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
+      <VisuallyHiddenH1>Operate Instances</VisuallyHiddenH1>
       <Styled.Content>
         <Styled.FilterSection>
           <Filters />

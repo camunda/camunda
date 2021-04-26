@@ -118,7 +118,7 @@ describe('stores/currentInstance', () => {
       })
     );
     expect(currentInstanceStore.processTitle).toBe(
-      'Camunda Operate: Instance 123 of Process processName'
+      'Operate: Instance 123 of Process processName'
     );
   });
 

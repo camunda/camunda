@@ -8,7 +8,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Camunda Operate Migration tests parent</name>
+	<name>Operate Migration tests parent</name>
 	<artifactId>migration-tests-parent</artifactId>
 	<packaging>pom</packaging>
 

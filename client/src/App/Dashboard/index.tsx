@@ -28,7 +28,7 @@ function Dashboard() {
 
   return (
     <Container>
-      <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
+      <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
       <MetricPanelWrapper>
         <MetricPanel />
       </MetricPanelWrapper>

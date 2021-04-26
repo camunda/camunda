@@ -12,7 +12,7 @@ export const labels = {
   filters: 'Filters',
   dashboard: 'Dashboard',
   incidents: 'Incidents',
-  brand: 'Camunda Operate',
+  brand: 'Operate',
 };
 
 export const createTitle = (

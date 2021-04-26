@@ -17,7 +17,7 @@
 
   </properties>
 
-  <name>Camunda Operate QA</name>
+  <name>Operate QA</name>
   <artifactId>qa</artifactId>
   <packaging>pom</packaging>
 

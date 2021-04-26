@@ -57,7 +57,7 @@ describe('Dashboard', () => {
     await statisticsStore.fetchStatistics();
 
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
-    expect(screen.getByText('Camunda Operate Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Operate Dashboard')).toBeInTheDocument();
     expect(
       screen.getByText('821 Running Instances in total')
     ).toBeInTheDocument();

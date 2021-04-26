@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate - Webjar</name>
+  <name>Operate - Webjar</name>
   <artifactId>camunda-operate-webjar</artifactId>
   <packaging>jar</packaging>
 

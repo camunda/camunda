@@ -86,7 +86,7 @@ describe('Header', () => {
 
     await waitForComponentToLoad();
 
-    expect(screen.getByText('Camunda Operate')).toBeInTheDocument();
+    expect(screen.getByText('Operate')).toBeInTheDocument();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Running Instances')).toBeInTheDocument();
     expect(screen.getByText('Filters')).toBeInTheDocument();
@@ -289,7 +289,7 @@ describe('Header', () => {
 
     await waitForComponentToLoad();
 
-    userEvent.click(await screen.findByText('Camunda Operate'));
+    userEvent.click(await screen.findByText('Operate'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
     expect(MOCK_HISTORY.location.search).toBe('');
 
@@ -326,7 +326,7 @@ describe('Header', () => {
 
     await waitForComponentToLoad();
 
-    userEvent.click(await screen.findByText('Camunda Operate'));
+    userEvent.click(await screen.findByText('Operate'));
     expect(MOCK_HISTORY.location.pathname).toBe('/');
     expect(MOCK_HISTORY.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com'

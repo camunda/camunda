@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Import from old Zeebe tests</name>
+  <name>Operate Import from old Zeebe tests</name>
   <artifactId>import-old-zeebe-tests</artifactId>
 
   <properties>

@@ -9,7 +9,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Camunda Operate Common</name>
+	<name>Operate Common</name>
 	<artifactId>camunda-operate-common</artifactId>
 
 	<dependencies>

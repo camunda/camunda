@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Batch performance tests</name>
+  <name>Operate Batch performance tests</name>
   <artifactId>batch-operation-performance-tests</artifactId>
 
   <dependencies>

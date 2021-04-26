@@ -105,8 +105,8 @@ describe('Instances', () => {
       ),
     });
 
-    expect(screen.getByText('Camunda Operate Instances')).toBeInTheDocument();
-    expect(document.title).toBe('Camunda Operate: Instances');
+    expect(screen.getByText('Operate Instances')).toBeInTheDocument();
+    expect(document.title).toBe('Operate: Instances');
   });
 
   it('should render page components', () => {

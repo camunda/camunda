@@ -1,4 +1,4 @@
-# Camunda Operate
+# Operate
 
 ## Documentation
 

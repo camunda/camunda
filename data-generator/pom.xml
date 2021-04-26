@@ -8,7 +8,7 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Data Generator</name>
+  <name>Operate Data Generator</name>
   <artifactId>camunda-operate-data-generator</artifactId>
 
   <dependencies>
