@@ -236,6 +236,46 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     awaitProcessInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
   }
 
+  @Override
+  public void incrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
+
+    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+
+    var newValue = 1;
+    if (number != null) {
+      newValue = number.getValue() + 1;
+    }
+    numberOfTakenSequenceFlows.wrapInt(newValue);
+
+    numberOfTakenSequenceFlowsColumnFamily.put(
+        numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+  }
+
+  @Override
+  public void decrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        (key, number) -> {
+          final var newValue = number.getValue() - 1;
+          if (newValue > 0) {
+            numberOfTakenSequenceFlows.wrapInt(newValue);
+            numberOfTakenSequenceFlowsColumnFamily.put(key, numberOfTakenSequenceFlows);
+          } else {
+            numberOfTakenSequenceFlowsColumnFamily.delete(key);
+          }
+        });
+  }
+
   private void handleMissingParentInstance(
       final BpmnElementType elementType, final long parentKey) {
     if (MigratedStreamProcessors.isMigrated(elementType)) {
@@ -298,20 +338,26 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public IndexedRecord getFailedRecord(final long key) {
-    final StoredRecord storedRecord = getStoredRecord(key);
-    if (storedRecord != null && storedRecord.getPurpose() == Purpose.FAILED) {
-      return storedRecord.getRecord();
-    } else {
-      return null;
-    }
-  }
-
-  @Override
   public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
       final long processInstanceKey) {
     elementInstanceKey.wrapLong(processInstanceKey);
     return awaitProcessInstanceResultMetadataColumnFamily.get(elementInstanceKey);
+  }
+
+  @Override
+  public int getNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    final var count = new MutableInteger(0);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        (key, number) -> {
+          count.increment();
+        });
+
+    return count.get();
   }
 
   private void setRecordKeys(final long scopeKey, final long recordKey, final Purpose purpose) {
@@ -372,62 +418,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       return copiedElementInstance;
     }
     return null;
-  }
-
-  @Override
-  public int getNumberOfTakenSequenceFlows(
-      final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    this.gatewayElementId.wrapBuffer(gatewayElementId);
-
-    final var count = new MutableInteger(0);
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        flowScopeKeyAndElementId,
-        (key, number) -> {
-          count.increment();
-        });
-
-    return count.get();
-  }
-
-  @Override
-  public void incrementNumberOfTakenSequenceFlows(
-      final long flowScopeKey,
-      final DirectBuffer gatewayElementId,
-      final DirectBuffer sequenceFlowElementId) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    this.gatewayElementId.wrapBuffer(gatewayElementId);
-    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
-
-    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
-
-    var newValue = 1;
-    if (number != null) {
-      newValue = number.getValue() + 1;
-    }
-    numberOfTakenSequenceFlows.wrapInt(newValue);
-
-    numberOfTakenSequenceFlowsColumnFamily.put(
-        numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
-  }
-
-  @Override
-  public void decrementNumberOfTakenSequenceFlows(
-      final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    this.gatewayElementId.wrapBuffer(gatewayElementId);
-
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        flowScopeKeyAndElementId,
-        (key, number) -> {
-          final var newValue = number.getValue() - 1;
-          if (newValue > 0) {
-            numberOfTakenSequenceFlows.wrapInt(newValue);
-            numberOfTakenSequenceFlowsColumnFamily.put(key, numberOfTakenSequenceFlows);
-          } else {
-            numberOfTakenSequenceFlowsColumnFamily.delete(key);
-          }
-        });
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {

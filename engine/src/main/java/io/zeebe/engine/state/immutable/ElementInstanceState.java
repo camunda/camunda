@@ -26,9 +26,6 @@ public interface ElementInstanceState {
   @Deprecated
   List<IndexedRecord> getDeferredRecords(long scopeKey);
 
-  @Deprecated
-  IndexedRecord getFailedRecord(long key);
-
   AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);
 
   /**

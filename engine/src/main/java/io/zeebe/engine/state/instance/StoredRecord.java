@@ -50,7 +50,6 @@ public final class StoredRecord extends UnpackedObject implements DbValue {
   @Deprecated
   public enum Purpose {
     // Order is important, as we use the ordinal for persistence
-    DEFERRED,
-    FAILED
+    DEFERRED
   }
 }
