@@ -56,7 +56,7 @@ public final class RaftRolesTest {
         startSingleNodeSinglePartitionWithPartitionConsumer(
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
-              raftPartition.addRoleChangeListener(role -> roleChanged.complete(null));
+              raftPartition.addRoleChangeListener((role, term) -> roleChanged.complete(null));
             });
 
     // then
@@ -74,7 +74,7 @@ public final class RaftRolesTest {
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  role -> {
+                  (role, term) -> {
                     roleChanged.complete(null);
 
                     // when
@@ -98,7 +98,7 @@ public final class RaftRolesTest {
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  role -> {
+                  (role, term) -> {
                     roles.add(role);
                     if (!roleChanged.isDone() && role == Role.LEADER) {
                       roleChanged.complete(null);

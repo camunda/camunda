@@ -43,7 +43,6 @@ import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.config.ConfigMapper;
 import io.atomix.utils.net.Address;
-import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -334,12 +333,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @Override
   public String toString() {
     return toStringHelper(this).toString();
-  }
-
-  /** Loads a configuration from the given file. */
-  private static ClusterConfig loadConfig(final File config, final ClassLoader classLoader) {
-    return new ConfigMapper(classLoader)
-        .loadResources(ClusterConfig.class, config.getAbsolutePath());
   }
 
   /** Builds a default messaging service. */
