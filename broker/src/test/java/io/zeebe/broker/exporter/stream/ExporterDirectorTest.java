@@ -369,7 +369,10 @@ public final class ExporterDirectorTest {
         .get(0)
         .onExport(
             r -> {
-              exporters.get(0).getController().scheduleTask(delay, timerTriggerLatch::countDown);
+              exporters
+                  .get(0)
+                  .getController()
+                  .scheduleCancellableTask(delay, timerTriggerLatch::countDown);
               timerScheduledLatch.countDown();
             });
 
