@@ -10,16 +10,12 @@ package io.zeebe.engine.state.immutable;
 import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.IndexedRecord;
-import io.zeebe.engine.state.instance.StoredRecord;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
 public interface ElementInstanceState {
 
   ElementInstance getInstance(long key);
-
-  @Deprecated
-  StoredRecord getStoredRecord(long recordKey);
 
   List<ElementInstance> getChildren(long parentKey);
 

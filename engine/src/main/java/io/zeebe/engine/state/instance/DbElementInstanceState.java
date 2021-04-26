@@ -307,12 +307,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public StoredRecord getStoredRecord(final long recordKey) {
-    this.recordKey.wrapLong(recordKey);
-    return recordColumnFamily.get(this.recordKey);
-  }
-
-  @Override
   public List<ElementInstance> getChildren(final long parentKey) {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
