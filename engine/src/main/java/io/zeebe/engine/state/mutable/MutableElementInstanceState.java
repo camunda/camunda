@@ -10,7 +10,6 @@ package io.zeebe.engine.state.mutable;
 import io.zeebe.engine.state.immutable.ElementInstanceState;
 import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.function.Consumer;
@@ -28,17 +27,6 @@ public interface MutableElementInstanceState extends ElementInstanceState {
   void updateInstance(ElementInstance scopeInstance);
 
   void updateInstance(long key, Consumer<ElementInstance> modifier);
-
-  @Deprecated
-  void storeRecord(
-      long key,
-      long scopeKey,
-      ProcessInstanceRecord value,
-      ProcessInstanceIntent intent,
-      Purpose purpose);
-
-  @Deprecated
-  void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose);
 
   void setAwaitResultRequestMetadata(
       long processInstanceKey, AwaitProcessInstanceResultMetadata metadata);

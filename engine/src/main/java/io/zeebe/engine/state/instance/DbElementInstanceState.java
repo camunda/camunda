@@ -10,7 +10,6 @@ package io.zeebe.engine.state.instance;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbInt;
 import io.zeebe.db.impl.DbLong;
@@ -18,7 +17,6 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -40,17 +38,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final DbLong elementInstanceKey;
   private final ElementInstance elementInstance;
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
-
-  private final DbLong recordKey;
-  private final StoredRecord storedRecord;
-  private final ColumnFamily<DbLong, StoredRecord> recordColumnFamily;
-
-  private final DbLong recordParentKey;
-  private final DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong> recordParentStateRecordKey;
-  private final DbByte stateKey;
-  private final DbCompositeKey<DbLong, DbByte> recordParentStateKey;
-  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
-      recordParentChildColumnFamily;
 
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
@@ -95,23 +82,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             elementInstanceKey,
             elementInstance);
-
-    recordKey = new DbLong();
-    storedRecord = new StoredRecord();
-    recordColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.STORED_INSTANCE_EVENTS, transactionContext, recordKey, storedRecord);
-
-    recordParentKey = new DbLong();
-    stateKey = new DbByte();
-    recordParentStateKey = new DbCompositeKey<>(recordParentKey, stateKey);
-    recordParentStateRecordKey = new DbCompositeKey<>(recordParentStateKey, recordKey);
-    recordParentChildColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.STORED_INSTANCE_EVENTS_PARENT_CHILD,
-            transactionContext,
-            recordParentStateRecordKey,
-            DbNil.INSTANCE);
 
     awaitResultMetadata = new AwaitProcessInstanceResultMetadata();
     awaitProcessInstanceResultMetadataColumnFamily =
@@ -168,13 +138,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       parentChildColumnFamily.delete(parentChildKey);
       elementInstanceColumnFamily.delete(elementInstanceKey);
 
-      recordParentChildColumnFamily.whileEqualPrefix(
-          elementInstanceKey,
-          (compositeKey, nil) -> {
-            recordParentChildColumnFamily.delete(compositeKey);
-            recordColumnFamily.delete(compositeKey.getSecond());
-          });
-
       variableState.removeScope(key);
 
       awaitProcessInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
@@ -203,30 +166,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final var scopeInstance = getInstance(key);
     modifier.accept(scopeInstance);
     updateInstance(scopeInstance);
-  }
-
-  @Override
-  public void storeRecord(
-      final long key,
-      final long scopeKey,
-      final ProcessInstanceRecord value,
-      final ProcessInstanceIntent intent,
-      final Purpose purpose) {
-    final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
-    final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
-
-    setRecordKeys(scopeKey, key, purpose);
-
-    recordColumnFamily.put(recordKey, storedRecord);
-    recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
-  }
-
-  @Override
-  public void removeStoredRecord(final long scopeKey, final long recordKey, final Purpose purpose) {
-    setRecordKeys(scopeKey, recordKey, purpose);
-
-    recordColumnFamily.delete(this.recordKey);
-    recordParentChildColumnFamily.delete(recordParentStateRecordKey);
   }
 
   @Override
@@ -347,53 +286,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return count.get();
-  }
-
-  private void setRecordKeys(final long scopeKey, final long recordKey, final Purpose purpose) {
-    recordParentKey.wrapLong(scopeKey);
-    stateKey.wrapByte((byte) purpose.ordinal());
-    this.recordKey.wrapLong(recordKey);
-  }
-
-  private List<IndexedRecord> collectRecords(final long scopeKey, final Purpose purpose) {
-    final List<IndexedRecord> records = new ArrayList<>();
-    visitRecords(
-        scopeKey,
-        purpose,
-        (indexedRecord) -> {
-          // the visited elements are only transient
-          // they will change on next iteration we have to copy them
-          // if we need to store the values
-
-          // for now we simply copy them into buffer and wrap the buffer
-          // which does another copy
-          // this could be improve if UnpackedObject has a clone method
-          final byte[] bytes = new byte[indexedRecord.getLength()];
-          final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
-
-          indexedRecord.write(buffer, 0);
-          final IndexedRecord copiedRecord = new IndexedRecord();
-          copiedRecord.wrap(buffer, 0, indexedRecord.getLength());
-
-          records.add(copiedRecord);
-        });
-    return records;
-  }
-
-  private void visitRecords(
-      final long scopeKey, final Purpose purpose, final RecordVisitor visitor) {
-    recordParentKey.wrapLong(scopeKey);
-    stateKey.wrapByte((byte) purpose.ordinal());
-
-    recordParentChildColumnFamily.whileEqualPrefix(
-        recordParentStateKey,
-        (compositeKey, value) -> {
-          final DbLong recordKey = compositeKey.getSecond();
-          final StoredRecord storedRecord = recordColumnFamily.get(recordKey);
-          if (storedRecord != null) {
-            visitor.visitRecord(storedRecord.getRecord());
-          }
-        });
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
