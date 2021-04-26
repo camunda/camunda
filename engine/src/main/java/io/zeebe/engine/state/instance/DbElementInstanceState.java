@@ -327,11 +327,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public List<IndexedRecord> getDeferredRecords(final long scopeKey) {
-    return collectRecords(scopeKey, Purpose.DEFERRED);
-  }
-
-  @Override
   public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
       final long processInstanceKey) {
     elementInstanceKey.wrapLong(processInstanceKey);

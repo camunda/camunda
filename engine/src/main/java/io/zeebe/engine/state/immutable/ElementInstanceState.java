@@ -9,7 +9,6 @@ package io.zeebe.engine.state.immutable;
 
 import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.instance.IndexedRecord;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -18,9 +17,6 @@ public interface ElementInstanceState {
   ElementInstance getInstance(long key);
 
   List<ElementInstance> getChildren(long parentKey);
-
-  @Deprecated
-  List<IndexedRecord> getDeferredRecords(long scopeKey);
 
   AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(long processInstanceKey);
 

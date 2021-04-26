@@ -22,7 +22,6 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -187,41 +186,5 @@ public final class BpmnEventSubscriptionBehavior {
     final var newEventInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
         newEventInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, record);
-  }
-
-  public void publishTriggeredEventSubProcess(
-      final boolean isChildMigrated, final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context);
-
-    if (isInterrupted(isChildMigrated, elementInstance)) {
-      elementInstanceState.getDeferredRecords(context.getElementInstanceKey()).stream()
-          .filter(
-              record ->
-                  record
-                      .getValue()
-                      .getElementIdBuffer()
-                      .equals(elementInstance.getInterruptingElementId()))
-          .filter(
-              record -> record.getValue().getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS)
-          .findFirst()
-          .ifPresent(
-              record -> {
-                final var elementInstanceKey = record.getKey();
-                final var interruptingRecord = record.getValue();
-
-                stateWriter.appendFollowUpEvent(
-                    elementInstanceKey,
-                    ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                    interruptingRecord);
-              });
-    }
-  }
-
-  private boolean isInterrupted(
-      final boolean isChildMigrated, final ElementInstance elementInstance) {
-    final int expectedActiveInstanceCount = isChildMigrated ? 0 : 1;
-    return elementInstance.getNumberOfActiveElementInstances() == expectedActiveInstanceCount
-        && elementInstance.isInterrupted()
-        && elementInstance.isActive();
   }
 }
