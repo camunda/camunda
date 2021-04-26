@@ -27,9 +27,9 @@ def longTimeoutMinutes = 45
 itAgentUnstashDirectory = '.tmp/it'
 itFlakyTestStashName = 'it-flakyTests'
 
-// the latest stable branch should be run at midnight to do a nightly build including QA test run
-// todo: run develop branch at midnight using new testbench version
-def cronTrigger = isLatestStable ? '0 0 * * *' : ''
+// the develop branch should be run at midnight to do a nightly build including QA test run
+// the latest stable branch is run an hour later at 01:00 AM.
+def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
 
 pipeline {
     agent {
@@ -315,7 +315,10 @@ pipeline {
                 anyOf {
                     expression { params.RUN_QA }
                     allOf {
-                        branch latestStableBranchName
+                        anyOf {
+                            branch developBranchName
+                            branch latestStableBranchName
+                        }
                         triggeredBy 'TimerTrigger'
                     }
                 }
