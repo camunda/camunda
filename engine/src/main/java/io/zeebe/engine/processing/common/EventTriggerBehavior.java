@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
+
+  private static final String ERROR_MSG_EXPECTED_START_EVENT =
+      "Expected an start event to be triggered on EventSubProcess scope, but was %s";
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
 
   private final KeyGenerator keyGenerator;
@@ -226,8 +229,13 @@ public class EventTriggerBehavior {
     }
 
     if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
-      activateEventSubProcess(triggeredEvent, flowScope);
-      return;
+      if (triggeredEvent instanceof ExecutableStartEvent) {
+        activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope);
+        return;
+      } else {
+        throw new IllegalStateException(
+            String.format(ERROR_MSG_EXPECTED_START_EVENT, triggeredEvent.getClass()));
+      }
     }
 
     eventRecord
@@ -256,7 +264,7 @@ public class EventTriggerBehavior {
   }
 
   private void activateEventSubProcess(
-      final ExecutableFlowElement triggeredStartEvent, final ExecutableFlowElement flowScope) {
+      final ExecutableStartEvent triggeredStartEvent, final ExecutableFlowElement flowScope) {
     // First we move the event sub process immediately to ACTIVATED,
     // to make sure that we can copy the temp variables from the flow scope directly to the
     // event sub process scope. This is done in the ACTIVATING applier of the event sub process.
