@@ -21,12 +21,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.Lists;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.cluster.protocol.GroupMembershipProtocolConfig;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
-import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
 import io.atomix.utils.Builder;
 import io.atomix.utils.net.Address;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Properties;
 
@@ -134,58 +131,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    * Sets the member address.
    *
    * <p>The constructed {@link AtomixCluster} will bind to the given address for intra-cluster
-   * communication. The format of the address can be {@code host:port} or just {@code host}.
-   *
-   * @param address a host:port tuple
-   * @return the cluster builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withHost(String)} and/or {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public AtomixClusterBuilder withAddress(final String address) {
-    return withAddress(Address.from(address));
-  }
-
-  /**
-   * Sets the member host/port.
-   *
-   * <p>The constructed {@link AtomixCluster} will bind to the given host/port for intra-cluster
-   * communication. The provided host should be visible to other nodes in the cluster.
-   *
-   * @param host the host name
-   * @param port the port number
-   * @return the cluster builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withHost(String)} and {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public AtomixClusterBuilder withAddress(final String host, final int port) {
-    return withAddress(Address.from(host, port));
-  }
-
-  /**
-   * Sets the member address using local host.
-   *
-   * <p>The constructed {@link AtomixCluster} will bind to the given port for intra-cluster
-   * communication.
-   *
-   * @param port the port number
-   * @return the cluster builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public AtomixClusterBuilder withAddress(final int port) {
-    return withAddress(Address.from(port));
-  }
-
-  /**
-   * Sets the member address.
-   *
-   * <p>The constructed {@link AtomixCluster} will bind to the given address for intra-cluster
    * communication. The provided address should be visible to other nodes in the cluster.
    *
    * @param address the member address
@@ -193,85 +138,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    */
   public AtomixClusterBuilder withAddress(final Address address) {
     config.getNodeConfig().setAddress(address);
-    return this;
-  }
-
-  /**
-   * Sets the zone to which the member belongs.
-   *
-   * <p>The zone attribute can be used to enable zone-awareness in replication for certain primitive
-   * protocols. It is an arbitrary string that should be used to group multiple nodes together by
-   * their physical location.
-   *
-   * @param zoneId the zone to which the member belongs
-   * @return the cluster builder
-   */
-  public AtomixClusterBuilder withZoneId(final String zoneId) {
-    config.getNodeConfig().setZoneId(zoneId);
-    return this;
-  }
-
-  /**
-   * Sets the zone to which the member belongs.
-   *
-   * <p>The zone attribute can be used to enable zone-awareness in replication for certain primitive
-   * protocols. It is an arbitrary string that should be used to group multiple nodes together by
-   * their physical location.
-   *
-   * @param zone the zone to which the member belongs
-   * @return the cluster builder
-   * @deprecated since 3.1. Use {@link #withZoneId(String)} instead
-   */
-  @Deprecated
-  public AtomixClusterBuilder withZone(final String zone) {
-    config.getNodeConfig().setZoneId(zone);
-    return this;
-  }
-
-  /**
-   * Sets the rack to which the member belongs.
-   *
-   * <p>The rack attribute can be used to enable rack-awareness in replication for certain primitive
-   * protocols. It is an arbitrary string that should be used to group multiple nodes together by
-   * their physical location.
-   *
-   * @param rackId the rack to which the member belongs
-   * @return the cluster builder
-   */
-  public AtomixClusterBuilder withRackId(final String rackId) {
-    config.getNodeConfig().setRackId(rackId);
-    return this;
-  }
-
-  /**
-   * Sets the rack to which the member belongs.
-   *
-   * <p>The rack attribute can be used to enable rack-awareness in replication for certain primitive
-   * protocols. It is an arbitrary string that should be used to group multiple nodes together by
-   * their physical location.
-   *
-   * @param rack the rack to which the member belongs
-   * @return the cluster builder
-   * @deprecated since 3.1. Use {@link #withRackId(String)} instead
-   */
-  @Deprecated
-  public AtomixClusterBuilder withRack(final String rack) {
-    config.getNodeConfig().setRackId(rack);
-    return this;
-  }
-
-  /**
-   * Sets the host to which the member belongs.
-   *
-   * <p>The host attribute can be used to enable host-awareness in replication for certain primitive
-   * protocols. It is an arbitrary string that should be used to group multiple nodes together by
-   * their physical location. Typically this attribute only applies to containerized clusters.
-   *
-   * @param hostId the host to which the member belongs
-   * @return the cluster builder
-   */
-  public AtomixClusterBuilder withHostId(final String hostId) {
-    config.getNodeConfig().setHostId(hostId);
     return this;
   }
 
@@ -292,23 +158,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
   }
 
   /**
-   * Sets a property of the member.
-   *
-   * <p>The properties are arbitrary settings that will be replicated along with this node's member
-   * information. Properties can be used to enable other nodes to determine metadata about this
-   * node.
-   *
-   * @param key the property key to set
-   * @param value the property value to set
-   * @return the cluster builder
-   * @throws NullPointerException if the property is null
-   */
-  public AtomixClusterBuilder withProperty(final String key, final String value) {
-    config.getNodeConfig().setProperty(key, value);
-    return this;
-  }
-
-  /**
    * Sets the interface to which to bind the instance.
    *
    * @param iface the interface to which to bind the instance
@@ -316,16 +165,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    */
   public AtomixClusterBuilder withMessagingInterface(final String iface) {
     return withMessagingInterfaces(Lists.newArrayList(iface));
-  }
-
-  /**
-   * Sets the interface(s) to which to bind the instance.
-   *
-   * @param ifaces the interface(s) to which to bind the instance
-   * @return the cluster builder
-   */
-  public AtomixClusterBuilder withMessagingInterfaces(final String... ifaces) {
-    return withMessagingInterfaces(Lists.newArrayList(ifaces));
   }
 
   /**
@@ -347,114 +186,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    */
   public AtomixClusterBuilder withMessagingPort(final int bindPort) {
     config.getMessagingConfig().setPort(bindPort);
-    return this;
-  }
-
-  /**
-   * Sets the messaging connection pool size.
-   *
-   * <p>The node will create {@code connectionPoolSize} connections to each peer with which it
-   * regularly communicates over TCP. Periodic heartbeats from cluster membership protocols will not
-   * consume pool connections. Thus, if a node does not communicate with one of its peers for
-   * replication or application communication, the pool for that peer should remain empty.
-   *
-   * @param connectionPoolSize the connection pool size
-   * @return the cluster builder
-   */
-  public AtomixClusterBuilder withConnectionPoolSize(final int connectionPoolSize) {
-    config.getMessagingConfig().setConnectionPoolSize(connectionPoolSize);
-    return this;
-  }
-
-  /**
-   * Sets the reachability broadcast interval.
-   *
-   * <p>The broadcast interval is the interval at which heartbeats are sent to peers in the cluster.
-   *
-   * @param interval the reachability broadcast interval
-   * @return the cluster builder
-   * @deprecated since 3.0.2
-   */
-  @Deprecated
-  public AtomixClusterBuilder setBroadcastInterval(final Duration interval) {
-    final GroupMembershipProtocolConfig protocolConfig = config.getProtocolConfig();
-    if (protocolConfig instanceof HeartbeatMembershipProtocolConfig) {
-      ((HeartbeatMembershipProtocolConfig) protocolConfig).setHeartbeatInterval(interval);
-    }
-    return this;
-  }
-
-  /**
-   * Sets the reachability broadcast interval.
-   *
-   * <p>The broadcast interval is the interval at which heartbeats are sent to peers in the cluster.
-   *
-   * @param interval the reachability broadcast interval
-   * @return the cluster builder
-   */
-  @Deprecated
-  public AtomixClusterBuilder withBroadcastInterval(final Duration interval) {
-    final GroupMembershipProtocolConfig protocolConfig = config.getProtocolConfig();
-    if (protocolConfig instanceof HeartbeatMembershipProtocolConfig) {
-      ((HeartbeatMembershipProtocolConfig) protocolConfig).setHeartbeatInterval(interval);
-    }
-    return this;
-  }
-
-  /**
-   * Sets the reachability failure detection threshold.
-   *
-   * <p>Reachability of cluster members is determined using a phi-accrual failure detector. The
-   * reachability threshold is the phi threshold after which a peer will be determined to be
-   * unreachable.
-   *
-   * @param threshold the reachability failure detection threshold
-   * @return the cluster builder
-   * @deprecated since 3.0.2
-   */
-  @Deprecated
-  public AtomixClusterBuilder setReachabilityThreshold(final int threshold) {
-    final GroupMembershipProtocolConfig protocolConfig = config.getProtocolConfig();
-    if (protocolConfig instanceof HeartbeatMembershipProtocolConfig) {
-      ((HeartbeatMembershipProtocolConfig) protocolConfig).setPhiFailureThreshold(threshold);
-    }
-    return this;
-  }
-
-  /**
-   * Sets the reachability failure detection threshold.
-   *
-   * <p>Reachability of cluster members is determined using a phi-accrual failure detector. The
-   * reachability threshold is the phi threshold after which a peer will be determined to be
-   * unreachable.
-   *
-   * @param threshold the reachability failure detection threshold
-   * @return the cluster builder
-   */
-  @Deprecated
-  public AtomixClusterBuilder withReachabilityThreshold(final int threshold) {
-    final GroupMembershipProtocolConfig protocolConfig = config.getProtocolConfig();
-    if (protocolConfig instanceof HeartbeatMembershipProtocolConfig) {
-      ((HeartbeatMembershipProtocolConfig) protocolConfig).setPhiFailureThreshold(threshold);
-    }
-    return this;
-  }
-
-  /**
-   * Sets the reachability failure timeout.
-   *
-   * <p>The reachability timeout determines the maximum time after which a member will be marked
-   * unreachable if heartbeats have failed.
-   *
-   * @param timeout the reachability failure timeout
-   * @return the cluster builder
-   */
-  @Deprecated
-  public AtomixClusterBuilder withReachabilityTimeout(final Duration timeout) {
-    final GroupMembershipProtocolConfig protocolConfig = config.getProtocolConfig();
-    if (protocolConfig instanceof HeartbeatMembershipProtocolConfig) {
-      ((HeartbeatMembershipProtocolConfig) protocolConfig).setFailureTimeout(timeout);
-    }
     return this;
   }
 

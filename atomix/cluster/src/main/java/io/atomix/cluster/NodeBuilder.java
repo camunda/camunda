@@ -74,49 +74,6 @@ public class NodeBuilder implements Builder<Node> {
   /**
    * Sets the node address.
    *
-   * @param address a host:port tuple
-   * @return the node builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withHost(String)} and/or {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public NodeBuilder withAddress(final String address) {
-    return withAddress(Address.from(address));
-  }
-
-  /**
-   * Sets the node host/port.
-   *
-   * @param host the host name
-   * @param port the port number
-   * @return the node builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withHost(String)} and {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public NodeBuilder withAddress(final String host, final int port) {
-    return withAddress(Address.from(host, port));
-  }
-
-  /**
-   * Sets the node address using local host.
-   *
-   * @param port the port number
-   * @return the node builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public NodeBuilder withAddress(final int port) {
-    return withAddress(Address.from(port));
-  }
-
-  /**
-   * Sets the node address.
-   *
    * @param address the node address
    * @return the node builder
    */
