@@ -63,7 +63,7 @@ public final class Protocol {
   public static final int KEY_BITS = 51;
 
   /** Job typ used for user tasks handled by Camunda Cloud Tasklist */
-  public static final String USER_TASK_JOB_TYPE = "humanTask";
+  public static final String USER_TASK_JOB_TYPE = "io.camunda.zeebe:userTask";
 
   /** Task header key used for user tasks to contain form key from BPMN XML */
   public static final String USER_TASK_FORM_KEY_HEADER_NAME = "io.camunda.zeebe:formKey";
