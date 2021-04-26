@@ -41,9 +41,6 @@
                 },
                 "resourceName": {
                   "type": "text"
-                },
-                "resourceType": {
-                  "type": "keyword"
                 }
               }
             }
