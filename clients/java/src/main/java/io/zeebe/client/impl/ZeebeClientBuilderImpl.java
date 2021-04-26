@@ -36,12 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-@SuppressWarnings({
-  "java:S4144",
-  "java:S1448",
-  "java:S1541",
-  "java:S138"
-}) // Because method getBrokerContactPoint will be removed and this issue will be fixed
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
@@ -61,11 +55,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
-
-  @Override
-  public String getBrokerContactPoint() {
-    return gatewayAddress;
-  }
 
   @Override
   public String getGatewayAddress() {
@@ -143,10 +132,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
     }
 
-    if (properties.containsKey(ClientProperties.BROKER_CONTACTPOINT)) {
-      brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
-    }
-
     if (properties.containsKey(ClientProperties.JOB_WORKER_EXECUTION_THREADS)) {
       numJobWorkerExecutionThreads(
           Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_EXECUTION_THREADS)));
@@ -196,12 +181,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (properties.containsKey(KEEP_ALIVE)) {
       keepAlive(properties.getProperty(KEEP_ALIVE));
     }
-    return this;
-  }
-
-  @Override
-  public ZeebeClientBuilder brokerContactPoint(final String contactPoint) {
-    gatewayAddress = contactPoint;
     return this;
   }
 
@@ -323,7 +302,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public String toString() {
     final StringBuilder sb = new StringBuilder();
 
-    appendProperty(sb, "brokerContactPoint", gatewayAddress);
     appendProperty(sb, "gatewayAddress", gatewayAddress);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
