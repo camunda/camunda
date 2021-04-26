@@ -121,15 +121,11 @@ public class TaskResponse {
         .collect(Collectors.toList())
         .toString();
       final String causedByString = Optional.ofNullable(causedBy)
-        .map(causes -> {
-          final StringBuilder causedByStringBuilder = new StringBuilder("'{");
-          causes.entrySet()
-            .stream()
-            .sorted(comparingByKey())
-            .forEach(entry -> causedByStringBuilder.append(entry.getKey()).append("=").append(entry.getValue()));
-          causedByStringBuilder.append("}'");
-          return causedByStringBuilder.toString();
-        })
+        .map(causes -> causes.entrySet()
+          .stream()
+          .sorted(comparingByKey())
+          .map(entry -> entry.getKey() + "=" + entry.getValue())
+          .collect(Collectors.joining(",", "'{", "}'")))
         .orElse(null);
       return "Error{" +
         "type='" + type + "\', reason='" + reason + '\'' +

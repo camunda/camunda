@@ -81,22 +81,15 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
       newIndex.getIndexName(),
       ProcessDefinitionOptimizeDto.class
     )).extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
-      .containsExactly(
+      .contains(
         instanceWithMixedFlowNodesExpectedFlowNode,
         instanceWithFlowNodesWithSameName,
         instanceWithEmptyFlowNodesExpectedFlowNode,
         // The definitions with null xml will have no flow node data
-        new ArrayList<>(),
-        new ArrayList<>(),
-        new ArrayList<>(),
-        new ArrayList<>(),
-        new ArrayList<>(),
-        new ArrayList<>(),
-        new ArrayList<>(),
         new ArrayList<>()
       );
     assertThat(getAllDocumentsOfIndex(newIndex.getIndexName()))
-      .hasSize(11)
+      .hasSize(1003)
       .allSatisfy(this::assertFlowNodeNameFieldHasBeenRemoved);
   }
 
