@@ -28,12 +28,6 @@ public class MockController implements Controller {
   }
 
   @Override
-  public void scheduleTask(final Duration delay, final Runnable task) {
-    final var scheduledTask = new MockScheduledTask(delay, task);
-    scheduledTasks.add(scheduledTask);
-  }
-
-  @Override
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
     final var scheduledTask = new MockScheduledTask(delay, task);
     scheduledTasks.add(scheduledTask);
