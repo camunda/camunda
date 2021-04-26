@@ -18,8 +18,6 @@ package io.atomix.cluster.discovery;
 
 import io.atomix.cluster.Node;
 import io.atomix.utils.net.Address;
-import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,54 +42,11 @@ public class BootstrapDiscoveryBuilder extends NodeDiscoveryBuilder {
   /**
    * Sets the bootstrap nodes.
    *
-   * @param nodes the bootstrap nodes
-   * @return the location provider builder
-   */
-  public BootstrapDiscoveryBuilder withNodes(final Node... nodes) {
-    return withNodes(Arrays.asList(nodes));
-  }
-
-  /**
-   * Sets the bootstrap nodes.
-   *
    * @param locations the bootstrap member locations
    * @return the location provider builder
    */
   public BootstrapDiscoveryBuilder withNodes(final Collection<Node> locations) {
     config.setNodes(locations.stream().map(Node::config).collect(Collectors.toList()));
-    return this;
-  }
-
-  /**
-   * Sets the failure detection heartbeat interval.
-   *
-   * @param heartbeatInterval the failure detection heartbeat interval
-   * @return the location provider builder
-   */
-  public BootstrapDiscoveryBuilder withHeartbeatInterval(final Duration heartbeatInterval) {
-    config.setHeartbeatInterval(heartbeatInterval);
-    return this;
-  }
-
-  /**
-   * Sets the phi accrual failure threshold.
-   *
-   * @param failureThreshold the phi accrual failure threshold
-   * @return the location provider builder
-   */
-  public BootstrapDiscoveryBuilder withFailureThreshold(final int failureThreshold) {
-    config.setFailureThreshold(failureThreshold);
-    return this;
-  }
-
-  /**
-   * Sets the failure timeout to use prior to phi failure detectors being populated.
-   *
-   * @param failureTimeout the failure timeout
-   * @return the location provider builder
-   */
-  public BootstrapDiscoveryBuilder withFailureTimeout(final Duration failureTimeout) {
-    config.setFailureTimeout(failureTimeout);
     return this;
   }
 
