@@ -33,6 +33,7 @@ import io.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.management.PartitionStatus;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.BrokerInfo;
@@ -45,6 +46,7 @@ import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.zeebe.snapshots.broker.SnapshotId;
 import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -715,7 +717,7 @@ public final class ClusteringRule extends ExternalResource {
     return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
 
-  public FileBasedSnapshotMetadata waitForSnapshotAtBroker(final Broker broker) {
+  public SnapshotId waitForSnapshotAtBroker(final Broker broker) {
     return waitForNewSnapshotAtBroker(broker, null);
   }
 
@@ -725,18 +727,15 @@ public final class ClusteringRule extends ExternalResource {
    * then this returns as soon as a new snapshot has been committed.
    *
    * @param broker the broker to check on
-   * @param previousSnapshot the previous expected snapshot
-   * @return the new snapshot metadata
+   * @param previousSnapshot the id of the previous expected snapshot
+   * @return the id of the new snapshot
    */
-  FileBasedSnapshotMetadata waitForNewSnapshotAtBroker(
-      final Broker broker, final FileBasedSnapshotMetadata previousSnapshot) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
-
+  SnapshotId waitForNewSnapshotAtBroker(final Broker broker, final SnapshotId previousSnapshot) {
     return Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofMinutes(1))
         .until(
-            () -> findSnapshot(snapshotsDir),
+            () -> getSnapshot(broker, 1),
             latestSnapshot ->
                 latestSnapshot.isPresent()
                     && (previousSnapshot == null
@@ -747,14 +746,23 @@ public final class ClusteringRule extends ExternalResource {
                     "Snapshot expected, but reference to snapshot is corrupted"));
   }
 
-  private Optional<FileBasedSnapshotMetadata> findSnapshot(final File snapshotsDir) {
-    final var files = snapshotsDir.listFiles();
-    if (files == null || files.length != 1) {
-      return Optional.empty();
-    }
+  private Optional<SnapshotId> getSnapshot(final Broker broker, final int partitionId) {
 
-    final var snapshotPath = files[0].toPath();
-    return FileBasedSnapshotMetadata.ofPath(snapshotPath);
+    final var partitions = broker.getBrokerAdminService().getPartitionStatus();
+    final var partitionStatus = partitions.get(partitionId);
+
+    return Optional.ofNullable(partitionStatus)
+        .map(PartitionStatus::getSnapshotId)
+        .flatMap(FileBasedSnapshotMetadata::ofFileName);
+  }
+
+  public Optional<SnapshotId> getSnapshot(final int brokerId) {
+    final var broker = getBroker(brokerId);
+    return getSnapshot(broker, 1);
+  }
+
+  public Optional<SnapshotId> getSnapshot(final Broker broker) {
+    return getSnapshot(broker, 1);
   }
 
   LogStream getLogStream(final int partitionId) {
