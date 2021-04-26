@@ -311,7 +311,6 @@ public final class StackdriverLayoutTest {
     final var jsonMap = readLoggedEvent();
     softly
         .assertThat(jsonMap)
-        .containsEntry("thread", currentThread.getName())
         .hasEntrySatisfying(
             "context",
             context ->
@@ -337,7 +336,6 @@ public final class StackdriverLayoutTest {
     final var jsonMap = readLoggedEvent();
     softly
         .assertThat(jsonMap)
-        .containsEntry("logger", logger.getName())
         .hasEntrySatisfying(
             "context",
             context ->
@@ -345,23 +343,6 @@ public final class StackdriverLayoutTest {
                     .assertThat(context)
                     .asInstanceOf(InstanceOfAssertFactories.MAP)
                     .containsEntry("loggerName", logger.getName()));
-  }
-
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  @Test
-  public void shouldBeBackwardsCompatibleWithStackdriverJSONLayout() throws IOException {
-    // when
-    logger.error("Should appear as JSON formatted output");
-
-    // then
-    final var jsonMap = readLoggedEvent();
-    softly
-        .assertThat(jsonMap)
-        .containsKeys(
-            "logger", "message", "severity", "thread", "timestampNanos", "timestampSeconds")
-        .containsEntry("message", "Should appear as JSON formatted output")
-        .containsEntry("severity", Severity.ERROR.name())
-        .containsEntry("logger", logger.getName());
   }
 
   @Test
