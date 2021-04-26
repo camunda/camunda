@@ -151,10 +151,6 @@ public final class EngineRule extends ExternalResource {
     startProcessors();
   }
 
-  public void startWithReprocessingDetection() {
-    startProcessors(true);
-  }
-
   public void stop() {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
@@ -180,10 +176,6 @@ public final class EngineRule extends ExternalResource {
   }
 
   private void startProcessors() {
-    startProcessors(false);
-  }
-
-  private void startProcessors(final boolean detectReprocessingInconsistency) {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
@@ -214,8 +206,7 @@ public final class EngineRule extends ExternalResource {
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor())
-                      .withListener(reprocessingCompletedListener),
-              detectReprocessingInconsistency);
+                      .withListener(reprocessingCompletedListener));
 
           // sequenialize the commands to avoid concurrency
           subscriptionHandlers.put(

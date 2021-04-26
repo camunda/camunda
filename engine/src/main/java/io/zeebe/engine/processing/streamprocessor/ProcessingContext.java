@@ -51,7 +51,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private Consumer<TypedRecord> onProcessedListener = record -> {};
   private Consumer<LoggedEvent> onSkippedListener = record -> {};
   private int maxFragmentSize;
-  private boolean detectReprocessingInconsistency;
 
   public ProcessingContext() {
     streamWriterProxy.wrap(logStreamWriter);
@@ -211,16 +210,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public Consumer<LoggedEvent> getOnSkippedListener() {
     return onSkippedListener;
-  }
-
-  public boolean isDetectReprocessingInconsistency() {
-    return detectReprocessingInconsistency;
-  }
-
-  public ProcessingContext setDetectReprocessingInconsistency(
-      final boolean detectReprocessingInconsistency) {
-    this.detectReprocessingInconsistency = detectReprocessingInconsistency;
-    return this;
   }
 
   public ReprocessingStreamWriter getReprocessingStreamWriter() {
