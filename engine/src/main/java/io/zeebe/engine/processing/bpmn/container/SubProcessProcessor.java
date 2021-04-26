@@ -122,10 +122,6 @@ public final class SubProcessProcessor
         // if we are able to terminate we try to trigger boundary events
         eventSubscriptionBehavior
             .findEventTrigger(subProcessContext)
-            .filter(
-                eventTrigger ->
-                    element.getBoundaryEvents().stream()
-                        .anyMatch(b -> b.getId().equals(eventTrigger.getElementId())))
             .ifPresentOrElse(
                 eventTrigger -> {
                   final var terminated =
