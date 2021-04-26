@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,11 +65,6 @@ public class RaftPartition implements Partition {
     } else {
       server.addRoleChangeListener(listener);
     }
-  }
-
-  @Deprecated
-  public void addRoleChangeListener(final Consumer<Role> listener) {
-    addRoleChangeListener((newRole, newTerm) -> listener.accept(newRole));
   }
 
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
