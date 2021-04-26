@@ -89,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1619420916893,
+  "iteration": 1619420916904,
   "links": [],
   "panels": [
     {
@@ -1160,16 +1160,23 @@
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}}-{{partition}}-{{processor}}-{{action}}",
+              "legendFormat": "{{pod}}-{{partition}}-{{processor}}-processed",
               "refId": "A"
             },
             {
               "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
               "format": "time_series",
               "hide": false,
+              "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}}-{{partition}}-{{exporter}}",
+              "legendFormat": "{{pod}}-{{partition}}-exported",
               "refId": "B"
+            },
+            {
+              "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[1m])) by (pod, partition, processor)",
+              "interval": "",
+              "legendFormat": "{{pod}}-{{partition}}-{{processor}}-written",
+              "refId": "C"
             }
           ],
           "thresholds": [],
