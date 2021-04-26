@@ -243,7 +243,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
           new IllegalStateException(
               String.format(
                   "Expected '%d' chunk files for this snapshot, but found '%d'. Files are: %s.",
-                  expectedSnapshotChecksum, files.length, Arrays.toString(files))));
+                  expectedTotalCount, files.length, Arrays.toString(files))));
       return;
     }
 
@@ -262,7 +262,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private boolean verifyChecksums(final CompletableActorFuture<PersistedSnapshot> future) {
 
     try {
-      if (SnapshotChecksum.verify(directory)) {
+      final long writtenChecksum = SnapshotChecksum.read(directory);
+      if (writtenChecksum == expectedSnapshotChecksum) {
         return true;
       } else {
         future.completeExceptionally(
