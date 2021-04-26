@@ -16,7 +16,6 @@ import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
 import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -134,19 +133,12 @@ final class ProcessInstanceElementActivatingApplier
         processState.getFlowElement(
             value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
 
-    final var tokensBySequenceFlow =
-        sequenceFlowAnalyzer.determineTakenIncomingFlows(value.getFlowScopeKey(), parallelGateway);
-
-    // cleanup deferred records for sequence flow taken to this parallel gateway
-    tokensBySequenceFlow.forEach(
-        (sequenceFlow, tokens) -> {
-          // before a parallel gateway is activated, each incoming sequence flow of the gateway must
-          // be taken (at least once). if a sequence flow is taken more than once then the redundant
-          // token remains for the next activation of the gateway (Tetris principle)
-          final var firstToken = tokens.get(0);
-          elementInstanceState.removeStoredRecord(
-              value.getFlowScopeKey(), firstToken.getKey(), Purpose.DEFERRED);
-        });
+    // before a parallel gateway is activated, all incoming sequence flows of the gateway must
+    // be taken at least once. decrement the number of the taken sequence flows for each incoming
+    // sequence flow but keep the remaining numbers for the next activation of the gateway.
+    // (Tetris principle)
+    elementInstanceState.decrementNumberOfTakenSequenceFlows(
+        value.getFlowScopeKey(), parallelGateway.getId());
   }
 
   private void decrementActiveSequenceFlow(

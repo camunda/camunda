@@ -245,18 +245,25 @@ public final class BpmnStateTransitionBehavior {
         context.copy(
             sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    final boolean shouldActivateTargetElement;
-    if (target.getElementType() != BpmnElementType.PARALLEL_GATEWAY) {
-      shouldActivateTargetElement = true;
-    } else {
-      // if all incoming sequence flows are taken at least once, the gateway can be activated
-      final var tokensBySequenceFlow =
-          sequenceFlowAnalyzer.determineTakenIncomingFlows(context.getFlowScopeKey(), target);
-      shouldActivateTargetElement = tokensBySequenceFlow.size() == target.getIncoming().size();
-    }
-
-    if (shouldActivateTargetElement) {
+    if (canActivateTargetElement(context, target)) {
       activateElementInstanceInFlowScope(sequenceFlowTaken, target);
+    }
+  }
+
+  private boolean canActivateTargetElement(
+      final BpmnElementContext context, final ExecutableFlowNode targetElement) {
+
+    final int numberOfIncomingSequenceFlows = targetElement.getIncoming().size();
+
+    if (targetElement.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
+      // activate the parallel gateway only if all incoming sequence flows are taken at least once
+      final int numberOfTakenSequenceFlows =
+          elementInstanceState.getNumberOfTakenSequenceFlows(
+              context.getFlowScopeKey(), targetElement.getId());
+      return numberOfTakenSequenceFlows == numberOfIncomingSequenceFlows;
+
+    } else {
+      return true;
     }
   }
 
