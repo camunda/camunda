@@ -202,6 +202,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     return metadata;
   }
 
+  @Override
+  public Path getPath() {
+    return directory;
+  }
+
   private void abortInternal() {
     try {
       LOGGER.debug("DELETE dir {}", directory);
