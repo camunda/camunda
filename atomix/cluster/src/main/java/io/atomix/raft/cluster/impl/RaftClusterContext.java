@@ -318,50 +318,15 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
     // Iterate through members in the new configuration, add any missing members, and update
     // existing members.
-    boolean transition = false;
     for (final RaftMember member : configuration.members()) {
-      if (member.equals(localMember)) {
-        transition = localMember.getType().ordinal() < member.getType().ordinal();
-        localMember.update(member.getType(), time);
-        members.add(localMember);
-      } else {
-        // If the member state doesn't already exist, create it.
-        RaftMemberContext state = membersMap.get(member.memberId());
-        if (state == null) {
-          final DefaultRaftMember defaultMember =
-              new DefaultRaftMember(member.memberId(), member.getType(), time);
-          state = new RaftMemberContext(defaultMember, this, raft.getMaxAppendsPerFollower());
-          state.resetState(raft.getLog());
-          members.add(state.getMember());
-          remoteMembers.add(state);
-          membersMap.put(member.memberId(), state);
-        }
-
-        // If the member type has changed, update the member type and reset its state.
-        if (state.getMember().getType() != member.getType()) {
-          state.getMember().update(member.getType(), time);
-          state.resetState(raft.getLog());
-        }
-
-        // Update the optimized member collections according to the member type.
-        for (final List<RaftMemberContext> memberType : memberTypes.values()) {
-          memberType.remove(state);
-        }
-
-        List<RaftMemberContext> memberType = memberTypes.get(member.getType());
-        if (memberType == null) {
-          memberType = new CopyOnWriteArrayList<>();
-          memberTypes.put(member.getType(), memberType);
-        }
-        memberType.add(state);
-      }
+      updateMember(member, time);
     }
 
     // Transition the local member only if the member is being promoted and not demoted.
     // Configuration changes that demote the local member are only applied to the local server
     // upon commitment. This ensures that e.g. a leader that's removing itself from the quorum
     // can commit the configuration change prior to shutting down.
-    if (transition) {
+    if (wasPromoted(configuration)) {
       raft.transition(localMember.getType());
     }
 
@@ -378,6 +343,50 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
 
     return this;
+  }
+
+  private boolean wasPromoted(final Configuration configuration) {
+    return configuration.members().stream()
+        .anyMatch(
+            m -> m.equals(localMember) && localMember.getType().ordinal() < m.getType().ordinal());
+  }
+
+  private void updateMember(final RaftMember member, final Instant time) {
+    if (member.equals(localMember)) {
+      localMember.update(member.getType(), time);
+      members.add(localMember);
+      return;
+    }
+
+    // If the member state doesn't already exist, create it.
+    RaftMemberContext state = membersMap.get(member.memberId());
+    if (state == null) {
+      final DefaultRaftMember defaultMember =
+          new DefaultRaftMember(member.memberId(), member.getType(), time);
+      state = new RaftMemberContext(defaultMember, this, raft.getMaxAppendsPerFollower());
+      state.resetState(raft.getLog());
+      members.add(state.getMember());
+      remoteMembers.add(state);
+      membersMap.put(member.memberId(), state);
+    }
+
+    // If the member type has changed, update the member type and reset its state.
+    if (state.getMember().getType() != member.getType()) {
+      state.getMember().update(member.getType(), time);
+      state.resetState(raft.getLog());
+    }
+
+    // Update the optimized member collections according to the member type.
+    for (final List<RaftMemberContext> memberType : memberTypes.values()) {
+      memberType.remove(state);
+    }
+
+    List<RaftMemberContext> memberType = memberTypes.get(member.getType());
+    if (memberType == null) {
+      memberType = new CopyOnWriteArrayList<>();
+      memberTypes.put(member.getType(), memberType);
+    }
+    memberType.add(state);
   }
 
   /**
