@@ -49,9 +49,9 @@ type integrationTestSuite struct {
 
 type testCase struct {
 	name       string
-	setupCmds  []string
+	setupCmds  [][]string
 	envVars    []string
-	cmd        string
+	cmd        []string
 	goldenFile string
 	jsonOutput bool
 }
@@ -59,32 +59,32 @@ type testCase struct {
 var tests = []testCase{
 	{
 		name:       "print help",
-		cmd:        "help",
+		cmd:        []string{"help"},
 		envVars:    []string{"HOME=/tmp"},
 		goldenFile: "testdata/help.golden",
 	},
 	{
 		name:       "print version",
-		cmd:        "version",
+		cmd:        []string{"version"},
 		envVars:    []string{"HOME=/tmp"},
 		goldenFile: "testdata/version.golden",
 	},
 	{
 		name:       "missing insecure flag",
-		cmd:        "status",
+		cmd:        []string{"status"},
 		envVars:    []string{"HOME=/tmp"},
 		goldenFile: "testdata/without_insecure.golden",
 	},
 	{
 		name: "using insecure env var",
-		cmd:  "status",
+		cmd:  []string{"status"},
 		// we need to set the path so it evaluates $HOME before we overwrite it
 		envVars:    []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
 		goldenFile: "testdata/topology.golden",
 	},
 	{
 		name: "using json flag",
-		cmd:  "status --output=json",
+		cmd:  strings.Fields("status --output=json"),
 		// we need to set the path so it evaluates $HOME before we overwrite it
 		envVars:    []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
 		goldenFile: "testdata/topology_json.golden",
@@ -92,41 +92,58 @@ var tests = []testCase{
 	},
 	{
 		name:       "deploy process",
-		cmd:        "--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn",
+		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn"),
 		goldenFile: "testdata/deploy.golden",
 		jsonOutput: true,
 	},
 	{
 		name:       "create instance",
-		setupCmds:  []string{"--insecure deploy testdata/model.bpmn"},
-		cmd:        "--insecure create instance process",
+		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/model.bpmn")},
+		cmd:        strings.Fields("--insecure create instance process"),
 		goldenFile: "testdata/create_instance.golden",
 		jsonOutput: true,
 	},
 	{
-		name:       "create worker",
-		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess"},
-		cmd:        "create --insecure worker jobType --handler echo",
+		name: "create worker",
+		setupCmds: [][]string{
+			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
+			strings.Fields("--insecure create instance jobProcess"),
+		},
+		cmd:        strings.Fields("create --insecure worker jobType --handler echo"),
 		goldenFile: "testdata/create_worker.golden",
 	},
 	{
 		name:       "empty activate job",
-		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 0",
+		cmd:        strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 0"),
 		goldenFile: "testdata/empty_activate_job.golden",
 		jsonOutput: true,
 	},
 	{
-		name:       "single activate job",
-		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess"},
-		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 1",
+		name: "single activate job",
+		setupCmds: [][]string{
+			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
+			strings.Fields("--insecure create instance jobProcess"),
+		},
+		cmd:        strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 1"),
 		goldenFile: "testdata/single_activate_job.golden",
 		jsonOutput: true,
 	},
 	{
-		name:       "double activate job",
-		setupCmds:  []string{"--insecure deploy testdata/job_model.bpmn", "--insecure create instance jobProcess", "--insecure create instance jobProcess"},
-		cmd:        "--insecure activate jobs jobType --maxJobsToActivate 2",
+		name: "double activate job",
+		setupCmds: [][]string{
+			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
+			strings.Fields("--insecure create instance jobProcess"),
+			strings.Fields("--insecure create instance jobProcess"),
+		},
+		cmd:        strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 2"),
 		goldenFile: "testdata/double_activate_job.golden",
+		jsonOutput: true,
+	},
+	{
+		name:       "send message with a space",
+		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/start_event.bpmn")},
+		cmd:        []string{"--insecure", "publish", "message", "Start Process", "--correlationKey", "1234"},
+		goldenFile: "testdata/publish_message_with_space.golden",
 		jsonOutput: true,
 	},
 }
@@ -163,7 +180,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 
 			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
 			if errors.Is(err, context.DeadlineExceeded) {
-				t.Fatalf("timed out while executing command '%s': %v", test.cmd, err)
+				t.Fatalf("timed out while executing command '%s': %v", strings.Join(test.cmd, " "), err)
 			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
@@ -248,11 +265,11 @@ func cmpIgnoreNums(x, y string) bool {
 }
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
-func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]byte, error) {
+func (s *integrationTestSuite) runCommand(command []string, envVars ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	args := append(strings.Fields(command), "--address", s.GatewayAddress)
+	args := append(command, "--address", s.GatewayAddress)
 	cmd := exec.CommandContext(ctx, fmt.Sprintf("./dist/%s", zbctl), args...)
 
 	cmd.Env = append(cmd.Env, envVars...)
