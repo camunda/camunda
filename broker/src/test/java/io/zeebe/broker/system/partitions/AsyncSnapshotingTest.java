@@ -88,7 +88,6 @@ public final class AsyncSnapshotingTest {
 
     snapshotController.openDb();
     autoCloseableRule.manage(snapshotController);
-    autoCloseableRule.manage(persistedSnapshotStore);
     snapshotController = spy(snapshotController);
 
     logStream = mock(LogStream.class);

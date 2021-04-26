@@ -85,9 +85,7 @@ public final class FailingSnapshotChunkReplicationTest {
     receiverStore.addSnapshotListener(receiverSnapshotController);
 
     autoCloseableRule.manage(replicatorSnapshotController);
-    autoCloseableRule.manage(senderStore);
     autoCloseableRule.manage(receiverSnapshotController);
-    autoCloseableRule.manage(receiverStore);
     replicatorSnapshotController.openDb();
   }
 
