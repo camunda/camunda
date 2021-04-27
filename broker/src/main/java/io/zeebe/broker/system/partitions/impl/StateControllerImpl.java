@@ -250,8 +250,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       LOG.debug(
           "Received all snapshot chunks ({}/{}), snapshot {} is valid",
           context.getChunkCount(),
-          snapshotChunk.getSnapshotId(),
-          totalChunkCount);
+          totalChunkCount,
+          snapshotChunk.getSnapshotId());
       if (!tryToMarkSnapshotAsValid(snapshotChunk, context)) {
         LOG.debug("Failed to mark snapshot {} as valid", snapshotChunk.getSnapshotId());
       }
