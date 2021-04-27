@@ -52,49 +52,6 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   default void onActivate(final T element, final BpmnElementContext context) {}
 
   /**
-   * The element is entered (initial step). Perform every action to initialize the element.
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>apply input mappings
-   *   <li>open event subscriptions
-   * </ul>
-   *
-   * Next step: activated.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated will be replaced by onActivate
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onActivating(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onActivate");
-  }
-
-  /**
-   * The element is initialized. If the element is a wait-state (i.e. it is waiting for an event or
-   * an external trigger) then it is waiting in this step to continue. Otherwise, it continues
-   * directly to the next step.
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>initialize child elements - if the element is a container (e.g. a sub-process)
-   * </ul>
-   *
-   * Next step: completing - if not a wait-state.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated will be replaced by onActivate
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onActivated(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onActivate");
-  }
-
-  /**
    * The element is going to be left. Perform every action to leave the element and continue with
    * the next element.
    *
@@ -114,49 +71,6 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onComplete(final T element, final BpmnElementContext context) {}
-
-  /**
-   * The element is going to be left. Perform every action to leave the element.
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>apply output mappings
-   *   <li>close event subscriptions
-   * </ul>
-   *
-   * <p>Next step: completed.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated will be replaced by onComplete
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onCompleting(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onComplete");
-  }
-
-  /**
-   * The element is left (final step). Continue with the next element.
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>take outgoing sequence flows - if any
-   *   <li>continue with parent element - if no outgoing sequence flows
-   *   <li>clean up the state
-   * </ul>
-   *
-   * Next step: none.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated will be replaced by onComplete
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onCompleted(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onComplete");
-  }
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element and
@@ -179,49 +93,4 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
-
-  /**
-   * The element is going to be terminated. Perform every action to terminate the element.
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>close event subscriptions
-   * </ul>
-   *
-   * <p>Next step: terminated.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated will be replaced by onTerminate
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onTerminating(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onTerminate");
-  }
-
-  /**
-   * The element is terminated (final step). Continue with the element that caused the termination
-   * (e.g. the triggered boundary event).
-   *
-   * <p>Possible actions:
-   *
-   * <ul>
-   *   <li>resolve incidents
-   *   <li>activate the triggered boundary event - if any
-   *   <li>activate the triggered event sub-process - if any
-   *   <li>continue with parent element
-   *   <li>clean up the state
-   * </ul>
-   *
-   * Next step: none.
-   *
-   * @param element the instance of the BPMN element that is executed
-   * @param context process instance-related data of the element that is executed
-   * @deprecated will be replaced by onTerminate
-   */
-  @Deprecated // todo (#6202): remove method
-  default void onTerminated(final T element, final BpmnElementContext context) {
-    throw new UnsupportedOperationException("This method is replaced by onTerminate");
-  }
 }
