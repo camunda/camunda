@@ -14,7 +14,6 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -32,7 +31,6 @@ final class ProcessInstanceElementActivatingApplier
   private final MutableVariableState variableState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final SequenceFlowAnalyzer sequenceFlowAnalyzer;
 
   public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
@@ -43,7 +41,6 @@ final class ProcessInstanceElementActivatingApplier
     this.processState = processState;
     this.variableState = variableState;
     this.eventScopeInstanceState = eventScopeInstanceState;
-    sequenceFlowAnalyzer = new SequenceFlowAnalyzer(elementInstanceState);
   }
 
   @Override

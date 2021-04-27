@@ -23,7 +23,6 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -53,7 +52,6 @@ public final class BpmnStateTransitionBehavior {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final MutableElementInstanceState elementInstanceState;
-  private final SequenceFlowAnalyzer sequenceFlowAnalyzer;
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
@@ -73,7 +71,6 @@ public final class BpmnStateTransitionBehavior {
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.elementInstanceState = elementInstanceState;
-    sequenceFlowAnalyzer = new SequenceFlowAnalyzer(elementInstanceState);
   }
 
   /** @return context with updated intent */
