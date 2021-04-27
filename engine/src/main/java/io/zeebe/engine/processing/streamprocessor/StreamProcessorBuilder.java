@@ -70,12 +70,6 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder detectReprocessingInconsistency(
-      final boolean detectReprocessingInconsistency) {
-    processingContext.setDetectReprocessingInconsistency(detectReprocessingInconsistency);
-    return this;
-  }
-
   public StreamProcessorBuilder eventApplierFactory(
       final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
     this.eventApplierFactory = eventApplierFactory;
