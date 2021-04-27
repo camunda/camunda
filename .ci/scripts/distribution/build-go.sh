@@ -17,7 +17,8 @@ for file in {internal,cmd/zbctl/internal}/*; do
   EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
 done
 
-/usr/bin/gocompat compare --go1compat $EXCLUDE ./...
+# Disabled for 1.0
+# /usr/bin/gocompat compare --go1compat $EXCLUDE ./...
 
 cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 
