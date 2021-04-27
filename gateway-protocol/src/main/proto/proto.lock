@@ -670,7 +670,7 @@
           },
           {
             "name": "go_package",
-            "value": "pb"
+            "value": "./;pb"
           }
         ]
       }
