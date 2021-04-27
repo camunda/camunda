@@ -253,7 +253,7 @@ public final class ProcessingStateMachine {
 
       processInTransaction(typedEvent);
 
-      metrics.eventProcessed();
+      metrics.commandsProcessed();
 
       writeEvent();
     } catch (final RecoverableException recoverableException) {
@@ -398,8 +398,12 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_WRITE_EVENT_ABORTED, currentEvent, metadata, t);
             onError(t, this::writeEvent);
           } else {
+            // We write various type of records. The positions are always increasing and
+            // incremented by 1 for one record (even in a batch), so we can count the amount
+            // of written events via the lastWritten and now written position.
+            final var amount = writtenEventPosition - lastWrittenEventPosition;
+            metrics.recordsWritten(amount);
             updateState();
-            metrics.eventWritten();
           }
         });
   }
