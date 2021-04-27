@@ -51,7 +51,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.zeebe.journal.JournalException;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
+import io.zeebe.snapshots.PersistedSnapshotListener;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;

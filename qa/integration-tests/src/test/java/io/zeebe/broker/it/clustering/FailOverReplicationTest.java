@@ -15,7 +15,7 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.snapshots.broker.SnapshotId;
+import io.zeebe.snapshots.SnapshotId;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

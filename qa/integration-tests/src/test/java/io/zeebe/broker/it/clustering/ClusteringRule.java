@@ -46,8 +46,8 @@ import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.zeebe.snapshots.broker.SnapshotId;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
+import io.zeebe.snapshots.SnapshotId;
+import io.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
@@ -710,11 +710,6 @@ public final class ClusteringRule extends ExternalResource {
   public Path getSegmentsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectory();
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
-  }
-
-  public File getSnapshotsDirectory(final Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectory();
-    return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
 
   public SnapshotId waitForSnapshotAtBroker(final Broker broker) {

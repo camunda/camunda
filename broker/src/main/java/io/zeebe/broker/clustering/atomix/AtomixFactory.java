@@ -26,7 +26,7 @@ import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.MembershipCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.logstreams.impl.log.ZeebeEntryValidator;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
+import io.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;

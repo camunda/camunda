@@ -22,7 +22,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
+import io.zeebe.snapshots.SnapshotStoreSupplier;
 import io.zeebe.util.health.HealthMonitor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
