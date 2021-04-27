@@ -21,15 +21,6 @@ public interface DeploymentResource {
   /** @return the resource contents */
   byte[] getResource();
 
-  /**
-   * @return the type of the resource
-   * @deprecated As of release 1.0, YAML support was removed and BPMN is the only supported resource
-   *     type. The method was kept to not break exporters relying on this method, e.g. hazelcast,
-   *     elastic (operate).
-   */
-  @Deprecated
-  ResourceType getResourceType();
-
   /** @return the name of the resource */
   String getResourceName();
 }

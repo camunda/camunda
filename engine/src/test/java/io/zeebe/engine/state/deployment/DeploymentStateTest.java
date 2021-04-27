@@ -14,7 +14,6 @@ import io.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -272,7 +271,6 @@ public class DeploymentStateTest {
         .resources()
         .add()
         .setResourceName(wrapString("resource"))
-        .setResourceType(ResourceType.BPMN_XML)
         .setResource(wrapString(Bpmn.convertToString(modelInstance)));
 
     deploymentRecord

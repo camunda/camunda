@@ -131,12 +131,6 @@
               <method>*</method>
               <differenceType>7012</differenceType>
             </ignored>
-            <ignored>
-              <!-- YAML support was removed -->
-              <className>io/zeebe/protocol/record/value/deployment/ResourceType</className>
-              <field>*</field>
-              <differenceType>6001</differenceType>
-            </ignored>
           </ignored>
         </configuration>
       </plugin>

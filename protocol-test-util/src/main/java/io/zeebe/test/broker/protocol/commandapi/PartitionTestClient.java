@@ -108,7 +108,7 @@ public final class PartitionTestClient {
   }
 
   public ExecuteCommandResponse deployWithResponse(final byte[] resource) {
-    return deployWithResponse(resource, "BPMN_XML", "process.bpmn");
+    return deployWithResponse(resource, "process.bpmn");
   }
 
   public ExecuteCommandResponse deployWithResponse(final BpmnModelInstance process) {
@@ -121,11 +121,11 @@ public final class PartitionTestClient {
     Bpmn.writeModelToStream(outStream, process);
     final byte[] resource = outStream.toByteArray();
 
-    return deployWithResponse(resource, "BPMN_XML", resourceName);
+    return deployWithResponse(resource, resourceName);
   }
 
   public ExecuteCommandResponse deployWithResponse(
-      final byte[] resource, final String resourceType, final String resourceName) {
+      final byte[] resource, final String resourceName) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
     deploymentResource.put("resourceName", resourceName);

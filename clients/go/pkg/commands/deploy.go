@@ -31,11 +31,11 @@ func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return cmd.AddResource(b, path, pb.ProcessRequestObject_FILE)
+	return cmd.AddResource(b, path)
 }
 
-func (cmd *DeployCommand) AddResource(definition []byte, name string, resourceType pb.ProcessRequestObject_ResourceType) *DeployCommand {
-	cmd.request.Processes = append(cmd.request.Processes, &pb.ProcessRequestObject{Definition: definition, Name: name, Type: resourceType})
+func (cmd *DeployCommand) AddResource(definition []byte, name string) *DeployCommand {
+	cmd.request.Processes = append(cmd.request.Processes, &pb.ProcessRequestObject{Definition: definition, Name: name})
 	return cmd
 }
 

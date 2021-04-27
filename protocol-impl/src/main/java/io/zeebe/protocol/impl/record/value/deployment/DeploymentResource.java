@@ -12,9 +12,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BinaryProperty;
-import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -22,23 +20,15 @@ public final class DeploymentResource extends UnpackedObject
     implements io.zeebe.protocol.record.value.deployment.DeploymentResource {
 
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
-  private final EnumProperty<ResourceType> resourceTypeProp =
-      new EnumProperty<>("resourceType", ResourceType.class, ResourceType.BPMN_XML);
   private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
 
   public DeploymentResource() {
-    declareProperty(resourceTypeProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(resourceProp);
+    declareProperty(resourceNameProp).declareProperty(resourceProp);
   }
 
   @Override
   public byte[] getResource() {
     return BufferUtil.bufferAsArray(resourceProp.getValue());
-  }
-
-  public ResourceType getResourceType() {
-    return resourceTypeProp.getValue();
   }
 
   @Override
@@ -53,11 +43,6 @@ public final class DeploymentResource extends UnpackedObject
 
   public DeploymentResource setResourceName(final DirectBuffer resourceName) {
     resourceNameProp.setValue(resourceName);
-    return this;
-  }
-
-  public DeploymentResource setResourceType(final ResourceType resourceType) {
-    resourceTypeProp.setValue(resourceType);
     return this;
   }
 
