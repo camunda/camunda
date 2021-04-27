@@ -130,8 +130,7 @@ public class TaskResponse {
       return "Error{" +
         "type='" + type + "\', reason='" + reason + '\'' +
         ", script_stack='" + scriptStackString + "\'\n" +
-        "caused_by='" + causedByString + '\'' +
-        '}';
+        "caused_by=" + causedByString + '}';
     }
   }
 

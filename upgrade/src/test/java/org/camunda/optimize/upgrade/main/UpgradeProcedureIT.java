@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.main;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
@@ -22,8 +23,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -114,25 +113,14 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
     // when
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
-      // then
+      // then the logged message includes all of the task error fields
       .isInstanceOf(UpgradeRuntimeException.class)
       .getCause()
-      .hasMessageContaining(getExpectedTaskErrorString());
-  }
-
-  private String getExpectedTaskErrorString() {
-    final Map<String, Object> reasons = new HashMap<>();
-    reasons.put("type", "null_pointer_exception");
-    reasons.put("reason", null);
-    return new TaskResponse.Error(
-      "script_exception",
-      "runtime error",
-      Arrays.asList(
-        "params.get(ctx._source.someNonExistentField).values();",
-        "                                            ^---- HERE"
-      ),
-      reasons
-    ).toString();
+      .hasMessageContainingAll(
+        Arrays.stream(TaskResponse.Error.class.getDeclaredFields())
+          .filter(field -> field.isAnnotationPresent(JsonProperty.class))
+          .map(field -> field.getAnnotation(JsonProperty.class).value())
+          .toArray(CharSequence[]::new));
   }
 
 }
