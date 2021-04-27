@@ -7,12 +7,9 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import static io.zeebe.util.StringUtil.LIST_SANITIZER;
-
 import io.zeebe.broker.Loggers;
 import java.io.File;
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.springframework.util.unit.DataSize;
@@ -29,13 +26,6 @@ public final class DataCfg implements ConfigurationEntry {
   private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.97;
   private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
   private static final double DISABLED_DISK_USAGE_WATERMARK = 1.0;
-
-  /**
-   * @deprecated this field is deprecated in favour of {@code directory}, and will be removed in
-   *     0.27.0
-   */
-  @Deprecated(since = "0.26.0")
-  private List<String> directories;
 
   private String directory = DEFAULT_DIRECTORY;
 
@@ -54,42 +44,12 @@ public final class DataCfg implements ConfigurationEntry {
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
 
-    // fallback to directories if it's still specified
-    if (directories != null) {
-      directories = LIST_SANITIZER.apply(directories);
-      if (!directories.isEmpty()) {
-        directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
-        directory = directories.get(0);
-      }
-    }
-
     if (!diskUsageMonitoringEnabled) {
       LOG.info(
           "Disk usage watermarks are disabled, setting all watermarks to {}",
           DISABLED_DISK_USAGE_WATERMARK);
       diskUsageReplicationWatermark = DISABLED_DISK_USAGE_WATERMARK;
       diskUsageCommandWatermark = DISABLED_DISK_USAGE_WATERMARK;
-    }
-  }
-
-  /**
-   * @deprecated this method is deprecated in favour of {@link #getDirectory()}, and will be removed
-   *     in 0.27.0
-   */
-  @Deprecated(since = "0.26.0")
-  public List<String> getDirectories() {
-    return directories;
-  }
-
-  /**
-   * @deprecated this method is deprecated in favour of {@link #setDirectory(String)}}, and will be
-   *     removed in 0.27.0
-   */
-  @Deprecated(since = "0.26.0")
-  public void setDirectories(final List<String> directories) {
-    this.directories = LIST_SANITIZER.apply(directories);
-    if (!this.directories.isEmpty()) {
-      directory = directories.get(0);
     }
   }
 

@@ -65,9 +65,6 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.disableExplicitRaftFlush";
   private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
 
-  @Deprecated(since = "0.26.0")
-  private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
-
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
       "zeebe.broker.network.advertisedHost";
@@ -372,17 +369,6 @@ public final class BrokerCfgTest {
     // given
     final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
     environment.put(ZEEBE_BROKER_DATA_DIRECTORY, "foo");
-
-    // then
-    assertWithDefaultConfigurations(
-        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
-  }
-
-  @Test
-  public void shouldOverrideDirectoryWithFirstDirectories() {
-    // given
-    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
-    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
 
     // then
     assertWithDefaultConfigurations(
