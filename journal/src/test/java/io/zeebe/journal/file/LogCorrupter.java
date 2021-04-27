@@ -16,9 +16,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 
 public class LogCorrupter {
+
+  private static final int BUFFER_SIZE = 8 * 1024;
 
   /**
    * Corrupts the record associated with the specified index, if it's present in the file.
@@ -28,12 +29,12 @@ public class LogCorrupter {
    * @return true if the specified record was successfully corrupted; otherwise, returns false
    */
   public static boolean corruptRecord(final File file, final long index) throws IOException {
-    final byte[] bytes = new byte[1024];
+    final byte[] bytes = new byte[BUFFER_SIZE];
     int read = 0;
 
     try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
-      while (in.available() > 0 && read < 1024) {
-        read += in.read(bytes, read, Math.min(1024, in.available()) - read);
+      while (in.available() > 0 && read < bytes.length) {
+        read += in.read(bytes, read, Math.min(bytes.length, in.available()) - read);
       }
     }
 
@@ -53,19 +54,18 @@ public class LogCorrupter {
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
     buffer.position(JournalSegmentDescriptor.getEncodingLength());
 
-    Optional<Integer> version = FrameUtil.readVersion(buffer);
-    for (long index = 1; version.isPresent() && version.get() == 1; index++) {
+    for (long index = 1;
+        FrameUtil.hasValidVersion(buffer) && FrameUtil.readVersion(buffer) == 1;
+        index++) {
       final var record = reader.read(buffer, index);
 
-      if (record == null || record.index() > targetIndex) {
+      if (record.index() > targetIndex) {
         break;
       } else if (record.index() == targetIndex) {
         final int lastPos = buffer.position() - 1;
         buffer.put(lastPos, (byte) ~buffer.get(lastPos));
         return true;
       }
-
-      version = FrameUtil.readVersion(buffer);
     }
 
     return false;

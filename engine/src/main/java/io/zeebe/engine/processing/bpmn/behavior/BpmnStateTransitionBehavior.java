@@ -12,7 +12,7 @@ import io.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
-import io.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -23,11 +23,13 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
+import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -47,18 +49,17 @@ public final class BpmnStateTransitionBehavior {
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
       processorLookUp;
 
-  private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final MutableElementInstanceState elementInstanceState;
+  private final SequenceFlowAnalyzer sequenceFlowAnalyzer;
 
   public BpmnStateTransitionBehavior(
       final TypedStreamWriter streamWriter,
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
       final ProcessEngineMetrics metrics,
-      final ProcessInstanceStateTransitionGuard stateTransitionGuard,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
       final Writers writers,
@@ -68,11 +69,11 @@ public final class BpmnStateTransitionBehavior {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
-    this.stateTransitionGuard = stateTransitionGuard;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.elementInstanceState = elementInstanceState;
+    sequenceFlowAnalyzer = new SequenceFlowAnalyzer(elementInstanceState);
   }
 
   /** @return context with updated intent */
@@ -112,10 +113,6 @@ public final class BpmnStateTransitionBehavior {
   public BpmnElementContext transitionToActivated(final BpmnElementContext context) {
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    }
     metrics.elementInstanceActivated(context);
     return transitionedContext;
   }
@@ -135,12 +132,7 @@ public final class BpmnStateTransitionBehavior {
             ProcessInstanceIntent.ELEMENT_COMPLETING);
       }
     }
-    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_COMPLETING);
-    }
-    return transitionedContext;
+    return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
   }
 
   /**
@@ -186,10 +178,6 @@ public final class BpmnStateTransitionBehavior {
   /** @return context with updated intent */
   public BpmnElementContext transitionToCompleted(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    }
     metrics.elementInstanceCompleted(context);
     return transitionedContext;
   }
@@ -204,22 +192,12 @@ public final class BpmnStateTransitionBehavior {
               context.getBpmnElementType(),
               "#transitionToTerminating"));
     }
-    final var transitionedContext =
-        transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    if (!isMigrated) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    }
-    return transitionedContext;
+    return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
   }
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToTerminated(final BpmnElementContext context) {
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      stateTransitionGuard.registerStateTransition(
-          context, ProcessInstanceIntent.ELEMENT_TERMINATED);
-    }
     metrics.elementInstanceTerminated(context);
     return transitionedContext;
   }
@@ -252,24 +230,33 @@ public final class BpmnStateTransitionBehavior {
   public void takeSequenceFlow(
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+    final var target = sequenceFlow.getTarget();
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
         .setElementId(sequenceFlow.getId())
         .setBpmnElementType(sequenceFlow.getElementType());
 
+    // take the sequence flow
     final var sequenceFlowKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+    final BpmnElementContext sequenceFlowTaken =
+        context.copy(
+            sequenceFlowKey, followUpInstanceRecord, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      flowScopeInstance.incrementActiveSequenceFlows();
-      elementInstanceState.updateInstance(flowScopeInstance);
-
-      streamWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+    final boolean shouldActivateTargetElement;
+    if (target.getElementType() != BpmnElementType.PARALLEL_GATEWAY) {
+      shouldActivateTargetElement = true;
     } else {
-      stateWriter.appendFollowUpEvent(
-          sequenceFlowKey, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN, followUpInstanceRecord);
+      // if all incoming sequence flows are taken at least once, the gateway can be activated
+      final var tokensBySequenceFlow =
+          sequenceFlowAnalyzer.determineTakenIncomingFlows(context.getFlowScopeKey(), target);
+      shouldActivateTargetElement = tokensBySequenceFlow.size() == target.getIncoming().size();
+    }
+
+    if (shouldActivateTargetElement) {
+      activateElementInstanceInFlowScope(sequenceFlowTaken, target);
     }
   }
 
@@ -415,9 +402,11 @@ public final class BpmnStateTransitionBehavior {
     invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) ->
-            containerProcessor.beforeExecutionPathCompleted(
-                containerScope, containerContext, childContext));
+        (containerProcessor, containerScope, containerContext) -> {
+          containerProcessor.beforeExecutionPathCompleted(
+              containerScope, containerContext, childContext);
+          return Either.right(null);
+        });
   }
 
   // CALL ACTIVITY SPECIFIC
@@ -444,9 +433,11 @@ public final class BpmnStateTransitionBehavior {
     invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) ->
-            containerProcessor.afterExecutionPathCompleted(
-                containerScope, containerContext, childContext));
+        (containerProcessor, containerScope, containerContext) -> {
+          containerProcessor.afterExecutionPathCompleted(
+              containerScope, containerContext, childContext);
+          return Either.right(null);
+        });
   }
 
   public void onElementTerminated(
@@ -455,21 +446,23 @@ public final class BpmnStateTransitionBehavior {
     invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) ->
-            containerProcessor.onChildTerminated(containerScope, containerContext, childContext));
+        (containerProcessor, containerScope, containerContext) -> {
+          containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
+          return Either.right(null);
+        });
   }
 
-  public void onElementActivating(
+  public Either<Failure, ?> onElementActivating(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
 
-    invokeElementContainerIfPresent(
+    return invokeElementContainerIfPresent(
         element,
         childContext,
         (containerProcessor, containerScope, containerContext) ->
             containerProcessor.onChildActivating(containerScope, containerContext, childContext));
   }
 
-  private void invokeElementContainerIfPresent(
+  private Either<Failure, ?> invokeElementContainerIfPresent(
       final ExecutableFlowElement childElement,
       final BpmnElementContext childContext,
       final ElementContainerProcessorFunction containerFunction) {
@@ -489,11 +482,11 @@ public final class BpmnStateTransitionBehavior {
 
     } else {
       // no flow scope or no parent process
-      return;
+      return Either.right(null);
     }
     final var containerProcessor = processorLookUp.apply(containerScope.getElementType());
 
-    containerFunction.apply(containerProcessor, containerScope, containerContext);
+    return containerFunction.apply(containerProcessor, containerScope, containerContext);
   }
 
   private ExecutableCallActivity getParentProcessScope(
@@ -557,7 +550,7 @@ public final class BpmnStateTransitionBehavior {
 
   @FunctionalInterface
   private interface ElementContainerProcessorFunction {
-    void apply(
+    Either<Failure, ?> apply(
         BpmnElementContainerProcessor<ExecutableFlowElement> containerProcessor,
         ExecutableFlowElement containerScope,
         BpmnElementContext containerContext);

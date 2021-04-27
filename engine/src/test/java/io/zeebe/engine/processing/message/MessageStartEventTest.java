@@ -22,11 +22,13 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,7 +57,7 @@ public final class MessageStartEventTest {
   private static BpmnModelInstance singleStartEvent(
       final Consumer<StartEventBuilder> customizer, final String messageName) {
     final var startEventBuilder =
-        Bpmn.createExecutableProcess("wf").startEvent().message(messageName);
+        Bpmn.createExecutableProcess("wf").startEvent("start").message(messageName);
 
     customizer.accept(startEventBuilder);
 
@@ -604,6 +606,65 @@ public final class MessageStartEventTest {
         .extracting(r -> r.getValue().getValue())
         .describedAs("Expected messages [1,2,3] to be correlated")
         .containsExactly("1", "2", "3");
+  }
+
+  @Test
+  public void shouldWriteCorrelatedEventsForBufferedMessages() {
+    // given
+    final var instanceCount = 3;
+    engine.deployment().withXmlResource(SINGLE_START_EVENT_1).deploy();
+
+    // when
+    final var expectedSubscriptionTuples =
+        IntStream.range(0, instanceCount)
+            .mapToObj(
+                i -> {
+                  final Map<String, Object> variables = Map.of("x", i);
+
+                  final var messagePublished =
+                      engine
+                          .message()
+                          .withName(MESSAGE_NAME_1)
+                          .withCorrelationKey(CORRELATION_KEY_1)
+                          .withVariables(variables)
+                          .publish();
+
+                  final var jobCreated =
+                      RecordingExporter.jobRecords(JobIntent.CREATED).skip(i).getFirst();
+                  engine.job().withKey(jobCreated.getKey()).complete();
+
+                  final var processInstanceKey = jobCreated.getValue().getProcessInstanceKey();
+                  return tuple(messagePublished.getKey(), processInstanceKey, variables);
+                })
+            .collect(Collectors.toList());
+
+    // then
+    final var process = RecordingExporter.processRecords().getFirst().getValue();
+
+    final var subscriptionRecords =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .limit(instanceCount)
+            .map(Record::getValue)
+            .collect(Collectors.toList());
+
+    assertThat(subscriptionRecords)
+        .allSatisfy(
+            value -> {
+              assertThat(value.getMessageName()).isEqualTo(MESSAGE_NAME_1);
+              assertThat(value.getCorrelationKey()).isEqualTo(CORRELATION_KEY_1);
+              assertThat(value.getProcessDefinitionKey())
+                  .isEqualTo(process.getProcessDefinitionKey());
+              assertThat(value.getBpmnProcessId()).isEqualTo(process.getBpmnProcessId());
+              assertThat(value.getStartEventId()).isEqualTo("start");
+            });
+
+    assertThat(subscriptionRecords)
+        .extracting(
+            MessageStartEventSubscriptionRecordValue::getMessageKey,
+            MessageStartEventSubscriptionRecordValue::getProcessInstanceKey,
+            MessageStartEventSubscriptionRecordValue::getVariables)
+        .containsSequence(expectedSubscriptionTuples);
   }
 
   @Test

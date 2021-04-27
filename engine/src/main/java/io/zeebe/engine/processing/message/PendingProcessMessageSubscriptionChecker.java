@@ -103,20 +103,20 @@ public final class PendingProcessMessageSubscriptionChecker
 
   private boolean sendOpenCommand(final ProcessMessageSubscription subscription) {
     return commandSender.openMessageSubscription(
-        subscription.getSubscriptionPartitionId(),
-        subscription.getProcessInstanceKey(),
-        subscription.getElementInstanceKey(),
-        subscription.getBpmnProcessId(),
-        subscription.getMessageName(),
-        subscription.getCorrelationKey(),
-        subscription.shouldCloseOnCorrelate());
+        subscription.getRecord().getSubscriptionPartitionId(),
+        subscription.getRecord().getProcessInstanceKey(),
+        subscription.getRecord().getElementInstanceKey(),
+        subscription.getRecord().getBpmnProcessIdBuffer(),
+        subscription.getRecord().getMessageNameBuffer(),
+        subscription.getRecord().getCorrelationKeyBuffer(),
+        subscription.getRecord().isInterrupting());
   }
 
   private boolean sendCloseCommand(final ProcessMessageSubscription subscription) {
     return commandSender.closeMessageSubscription(
-        subscription.getSubscriptionPartitionId(),
-        subscription.getProcessInstanceKey(),
-        subscription.getElementInstanceKey(),
-        subscription.getMessageName());
+        subscription.getRecord().getSubscriptionPartitionId(),
+        subscription.getRecord().getProcessInstanceKey(),
+        subscription.getRecord().getElementInstanceKey(),
+        subscription.getRecord().getMessageNameBuffer());
   }
 }

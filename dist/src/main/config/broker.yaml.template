@@ -460,11 +460,6 @@
       # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE
       # maxAppendBatchSize = 32KB;
 
-      # Enables the detection of an inconsistency during reprocessing. If a inconsistency is detect the StreamProcessor is
-      # failed and the partition becomes unhealthy, no further progress will made on that specific partition.
-      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY
-      # detectReprocessingInconsistency = false;
-
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
         # Specify custom column family options overwriting Zeebe's own defaults.

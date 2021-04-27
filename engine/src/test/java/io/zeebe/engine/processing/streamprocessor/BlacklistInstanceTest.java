@@ -73,7 +73,6 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       ////////////// INCIDENTS ///////////////
       ////////////////////////////////////////
-      {ValueType.INCIDENT, IncidentIntent.CREATE, true},
       {ValueType.INCIDENT, IncidentIntent.CREATED, true},
       {ValueType.INCIDENT, IncidentIntent.RESOLVED, true},
 
@@ -138,7 +137,6 @@ public final class BlacklistInstanceTest {
       ////////////////////////////////////////
       //////////////// TIMERS ////////////////
       ////////////////////////////////////////
-      {ValueType.TIMER, TimerIntent.CREATE, true},
       {ValueType.TIMER, TimerIntent.CREATED, true},
       {ValueType.TIMER, TimerIntent.TRIGGER, true},
       {ValueType.TIMER, TimerIntent.TRIGGERED, true},
@@ -167,7 +165,6 @@ public final class BlacklistInstanceTest {
       {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED, true},
       {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING, true},
       {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED, true},
-      {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.EVENT_OCCURRED, true},
 
       // USER COMMAND
       {ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL, false},

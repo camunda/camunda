@@ -139,6 +139,11 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
+  public RaftLogBuilder withLastWrittenIndex(final long lastWrittenIndex) {
+    journalBuilder.withLastWrittenIndex(lastWrittenIndex);
+    return this;
+  }
+
   @Override
   public RaftLog build() {
     final Journal journal = journalBuilder.build();

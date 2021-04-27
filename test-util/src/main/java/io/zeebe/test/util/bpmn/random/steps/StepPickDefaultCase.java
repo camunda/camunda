@@ -7,6 +7,9 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Map;
+
 public final class StepPickDefaultCase extends AbstractExecutionStep {
 
   private final String forkingGatewayId;
@@ -17,6 +20,29 @@ public final class StepPickDefaultCase extends AbstractExecutionStep {
   }
 
   @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return true;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + forkingGatewayId.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -24,21 +50,12 @@ public final class StepPickDefaultCase extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepPickDefaultCase that = (StepPickDefaultCase) o;
 
-    if (forkingGatewayId != null
-        ? !forkingGatewayId.equals(that.forkingGatewayId)
-        : that.forkingGatewayId != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = forkingGatewayId != null ? forkingGatewayId.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
-    return result;
+    return forkingGatewayId.equals(that.forkingGatewayId);
   }
 }

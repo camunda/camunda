@@ -109,15 +109,15 @@ public final class MessageCorrelationMultiplePartitionsTest {
     // when
     final ProcessInstanceCreationClient processInstanceCreationClient =
         engine.processInstance().ofBpmnProcessId(PROCESS_ID);
-    final long wfiKey1 =
+    final long processInstanceKey1 =
         processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
             .create();
-    final long wfiKey2 =
+    final long processInstanceKey2 =
         processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
             .create();
-    final long wfiKey3 =
+    final long processInstanceKey3 =
         processInstanceCreationClient
             .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
             .create();
@@ -125,9 +125,9 @@ public final class MessageCorrelationMultiplePartitionsTest {
     // then
     final List<String> correlatedValues =
         Arrays.asList(
-            ProcessInstances.getCurrentVariables(wfiKey1).get("p"),
-            ProcessInstances.getCurrentVariables(wfiKey2).get("p"),
-            ProcessInstances.getCurrentVariables(wfiKey3).get("p"));
+            ProcessInstances.getCurrentVariables(processInstanceKey1).get("p"),
+            ProcessInstances.getCurrentVariables(processInstanceKey2).get("p"),
+            ProcessInstances.getCurrentVariables(processInstanceKey3).get("p"));
 
     assertThat(correlatedValues).contains("\"p1\"", "\"p2\"", "\"p3\"");
   }

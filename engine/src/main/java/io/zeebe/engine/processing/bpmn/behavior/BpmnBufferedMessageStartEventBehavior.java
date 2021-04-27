@@ -12,11 +12,11 @@ import io.zeebe.engine.processing.common.EventHandle;
 import io.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.message.StoredMessage;
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.Optional;
@@ -24,13 +24,14 @@ import org.agrona.DirectBuffer;
 
 public final class BpmnBufferedMessageStartEventBehavior {
 
-  private final MutableMessageState messageState;
+  private final MessageState messageState;
   private final ProcessState processState;
 
   private final EventHandle eventHandle;
 
   public BpmnBufferedMessageStartEventBehavior(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
     messageState = zeebeState.getMessageState();
@@ -38,21 +39,22 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     eventHandle =
         new EventHandle(
-            zeebeState.getKeyGenerator(),
+            keyGenerator,
             zeebeState.getEventScopeInstanceState(),
             writers,
             processState,
             eventTriggerBehavior);
   }
 
-  public void correlateMessage(final BpmnElementContext context) {
-
+  public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {
     final var processInstanceKey = context.getProcessInstanceKey();
-    final var correlationKey = messageState.getProcessInstanceCorrelationKey(processInstanceKey);
+    return Optional.ofNullable(messageState.getProcessInstanceCorrelationKey(processInstanceKey));
+  }
+
+  public void correlateMessage(
+      final BpmnElementContext context, final DirectBuffer correlationKey) {
 
     if (correlationKey != null) {
-      messageState.removeProcessInstanceCorrelationKey(processInstanceKey);
-
       // the process instance was created by a message with a correlation key
       // - other messages with same correlation key are not correlated to this process until this
       // instance is ended (process-correlation-key lock)
@@ -68,15 +70,15 @@ public final class BpmnBufferedMessageStartEventBehavior {
     final var process = processState.getLatestProcessVersionByProcessId(bpmnProcessId);
 
     findNextMessageToCorrelate(process, correlationKey)
-        .ifPresentOrElse(
+        .ifPresent(
             messageCorrelation -> {
               final var storedMessage = messageState.getMessage(messageCorrelation.messageKey);
-              correlateMessage(process, messageCorrelation.elementId, storedMessage);
-            },
-            () -> {
-              // no buffered message to correlate
-              // - release the process-correlation-key lock
-              messageState.removeActiveProcessInstance(bpmnProcessId, correlationKey);
+
+              eventHandle.triggerMessageStartEvent(
+                  process.getKey(),
+                  messageCorrelation.elementId,
+                  storedMessage.getMessageKey(),
+                  storedMessage.getMessage());
             });
   }
 
@@ -119,23 +121,6 @@ public final class BpmnBufferedMessageStartEventBehavior {
       return Optional.of(messageCorrelation);
     } else {
       return Optional.empty();
-    }
-  }
-
-  private void correlateMessage(
-      final DeployedProcess process,
-      final DirectBuffer elementId,
-      final StoredMessage storedMessage) {
-
-    final var processInstanceKey =
-        eventHandle.triggerStartEvent(
-            process.getKey(), elementId, storedMessage.getMessage().getVariablesBuffer());
-
-    if (processInstanceKey > 0) {
-      // mark the message as correlated
-      messageState.putMessageCorrelation(storedMessage.getMessageKey(), process.getBpmnProcessId());
-      messageState.putProcessInstanceCorrelationKey(
-          processInstanceKey, storedMessage.getMessage().getCorrelationKeyBuffer());
     }
   }
 

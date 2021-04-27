@@ -10,27 +10,25 @@ package io.zeebe.engine.processing.bpmn.behavior;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.IncidentState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
+import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 
 public final class BpmnIncidentBehavior {
 
-  private final IncidentRecord incidentCommand = new IncidentRecord();
+  private final IncidentRecord incidentRecord = new IncidentRecord();
 
   private final IncidentState incidentState;
   private final StateWriter stateWriter;
-  private final TypedCommandWriter typedCommandWriter;
+  private final KeyGenerator keyGenerator;
 
   public BpmnIncidentBehavior(
-      final MutableZeebeState zeebeState,
-      final TypedCommandWriter typedCommandWriter,
-      final StateWriter stateWriter) {
+      final ZeebeState zeebeState, final KeyGenerator keyGenerator, final StateWriter stateWriter) {
     incidentState = zeebeState.getIncidentState();
+    this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
-    this.typedCommandWriter = typedCommandWriter;
   }
 
   public void resolveJobIncident(final long jobKey) {
@@ -49,8 +47,8 @@ public final class BpmnIncidentBehavior {
             ? failure.getVariableScopeKey()
             : context.getElementInstanceKey();
 
-    incidentCommand.reset();
-    incidentCommand
+    incidentRecord.reset();
+    incidentRecord
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
@@ -60,7 +58,8 @@ public final class BpmnIncidentBehavior {
         .setErrorType(failure.getErrorType())
         .setErrorMessage(failure.getMessage());
 
-    typedCommandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
+    final var key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
   }
 
   public void resolveIncidents(final BpmnElementContext context) {

@@ -29,12 +29,6 @@ public final class StackdriverLogEntryBuilder {
   private String exception;
   private Instant time;
 
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  private String logger;
-
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  private String thread;
-
   StackdriverLogEntryBuilder() {
     service = new ServiceContext();
     context = new HashMap<>();
@@ -118,12 +112,10 @@ public final class StackdriverLogEntryBuilder {
   }
 
   public StackdriverLogEntryBuilder withLogger(final String logger) {
-    this.logger = logger;
     return withContextEntry("loggerName", logger);
   }
 
   public StackdriverLogEntryBuilder withThreadName(final String threadName) {
-    thread = threadName;
     return withContextEntry("threadName", threadName);
   }
 
@@ -163,8 +155,6 @@ public final class StackdriverLogEntryBuilder {
     stackdriverLogEntry.setContext(context);
     stackdriverLogEntry.setType(type);
     stackdriverLogEntry.setException(exception);
-    stackdriverLogEntry.setLogger(logger);
-    stackdriverLogEntry.setThread(thread);
 
     return stackdriverLogEntry;
   }

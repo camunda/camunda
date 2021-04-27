@@ -38,12 +38,14 @@ import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.locks.StampedLock;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** A file based journal. The journal is split into multiple segments files. */
 public class SegmentedJournal implements Journal {
+
   public static final long ASQN_IGNORE = -1;
   private static final int SEGMENT_BUFFER_FACTOR = 3;
   private static final int FIRST_SEGMENT_ID = 1;
@@ -61,6 +63,8 @@ public class SegmentedJournal implements Journal {
   private final long minFreeDiskSpace;
   private final JournalIndex journalIndex;
   private final SegmentedJournalWriter writer;
+  private final long lastWrittenIndex;
+  private final StampedLock rwlock = new StampedLock();
 
   public SegmentedJournal(
       final String name,
@@ -68,7 +72,8 @@ public class SegmentedJournal implements Journal {
       final int maxSegmentSize,
       final int maxEntrySize,
       final long minFreeSpace,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex,
+      final long lastWrittenIndex) {
     this.name = checkNotNull(name, "name cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
     this.maxSegmentSize = maxSegmentSize;
@@ -76,6 +81,7 @@ public class SegmentedJournal implements Journal {
     journalMetrics = new JournalMetrics(name);
     minFreeDiskSpace = minFreeSpace;
     this.journalIndex = journalIndex;
+    this.lastWrittenIndex = lastWrittenIndex;
     open();
     writer = new SegmentedJournalWriter(this);
   }
@@ -106,7 +112,17 @@ public class SegmentedJournal implements Journal {
 
   @Override
   public void deleteAfter(final long indexExclusive) {
-    writer.deleteAfter(indexExclusive);
+    journalMetrics.observeSegmentTruncation(
+        () -> {
+          final var stamp = rwlock.writeLock();
+          try {
+            writer.deleteAfter(indexExclusive);
+            // Reset segment readers.
+            resetAdvancedReaders(indexExclusive + 1);
+          } finally {
+            rwlock.unlockWrite(stamp);
+          }
+        });
   }
 
   @Override
@@ -146,8 +162,14 @@ public class SegmentedJournal implements Journal {
 
   @Override
   public void reset(final long nextIndex) {
-    journalIndex.clear();
-    writer.reset(nextIndex);
+    final var stamp = rwlock.writeLock();
+    try {
+      journalIndex.clear();
+      writer.reset(nextIndex);
+      resetHead(nextIndex);
+    } finally {
+      rwlock.unlockWrite(stamp);
+    }
   }
 
   @Override
@@ -436,7 +458,8 @@ public class SegmentedJournal implements Journal {
    */
   protected JournalSegment newSegment(
       final JournalSegmentFile segmentFile, final JournalSegmentDescriptor descriptor) {
-    return new JournalSegment(segmentFile, descriptor, maxEntrySize, journalIndex);
+    return new JournalSegment(
+        segmentFile, descriptor, maxEntrySize, lastWrittenIndex, journalIndex);
   }
 
   /** Loads a segment. */
@@ -539,23 +562,20 @@ public class SegmentedJournal implements Journal {
   void resetHead(final long index) {
     for (final SegmentedJournalReader reader : readers) {
       if (reader.getNextIndex() <= index) {
-        reader.seek(index);
+        reader.unsafeSeek(index);
       }
     }
   }
 
   /**
-   * Resets journal readers to the given tail.
+   * Resets journal readers to the given index, if they are at a larger index.
    *
    * @param index The index at which to reset readers.
    */
-  void resetTail(final long index) {
+  void resetAdvancedReaders(final long index) {
     for (final SegmentedJournalReader reader : readers) {
-      if (reader.getNextIndex() >= index) {
-        reader.seek(index);
-      } else {
-        // This is not thread safe https://github.com/zeebe-io/zeebe/issues/4198
-        reader.seek(reader.getNextIndex());
+      if (reader.getNextIndex() > index) {
+        reader.unsafeSeek(index);
       }
     }
   }
@@ -566,5 +586,13 @@ public class SegmentedJournal implements Journal {
 
   public JournalIndex getJournalIndex() {
     return journalIndex;
+  }
+
+  long acquireReadlock() {
+    return rwlock.readLock();
+  }
+
+  void releaseReadlock(final long stamp) {
+    rwlock.unlockRead(stamp);
   }
 }

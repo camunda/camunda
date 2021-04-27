@@ -169,12 +169,12 @@ public final class ExclusiveGatewayTest {
             .limit(2)
             .asList();
 
-    // assert that gateway activation originates from sequence flow taken and that the correct flow
-    // was taken
+    // assert that gateway activation originates from the same command as the sequence flow taken
+    // and that the correct flow was taken
     assertThat(gateWays.get(0).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(0).getPosition());
+        .isEqualTo(sequenceFlows.get(0).getSourceRecordPosition());
     assertThat(gateWays.get(1).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(1).getPosition());
+        .isEqualTo(sequenceFlows.get(1).getSourceRecordPosition());
     assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s1");
 
     // when
@@ -197,9 +197,9 @@ public final class ExclusiveGatewayTest {
             .collect(Collectors.toList());
 
     assertThat(gateWays.get(0).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(0).getPosition());
+        .isEqualTo(sequenceFlows.get(0).getSourceRecordPosition());
     assertThat(gateWays.get(1).getSourceRecordPosition())
-        .isEqualTo(sequenceFlows.get(1).getPosition());
+        .isEqualTo(sequenceFlows.get(1).getSourceRecordPosition());
     assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
   }
 
@@ -343,7 +343,7 @@ public final class ExclusiveGatewayTest {
     assertThat(
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED);
+        .containsExactly(IncidentIntent.CREATED);
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
@@ -363,6 +363,6 @@ public final class ExclusiveGatewayTest {
     assertThat(
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(3))
         .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
 }

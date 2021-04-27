@@ -133,7 +133,7 @@ public final class ExporterDirectorTest {
     filteringExporter.getController().updateLastExportedRecordPosition(firstRecordPosition);
     // skipped entirely
     final long skippedRecordPosition =
-        rule.writeCommand(IncidentIntent.CREATE, new IncidentRecord());
+        rule.writeCommand(IncidentIntent.CREATED, new IncidentRecord());
     // accepted by both again
     rule.writeCommand(DeploymentIntent.CREATE, new DeploymentRecord());
 
@@ -369,7 +369,10 @@ public final class ExporterDirectorTest {
         .get(0)
         .onExport(
             r -> {
-              exporters.get(0).getController().scheduleTask(delay, timerTriggerLatch::countDown);
+              exporters
+                  .get(0)
+                  .getController()
+                  .scheduleCancellableTask(delay, timerTriggerLatch::countDown);
               timerScheduledLatch.countDown();
             });
 

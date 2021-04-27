@@ -246,7 +246,6 @@
       <artifactId>agrona</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>

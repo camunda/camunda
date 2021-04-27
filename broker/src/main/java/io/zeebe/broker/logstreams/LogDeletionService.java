@@ -8,9 +8,9 @@
 package io.zeebe.broker.logstreams;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
+import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.PersistedSnapshotListener;
+import io.zeebe.snapshots.PersistedSnapshotStore;
 import io.zeebe.util.sched.Actor;
 
 public final class LogDeletionService extends Actor implements PersistedSnapshotListener {

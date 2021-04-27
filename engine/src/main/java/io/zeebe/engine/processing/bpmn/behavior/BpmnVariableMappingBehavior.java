@@ -54,17 +54,6 @@ public final class BpmnVariableMappingBehavior {
     final long processInstanceKey = context.getProcessInstanceKey();
     final Optional<Expression> inputMappingExpression = element.getInputMappings();
 
-    if (context.getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
-      // copy temp variables into local scope (necessary for start/boundary event to apply output
-      // mappings)
-      // todo (#6196): move into event applier
-      final var temporaryVariables =
-          variablesState.getTemporaryVariables(context.getFlowScopeKey());
-      if (temporaryVariables != null) {
-        variablesState.setTemporaryVariables(scopeKey, temporaryVariables);
-      }
-    }
-
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey)

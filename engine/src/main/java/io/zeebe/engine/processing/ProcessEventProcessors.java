@@ -24,7 +24,6 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.processing.timer.CancelTimerProcessor;
-import io.zeebe.engine.processing.timer.CreateTimerProcessor;
 import io.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.zeebe.engine.processing.timer.TriggerTimerProcessor;
 import io.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
@@ -173,10 +172,6 @@ public final class ProcessEventProcessors {
       final ExpressionProcessor expressionProcessor,
       final Writers writers) {
     typedRecordProcessors
-        .onCommand(
-            ValueType.TIMER,
-            TimerIntent.CREATE,
-            new CreateTimerProcessor(writers.state(), zeebeState.getKeyGenerator(), timerChecker))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,

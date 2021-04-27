@@ -28,16 +28,6 @@ public interface Controller {
   void updateLastExportedRecordPosition(long position);
 
   /**
-   * Schedules a {@param task} to be ran after {@param delay} has expired.
-   *
-   * @param delay time to wait until the task is ran
-   * @param task the task to run
-   * @deprecated Consider to use {@link #scheduleCancellableTask(Duration, Runnable)}
-   */
-  @Deprecated(since = "0.26.0", forRemoval = true)
-  void scheduleTask(Duration delay, Runnable task);
-
-  /**
    * Schedules a cancellable {@param task} to be ran after {@param delay} has expired.
    *
    * @param delay time to wait until the task is ran

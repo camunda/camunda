@@ -15,7 +15,7 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
+import io.zeebe.snapshots.SnapshotId;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -182,7 +182,7 @@ public class FailOverReplicationTest {
     return broker.getConfig().getCluster().getNodeId();
   }
 
-  private FileBasedSnapshotMetadata awaitSnapshot(final Broker leader) {
+  private SnapshotId awaitSnapshot(final Broker leader) {
     triggerSnapshotCreation();
     return clusteringRule.waitForSnapshotAtBroker(leader);
   }

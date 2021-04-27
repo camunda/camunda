@@ -7,7 +7,9 @@
  */
 package io.zeebe.engine.processing.bpmn;
 
+import io.zeebe.engine.processing.common.Failure;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.zeebe.util.Either;
 
 /**
  * The business logic of an BPMN element container (e.g. a sub-process).
@@ -28,11 +30,14 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    * @param element the instance of the BPMN element container
    * @param flowScopeContext process instance-related data of the element container
    * @param childContext process instance-related data of the child element that is on activating
+   * @return either a failure (Left) or any success value (Right)
    */
-  void onChildActivating(
+  default Either<Failure, ?> onChildActivating(
       final T element,
       final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext);
+      final BpmnElementContext childContext) {
+    return Either.right(null); // im always right
+  }
 
   /**
    * The execution path of a child element is about to be completed.

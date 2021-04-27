@@ -14,7 +14,9 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.analyzers.SequenceFlowAnalyzer;
 import io.zeebe.engine.state.immutable.ProcessState;
+import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
@@ -31,6 +33,7 @@ final class ProcessInstanceElementActivatingApplier
   private final MutableVariableState variableState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final SequenceFlowAnalyzer sequenceFlowAnalyzer;
 
   public ProcessInstanceElementActivatingApplier(
       final MutableElementInstanceState elementInstanceState,
@@ -41,12 +44,14 @@ final class ProcessInstanceElementActivatingApplier
     this.processState = processState;
     this.variableState = variableState;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    sequenceFlowAnalyzer = new SequenceFlowAnalyzer(elementInstanceState);
   }
 
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
 
     createEventScope(elementInstanceKey, value);
+    cleanupSequenceFlowsTaken(value);
 
     final var processDefinitionKey = value.getProcessDefinitionKey();
     final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
@@ -84,6 +89,16 @@ final class ProcessInstanceElementActivatingApplier
 
     decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
 
+    if (currentElementType == BpmnElementType.EVENT_SUB_PROCESS) {
+      // copy temp variables into local scope (necessary for start event to apply output mappings)
+      final var temporaryVariables =
+          variableState.getTemporaryVariables(flowScopeInstance.getKey());
+      if (temporaryVariables != null) {
+        variableState.setTemporaryVariables(elementInstanceKey, temporaryVariables);
+        variableState.removeTemporaryVariables(flowScopeInstance.getKey());
+      }
+    }
+
     if (currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
       // the event variables are stored as temporary variables in the scope of the subprocess
@@ -108,6 +123,30 @@ final class ProcessInstanceElementActivatingApplier
       elementInstanceState.updateInstance(
           elementInstanceKey, instance -> instance.setMultiInstanceLoopCounter(loopCounter));
     }
+  }
+
+  private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {
+    if (value.getBpmnElementType() != BpmnElementType.PARALLEL_GATEWAY) {
+      return;
+    }
+
+    final var parallelGateway =
+        processState.getFlowElement(
+            value.getProcessDefinitionKey(), value.getElementIdBuffer(), ExecutableFlowNode.class);
+
+    final var tokensBySequenceFlow =
+        sequenceFlowAnalyzer.determineTakenIncomingFlows(value.getFlowScopeKey(), parallelGateway);
+
+    // cleanup deferred records for sequence flow taken to this parallel gateway
+    tokensBySequenceFlow.forEach(
+        (sequenceFlow, tokens) -> {
+          // before a parallel gateway is activated, each incoming sequence flow of the gateway must
+          // be taken (at least once). if a sequence flow is taken more than once then the redundant
+          // token remains for the next activation of the gateway (Tetris principle)
+          final var firstToken = tokens.get(0);
+          elementInstanceState.removeStoredRecord(
+              value.getFlowScopeKey(), firstToken.getKey(), Purpose.DEFERRED);
+        });
   }
 
   private void decrementActiveSequenceFlow(

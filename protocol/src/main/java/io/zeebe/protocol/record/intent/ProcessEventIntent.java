@@ -16,7 +16,8 @@
 package io.zeebe.protocol.record.intent;
 
 public enum ProcessEventIntent implements ProcessInstanceRelatedIntent {
-  TRIGGERED((short) 0);
+  TRIGGERING((short) 0),
+  TRIGGERED((short) 1);
 
   private final short value;
 
@@ -29,11 +30,11 @@ public enum ProcessEventIntent implements ProcessInstanceRelatedIntent {
     return value;
   }
 
-  // suppress as it's simpler to have a short switch for extension later
-  @SuppressWarnings({"SwitchStatementWithTooFewBranches", "java:S1301"})
   public static Intent from(final short value) {
     switch (value) {
       case 0:
+        return TRIGGERING;
+      case 1:
         return TRIGGERED;
       default:
         return Intent.UNKNOWN;

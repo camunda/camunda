@@ -491,8 +491,11 @@ public final class PartitionTestClient {
   }
 
   public Record<IncidentRecordValue> receiveFirstIncidentEvent(
-      final long wfInstanceKey, final Intent intent) {
-    return receiveIncidents().withIntent(intent).withProcessInstanceKey(wfInstanceKey).getFirst();
+      final long processInstanceKey, final Intent intent) {
+    return receiveIncidents()
+        .withIntent(intent)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
   }
 
   public Record<IncidentRecordValue> receiveFirstIncidentCommand(final IncidentIntent intent) {
@@ -548,27 +551,27 @@ public final class PartitionTestClient {
   }
 
   public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
-      final long wfInstanceKey, final String elementId, final Intent intent) {
+      final long processInstanceKey, final String elementId, final Intent intent) {
     return receiveProcessInstances()
         .withIntent(intent)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementId(elementId)
         .getFirst();
   }
 
   public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
-      final long wfInstanceKey, final Intent intent) {
+      final long processInstanceKey, final Intent intent) {
     return receiveProcessInstances()
         .withIntent(intent)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .getFirst();
   }
 
   public Record<ProcessInstanceRecordValue> receiveFirstProcessInstanceEvent(
-      final long wfInstanceKey, final Intent intent, final BpmnElementType elementType) {
+      final long processInstanceKey, final Intent intent, final BpmnElementType elementType) {
     return receiveProcessInstances()
         .withIntent(intent)
-        .withProcessInstanceKey(wfInstanceKey)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(elementType)
         .getFirst();
   }

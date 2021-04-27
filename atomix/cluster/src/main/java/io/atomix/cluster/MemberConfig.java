@@ -33,6 +33,7 @@ public class MemberConfig extends NodeConfig {
    *
    * @return the member identifier
    */
+  @Override
   public MemberId getId() {
     return id;
   }
@@ -43,6 +44,7 @@ public class MemberConfig extends NodeConfig {
    * @param id the member identifier
    * @return the member configuration
    */
+  @Override
   public MemberConfig setId(final String id) {
     return setId(id != null ? MemberId.from(id) : null);
   }
@@ -77,12 +79,6 @@ public class MemberConfig extends NodeConfig {
   }
 
   @Override
-  public MemberConfig setAddress(final String address) {
-    super.setAddress(address);
-    return this;
-  }
-
-  @Override
   public MemberConfig setAddress(final Address address) {
     super.setAddress(address);
     return this;
@@ -109,16 +105,6 @@ public class MemberConfig extends NodeConfig {
   }
 
   /**
-   * Sets the member zone.
-   *
-   * @param zone the member zone
-   * @return the member configuration
-   */
-  public MemberConfig setZone(final String zone) {
-    return setZoneId(zone);
-  }
-
-  /**
    * Returns the member rack.
    *
    * @return the member rack
@@ -136,16 +122,6 @@ public class MemberConfig extends NodeConfig {
   public MemberConfig setRackId(final String rackId) {
     this.rackId = rackId;
     return this;
-  }
-
-  /**
-   * Sets the member rack.
-   *
-   * @param rack the member rack
-   * @return the member configuration
-   */
-  public MemberConfig setRack(final String rack) {
-    return setRackId(rack);
   }
 
   /**
@@ -197,18 +173,6 @@ public class MemberConfig extends NodeConfig {
    */
   public MemberConfig setProperties(final Properties properties) {
     this.properties = properties;
-    return this;
-  }
-
-  /**
-   * Sets a member property.
-   *
-   * @param key the property key to et
-   * @param value the property value to et
-   * @return the member configuration
-   */
-  public MemberConfig setProperty(final String key, final String value) {
-    properties.put(key, value);
     return this;
   }
 }

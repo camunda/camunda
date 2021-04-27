@@ -9,6 +9,7 @@ package io.zeebe.engine.util;
 
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -21,15 +22,13 @@ import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
 import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
-import io.zeebe.test.util.bpmn.random.steps.StepExpressionIncidentCase;
-import io.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
-import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
+import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
 import java.util.Map;
 import org.awaitility.Awaitility;
 
@@ -37,18 +36,16 @@ import org.awaitility.Awaitility;
 public class ProcessExecutor {
 
   private final EngineRule engineRule;
-  private long lastProcessedPosition = -1L;
 
   public ProcessExecutor(final EngineRule engineRule) {
-    this.engineRule =
-        engineRule
-            .withOnProcessedCallback(r -> lastProcessedPosition = r.getPosition())
-            .withOnSkippedCallback(r -> lastProcessedPosition = r.getPosition());
+    this.engineRule = engineRule;
   }
 
   public void applyStep(final AbstractExecutionStep step) {
 
-    if (step instanceof StepStartProcessInstance) {
+    if (step.isAutomatic()) {
+      // Nothing to do here, as the step execution is controlled by the engine
+    } else if (step instanceof StepStartProcessInstance) {
       final StepStartProcessInstance startProcess = (StepStartProcessInstance) step;
       createProcessInstance(startProcess);
     } else if (step instanceof StepPublishStartMessage) {
@@ -66,20 +63,15 @@ public class ProcessExecutor {
     } else if (step instanceof StepActivateAndTimeoutJob) {
       final StepActivateAndTimeoutJob activateAndTimeoutJob = (StepActivateAndTimeoutJob) step;
       activateAndTimeoutJob(activateAndTimeoutJob);
+    } else if (step instanceof StepTriggerTimerBoundaryEvent) {
+      final StepTriggerTimerBoundaryEvent timeoutElement = (StepTriggerTimerBoundaryEvent) step;
+      triggerTimerBoundaryEvent(timeoutElement);
     } else if (step instanceof StepActivateJobAndThrowError) {
       final StepActivateJobAndThrowError activateJobAndThrowError =
           (StepActivateJobAndThrowError) step;
       activateJobAndThrowError(activateJobAndThrowError);
-    } else if ((step instanceof StepPickDefaultCase) || (step instanceof StepPickConditionCase)) {
-      /*
-       * Nothing to do here, as the choice is made by the engine. The default case is for debugging
-       * purposes only The condition case is implemented by starting the process with the right
-       * variables;
-       *
-       * One thing that might be a useful addition here is to wait until a certain path was taken to improve debugging
-       */
-    } else if (step instanceof StepExpressionIncidentCase) {
-      final var expressionIncident = (StepExpressionIncidentCase) step;
+    } else if (step instanceof StepRaiseIncidentThenResolveAndPickConditionCase) {
+      final var expressionIncident = (StepRaiseIncidentThenResolveAndPickConditionCase) step;
       resolveExpressionIncident(expressionIncident);
     } else if (step instanceof StepTriggerTimerStartEvent) {
       final StepTriggerTimerStartEvent timerStep = (StepTriggerTimerStartEvent) step;
@@ -87,6 +79,21 @@ public class ProcessExecutor {
     } else {
       throw new IllegalStateException("Not yet implemented: " + step);
     }
+  }
+
+  private void triggerTimerBoundaryEvent(final StepTriggerTimerBoundaryEvent timeoutElement) {
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withHandlerNodeId(timeoutElement.getBoundaryTimerEventId())
+            .getFirst();
+
+    waitUntilRecordIsProcessed("await the timer to be processed", timerCreated);
+
+    engineRule.getClock().addTime(timeoutElement.getDeltaTime());
+
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+        .withHandlerNodeId(timeoutElement.getBoundaryTimerEventId())
+        .await();
   }
 
   private void activateAndCompleteJob(final StepActivateAndCompleteJob activateAndCompleteJob) {
@@ -150,7 +157,14 @@ public class ProcessExecutor {
 
     engineRule.jobs().withType(activateAndTimeoutJob.getJobType()).withTimeout(100).activate();
 
-    engineRule.getClock().addTime(Duration.ofSeconds(150));
+    final var activatedJobBatch =
+        RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
+            .withType(activateAndTimeoutJob.getJobType())
+            .getFirst();
+
+    waitUntilRecordIsProcessed("await job batch to be processed", activatedJobBatch);
+
+    engineRule.getClock().addTime(activateAndTimeoutJob.getDeltaTime());
 
     RecordingExporter.jobRecords(JobIntent.TIME_OUT)
         .withType(activateAndTimeoutJob.getJobType())
@@ -215,7 +229,7 @@ public class ProcessExecutor {
         .message()
         .withName(publishMessage.getMessageName())
         .withCorrelationKey("")
-        .withVariables(publishMessage.getVariables())
+        .withVariables(publishMessage.getProcessVariables())
         .publish();
 
     RecordingExporter.messageStartEventSubscriptionRecords(
@@ -228,16 +242,16 @@ public class ProcessExecutor {
     engineRule
         .processInstance()
         .ofBpmnProcessId(startProcess.getProcessId())
-        .withVariables(startProcess.getVariables())
+        .withVariables(startProcess.getProcessVariables())
         .create();
   }
 
   private void triggerTimerStartEvent(final StepTriggerTimerStartEvent timerStep) {
     final Record<TimerRecordValue> timerSchedulingRecord =
-        RecordingExporter.timerRecords(TimerIntent.CREATE).getFirst();
+        RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
     waitUntilRecordIsProcessed("until start timer is scheduled", timerSchedulingRecord);
 
-    engineRule.increaseTime(timerStep.getTimeToAdd());
+    engineRule.increaseTime(timerStep.getDeltaTime());
 
     // await that the timer is triggered or otherwise there may be a race condition where a test may
     // think we've already reached a wait state, when in truth the timer trigger hasn't even been
@@ -245,7 +259,8 @@ public class ProcessExecutor {
     RecordingExporter.timerRecords(TimerIntent.TRIGGERED).await();
   }
 
-  private void resolveExpressionIncident(final StepExpressionIncidentCase expressionIncident) {
+  private void resolveExpressionIncident(
+      final StepRaiseIncidentThenResolveAndPickConditionCase expressionIncident) {
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withElementId(expressionIncident.getGatewayElementId())
@@ -274,6 +289,7 @@ public class ProcessExecutor {
   }
 
   private void waitUntilRecordIsProcessed(final String condition, final Record<?> record) {
-    Awaitility.await(condition).until(() -> lastProcessedPosition >= record.getPosition());
+    Awaitility.await(condition)
+        .until(() -> engineRule.getLastProcessedPosition() >= record.getPosition());
   }
 }

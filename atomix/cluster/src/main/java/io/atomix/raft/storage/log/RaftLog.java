@@ -32,7 +32,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Raft log. */
-public class RaftLog implements Closeable {
+public final class RaftLog implements Closeable {
   private final Journal journal;
   private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   private final boolean flushExplicitly;
@@ -42,7 +42,7 @@ public class RaftLog implements Closeable {
 
   private final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer(4 * 1024);
 
-  protected RaftLog(final Journal journal, final boolean flushExplicitly) {
+  RaftLog(final Journal journal, final boolean flushExplicitly) {
     this.journal = journal;
     this.flushExplicitly = flushExplicitly;
   }
@@ -184,6 +184,12 @@ public class RaftLog implements Closeable {
   }
 
   public void deleteAfter(final long index) {
+    if (index < commitIndex) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to delete index after %d, but it is lower than the commit index %d. Deleting committed entries can lead to inconsistencies and is prohibited.",
+              index, commitIndex));
+    }
     journal.deleteAfter(index);
     lastAppendedEntry = null;
   }

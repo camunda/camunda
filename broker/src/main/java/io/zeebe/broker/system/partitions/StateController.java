@@ -8,7 +8,7 @@
 package io.zeebe.broker.system.partitions;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.snapshots.raft.TransientSnapshot;
+import io.zeebe.snapshots.TransientSnapshot;
 import java.util.Optional;
 
 public interface StateController extends AutoCloseable {

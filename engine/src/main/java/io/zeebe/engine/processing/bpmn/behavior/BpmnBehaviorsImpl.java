@@ -34,7 +34,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
-  private final BpmnDeferredRecordsBehavior deferredRecordsBehavior;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final TypedStreamWriter streamWriter;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
@@ -70,28 +69,26 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             zeebeState.getKeyGenerator(),
             stateBehavior,
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
-            stateTransitionGuard,
             processorLookup,
             writers,
             zeebeState.getElementInstanceState());
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
             stateBehavior,
-            stateTransitionBehavior,
             catchEventBehavior,
-            variableBehavior,
             eventTriggerBehavior,
             stateWriter,
             commandWriter,
             sideEffects,
             zeebeState);
-    incidentBehavior = new BpmnIncidentBehavior(zeebeState, commandWriter, stateWriter);
-    deferredRecordsBehavior = new BpmnDeferredRecordsBehavior(zeebeState);
+    incidentBehavior =
+        new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
     eventPublicationBehavior =
         new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
-        new BpmnBufferedMessageStartEventBehavior(zeebeState, eventTriggerBehavior, writers);
+        new BpmnBufferedMessageStartEventBehavior(
+            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
     jobBehavior =
         new BpmnJobBehavior(zeebeState.getKeyGenerator(), zeebeState.getJobState(), writers);
   }
@@ -134,11 +131,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnStateTransitionBehavior stateTransitionBehavior() {
     return stateTransitionBehavior;
-  }
-
-  @Override
-  public BpmnDeferredRecordsBehavior deferredRecordsBehavior() {
-    return deferredRecordsBehavior;
   }
 
   @Override

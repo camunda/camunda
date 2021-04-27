@@ -87,4 +87,14 @@ public final class BrokerMonitoringEndpointTest {
         .then() //
         .statusCode(204);
   }
+
+  @Test
+  public void shouldGetStartupStatus() {
+    given()
+        .spec(brokerServerSpec)
+        .when()
+        .get("startup")
+        .then() //
+        .statusCode(204);
+  }
 }

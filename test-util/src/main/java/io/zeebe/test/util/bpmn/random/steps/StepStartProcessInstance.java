@@ -7,9 +7,12 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 
-public final class StepStartProcessInstance extends AbstractExecutionStep {
+public final class StepStartProcessInstance extends AbstractExecutionStep
+    implements ProcessStartStep {
 
   private final String processId;
 
@@ -18,8 +21,36 @@ public final class StepStartProcessInstance extends AbstractExecutionStep {
     this.variables.putAll(variables);
   }
 
+  @Override
+  public Map<String, Object> getProcessVariables() {
+    return Collections.unmodifiableMap(variables);
+  }
+
   public String getProcessId() {
     return processId;
+  }
+
+  @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + processId.hashCode();
+    return result;
   }
 
   @Override
@@ -30,19 +61,12 @@ public final class StepStartProcessInstance extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepStartProcessInstance that = (StepStartProcessInstance) o;
 
-    if (processId != null ? !processId.equals(that.processId) : that.processId != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = processId != null ? processId.hashCode() : 0;
-    result = 31 * result + variables.hashCode();
-    return result;
+    return processId.equals(that.processId);
   }
 }

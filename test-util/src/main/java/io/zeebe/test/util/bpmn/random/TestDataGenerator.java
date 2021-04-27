@@ -67,6 +67,8 @@ public class TestDataGenerator {
     private final List<BpmnModelInstance> bpmnModels;
     private final ExecutionPath executionPath;
 
+    private ScheduledExecutionStep currentStep;
+
     private TestDataRecord(
         final long processSeed,
         final long executionPathSeed,
@@ -84,6 +86,14 @@ public class TestDataGenerator {
 
     public ExecutionPath getExecutionPath() {
       return executionPath;
+    }
+
+    public ScheduledExecutionStep getCurrentStep() {
+      return currentStep;
+    }
+
+    public void setCurrentStep(final ScheduledExecutionStep currentStep) {
+      this.currentStep = currentStep;
     }
 
     @Override

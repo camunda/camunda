@@ -33,7 +33,7 @@ public class ClusterConfig implements Config {
   private MemberConfig nodeConfig = new MemberConfig();
   private NodeDiscoveryConfig discoveryConfig;
   private GroupMembershipProtocolConfig protocolConfig = new SwimMembershipProtocolConfig();
-  private MembershipConfig membershipConfig = new MembershipConfig();
+  private final MembershipConfig membershipConfig = new MembershipConfig();
   private MessagingConfig messagingConfig = new MessagingConfig();
 
   /**
@@ -113,30 +113,6 @@ public class ClusterConfig implements Config {
    */
   public ClusterConfig setProtocolConfig(final GroupMembershipProtocolConfig protocolConfig) {
     this.protocolConfig = protocolConfig;
-    return this;
-  }
-
-  /**
-   * Returns the cluster membership configuration.
-   *
-   * @return the cluster membership configuration
-   * @deprecated since 3.1
-   */
-  @Deprecated
-  public MembershipConfig getMembershipConfig() {
-    return membershipConfig;
-  }
-
-  /**
-   * Sets the cluster membership configuration.
-   *
-   * @param membershipConfig the cluster membership configuration
-   * @return the cluster configuration
-   * @deprecated since 3.1
-   */
-  @Deprecated
-  public ClusterConfig setMembershipConfig(final MembershipConfig membershipConfig) {
-    this.membershipConfig = checkNotNull(membershipConfig);
     return this;
   }
 

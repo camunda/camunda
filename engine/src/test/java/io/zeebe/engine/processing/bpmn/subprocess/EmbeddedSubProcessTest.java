@@ -23,6 +23,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -103,6 +104,107 @@ public final class EmbeddedSubProcessTest {
     Assertions.assertThat(subProcessActivating.getValue())
         .hasFlowScopeKey(processInstanceKey)
         .hasElementId("sub-process");
+  }
+
+  @Test
+  public void shouldTerminateSubProcessWithNonInterruptingBoundaryEvent() {
+    // given
+    final var model =
+        processWithSubProcess(
+            subProcess -> {
+              subProcess
+                  .startEvent()
+                  .serviceTask("task-1", b -> b.zeebeJobType("task-1"))
+                  .endEvent()
+                  .subProcessDone()
+                  .boundaryEvent(
+                      "boundary",
+                      b -> b.cancelActivity(false).timerWithDuration("PT15S").endEvent());
+            });
+
+    ENGINE.deployment().withXmlResource(model).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .await();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+    RecordingExporter.processInstanceRecords()
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.BOUNDARY_EVENT)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldTerminateSubProcessWithNonInterruptingEventSubProcess() {
+    // given
+    final var model =
+        processWithSubProcess(
+            subProcess -> {
+              subProcess
+                  .eventSubProcess()
+                  .startEvent()
+                  .interrupting(false)
+                  .timerWithDuration("PT15S")
+                  .endEvent();
+
+              subProcess
+                  .startEvent()
+                  .serviceTask("task-1", b -> b.zeebeJobType("task-1"))
+                  .endEvent();
+            });
+
+    ENGINE.deployment().withXmlResource(model).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .await();
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+    RecordingExporter.processInstanceRecords()
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test

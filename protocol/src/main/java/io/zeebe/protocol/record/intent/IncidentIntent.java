@@ -16,11 +16,10 @@
 package io.zeebe.protocol.record.intent;
 
 public enum IncidentIntent implements ProcessInstanceRelatedIntent {
-  CREATE((short) 0),
-  CREATED((short) 1),
+  CREATED((short) 0),
 
-  RESOLVE((short) 2, false),
-  RESOLVED((short) 3);
+  RESOLVE((short) 1, false),
+  RESOLVED((short) 2);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -41,12 +40,10 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return CREATE;
-      case 1:
         return CREATED;
-      case 2:
+      case 1:
         return RESOLVE;
-      case 3:
+      case 2:
         return RESOLVED;
       default:
         return Intent.UNKNOWN;

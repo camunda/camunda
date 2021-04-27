@@ -21,7 +21,6 @@ import io.zeebe.journal.file.record.JournalRecordReaderUtil;
 import io.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 /** Log segment reader. */
 class MappedJournalSegmentReader {
@@ -29,8 +28,7 @@ class MappedJournalSegmentReader {
   private final ByteBuffer buffer;
   private final JournalIndex index;
   private final JournalSegment segment;
-  private JournalRecord currentEntry;
-  private JournalRecord nextEntry;
+  private long currentIndex;
   private final JournalRecordReaderUtil recordReader;
   private final int descriptorLength;
 
@@ -44,20 +42,9 @@ class MappedJournalSegmentReader {
     reset();
   }
 
-  public JournalRecord getCurrentEntry() {
-    return currentEntry;
-  }
-
-  public JournalRecord getNextEntry() {
-    return nextEntry;
-  }
-
   public boolean hasNext() {
-    // If the next entry is null, check whether a next entry exists.
-    if (nextEntry == null) {
-      readNext(getNextIndex());
-    }
-    return nextEntry != null;
+    // if the next entry exists the version would be non-zero
+    return FrameUtil.hasValidVersion(buffer);
   }
 
   public JournalRecord next() {
@@ -65,27 +52,21 @@ class MappedJournalSegmentReader {
       throw new NoSuchElementException();
     }
 
-    // Set the current entry to the next entry.
-    currentEntry = nextEntry;
+    // Read version so that buffer's position is advanced.
+    FrameUtil.readVersion(buffer);
 
-    // Reset the next entry to null.
-    nextEntry = null;
-
-    // Read the next entry in the segment.
-    readNext(getNextIndex());
-
-    // Return the current entry.
+    final var currentEntry = recordReader.read(buffer, getNextIndex());
+    // currentEntry should not be null as hasNext returns true
+    currentIndex = currentEntry.index();
     return currentEntry;
   }
 
   public void reset() {
     buffer.position(descriptorLength);
-    currentEntry = null;
-    nextEntry = null;
-    readNext(getNextIndex());
+    currentIndex = segment.index() - 1;
   }
 
-  public boolean seek(final long index) {
+  public void seek(final long index) {
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
 
@@ -93,18 +74,13 @@ class MappedJournalSegmentReader {
 
     final var position = this.index.lookup(index - 1);
     if (position != null && position.index() >= firstIndex && position.index() <= lastIndex) {
-      currentEntry = null;
       buffer.position(position.position());
-
-      nextEntry = null;
-      readNext(position.index());
+      currentIndex = position.index() - 1;
     }
 
     while (getNextIndex() < index && hasNext()) {
       next();
     }
-
-    return nextEntry != null && nextEntry.index() == index;
   }
 
   public void close() {
@@ -112,21 +88,6 @@ class MappedJournalSegmentReader {
   }
 
   long getNextIndex() {
-    return currentEntry == null ? segment.index() : currentEntry.index() + 1;
-  }
-
-  /** Reads the next entry in the segment. */
-  private void readNext(final long expectedIndex) {
-    final Optional<Integer> version = FrameUtil.readVersion(buffer);
-    if (version.isEmpty()) {
-      nextEntry = null;
-      return;
-    }
-
-    nextEntry = recordReader.read(buffer, expectedIndex);
-  }
-
-  long getCurrentIndex() {
-    return currentEntry != null ? currentEntry.index() : 0;
+    return currentIndex + 1;
   }
 }

@@ -8,7 +8,7 @@
 package io.zeebe.broker.system.partitions.impl;
 
 import io.zeebe.broker.system.partitions.SnapshotReplication;
-import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.SnapshotChunk;
 import java.util.function.Consumer;
 
 public final class NoneSnapshotReplication implements SnapshotReplication {

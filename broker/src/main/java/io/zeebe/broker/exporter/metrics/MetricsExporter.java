@@ -50,7 +50,7 @@ public class MetricsExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
 
-    controller.scheduleTask(TIME_TO_LIVE, this::cleanUp);
+    controller.scheduleCancellableTask(TIME_TO_LIVE, this::cleanUp);
   }
 
   @Override
@@ -120,7 +120,7 @@ public class MetricsExporter implements Exporter {
 
     if (currentIntent == JobBatchIntent.ACTIVATED) {
       final var value = (JobBatchRecordValue) record.getValue();
-      for (long jobKey : value.getJobKeys()) {
+      for (final long jobKey : value.getJobKeys()) {
         final var creationTime = jobKeyToCreationTimeMap.get(jobKey);
         executionLatencyMetrics.observeJobActivationTime(
             partitionId, creationTime, record.getTimestamp());
@@ -143,7 +143,7 @@ public class MetricsExporter implements Exporter {
         creationTimeToProcessInstanceKeyNavigableMap,
         processInstanceKeyToCreationTimeMap);
 
-    controller.scheduleTask(TIME_TO_LIVE, this::cleanUp);
+    controller.scheduleCancellableTask(TIME_TO_LIVE, this::cleanUp);
   }
 
   private void clearMaps(

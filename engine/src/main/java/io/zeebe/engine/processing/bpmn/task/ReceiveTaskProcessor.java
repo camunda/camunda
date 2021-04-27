@@ -74,7 +74,10 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
               eventSubscriptionBehavior.activateTriggeredEvent(
-                  terminated.getFlowScopeKey(), terminated, eventTrigger);
+                  context.getElementInstanceKey(),
+                  terminated.getFlowScopeKey(),
+                  eventTrigger,
+                  terminated);
             },
             () -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);

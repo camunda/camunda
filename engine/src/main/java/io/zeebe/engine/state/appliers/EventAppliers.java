@@ -10,6 +10,7 @@ package io.zeebe.engine.state.appliers;
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.state.EventApplier;
 import io.zeebe.engine.state.TypedEventApplier;
+import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -75,13 +76,7 @@ public final class EventAppliers implements EventApplier {
   private void registerTimeEventAppliers(final MutableZeebeState state) {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
-    register(
-        TimerIntent.TRIGGERED,
-        new TimerTriggeredApplier(
-            state.getEventScopeInstanceState(),
-            state.getTimerState(),
-            state.getElementInstanceState(),
-            state.getProcessState()));
+    register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
   }
 
   private void registerDeploymentAppliers(final MutableZeebeState state) {
@@ -109,6 +104,9 @@ public final class EventAppliers implements EventApplier {
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
     final var processState = state.getProcessState();
     final var variableState = state.getVariableState();
+    final var bufferedStartMessageEventStateApplier =
+        new BufferedStartMessageEventStateApplier(processState, state.getMessageState());
+
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
         new ProcessInstanceElementActivatingApplier(
@@ -122,16 +120,21 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETED,
         new ProcessInstanceElementCompletedApplier(
-            elementInstanceState, eventScopeInstanceState, variableState, processState));
+            elementInstanceState,
+            eventScopeInstanceState,
+            variableState,
+            processState,
+            bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATED,
-        new ProcessInstanceElementTerminatedApplier(elementInstanceState, eventScopeInstanceState));
+        new ProcessInstanceElementTerminatedApplier(
+            elementInstanceState, eventScopeInstanceState, bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-        new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState));
+        new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
   }
 
   private void registerJobIntentEventAppliers(final MutableZeebeState state) {
@@ -193,32 +196,37 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerProcessMessageSubscriptionEventAppliers(final MutableZeebeState state) {
+    final MutableProcessMessageSubscriptionState subscriptionState =
+        state.getProcessMessageSubscriptionState();
+
     register(
         ProcessMessageSubscriptionIntent.CREATING,
-        new ProcessMessageSubscriptionCreatingApplier(state.getProcessMessageSubscriptionState()));
+        new ProcessMessageSubscriptionCreatingApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CREATED,
-        new ProcessMessageSubscriptionCreatedApplier(state.getProcessMessageSubscriptionState()));
+        new ProcessMessageSubscriptionCreatedApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
         new ProcessMessageSubscriptionCorrelatedApplier(
-            state.getProcessMessageSubscriptionState(),
-            state.getEventScopeInstanceState(),
-            state.getVariableState(),
-            state.getElementInstanceState(),
-            state.getProcessState()));
+            subscriptionState, state.getVariableState()));
+    register(
+        ProcessMessageSubscriptionIntent.DELETING,
+        new ProcessMessageSubscriptionDeletingApplier(subscriptionState));
     register(
         ProcessMessageSubscriptionIntent.DELETED,
-        new ProcessMessageSubscriptionDeletedApplier(state.getProcessMessageSubscriptionState()));
+        new ProcessMessageSubscriptionDeletedApplier(subscriptionState));
   }
 
   private void registerProcessEventAppliers(final MutableZeebeState state) {
     register(
-        ProcessEventIntent.TRIGGERED,
-        new ProcessEventTriggeredApplier(
+        ProcessEventIntent.TRIGGERING,
+        new ProcessEventTriggeringApplier(
             state.getEventScopeInstanceState(),
             state.getElementInstanceState(),
             state.getProcessState()));
+    register(
+        ProcessEventIntent.TRIGGERED,
+        new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

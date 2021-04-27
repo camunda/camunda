@@ -59,7 +59,6 @@ public final class BpmnEventPublicationBehavior {
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
 
     if (eventHandle.canTriggerElement(eventScopeInstance)) {
-      eventHandle.triggerProcessEvent(eventScopeInstance, catchEvent.getId(), NO_VARIABLES);
       eventHandle.activateElement(
           catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
     }

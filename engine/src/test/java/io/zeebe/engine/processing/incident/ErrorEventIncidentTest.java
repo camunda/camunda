@@ -256,11 +256,6 @@ public final class ErrorEventIncidentTest {
     assertThat(
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(5))
         .extracting(Record::getIntent)
-        .containsExactly(
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED,
-            IncidentIntent.RESOLVED,
-            IncidentIntent.CREATE,
-            IncidentIntent.CREATED);
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED, IncidentIntent.CREATED);
   }
 }

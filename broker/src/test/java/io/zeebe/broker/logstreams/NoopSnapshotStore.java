@@ -7,10 +7,10 @@
  */
 package io.zeebe.broker.logstreams;
 
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
-import io.zeebe.snapshots.raft.SnapshotChunkReader;
+import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.PersistedSnapshotListener;
+import io.zeebe.snapshots.PersistedSnapshotStore;
+import io.zeebe.snapshots.SnapshotChunkReader;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.file.Path;

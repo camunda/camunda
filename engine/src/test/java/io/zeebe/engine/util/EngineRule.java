@@ -98,6 +98,8 @@ public final class EngineRule extends ExternalResource {
   private final Map<Integer, ReprocessingCompletedListener> partitionReprocessingCompleteListeners =
       new Int2ObjectHashMap<>();
 
+  private long lastProcessedPosition = -1L;
+
   private EngineRule(final int partitionCount) {
     this(partitionCount, false);
   }
@@ -149,10 +151,6 @@ public final class EngineRule extends ExternalResource {
     startProcessors();
   }
 
-  public void startWithReprocessingDetection() {
-    startProcessors(true);
-  }
-
   public void stop() {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
@@ -178,10 +176,6 @@ public final class EngineRule extends ExternalResource {
   }
 
   private void startProcessors() {
-    startProcessors(false);
-  }
-
-  private void startProcessors(final boolean detectReprocessingInconsistency) {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
@@ -195,8 +189,16 @@ public final class EngineRule extends ExternalResource {
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
                           processingContext
-                              .onProcessedListener(onProcessedCallback)
-                              .onSkippedListener(onSkippedCallback),
+                              .onProcessedListener(
+                                  record -> {
+                                    lastProcessedPosition = record.getPosition();
+                                    onProcessedCallback.accept(record);
+                                  })
+                              .onSkippedListener(
+                                  record -> {
+                                    lastProcessedPosition = record.getPosition();
+                                    onSkippedCallback.accept(record);
+                                  }),
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),
@@ -204,8 +206,7 @@ public final class EngineRule extends ExternalResource {
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor())
-                      .withListener(reprocessingCompletedListener),
-              detectReprocessingInconsistency);
+                      .withListener(reprocessingCompletedListener));
 
           // sequenialize the commands to avoid concurrency
           subscriptionHandlers.put(
@@ -274,6 +275,10 @@ public final class EngineRule extends ExternalResource {
 
   public long getLastWrittenPosition(final int partitionId) {
     return environmentRule.getLastWrittenPosition(partitionId);
+  }
+
+  public long getLastProcessedPosition() {
+    return lastProcessedPosition;
   }
 
   public DeploymentClient deployment() {

@@ -17,7 +17,8 @@ package io.zeebe.journal.file.record;
 
 import io.zeebe.util.exception.UnrecoverableException;
 
-public class CorruptedLogException extends UnrecoverableException {
+public final class CorruptedLogException extends UnrecoverableException {
+
   public CorruptedLogException(final String message) {
     super(message);
   }

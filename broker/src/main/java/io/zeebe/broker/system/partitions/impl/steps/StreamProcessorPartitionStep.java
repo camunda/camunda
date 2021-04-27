@@ -70,8 +70,6 @@ public class StreamProcessorPartitionStep implements PartitionStep {
         .eventApplierFactory(EventAppliers::new)
         .nodeId(state.getNodeId())
         .commandResponseWriter(state.getCommandApiService().newCommandResponseWriter())
-        .detectReprocessingInconsistency(
-            state.getBrokerCfg().getExperimental().isDetectReprocessingInconsistency())
         .onProcessedListener(
             state.getCommandApiService().getOnProcessedListener(state.getPartitionId()))
         .streamProcessorFactory(

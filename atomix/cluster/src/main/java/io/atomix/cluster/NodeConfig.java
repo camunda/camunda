@@ -110,18 +110,6 @@ public class NodeConfig implements Config {
    * @param address the node address
    * @return the node configuration
    */
-  @Deprecated
-  public NodeConfig setAddress(final String address) {
-    return setAddress(Address.from(address));
-  }
-
-  /**
-   * Sets the node address.
-   *
-   * @param address the node address
-   * @return the node configuration
-   */
-  @Deprecated
   public NodeConfig setAddress(final Address address) {
     host = address.host();
     port = address.port();

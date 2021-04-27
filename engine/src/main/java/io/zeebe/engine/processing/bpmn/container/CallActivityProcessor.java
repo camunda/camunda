@@ -100,18 +100,6 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onEventOccurred(
-      final ExecutableCallActivity element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.triggerBoundaryEvent(element, context);
-  }
-
-  @Override
-  public void onChildActivating(
-      final ExecutableCallActivity element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
-
-  @Override
   public void beforeExecutionPathCompleted(
       final ExecutableCallActivity element,
       final BpmnElementContext callActivityContext,
@@ -157,7 +145,10 @@ public final class CallActivityProcessor
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(callActivityContext);
               eventSubscriptionBehavior.activateTriggeredEvent(
-                  terminated.getFlowScopeKey(), terminated, eventTrigger);
+                  callActivityContext.getElementInstanceKey(),
+                  terminated.getFlowScopeKey(),
+                  eventTrigger,
+                  terminated);
             },
             () -> {
               final var terminated =

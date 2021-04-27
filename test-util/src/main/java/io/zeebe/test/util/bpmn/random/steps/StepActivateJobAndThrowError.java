@@ -7,6 +7,9 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Map;
+
 public class StepActivateJobAndThrowError extends AbstractExecutionStep {
 
   private final String jobType;
@@ -27,6 +30,30 @@ public class StepActivateJobAndThrowError extends AbstractExecutionStep {
   }
 
   @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return false;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + jobType.hashCode();
+    result = 31 * result + errorCode.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -34,23 +61,15 @@ public class StepActivateJobAndThrowError extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepActivateJobAndThrowError that = (StepActivateJobAndThrowError) o;
 
-    if (jobType != null ? !jobType.equals(that.jobType) : that.jobType != null) {
+    if (!jobType.equals(that.jobType)) {
       return false;
     }
-    if (errorCode != null ? !errorCode.equals(that.errorCode) : that.errorCode != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = jobType != null ? jobType.hashCode() : 0;
-    result = 31 * result + (errorCode != null ? errorCode.hashCode() : 0);
-    result = 31 * result + variables.hashCode();
-    return result;
+    return errorCode.equals(that.errorCode);
   }
 }

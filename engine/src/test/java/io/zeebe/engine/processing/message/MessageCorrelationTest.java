@@ -321,7 +321,7 @@ public final class MessageCorrelationTest {
         .publish();
 
     // then
-    final Record<ProcessInstanceRecordValue> catchEventOccurred1 =
+    final Record<ProcessInstanceRecordValue> catchEvent1Completed =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey1)
             .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
@@ -329,10 +329,10 @@ public final class MessageCorrelationTest {
             .getFirst();
     final Map<String, String> variables1 =
         ProcessInstances.getCurrentVariables(
-            processInstanceKey1, catchEventOccurred1.getPosition());
+            processInstanceKey1, catchEvent1Completed.getPosition());
     assertThat(variables1).containsOnly(entry("key", "\"order-123\""), entry("nr", "1"));
 
-    final Record<ProcessInstanceRecordValue> catchEventOccurred2 =
+    final Record<ProcessInstanceRecordValue> catchEvent2Completed =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey2)
             .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
@@ -340,7 +340,7 @@ public final class MessageCorrelationTest {
             .getFirst();
     final Map<String, String> variables2 =
         ProcessInstances.getCurrentVariables(
-            processInstanceKey2, catchEventOccurred2.getPosition());
+            processInstanceKey2, catchEvent2Completed.getPosition());
     assertThat(variables2).containsOnly(entry("key", "\"order-456\""), entry("nr", "2"));
   }
 

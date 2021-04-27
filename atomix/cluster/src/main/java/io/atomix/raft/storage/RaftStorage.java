@@ -22,8 +22,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.zeebe.snapshots.PersistedSnapshotStore;
+import io.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -216,6 +216,11 @@ public final class RaftStorage {
    * @return The opened log.
    */
   public RaftLog openLog() {
+    final long lastWrittenIndex;
+    try (final MetaStore metaStore = openMetaStore()) {
+      lastWrittenIndex = metaStore.loadLastWrittenIndex();
+    }
+
     return RaftLog.builder()
         .withName(prefix)
         .withDirectory(directory)
@@ -224,6 +229,7 @@ public final class RaftStorage {
         .withFreeDiskSpace(freeDiskSpace)
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
+        .withLastWrittenIndex(lastWrittenIndex)
         .build();
   }
 

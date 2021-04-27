@@ -42,9 +42,6 @@ public final class ErrorCatchEventTest {
   public BpmnModelInstance process;
 
   @Parameter(2)
-  public String expectedEventOccurredElementId;
-
-  @Parameter(3)
   public String expectedActivatedElement;
 
   @Rule
@@ -62,7 +59,6 @@ public final class ErrorCatchEventTest {
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
-        TASK_ELEMENT_ID,
         "error-boundary-event"
       },
       {
@@ -79,7 +75,6 @@ public final class ErrorCatchEventTest {
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
-        "subprocess",
         "error-boundary-event"
       },
       {
@@ -97,7 +92,6 @@ public final class ErrorCatchEventTest {
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
-        "subprocess",
         "error-boundary-event"
       },
       {
@@ -112,7 +106,6 @@ public final class ErrorCatchEventTest {
             .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
-        TASK_ELEMENT_ID,
         "error-boundary-event"
       },
       {
@@ -129,7 +122,6 @@ public final class ErrorCatchEventTest {
             .serviceTask(TASK_ELEMENT_ID, t -> t.zeebeJobType(JOB_TYPE))
             .endEvent()
             .done(),
-        "error-start-event",
         "error-event-subprocess"
       },
       {
@@ -147,7 +139,6 @@ public final class ErrorCatchEventTest {
             .boundaryEvent("error-boundary-event-on-subprocess", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
-        TASK_ELEMENT_ID,
         "error-boundary-event"
       },
       {
@@ -162,7 +153,6 @@ public final class ErrorCatchEventTest {
             .error(ERROR_CODE)
             .endEvent()
             .done(),
-        TASK_ELEMENT_ID,
         "error-boundary-event"
       },
       {
@@ -186,7 +176,6 @@ public final class ErrorCatchEventTest {
             .boundaryEvent("error", b -> b.error(ERROR_CODE))
             .endEvent()
             .done(),
-        "error-start-event",
         "error-event-subprocess"
       },
     };

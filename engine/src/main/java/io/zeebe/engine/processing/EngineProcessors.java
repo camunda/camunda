@@ -72,6 +72,7 @@ public final class EngineProcessors {
             expressionProcessor,
             subscriptionCommandSender,
             writers.state(),
+            timerChecker,
             partitionsCount);
 
     final var eventTriggerBehavior =
@@ -115,7 +116,6 @@ public final class EngineProcessors {
         typedRecordProcessors,
         zeebeState,
         onJobsAvailableCallback,
-        eventTriggerBehavior,
         eventPublicationBehavior,
         maxFragmentSize,
         writers);

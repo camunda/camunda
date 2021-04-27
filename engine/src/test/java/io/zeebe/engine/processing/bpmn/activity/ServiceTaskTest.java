@@ -216,7 +216,7 @@ public final class ServiceTaskTest {
     assertThat(
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED);
+        .containsExactly(IncidentIntent.CREATED);
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
@@ -236,6 +236,6 @@ public final class ServiceTaskTest {
     assertThat(
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(3))
         .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
 }

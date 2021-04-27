@@ -19,16 +19,22 @@ final class ProcessInstanceElementTerminatedApplier
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementTerminatedApplier(
       final MutableElementInstanceState elementInstanceState,
-      final MutableEventScopeInstanceState eventScopeInstanceState) {
+      final MutableEventScopeInstanceState eventScopeInstanceState,
+      final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    this.bufferedStartMessageEventStateApplier = bufferedStartMessageEventStateApplier;
   }
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
+
+    bufferedStartMessageEventStateApplier.removeMessageLock(value);
+
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
   }

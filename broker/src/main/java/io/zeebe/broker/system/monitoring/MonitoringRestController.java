@@ -19,6 +19,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class MonitoringRestController {
 
   private static final String BROKER_READY_STATUS_URI = "/ready";
+  private static final String BROKER_STARTUP_STATUS_URI = "/startup";
   private static final String METRICS_URI = "/metrics";
   private static final String BROKER_HEALTH_STATUS_URI = "/health";
 
@@ -56,6 +57,23 @@ public class MonitoringRestController {
 
     final HttpStatus status;
     if (brokerReady) {
+      status = HttpStatus.NO_CONTENT;
+    } else {
+      status = HttpStatus.SERVICE_UNAVAILABLE;
+    }
+    return new ResponseEntity<>(status);
+  }
+
+  @GetMapping(value = BROKER_STARTUP_STATUS_URI)
+  public ResponseEntity<String> startup() {
+    final boolean brokerStarted =
+        springBrokerBridge
+            .getBrokerHealthCheckService()
+            .map(BrokerHealthCheckService::isBrokerStarted)
+            .orElse(false);
+
+    final HttpStatus status;
+    if (brokerStarted) {
       status = HttpStatus.NO_CONTENT;
     } else {
       status = HttpStatus.SERVICE_UNAVAILABLE;

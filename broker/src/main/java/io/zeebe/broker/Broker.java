@@ -72,8 +72,8 @@ import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
+import io.zeebe.snapshots.SnapshotStoreSupplier;
+import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
@@ -179,6 +179,7 @@ public final class Broker implements AutoCloseable {
     try {
       closeProcess = startProcess.start();
       startFuture.complete(this);
+      healthCheckService.setBrokerStarted();
     } catch (final Exception bootStrapException) {
       final BrokerCfg brokerCfg = getConfig();
       LOG.error(

@@ -13,13 +13,13 @@ import io.zeebe.broker.system.partitions.StateController;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivedSnapshot;
-import io.zeebe.snapshots.raft.SnapshotChunk;
-import io.zeebe.snapshots.raft.TransientSnapshot;
+import io.zeebe.snapshots.ConstructableSnapshotStore;
+import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.PersistedSnapshotListener;
+import io.zeebe.snapshots.ReceivableSnapshotStore;
+import io.zeebe.snapshots.ReceivedSnapshot;
+import io.zeebe.snapshots.SnapshotChunk;
+import io.zeebe.snapshots.TransientSnapshot;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
@@ -250,8 +250,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       LOG.debug(
           "Received all snapshot chunks ({}/{}), snapshot {} is valid",
           context.getChunkCount(),
-          snapshotChunk.getSnapshotId(),
-          totalChunkCount);
+          totalChunkCount,
+          snapshotChunk.getSnapshotId());
       if (!tryToMarkSnapshotAsValid(snapshotChunk, context)) {
         LOG.debug("Failed to mark snapshot {} as valid", snapshotChunk.getSnapshotId());
       }

@@ -15,11 +15,11 @@
  */
 package io.atomix.raft.snapshot;
 
-import io.zeebe.snapshots.broker.SnapshotId;
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.ReceivedSnapshot;
-import io.zeebe.snapshots.raft.SnapshotChunk;
-import io.zeebe.snapshots.raft.SnapshotChunkReader;
+import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.ReceivedSnapshot;
+import io.zeebe.snapshots.SnapshotChunk;
+import io.zeebe.snapshots.SnapshotChunkReader;
+import io.zeebe.snapshots.SnapshotId;
 import io.zeebe.util.StringUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.future.ActorFuture;

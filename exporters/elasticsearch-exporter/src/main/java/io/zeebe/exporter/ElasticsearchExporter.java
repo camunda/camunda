@@ -117,7 +117,8 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void scheduleDelayedFlush() {
-    controller.scheduleTask(Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
+    controller.scheduleCancellableTask(
+        Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
   }
 
   private void flush() {

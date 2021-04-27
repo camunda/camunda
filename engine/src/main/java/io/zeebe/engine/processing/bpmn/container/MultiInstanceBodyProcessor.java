@@ -110,7 +110,7 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void onChildActivating(
+  public Either<Failure, ?> onChildActivating(
       final ExecutableMultiInstanceBody multiInstanceBody,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
@@ -118,7 +118,7 @@ public final class MultiInstanceBodyProcessor
     final var bodyInstance = stateBehavior.getElementInstance(flowScopeContext);
     final var loopCounter = bodyInstance.getMultiInstanceLoopCounter();
 
-    readInputCollectionVariable(multiInstanceBody, childContext)
+    return readInputCollectionVariable(multiInstanceBody, childContext)
         .flatMap(
             collection -> {
               // the loop counter starts by 1
@@ -135,10 +135,11 @@ public final class MultiInstanceBodyProcessor
                 return Either.left(failure);
               }
             })
-        .ifRightOrLeft(
-            inputElement ->
-                setLoopVariables(multiInstanceBody, childContext, loopCounter, inputElement),
-            failure -> incidentBehavior.createIncident(failure, childContext));
+        .map(
+            inputElement -> {
+              setLoopVariables(multiInstanceBody, childContext, loopCounter, inputElement);
+              return null;
+            });
   }
 
   @Override
@@ -238,7 +239,10 @@ public final class MultiInstanceBodyProcessor
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(flowScopeContext);
               eventSubscriptionBehavior.activateTriggeredEvent(
-                  terminated.getFlowScopeKey(), terminated, eventTrigger);
+                  flowScopeContext.getElementInstanceKey(),
+                  terminated.getFlowScopeKey(),
+                  eventTrigger,
+                  terminated);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             },
             () -> {

@@ -53,7 +53,8 @@ class MappedJournalSegmentWriter {
       final MappedByteBuffer buffer,
       final JournalSegment segment,
       final int maxEntrySize,
-      final JournalIndex index) {
+      final JournalIndex index,
+      final long lastWrittenIndex) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
     this.maxEntrySize = maxEntrySize;
@@ -62,7 +63,7 @@ class MappedJournalSegmentWriter {
     firstIndex = segment.index();
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
-    reset(0, true);
+    reset(0, lastWrittenIndex);
   }
 
   public long getLastIndex() {
@@ -191,10 +192,10 @@ class MappedJournalSegmentWriter {
   }
 
   private void reset(final long index) {
-    reset(index, false);
+    reset(index, -1);
   }
 
-  private void reset(final long index, final boolean startup) {
+  private void reset(final long index, final long lastWrittenIndex) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
@@ -202,12 +203,10 @@ class MappedJournalSegmentWriter {
     buffer.mark();
     int position = buffer.position();
     try {
-      while ((index == 0 || nextIndex <= index) && FrameUtil.readVersion(buffer).isPresent()) {
-        final var nextEntry = recordUtil.read(buffer, nextIndex);
-        if (nextEntry == null) {
-          break;
-        }
-        lastEntry = nextEntry;
+      while ((index == 0 || nextIndex <= index) && FrameUtil.hasValidVersion(buffer)) {
+        // read version so that buffer's position is advanced
+        FrameUtil.readVersion(buffer);
+        lastEntry = recordUtil.read(buffer, nextIndex);
         nextIndex++;
         this.index.index(lastEntry, position);
         buffer.mark();
@@ -216,17 +215,26 @@ class MappedJournalSegmentWriter {
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
     } catch (final CorruptedLogException e) {
-      // if at startup, assume record was partially written due to crash and mark as ignored
-      if (!startup) {
-        throw e;
-      }
-
-      FrameUtil.markAsIgnored(buffer, position);
-      buffer.position(position);
-      buffer.mark();
+      handleChecksumMismatch(e, nextIndex, lastWrittenIndex, position);
     } finally {
       buffer.reset();
     }
+  }
+
+  private void handleChecksumMismatch(
+      final CorruptedLogException e,
+      final long nextIndex,
+      final long lastWrittenIndex,
+      final int position) {
+    // entry wasn't acked (likely a partial write): it's safe to delete it
+    if (nextIndex > lastWrittenIndex) {
+      FrameUtil.markAsIgnored(buffer, position);
+      buffer.position(position);
+      buffer.mark();
+      return;
+    }
+
+    throw e;
   }
 
   public void truncate(final long index) {

@@ -7,6 +7,9 @@
  */
 package io.zeebe.test.util.bpmn.random.steps;
 
+import java.time.Duration;
+import java.util.Map;
+
 // this class could also be called "Set variables when starting the process so that the engine
 // will select a certain condition"
 public final class StepPickConditionCase extends AbstractExecutionStep {
@@ -22,6 +25,30 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
   }
 
   @Override
+  protected Map<String, Object> updateVariables(
+      final Map<String, Object> variables, final Duration activationDuration) {
+    return variables;
+  }
+
+  @Override
+  public boolean isAutomatic() {
+    return true;
+  }
+
+  @Override
+  public Duration getDeltaTime() {
+    return VIRTUALLY_NO_TIME;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    result = 31 * result + forkingGatewayId.hashCode();
+    result = 31 * result + edgeId.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -29,26 +56,16 @@ public final class StepPickConditionCase extends AbstractExecutionStep {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    if (!super.equals(o)) {
+      return false;
+    }
 
     final StepPickConditionCase that = (StepPickConditionCase) o;
 
-    if (forkingGatewayId != null
-        ? !forkingGatewayId.equals(that.forkingGatewayId)
-        : that.forkingGatewayId != null) {
+    if (!forkingGatewayId.equals(that.forkingGatewayId)) {
       return false;
     }
-    if (edgeId != null ? !edgeId.equals(that.edgeId) : that.edgeId != null) {
-      return false;
-    }
-    return variables.equals(that.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = forkingGatewayId != null ? forkingGatewayId.hashCode() : 0;
-    result = 31 * result + (edgeId != null ? edgeId.hashCode() : 0);
-    result = 31 * result + variables.hashCode();
-    return result;
+    return edgeId.equals(that.edgeId);
   }
 
   public void removeVariable(final String variable) {

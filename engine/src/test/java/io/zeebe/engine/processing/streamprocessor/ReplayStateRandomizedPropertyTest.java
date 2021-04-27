@@ -16,9 +16,9 @@ import io.zeebe.engine.util.ProcessExecutor;
 import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator;
 import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
 import org.assertj.core.api.SoftAssertions;
@@ -37,19 +37,13 @@ public class ReplayStateRandomizedPropertyTest {
 
   private static final int PROCESS_COUNT = 10;
   private static final int EXECUTION_PATH_COUNT = 5;
+  @Parameter public TestDataRecord record;
 
   @Rule
   public TestWatcher failedTestDataPrinter =
       new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
 
-  @Rule
-  public final EngineRule engineRule =
-      EngineRule.singlePartition()
-          .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
-          .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
-
-  @Parameter public TestDataRecord record;
-
+  @Rule public final EngineRule engineRule = EngineRule.singlePartition();
   private long lastProcessedPosition = -1L;
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
 
@@ -80,9 +74,9 @@ public class ReplayStateRandomizedPropertyTest {
 
     final ExecutionPath path = record.getExecutionPath();
 
-    for (final AbstractExecutionStep step : path.getSteps()) {
-
-      processExecutor.applyStep(step);
+    for (final ScheduledExecutionStep scheduledStep : path.getSteps()) {
+      record.setCurrentStep(scheduledStep);
+      processExecutor.applyStep(scheduledStep.getStep());
 
       stopAndRestartEngineAndCompareStates();
     }
@@ -97,7 +91,9 @@ public class ReplayStateRandomizedPropertyTest {
     final var position = result.getPosition();
 
     Awaitility.await("await the last process record to be processed")
-        .untilAsserted(() -> assertThat(lastProcessedPosition).isGreaterThanOrEqualTo(position));
+        .untilAsserted(
+            () ->
+                assertThat(engineRule.getLastProcessedPosition()).isGreaterThanOrEqualTo(position));
 
     stopAndRestartEngineAndCompareStates();
   }
@@ -160,7 +156,8 @@ public class ReplayStateRandomizedPropertyTest {
     Awaitility.await("await the last written record to be processed")
         .untilAsserted(
             () ->
-                assertThat(lastProcessedPosition).isEqualTo(engineRule.getLastWrittenPosition(1)));
+                assertThat(engineRule.getLastProcessedPosition())
+                    .isEqualTo(engineRule.getLastWrittenPosition(1)));
   }
 
   @Parameters(name = "{0}")

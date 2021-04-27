@@ -20,7 +20,6 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_A
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
@@ -62,14 +61,9 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.maxAppendsPerFollower";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE =
       "zeebe.broker.experimental.maxAppendBatchSize";
-  private static final String ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY =
-      "zeebe.broker.experimental.detectReprocessingInconsistency";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
       "zeebe.broker.experimental.disableExplicitRaftFlush";
   private static final String ZEEBE_BROKER_DATA_DIRECTORY = "zeebe.broker.data.directory";
-
-  @Deprecated(since = "0.26.0")
-  private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
@@ -382,17 +376,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldOverrideDirectoryWithFirstDirectories() {
-    // given
-    final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
-    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
-
-    // then
-    assertWithDefaultConfigurations(
-        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
-  }
-
-  @Test
   public void shouldReadDefaultSystemClusterConfiguration() {
     assertDefaultSystemClusterConfiguration(
         DEFAULT_NODE_ID,
@@ -492,43 +475,6 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(experimentalCfg.getMaxAppendBatchSizeInBytes()).isEqualTo(256 * 1024);
-  }
-
-  @Test
-  public void shouldDisableDetectReprocessingInconsistencyPerDefault() {
-    // given
-    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
-    // when
-
-    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
-
-    // then
-    assertThat(experimentalCfg.isDisableExplicitRaftFlush()).isFalse();
-  }
-
-  @Test
-  public void shouldOverrideDetectReprocessingInconsistencySettingViaEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "true");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
-    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
-
-    // then
-    assertThat(experimentalCfg.isDetectReprocessingInconsistency()).isTrue();
-  }
-
-  @Test
-  public void
-      shouldThrowExceptionWhenInvalidValueIsUsedForDetectReprocessingInconsistencySettingViaEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY, "XXX");
-
-    // thrown
-    assertThatThrownBy(() -> TestConfigReader.readConfig("default", environment))
-        .hasMessageContaining(
-            "Failed to bind properties under 'zeebe.broker.experimental.detect-reprocessing-inconsistency' to boolean");
   }
 
   @Test

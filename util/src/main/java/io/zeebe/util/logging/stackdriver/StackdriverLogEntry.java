@@ -52,14 +52,6 @@ public final class StackdriverLogEntry {
   @JsonProperty("timestampNanos")
   private Long timestampNanos;
 
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  @JsonProperty("logger")
-  private String logger;
-
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  @JsonProperty("thread")
-  private String thread;
-
   StackdriverLogEntry() {}
 
   public static StackdriverLogEntryBuilder builder() {
@@ -136,29 +128,5 @@ public final class StackdriverLogEntry {
 
   public void setTimestampNanos(final long timestampNanos) {
     this.timestampNanos = timestampNanos;
-  }
-
-  /** @deprecated deprecated in favor of the context map property {@code loggerName} */
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  public String getLogger() {
-    return logger;
-  }
-
-  /** @deprecated deprecated in favor of the context map property {@code loggerName} */
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  public void setLogger(final String logger) {
-    this.logger = logger;
-  }
-
-  /** @deprecated deprecated in favor of the context map property {@code threadName} */
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  public String getThread() {
-    return thread;
-  }
-
-  /** @deprecated deprecated in favor of the context map property {@code threadName} */
-  @Deprecated(since = "0.24.0", forRemoval = true)
-  public void setThread(final String thread) {
-    this.thread = thread;
   }
 }

@@ -33,8 +33,8 @@ import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLog;
 import io.zeebe.journal.JournalException;
 import io.zeebe.journal.JournalException.InvalidChecksum;
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -191,5 +191,34 @@ public class PassiveRoleTest {
 
     // then
     verify(ctx).setLastWrittenIndex(eq(2L));
+  }
+
+  @Test
+  public void shouldResetLastWrittenIndexAfterTruncating() {
+    // given
+    final List<PersistedRaftRecord> entries =
+        List.of(
+            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
+            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]),
+            new PersistedRaftRecord(1, 3, 3, 1, new byte[1]));
+    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 0);
+
+    when(log.append(any(PersistedRaftRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    when(ctx.getLog()).thenReturn(log);
+    role.handleAppend(request).join();
+    verify(ctx).setLastWrittenIndex(eq(3L));
+
+    // when - force truncation
+    when(log.getLastIndex()).thenReturn(3L);
+    when(ctx.getCommitIndex()).thenReturn(1L);
+
+    role = new PassiveRole(ctx);
+    role.start().join();
+
+    // then
+    verify(ctx).setLastWrittenIndex(eq(1L));
   }
 }
