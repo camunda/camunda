@@ -108,5 +108,10 @@ public class NoopSnapshotStore implements PersistedSnapshotStore {
   }
 
   @Override
+  public Path getPath() {
+    return null;
+  }
+
+  @Override
   public void close() {}
 }

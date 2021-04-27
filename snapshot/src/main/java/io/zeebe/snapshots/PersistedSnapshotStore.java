@@ -9,6 +9,7 @@ package io.zeebe.snapshots;
 
 import io.zeebe.util.CloseableSilently;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -75,4 +76,6 @@ public interface PersistedSnapshotStore extends CloseableSilently {
    * @return
    */
   ActorFuture<Void> delete();
+
+  Path getPath();
 }

@@ -21,6 +21,7 @@ import io.zeebe.snapshots.PersistedSnapshotListener;
 import io.zeebe.snapshots.ReceivableSnapshotStore;
 import io.zeebe.snapshots.ReceivedSnapshot;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.nio.file.Path;
 import java.util.Optional;
 
 class NoopSnapshotStore implements ReceivableSnapshotStore {
@@ -57,6 +58,11 @@ class NoopSnapshotStore implements ReceivableSnapshotStore {
 
   @Override
   public ActorFuture<Void> delete() {
+    return null;
+  }
+
+  @Override
+  public Path getPath() {
     return null;
   }
 

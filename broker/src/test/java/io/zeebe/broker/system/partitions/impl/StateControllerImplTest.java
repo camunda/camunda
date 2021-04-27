@@ -70,7 +70,6 @@ public final class StateControllerImplTest {
             db -> exporterPosition.get());
 
     autoCloseableRule.manage(snapshotController);
-    autoCloseableRule.manage(store);
   }
 
   @Test
