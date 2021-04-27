@@ -2,15 +2,16 @@
   "index_patterns": [
     "zeebe-record_job_*"
   ],
-  "order": 20,
-  "settings": {
-    "number_of_shards": 3
-  },
-  "aliases": {
-    "zeebe-record-job": {}
-  },
-  "mappings": {
-    "_doc": {
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3
+    },
+    "aliases": {
+      "zeebe-record-job": {}
+    },
+    "mappings": {
       "properties": {
         "value": {
           "dynamic": "strict",

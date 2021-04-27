@@ -2,12 +2,13 @@
   "index_patterns": [
     "zeebe-record_message-subscription_*"
   ],
-  "order": 20,
-  "aliases": {
-    "zeebe-record-message-subscription": {}
-  },
-  "mappings": {
-    "_doc": {
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "aliases": {
+      "zeebe-record-message-subscription": {}
+    },
+    "mappings": {
       "properties": {
         "value": {
           "dynamic": "strict",

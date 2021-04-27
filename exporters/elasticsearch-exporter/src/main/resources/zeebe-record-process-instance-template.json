@@ -2,15 +2,16 @@
   "index_patterns": [
     "zeebe-record_process-instance_*"
   ],
-  "order": 20,
-  "settings": {
-    "number_of_shards": 3
-  },
-  "aliases": {
-    "zeebe-record-process-instance": {}
-  },
-  "mappings": {
-    "_doc": {
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 3
+    },
+    "aliases": {
+      "zeebe-record-process-instance": {}
+    },
+    "mappings": {
       "properties": {
         "value": {
           "dynamic": "strict",
