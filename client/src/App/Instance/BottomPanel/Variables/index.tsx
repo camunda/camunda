@@ -140,6 +140,7 @@ const Variables: React.FC = observer(() => {
                               ) : (
                                 <Styled.EditButton
                                   title="Enter edit mode"
+                                  type="button"
                                   data-testid="edit-variable-button"
                                   onClick={() => {
                                     form.reset({

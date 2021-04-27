@@ -475,6 +475,29 @@ describe('Variables', () => {
         )
       ).not.toBeInTheDocument();
     });
+
+    it('clicking edit variables while add mode is open, should not display a validation error', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.get(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json(mockVariables))
+        )
+      );
+      variablesStore.fetchVariables('1');
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+
+      const withinVariable = within(screen.getByTestId('clientNo'));
+      userEvent.click(withinVariable.getByTestId('edit-variable-button'));
+      expect(
+        screen.queryByTitle('Name should be unique')
+      ).not.toBeInTheDocument();
+    });
   });
 
   describe('Edit variable', () => {

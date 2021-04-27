@@ -28,6 +28,14 @@ fixture('Add/Edit Variables')
   });
 
 test('Validations for add/edit variable works correctly', async (t) => {
+  await t
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Add variable'})
+        .hasAttribute('disabled')
+    )
+    .notOk();
+
   // open single instance page, after clicking add new variable button see that save variable button is disabled and no spinner is displayed.
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
@@ -147,6 +155,14 @@ test('Edit variables', async (t) => {
     initialData: {instance},
   } = t.fixtureCtx;
 
+  await t
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Add variable'})
+        .hasAttribute('disabled')
+    )
+    .notOk();
+
   // open single instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
     .click(screen.queryByTestId('edit-variable-button'))
@@ -199,6 +215,14 @@ test('Add variables', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
+  await t
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Add variable'})
+        .hasAttribute('disabled')
+    )
+    .notOk();
+
   // open single instance page, click add new variable button and see that save variable button is disabled.
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
@@ -294,7 +318,45 @@ test('Add variables', async (t) => {
     .ok();
 });
 
+test('Should not change add variable state when enter is pressed', async (t) => {
+  await t
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Add variable'})
+        .hasAttribute('disabled')
+    )
+    .notOk();
+
+  await t.click(
+    screen.queryByRole('button', {
+      name: 'Add variable',
+    })
+  );
+
+  await t
+    .expect(screen.getByRole('textbox', {name: /name/i}).exists)
+    .ok()
+    .expect(screen.getByRole('textbox', {name: /value/i}).exists)
+    .ok();
+
+  await t.pressKey('enter');
+
+  await t
+    .expect(screen.getByRole('textbox', {name: /name/i}).exists)
+    .ok()
+    .expect(screen.getByRole('textbox', {name: /value/i}).exists)
+    .ok();
+});
+
 test('Remove fields when instance is canceled', async (t) => {
+  await t
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Add variable'})
+        .hasAttribute('disabled')
+    )
+    .notOk();
+
   await t
     .click(screen.queryByRole('button', {name: 'Add variable'}))
     .expect(screen.queryByRole('textbox', {name: /name/i}).exists)

@@ -54,6 +54,7 @@ const EditButtons: React.FC = () => {
       </Warning>
 
       <EditButton
+        type="button"
         title="Exit edit mode"
         onClick={exitEditMode}
         size="large"
@@ -62,6 +63,7 @@ const EditButtons: React.FC = () => {
       />
 
       <EditButton
+        type="button"
         title="Save variable"
         disabled={
           initialValues.value === values.value || errorMessage !== undefined

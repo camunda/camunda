@@ -8,15 +8,11 @@ import React from 'react';
 
 import * as Styled from './styled';
 
-type Props = {
+interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   iconButtonTheme: 'default' | 'incidentsBanner' | 'foldable';
-  disabled?: boolean;
-  title?: string;
-  onClick?: () => void;
   size?: 'medium' | 'large';
-  children?: React.ReactNode;
   icon?: React.ReactNode;
-};
+}
 
 const IconButton = React.forwardRef<any, Props>(function IconButton(
   {children, iconButtonTheme, icon, size, ...props},

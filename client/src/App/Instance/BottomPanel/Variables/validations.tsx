@@ -10,7 +10,8 @@ import {variablesStore} from 'modules/stores/variables';
 
 const handleVariableNameFieldValidation: FieldValidator<string> = (
   variableName = '',
-  all: {name?: string; value?: string}
+  all: {name?: string; value?: string},
+  meta
 ) => {
   if (all.value !== undefined && all.value.trim() !== '' && !variableName) {
     return 'Name has to be filled';
@@ -29,7 +30,7 @@ const handleVariableNameFieldValidation: FieldValidator<string> = (
       .filter((name) => name === variableName).length > 0;
 
   if (isVariableDuplicate) {
-    return 'Name should be unique';
+    return meta?.dirty ? 'Name should be unique' : undefined;
   }
 };
 
