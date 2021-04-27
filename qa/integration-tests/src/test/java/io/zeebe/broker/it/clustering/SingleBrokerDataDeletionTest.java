@@ -28,7 +28,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordAssert;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -158,7 +157,7 @@ public class SingleBrokerDataDeletionTest {
     reader.seekToFirstEvent();
     long firstPositionPreCompaction = reader.getPosition();
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    final FileBasedSnapshotMetadata firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
+    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
     awaitUntilCompaction(reader, firstPositionPreCompaction);
     assertContainsDeploymentCommand(reader);
 
@@ -192,7 +191,7 @@ public class SingleBrokerDataDeletionTest {
     reader.seekToFirstEvent();
     final long firstPositionPreCompaction = reader.getPosition();
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    final FileBasedSnapshotMetadata firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
+    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
     awaitUntilCompaction(reader, firstPositionPreCompaction);
     assertContainsDeploymentCommand(reader);
 
@@ -207,7 +206,7 @@ public class SingleBrokerDataDeletionTest {
     reader = clusteringRule.getLogStream(1).newLogStreamReader().join();
     final long newFirstPositionPreCompaction = reader.getPosition();
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForNewSnapshotAtBroker(broker, firstSnapshot);
+    clusteringRule.waitForNewSnapshotAtBroker(clusteringRule.getBroker(0), firstSnapshot);
     assertThat(newFirstPositionPreCompaction).isGreaterThan(firstPositionPreCompaction);
     awaitUntilCompaction(reader, newFirstPositionPreCompaction);
     assertDoesNotContainDeploymentCommand(reader);
