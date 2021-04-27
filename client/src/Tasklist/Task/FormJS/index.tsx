@@ -125,7 +125,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   return (
     <Container hasFooter={canCompleteTask} data-testid="embedded-form">
       <PanelHeader>
-        <PanelTitle>Embedded Form</PanelTitle>
+        <PanelTitle>Task Form</PanelTitle>
       </PanelHeader>
       <FormCustomStyling />
       <FormContainer ref={containerRef} key={task.id} />
