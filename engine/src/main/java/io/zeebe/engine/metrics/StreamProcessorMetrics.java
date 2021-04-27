@@ -95,13 +95,12 @@ public final class StreamProcessorMetrics {
    * We write various type of records. The positions are always increasing and incremented by 1 for
    * one record.
    */
-  public void recordsWritten(final long lastWrittenPosition) {
-    final var previousWritten =
-        STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).get();
-    final var diff = lastWrittenPosition - previousWritten;
-    if (diff > 0) {
-      STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).inc(diff);
+  public void recordsWritten(final long amount) {
+    if (amount < 1) {
+      return;
     }
+
+    STREAM_PROCESSOR_EVENTS.labels(LABEL_WRITTEN, partitionIdLabel).inc(amount);
   }
 
   /** We skip events on processing. */
