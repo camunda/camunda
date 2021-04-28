@@ -43,7 +43,6 @@ class MappedJournalSegmentWriter {
   private JournalRecord lastEntry;
   private boolean isOpen = true;
   private final JournalRecordReaderUtil recordUtil;
-  private final int maxEntrySize;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   private final JournalRecordSerializer serializer = new SBESerializer();
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
@@ -52,12 +51,10 @@ class MappedJournalSegmentWriter {
   MappedJournalSegmentWriter(
       final MappedByteBuffer buffer,
       final JournalSegment segment,
-      final int maxEntrySize,
       final JournalIndex index,
       final long lastWrittenIndex) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
-    this.maxEntrySize = maxEntrySize;
     recordUtil = new JournalRecordReaderUtil(serializer);
     this.index = index;
     firstIndex = segment.index();

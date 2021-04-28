@@ -422,27 +422,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Sets the maximum Raft log entry size.
-     *
-     * @param maxEntrySize the maximum Raft log entry size
-     * @return the Raft partition group builder
-     */
-    public Builder withMaxEntrySize(final int maxEntrySize) {
-      return withMaxEntrySize(new MemorySize(maxEntrySize));
-    }
-
-    /**
-     * Sets the maximum Raft log entry size.
-     *
-     * @param maxEntrySize the maximum Raft log entry size
-     * @return the Raft partition group builder
-     */
-    public Builder withMaxEntrySize(final MemorySize maxEntrySize) {
-      config.getStorageConfig().setMaxEntrySize(maxEntrySize);
-      return this;
-    }
-
-    /**
      * Set the minimum free disk space (in bytes) to leave when allocating a new segment
      *
      * @param freeDiskSpace free disk space in bytes

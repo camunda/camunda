@@ -55,7 +55,6 @@ public class SegmentedJournal implements Journal {
   private final String name;
   private final File directory;
   private final int maxSegmentSize;
-  private final int maxEntrySize;
   private final NavigableMap<Long, JournalSegment> segments = new ConcurrentSkipListMap<>();
   private final Collection<SegmentedJournalReader> readers = Sets.newConcurrentHashSet();
   private volatile JournalSegment currentSegment;
@@ -70,14 +69,12 @@ public class SegmentedJournal implements Journal {
       final String name,
       final File directory,
       final int maxSegmentSize,
-      final int maxEntrySize,
       final long minFreeSpace,
       final JournalIndex journalIndex,
       final long lastWrittenIndex) {
     this.name = checkNotNull(name, "name cannot be null");
     this.directory = checkNotNull(directory, "directory cannot be null");
     this.maxSegmentSize = maxSegmentSize;
-    this.maxEntrySize = maxEntrySize;
     journalMetrics = new JournalMetrics(name);
     minFreeDiskSpace = minFreeSpace;
     this.journalIndex = journalIndex;
@@ -458,8 +455,7 @@ public class SegmentedJournal implements Journal {
    */
   protected JournalSegment newSegment(
       final JournalSegmentFile segmentFile, final JournalSegmentDescriptor descriptor) {
-    return new JournalSegment(
-        segmentFile, descriptor, maxEntrySize, lastWrittenIndex, journalIndex);
+    return new JournalSegment(segmentFile, descriptor, lastWrittenIndex, journalIndex);
   }
 
   /** Loads a segment. */
