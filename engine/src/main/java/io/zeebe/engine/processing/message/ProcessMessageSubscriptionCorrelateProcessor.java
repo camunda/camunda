@@ -111,7 +111,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             .setInterrupting(subscriptionRecord.isInterrupting());
 
         stateWriter.appendFollowUpEvent(
-            command.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
+            subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
 
         final var catchEvent =
             getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());

@@ -189,15 +189,19 @@ public final class MessageCatchElementTest {
 
   @Test
   public void shouldOpenProcessMessageSubscription() {
+    final var subscriptionCreating =
+        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CREATING);
+
     final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
     final Record<ProcessMessageSubscriptionRecordValue> processMessageSubscription =
         getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CREATED);
 
-    assertThat(processMessageSubscription.getValueType())
-        .isEqualTo(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
-    assertThat(processMessageSubscription.getRecordType()).isEqualTo(RecordType.EVENT);
+    Assertions.assertThat(processMessageSubscription)
+        .hasValueType(ValueType.PROCESS_MESSAGE_SUBSCRIPTION)
+        .hasRecordType(RecordType.EVENT)
+        .hasKey(subscriptionCreating.getKey());
 
     Assertions.assertThat(processMessageSubscription.getValue())
         .hasProcessInstanceKey(processInstanceKey)
@@ -304,6 +308,9 @@ public final class MessageCatchElementTest {
   @Test
   public void shouldCloseProcessMessageSubscription() {
     // given
+    final var subscriptionCreated =
+        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CREATED);
+
     final Record<ProcessInstanceRecordValue> catchEventEntered =
         getFirstElementRecord(enteredState);
 
@@ -322,6 +329,12 @@ public final class MessageCatchElementTest {
         .as("the lifecycle of the subscription should end with DELETING and DELETED on close")
         .containsSubsequence(
             ProcessMessageSubscriptionIntent.DELETING, ProcessMessageSubscriptionIntent.DELETED);
+
+    final var subscriptionDeleted =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.DELETED)
+            .getFirst();
+    Assertions.assertThat(subscriptionDeleted).hasKey(subscriptionCreated.getKey());
   }
 
   @Test
@@ -424,6 +437,33 @@ public final class MessageCatchElementTest {
             tuple(MessageSubscriptionIntent.CORRELATING, messageSubscriptionKey),
             tuple(MessageSubscriptionIntent.CORRELATE, -1L),
             tuple(MessageSubscriptionIntent.CORRELATED, messageSubscriptionKey));
+  }
+
+  @Test
+  public void shouldHaveSameProcessMessageSubscriptionKey() {
+    // given
+    final var subscriptionKey =
+        getFirstProcessMessageSubscriptionRecord(ProcessMessageSubscriptionIntent.CREATING)
+            .getKey();
+
+    // when
+    ENGINE_RULE.message().withCorrelationKey(correlationKey).withName(MESSAGE_NAME).publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName(MESSAGE_NAME)
+                .filter(
+                    r ->
+                        r.getIntent() != ProcessMessageSubscriptionIntent.CREATE
+                            && r.getIntent() != ProcessMessageSubscriptionIntent.CREATED)
+                .limit(3))
+        .extracting(Record::getIntent, Record::getKey)
+        .containsExactly(
+            tuple(ProcessMessageSubscriptionIntent.CREATING, subscriptionKey),
+            tuple(ProcessMessageSubscriptionIntent.CORRELATE, -1L),
+            tuple(ProcessMessageSubscriptionIntent.CORRELATED, subscriptionKey));
   }
 
   private Record<ProcessInstanceRecordValue> getFirstElementRecord(

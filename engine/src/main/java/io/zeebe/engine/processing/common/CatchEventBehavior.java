@@ -251,9 +251,8 @@ public final class CatchEventBehavior {
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
 
-    // TODO (npepinpe): the subscription should have a key (#2805)
     stateWriter.appendFollowUpEvent(
-        -1L, ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
+        subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sideEffects.add(
         () ->
             sendCloseMessageSubscriptionCommand(

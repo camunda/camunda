@@ -44,19 +44,19 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
 
-    final ProcessMessageSubscriptionRecord subscription = command.getValue();
+    final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
 
-    final var exists =
-        subscriptionState.existSubscriptionForElementInstance(
-            subscription.getElementInstanceKey(), subscription.getMessageNameBuffer());
+    final var subscription =
+        subscriptionState.getSubscription(
+            command.getValue().getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer());
 
-    if (exists) {
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), ProcessMessageSubscriptionIntent.DELETED, subscription);
-
-    } else {
+    if (subscription == null) {
       rejectCommand(command);
+      return;
     }
+
+    stateWriter.appendFollowUpEvent(
+        subscription.getKey(), ProcessMessageSubscriptionIntent.DELETED, subscription.getRecord());
   }
 
   private void rejectCommand(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
