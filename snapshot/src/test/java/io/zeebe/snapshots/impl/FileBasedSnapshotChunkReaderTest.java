@@ -8,93 +8,67 @@
 package io.zeebe.snapshots.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.snapshots.SnapshotChunk;
+import io.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.util.ArrayList;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class FileBasedSnapshotChunkReaderTest {
+
+  private static final long SNAPSHOT_CHECKSUM = 1L;
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private Path snapshotDirectory;
 
   @Test
-  public void shouldDoNothingIfSeekNull() {
+  public void shouldAssignChunkIdsFromFileNames() throws IOException {
     // given
-    final var reader = newReader(chunksOf("foo", "bar"));
-
-    // when
-    reader.seek(null);
-
-    // then
-    assertThat(reader).hasNext();
-    assertThat(reader.next().getChunkName()).isEqualTo("bar");
-    assertThat(reader.nextId()).isEqualTo(asBuffer("foo"));
-  }
-
-  @Test
-  public void shouldSeekToChunk() {
-    // given
-    final var reader = newReader(chunksOf("foo", "bar"));
-
-    // when
-    reader.seek(asBuffer("foo"));
-
-    // then
-    assertThat(reader).hasNext();
-    assertThat(reader.next().getChunkName()).isEqualTo("foo");
-    assertThat(reader.nextId()).isNull();
-  }
-
-  @Test
-  public void shouldGetNextChunkInOrder() {
-    // given
-    final var reader = newReader(chunksOf("c", "a", "b"));
+    final var reader = newReader();
 
     // when - then
-    final var chunks = new ArrayList<SnapshotChunk>();
-    while (reader.hasNext()) {
-      chunks.add(reader.next());
-    }
+    assertThat(reader.next().getChunkName()).isEqualTo("bar");
+    assertThat(reader.next().getChunkName()).isEqualTo("foo");
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenChunkFileDoesNotExist() throws IOException {
+    // given
+    final var reader = newReader();
+
+    // when
+    Files.delete(snapshotDirectory.resolve("bar"));
 
     // then
-    assertThat(chunks).extracting(SnapshotChunk::getChunkName).containsExactly("a", "b", "c");
-    assertThat(reader.nextId()).isNull();
-    assertThat(reader.hasNext()).isFalse();
+    assertThatThrownBy(reader::next).hasCauseInstanceOf(NoSuchFileException.class);
   }
 
-  private ByteBuffer asBuffer(final CharSequence chunk) {
-    return ByteBuffer.wrap(chunk.toString().getBytes(FileBasedSnapshotChunkReader.ID_CHARSET));
+  @Test
+  public void shouldThrowExceptionWhenNoDirectoryExist() throws IOException {
+    // given
+    final var reader = newReader();
+
+    // when
+    FileUtil.deleteFolder(snapshotDirectory);
+
+    // then
+    assertThatThrownBy(reader::next).hasCauseInstanceOf(NoSuchFileException.class);
   }
 
-  private NavigableSet<CharSequence> chunksOf(final CharSequence... chunks) {
-    final var set = new TreeSet<>(CharSequence::compare);
-    set.addAll(Arrays.asList(chunks));
-    return set;
-  }
+  private FileBasedSnapshotChunkReader newReader() throws IOException {
+    snapshotDirectory = temporaryFolder.getRoot().toPath();
+    for (final var chunk : Arrays.asList("foo", "bar")) {
+      final var path = snapshotDirectory.resolve(chunk);
 
-  private FileBasedSnapshotChunkReader newReader(final NavigableSet<CharSequence> chunks) {
-    final var directory = temporaryFolder.getRoot().toPath();
-    for (final var chunk : chunks) {
-      final var path = directory.resolve(chunk.toString());
-      try {
-        Files.createFile(path);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
+      Files.createFile(path);
+      Files.writeString(path, "content");
     }
 
-    try {
-      return new FileBasedSnapshotChunkReader(directory, 1);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    return new FileBasedSnapshotChunkReader(snapshotDirectory, SNAPSHOT_CHECKSUM);
   }
 }
