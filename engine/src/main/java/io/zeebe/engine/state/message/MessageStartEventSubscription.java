@@ -13,22 +13,22 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.ObjectProperty;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 
-public class SubscriptionValue extends UnpackedObject implements DbValue {
+public class MessageStartEventSubscription extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<MessageStartEventSubscriptionRecord> recordProp =
       new ObjectProperty<>(
           "messageStartEventSubscriptionRecord", new MessageStartEventSubscriptionRecord());
   private final LongProperty keyProp = new LongProperty("key");
 
-  public SubscriptionValue() {
+  public MessageStartEventSubscription() {
     declareProperty(recordProp).declareProperty(keyProp);
   }
 
-  public void set(final MessageStartEventSubscriptionRecord record) {
+  public void setRecord(final MessageStartEventSubscriptionRecord record) {
     recordProp.getValue().wrap(record);
   }
 
-  public MessageStartEventSubscriptionRecord get() {
+  public MessageStartEventSubscriptionRecord getRecord() {
     return recordProp.getValue();
   }
 
@@ -36,7 +36,7 @@ public class SubscriptionValue extends UnpackedObject implements DbValue {
     return keyProp.getValue();
   }
 
-  public SubscriptionValue setKey(final long key) {
+  public MessageStartEventSubscription setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }

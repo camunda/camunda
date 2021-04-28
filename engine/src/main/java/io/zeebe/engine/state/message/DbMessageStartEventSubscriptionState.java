@@ -28,9 +28,10 @@ public final class DbMessageStartEventSubscriptionState
 
   // (messageName, processDefinitionKey => MessageSubscription)
   private final DbCompositeKey<DbString, DbLong> messageNameAndProcessDefinitionKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, SubscriptionValue>
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, MessageStartEventSubscription>
       subscriptionsColumnFamily;
-  private final SubscriptionValue subscriptionValue = new SubscriptionValue();
+  private final MessageStartEventSubscription messageStartEventSubscription =
+      new MessageStartEventSubscription();
 
   // (processDefinitionKey, messageName) => \0  : to find existing subscriptions of a process
   private final DbCompositeKey<DbLong, DbString> processDefinitionKeyAndMessageName;
@@ -47,7 +48,7 @@ public final class DbMessageStartEventSubscriptionState
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
             messageNameAndProcessDefinitionKey,
-            subscriptionValue);
+            messageStartEventSubscription);
 
     processDefinitionKeyAndMessageName = new DbCompositeKey<>(processDefinitionKey, messageName);
     subscriptionsOfProcessDefinitionKeyColumnFamily =
@@ -60,11 +61,12 @@ public final class DbMessageStartEventSubscriptionState
 
   @Override
   public void put(final MessageStartEventSubscriptionRecord subscription) {
-    subscriptionValue.set(subscription);
+    messageStartEventSubscription.setRecord(subscription);
 
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     processDefinitionKey.wrapLong(subscription.getProcessDefinitionKey());
-    subscriptionsColumnFamily.put(messageNameAndProcessDefinitionKey, subscriptionValue);
+    subscriptionsColumnFamily.put(
+        messageNameAndProcessDefinitionKey, messageStartEventSubscription);
     subscriptionsOfProcessDefinitionKeyColumnFamily.put(
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
   }
@@ -97,7 +99,7 @@ public final class DbMessageStartEventSubscriptionState
     subscriptionsColumnFamily.whileEqualPrefix(
         this.messageName,
         (key, value) -> {
-          visitor.accept(value.get());
+          visitor.accept(value.getRecord());
         });
   }
 }
