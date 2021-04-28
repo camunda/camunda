@@ -25,13 +25,11 @@ public class RaftStorageConfig {
 
   private static final String DATA_PREFIX = ".data";
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-  private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
   private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
   private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
   private String directory;
-  private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
@@ -50,26 +48,6 @@ public class RaftStorageConfig {
     return directory != null
         ? directory
         : System.getProperty("atomix.data", DATA_PREFIX) + "/" + groupName;
-  }
-
-  /**
-   * Returns the maximum entry size.
-   *
-   * @return the maximum entry size
-   */
-  public MemorySize getMaxEntrySize() {
-    return MemorySize.from(maxEntrySize);
-  }
-
-  /**
-   * Sets the maximum entry size.
-   *
-   * @param maxEntrySize the maximum entry size
-   * @return the Raft storage configuration
-   */
-  public RaftStorageConfig setMaxEntrySize(final MemorySize maxEntrySize) {
-    this.maxEntrySize = (int) maxEntrySize.bytes();
-    return this;
   }
 
   /**

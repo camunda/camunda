@@ -370,7 +370,6 @@ class SegmentedJournalTest {
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(
             (int) (entrySize * entriesPerSegment) + JournalSegmentDescriptor.getEncodingLength())
-        .withMaxEntrySize(entrySize)
         .withJournalIndexDensity(journalIndexDensity)
         .build();
   }

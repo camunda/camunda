@@ -53,7 +53,6 @@ public final class RaftStorage {
   private final String prefix;
   private final File directory;
   private final int maxSegmentSize;
-  private final int maxEntrySize;
   private final long freeDiskSpace;
   private final boolean flushExplicitly;
   private final ReceivableSnapshotStore persistedSnapshotStore;
@@ -63,7 +62,6 @@ public final class RaftStorage {
       final String prefix,
       final File directory,
       final int maxSegmentSize,
-      final int maxEntrySize,
       final long freeDiskSpace,
       final boolean flushExplicitly,
       final ReceivableSnapshotStore persistedSnapshotStore,
@@ -71,7 +69,6 @@ public final class RaftStorage {
     this.prefix = prefix;
     this.directory = directory;
     this.maxSegmentSize = maxSegmentSize;
-    this.maxEntrySize = maxEntrySize;
     this.freeDiskSpace = freeDiskSpace;
     this.flushExplicitly = flushExplicitly;
     this.persistedSnapshotStore = persistedSnapshotStore;
@@ -225,7 +222,6 @@ public final class RaftStorage {
         .withName(prefix)
         .withDirectory(directory)
         .withMaxSegmentSize(maxSegmentSize)
-        .withMaxEntrySize(maxEntrySize)
         .withFreeDiskSpace(freeDiskSpace)
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
@@ -282,7 +278,6 @@ public final class RaftStorage {
     private static final String DEFAULT_DIRECTORY =
         System.getProperty("atomix.data", System.getProperty("user.dir"));
     private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-    private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
     private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
     private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
     private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
@@ -290,7 +285,6 @@ public final class RaftStorage {
     private String prefix = DEFAULT_PREFIX;
     private File directory = new File(DEFAULT_DIRECTORY);
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
-    private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
     private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private ReceivableSnapshotStore persistedSnapshotStore;
@@ -360,19 +354,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Sets the maximum entry size in bytes, returning the builder for method chaining.
-     *
-     * @param maxEntrySize the maximum entry size in bytes
-     * @return the storage builder
-     * @throws IllegalArgumentException if the {@code maxEntrySize} is not positive
-     */
-    public Builder withMaxEntrySize(final int maxEntrySize) {
-      checkArgument(maxEntrySize > 0, "maxEntrySize must be positive");
-      this.maxEntrySize = maxEntrySize;
-      return this;
-    }
-
-    /**
      * Sets the percentage of free disk space that must be preserved before log compaction is
      * forced.
      *
@@ -424,7 +405,6 @@ public final class RaftStorage {
           prefix,
           directory,
           maxSegmentSize,
-          maxEntrySize,
           freeDiskSpace,
           flushExplicitly,
           persistedSnapshotStore,

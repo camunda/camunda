@@ -119,7 +119,6 @@ public class ZeebeTestNode {
         .withPartitionSize(members.size())
         .withFlushExplicitly(true)
         .withSegmentSize(1024L)
-        .withMaxEntrySize(512)
         .withSnapshotStoreFactory(
             (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));
   }

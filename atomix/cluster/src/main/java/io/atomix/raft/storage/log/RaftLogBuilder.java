@@ -85,18 +85,6 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   }
 
   /**
-   * Sets the maximum entry size in bytes, returning the builder for method chaining.
-   *
-   * @param maxEntrySize the maximum entry size in bytes
-   * @return the storage builder
-   * @throws IllegalArgumentException if the {@code maxEntrySize} is not positive
-   */
-  public RaftLogBuilder withMaxEntrySize(final int maxEntrySize) {
-    journalBuilder.withMaxEntrySize(maxEntrySize);
-    return this;
-  }
-
-  /**
    * Sets the minimum free disk space to leave when allocating a new segment
    *
    * @param freeDiskSpace free disk space in bytes
