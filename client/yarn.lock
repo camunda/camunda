@@ -1285,30 +1285,30 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/form-js-editor@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.0.9.tgz#1da5bb8f179ace6cf9151a68fa6027bb174e77ac"
-  integrity sha512-bNUWQncwXkVB077plKSCNnHU6SOJWaChF5WXy57VBny5049lSCeyNRwnJX1NxpakJNARPwSpgQXI0BdF91X1Og==
+"@bpmn-io/form-js-editor@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.0.12.tgz#fea98ace6ba54c5214a10f3959d15bd92cf7f521"
+  integrity sha512-jrUEDZbh3InSdox47x9Xeq+/5txzNBYTiYhow3qwOtG4AgE3Bi8XjdklnVDNrpIhx0uGCg6fc6ixPkK39QgbOQ==
   dependencies:
-    "@bpmn-io/form-js-viewer" "^0.0.9"
+    "@bpmn-io/form-js-viewer" "^0.0.12"
     array-move "^3.0.1"
     dragula "^3.7.3"
     preact "^10.5.12"
 
-"@bpmn-io/form-js-viewer@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.0.9.tgz#133be2f56416903274dc8ed7b19f9fe922818435"
-  integrity sha512-WfVYwiSh4EG+UYo8x/rMy35p2z+KV13lLVJSMyQiRkB2vnJU6TkoCD3N5Ll8106qJvwGMnuTQi6o94KCEedj1w==
+"@bpmn-io/form-js-viewer@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.0.12.tgz#f36d1241b3f7a20ad276adbbfb65495171bcf3f1"
+  integrity sha512-luBGfBUZ7NPsVgXmEuEqx82mXUD6dwcrsCHyBDXagpJ0wlnj55Tsz1euxi2XziHqo/KOTYKDvm93LBbAs5aF4w==
   dependencies:
     preact "^10.5.12"
 
-"@bpmn-io/form-js@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.0.9.tgz#39747446748144c4452efd9c7dc54739247a0e3a"
-  integrity sha512-hkdYoESwZ1y6etW7kX0DUfQ0/8VGTq7L+5heUte4bv7gRUE0I+DmxKYBCKDrH8qyT1SqzBhVXNmKIdORtDEftw==
+"@bpmn-io/form-js@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.0.12.tgz#256b38bb69d4203746aaab44c110df6d7c7c8a46"
+  integrity sha512-cZT+8FXJlZN1c2+ssoUSEB4enppqkXkhY6qLXjcwMPgwpZFZjExhLyXDkMoL4CVskNJ2E6FQQ0e2vm2w4CqK3Q==
   dependencies:
-    "@bpmn-io/form-js-editor" "^0.0.9"
-    "@bpmn-io/form-js-viewer" "^0.0.9"
+    "@bpmn-io/form-js-editor" "^0.0.12"
+    "@bpmn-io/form-js-viewer" "^0.0.12"
 
 "@camunda-cloud/common-ui-react@^0.0.15":
   version "0.0.15"
