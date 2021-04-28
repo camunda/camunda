@@ -171,10 +171,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             correlatingSubscriptions.add(subscriptionRecord);
 
             eventHandle.triggerMessageStartEvent(
-                subscriptionRecord.getProcessDefinitionKey(),
-                subscriptionRecord.getStartEventIdBuffer(),
-                messageKey,
-                messageRecord);
+                subscription.getKey(), subscriptionRecord, messageKey, messageRecord);
           }
         });
   }
