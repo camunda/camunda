@@ -22,6 +22,7 @@ pipelineJob('generate-cambpm-test-data') {
         choiceParam('SQL_DUMP', ['optimize_data-large.sqlc', 'optimize_data-medium.sqlc', 'optimize_data-stage.sqlc', 'optimize_data-e2e.sqlc'])
         booleanParam('USE_E2E_PRESETS', false, 'When enabled loads E2E test dataset presets and overwrites all of the below.')
         stringParam('NUM_PROCESS_INSTANCES', '10000000', 'Number of process instances to generate.')
+        stringParam('ADJUST_PROCESS_INSTANCE_DATES', 'true', 'Flag to indicate whether process instance dates should be adjusted. Should be true for stage data and false for larger data sets.')
         stringParam('PROCESS_DEFINITIONS', '', 'Optional, comma-separated list of definitions and number of versions to generate data for, e.g. "InvoiceWithAlternativeCorrelationVariable:5,InvoiceDataFor2Tenants:2".')
         stringParam('NUM_DECISION_INSTANCES', '100000', 'At least the number of decision instances stated here will be generated but due to the DRD structure about 1/3 more than that.')
         stringParam('DECISION_DEFINITIONS', '', 'Optional, comma-separated list of definitions and number of versions to generate data for, e.g. "DecideDish:5,InvoiceBusinessDecisions:5".')

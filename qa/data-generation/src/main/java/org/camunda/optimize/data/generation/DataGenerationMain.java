@@ -44,7 +44,7 @@ public class DataGenerationMain {
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
     validateProcessInstanceDateParameters(arguments);
     main.generateData();
-    updateProcessInstanceDates(arguments);
+    updateProcessInstanceDatesIfRequired(arguments);
   }
 
   public void generateData() {
@@ -171,7 +171,7 @@ public class DataGenerationMain {
     }
   }
 
-  private static void updateProcessInstanceDates(final Map<String, String> arguments) {
+  private static void updateProcessInstanceDatesIfRequired(final Map<String, String> arguments) {
     if (Boolean.parseBoolean(arguments.get("adjustProcessInstanceDates"))) {
       DBConnector dbConnector = new DBConnector(
         arguments.get("jdbcDriver"),
