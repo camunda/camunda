@@ -44,6 +44,7 @@
         <zeebe:ioMapping>
           <zeebe:input source="=orderNo" target="orderId" />
           <zeebe:input source="=total" target="amountToPay" />
+          <zeebe:output source="=paid=&#34;true&#34;" target="paidAsBool" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0j6tsnn</bpmn:incoming>
@@ -62,6 +63,7 @@
       <bpmn:extensionElements>
         <zeebe:ioMapping>
           <zeebe:input source="=items" target="orderItems" />
+          <zeebe:output source="=smthIsMissing=&#34;true&#34;" target="smthIsMissingBool" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1dwqvrt</bpmn:incoming>
@@ -75,7 +77,7 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1fgekwd" sourceRef="Task_1t0a4uy" targetRef="ExclusiveGateway_0n882rg" />
     <bpmn:sequenceFlow id="SequenceFlow_0drux68" name="OK" sourceRef="ExclusiveGateway_0n882rg" targetRef="Task_162x79i">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=smthIsMissing = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=smthIsMissingBool = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="ExclusiveGateway_1qqmrb8" name="Payment OK?">
       <bpmn:incoming>SequenceFlow_1s6g17c</bpmn:incoming>
@@ -84,14 +86,14 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1s6g17c" sourceRef="Task_1b1r7ow" targetRef="ExclusiveGateway_1qqmrb8" />
     <bpmn:sequenceFlow id="SequenceFlow_1dwqvrt" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_1t0a4uy">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paid = true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paidAsBool = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:userTask id="ServiceTask_00g0gy6" name="Request for payment">
       <bpmn:incoming>SequenceFlow_0jzbqu1</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1q6ade7</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_0jzbqu1" name="Not paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="ServiceTask_00g0gy6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paid = false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paidAsBool = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1q6ade7" sourceRef="ServiceTask_00g0gy6" targetRef="Task_1b1r7ow" />
     <bpmn:userTask id="ServiceTask_0fiiz29" name="Request from  warehouse">
@@ -99,7 +101,7 @@
       <bpmn:outgoing>SequenceFlow_01a5668</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="SequenceFlow_11p0iy6" name="Smth is missing" sourceRef="ExclusiveGateway_0n882rg" targetRef="ServiceTask_0fiiz29">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=smthIsMissing = true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=smthIsMissingBool = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_01a5668" sourceRef="ServiceTask_0fiiz29" targetRef="Task_1t0a4uy" />
   </bpmn:process>

@@ -135,7 +135,20 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startSimpleProcess() {
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", null);
+    String payload = null;
+    if (random.nextBoolean()) {
+      payload =
+          "{\"stringVar\":\"varValue"
+              + random.nextInt(100)
+              + "\", "
+              + " \"intVar\": 123, "
+              + " \"boolVar\": true, "
+              + " \"emptyStringVar\": \"\", "
+              + " \"objectVar\": "
+              + "   {\"testVar\":555, \n"
+              + "   \"testVar2\": \"dkjghkdg\"}}";
+    }
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", payload);
   }
 
   private void startOrderProcess() {
@@ -176,23 +189,7 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startFlightRegistrationProcess() {
-    ZeebeTestUtil.startProcessInstance(
-        zeebeClient,
-        "flightRegistration",
-        "{\n"
-            + "  \"firstName\": \""
-            + NameGenerator.getRandomFirstName()
-            + "\",\n"
-            + "  \"lastName\": \""
-            + NameGenerator.getRandomLastName()
-            + "\",\n"
-            + "  \"passNo\": \"PS"
-            + (random.nextInt(1000000) + (random.nextInt(9) + 1) * 1000000)
-            + "\",\n"
-            + "  \"ticketNo\": \""
-            + random.nextInt(1000)
-            + "\"\n"
-            + "}");
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "flightRegistration", null);
   }
 
   private void deployProcesses() {
