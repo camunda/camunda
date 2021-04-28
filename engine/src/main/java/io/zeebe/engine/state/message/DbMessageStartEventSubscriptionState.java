@@ -70,6 +70,7 @@ public final class DbMessageStartEventSubscriptionState
         processDefinitionKeyAndMessageName, DbNil.INSTANCE);
   }
 
+  // TODO (saig0): replace with remove(key)
   @Override
   public void removeSubscriptionsOfProcess(final long processDefinitionKey) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
@@ -80,6 +81,15 @@ public final class DbMessageStartEventSubscriptionState
           subscriptionsColumnFamily.delete(messageNameAndProcessDefinitionKey);
           subscriptionsOfProcessDefinitionKeyColumnFamily.delete(key);
         });
+  }
+
+  @Override
+  public void remove(final long processDefinitionKey, final DirectBuffer messageName) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.messageName.wrapBuffer(messageName);
+
+    subscriptionsColumnFamily.delete(messageNameAndProcessDefinitionKey);
+    subscriptionsOfProcessDefinitionKeyColumnFamily.delete(processDefinitionKeyAndMessageName);
   }
 
   @Override

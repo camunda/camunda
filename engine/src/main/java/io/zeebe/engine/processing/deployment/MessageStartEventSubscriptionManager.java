@@ -14,6 +14,7 @@ import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -28,11 +29,15 @@ public class MessageStartEventSubscriptionManager {
       new MessageStartEventSubscriptionRecord();
 
   private final ProcessState processState;
+  private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final KeyGenerator keyGenerator;
 
   public MessageStartEventSubscriptionManager(
-      final ProcessState processState, final KeyGenerator keyGenerator) {
+      final ProcessState processState,
+      final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
+      final KeyGenerator keyGenerator) {
     this.processState = processState;
+    this.messageStartEventSubscriptionState = messageStartEventSubscriptionState;
     this.keyGenerator = keyGenerator;
   }
 
@@ -61,12 +66,13 @@ public class MessageStartEventSubscriptionManager {
       return;
     }
 
-    subscriptionRecord.reset();
-    subscriptionRecord.setProcessDefinitionKey(lastMsgProcess.getKey());
-
-    // TODO (saig0): we should write one DELETED event for each created subscription (#2805)
-    stateWriter.appendFollowUpEvent(
-        -1L, MessageStartEventSubscriptionIntent.DELETED, subscriptionRecord);
+    messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
+        lastMsgProcess.getKey(),
+        subscription ->
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                MessageStartEventSubscriptionIntent.DELETED,
+                subscription.getRecord()));
   }
 
   private DeployedProcess findLastMessageStartProcess(final ProcessRecord processRecord) {

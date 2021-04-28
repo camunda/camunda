@@ -74,7 +74,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
     messageStartEventSubscriptionManager =
-        new MessageStartEventSubscriptionManager(processState, keyGenerator);
+        new MessageStartEventSubscriptionManager(
+            processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
   }

@@ -9,6 +9,7 @@ package io.zeebe.engine.state.mutable;
 
 import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import org.agrona.DirectBuffer;
 
 public interface MutableMessageStartEventSubscriptionState
     extends MessageStartEventSubscriptionState {
@@ -16,4 +17,6 @@ public interface MutableMessageStartEventSubscriptionState
   void put(final long key, MessageStartEventSubscriptionRecord subscription);
 
   void removeSubscriptionsOfProcess(long processDefinitionKey);
+
+  void remove(long processDefinitionKey, DirectBuffer messageName);
 }
