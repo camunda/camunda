@@ -130,7 +130,7 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receiverSnapshotsDir)
         .as("there is only the latest snapshot in the receiver's snapshot directory")
-        .isDirectoryContaining(p -> p.equals(secondReceivedPersistedSnapshot.getPath()));
+        .isDirectoryNotContaining(p -> !p.equals(secondReceivedPersistedSnapshot.getPath()));
   }
 
   @Test
@@ -148,7 +148,8 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(receiverPendingDir)
         .as(
             "the latest pending snapshot should not be deleted because it is newer than the persisted one")
-        .isDirectoryContaining(p -> p.equals(receivedSnapshot.getPath()));
+        .isDirectoryContaining(p -> p.equals(receivedSnapshot.getPath()))
+        .isDirectoryNotContaining(p -> !p.equals(receivedSnapshot.getPath()));
   }
 
   @Test
@@ -207,7 +208,8 @@ public class FileBasedReceivedSnapshotTest {
 
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContaining(p -> p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryNotContaining(
+            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
   }
 
   @Test
@@ -230,7 +232,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContaining(p -> p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryNotContaining(
+            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
   }
 
   @Test
@@ -254,7 +257,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContaining(p -> p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryNotContaining(
+            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
   }
 
   @Test
@@ -278,7 +282,8 @@ public class FileBasedReceivedSnapshotTest {
     // then
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContaining(p -> p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryNotContaining(
+            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
   }
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot)

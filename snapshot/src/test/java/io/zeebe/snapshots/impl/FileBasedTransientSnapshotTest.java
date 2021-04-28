@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Map;
 import org.agrona.IoUtil;
 import org.junit.Before;
@@ -121,24 +120,6 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldPurgePendingSnapshots() {
-    // given
-    final var transientSnapshots =
-        List.of(
-            snapshotStore.newTransientSnapshot(1L, 2L, 1L, 0L).orElseThrow(),
-            snapshotStore.newTransientSnapshot(2L, 2L, 1L, 0L).orElseThrow());
-    transientSnapshots.forEach(s -> s.take(this::writeSnapshot).join());
-
-    // when
-    snapshotStore.purgePendingSnapshots().join();
-
-    // then
-    assertThat(pendingDir)
-        .as("there are no more transient snapshots after purge")
-        .isEmptyDirectory();
-  }
-
-  @Test
   public void shouldNotDeletePersistedSnapshotOnPurge() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
@@ -159,7 +140,7 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldDeleteTransientDirectoryOnPersist() {
+  public void shouldDeleteOlderTransientDirectoryOnPersist() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).orElseThrow();
     transientSnapshot.take(this::writeSnapshot).join();
