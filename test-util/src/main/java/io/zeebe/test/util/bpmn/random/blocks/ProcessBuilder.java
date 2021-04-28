@@ -37,7 +37,7 @@ public final class ProcessBuilder {
 
   private final String processId;
   private final String endEventId;
-  private boolean hasEventSubProcess;
+  private final boolean hasEventSubProcess;
   private String eventSubProcessId;
   private boolean isEventSubProcessInterrupting;
   private String eventSubProcessMessageName;
@@ -51,9 +51,7 @@ public final class ProcessBuilder {
 
     final var idGenerator = processContext.getIdGenerator();
     processId = "process_" + idGenerator.nextId();
-    // todo enable when sub processes are migrated
-    // https://github.com/camunda-cloud/zeebe/issues/6195
-    // hasEventSubProcess = initEventSubProcess(processContext, idGenerator);
+    hasEventSubProcess = initEventSubProcess(processContext, idGenerator);
     final var random = processContext.getRandom();
     final var startEventBuilderFactory =
         START_EVENT_BUILDER_FACTORIES.get(random.nextInt(START_EVENT_BUILDER_FACTORIES.size()));
@@ -85,11 +83,9 @@ public final class ProcessBuilder {
     final io.zeebe.model.bpmn.builder.ProcessBuilder processBuilder =
         Bpmn.createExecutableProcess(processId);
 
-    // todo enable when sub processes are migrated
-    // https://github.com/camunda-cloud/zeebe/issues/6195
-    //    if (hasEventSubProcess) {
-    //      buildEventSubProcess(processBuilder);
-    //    }
+    if (hasEventSubProcess) {
+      buildEventSubProcess(processBuilder);
+    }
 
     AbstractFlowNodeBuilder<?, ?> processWorkInProgress =
         startEventBuilder.buildStartEvent(processBuilder);
@@ -124,14 +120,12 @@ public final class ProcessBuilder {
   public ExecutionPath findRandomExecutionPath(final Random random) {
     final var followingPath = blockBuilder.findRandomExecutionPath(random);
 
-    // todo enable when sub processes are migrated
-    // https://github.com/camunda-cloud/zeebe/issues/6195
-    //    if (hasEventSubProcess) {
-    //      final var shouldTriggerEventSubProcess = random.nextBoolean();
-    //      if (shouldTriggerEventSubProcess) {
-    //        executionPathForEventSubProcess(random, followingPath);
-    //      }
-    //    }
+    if (hasEventSubProcess) {
+      final var shouldTriggerEventSubProcess = random.nextBoolean();
+      if (shouldTriggerEventSubProcess) {
+        executionPathForEventSubProcess(random, followingPath);
+      }
+    }
 
     final var startPath =
         startEventBuilder.findRandomExecutionPath(processId, followingPath.collectVariables());
@@ -160,12 +154,13 @@ public final class ProcessBuilder {
         new StepPublishMessage(
             eventSubProcessMessageName, "", EVENT_SUBPROCESS_CORRELATION_KEY_VALUE);
 
-    final var index = random.nextInt(size);
     if (isEventSubProcessInterrupting) {
       // if it is interrupting we remove the other execution path
-      followingPath.replace(index, executionStep);
+      followingPath.cutAtRandomPosition(random);
+      followingPath.appendDirectSuccessor(executionStep);
     } else {
-      followingPath.insert(index, executionStep);
+      final var index = random.nextInt(size);
+      followingPath.insertExecutionStepAt(index, executionStep);
     }
   }
 }
