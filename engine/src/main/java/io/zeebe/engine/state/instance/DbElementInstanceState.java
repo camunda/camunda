@@ -12,8 +12,10 @@ import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbInt;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
+import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
@@ -25,6 +27,8 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
@@ -51,6 +55,19 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
       awaitProcessInstanceResultMetadataColumnFamily;
+
+  private final DbLong flowScopeKey = new DbLong();
+  private final DbString gatewayElementId = new DbString();
+  private final DbString sequenceFlowElementId = new DbString();
+  private final DbInt numberOfTakenSequenceFlows = new DbInt();
+  private final DbCompositeKey<DbLong, DbString> flowScopeKeyAndElementId;
+  private final DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>
+      numberOfTakenSequenceFlowsKey;
+  /**
+   * [flow scope key | gateway element id | sequence flow id] => [times the sequence flow was taken]
+   */
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>, DbInt>
+      numberOfTakenSequenceFlowsColumnFamily;
 
   private final MutableVariableState variableState;
 
@@ -103,6 +120,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             elementInstanceKey,
             awaitResultMetadata);
+
+    flowScopeKeyAndElementId = new DbCompositeKey<>(flowScopeKey, gatewayElementId);
+    numberOfTakenSequenceFlowsKey =
+        new DbCompositeKey<>(flowScopeKeyAndElementId, sequenceFlowElementId);
+    numberOfTakenSequenceFlowsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS,
+            transactionContext,
+            numberOfTakenSequenceFlowsKey,
+            numberOfTakenSequenceFlows);
   }
 
   @Override
@@ -151,6 +178,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       variableState.removeScope(key);
 
       awaitProcessInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
+      removeNumberOfTakenSequenceFlows(key);
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -344,6 +372,72 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       return copiedElementInstance;
     }
     return null;
+  }
+
+  @Override
+  public int getNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    final var count = new MutableInteger(0);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        (key, number) -> {
+          count.increment();
+        });
+
+    return count.get();
+  }
+
+  @Override
+  public void incrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
+
+    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+
+    var newValue = 1;
+    if (number != null) {
+      newValue = number.getValue() + 1;
+    }
+    numberOfTakenSequenceFlows.wrapInt(newValue);
+
+    numberOfTakenSequenceFlowsColumnFamily.put(
+        numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+  }
+
+  @Override
+  public void decrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        (key, number) -> {
+          final var newValue = number.getValue() - 1;
+          if (newValue > 0) {
+            numberOfTakenSequenceFlows.wrapInt(newValue);
+            numberOfTakenSequenceFlowsColumnFamily.put(key, numberOfTakenSequenceFlows);
+          } else {
+            numberOfTakenSequenceFlowsColumnFamily.delete(key);
+          }
+        });
+  }
+
+  private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey,
+        (key, number) -> {
+          numberOfTakenSequenceFlowsColumnFamily.delete(key);
+        });
   }
 
   @FunctionalInterface
