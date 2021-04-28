@@ -75,11 +75,11 @@ public final class JobTimeoutTriggerTest {
 
     inOrder
         .verify(typedStreamWriter)
-        .appendFollowUpCommand(eq(0L), eq(JobIntent.TIME_OUT), any(JobRecord.class), any());
+        .appendFollowUpCommand(eq(0L), eq(JobIntent.TIME_OUT), any(JobRecord.class));
     inOrder.verify(typedStreamWriter).flush();
     inOrder
         .verify(typedStreamWriter)
-        .appendFollowUpCommand(eq(1L), eq(JobIntent.TIME_OUT), any(JobRecord.class), any());
+        .appendFollowUpCommand(eq(1L), eq(JobIntent.TIME_OUT), any(JobRecord.class));
     inOrder.verify(typedStreamWriter).flush();
     inOrder.verify(typedStreamWriter).reset();
     inOrder.verifyNoMoreInteractions();

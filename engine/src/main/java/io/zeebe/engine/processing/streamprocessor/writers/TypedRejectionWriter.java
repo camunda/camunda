@@ -8,21 +8,11 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
-import java.util.function.UnaryOperator;
 
 public interface TypedRejectionWriter {
 
   void appendRejection(
       TypedRecord<? extends RecordValue> command, RejectionType type, String reason);
-
-  /** @deprecated The modifier parameter is not used at the time of writing */
-  @Deprecated
-  void appendRejection(
-      TypedRecord<? extends RecordValue> command,
-      RejectionType type,
-      String reason,
-      UnaryOperator<RecordMetadata> modifier);
 }

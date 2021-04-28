@@ -13,7 +13,6 @@ import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import org.agrona.DirectBuffer;
 
@@ -30,19 +29,6 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp)
         .declareProperty(resourceProp);
-  }
-
-  @Deprecated
-  public void wrap(
-      final DeploymentResource resource,
-      final ProcessRecord processRecord,
-      final long processDefinitionKey) {
-    bpmnProcessIdProp.setValue(processRecord.getBpmnProcessIdBuffer());
-    resourceNameProp.setValue(resource.getResourceNameBuffer());
-    resourceProp.setValue(resource.getResourceBuffer());
-
-    versionProp.setValue(processRecord.getVersion());
-    keyProp.setValue(processDefinitionKey);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {

@@ -13,7 +13,6 @@ import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.zeebe.engine.state.immutable.JobState;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
@@ -77,8 +76,7 @@ public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
     state.forEachTimedOutEntry(
         now,
         (key, record) -> {
-          writer.appendFollowUpCommand(
-              key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
+          writer.appendFollowUpCommand(key, JobIntent.TIME_OUT, record);
 
           final boolean flushed = writer.flush() >= 0;
           if (!flushed) {

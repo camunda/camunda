@@ -8,14 +8,12 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 public final class ReprocessingStreamWriter implements TypedStreamWriter {
 
@@ -39,39 +37,12 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
   }
 
   @Override
-  public void appendRejection(
-      final TypedRecord<? extends RecordValue> command,
-      final RejectionType type,
-      final String reason,
-      final UnaryOperator<RecordMetadata> modifier) {
-
-    final var record =
-        new ReprocessingRecord(
-            command.getKey(),
-            sourceRecordPosition,
-            command.getIntent(),
-            RecordType.COMMAND_REJECTION);
-    records.add(record);
-  }
-
-  @Override
   public void configureSourceContext(final long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-
-    final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
-    records.add(record);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
 
     final var record = new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.EVENT);
     records.add(record);
@@ -87,18 +58,6 @@ public final class ReprocessingStreamWriter implements TypedStreamWriter {
 
   @Override
   public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
-
-    final var record =
-        new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.COMMAND);
-    records.add(record);
-  }
-
-  @Override
-  public void appendFollowUpCommand(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
 
     final var record =
         new ReprocessingRecord(key, sourceRecordPosition, intent, RecordType.COMMAND);
