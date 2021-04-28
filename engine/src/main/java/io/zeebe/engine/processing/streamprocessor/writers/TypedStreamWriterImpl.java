@@ -22,11 +22,8 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.UnaryOperator;
 
 public class TypedStreamWriterImpl implements TypedStreamWriter {
-
-  private static final UnaryOperator<RecordMetadata> NO_MODIFIER = UnaryOperator.identity();
 
   private final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
   private final RecordMetadata metadata = new RecordMetadata();
@@ -52,12 +49,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
   }
 
   protected void appendRecord(
-      final long key,
-      final RecordType type,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
-    appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value, modifier);
+      final long key, final RecordType type, final Intent intent, final RecordValue value) {
+    appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value);
   }
 
   protected void appendRecord(
@@ -66,8 +59,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
       final Intent intent,
       final RejectionType rejectionType,
       final String rejectionReason,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
+      final RecordValue value) {
 
     final LogEntryBuilder event = batchWriter.event();
 
@@ -86,7 +78,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
     }
 
     if (value instanceof BufferWriter) {
-      event.metadataWriter(modifier.apply(metadata)).valueWriter((BufferWriter) value).done();
+      event.metadataWriter(metadata).valueWriter((BufferWriter) value).done();
     } else {
       throw new RuntimeException(String.format("The record value %s is not a BufferWriter", value));
     }
@@ -94,21 +86,12 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
 
   @Override
   public void appendNewCommand(final Intent intent, final RecordValue value) {
-    appendRecord(-1, RecordType.COMMAND, intent, value, NO_MODIFIER);
+    appendRecord(-1, RecordType.COMMAND, intent, value);
   }
 
   @Override
   public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value) {
-    appendRecord(key, RecordType.COMMAND, intent, value, NO_MODIFIER);
-  }
-
-  @Override
-  public void appendFollowUpCommand(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
-    appendRecord(key, RecordType.COMMAND, intent, value, modifier);
+    appendRecord(key, RecordType.COMMAND, intent, value);
   }
 
   @Override
@@ -132,24 +115,7 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
         command.getIntent(),
         rejectionType,
         reason,
-        command.getValue(),
-        NO_MODIFIER);
-  }
-
-  @Override
-  public void appendRejection(
-      final TypedRecord<? extends RecordValue> command,
-      final RejectionType rejectionType,
-      final String reason,
-      final UnaryOperator<RecordMetadata> modifier) {
-    appendRecord(
-        command.getKey(),
-        RecordType.COMMAND_REJECTION,
-        command.getIntent(),
-        rejectionType,
-        reason,
-        command.getValue(),
-        modifier);
+        command.getValue());
   }
 
   @Override
@@ -159,15 +125,6 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    appendRecord(key, RecordType.EVENT, intent, value, NO_MODIFIER);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
-    appendRecord(key, RecordType.EVENT, intent, value, modifier);
+    appendRecord(key, RecordType.EVENT, intent, value);
   }
 }
