@@ -12,10 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.snapshots.PersistedSnapshot;
+import io.zeebe.snapshots.TransientSnapshot;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
@@ -24,13 +23,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import org.assertj.core.api.Assertions;
+import org.agrona.IoUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class FileBasedSnapshotStoreTest {
+  private static final String SNAPSHOT_DIRECTORY = "snapshots";
+  private static final String PENDING_DIRECTORY = "pending";
 
   private static final String SNAPSHOT_CONTENT_FILE_NAME = "file1.txt";
 
@@ -39,34 +40,14 @@ public class FileBasedSnapshotStoreTest {
 
   private Path snapshotsDir;
   private Path pendingSnapshotsDir;
-  private FileBasedSnapshotStoreFactory factory;
-  private File root;
-  private int partitionId;
+  private FileBasedSnapshotStore snapshotStore;
 
   @Before
-  public void before() {
-    factory = new FileBasedSnapshotStoreFactory(scheduler.get(), 1);
-    partitionId = 1;
-    root = temporaryFolder.getRoot();
-
-    factory.createReceivableSnapshotStore(root.toPath(), partitionId);
-
-    snapshotsDir =
-        temporaryFolder
-            .getRoot()
-            .toPath()
-            .resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY);
-    pendingSnapshotsDir =
-        temporaryFolder.getRoot().toPath().resolve(FileBasedSnapshotStoreFactory.PENDING_DIRECTORY);
-  }
-
-  @Test
-  public void shouldCreateSubFoldersOnCreatingDirBasedStore() {
-    // given
-
-    // when + then
-    assertThat(snapshotsDir).exists();
-    Assertions.assertThat(pendingSnapshotsDir).exists();
+  public void before() throws IOException {
+    final var root = temporaryFolder.newFolder("snapshots").toPath();
+    snapshotsDir = root.resolve(PENDING_DIRECTORY);
+    pendingSnapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
   }
 
   @Test
@@ -74,7 +55,7 @@ public class FileBasedSnapshotStoreTest {
     // given
 
     // when
-    factory.getPersistedSnapshotStore(partitionId).delete().join();
+    snapshotStore.delete().join();
 
     // then
     assertThat(pendingSnapshotsDir).doesNotExist();
@@ -82,35 +63,21 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadExistingSnapshot() throws Exception {
+  public void shouldLoadExistingSnapshot() {
     // given
-    final var index = 1L;
-    final var term = 0L;
-    final var transientSnapshot =
-        factory
-            .getConstructableSnapshotStore(partitionId)
-            .newTransientSnapshot(index, term, 1, 0)
-            .orElseThrow();
-    transientSnapshot.take(this::createSnapshotDir);
-    final var persistedSnapshot = transientSnapshot.persist().join();
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
 
     // when
-    try (final ActorScheduler otherScheduler = ActorScheduler.newActorScheduler().build()) {
-      otherScheduler.start();
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
 
-      final var snapshotStore =
-          new FileBasedSnapshotStoreFactory(otherScheduler, 1)
-              .createReceivableSnapshotStore(root.toPath(), partitionId);
-
-      // then
-      final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
-      assertThat(currentSnapshotIndex).isEqualTo(1L);
-      assertThat(snapshotStore.getLatestSnapshot()).get().isEqualTo(persistedSnapshot);
-    }
+    // then
+    assertThat(snapshotStore.getCurrentSnapshotIndex()).isEqualTo(1L);
+    assertThat(snapshotStore.getLatestSnapshot()).hasValue(persistedSnapshot);
   }
 
   @Test
-  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws Exception {
+  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() {
     // given
     final List<FileBasedSnapshotMetadata> snapshots = new ArrayList<>();
     snapshots.add(new FileBasedSnapshotMetadata(1, 1, 1, 1));
@@ -134,51 +101,43 @@ public class FileBasedSnapshotStoreTest {
         });
 
     // when
-    try (final ActorScheduler otherScheduler = ActorScheduler.newActorScheduler().build()) {
-      otherScheduler.start();
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
 
-      final var snapshotStore =
-          new FileBasedSnapshotStoreFactory(otherScheduler, 1)
-              .createReceivableSnapshotStore(root.toPath(), partitionId);
-
-      // then
-      final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
-      assertThat(currentSnapshotIndex).isEqualTo(10L);
-      // should delete older snapshots
-      assertThat(snapshotsDir.toFile().list())
-          .hasSize(1)
-          .containsExactly(snapshotStore.getLatestSnapshot().orElseThrow().getId());
-    }
+    // then
+    assertThat(snapshotStore.getCurrentSnapshotIndex()).isEqualTo(10L);
+    final var latestSnapshotPath =
+        snapshotStore.getLatestSnapshot().map(PersistedSnapshot::getPath).orElseThrow();
+    assertThat(snapshotsDir)
+        .as("The older snapshots should have been deleted")
+        .isDirectoryNotContaining(p -> !p.equals(latestSnapshotPath));
   }
 
   @Test
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
-    final var index = 1L;
-    final var term = 0L;
-    final var transientSnapshot =
-        factory
-            .getConstructableSnapshotStore(partitionId)
-            .newTransientSnapshot(index, term, 1, 0)
-            .orElseThrow();
-    transientSnapshot.take(this::createSnapshotDir);
-    final var persistedSnapshot = transientSnapshot.persist().join();
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
 
     corruptSnapshot(persistedSnapshot);
 
     // when
-    try (final ActorScheduler otherScheduler = ActorScheduler.newActorScheduler().build()) {
-      otherScheduler.start();
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
 
-      final var snapshotStore =
-          new FileBasedSnapshotStoreFactory(otherScheduler, 1)
-              .createReceivableSnapshotStore(root.toPath(), partitionId);
+    // then
+    assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+  }
 
-      // then
-      final var currentSnapshotIndex = snapshotStore.getCurrentSnapshotIndex();
-      assertThat(currentSnapshotIndex).isZero();
-      assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
-    }
+  @Test
+  public void shouldPurgePendingSnapshots() {
+    // given
+    takeTransientSnapshot();
+
+    // when
+    snapshotStore.purgePendingSnapshots().join();
+
+    // then
+    assertThat(pendingSnapshotsDir).isEmptyDirectory();
   }
 
   private void corruptSnapshot(final PersistedSnapshot persistedSnapshot) throws IOException {
@@ -201,5 +160,21 @@ public class FileBasedSnapshotStoreTest {
       throw new UncheckedIOException(e);
     }
     return true;
+  }
+
+  private TransientSnapshot takeTransientSnapshot() {
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1, 1, 1, 0).orElseThrow();
+    transientSnapshot.take(this::createSnapshotDir);
+    return transientSnapshot;
+  }
+
+  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir) {
+    final var store =
+        new FileBasedSnapshotStore(1, 1, new SnapshotMetrics(1 + "-" + 1), snapshotDir, pendingDir);
+    IoUtil.ensureDirectoryExists(snapshotDir.toFile(), "Snapshot directory");
+    IoUtil.ensureDirectoryExists(pendingSnapshotsDir.toFile(), "Pending snapshot directory");
+    scheduler.submitActor(store).join();
+
+    return store;
   }
 }
