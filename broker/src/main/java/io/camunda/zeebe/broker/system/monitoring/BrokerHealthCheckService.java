@@ -83,6 +83,10 @@ import org.slf4j.Logger;
  *                                 |informs
  *                                 |upwards   +------------------+
  *                                 |----------| ExporterDirector |
+ *                                 |          +------------------+
+ *                                 |informs
+ *                                 |upwards   +------------------+
+ *                                 |----------| SnapshotDirector |
  *                                            +------------------+
  *
  * https://textik.com/#cb084adedb02d970
