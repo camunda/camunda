@@ -106,9 +106,11 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(snapshotStore.getCurrentSnapshotIndex()).isEqualTo(10L);
-    assertThat(snapshotsDir.toFile().list())
+    final var latestSnapshotPath =
+        snapshotStore.getLatestSnapshot().map(PersistedSnapshot::getPath).orElseThrow();
+    assertThat(snapshotsDir)
         .as("The older snapshots should have been deleted")
-        .containsExactly(snapshotStore.getLatestSnapshot().orElseThrow().getId());
+        .isDirectoryNotContaining(p -> !p.equals(latestSnapshotPath));
   }
 
   @Test
