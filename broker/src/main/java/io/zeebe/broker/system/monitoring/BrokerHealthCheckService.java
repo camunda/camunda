@@ -79,7 +79,11 @@ import org.slf4j.Logger;
  *                                 |informs
  *                                 |upwards   +-----+
  *                                 |----------| Log |
- *                                            +-----+
+ *                                 |          +-----+
+ *                                 |informs
+ *                                 |upwards   +------------------+
+ *                                 |----------| ExporterDirector |
+ *                                            +------------------+
  *
  * https://textik.com/#cb084adedb02d970
  */

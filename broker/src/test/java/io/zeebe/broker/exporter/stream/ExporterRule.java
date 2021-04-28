@@ -83,6 +83,10 @@ public final class ExporterRule implements TestRule {
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
+  public ExporterDirector getDirector() {
+    return director;
+  }
+
   public ControlledActorClock getClock() {
     return clock;
   }

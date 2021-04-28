@@ -273,7 +273,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onUnrecoverableFailure() {
-    actor.run(() -> handleUnrecoverableFailure());
+    actor.run(this::handleUnrecoverableFailure);
   }
 
   private void onInstallFailure(final long term, final Throwable error) {
@@ -295,11 +295,10 @@ public final class ZeebePartition extends Actor
         .forEach(l -> l.onBecomingInactive(context.getPartitionId(), term));
 
     if (context.getRaftPartition().getRole() == Role.LEADER) {
-      LOG.info("Unexpected failures occurred when installing leader services, stepping down");
+      LOG.info("Unexpected failure occurred, stepping down");
       context.getRaftPartition().stepDown();
     } else {
-      LOG.info(
-          "Unexpected failures occurred when installing follower services, transitioning to inactive");
+      LOG.info("Unexpected failure occurred, transitioning to inactive");
       context.getRaftPartition().goInactive();
     }
   }
