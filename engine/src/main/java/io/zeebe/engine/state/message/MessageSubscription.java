@@ -18,7 +18,7 @@ public final class MessageSubscription extends UnpackedObject implements DbValue
   private final ObjectProperty<MessageSubscriptionRecord> recordProp =
       new ObjectProperty<>("record", new MessageSubscriptionRecord());
 
-  private final LongProperty keyProp = new LongProperty("key", -1L);
+  private final LongProperty keyProp = new LongProperty("key");
 
   private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
 
