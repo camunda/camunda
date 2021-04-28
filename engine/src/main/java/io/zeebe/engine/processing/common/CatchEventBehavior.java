@@ -220,8 +220,9 @@ public final class CatchEventBehavior {
     subscription.setElementId(catchEvent.getId());
     subscription.setInterrupting(catchEvent.isInterrupting());
 
-    // TODO (saig0): the subscription should have a key (#2805)
-    stateWriter.appendFollowUpEvent(-1L, ProcessMessageSubscriptionIntent.CREATING, subscription);
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
     sideEffects.add(
         () ->
