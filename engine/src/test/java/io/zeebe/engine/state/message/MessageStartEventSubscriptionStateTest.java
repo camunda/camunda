@@ -10,6 +10,7 @@ package io.zeebe.engine.state.message;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.engine.util.ZeebeStateRule;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.agrona.collections.MutableReference;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,17 +56,21 @@ public final class MessageStartEventSubscriptionStateTest {
 
   @Test
   public void shouldStoreSubscriptionWithKey() {
+    // given
     final MessageStartEventSubscriptionRecord subscription =
         createSubscription("messageName", "startEventID", 1);
+
+    // then
     state.put(1L, subscription);
 
-    final var storedSubscription = new MutableReference<MessageStartEventSubscriptionRecord>();
+    // when
+    final var storedSubscription = new MutableReference<MessageStartEventSubscription>();
     state.visitSubscriptionsByMessageName(
         subscription.getMessageNameBuffer(), storedSubscription::set);
 
-    // TODO (saig0): verfiy the subscription key
     assertThat(storedSubscription).isNotNull();
-    assertThat(storedSubscription.get()).isEqualTo(subscription);
+    assertThat(storedSubscription.get().getKey()).isEqualTo(1L);
+    assertThat(storedSubscription.get().getRecord()).isEqualTo(subscription);
   }
 
   @Test
@@ -92,12 +98,42 @@ public final class MessageStartEventSubscriptionStateTest {
     state.visitSubscriptionsByMessageName(
         wrapString("message"),
         subscription -> {
-          visitedStartEvents.add(bufferAsString(subscription.getStartEventIdBuffer()));
+          visitedStartEvents.add(bufferAsString(subscription.getRecord().getStartEventIdBuffer()));
         });
 
     assertThat(visitedStartEvents.size()).isEqualTo(3);
     assertThat(visitedStartEvents)
         .containsExactlyInAnyOrder("startEvent1", "startEvent2", "startEvent3");
+  }
+
+  @Test
+  public void shouldVisitForProcessDefinitionKey() {
+    final MessageStartEventSubscriptionRecord subscription1 =
+        createSubscription("message1", "startEvent1", 1);
+    state.put(1L, subscription1);
+
+    // more subscriptions for same process definition
+    final MessageStartEventSubscriptionRecord subscription2 =
+        createSubscription("message2", "startEvent2", 1);
+    state.put(2L, subscription2);
+
+    // should not visit with other process definition
+    final MessageStartEventSubscriptionRecord subscription3 =
+        createSubscription("message3", "startEvent3", 2);
+    state.put(3L, subscription3);
+
+    final List<Tuple> visitedSubscriptions = new ArrayList<>();
+
+    state.visitSubscriptionsByProcessDefinition(
+        1,
+        subscription -> {
+          visitedSubscriptions.add(
+              tuple(subscription.getKey(), subscription.getRecord().getMessageName()));
+        });
+
+    assertThat(visitedSubscriptions)
+        .hasSize(2)
+        .containsExactlyInAnyOrder(tuple(1L, "message1"), tuple(2L, "message2"));
   }
 
   @Test
@@ -153,9 +189,10 @@ public final class MessageStartEventSubscriptionStateTest {
     state.visitSubscriptionsByMessageName(
         BufferUtil.wrapString("msg"),
         readRecord -> {
-          assertThat(readRecord.getMessageNameBuffer())
+          assertThat(readRecord.getRecord().getMessageNameBuffer())
               .isNotEqualTo(writtenRecord.getMessageNameBuffer());
-          assertThat(readRecord.getMessageNameBuffer()).isEqualTo(BufferUtil.wrapString("msg"));
+          assertThat(readRecord.getRecord().getMessageNameBuffer())
+              .isEqualTo(BufferUtil.wrapString("msg"));
           Assertions.assertThat(writtenRecord.getMessageNameBuffer())
               .isEqualTo(BufferUtil.wrapString("foo"));
         });

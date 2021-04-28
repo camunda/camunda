@@ -157,7 +157,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageRecord.getNameBuffer(),
         subscription -> {
-          final var bpmnProcessIdBuffer = subscription.getBpmnProcessIdBuffer();
+          final var subscriptionRecord = subscription.getRecord();
+          final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
           final var correlationKeyBuffer = messageRecord.getCorrelationKeyBuffer();
 
           // create only one instance of a process per correlation key
@@ -167,11 +168,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
                   || !messageState.existActiveProcessInstance(
                       bpmnProcessIdBuffer, correlationKeyBuffer))) {
 
-            correlatingSubscriptions.add(subscription);
+            correlatingSubscriptions.add(subscriptionRecord);
 
             eventHandle.triggerMessageStartEvent(
-                subscription.getProcessDefinitionKey(),
-                subscription.getStartEventIdBuffer(),
+                subscriptionRecord.getProcessDefinitionKey(),
+                subscriptionRecord.getStartEventIdBuffer(),
                 messageKey,
                 messageRecord);
           }

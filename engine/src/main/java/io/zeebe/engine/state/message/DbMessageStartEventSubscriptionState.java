@@ -17,7 +17,6 @@ import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DbMessageStartEventSubscriptionState
@@ -93,13 +92,30 @@ public final class DbMessageStartEventSubscriptionState
 
   @Override
   public void visitSubscriptionsByMessageName(
-      final DirectBuffer messageName, final Consumer<MessageStartEventSubscriptionRecord> visitor) {
+      final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
 
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(
         this.messageName,
         (key, value) -> {
-          visitor.accept(value.getRecord());
+          visitor.visit(value);
+        });
+  }
+
+  @Override
+  public void visitSubscriptionsByProcessDefinition(
+      final long processDefinitionKey, final MessageStartEventSubscriptionVisitor visitor) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        (key, value) -> {
+          final var subscription =
+              subscriptionsColumnFamily.get(messageNameAndProcessDefinitionKey);
+
+          if (subscription != null) {
+            visitor.visit(subscription);
+          }
         });
   }
 }

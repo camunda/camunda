@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.state.immutable;
 
+import io.zeebe.engine.state.message.MessageStartEventSubscription;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public interface MessageStartEventSubscriptionState {
@@ -16,5 +16,19 @@ public interface MessageStartEventSubscriptionState {
   boolean exists(MessageStartEventSubscriptionRecord subscription);
 
   void visitSubscriptionsByMessageName(
-      DirectBuffer messageName, Consumer<MessageStartEventSubscriptionRecord> visitor);
+      DirectBuffer messageName, MessageStartEventSubscriptionVisitor visitor);
+
+  /**
+   * Visit all subscriptions with the given process definition key.
+   *
+   * @param processDefinitionKey the key of the process definition the subscription belongs to
+   * @param visitor the function that is called for each subscription
+   */
+  void visitSubscriptionsByProcessDefinition(
+      long processDefinitionKey, MessageStartEventSubscriptionVisitor visitor);
+
+  @FunctionalInterface
+  interface MessageStartEventSubscriptionVisitor {
+    void visit(MessageStartEventSubscription subscription);
+  }
 }
