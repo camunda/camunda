@@ -68,25 +68,6 @@ public class PersistedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldCreateSubFoldersOnCreatingDirBasedStore() {
-    // given
-
-    // when + then
-    assertThat(
-            temporaryFolder
-                .getRoot()
-                .toPath()
-                .resolve(FileBasedSnapshotStoreFactory.SNAPSHOTS_DIRECTORY))
-        .exists();
-    assertThat(
-            temporaryFolder
-                .getRoot()
-                .toPath()
-                .resolve(FileBasedSnapshotStoreFactory.PENDING_DIRECTORY))
-        .exists();
-  }
-
-  @Test
   public void shouldTakeReceivedSnapshot() {
     // given
     final var index = 1L;
