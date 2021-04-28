@@ -20,10 +20,6 @@ import io.atomix.utils.AtomixRuntimeException;
 
 /** Atomix configuration exception. */
 public class ConfigurationException extends AtomixRuntimeException {
-  public ConfigurationException(final String message) {
-    super(message);
-  }
-
   public ConfigurationException(final String message, final Throwable cause) {
     super(message, cause);
   }
