@@ -6,14 +6,12 @@
 package io.zeebe.tasklist.zeebeimport.v100.record.value.deployment;
 
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import java.util.Arrays;
 import java.util.Objects;
 
 public class DeploymentResourceImpl implements DeploymentResource {
 
   private byte[] resource;
-  private ResourceType resourceType;
   private String resourceName;
 
   public DeploymentResourceImpl() {}
@@ -21,11 +19,6 @@ public class DeploymentResourceImpl implements DeploymentResource {
   @Override
   public byte[] getResource() {
     return resource;
-  }
-
-  @Override
-  public ResourceType getResourceType() {
-    return resourceType;
   }
 
   @Override
@@ -37,23 +30,12 @@ public class DeploymentResourceImpl implements DeploymentResource {
     this.resourceName = resourceName;
   }
 
-  public void setResourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
-  }
-
   public void setResource(byte[] resource) {
     this.resource = resource;
   }
 
   @Override
-  public int hashCode() {
-    int result = Objects.hash(resourceType, resourceName);
-    result = 31 * result + Arrays.hashCode(resource);
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -62,8 +44,14 @@ public class DeploymentResourceImpl implements DeploymentResource {
     }
     final DeploymentResourceImpl that = (DeploymentResourceImpl) o;
     return Arrays.equals(resource, that.resource)
-        && resourceType == that.resourceType
         && Objects.equals(resourceName, that.resourceName);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(resourceName);
+    result = 31 * result + Arrays.hashCode(resource);
+    return result;
   }
 
   @Override
@@ -71,8 +59,6 @@ public class DeploymentResourceImpl implements DeploymentResource {
     return "DeploymentResourceImpl{"
         + "resource="
         + Arrays.toString(resource)
-        + ", resourceType="
-        + resourceType
         + ", resourceName='"
         + resourceName
         + '\''
