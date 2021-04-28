@@ -113,7 +113,10 @@ public class ProcessVariableReader {
         new ProcessInstanceIndex(request.getProcessDefinitionKey()),
         processDefinitionReader::getLatestVersionToKey
       )));
+    return getVariableNamesForInstancesMatchingQuery(query);
+  }
 
+  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery) {
     List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
     variableNameAndTypeTerms.add(new TermsValuesSourceBuilder(NAME_AGGREGATION)
                                    .field(getNestedVariableNameField()));
@@ -125,7 +128,7 @@ public class ProcessVariableReader {
         .size(configurationService.getEsAggregationBucketLimit());
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
+      .query(baseQuery)
       .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)

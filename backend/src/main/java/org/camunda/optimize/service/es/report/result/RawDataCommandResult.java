@@ -36,13 +36,6 @@ public class RawDataCommandResult<T extends RawDataInstanceDto> extends CommandE
     super(Collections.singletonList(MeasureDto.of(data)), reportData);
   }
 
-  public RawDataCommandResult(final long instanceCount,
-                              final long instanceCountWithoutFilters,
-                              @NonNull final List<MeasureDto<List<T>>> measures,
-                              @NonNull final SingleReportDataDto reportData) {
-    super(instanceCount, instanceCountWithoutFilters, measures, reportData);
-  }
-
   @Override
   @SuppressWarnings(UNCHECKED_CAST)
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {

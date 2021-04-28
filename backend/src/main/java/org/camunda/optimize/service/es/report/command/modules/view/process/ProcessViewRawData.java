@@ -15,8 +15,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.es.reader.ProcessVariableReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
@@ -38,6 +40,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
@@ -49,6 +53,7 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Slf4j
@@ -61,6 +66,7 @@ public class ProcessViewRawData extends ProcessViewPart {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
+  private final ProcessVariableReader processVariableReader;
   private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
 
   @Override
@@ -73,6 +79,14 @@ public class ProcessViewRawData extends ProcessViewPart {
                                   final BoolQueryBuilder baseQuery,
                                   final ExecutionContext<ProcessReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
+
+    final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
+    final Set<String> allVariableNamesForMatchingInstances =
+      processVariableReader.getVariableNamesForInstancesMatchingQuery(variableQuery)
+        .stream()
+        .map(ProcessVariableNameResponseDto::getName)
+        .collect(Collectors.toSet());
+    context.setAllVariablesNames(allVariableNamesForMatchingInstances);
 
     final String sortByField = context.getReportConfiguration().getSorting()
       .flatMap(ReportSortingDto::getBy)
@@ -131,7 +145,8 @@ public class ProcessViewRawData extends ProcessViewPart {
 
     final List<RawDataProcessInstanceDto> rawData = rawDataSingleReportResultDtoMapper.mapFrom(
       rawDataProcessInstanceDtos,
-      objectMapper
+      objectMapper,
+      context.getAllVariablesNames()
     );
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
     return ViewResult.builder().rawData(rawData).build();

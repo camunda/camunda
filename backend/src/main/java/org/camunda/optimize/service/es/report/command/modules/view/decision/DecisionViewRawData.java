@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -19,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -43,10 +45,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
+import static org.camunda.optimize.service.DefinitionService.prepareTenantListForDefinitionSearch;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionInstanceDtoFieldKeys;
@@ -70,6 +75,7 @@ public class DecisionViewRawData extends DecisionViewPart {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
+  private final DecisionVariableReader decisionVariableReader;
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
     new RawDecisionDataResultDtoMapper();
 
@@ -129,11 +135,41 @@ public class DecisionViewRawData extends DecisionViewPart {
         objectMapper
       );
     }
-
     final List<RawDataDecisionInstanceDto> rawData = rawDataSingleReportResultDtoMapper
-      .mapFrom(rawDataDecisionInstanceDtos);
+      .mapFrom(
+        rawDataDecisionInstanceDtos,
+        getInputVariableEntries(context.getReportData()),
+        getOutputVars(context.getReportData())
+      );
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
     return ViewResult.builder().rawData(rawData).build();
+  }
+
+  private Set<InputVariableEntry> getInputVariableEntries(final SingleReportDataDto reportDataDto) {
+    return decisionVariableReader.getInputVariableNames(
+      reportDataDto.getDefinitionKey(),
+      reportDataDto.getDefinitionVersions(),
+      prepareTenantListForDefinitionSearch(reportDataDto.getTenantIds())
+    )
+      .stream()
+      .map(inputVar -> new InputVariableEntry(inputVar.getId(), inputVar.getName(), inputVar.getType(), null))
+      .collect(Collectors.toSet());
+  }
+
+  private Set<OutputVariableEntry> getOutputVars(final SingleReportDataDto reportDataDto) {
+    return decisionVariableReader.getOutputVariableNames(
+      reportDataDto.getDefinitionKey(),
+      reportDataDto.getDefinitionVersions(),
+      prepareTenantListForDefinitionSearch(reportDataDto.getTenantIds())
+    )
+      .stream()
+      .map(outputVar -> new OutputVariableEntry(
+        outputVar.getId(),
+        outputVar.getName(),
+        outputVar.getType(),
+        Collections.emptyList()
+      ))
+      .collect(Collectors.toSet());
   }
 
   @Override

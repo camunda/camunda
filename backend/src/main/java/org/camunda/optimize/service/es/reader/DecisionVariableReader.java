@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
@@ -75,13 +74,13 @@ public class DecisionVariableReader {
       return Collections.emptyList();
     }
 
-    final Optional<DecisionDefinitionOptimizeDto> decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
+    final DecisionDefinitionOptimizeDto decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
       decisionDefinitionKey,
       decisionDefinitionVersions,
       tenantIds
-    );
-    return decisionDefinition.orElseThrow(() -> new OptimizeRuntimeException(
-      "Could not extract input variables. Requested decision definition not found!")).getInputVariableNames();
+    ).orElseThrow(() -> new OptimizeRuntimeException(
+      "Could not extract input variables. Requested decision definition not found!"));
+    return decisionDefinition.getInputVariableNames();
   }
 
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
@@ -90,15 +89,13 @@ public class DecisionVariableReader {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       return Collections.emptyList();
     } else {
-      final Optional<DecisionDefinitionOptimizeDto> decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
+      final DecisionDefinitionOptimizeDto decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
         decisionDefinitionKey,
         decisionDefinitionVersions,
         tenantIds
-      );
-      return decisionDefinition.orElseThrow(
-        () -> new OptimizeRuntimeException(
-          "Could not extract output variables. Requested decision definition not found!"))
-        .getOutputVariableNames();
+      ).orElseThrow(() -> new OptimizeRuntimeException(
+        "Could not extract output variables. Requested decision definition not found!"));
+      return decisionDefinition.getOutputVariableNames();
     }
   }
 
@@ -222,7 +219,7 @@ public class DecisionVariableReader {
   }
 
   private void addValueFilter(final String variablePath, final String valueFilter, final BoolQueryBuilder filterQuery) {
-    if (!(valueFilter == null) && !valueFilter.isEmpty()) {
+    if (valueFilter != null && !valueFilter.isEmpty()) {
       final String lowerCaseValue = valueFilter.toLowerCase();
       QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)
           /*

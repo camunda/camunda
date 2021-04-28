@@ -26,6 +26,7 @@ import org.camunda.optimize.service.es.report.command.modules.view.decision.Deci
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -151,7 +152,9 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluateRawReportWithDefaultPagination(reportData).getResult();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      evaluateRawReportWithDefaultPagination(reportData)
+        .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -354,6 +357,69 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       .isSortedAccordingTo(Comparator.comparing(instance -> Boolean.valueOf((String) instance.getOutputVariables()
         .get(OUTPUT_AUDIT_ID)
         .getFirstValue())));
+  }
+
+  @Test
+  public void addVariablesToEntriesEvenIfNoValueExistsForVariable() {
+    // given a decision instance with non null variable value and one instance with null variable value
+    final String outputVarName = "outputVarName";
+    final String inputVarName = "inputVarName";
+    final Double doubleVarValue = 1.0;
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
+      outputVarName,
+      inputVarName,
+      String.valueOf(doubleVarValue),
+      DecisionTypeRef.DOUBLE
+    );
+
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(inputVarName, null)
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(inputVarName, doubleVarValue)
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when we get the first result as a page
+    DecisionReportDataDto reportData = createReport(
+      decisionDefinitionDto.getKey(),
+      decisionDefinitionDto.getVersionAsString()
+    );
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(1);
+    AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
+      reportClient.evaluateDecisionRawReport(reportData, paginationDto);
+
+    // then the first result has a value for the input and output
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
+    assertThat(result.getFirstMeasureData().get(0))
+      .satisfies(rawDataInstance -> {
+        assertThat(rawDataInstance.getInputVariables().entrySet()).singleElement()
+          .satisfies(inputVar -> assertThat(inputVar.getValue().getValue()).isEqualTo(String.valueOf(doubleVarValue)));
+        assertThat(rawDataInstance.getOutputVariables().entrySet()).singleElement()
+          .satisfies(outputVar -> assertThat(outputVar.getValue().getValues())
+            .containsExactly(String.valueOf(doubleVarValue)));
+      });
+
+    // when we get the second result as a page
+    paginationDto.setOffset(1);
+    paginationDto.setLimit(1);
+    evaluationResult = reportClient.evaluateDecisionRawReport(reportData, paginationDto);
+
+    // then the second result still has variables shown despite no value
+    result = evaluationResult.getResult();
+    assertThat(result.getFirstMeasureData().get(0))
+      .satisfies(rawDataInstance -> {
+        assertThat(rawDataInstance.getInputVariables().entrySet()).singleElement()
+          .satisfies(inputVar -> assertThat(inputVar.getValue().getValue()).isEqualTo(""));
+        assertThat(rawDataInstance.getOutputVariables().entrySet()).singleElement()
+          .satisfies(outputVar -> assertThat(outputVar.getValue().getValues()).isEmpty());
+      });
   }
 
   @Test

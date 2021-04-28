@@ -202,7 +202,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId()).isEqualTo(processInstance.getDefinitionId());
     rawDataProcessInstanceDto.getVariables().
       forEach((varName, varValue) -> {
-                assertThat(variables.keySet()).contains(varName);
+                assertThat(variables).containsKey(varName);
                 assertThat(variables.get(varName)).isNotNull();
               }
       );
@@ -403,12 +403,76 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       rawDataProcessInstanceDto1 -> {
         Map<String, Object> vars = rawDataProcessInstanceDto1.getVariables();
         assertThat(vars.keySet()).hasSize(2);
-        assertThat(vars.values()).contains("");
+        assertThat(vars).containsValue("");
         // ensure is ordered
         List<String> actual = new ArrayList<>(vars.keySet());
         assertThat(actual).isSortedAccordingTo(Comparator.naturalOrder());
       }
     );
+  }
+
+  @Test
+  public void variablesOfOneProcessInstanceAreAddedToOtherIncludingVariablesFromInstancesNotOnPage() {
+    // given
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("varName1", "value1");
+
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
+
+    variables.clear();
+    variables.put("varName2", "value2");
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    // when we request the first page of results
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(1);
+    AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      reportClient.evaluateRawReport(reportData, paginationDto);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then both variables appear even though no result on the page has a value for the second variable
+    ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
+    assertThat(resultDataDto.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
+    assertThat(resultDataDto.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
+    assertThat(result.getData()).isNotNull()
+      .singleElement()
+      .satisfies(
+        rawDataProcessInstanceDto1 -> {
+          Map<String, Object> vars = rawDataProcessInstanceDto1.getVariables();
+          assertThat(vars.keySet()).hasSize(2);
+          assertThat(vars).containsValue("");
+          // ensure is ordered alphabetically
+          List<String> actual = new ArrayList<>(vars.keySet());
+          assertThat(actual).isSortedAccordingTo(Comparator.naturalOrder());
+        }
+      );
+
+    // when we request the second page of results
+    paginationDto.setOffset(1);
+    paginationDto.setLimit(1);
+    evaluationResult =
+      reportClient.evaluateRawReport(reportData, paginationDto);
+    result = evaluationResult.getResult();
+
+    // then both variables appear even though no result on the page has a value for the first variable
+    resultDataDto = evaluationResult.getReportDefinition().getData();
+    assertThat(resultDataDto.getProcessDefinitionKey()).isEqualTo(processInstance.getProcessDefinitionKey());
+    assertThat(resultDataDto.getDefinitionVersions()).containsExactly(processInstance.getProcessDefinitionVersion());
+    assertThat(result.getData()).isNotNull()
+      .singleElement()
+      .satisfies(
+        rawDataProcessInstanceDto1 -> {
+          Map<String, Object> vars = rawDataProcessInstanceDto1.getVariables();
+          assertThat(vars.keySet()).hasSize(2);
+          assertThat(vars).containsValue("");
+          // ensure is ordered alphabetically
+          List<String> actual = new ArrayList<>(vars.keySet());
+          assertThat(actual).isSortedAccordingTo(Comparator.naturalOrder());
+        }
+      );
   }
 
   @Test

@@ -18,6 +18,7 @@ import java.util.List;
 
 @Component
 public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends ProcessCmd<List<HyperMapResultEntryDto>> {
+
   public FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }

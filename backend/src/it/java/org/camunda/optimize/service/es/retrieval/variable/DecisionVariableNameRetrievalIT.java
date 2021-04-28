@@ -10,8 +10,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -169,7 +169,10 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameResponseDto> variableResponse = getVariableNames(decisionDefinition.getKey(), ALL_VERSIONS);
+    List<DecisionVariableNameResponseDto> variableResponse = getVariableNames(
+      decisionDefinition.getKey(),
+      ALL_VERSIONS
+    );
 
     // then
     assertThat(variableResponse)
@@ -188,7 +191,10 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameResponseDto> variableResponse = getVariableNames(decisionDefinition.getKey(), LATEST_VERSION);
+    List<DecisionVariableNameResponseDto> variableResponse = getVariableNames(
+      decisionDefinition.getKey(),
+      LATEST_VERSION
+    );
 
     // then
     assertThat(variableResponse)
@@ -201,7 +207,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
   public void noVariablesFromAnotherDecisionDefinition() {
     // given
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithStringVarNames(of("expectedVar"));
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("notExpectedVar"));
+    deployDecisionsWithStringVarNames(of("notExpectedVar"));
     importAllEngineEntitiesFromScratch();
 
     // when

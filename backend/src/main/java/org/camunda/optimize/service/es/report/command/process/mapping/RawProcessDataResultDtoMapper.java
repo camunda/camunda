@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,10 +21,12 @@ import java.util.TreeMap;
 @Slf4j
 public class RawProcessDataResultDtoMapper {
 
+  private static final String DEFAULT_VARIABLE_VALUE = "";
+
   public List<RawDataProcessInstanceDto> mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
-                                                 final ObjectMapper objectMapper) {
+                                                 final ObjectMapper objectMapper,
+                                                 final Set<String> allVariableNames) {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
-    final Set<String> allVariableNames = new HashSet<>();
     processInstanceDtos
       .forEach(processInstanceDto -> {
         Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
@@ -43,7 +44,7 @@ public class RawProcessDataResultDtoMapper {
                                                                   final Set<String> allVariableNames) {
     rawData
       .forEach(data -> allVariableNames
-        .forEach(varName -> data.getVariables().putIfAbsent(varName, ""))
+        .forEach(varName -> data.getVariables().putIfAbsent(varName, DEFAULT_VARIABLE_VALUE))
       );
   }
 

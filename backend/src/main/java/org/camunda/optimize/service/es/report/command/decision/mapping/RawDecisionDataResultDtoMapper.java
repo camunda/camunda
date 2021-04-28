@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,22 +24,24 @@ import static java.util.stream.Collectors.toMap;
 @Slf4j
 public class RawDecisionDataResultDtoMapper {
 
-  public List<RawDataDecisionInstanceDto> mapFrom(final List<DecisionInstanceDto> decisionInstanceDtos) {
-    final List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
-    final Set<InputVariableEntry> allInputVariablesWithBlankValue = new LinkedHashSet<>();
-    final Set<OutputVariableEntry> allOutputVariablesWithNoValues = new LinkedHashSet<>();
+  private static final List<Object> DEFAULT_OUTPUT_VARIABLE_VALUE = Collections.emptyList();
+  private static final String DEFAULT_INPUT_VARIABLE_VALUE = "";
 
+  public List<RawDataDecisionInstanceDto> mapFrom(final List<DecisionInstanceDto> decisionInstanceDtos,
+                                                  final Set<InputVariableEntry> allInputVariables,
+                                                  final Set<OutputVariableEntry> allOutputVariables) {
+    final List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
     decisionInstanceDtos
       .forEach(decisionInstanceDto -> {
-        allInputVariablesWithBlankValue.addAll(getInputVariables(decisionInstanceDto));
-        allOutputVariablesWithNoValues.addAll(getOutputVariables(decisionInstanceDto));
+        allInputVariables.addAll(getInputVariables(decisionInstanceDto));
+        allOutputVariables.addAll(getOutputVariables(decisionInstanceDto));
 
         RawDataDecisionInstanceDto dataEntry = convertToRawDataEntry(decisionInstanceDto);
         rawData.add(dataEntry);
       });
 
     ensureEveryRawDataInstanceContainsAllVariables(
-      rawData, allInputVariablesWithBlankValue, allOutputVariablesWithNoValues
+      rawData, allInputVariables, allOutputVariables
     );
 
     return rawData;
@@ -51,12 +52,24 @@ public class RawDecisionDataResultDtoMapper {
                                                               final Set<OutputVariableEntry> outputVariables) {
     rawData.forEach(data -> {
       inputVariables.forEach(
-        inputVariableEntry -> data.getInputVariables().putIfAbsent(inputVariableEntry.getId(), inputVariableEntry)
+        inputVariableEntry -> data.getInputVariables()
+          .putIfAbsent(inputVariableEntry.getId(), toDefaultInputVariable(inputVariableEntry))
       );
       outputVariables.forEach(
-        outputVariableEntry -> data.getOutputVariables().putIfAbsent(outputVariableEntry.getId(), outputVariableEntry)
+        outputVariableEntry -> data.getOutputVariables()
+          .putIfAbsent(outputVariableEntry.getId(), toDefaultOutputVariable(outputVariableEntry))
       );
     });
+  }
+
+  private InputVariableEntry toDefaultInputVariable(final InputVariableEntry inputVariableEntry) {
+    inputVariableEntry.setValue(DEFAULT_INPUT_VARIABLE_VALUE);
+    return inputVariableEntry;
+  }
+
+  private OutputVariableEntry toDefaultOutputVariable(final OutputVariableEntry outputVariableEntry) {
+    outputVariableEntry.setValues(DEFAULT_OUTPUT_VARIABLE_VALUE);
+    return outputVariableEntry;
   }
 
   private Set<InputVariableEntry> getInputVariables(final DecisionInstanceDto decisionInstanceDto) {
@@ -65,7 +78,7 @@ public class RawDecisionDataResultDtoMapper {
         inputInstanceDto.getClauseId(),
         inputInstanceDto.getClauseName(),
         inputInstanceDto.getType(),
-        ""
+        DEFAULT_INPUT_VARIABLE_VALUE
       ))
       .collect(Collectors.toSet());
   }
@@ -76,7 +89,7 @@ public class RawDecisionDataResultDtoMapper {
         outputInstanceDto.getClauseId(),
         outputInstanceDto.getClauseName(),
         outputInstanceDto.getType(),
-        Collections.emptyList()
+        DEFAULT_OUTPUT_VARIABLE_VALUE
       ))
       .collect(Collectors.toSet());
   }
