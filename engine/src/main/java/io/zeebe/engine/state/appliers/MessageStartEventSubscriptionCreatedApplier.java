@@ -35,7 +35,7 @@ public final class MessageStartEventSubscriptionCreatedApplier
   @Override
   public void applyState(final long key, final MessageStartEventSubscriptionRecord value) {
 
-    subscriptionState.put(value);
+    subscriptionState.put(key, value);
 
     eventScopeInstanceState.createIfNotExists(
         value.getProcessDefinitionKey(), NO_INTERRUPTING_ELEMENT_IDS);

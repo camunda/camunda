@@ -13,7 +13,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscription
 public interface MutableMessageStartEventSubscriptionState
     extends MessageStartEventSubscriptionState {
 
-  void put(MessageStartEventSubscriptionRecord subscription);
+  void put(final long key, MessageStartEventSubscriptionRecord subscription);
 
   void removeSubscriptionsOfProcess(long processDefinitionKey);
 }

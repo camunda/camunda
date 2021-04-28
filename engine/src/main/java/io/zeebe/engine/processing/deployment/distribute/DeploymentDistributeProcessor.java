@@ -16,6 +16,7 @@ import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -32,8 +33,10 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
       final ProcessState processState,
       final DeploymentResponder deploymentResponder,
       final int partitionId,
-      final Writers writers) {
-    messageStartEventSubscriptionManager = new MessageStartEventSubscriptionManager(processState);
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
+    messageStartEventSubscriptionManager =
+        new MessageStartEventSubscriptionManager(processState, keyGenerator);
     this.deploymentResponder = deploymentResponder;
     this.partitionId = partitionId;
     stateWriter = writers.state();
