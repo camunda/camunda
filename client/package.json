@@ -82,7 +82,7 @@
     "testcafe-browser-provider-browserstack": "^1.13.1",
     "ts-toolbelt": "^9.6.0",
     "typescript": "^4.2.4",
-    "zeebe-node": "1.0.0-alpha.3"
+    "zeebe-node": "1.0.0-alpha.7"
   },
   "lint-staged": {
     "*": [
