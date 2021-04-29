@@ -85,11 +85,11 @@
     "jest-junit": "^12.0.0",
     "lint-staged": "^10.5.4",
     "msw": "^0.26.2",
-    "react-scripts": "4.0.3",
     "prettier": "^2.2.1",
+    "react-scripts": "4.0.3",
     "testcafe": "^1.14.0",
     "typescript": "~4.2.4",
-    "zeebe-node": "1.0.0-alpha.3"
+    "zeebe-node": "1.0.0-alpha.7"
   },
   "lint-staged": {
     "*": [

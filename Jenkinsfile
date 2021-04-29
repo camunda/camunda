@@ -120,8 +120,6 @@ pipeline {
         }
 
         stage('End to end - Tests'){
-          // TODO(svetlana): re-enable after node client is released and updated
-          when { expression { return false } }
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
