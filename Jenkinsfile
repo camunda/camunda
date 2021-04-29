@@ -90,7 +90,7 @@ pipeline {
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                    // since zbctl is included in zeebe-distribution.tar.gz, which is produced by
+                    // since zbctl is included in camunda-cloud-zeebe.tar.gz, which is produced by
                     // maven, we have to build the go artifacts first
                     container('golang') {
                         sh '.ci/scripts/distribution/build-go.sh'
@@ -99,9 +99,9 @@ pipeline {
 
                     // to simplify building the Docker image, we copy the distribution to a fixed
                     // filename that doesn't include the version
-                    runMavenContainerCommand('cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz')
+                    runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
                     stash name: "zeebe-build", includes: "m2-repository/io/zeebe/*/${VERSION}/*"
-                    stash name: "zeebe-distro", includes: "zeebe-distribution.tar.gz"
+                    stash name: "zeebe-distro", includes: "camunda-cloud-zeebe.tar.gz"
                 }
             }
         }
