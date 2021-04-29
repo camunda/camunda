@@ -8,11 +8,11 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState.MessageSubscriptionVisitor;
-import io.camunda.zeebe.engine.state.message.MessageSubscription;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 
 public interface MutablePendingMessageSubscriptionState {
 
   void visitSubscriptionBefore(long deadline, MessageSubscriptionVisitor visitor);
 
-  void updateSentTimeInTransaction(MessageSubscription subscription, long sentTime);
+  void updateCommandSentTime(MessageSubscriptionRecord record, long sentTime);
 }

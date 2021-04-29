@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class TransientMessageSubscriptionStateTest {
+public final class PendingMessageSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
@@ -123,7 +123,7 @@ public final class TransientMessageSubscriptionStateTest {
         persistentState.get(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     // when
-    persistentState.updateSentTime(subscription, 1_000);
+    persistentState.updateToCorrelatingState(subscription.getRecord(), 1_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -133,7 +133,7 @@ public final class TransientMessageSubscriptionStateTest {
     assertThat(keys).hasSize(1).contains(1L);
 
     // and
-    persistentState.updateSentTime(subscription, 1_500);
+    transientState.updateCommandSentTime(subscription.getRecord(), 1_500);
 
     keys.clear();
     transientState.visitSubscriptionBefore(
