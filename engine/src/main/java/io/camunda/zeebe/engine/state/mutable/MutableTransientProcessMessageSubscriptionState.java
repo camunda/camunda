@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
-import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 
 /**
  * Captures the transient (in-memory) state for a ProcessMessageSubscription. This is to track the
@@ -20,5 +20,5 @@ public interface MutableTransientProcessMessageSubscriptionState {
 
   void visitSubscriptionBefore(long deadline, ProcessMessageSubscriptionVisitor visitor);
 
-  void updateSentTimeInTransaction(ProcessMessageSubscription subscription, long commandSentTime);
+  void updateCommandSentTime(ProcessMessageSubscriptionRecord record, long commandSentTime);
 }

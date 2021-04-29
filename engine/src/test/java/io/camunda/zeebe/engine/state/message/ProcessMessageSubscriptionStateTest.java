@@ -37,7 +37,7 @@ public final class ProcessMessageSubscriptionStateTest {
   public void shouldNotExist() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     final boolean exist =
@@ -51,7 +51,7 @@ public final class ProcessMessageSubscriptionStateTest {
   public void shouldExistSubscription() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     final boolean exist =
@@ -65,7 +65,7 @@ public final class ProcessMessageSubscriptionStateTest {
   public void shouldGetSubscription() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     final var subscription =
@@ -75,14 +75,13 @@ public final class ProcessMessageSubscriptionStateTest {
     assertThat(subscription).isNotNull();
     assertThat(subscription.getKey()).isEqualTo(1L);
     assertThat(subscription.getRecord()).isEqualTo(record);
-    assertThat(subscription.getCommandSentTime()).isEqualTo(1_000L);
   }
 
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     state.remove(1L, record.getMessageNameBuffer());
@@ -96,8 +95,8 @@ public final class ProcessMessageSubscriptionStateTest {
   @Test
   public void shouldNotRemoveSubscriptionOnDifferentKey() {
     // given
-    state.put(1L, subscriptionRecord("messageName", "correlationKey", 1L), 1_000L);
-    state.put(2L, subscriptionRecord("messageName", "correlationKey", 2L), 1_000L);
+    state.put(1L, subscriptionRecord("messageName", "correlationKey", 1L));
+    state.put(2L, subscriptionRecord("messageName", "correlationKey", 2L));
 
     // when
     state.remove(2L, wrapString("messageName"));
@@ -109,9 +108,9 @@ public final class ProcessMessageSubscriptionStateTest {
   @Test
   public void shouldVisitAllSubscriptionsInTheState() {
     // given
-    state.put(1L, subscriptionRecord("message1", "correlationKey", 1L), 1_000L);
-    state.put(2L, subscriptionRecord("message2", "correlationKey", 1L), 1_000L);
-    state.put(3L, subscriptionRecord("message3", "correlationKey", 2L), 1_000L);
+    state.put(1L, subscriptionRecord("message1", "correlationKey", 1L));
+    state.put(2L, subscriptionRecord("message2", "correlationKey", 1L));
+    state.put(3L, subscriptionRecord("message3", "correlationKey", 2L));
 
     // when
     final List<Tuple<Long, DirectBuffer>> visited = new ArrayList<>();
