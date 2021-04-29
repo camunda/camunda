@@ -20,8 +20,6 @@ public interface MutableMessageSubscriptionState extends MessageSubscriptionStat
 
   void resetSentTime(MessageSubscription subscription);
 
-  void updateSentTime(MessageSubscription subscription, long sentTime);
-
   boolean remove(long elementInstanceKey, DirectBuffer messageName);
 
   void remove(MessageSubscription subscription);
