@@ -16,11 +16,13 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableTransientMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class DbMessageSubscriptionState implements MutableMessageSubscriptionState {
+public final class DbMessageSubscriptionState
+    implements MutableMessageSubscriptionState, MutableTransientMessageSubscriptionState {
 
   private final TransactionContext transactionContext;
 
@@ -90,20 +92,6 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
   }
 
   @Override
-  public void put(final long key, final MessageSubscriptionRecord record) {
-    elementInstanceKey.wrapLong(record.getElementInstanceKey());
-    messageName.wrapBuffer(record.getMessageNameBuffer());
-
-    messageSubscription.setKey(key).setRecord(record).setCommandSentTime(0);
-
-    subscriptionColumnFamily.put(elementKeyAndMessageName, messageSubscription);
-
-    correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
-    messageNameAndCorrelationKeyColumnFamily.put(
-        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
-  }
-
-  @Override
   public void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
@@ -119,20 +107,27 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
         });
   }
 
-  private Boolean visitMessageSubscription(
-      final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
-      final MessageSubscriptionVisitor visitor) {
-    final MessageSubscription messageSubscription =
-        subscriptionColumnFamily.get(elementKeyAndMessageName);
+  @Override
+  public boolean existSubscriptionForElementInstance(
+      final long elementInstanceKey, final DirectBuffer messageName) {
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
 
-    if (messageSubscription == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected to find subscription with key %d and %s, but no subscription found",
-              elementKeyAndMessageName.getFirst().getValue(),
-              elementKeyAndMessageName.getSecond()));
-    }
-    return visitor.visit(messageSubscription);
+    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
+  }
+
+  @Override
+  public void put(final long key, final MessageSubscriptionRecord record) {
+    elementInstanceKey.wrapLong(record.getElementInstanceKey());
+    messageName.wrapBuffer(record.getMessageNameBuffer());
+
+    messageSubscription.setKey(key).setRecord(record).setCommandSentTime(0);
+
+    subscriptionColumnFamily.put(elementKeyAndMessageName, messageSubscription);
+
+    correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
+    messageNameAndCorrelationKeyColumnFamily.put(
+        nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -165,12 +160,6 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
   }
 
   @Override
-  public void updateSentTimeInTransaction(
-      final MessageSubscription subscription, final long sentTime) {
-    transactionContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
-  }
-
-  @Override
   public void updateSentTime(final MessageSubscription subscription, final long sentTime) {
     final var record = subscription.getRecord();
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
@@ -185,28 +174,6 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
       this.sentTime.wrapLong(subscription.getCommandSentTime());
       sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
     }
-  }
-
-  @Override
-  public void visitSubscriptionBefore(
-      final long deadline, final MessageSubscriptionVisitor visitor) {
-    sentTimeColumnFamily.whileTrue(
-        (compositeKey, nil) -> {
-          final long sentTime = compositeKey.getFirst().getValue();
-          if (sentTime < deadline) {
-            return visitMessageSubscription(compositeKey.getSecond(), visitor);
-          }
-          return false;
-        });
-  }
-
-  @Override
-  public boolean existSubscriptionForElementInstance(
-      final long elementInstanceKey, final DirectBuffer messageName) {
-    this.elementInstanceKey.wrapLong(elementInstanceKey);
-    this.messageName.wrapBuffer(messageName);
-
-    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
   @Override
@@ -234,6 +201,41 @@ public final class DbMessageSubscriptionState implements MutableMessageSubscript
     messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
     removeSubscriptionFromSentTimeColumnFamily(subscription);
+  }
+
+  private Boolean visitMessageSubscription(
+      final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
+      final MessageSubscriptionVisitor visitor) {
+    final MessageSubscription messageSubscription =
+        subscriptionColumnFamily.get(elementKeyAndMessageName);
+
+    if (messageSubscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find subscription with key %d and %s, but no subscription found",
+              elementKeyAndMessageName.getFirst().getValue(),
+              elementKeyAndMessageName.getSecond()));
+    }
+    return visitor.visit(messageSubscription);
+  }
+
+  @Override
+  public void visitSubscriptionBefore(
+      final long deadline, final MessageSubscriptionVisitor visitor) {
+    sentTimeColumnFamily.whileTrue(
+        (compositeKey, nil) -> {
+          final long sentTime = compositeKey.getFirst().getValue();
+          if (sentTime < deadline) {
+            return visitMessageSubscription(compositeKey.getSecond(), visitor);
+          }
+          return false;
+        });
+  }
+
+  @Override
+  public void updateSentTimeInTransaction(
+      final MessageSubscription subscription, final long sentTime) {
+    transactionContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
   }
 
   private void removeSubscriptionFromSentTimeColumnFamily(final MessageSubscription subscription) {
