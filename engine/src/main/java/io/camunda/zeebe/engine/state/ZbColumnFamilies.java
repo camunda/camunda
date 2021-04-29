@@ -57,7 +57,9 @@ public enum ZbColumnFamilies {
 
   // message subscription
   MESSAGE_SUBSCRIPTION_BY_KEY,
+  @Deprecated // only used for migration logic
   MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
+  // migration end
   MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
 
   // message start event subscription

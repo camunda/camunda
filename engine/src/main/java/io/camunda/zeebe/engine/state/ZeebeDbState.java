@@ -109,6 +109,7 @@ public class ZeebeDbState implements MutableZeebeState {
 
   @Override
   public void onRecovered(final ReadonlyProcessingContext context) {
+    messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
   }
 
