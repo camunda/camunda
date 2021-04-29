@@ -8,11 +8,9 @@ package org.camunda.operate.zeebeimport.v1_0.record.value.deployment;
 import java.util.Arrays;
 import java.util.Objects;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 
 public class DeploymentResourceImpl implements DeploymentResource {
   private byte[] resource;
-  private ResourceType resourceType;
   private String resourceName;
 
   public DeploymentResourceImpl() {
@@ -24,11 +22,6 @@ public class DeploymentResourceImpl implements DeploymentResource {
   }
 
   @Override
-  public ResourceType getResourceType() {
-    return resourceType;
-  }
-
-  @Override
   public String getResourceName() {
     return resourceName;
   }
@@ -37,16 +30,12 @@ public class DeploymentResourceImpl implements DeploymentResource {
     this.resource = resource;
   }
 
-  public void setResourceType(ResourceType resourceType) {
-    this.resourceType = resourceType;
-  }
-
   public void setResourceName(String resourceName) {
     this.resourceName = resourceName;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -54,28 +43,22 @@ public class DeploymentResourceImpl implements DeploymentResource {
       return false;
     }
     final DeploymentResourceImpl that = (DeploymentResourceImpl) o;
-    return Arrays.equals(resource, that.resource)
-        && resourceType == that.resourceType
-        && Objects.equals(resourceName, that.resourceName);
+    return Arrays.equals(resource, that.resource) &&
+        Objects.equals(resourceName, that.resourceName);
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(resourceType, resourceName);
+    int result = Objects.hash(resourceName);
     result = 31 * result + Arrays.hashCode(resource);
     return result;
   }
 
   @Override
   public String toString() {
-    return "DeploymentResourceImpl{"
-        + "resource="
-        + Arrays.toString(resource)
-        + ", resourceType="
-        + resourceType
-        + ", resourceName='"
-        + resourceName
-        + '\''
-        + '}';
+    return "DeploymentResourceImpl{" +
+        "resource=" + Arrays.toString(resource) +
+        ", resourceName='" + resourceName + '\'' +
+        '}';
   }
 }

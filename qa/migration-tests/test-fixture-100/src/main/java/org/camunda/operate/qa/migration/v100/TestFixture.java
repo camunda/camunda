@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestFixture extends AbstractTestFixture {
 
-  public static final String VERSION = "1.0.0-alpha4";
+  public static final String VERSION = "1.0.0-alpha7";
 
   @Autowired
   private BasicProcessDataGenerator basicProcessDataGenerator;

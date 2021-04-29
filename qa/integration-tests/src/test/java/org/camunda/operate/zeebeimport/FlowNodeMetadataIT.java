@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
 import org.camunda.operate.entities.FlowNodeType;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -28,6 +29,7 @@ import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import org.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -461,6 +463,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("flaky test")
   public void testMetadataIncidentOnInputMapping() throws Exception {
     // having
     String processId = "demoProcess";

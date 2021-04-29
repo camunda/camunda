@@ -22,7 +22,6 @@ import org.camunda.operate.schema.indices.ProcessIndex;
 import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
 import org.camunda.operate.zeebeimport.util.XMLUtil;
 import org.camunda.operate.zeebeimport.v1_0.record.value.DeploymentRecordValueImpl;
@@ -40,7 +39,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 
 @Component
 public class ProcessZeebeRecordProcessor {
@@ -125,20 +123,17 @@ public class ProcessZeebeRecordProcessor {
     processEntity.setBpmnProcessId(process.getBpmnProcessId());
     processEntity.setVersion(process.getVersion());
 
-    ResourceType resourceType = resource.getResourceType();
-    if (resourceType != null && resourceType.equals(ResourceType.BPMN_XML)) {
-      byte[] byteArray = resource.getResource();
+    byte[] byteArray = resource.getResource();
 
-      String bpmn = new String(byteArray, CHARSET);
-      processEntity.setBpmnXml(bpmn);
+    String bpmn = new String(byteArray, CHARSET);
+    processEntity.setBpmnXml(bpmn);
 
-      String resourceName = resource.getResourceName();
-      processEntity.setResourceName(resourceName);
+    String resourceName = resource.getResourceName();
+    processEntity.setResourceName(resourceName);
 
-      final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
-      if(diagramData.isPresent()) {
-        processEntity.setName(diagramData.get().getName());
-      }
+    final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
+    if (diagramData.isPresent()) {
+      processEntity.setName(diagramData.get().getName());
     }
 
     return processEntity;
