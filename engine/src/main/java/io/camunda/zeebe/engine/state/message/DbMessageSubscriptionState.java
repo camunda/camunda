@@ -48,6 +48,9 @@ public final class DbMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
+  private final TransientMessageSubscriptionState transientState =
+      new TransientMessageSubscriptionState(this);
+
   public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     this.transactionContext = transactionContext;
@@ -82,6 +85,8 @@ public final class DbMessageSubscriptionState
             transactionContext,
             nameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
+
+    // TODO initialize transient state
   }
 
   @Override
@@ -152,28 +157,14 @@ public final class DbMessageSubscriptionState
     subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
 
     updateSentTime(subscription, sentTime);
+
+    transientState.add(record);
+    transientState.updateCommandSentTime(record, sentTime);
   }
 
   @Override
   public void resetSentTime(final MessageSubscription subscription) {
     updateSentTime(subscription, 0);
-  }
-
-  @Override
-  public void updateSentTime(final MessageSubscription subscription, final long sentTime) {
-    final var record = subscription.getRecord();
-    elementInstanceKey.wrapLong(record.getElementInstanceKey());
-    messageName.wrapBuffer(record.getMessageNameBuffer());
-
-    removeSubscriptionFromSentTimeColumnFamily(subscription);
-
-    subscription.setCommandSentTime(sentTime);
-    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
-
-    if (sentTime > 0) {
-      this.sentTime.wrapLong(subscription.getCommandSentTime());
-      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-    }
   }
 
   @Override
@@ -201,6 +192,23 @@ public final class DbMessageSubscriptionState
     messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
     removeSubscriptionFromSentTimeColumnFamily(subscription);
+    transientState.remove(subscription.getRecord());
+  }
+
+  private void updateSentTime(final MessageSubscription subscription, final long sentTime) {
+    final var record = subscription.getRecord();
+    elementInstanceKey.wrapLong(record.getElementInstanceKey());
+    messageName.wrapBuffer(record.getMessageNameBuffer());
+
+    removeSubscriptionFromSentTimeColumnFamily(subscription);
+
+    subscription.setCommandSentTime(sentTime);
+    subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
+
+    if (sentTime > 0) {
+      this.sentTime.wrapLong(subscription.getCommandSentTime());
+      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+    }
   }
 
   private Boolean visitMessageSubscription(
@@ -222,20 +230,12 @@ public final class DbMessageSubscriptionState
   @Override
   public void visitSubscriptionBefore(
       final long deadline, final MessageSubscriptionVisitor visitor) {
-    sentTimeColumnFamily.whileTrue(
-        (compositeKey, nil) -> {
-          final long sentTime = compositeKey.getFirst().getValue();
-          if (sentTime < deadline) {
-            return visitMessageSubscription(compositeKey.getSecond(), visitor);
-          }
-          return false;
-        });
+    transientState.visitSubscriptionBefore(deadline, visitor);
   }
 
   @Override
-  public void updateSentTimeInTransaction(
-      final MessageSubscription subscription, final long sentTime) {
-    transactionContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
+  public void updateCommandSentTime(final MessageSubscriptionRecord record, final long sentTime) {
+    transientState.updateCommandSentTime(record, sentTime);
   }
 
   private void removeSubscriptionFromSentTimeColumnFamily(final MessageSubscription subscription) {
