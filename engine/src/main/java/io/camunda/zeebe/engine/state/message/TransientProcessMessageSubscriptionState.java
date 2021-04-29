@@ -1,10 +1,17 @@
-package io.zeebe.engine.state.message;
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.engine.state.message;
 
-import io.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
-import io.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
-import io.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
+import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -39,19 +46,21 @@ final class TransientProcessMessageSubscriptionState
   }
 
   @Override
-  public void updateSentTimeInTransaction(
-      final ProcessMessageSubscription subscription, final long commandSentTime) {
+  public void updateCommandSentTime(
+      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
 
-    final var updatedEntry = new Entry(subscription.getRecord(), commandSentTime);
+    final var updatedEntry = new Entry(record, commandSentTime);
 
     final var existingEntry = findEqualEntry(updatedEntry);
     if (existingEntry != null) {
+      transientState.remove(existingEntry);
       existingEntry.setCommandSentTime(commandSentTime);
+      transientState.add(existingEntry);
     }
   }
 
-  public void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    transientState.add(new Entry(record, commandSentTime));
+  public void add(final ProcessMessageSubscriptionRecord record) {
+    transientState.add(new Entry(record, 0));
   }
 
   public void remove(final ProcessMessageSubscriptionRecord record) {

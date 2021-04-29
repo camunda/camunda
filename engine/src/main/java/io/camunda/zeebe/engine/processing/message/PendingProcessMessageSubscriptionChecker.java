@@ -93,9 +93,8 @@ public final class PendingProcessMessageSubscriptionChecker
     }
 
     if (success) {
-      // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
       final var sentTime = ActorClock.currentTimeMillis();
-      transientMessageSubscriptionState.updateSentTimeInTransaction(subscription, sentTime);
+      transientMessageSubscriptionState.updateCommandSentTime(subscription.getRecord(), sentTime);
     }
 
     return success;

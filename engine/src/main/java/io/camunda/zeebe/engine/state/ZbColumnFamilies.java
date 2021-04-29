@@ -66,7 +66,6 @@ public enum ZbColumnFamilies {
 
   // process message subscription
   PROCESS_SUBSCRIPTION_BY_KEY,
-  PROCESS_SUBSCRIPTION_BY_SENT_TIME,
 
   // incident
   INCIDENTS,

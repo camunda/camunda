@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -25,8 +24,6 @@ public final class DbProcessMessageSubscriptionState
     implements MutableProcessMessageSubscriptionState,
         MutableTransientProcessMessageSubscriptionState {
 
-  private final TransactionContext transactionContext;
-
   // (elementInstanceKey, messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
   private final DbString messageName;
@@ -35,18 +32,11 @@ public final class DbProcessMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
-  // (sentTime, elementInstanceKey, messageName) => \0
-  private final DbLong sentTime;
-  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>> sentTimeCompositeKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
-      sentTimeColumnFamily;
-
   private final TransientProcessMessageSubscriptionState transientState =
       new TransientProcessMessageSubscriptionState(this);
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this.transactionContext = transactionContext;
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
@@ -59,51 +49,37 @@ public final class DbProcessMessageSubscriptionState
             elementKeyAndMessageName,
             processMessageSubscription);
 
-    sentTime = new DbLong();
-    sentTimeCompositeKey = new DbCompositeKey<>(sentTime, elementKeyAndMessageName);
-    sentTimeColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME,
-            transactionContext,
-            sentTimeCompositeKey,
-            DbNil.INSTANCE);
-
     subscriptionColumnFamily.whileTrue(
         (compositeKey, subscription) -> {
           if (subscription.isOpening() || subscription.isClosing()) {
-            transientState.add(subscription.getRecord(), System.currentTimeMillis());
+            transientState.add(subscription.getRecord());
           }
           return true;
         });
   }
 
   @Override
-  public void put(
-      final long key, final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+  public void put(final long key, final ProcessMessageSubscriptionRecord record) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
-    processMessageSubscription.setKey(key).setRecord(record).setCommandSentTime(commandSentTime);
+    processMessageSubscription.setKey(key).setRecord(record);
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
 
-    sentTime.wrapLong(commandSentTime);
-    sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-
-    transientState.add(record, commandSentTime);
+    transientState.add(record);
   }
 
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setCommandSentTime(0).setOpened());
+    update(record, s -> s.setRecord(record).setOpened());
     transientState.remove(record);
   }
 
   @Override
-  public void updateToClosingState(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    update(record, s -> s.setRecord(record).setCommandSentTime(commandSentTime).setClosing());
-    transientState.add(record, commandSentTime);
+  public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
+    update(record, s -> s.setRecord(record).setClosing());
+    transientState.add(record);
   }
 
   @Override
@@ -153,9 +129,9 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void updateSentTimeInTransaction(
-      final ProcessMessageSubscription subscription, final long commandSentTime) {
-    transientState.updateSentTimeInTransaction(subscription, commandSentTime);
+  public void updateCommandSentTime(
+      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+    transientState.updateCommandSentTime(record, commandSentTime);
   }
 
   private void update(
@@ -173,26 +149,12 @@ public final class DbProcessMessageSubscriptionState
   private void update(
       final ProcessMessageSubscription subscription,
       final Consumer<ProcessMessageSubscription> modifier) {
-    final long previousSentTime = subscription.getCommandSentTime();
     modifier.accept(subscription);
 
     wrapSubscriptionKeys(
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
     subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
-
-    final long updatedSentTime = subscription.getCommandSentTime();
-    if (updatedSentTime != previousSentTime) {
-      if (previousSentTime > 0) {
-        sentTime.wrapLong(previousSentTime);
-        sentTimeColumnFamily.delete(sentTimeCompositeKey);
-      }
-
-      if (updatedSentTime > 0) {
-        sentTime.wrapLong(updatedSentTime);
-        sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-      }
-    }
   }
 
   private void remove(final ProcessMessageSubscription subscription) {
@@ -202,8 +164,6 @@ public final class DbProcessMessageSubscriptionState
 
     subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-    sentTime.wrapLong(subscription.getCommandSentTime());
-    sentTimeColumnFamily.delete(sentTimeCompositeKey);
     transientState.remove(subscription.getRecord());
   }
 
