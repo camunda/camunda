@@ -122,7 +122,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
     final ProcessMessageSubscription existingSubscription =
         persistentState.getSubscription(
             record.getElementInstanceKey(), record.getMessageNameBuffer());
-    transientState.updateSentTimeInTransaction(existingSubscription, 1_500);
+    transientState.updateSentTime(existingSubscription, 1_500);
 
     keys.clear();
     transientState.visitSubscriptionBefore(
@@ -209,7 +209,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
 
     // and
     assertThat(
-            persistentState.existSubscriptionForElementInstance(1L, record.getMessageNameBuffer()))
+        persistentState.existSubscriptionForElementInstance(1L, record.getMessageNameBuffer()))
         .isFalse();
   }
 

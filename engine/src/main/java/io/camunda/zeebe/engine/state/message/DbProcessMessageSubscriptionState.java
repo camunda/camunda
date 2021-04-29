@@ -25,8 +25,6 @@ public final class DbProcessMessageSubscriptionState
     implements MutableProcessMessageSubscriptionState,
         MutableTransientProcessMessageSubscriptionState {
 
-  private final TransactionContext transactionContext;
-
   // (elementInstanceKey, messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
   private final DbString messageName;
@@ -41,9 +39,11 @@ public final class DbProcessMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
       sentTimeColumnFamily;
 
+  private final TransientProcessMessageSubscriptionState transientState =
+      new TransientProcessMessageSubscriptionState(this);
+
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this.transactionContext = transactionContext;
     elementInstanceKey = new DbLong();
     messageName = new DbString();
     elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
@@ -64,6 +64,14 @@ public final class DbProcessMessageSubscriptionState
             transactionContext,
             sentTimeCompositeKey,
             DbNil.INSTANCE);
+
+    subscriptionColumnFamily.whileTrue(
+        (compositeKey, subscription) -> {
+          if (subscription.isOpening() || subscription.isClosing()) {
+            transientState.add(subscription.getRecord());
+          }
+          return true;
+        });
   }
 
   @Override
@@ -72,23 +80,28 @@ public final class DbProcessMessageSubscriptionState
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
-    processMessageSubscription.setKey(key).setRecord(record).setCommandSentTime(commandSentTime);
+    processMessageSubscription.setKey(key).setRecord(record);
 
-    subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
+    subscriptionColumnFamily
+        .put(elementKeyAndMessageName, processMessageSubscription);
 
     sentTime.wrapLong(commandSentTime);
     sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+
+    transientState.add(record, commandSentTime);
   }
 
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setCommandSentTime(0).setOpened());
+    update(record, s -> s.setRecord(record).setOpened());
+    transientState.remove(record);
   }
 
   @Override
   public void updateToClosingState(
       final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
-    update(record, s -> s.setRecord(record).setCommandSentTime(commandSentTime).setClosing());
+    update(record, s -> s.setRecord(record).setClosing());
+    transientState.add(record, commandSentTime);
   }
 
   @Override
@@ -134,24 +147,13 @@ public final class DbProcessMessageSubscriptionState
   public void visitSubscriptionBefore(
       final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
-    sentTimeColumnFamily.whileTrue(
-        (compositeKey, nil) -> {
-          final long commandSentTime = compositeKey.getFirst().getValue();
-          if (commandSentTime < deadline) {
-            final ProcessMessageSubscription subscription =
-                subscriptionColumnFamily.get(compositeKey.getSecond());
-
-            return visitor.visit(subscription);
-          }
-          return false;
-        });
+    transientState.visitSubscriptionBefore(deadline, visitor);
   }
 
   @Override
-  public void updateSentTimeInTransaction(
+  public void updateSentTime(
       final ProcessMessageSubscription subscription, final long commandSentTime) {
-    transactionContext.runInTransaction(
-        () -> update(subscription, s -> s.setCommandSentTime(commandSentTime)));
+    transientState.updateSentTime(subscription, commandSentTime);
   }
 
   private void update(
@@ -200,6 +202,7 @@ public final class DbProcessMessageSubscriptionState
 
     sentTime.wrapLong(subscription.getCommandSentTime());
     sentTimeColumnFamily.delete(sentTimeCompositeKey);
+    transientState.remove(subscription.getRecord());
   }
 
   private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {

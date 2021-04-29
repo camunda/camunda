@@ -14,7 +14,6 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 
-@SuppressWarnings({"java:S2160", "UnusedReturnValue"})
 public final class ProcessMessageSubscription extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<ProcessMessageSubscriptionRecord> recordProp =
@@ -44,6 +43,7 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
     return commandSentTimeProp.getValue();
   }
 
+  @Deprecated
   public ProcessMessageSubscription setCommandSentTime(final long commandSentTime) {
     commandSentTimeProp.setValue(commandSentTime);
     return this;

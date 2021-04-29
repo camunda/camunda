@@ -75,7 +75,6 @@ public final class ProcessMessageSubscriptionStateTest {
     assertThat(subscription).isNotNull();
     assertThat(subscription.getKey()).isEqualTo(1L);
     assertThat(subscription.getRecord()).isEqualTo(record);
-    assertThat(subscription.getCommandSentTime()).isEqualTo(1_000L);
   }
 
   @Test
