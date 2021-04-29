@@ -112,6 +112,7 @@ public class ExportRestServiceIT extends AbstractIT {
       decisionDefinitionEngineDto.getKey(),
       String.valueOf(decisionDefinitionEngineDto.getVersion())
     );
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = embeddedOptimizeExtension
