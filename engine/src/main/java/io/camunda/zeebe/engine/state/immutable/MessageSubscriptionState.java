@@ -17,8 +17,6 @@ public interface MessageSubscriptionState {
   void visitSubscriptions(
       DirectBuffer messageName, DirectBuffer correlationKey, MessageSubscriptionVisitor visitor);
 
-  void visitSubscriptionBefore(long deadline, MessageSubscriptionVisitor visitor);
-
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
   @FunctionalInterface

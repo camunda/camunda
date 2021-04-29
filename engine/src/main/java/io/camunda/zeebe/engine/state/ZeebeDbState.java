@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableTransientMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -59,7 +60,7 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
-  private final MutableMessageSubscriptionState messageSubscriptionState;
+  private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
@@ -166,14 +167,19 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
-  public MutableTransientProcessMessageSubscriptionState
-      getTransientProcessMessageSubscriptionState() {
-    return processMessageSubscriptionState;
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
   }
 
   @Override
-  public KeyGenerator getKeyGenerator() {
-    return keyGenerator;
+  public MutableTransientMessageSubscriptionState getTransientMessageSubscriptionState() {
+    return messageSubscriptionState;
+  }
+
+  @Override
+  public MutableTransientProcessMessageSubscriptionState
+      getTransientProcessMessageSubscriptionState() {
+    return processMessageSubscriptionState;
   }
 
   @Override
