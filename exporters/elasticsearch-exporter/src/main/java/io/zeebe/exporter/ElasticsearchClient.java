@@ -229,7 +229,18 @@ public class ElasticsearchClient {
     template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
 
     // update alias in template in case it was changed in configuration
-    template.put("aliases", Collections.singletonMap(aliasName, Collections.emptyMap()));
+    final Object templateProperties =
+        template.computeIfAbsent("template", key -> new HashMap<String, Object>());
+    if (templateProperties instanceof Map) {
+      final Map templatePropertyMap = (Map) templateProperties;
+      templatePropertyMap.put(
+          "aliases", Collections.singletonMap(aliasName, Collections.emptyMap()));
+    } else {
+      throw new IllegalStateException(
+          String.format(
+              "Expected the 'template' field of the index template '%s' to be a map, but was '%s'",
+              templateName, templateProperties.getClass()));
+    }
 
     return putIndexTemplate(templateName, template);
   }
@@ -237,8 +248,7 @@ public class ElasticsearchClient {
   /** @return true if request was acknowledged */
   private boolean putIndexTemplate(final String templateName, final Object body) {
     try {
-      final var request = new Request("PUT", "/_template/" + templateName);
-      request.addParameter("include_type_name", "true");
+      final var request = new Request("PUT", "/_index_template/" + templateName);
       request.setJsonEntity(MAPPER.writeValueAsString(body));
 
       final var response = client.performRequest(request);
@@ -352,7 +362,6 @@ public class ElasticsearchClient {
     final Map<String, Object> command = new HashMap<>();
     final Map<String, Object> contents = new HashMap<>();
     contents.put("_index", indexFor(record));
-    contents.put("_type", typeFor(record));
     contents.put("_id", idFor(record));
     contents.put("routing", String.valueOf(record.getPartitionId()));
 

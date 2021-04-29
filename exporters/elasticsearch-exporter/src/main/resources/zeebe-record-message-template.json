@@ -2,12 +2,18 @@
   "index_patterns": [
     "zeebe-record_message_*"
   ],
-  "order": 20,
-  "aliases": {
-    "zeebe-record-message": {}
-  },
-  "mappings": {
-    "_doc": {
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-message": {}
+    },
+    "mappings": {
       "properties": {
         "value": {
           "dynamic": "strict",
