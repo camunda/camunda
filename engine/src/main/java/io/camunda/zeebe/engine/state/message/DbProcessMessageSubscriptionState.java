@@ -16,12 +16,14 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DbProcessMessageSubscriptionState
-    implements MutableProcessMessageSubscriptionState {
+    implements MutableProcessMessageSubscriptionState,
+        MutableTransientProcessMessageSubscriptionState {
 
   private final TransactionContext transactionContext;
 
@@ -90,13 +92,6 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void updateSentTimeInTransaction(
-      final ProcessMessageSubscription subscription, final long commandSentTime) {
-    transactionContext.runInTransaction(
-        () -> update(subscription, s -> s.setCommandSentTime(commandSentTime)));
-  }
-
-  @Override
   public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
     final ProcessMessageSubscription subscription =
         getSubscription(elementInstanceKey, messageName);
@@ -128,6 +123,14 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
+  public boolean existSubscriptionForElementInstance(
+      final long elementInstanceKey, final DirectBuffer messageName) {
+    wrapSubscriptionKeys(elementInstanceKey, messageName);
+
+    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
+  }
+
+  @Override
   public void visitSubscriptionBefore(
       final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
@@ -145,11 +148,10 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public boolean existSubscriptionForElementInstance(
-      final long elementInstanceKey, final DirectBuffer messageName) {
-    wrapSubscriptionKeys(elementInstanceKey, messageName);
-
-    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
+  public void updateSentTimeInTransaction(
+      final ProcessMessageSubscription subscription, final long commandSentTime) {
+    transactionContext.runInTransaction(
+        () -> update(subscription, s -> s.setCommandSentTime(commandSentTime)));
   }
 
   private void update(

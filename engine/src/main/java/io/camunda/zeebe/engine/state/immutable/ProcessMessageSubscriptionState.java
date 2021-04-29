@@ -17,8 +17,6 @@ public interface ProcessMessageSubscriptionState {
   void visitElementSubscriptions(
       long elementInstanceKey, ProcessMessageSubscriptionVisitor visitor);
 
-  void visitSubscriptionBefore(long deadline, ProcessMessageSubscriptionVisitor visitor);
-
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
   @FunctionalInterface
