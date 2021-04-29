@@ -31,7 +31,7 @@ public class SnapshotChecksumTest {
     multipleFileSnapshot = temporaryFolder.newFolder().toPath();
     corruptedSnapshot = temporaryFolder.newFolder().toPath();
 
-    Files.createFile(singleFileSnapshot.resolve("singleFile.txt"));
+    Files.createFile(singleFileSnapshot.resolve("file1.txt"));
     Files.createFile(multipleFileSnapshot.resolve("file1.txt"));
     Files.createFile(multipleFileSnapshot.resolve("file2.txt"));
     Files.createFile(multipleFileSnapshot.resolve("file3.txt"));
@@ -51,6 +51,19 @@ public class SnapshotChecksumTest {
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
+  }
+
+  @Test
+  public void shouldGenerateDifferentChecksumWhenFileNameIsDifferent() throws Exception {
+    // given
+    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
+
+    // when
+    Files.move(singleFileSnapshot.resolve("file1.txt"), singleFileSnapshot.resolve("renamed"));
+    final var actual = SnapshotChecksum.calculate(singleFileSnapshot);
+
+    // then
+    assertThat(actual).isNotEqualTo(expectedChecksum);
   }
 
   @Test

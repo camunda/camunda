@@ -9,13 +9,12 @@ package io.zeebe.snapshots.impl;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.zip.CRC32C;
+import java.util.zip.Checksum;
 
 final class SnapshotChecksum {
 
@@ -70,19 +69,14 @@ final class SnapshotChecksum {
 
   /** computes a checksum for the files, in the order they're presented */
   private static long createCombinedChecksum(final List<Path> paths) throws IOException {
-    final CRC32C checksumGenerator = new CRC32C();
-    final List<Long> chunkChecksum = new ArrayList<>();
+    final Checksum checksum = SnapshotChunkUtil.newChecksum();
 
     for (final var path : paths) {
       if (!path.endsWith(CHECKSUM_FILE_NAME)) {
-        checksumGenerator.update(Files.readAllBytes(path));
-        chunkChecksum.add(checksumGenerator.getValue());
-        checksumGenerator.reset();
+        checksum.update(path.getFileName().toString().getBytes(StandardCharsets.UTF_8));
+        checksum.update(Files.readAllBytes(path));
       }
     }
-
-    chunkChecksum.forEach(
-        c -> checksumGenerator.update(ByteBuffer.allocate(Long.BYTES).putLong(0, c)));
-    return checksumGenerator.getValue();
+    return checksum.getValue();
   }
 }

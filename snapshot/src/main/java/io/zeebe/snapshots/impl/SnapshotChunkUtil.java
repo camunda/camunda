@@ -12,15 +12,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.CRC32C;
+import java.util.zip.Checksum;
 
 final class SnapshotChunkUtil {
 
   private SnapshotChunkUtil() {}
 
   static long createChecksum(final byte[] content) {
-    final CRC32C crc32 = new CRC32C();
-    crc32.update(content);
-    return crc32.getValue();
+    final Checksum checksum = newChecksum();
+    checksum.update(content);
+    return checksum.getValue();
+  }
+
+  static Checksum newChecksum() {
+    return new CRC32C();
   }
 
   static SnapshotChunk createSnapshotChunkFromFile(
