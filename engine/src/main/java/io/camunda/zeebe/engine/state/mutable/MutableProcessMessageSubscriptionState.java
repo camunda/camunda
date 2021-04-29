@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
@@ -19,8 +18,6 @@ public interface MutableProcessMessageSubscriptionState extends ProcessMessageSu
   void updateToOpenedState(ProcessMessageSubscriptionRecord record);
 
   void updateToClosingState(ProcessMessageSubscriptionRecord record, long commandSentTime);
-
-  void updateSentTimeInTransaction(ProcessMessageSubscription subscription, long commandSentTime);
 
   boolean remove(long elementInstanceKey, DirectBuffer messageName);
 }

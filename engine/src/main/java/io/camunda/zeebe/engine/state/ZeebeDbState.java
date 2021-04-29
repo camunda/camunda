@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
@@ -60,7 +61,7 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableMessageState messageState;
   private final MutableMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
-  private final MutableProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
@@ -162,6 +163,12 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public MutableEventScopeInstanceState getEventScopeInstanceState() {
     return eventScopeInstanceState;
+  }
+
+  @Override
+  public MutableTransientProcessMessageSubscriptionState
+      getTransientProcessMessageSubscriptionState() {
+    return processMessageSubscriptionState;
   }
 
   @Override
