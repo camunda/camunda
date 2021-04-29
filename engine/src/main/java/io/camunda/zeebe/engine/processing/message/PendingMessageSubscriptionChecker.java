@@ -9,27 +9,27 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class PendingMessageSubscriptionChecker implements Runnable {
   private final SubscriptionCommandSender commandSender;
-  private final MutableMessageSubscriptionState subscriptionState;
+  private final MutablePendingMessageSubscriptionState transientState;
 
   private final long subscriptionTimeout;
 
   public PendingMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutableMessageSubscriptionState subscriptionState,
+      final MutablePendingMessageSubscriptionState transientState,
       final long subscriptionTimeout) {
     this.commandSender = commandSender;
-    this.subscriptionState = subscriptionState;
+    this.transientState = transientState;
     this.subscriptionTimeout = subscriptionTimeout;
   }
 
   @Override
   public void run() {
-    subscriptionState.visitSubscriptionBefore(
+    transientState.visitSubscriptionBefore(
         ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
   }
 
@@ -49,7 +49,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
     if (success) {
       // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
       final var sentTime = ActorClock.currentTimeMillis();
-      subscriptionState.updateSentTimeInTransaction(subscription, sentTime);
+      transientState.updateSentTimeInTransaction(subscription, sentTime);
     }
 
     return success;

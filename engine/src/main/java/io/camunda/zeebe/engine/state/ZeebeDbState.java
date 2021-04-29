@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptio
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -184,6 +185,11 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState() {
+    return messageSubscriptionState;
   }
 
   @Override
