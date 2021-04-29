@@ -57,7 +57,6 @@ public enum ZbColumnFamilies {
 
   // message subscription
   MESSAGE_SUBSCRIPTION_BY_KEY,
-  MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
   MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
 
   // message start event subscription

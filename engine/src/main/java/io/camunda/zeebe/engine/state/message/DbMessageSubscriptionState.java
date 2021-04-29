@@ -24,8 +24,6 @@ import org.agrona.DirectBuffer;
 public final class DbMessageSubscriptionState
     implements MutableMessageSubscriptionState, MutableTransientMessageSubscriptionState {
 
-  private final TransactionContext transactionContext;
-
   // (elementInstanceKey, messageName) => MessageSubscription
   private final DbLong elementInstanceKey;
   private final DbString messageName;
@@ -33,12 +31,6 @@ public final class DbMessageSubscriptionState
   private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, MessageSubscription>
       subscriptionColumnFamily;
-
-  // (sentTime, elementInstanceKey, messageName) => \0
-  private final DbLong sentTime;
-  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>> sentTimeCompositeKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
-      sentTimeColumnFamily;
 
   // (messageName, correlationKey, elementInstanceKey) => \0
   private final DbString correlationKey;
@@ -53,7 +45,6 @@ public final class DbMessageSubscriptionState
 
   public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    this.transactionContext = transactionContext;
 
     elementInstanceKey = new DbLong();
     messageName = new DbString();
@@ -66,14 +57,13 @@ public final class DbMessageSubscriptionState
             elementKeyAndMessageName,
             messageSubscription);
 
-    sentTime = new DbLong();
-    sentTimeCompositeKey = new DbCompositeKey<>(sentTime, elementKeyAndMessageName);
-    sentTimeColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
-            transactionContext,
-            sentTimeCompositeKey,
-            DbNil.INSTANCE);
+    subscriptionColumnFamily.whileTrue(
+        (compositeKey, subscription) -> {
+          if (subscription.isCorrelating()) {
+            transientState.add(subscription.getRecord());
+          }
+          return true;
+        });
 
     correlationKey = new DbString();
     nameAndCorrelationKey = new DbCompositeKey<>(messageName, correlationKey);
@@ -85,8 +75,6 @@ public final class DbMessageSubscriptionState
             transactionContext,
             nameCorrelationAndElementInstanceKey,
             DbNil.INSTANCE);
-
-    // TODO initialize transient state
   }
 
   @Override
@@ -126,7 +114,7 @@ public final class DbMessageSubscriptionState
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
 
-    messageSubscription.setKey(key).setRecord(record).setCommandSentTime(0);
+    messageSubscription.setKey(key).setRecord(record).setCorrelating(false);
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, messageSubscription);
 
@@ -136,8 +124,7 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateToCorrelatingState(
-      final MessageSubscriptionRecord record, final long sentTime) {
+  public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
     final var messageKey = record.getMessageKey();
     var messageVariables = record.getVariablesBuffer();
     if (record == messageSubscription.getRecord()) {
@@ -156,15 +143,14 @@ public final class DbMessageSubscriptionState
     // update the message key and the variables
     subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
 
-    updateSentTime(subscription, sentTime);
+    updateCorrelatingFlag(subscription, true);
 
     transientState.add(record);
-    transientState.updateCommandSentTime(record, sentTime);
   }
 
   @Override
-  public void resetSentTime(final MessageSubscription subscription) {
-    updateSentTime(subscription, 0);
+  public void resetCorrelatingState(final MessageSubscription subscription) {
+    updateCorrelatingFlag(subscription, false);
   }
 
   @Override
@@ -191,24 +177,17 @@ public final class DbMessageSubscriptionState
     correlationKey.wrapBuffer(record.getCorrelationKeyBuffer());
     messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
-    removeSubscriptionFromSentTimeColumnFamily(subscription);
     transientState.remove(subscription.getRecord());
   }
 
-  private void updateSentTime(final MessageSubscription subscription, final long sentTime) {
+  private void updateCorrelatingFlag(
+      final MessageSubscription subscription, final boolean correlating) {
     final var record = subscription.getRecord();
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
 
-    removeSubscriptionFromSentTimeColumnFamily(subscription);
-
-    subscription.setCommandSentTime(sentTime);
+    subscription.setCorrelating(correlating);
     subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
-
-    if (sentTime > 0) {
-      this.sentTime.wrapLong(subscription.getCommandSentTime());
-      sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
-    }
   }
 
   private Boolean visitMessageSubscription(
@@ -236,12 +215,5 @@ public final class DbMessageSubscriptionState
   @Override
   public void updateCommandSentTime(final MessageSubscriptionRecord record, final long sentTime) {
     transientState.updateCommandSentTime(record, sentTime);
-  }
-
-  private void removeSubscriptionFromSentTimeColumnFamily(final MessageSubscription subscription) {
-    if (subscription.getCommandSentTime() > 0) {
-      sentTime.wrapLong(subscription.getCommandSentTime());
-      sentTimeColumnFamily.delete(sentTimeCompositeKey);
-    }
   }
 }

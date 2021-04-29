@@ -100,7 +100,7 @@ public final class MessageSubscriptionStateTest {
         .isEqualTo(subscription.getCorrelationKey());
     assertThat(subscriptions.get(0).getRecord().getVariables())
         .isEqualTo(subscription.getVariables());
-    assertThat(subscriptions.get(0).getCommandSentTime()).isZero();
+    assertThat(subscriptions.get(0).isCorrelating()).isFalse();
   }
 
   @Test
