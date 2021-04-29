@@ -16,7 +16,5 @@ public interface MutableMessageStartEventSubscriptionState
 
   void put(final long key, MessageStartEventSubscriptionRecord subscription);
 
-  void removeSubscriptionsOfProcess(long processDefinitionKey);
-
   void remove(long processDefinitionKey, DirectBuffer messageName);
 }

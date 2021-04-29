@@ -142,36 +142,36 @@ public final class MessageStartEventSubscriptionStateTest {
         createSubscription("message1", "startEvent1", 1);
     state.put(1L, subscription1);
 
-    // more subscriptions for same process
     final MessageStartEventSubscriptionRecord subscription2 =
-        createSubscription("message2", "startEvent2", 1);
+        createSubscription("message2", "startEvent2", 2);
     state.put(2L, subscription2);
 
-    final MessageStartEventSubscriptionRecord subscription3 =
-        createSubscription("message3", "startEvent3", 1);
-    state.put(3L, subscription3);
-
-    state.removeSubscriptionsOfProcess(1);
+    state.remove(1L, wrapString("message1"));
+    state.remove(2L, wrapString("message2"));
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isFalse();
-    assertThat(state.exists(subscription3)).isFalse();
   }
 
   @Test
-  public void shouldNotRemoveOtherKeys() {
+  public void shouldNotRemoveOtherSubscriptions() {
     final MessageStartEventSubscriptionRecord subscription1 =
         createSubscription("message1", "startEvent1", 1);
     state.put(1L, subscription1);
 
     final MessageStartEventSubscriptionRecord subscription2 =
-        createSubscription("message1", "startEvent1", 4);
+        createSubscription("message2", "startEvent2", 1);
     state.put(2L, subscription2);
 
-    state.removeSubscriptionsOfProcess(1);
+    final MessageStartEventSubscriptionRecord subscription3 =
+        createSubscription("message1", "startEvent1", 2);
+    state.put(3L, subscription3);
+
+    state.remove(1L, wrapString("message1"));
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isTrue();
+    assertThat(state.exists(subscription3)).isTrue();
   }
 
   @Test
