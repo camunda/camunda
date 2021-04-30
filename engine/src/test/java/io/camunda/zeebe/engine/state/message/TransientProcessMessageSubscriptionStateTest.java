@@ -38,8 +38,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldNoVisitSubscriptionBeforeTime() {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record1);
-    transientState.updateCommandSentTime(record1, 1_000L);
+    persistentState.put(1L, record1, 1_000);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
     transientState.updateCommandSentTime(record2, 3_000L);
@@ -56,12 +55,10 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldVisitSubscriptionBeforeTime() {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record1);
-    transientState.updateCommandSentTime(record1, 1_000L);
+    persistentState.put(1L, record1, 1_000);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    persistentState.put(2L, record2);
-    transientState.updateCommandSentTime(record2, 3_000L);
+    persistentState.put(2L, record2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -75,12 +72,10 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldFindSubscriptionBeforeTimeInOrder() {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record1);
-    transientState.updateCommandSentTime(record1, 1_000L);
+    persistentState.put(1L, record1, 1_000);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    persistentState.put(2L, record2);
-    transientState.updateCommandSentTime(record2, 2_000L);
+    persistentState.put(2L, record2, 2_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -94,12 +89,10 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldNotVisitSubscriptionIfOpened() {
     // given
     final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record1);
-    transientState.updateCommandSentTime(record1, 1_000L);
+    persistentState.put(1L, record1, 1_000);
 
     final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    persistentState.put(2L, record2);
-    transientState.updateCommandSentTime(record2, 2_000L);
+    persistentState.put(2L, record2, 2_000);
 
     persistentState.updateToOpenedState(record2.setSubscriptionPartitionId(3));
 
@@ -117,8 +110,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
 
     // when
-    persistentState.put(1L, record);
-    transientState.updateCommandSentTime(record, 1_000L);
+    persistentState.put(1L, record, 1_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -144,8 +136,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldUpdateOpenState() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record);
-    transientState.updateCommandSentTime(record, 1_000L);
+    persistentState.put(1L, record, 1_000);
 
     final ProcessMessageSubscription subscription =
         persistentState.getSubscription(
@@ -177,8 +168,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldUpdateCloseState() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record);
-    transientState.updateCommandSentTime(record, 1_000L);
+    persistentState.put(1L, record, 1_000);
 
     persistentState.updateToOpenedState(record.setSubscriptionPartitionId(3));
     final ProcessMessageSubscription subscription =
@@ -188,8 +178,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
     Assertions.assertThat(subscription.isClosing()).isFalse();
 
     // when
-    persistentState.updateToClosingState(record);
-    transientState.updateCommandSentTime(record, 1_000L);
+    persistentState.updateToClosingState(record, 1_000);
 
     // then
     final ProcessMessageSubscription updatedSubscription =
@@ -209,8 +198,7 @@ public final class TransientProcessMessageSubscriptionStateTest {
   public void shouldRemoveSubscription() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record);
-    transientState.updateCommandSentTime(record, 1_000L);
+    persistentState.put(1L, record, 1_000);
 
     // when
     persistentState.remove(1L, record.getMessageNameBuffer());

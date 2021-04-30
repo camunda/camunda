@@ -43,8 +43,8 @@ final class TransientMessageSubscriptionState {
     transientState.updateCommandSentTime(buildCommandEntry(record, commandSentTime));
   }
 
-  final void add(final MessageSubscriptionRecord record) {
-    transientState.add(buildCommandEntry(record, 0));
+  final void add(final MessageSubscriptionRecord record, final long commandSentTime) {
+    transientState.add(buildCommandEntry(record, commandSentTime));
   }
 
   final void remove(final MessageSubscriptionRecord record) {

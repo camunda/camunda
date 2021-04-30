@@ -60,7 +60,7 @@ public final class DbMessageSubscriptionState
     subscriptionColumnFamily.whileTrue(
         (compositeKey, subscription) -> {
           if (subscription.isCorrelating()) {
-            transientState.add(subscription.getRecord());
+            transientState.add(subscription.getRecord(), 0);
           }
           return true;
         });
@@ -124,31 +124,6 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
-    final var messageKey = record.getMessageKey();
-    var messageVariables = record.getVariablesBuffer();
-    if (record == messageSubscription.getRecord()) {
-      // copy the buffer before loading the subscription to avoid that it is overridden
-      messageVariables = BufferUtil.cloneBuffer(record.getVariablesBuffer());
-    }
-
-    final var subscription = get(record.getElementInstanceKey(), record.getMessageNameBuffer());
-    if (subscription == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected subscription but not found. [element-instance-key: %d, message-name: %s]",
-              record.getElementInstanceKey(), record.getMessageName()));
-    }
-
-    // update the message key and the variables
-    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
-
-    updateCorrelatingFlag(subscription, true);
-
-    transientState.add(record);
-  }
-
-  @Override
   public void resetCorrelatingState(final MessageSubscription subscription) {
     updateCorrelatingFlag(subscription, false);
   }
@@ -178,6 +153,32 @@ public final class DbMessageSubscriptionState
     messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
     transientState.remove(subscription.getRecord());
+  }
+
+  @Override
+  public void updateToCorrelatingState(
+      final MessageSubscriptionRecord record, final long commandSentTime) {
+    final var messageKey = record.getMessageKey();
+    var messageVariables = record.getVariablesBuffer();
+    if (record == messageSubscription.getRecord()) {
+      // copy the buffer before loading the subscription to avoid that it is overridden
+      messageVariables = BufferUtil.cloneBuffer(record.getVariablesBuffer());
+    }
+
+    final var subscription = get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+    if (subscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected subscription but not found. [element-instance-key: %d, message-name: %s]",
+              record.getElementInstanceKey(), record.getMessageName()));
+    }
+
+    // update the message key and the variables
+    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
+
+    updateCorrelatingFlag(subscription, true);
+
+    transientState.add(record, commandSentTime);
   }
 
   private void updateCorrelatingFlag(

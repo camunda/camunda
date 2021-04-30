@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class ProcessMessageSubscriptionCreatingApplier
     implements TypedEventApplier<
@@ -31,6 +32,6 @@ public final class ProcessMessageSubscriptionCreatingApplier
       return;
     }
 
-    subscriptionState.put(key, value);
+    subscriptionState.put(key, value, ActorClock.currentTimeMillis());
   }
 }

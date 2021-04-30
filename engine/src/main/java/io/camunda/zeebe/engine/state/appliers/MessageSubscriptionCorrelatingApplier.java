@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class MessageSubscriptionCorrelatingApplier
     implements TypedEventApplier<MessageSubscriptionIntent, MessageSubscriptionRecord> {
@@ -28,7 +29,7 @@ public final class MessageSubscriptionCorrelatingApplier
 
   @Override
   public void applyState(final long key, final MessageSubscriptionRecord value) {
-    messageSubscriptionState.updateToCorrelatingState(value);
+    messageSubscriptionState.updateToCorrelatingState(value, ActorClock.currentTimeMillis());
 
     // avoid correlating this message to one instance of this process again
     messageState.putMessageCorrelation(value.getMessageKey(), value.getBpmnProcessIdBuffer());

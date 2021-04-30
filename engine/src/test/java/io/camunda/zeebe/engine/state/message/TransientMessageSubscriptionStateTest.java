@@ -43,13 +43,11 @@ public final class TransientMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
-    persistentState.updateToCorrelatingState(subscription2);
-    transientState.updateCommandSentTime(subscription2, 3_000);
+    persistentState.updateToCorrelatingState(subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -64,13 +62,11 @@ public final class TransientMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
-    persistentState.updateToCorrelatingState(subscription2);
-    transientState.updateCommandSentTime(subscription2, 3_000);
+    persistentState.updateToCorrelatingState(subscription2, 3_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -85,13 +81,11 @@ public final class TransientMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
-    persistentState.updateToCorrelatingState(subscription2);
-    transientState.updateCommandSentTime(subscription2, 2_000);
+    persistentState.updateToCorrelatingState(subscription2, 2_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -106,8 +100,7 @@ public final class TransientMessageSubscriptionStateTest {
     // given
     final var subscription1 = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription1);
-    persistentState.updateToCorrelatingState(subscription1);
-    transientState.updateCommandSentTime(subscription1, 1_000);
+    persistentState.updateToCorrelatingState(subscription1, 1_000);
 
     final var subscription2 = subscriptionWithElementInstanceKey(2L);
     persistentState.put(2L, subscription2);
@@ -130,8 +123,7 @@ public final class TransientMessageSubscriptionStateTest {
         persistentState.get(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     // when
-    persistentState.updateToCorrelatingState(subscription.getRecord());
-    transientState.updateCommandSentTime(subscription.getRecord(), 1_000);
+    persistentState.updateToCorrelatingState(subscription.getRecord(), 1_000);
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -164,8 +156,7 @@ public final class TransientMessageSubscriptionStateTest {
 
     // when
     subscription.setVariables(MsgPackUtil.asMsgPack("{\"foo\":\"bar\"}")).setMessageKey(5L);
-    persistentState.updateToCorrelatingState(subscription);
-    transientState.updateCommandSentTime(subscription, 1_000);
+    persistentState.updateToCorrelatingState(subscription, 1_000);
 
     // then
     assertThat(
@@ -200,8 +191,7 @@ public final class TransientMessageSubscriptionStateTest {
     // given
     final var subscription = subscriptionWithElementInstanceKey(1L);
     persistentState.put(1L, subscription);
-    persistentState.updateToCorrelatingState(subscription);
-    transientState.updateCommandSentTime(subscription, 1_000);
+    persistentState.updateToCorrelatingState(subscription, 1_000);
 
     // when
     persistentState.remove(1L, subscription.getMessageNameBuffer());

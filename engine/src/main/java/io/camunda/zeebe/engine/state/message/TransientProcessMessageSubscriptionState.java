@@ -45,8 +45,8 @@ final class TransientProcessMessageSubscriptionState {
     transientState.updateCommandSentTime(updatedEntry);
   }
 
-  final void add(final ProcessMessageSubscriptionRecord record) {
-    transientState.add(buildCommandEntry(record, 0));
+  final void add(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+    transientState.add(buildCommandEntry(record, commandSentTime));
   }
 
   final void remove(final ProcessMessageSubscriptionRecord record) {
