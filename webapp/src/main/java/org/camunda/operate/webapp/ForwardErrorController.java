@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.webapp;
 
+import javax.servlet.RequestDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.servlet.error.ErrorController;
@@ -21,9 +22,18 @@ public class ForwardErrorController implements ErrorController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ForwardErrorController.class);
 
-  @RequestMapping("/error")
+  @RequestMapping(value = "/error")
   public ModelAndView handleError(HttpServletRequest request, HttpServletResponse response) {
-    LOGGER.warn("Requested non existing path. Forward (on serverside) to /");
+    final String requestedURI = (String) request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+    if (requestedURI.contains("/api/")) {
+      Integer statusCode = (Integer) request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+      Exception exception = (Exception) request.getAttribute("org.springframework.boot.web.servlet.error.DefaultErrorAttributes.ERROR");
+      ModelAndView modelAndView = new ModelAndView();
+      modelAndView.addObject("message", exception!=null?exception.getMessage():"");
+      modelAndView.setStatus(HttpStatus.valueOf(statusCode));
+      return modelAndView;
+    }
+    LOGGER.warn("Requested non existing path ({}), is forwarded (on server side) to /", requestedURI);
     final ModelAndView modelAndView = new ModelAndView("forward:/");
     // Is it really necessary to set status to OK (for frontend)?
     modelAndView.setStatus(HttpStatus.OK);

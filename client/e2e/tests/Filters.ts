@@ -23,11 +23,10 @@ fixture('Filters')
     await t
       .useRole(demoUser)
       .maximizeWindow()
-      .navigateTo(
-        `#/instances?${convertToQueryString({
-          active: 'true',
-          incidents: 'true',
-        })}`
+      .click(
+        screen.queryByRole('listitem', {
+          name: /running instances/i,
+        })
       );
   });
 
@@ -1005,7 +1004,7 @@ test('Process Filter - Interaction with diagram', async (t) => {
 
 test('Should set filters from url', async (t) => {
   await t.navigateTo(
-    `#/instances?${convertToQueryString({
+    `/instances?${convertToQueryString({
       active: 'true',
       incidents: 'true',
       completed: 'true',

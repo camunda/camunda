@@ -19,7 +19,6 @@ fixture('Operations')
     await t
       .useRole(demoUser)
       .maximizeWindow()
-      .navigateTo('/')
       .click(
         screen.queryByRole('listitem', {
           name: /running instances/i,

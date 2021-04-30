@@ -20,7 +20,11 @@ fixture('Select Instances')
     await t
       .useRole(demoUser)
       .maximizeWindow()
-      .navigateTo('#/instances?active=true&incidents=true');
+      .click(
+        screen.queryByRole('listitem', {
+          name: /running instances/i,
+        })
+      );
   });
 
 test('Selection of instances are removed on header navigation', async (t) => {

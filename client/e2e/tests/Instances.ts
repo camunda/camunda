@@ -21,7 +21,11 @@ fixture('Instances')
     await wait();
   })
   .beforeEach(async (t) => {
-    await t.useRole(demoUser).navigateTo('/');
+    await t.useRole(demoUser).click(
+      screen.queryByRole('listitem', {
+        name: /running instances/i,
+      })
+    );
   });
 
 test('Instances Page Initial Load', async (t) => {
@@ -166,7 +170,7 @@ test('Select flow node in diagram', async (t) => {
 
 test('Wait for process creation', async (t) => {
   await t.navigateTo(
-    '/#/instances?active=true&incidents=true&process=testProcess&version=1'
+    '/instances?active=true&incidents=true&process=testProcess&version=1'
   );
 
   await t.expect(screen.queryByTestId('listpanel-skeleton').exists).ok();

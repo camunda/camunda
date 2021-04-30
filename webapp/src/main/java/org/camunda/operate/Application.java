@@ -36,6 +36,8 @@ import java.util.Set;
 public class Application {
 
   private static final Logger logger = LoggerFactory.getLogger(Application.class);
+  public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
+  public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
 
   public static void main(String[] args) {
 
@@ -60,6 +62,7 @@ public class Application {
 
   private static void setDefaultProperties(final SpringApplication springApplication) {
     final Map<String, Object> defaultsMap = new HashMap<>(getManagementProperties());
+    defaultsMap.put(SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE);
     springApplication.setDefaultProperties(defaultsMap);
   }
 

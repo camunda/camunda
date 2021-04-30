@@ -5,14 +5,7 @@
  */
 
 function getSearchString() {
-  const HASH_PATHNAME_PATTERN = /^#(\/\w{1,}\/*)+\?/;
-  const hash = window.location.hash;
-
-  if (HASH_PATHNAME_PATTERN.test(hash)) {
-    return hash.replace(HASH_PATHNAME_PATTERN, '');
-  }
-
-  return '';
+  return window.location.search;
 }
 
 export {getSearchString};

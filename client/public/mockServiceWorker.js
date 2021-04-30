@@ -7,7 +7,7 @@
 /* eslint-disable */
 /* tslint:disable */
 
-const INTEGRITY_CHECKSUM = '795882c72c7304f6fa1d4a65a2418900'
+const INTEGRITY_CHECKSUM = '82ef9b96d8393b6da34527d1d6e19187'
 const bypassHeaderName = 'x-msw-bypass'
 const activeClientIds = new Set()
 
@@ -114,7 +114,7 @@ async function handleRequest(event, requestId) {
   // Send back the response clone for the "response:*" life-cycle events.
   // Ensure MSW is active and ready to handle the message, otherwise
   // this message will pend indefinitely.
-  if (activeClientIds.has(client.id)) {
+  if (client && activeClientIds.has(client.id)) {
     ;(async function () {
       const clonedResponse = response.clone()
       sendToClient(client, {

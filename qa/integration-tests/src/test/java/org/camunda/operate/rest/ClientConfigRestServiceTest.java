@@ -39,7 +39,7 @@ public class ClientConfigRestServiceTest extends OperateIntegrationTest {
         .andReturn();
 
     // then
-    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo("window.clientConfig = { \"isEnterprise\": false, \"contextPath\": \"/\" };");
+    assertThat(mvcResult.getResponse().getContentAsString()).isEqualTo("window.clientConfig = { \"isEnterprise\": false, \"contextPath\": \"\" };");
   }
 
 }

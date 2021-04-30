@@ -32,12 +32,15 @@ fixture('InstancesTable')
     ctx.initialData = await setup();
     await wait();
   })
-
   .beforeEach(async (t) => {
     await t
       .useRole(demoUser)
       .maximizeWindow()
-      .navigateTo('#/instances?active=true&incidents=true');
+      .click(
+        screen.queryByRole('listitem', {
+          name: /running instances/i,
+        })
+      );
   });
 
 test('Sorting', async (t) => {
