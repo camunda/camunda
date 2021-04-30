@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: gcr.io/zeebe-io/worker:SNAPSHOT
+        image: gcr.io/zeebe-io/worker:medic-cw-16-bb2064273-benchmark
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
