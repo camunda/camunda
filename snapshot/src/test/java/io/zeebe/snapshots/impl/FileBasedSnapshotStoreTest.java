@@ -16,8 +16,6 @@ import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -102,13 +100,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    try (final var channel =
-        FileChannel.open(
-            persistedSnapshot.getChecksumFile(),
-            StandardOpenOption.WRITE,
-            StandardOpenOption.DSYNC)) {
-      channel.write(ByteBuffer.allocate(Long.BYTES).putLong(0, 0xCAFEL));
-    }
+    SnapshotChecksum.persist(persistedSnapshot.getChecksumFile(), 0xCAFEL);
 
     // when
     snapshotStore.close();
@@ -116,6 +108,21 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+  }
+
+  @Test
+  public void shouldDeleteSnapshotWithoutChecksumFile() throws IOException {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+    Files.delete(persistedSnapshot.getChecksumFile());
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+    assertThat(persistedSnapshot.getDirectory()).doesNotExist();
   }
 
   @Test
