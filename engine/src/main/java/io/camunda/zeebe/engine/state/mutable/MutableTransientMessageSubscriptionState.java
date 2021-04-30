@@ -10,9 +10,14 @@ package io.camunda.zeebe.engine.state.mutable;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState.MessageSubscriptionVisitor;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 
+/**
+ * Captures the transient (in-memory) state for a MessageSubscription. This is to track the state of
+ * the communication between the message partition and the during correlation of message
+ * subscription. This state is not persisted to disk and needs to be recovered after restart
+ */
 public interface MutableTransientMessageSubscriptionState {
 
   void visitSubscriptionBefore(long deadline, MessageSubscriptionVisitor visitor);
 
-  void updateCommandSentTime(MessageSubscriptionRecord record, long sentTime);
+  void updateCommandSentTime(MessageSubscriptionRecord record, long commandSentTime);
 }
