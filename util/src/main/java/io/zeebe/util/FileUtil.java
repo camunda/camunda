@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +43,45 @@ public final class FileUtil {
     } else {
       Files.createDirectories(directory);
     }
+  }
+
+  /**
+   * A variant of {@link #deleteFolder(Path)}, which ignores missing files. Inspired from {@link
+   * Files#deleteIfExists(Path)} which is implemented in much the same way. To be preferred over
+   * {@link #deleteFolder(Path)} preceded by a {@link Files#exists(Path, LinkOption...)}, as that is
+   * more prone to race conditions.
+   *
+   * @param directory the directory to delete (if or any of its files exists)
+   * @throws IOException on failure to scan the directory and/or delete the file
+   */
+  public static void deleteFolderIfExists(final Path directory) throws IOException {
+    Files.walkFileTree(
+        directory,
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+              throws IOException {
+            try {
+              Files.delete(file);
+            } catch (final NoSuchFileException ignored) {
+              // ignored
+            }
+
+            return CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
+              throws IOException {
+            try {
+              Files.delete(dir);
+            } catch (final NoSuchFileException ignored) {
+              // ignored
+            }
+
+            return CONTINUE;
+          }
+        });
   }
 
   public static void deleteFolder(final Path directory) throws IOException {
