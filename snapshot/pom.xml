@@ -19,18 +19,22 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
+
     <dependency>
       <artifactId>simpleclient</artifactId>
       <groupId>io.prometheus</groupId>
     </dependency>
+
     <dependency>
       <artifactId>zeebe-protocol</artifactId>
       <groupId>io.zeebe</groupId>
     </dependency>
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -41,11 +45,7 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
