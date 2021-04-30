@@ -22,6 +22,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -40,6 +41,7 @@ public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
+  private final ProcessRecord processRecord = new ProcessRecord();
   private final BpmnValidator validator;
   private final ProcessState processState;
   private final KeyGenerator keyGenerator;
@@ -171,21 +173,22 @@ public final class DeploymentTransformer {
             new UnsafeBuffer(digestGenerator.digest(deploymentResource.getResource()));
 
         // adds process record to deployment record
-        final var processRecord = deploymentEvent.processes().add();
-        processRecord
+        final var processMetadata = deploymentEvent.processes().add();
+        processMetadata
             .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
             .setChecksum(resourceDigest)
-            .setResourceName(deploymentResource.getResourceNameBuffer())
-            .setResource(deploymentResource.getResourceBuffer());
+            .setResourceName(deploymentResource.getResourceNameBuffer());
 
         final var isDuplicate =
             isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
         if (isDuplicate) {
-          processRecord.setVersion(lastProcess.getVersion()).setKey(lastProcess.getKey());
+          processMetadata.setVersion(lastProcess.getVersion()).setKey(lastProcess.getKey());
         } else {
           final var key = keyGenerator.nextKey();
-          processRecord.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
+          processMetadata.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
 
+          processRecord.reset();
+          processRecord.wrap(processMetadata, deploymentResource.getResource());
           stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
         }
       }

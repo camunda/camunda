@@ -24,8 +24,10 @@ import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.impl.record.value.deployment.DeployedProcessMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,6 +45,7 @@ public final class DbProcessState implements MutableProcessState {
   private static final int DEFAULT_VERSION_VALUE = 0;
 
   private final BpmnTransformer transformer = BpmnFactory.createTransformer();
+  private final ProcessRecord processRecordForDeployments = new ProcessRecord();
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>
       processesByProcessIdAndVersion = new HashMap<>();
@@ -99,9 +102,24 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void putDeployment(final DeploymentRecord deploymentRecord) {
-    for (final ProcessRecord processRecord : deploymentRecord.processes()) {
-      putProcess(processRecord.getKey(), processRecord);
+    for (final DeployedProcessMetadata metadata : deploymentRecord.processes()) {
+      for (final DeploymentResource resource : deploymentRecord.getResources()) {
+        if (resource.getResourceName().equals(metadata.getResourceName())) {
+          processRecordForDeployments.reset();
+          processRecordForDeployments.wrap(metadata, resource.getResource());
+          putProcess(metadata.getKey(), processRecordForDeployments);
+        }
+      }
     }
+  }
+
+  @Override
+  public void putLatestVersionDigest(
+      final DirectBuffer processIdBuffer, final DirectBuffer digest) {
+    processId.wrapBuffer(processIdBuffer);
+    this.digest.set(digest);
+
+    digestByIdColumnFamily.put(processId, this.digest);
   }
 
   @Override
@@ -201,18 +219,6 @@ public final class DbProcessState implements MutableProcessState {
     return deployedProcess;
   }
 
-  private DeployedProcess lookupProcessByIdAndPersistedVersion(final long latestVersion) {
-    processVersion.wrapLong(latestVersion);
-
-    final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(idAndVersionKey);
-
-    if (processWithVersionAndId != null) {
-      return updateInMemoryState(processWithVersionAndId);
-    }
-    return null;
-  }
-
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version) {
@@ -227,28 +233,6 @@ public final class DbProcessState implements MutableProcessState {
     }
   }
 
-  private DeployedProcess lookupPersistenceState(
-      final DirectBuffer processIdBuffer, final int version) {
-    processId.wrapBuffer(processIdBuffer);
-    processVersion.wrapLong(version);
-
-    final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(idAndVersionKey);
-
-    if (processWithVersionAndId != null) {
-      updateInMemoryState(processWithVersionAndId);
-
-      final Long2ObjectHashMap<DeployedProcess> newVersionMap =
-          processesByProcessIdAndVersion.get(processIdBuffer);
-
-      if (newVersionMap != null) {
-        return newVersionMap.get(version);
-      }
-    }
-    // does not exist in persistence and in memory state
-    return null;
-  }
-
   @Override
   public DeployedProcess getProcessByKey(final long key) {
     final DeployedProcess deployedProcess = processesByKey.get(key);
@@ -258,19 +242,6 @@ public final class DbProcessState implements MutableProcessState {
     } else {
       return lookupPersistenceStateForProcessByKey(key);
     }
-  }
-
-  private DeployedProcess lookupPersistenceStateForProcessByKey(final long processDefinitionKey) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-
-    final PersistedProcess processWithKey = processColumnFamily.get(this.processDefinitionKey);
-    if (processWithKey != null) {
-      updateInMemoryState(processWithKey);
-
-      return processesByKey.get(processDefinitionKey);
-    }
-    // does not exist in persistence and in memory state
-    return null;
   }
 
   @Override
@@ -290,19 +261,6 @@ public final class DbProcessState implements MutableProcessState {
       return processesByVersions.values();
     }
     return Collections.emptyList();
-  }
-
-  private void updateCompleteInMemoryState() {
-    processColumnFamily.forEach(this::updateInMemoryState);
-  }
-
-  @Override
-  public void putLatestVersionDigest(
-      final DirectBuffer processIdBuffer, final DirectBuffer digest) {
-    processId.wrapBuffer(processIdBuffer);
-    this.digest.set(digest);
-
-    digestByIdColumnFamily.put(processId, this.digest);
   }
 
   @Override
@@ -339,5 +297,56 @@ public final class DbProcessState implements MutableProcessState {
     }
 
     return element;
+  }
+
+  private DeployedProcess lookupProcessByIdAndPersistedVersion(final long latestVersion) {
+    processVersion.wrapLong(latestVersion);
+
+    final PersistedProcess processWithVersionAndId =
+        processByIdAndVersionColumnFamily.get(idAndVersionKey);
+
+    if (processWithVersionAndId != null) {
+      return updateInMemoryState(processWithVersionAndId);
+    }
+    return null;
+  }
+
+  private DeployedProcess lookupPersistenceState(
+      final DirectBuffer processIdBuffer, final int version) {
+    processId.wrapBuffer(processIdBuffer);
+    processVersion.wrapLong(version);
+
+    final PersistedProcess processWithVersionAndId =
+        processByIdAndVersionColumnFamily.get(idAndVersionKey);
+
+    if (processWithVersionAndId != null) {
+      updateInMemoryState(processWithVersionAndId);
+
+      final Long2ObjectHashMap<DeployedProcess> newVersionMap =
+          processesByProcessIdAndVersion.get(processIdBuffer);
+
+      if (newVersionMap != null) {
+        return newVersionMap.get(version);
+      }
+    }
+    // does not exist in persistence and in memory state
+    return null;
+  }
+
+  private DeployedProcess lookupPersistenceStateForProcessByKey(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+
+    final PersistedProcess processWithKey = processColumnFamily.get(this.processDefinitionKey);
+    if (processWithKey != null) {
+      updateInMemoryState(processWithKey);
+
+      return processesByKey.get(processDefinitionKey);
+    }
+    // does not exist in persistence and in memory state
+    return null;
+  }
+
+  private void updateCompleteInMemoryState() {
+    processColumnFamily.forEach(this::updateInMemoryState);
   }
 }
