@@ -80,7 +80,6 @@ function useTaskVariables(id: Task['id']) {
     variables: {
       id,
     },
-    notifyOnNetworkStatusChange: true,
   });
 
   return {

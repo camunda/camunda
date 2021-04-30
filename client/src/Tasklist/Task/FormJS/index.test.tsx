@@ -17,9 +17,9 @@ import {mockGetForm} from 'modules/queries/get-form';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
 import {
-  mockGetTaskVariables,
-  mockGetTaskEmptyVariables,
-} from 'modules/queries/get-task-variables';
+  mockGetSelectedVariables,
+  mockGetSelectedVariablesEmptyVariables,
+} from 'modules/queries/get-selected-variables';
 
 function createWrapper(mocks: MockedResponse[] = []) {
   const Wrapper: React.FC = ({children}) => (
@@ -41,7 +41,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: createWrapper([mockGetSelectedVariables()]),
       },
     );
 
@@ -66,7 +66,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: createWrapper([mockGetSelectedVariables()]),
       },
     );
 
@@ -91,7 +91,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: createWrapper([mockGetSelectedVariables()]),
       },
     );
 
@@ -115,14 +115,22 @@ describe('<FormJS />', () => {
       />,
       {
         wrapper: createWrapper([
-          mockGetTaskEmptyVariables(),
-          mockGetTaskVariables('1'),
+          mockGetSelectedVariablesEmptyVariables(),
+          mockGetSelectedVariables('1'),
         ]),
       },
     );
 
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /complete task/i,
+        }),
+      ).toBeEnabled(),
+    );
+
     userEvent.click(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: /complete task/i,
       }),
     );
@@ -160,12 +168,20 @@ describe('<FormJS />', () => {
         onSubmit={mockOnSubmit}
       />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: createWrapper([mockGetSelectedVariables()]),
       },
     );
 
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /complete task/i,
+        }),
+      ).toBeEnabled(),
+    );
+
     userEvent.click(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: /complete task/i,
       }),
     );
@@ -194,7 +210,7 @@ describe('<FormJS />', () => {
         onSubmit={mockOnSubmit}
       />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: createWrapper([mockGetSelectedVariables()]),
       },
     );
 
