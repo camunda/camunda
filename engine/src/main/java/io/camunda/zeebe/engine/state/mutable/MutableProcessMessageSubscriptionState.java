@@ -13,11 +13,11 @@ import org.agrona.DirectBuffer;
 
 public interface MutableProcessMessageSubscriptionState extends ProcessMessageSubscriptionState {
 
-  void put(final long key, ProcessMessageSubscriptionRecord record);
+  void put(final long key, ProcessMessageSubscriptionRecord record, long commandSentTime);
 
   void updateToOpenedState(ProcessMessageSubscriptionRecord record);
 
-  void updateToClosingState(ProcessMessageSubscriptionRecord record);
+  void updateToClosingState(ProcessMessageSubscriptionRecord record, long commandSentTime);
 
   boolean remove(long elementInstanceKey, DirectBuffer messageName);
 }

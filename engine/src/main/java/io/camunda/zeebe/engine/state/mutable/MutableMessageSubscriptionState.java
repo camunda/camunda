@@ -16,7 +16,7 @@ public interface MutableMessageSubscriptionState extends MessageSubscriptionStat
 
   void put(long key, MessageSubscriptionRecord record);
 
-  void updateToCorrelatingState(MessageSubscriptionRecord record);
+  void updateToCorrelatingState(MessageSubscriptionRecord record, long commandSentTime);
 
   void resetCorrelatingState(MessageSubscription subscription);
 

@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 final class ProcessMessageSubscriptionDeletingApplier
     implements TypedEventApplier<
@@ -24,6 +25,6 @@ final class ProcessMessageSubscriptionDeletingApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-    state.updateToClosingState(value);
+    state.updateToClosingState(value, ActorClock.currentTimeMillis());
   }
 }

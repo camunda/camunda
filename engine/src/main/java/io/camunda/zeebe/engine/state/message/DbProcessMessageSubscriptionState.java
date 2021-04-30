@@ -52,14 +52,15 @@ public final class DbProcessMessageSubscriptionState
     subscriptionColumnFamily.whileTrue(
         (compositeKey, subscription) -> {
           if (subscription.isOpening() || subscription.isClosing()) {
-            transientState.add(subscription.getRecord());
+            transientState.add(subscription.getRecord(), 0);
           }
           return true;
         });
   }
 
   @Override
-  public void put(final long key, final ProcessMessageSubscriptionRecord record) {
+  public void put(
+      final long key, final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
@@ -67,19 +68,13 @@ public final class DbProcessMessageSubscriptionState
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
 
-    transientState.add(record);
+    transientState.add(record, commandSentTime);
   }
 
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpened());
     transientState.remove(record);
-  }
-
-  @Override
-  public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
-    update(record, s -> s.setRecord(record).setClosing());
-    transientState.add(record);
   }
 
   @Override
@@ -91,6 +86,13 @@ public final class DbProcessMessageSubscriptionState
       remove(subscription);
     }
     return found;
+  }
+
+  @Override
+  public void updateToClosingState(
+      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+    update(record, s -> s.setRecord(record).setClosing());
+    transientState.add(record, commandSentTime);
   }
 
   @Override
