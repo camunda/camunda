@@ -12,7 +12,6 @@ import io.zeebe.snapshots.PersistableSnapshot;
 import io.zeebe.snapshots.PersistedSnapshot;
 import io.zeebe.snapshots.PersistedSnapshotListener;
 import io.zeebe.snapshots.ReceivableSnapshotStore;
-import io.zeebe.snapshots.ReceivedSnapshot;
 import io.zeebe.snapshots.SnapshotId;
 import io.zeebe.snapshots.TransientSnapshot;
 import io.zeebe.util.FileUtil;
@@ -45,6 +44,7 @@ public final class FileBasedSnapshotStore extends Actor
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
+  private static final String CHECKSUM_SUFFIX = ".checksum";
 
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
@@ -97,7 +97,9 @@ public final class FileBasedSnapshotStore extends Actor
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
     FileBasedSnapshot latestPersistedSnapshot = null;
     final List<FileBasedSnapshot> snapshots = new ArrayList<>();
-    try (final var stream = Files.newDirectoryStream(snapshotDirectory)) {
+    try (final var stream =
+        Files.newDirectoryStream(
+            snapshotDirectory, p -> !p.getFileName().toString().endsWith(CHECKSUM_SUFFIX))) {
       for (final var path : stream) {
         final var snapshot = collectSnapshot(path);
         if (snapshot != null) {
@@ -128,23 +130,46 @@ public final class FileBasedSnapshotStore extends Actor
 
   private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
     final var optionalMeta = FileBasedSnapshotMetadata.ofPath(path);
-    if (optionalMeta.isPresent()) {
-      final var metadata = optionalMeta.get();
-      try {
-        if (SnapshotChecksum.verify(path)) {
-          return new FileBasedSnapshot(path, metadata);
-        } else {
-          LOGGER.warn(
-              "Cannot load snapshot in {}. The checksum stored does not match the checksum calculated.",
-              path);
-        }
-      } catch (final Exception e) {
-        LOGGER.warn("Could not load snapshot in {}", path, e);
-      }
-    } else {
-      LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d, but was {}", path);
+    if (optionalMeta.isEmpty()) {
+      return null;
     }
-    return null;
+
+    final var metadata = optionalMeta.get();
+    final var checksumPath = buildSnapshotsChecksumPath(metadata);
+
+    if (!Files.exists(checksumPath)) {
+      // checksum was not completely/successfully written, we can safely delete it and proceed
+      LOGGER.debug(
+          "Snapshot {} does not have a checksum file, which most likely indicates a partial write"
+              + " (e.g. crash during move), and will be deleted",
+          path);
+      try {
+        FileUtil.deleteFolder(path);
+      } catch (final Exception e) {
+        // it's fine to ignore failures to delete here, as it would constitute mostly noise
+        LOGGER.debug("Failed to delete partial snapshot {}", path, e);
+      }
+
+      return null;
+    }
+
+    try {
+      final var expectedChecksum = SnapshotChecksum.read(checksumPath);
+      final var actualChecksum = SnapshotChecksum.calculate(path);
+      if (expectedChecksum != actualChecksum) {
+        LOGGER.warn(
+            "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted",
+            path,
+            expectedChecksum,
+            actualChecksum);
+        return null;
+      }
+
+      return new FileBasedSnapshot(path, checksumPath, actualChecksum, metadata);
+    } catch (final Exception e) {
+      LOGGER.warn("Could not load snapshot in {}", path, e);
+      return null;
+    }
   }
 
   private void purgePendingSnapshotsDirectory() {
@@ -238,7 +263,7 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
-  public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
+  public FileBasedReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
     final var optMetadata = FileBasedSnapshotMetadata.ofFileName(snapshotId);
     final var metadata =
         optMetadata.orElseThrow(
@@ -292,7 +317,7 @@ public final class FileBasedSnapshotStore extends Actor
     pendingSnapshots.remove(pendingSnapshot);
   }
 
-  private void observeSnapshotSize(final PersistedSnapshot persistedSnapshot) {
+  private void observeSnapshotSize(final FileBasedSnapshot persistedSnapshot) {
     try (final var contents = Files.newDirectoryStream(persistedSnapshot.getPath())) {
       var totalSize = 0L;
       var totalCount = 0L;
@@ -355,7 +380,8 @@ public final class FileBasedSnapshotStore extends Actor
     return (persistedSnapshot != null && persistedSnapshot.getMetadata().compareTo(metadata) >= 0);
   }
 
-  PersistedSnapshot newSnapshot(final FileBasedSnapshotMetadata metadata, final Path directory) {
+  FileBasedSnapshot newSnapshot(
+      final FileBasedSnapshotMetadata metadata, final Path directory, final long expectedChecksum) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
     if (isCurrentSnapshotNewer(metadata)) {
@@ -364,10 +390,28 @@ public final class FileBasedSnapshotStore extends Actor
       return currentPersistedSnapshot;
     }
 
+    // it's important to persist the checksum file only after the move is finished, since we use it
+    // as a marker file to guarantee the move was complete and not partial
     final var destination = buildSnapshotDirectory(metadata);
     moveToSnapshotDirectory(directory, destination);
 
-    final var newPersistedSnapshot = new FileBasedSnapshot(destination, metadata);
+    final var checksumPath = buildSnapshotsChecksumPath(metadata);
+    final long actualChecksum;
+    try {
+      // computing the checksum on the final destination also lets us detect any failures during the
+      // copy/move that could occur
+      actualChecksum = SnapshotChecksum.calculate(destination);
+      if (actualChecksum != expectedChecksum) {
+        throw new InvalidSnapshotChecksum(directory, expectedChecksum, actualChecksum);
+      }
+
+      SnapshotChecksum.persist(checksumPath, actualChecksum);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    final var newPersistedSnapshot =
+        new FileBasedSnapshot(destination, checksumPath, actualChecksum, metadata);
     final var failed =
         !currentPersistedSnapshotRef.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
     if (failed) {
@@ -409,15 +453,11 @@ public final class FileBasedSnapshotStore extends Actor
           destination,
           e);
     } catch (final IOException e) {
-      // If the snapshot was partially copied, we should delete it
       try {
-        if (Files.exists(destination)) {
-          FileUtil.deleteFolder(destination);
-        }
+        FileUtil.deleteFolderIfExists(destination);
       } catch (final IOException ioException) {
-        // If delete fails, we can't do anything.
-        LOGGER.error(
-            "Failed to delete snapshot directory {} after atomic move failed.",
+        LOGGER.debug(
+            "Snapshot {} could not be deleted on rollback, but will be ignored as a partial snapshot",
             destination,
             ioException);
       }
@@ -430,7 +470,7 @@ public final class FileBasedSnapshotStore extends Actor
       FileUtil.deleteFolder(pendingSnapshot);
       LOGGER.debug("Deleted not completed (orphaned) snapshot {}", pendingSnapshot);
     } catch (final IOException e) {
-      LOGGER.error("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot, e);
+      LOGGER.warn("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot, e);
     }
   }
 
@@ -450,6 +490,10 @@ public final class FileBasedSnapshotStore extends Actor
 
   private Path buildSnapshotDirectory(final FileBasedSnapshotMetadata metadata) {
     return snapshotsDirectory.resolve(metadata.getSnapshotIdAsString());
+  }
+
+  private Path buildSnapshotsChecksumPath(final FileBasedSnapshotMetadata metadata) {
+    return snapshotsDirectory.resolve(metadata.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
   SnapshotMetrics getSnapshotMetrics() {

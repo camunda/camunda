@@ -55,7 +55,10 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
       } catch (final NumberFormatException e) {
         LOGGER.warn("Failed to parse part of snapshot metadata", e);
       }
+    } else {
+      LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d, but was {}", name);
     }
+
     return metadata;
   }
 

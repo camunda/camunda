@@ -18,7 +18,6 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -247,33 +246,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return;
     }
 
-    if (!verifyChecksums(future)) {
-      return;
-    }
-
     try {
-      final PersistedSnapshot value = snapshotStore.newSnapshot(metadata, directory);
+      final PersistedSnapshot value =
+          snapshotStore.newSnapshot(metadata, directory, expectedSnapshotChecksum);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
-    }
-  }
-
-  private boolean verifyChecksums(final CompletableActorFuture<PersistedSnapshot> future) {
-
-    try {
-      final long writtenChecksum = SnapshotChecksum.read(directory);
-      if (writtenChecksum == expectedSnapshotChecksum) {
-        return true;
-      } else {
-        future.completeExceptionally(
-            new IllegalStateException("Snapshot is corrupted. Checksum does not match"));
-        return false;
-      }
-    } catch (final IOException e) {
-      future.completeExceptionally(
-          new UncheckedIOException("Unexpected exception on calculating snapshot checksum.", e));
-      return false;
     }
   }
 
