@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -74,13 +73,13 @@ public class DecisionVariableReader {
       return Collections.emptyList();
     }
 
-    final DecisionDefinitionOptimizeDto decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
+    return decisionDefinitionReader.getDecisionDefinition(
       decisionDefinitionKey,
       decisionDefinitionVersions,
       tenantIds
     ).orElseThrow(() -> new OptimizeRuntimeException(
-      "Could not extract input variables. Requested decision definition not found!"));
-    return decisionDefinition.getInputVariableNames();
+      "Could not extract input variables. Requested decision definition not found!"))
+      .getInputVariableNames();
   }
 
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
@@ -89,13 +88,13 @@ public class DecisionVariableReader {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       return Collections.emptyList();
     } else {
-      final DecisionDefinitionOptimizeDto decisionDefinition = decisionDefinitionReader.getDecisionDefinition(
+      return decisionDefinitionReader.getDecisionDefinition(
         decisionDefinitionKey,
         decisionDefinitionVersions,
         tenantIds
       ).orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not extract output variables. Requested decision definition not found!"));
-      return decisionDefinition.getOutputVariableNames();
+        "Could not extract output variables. Requested decision definition not found!"))
+        .getOutputVariableNames();
     }
   }
 
