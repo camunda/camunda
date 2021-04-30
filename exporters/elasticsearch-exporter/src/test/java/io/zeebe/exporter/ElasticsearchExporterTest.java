@@ -63,6 +63,7 @@ public class ElasticsearchExporterTest {
     config.index.prefix = "foo-bar";
     config.index.createTemplate = true;
     config.index.deployment = true;
+    config.index.process = true;
     config.index.error = true;
     config.index.incident = true;
     config.index.job = true;
@@ -83,6 +84,7 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate("foo-bar", "foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
 
     verify(esClient).putIndexTemplate(ValueType.DEPLOYMENT);
+    verify(esClient).putIndexTemplate(ValueType.PROCESS);
     verify(esClient).putIndexTemplate(ValueType.ERROR);
     verify(esClient).putIndexTemplate(ValueType.INCIDENT);
     verify(esClient).putIndexTemplate(ValueType.JOB);
@@ -101,6 +103,7 @@ public class ElasticsearchExporterTest {
     // given
     config.index.event = true;
     config.index.deployment = true;
+    config.index.process = true;
     config.index.error = true;
     config.index.incident = true;
     config.index.job = true;
@@ -118,6 +121,7 @@ public class ElasticsearchExporterTest {
     final ValueType[] valueTypes =
         new ValueType[] {
           ValueType.DEPLOYMENT,
+          ValueType.PROCESS,
           ValueType.ERROR,
           ValueType.INCIDENT,
           ValueType.JOB,
