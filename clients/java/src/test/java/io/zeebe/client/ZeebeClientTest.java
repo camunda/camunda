@@ -22,7 +22,9 @@ import static io.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_V
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.client.impl.NoopCredentialsProvider;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.zeebe.client.impl.util.Environment;
 import io.zeebe.client.impl.util.EnvironmentRule;
 import io.zeebe.client.util.ClientTest;
@@ -171,5 +173,44 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(KEEP_ALIVE_VAR, "-2s");
     assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClient() {
+    // given
+    final String clusterId = "clusterId";
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
+            .withClusterId(clusterId)
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build()) {
+      // when
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGatewayAddress())
+          .isEqualTo(String.format("%s.zeebe.camunda.io:443", clusterId));
+    }
+  }
+
+  @Test
+  public void shouldOverrideCloudProperties() {
+    // given
+    final String gatewayAddress = "localhost:10000";
+    final NoopCredentialsProvider credentialsProvider = new NoopCredentialsProvider();
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .gatewayAddress(gatewayAddress)
+            .credentialsProvider(credentialsProvider)
+            .build()) {
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
+      assertThat(configuration.getGatewayAddress()).isEqualTo(gatewayAddress);
+      assertThat(configuration.getCredentialsProvider()).isEqualTo(credentialsProvider);
+    }
   }
 }
