@@ -280,8 +280,7 @@ public class DeploymentStateTest {
         .setBpmnProcessId("process")
         .setKey(1)
         .setVersion(1)
-        .setResourceName(wrapString("resource"))
-        .setResource(wrapString(Bpmn.convertToString(modelInstance)));
+        .setResourceName(wrapString("resource"));
 
     return deploymentRecord;
   }

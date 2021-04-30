@@ -25,7 +25,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
+import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -88,8 +88,7 @@ public final class CreateDeploymentTest {
   @Test
   public void testLifecycle() {
     // when
-    final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE.deployment().withXmlResource(process).deploy();
 
     // then
     final var deploymentPartitionRecords =
@@ -169,10 +168,10 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource("wf2.bpmn", process).deploy();
 
     // then
-    List<DeployedProcess> deployedProcesses = firstDeployment.getValue().getDeployedProcesses();
+    var deployedProcesses = firstDeployment.getValue().getDeployedProcesses();
     assertThat(deployedProcesses).hasSize(1);
 
-    DeployedProcess deployedProcess = deployedProcesses.get(0);
+    DeployedProcessMetadataValue deployedProcess = deployedProcesses.get(0);
     assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(processId);
     assertThat(deployedProcess.getResourceName()).isEqualTo("wf1.bpmn");
 
@@ -197,7 +196,7 @@ public final class CreateDeploymentTest {
 
     // then
     assertThat(deployment.getValue().getDeployedProcesses())
-        .extracting(DeployedProcess::getBpmnProcessId)
+        .extracting(DeployedProcessMetadataValue::getBpmnProcessId)
         .contains("process1", "process2");
   }
 
@@ -215,7 +214,7 @@ public final class CreateDeploymentTest {
 
     // then
     assertThat(deployment.getValue().getDeployedProcesses())
-        .extracting(DeployedProcess::getBpmnProcessId)
+        .extracting(DeployedProcessMetadataValue::getBpmnProcessId)
         .contains(processId, processId2);
 
     assertThat(deployment.getValue().getResources())
@@ -244,7 +243,7 @@ public final class CreateDeploymentTest {
     // then
     final var processDefinitionKeyList =
         deployment.getDeployedProcesses().stream()
-            .map(DeployedProcess::getProcessDefinitionKey)
+            .map(DeployedProcessMetadataValue::getProcessDefinitionKey)
             .collect(Collectors.toList());
 
     final var processRecordKeys =
@@ -463,8 +462,8 @@ public final class CreateDeploymentTest {
     // then
     assertThat(repeated.getKey()).isGreaterThan(original.getKey());
 
-    final List<DeployedProcess> originalProcesses = original.getValue().getDeployedProcesses();
-    final List<DeployedProcess> repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getDeployedProcesses();
+    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertSameResource(originalProcesses.get(0), repeatedProcesses.get(0));
@@ -483,8 +482,8 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource(repeatedResourceName, process).deploy();
 
     // then
-    final List<DeployedProcess> originalProcesses = original.getValue().getDeployedProcesses();
-    final List<DeployedProcess> repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getDeployedProcesses();
+    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertDifferentResources(originalProcesses.get(0), repeatedProcesses.get(0));
@@ -503,8 +502,8 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource("process.bpmn", process_V2).deploy();
 
     // then
-    final List<DeployedProcess> originalProcesses = original.getValue().getDeployedProcesses();
-    final List<DeployedProcess> repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getDeployedProcesses();
+    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertDifferentResources(originalProcesses.get(0), repeatedProcesses.get(0));
@@ -529,11 +528,11 @@ public final class CreateDeploymentTest {
             .deploy();
 
     // then
-    final List<DeployedProcess> originalProcesses = original.getValue().getDeployedProcesses();
-    final List<DeployedProcess> repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getDeployedProcesses();
+    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isEqualTo(2);
 
-    for (final DeployedProcess process : originalProcesses) {
+    for (final DeployedProcessMetadataValue process : originalProcesses) {
       assertSameResource(process, findProcess(repeatedProcesses, process.getBpmnProcessId()));
     }
   }
@@ -557,8 +556,8 @@ public final class CreateDeploymentTest {
             .deploy();
 
     // then
-    final List<DeployedProcess> originalProcesses = original.getValue().getDeployedProcesses();
-    final List<DeployedProcess> repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getDeployedProcesses();
+    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isEqualTo(2);
 
     assertSameResource(
@@ -579,8 +578,8 @@ public final class CreateDeploymentTest {
         ENGINE.deployment().withXmlResource("p1.bpmn", process).deploy();
 
     // then
-    final List<DeployedProcess> originalProcesses = original.getValue().getDeployedProcesses();
-    final List<DeployedProcess> repeatedProcesses = rollback.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getDeployedProcesses();
+    final var repeatedProcesses = rollback.getValue().getDeployedProcesses();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertDifferentResources(
@@ -643,15 +642,16 @@ public final class CreateDeploymentTest {
                 + "'INVALID_CYCLE_EXPRESSION')\n");
   }
 
-  private DeployedProcess findProcess(
-      final List<DeployedProcess> processes, final String processId) {
+  private DeployedProcessMetadataValue findProcess(
+      final List<DeployedProcessMetadataValue> processes, final String processId) {
     return processes.stream()
         .filter(w -> w.getBpmnProcessId().equals(processId))
         .findFirst()
         .orElse(null);
   }
 
-  private void assertSameResource(final DeployedProcess original, final DeployedProcess repeated) {
+  private void assertSameResource(
+      final DeployedProcessMetadataValue original, final DeployedProcessMetadataValue repeated) {
     io.zeebe.protocol.record.Assertions.assertThat(repeated)
         .hasVersion(original.getVersion())
         .hasProcessDefinitionKey(original.getProcessDefinitionKey())
@@ -660,7 +660,7 @@ public final class CreateDeploymentTest {
   }
 
   private void assertDifferentResources(
-      final DeployedProcess original, final DeployedProcess repeated) {
+      final DeployedProcessMetadataValue original, final DeployedProcessMetadataValue repeated) {
     assertThat(original.getProcessDefinitionKey()).isLessThan(repeated.getProcessDefinitionKey());
     assertThat(original.getVersion()).isLessThan(repeated.getVersion());
   }

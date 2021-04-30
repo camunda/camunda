@@ -63,8 +63,7 @@ public final class TypedEventSerializationTest {
         .setKey(processDefinitionKey)
         .setResourceName(wrapString(resourceName))
         .setVersion(processVersion)
-        .setChecksum(wrapString("checksum"))
-        .setResource(resource);
+        .setChecksum(wrapString("checksum"));
 
     final long key = 1234;
     final long position = 4321;
