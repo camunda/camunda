@@ -35,6 +35,6 @@ public final class ProcessMessageSubscriptionCreatingApplier
       return;
     }
 
-    subscriptionState.put(value, sentTime);
+    subscriptionState.put(key, value, sentTime);
   }
 }

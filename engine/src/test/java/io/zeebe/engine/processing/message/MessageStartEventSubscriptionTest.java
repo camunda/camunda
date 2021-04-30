@@ -15,6 +15,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
@@ -73,7 +74,7 @@ public final class MessageStartEventSubscriptionTest {
   }
 
   @Test
-  public void shouldCloseSubscriptionForOldVersions() {
+  public void shouldDeleteSubscriptionForOldVersions() {
     // given
     engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
 
@@ -97,6 +98,70 @@ public final class MessageStartEventSubscriptionTest {
         subscriptions.get(1).getValue().getProcessDefinitionKey();
     assertThat(closingProcessDefinitionKey)
         .isEqualTo(subscriptions.get(0).getValue().getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldDeleteSubscriptionsForAllMessageStartEvents() {
+    // given
+    engine.deployment().withXmlResource(createProcessWithTwoMessageStartEvent()).deploy();
+
+    final var processDefinitionKey = RecordingExporter.processRecords().getFirst().getKey();
+
+    // when
+    engine.deployment().withXmlResource(createProcessWithTwoMessageStartEvent()).deploy();
+
+    // then
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
+                .limit(2))
+        .extracting(r -> r.getValue().getProcessDefinitionKey(), r -> r.getValue().getMessageName())
+        .contains(
+            tuple(processDefinitionKey, MESSAGE_NAME1), tuple(processDefinitionKey, MESSAGE_NAME2));
+  }
+
+  @Test
+  public void testLifecycle() {
+    // given
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
+
+    engine.message().withName(MESSAGE_NAME1).withCorrelationKey("key-1").publish();
+
+    // when
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
+
+    // then
+    assertThat(RecordingExporter.messageStartEventSubscriptionRecords().limit(3))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .containsExactly(
+            tuple(RecordType.EVENT, MessageStartEventSubscriptionIntent.CREATED),
+            tuple(RecordType.EVENT, MessageStartEventSubscriptionIntent.CORRELATED),
+            tuple(RecordType.EVENT, MessageStartEventSubscriptionIntent.DELETED));
+  }
+
+  @Test
+  public void shouldHaveSameSubscriptionKey() {
+    // given
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
+
+    final var subscriptionKey =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CREATED)
+            .getFirst()
+            .getKey();
+
+    engine.message().withName(MESSAGE_NAME1).withCorrelationKey("key-1").publish();
+
+    // when
+    engine.deployment().withXmlResource(createProcessWithOneMessageStartEvent()).deploy();
+
+    // then
+    assertThat(RecordingExporter.messageStartEventSubscriptionRecords().limit(3))
+        .extracting(Record::getIntent, Record::getKey)
+        .containsExactly(
+            tuple(MessageStartEventSubscriptionIntent.CREATED, subscriptionKey),
+            tuple(MessageStartEventSubscriptionIntent.CORRELATED, subscriptionKey),
+            tuple(MessageStartEventSubscriptionIntent.DELETED, subscriptionKey));
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {

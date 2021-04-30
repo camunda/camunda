@@ -152,32 +152,31 @@ public final class EventHandle {
   }
 
   public void triggerMessageStartEvent(
-      final long processDefinitionKey,
-      final DirectBuffer startEventElementId,
+      final long subscriptionKey,
+      final MessageStartEventSubscriptionRecord subscription,
       final long messageKey,
       final MessageRecord message) {
 
     final var newProcessInstanceKey = keyGenerator.nextKey();
-    final var bpmnProcessId = processState.getProcessByKey(processDefinitionKey).getBpmnProcessId();
-
     startEventSubscriptionRecord
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setBpmnProcessId(bpmnProcessId)
-        .setStartEventId(startEventElementId)
+        .setProcessDefinitionKey(subscription.getProcessDefinitionKey())
+        .setBpmnProcessId(subscription.getBpmnProcessIdBuffer())
+        .setStartEventId(subscription.getStartEventIdBuffer())
         .setProcessInstanceKey(newProcessInstanceKey)
         .setCorrelationKey(message.getCorrelationKeyBuffer())
         .setMessageKey(messageKey)
         .setMessageName(message.getNameBuffer())
         .setVariables(message.getVariablesBuffer());
 
-    // TODO (saig0): the subscription should have a key (#2805)
     stateWriter.appendFollowUpEvent(
-        -1L, MessageStartEventSubscriptionIntent.CORRELATED, startEventSubscriptionRecord);
+        subscriptionKey,
+        MessageStartEventSubscriptionIntent.CORRELATED,
+        startEventSubscriptionRecord);
 
     activateProcessInstanceForStartEvent(
-        processDefinitionKey,
+        subscription.getProcessDefinitionKey(),
         newProcessInstanceKey,
-        startEventElementId,
+        startEventSubscriptionRecord.getStartEventIdBuffer(),
         message.getVariablesBuffer());
   }
 

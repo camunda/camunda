@@ -181,7 +181,12 @@ public final class EngineProcessors {
     // on other partitions DISTRIBUTE command is received and processed
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            zeebeState.getProcessState(), deploymentResponder, partitionId, writers);
+            zeebeState.getProcessState(),
+            zeebeState.getMessageStartEventSubscriptionState(),
+            deploymentResponder,
+            partitionId,
+            writers,
+            keyGenerator);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
 
