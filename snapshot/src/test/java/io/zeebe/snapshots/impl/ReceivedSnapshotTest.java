@@ -122,9 +122,9 @@ public class ReceivedSnapshotTest {
     assertThat(receiverSnapshotStore.getLatestSnapshot())
         .as("the received snapshot was committed and is the latest snapshot")
         .hasValue(receivedSnapshot);
-    assertThat(SnapshotChecksum.calculate(receivedSnapshot.getPath()))
+    assertThat(receivedSnapshot.getChecksum())
         .as("the received snapshot has the same checksum as the sent snapshot")
-        .isEqualTo(SnapshotChecksum.calculate(persistedSnapshot.getPath()));
+        .isEqualTo(persistedSnapshot.getChecksum());
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
@@ -150,7 +150,6 @@ public class ReceivedSnapshotTest {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot = receiveSnapshot(persistedSnapshot).persist().join();
-    final var expectedChecksum = SnapshotChecksum.calculate(receivedSnapshot.getPath());
 
     // when
     receiverSnapshotStore.purgePendingSnapshots().join();
@@ -160,9 +159,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot)
         .as("the previous snapshot should still be the latest snapshot")
         .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
-    assertThat(SnapshotChecksum.calculate(receivedSnapshot.getPath()))
+    assertThat(receivedSnapshot.getChecksum())
         .as("the received snapshot still has the same checksum")
-        .isEqualTo(expectedChecksum);
+        .isEqualTo(persistedSnapshot.getChecksum());
   }
 
   @Test
@@ -308,9 +307,9 @@ public class ReceivedSnapshotTest {
     assertThat(secondReceivedSnapshot.getPath())
         .as("the second received snapshot was not removed as it's not considered older")
         .exists();
-    assertThat(SnapshotChecksum.calculate(receivedPersistedSnapshot.getPath()))
+    assertThat(receivedPersistedSnapshot.getChecksum())
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(SnapshotChecksum.calculate(persistedSnapshot.getPath()));
+        .isEqualTo(persistedSnapshot.getChecksum());
   }
 
   @Test
@@ -331,9 +330,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot was removed on persist of the other snapshot")
         .doesNotExist();
-    assertThat(SnapshotChecksum.calculate(receivedPersisted.getPath()))
+    assertThat(receivedPersisted.getChecksum())
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(SnapshotChecksum.calculate(persistedSnapshot.getPath()));
+        .isEqualTo(persistedSnapshot.getChecksum());
   }
 
   @Test
@@ -404,8 +403,7 @@ public class ReceivedSnapshotTest {
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
         .as(
             "the snapshot should not be persisted since the computed checksum is not the reported one")
-        .hasCauseInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Snapshot is corrupted");
+        .hasCauseInstanceOf(InvalidSnapshotChecksum.class);
   }
 
   @Test

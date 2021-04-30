@@ -108,23 +108,11 @@ public class SnapshotChecksumTest {
   public void shouldPersistChecksum() throws Exception {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
-    SnapshotChecksum.persist(multipleFileSnapshot, expectedChecksum);
+    final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
+    SnapshotChecksum.persist(checksumPath, expectedChecksum);
 
     // when
-    final var actual = SnapshotChecksum.read(multipleFileSnapshot);
-
-    // then
-    assertThat(actual).isEqualTo(expectedChecksum);
-  }
-
-  @Test
-  public void shouldGenerateTheSameWithPersistedChecksum() throws Exception {
-    // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
-    SnapshotChecksum.persist(multipleFileSnapshot, expectedChecksum);
-
-    // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var actual = SnapshotChecksum.read(checksumPath);
 
     // then
     assertThat(actual).isEqualTo(expectedChecksum);
@@ -134,13 +122,15 @@ public class SnapshotChecksumTest {
   public void shouldDetectCorruptedSnapshot() throws IOException {
     // given
     final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
-    SnapshotChecksum.persist(corruptedSnapshot, expectedChecksum);
+    final var checksumPath = corruptedSnapshot.resolveSibling("checksum");
+    SnapshotChecksum.persist(checksumPath, expectedChecksum);
 
     // when
     Files.delete(corruptedSnapshot.resolve("file1.txt"));
+    final var actualChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
 
     // then
-    assertThat(SnapshotChecksum.verify(corruptedSnapshot)).isFalse();
+    assertThat(actualChecksum).isNotEqualTo(expectedChecksum);
   }
 
   @Test

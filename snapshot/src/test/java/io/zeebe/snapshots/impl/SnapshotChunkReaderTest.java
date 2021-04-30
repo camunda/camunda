@@ -35,7 +35,7 @@ public class SnapshotChunkReaderTest {
 
   private static final Map<String, String> SNAPSHOT_CHUNK =
       Map.of("file3", "content", "file1", "this", "file2", "is");
-  private static final int EXPECTED_CHUNK_COUNT = 4;
+  private static final int EXPECTED_CHUNK_COUNT = 3;
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
   private PersistedSnapshot persistedSnapshot;
@@ -57,9 +57,9 @@ public class SnapshotChunkReaderTest {
   }
 
   @Test
-  public void shouldReadSnapshotChunks() throws IOException {
+  public void shouldReadSnapshotChunks() {
     // given
-    final var expectedSnapshotChecksum = SnapshotChecksum.calculate(persistedSnapshot.getPath());
+    final var expectedSnapshotChecksum = persistedSnapshot.getChecksum();
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       for (int i = 0; i < EXPECTED_CHUNK_COUNT; i++) {
@@ -94,14 +94,9 @@ public class SnapshotChunkReaderTest {
 
     // then
     assertThat(snapshotChunkIds)
-        .containsExactly(
-            asByteBuffer("CHECKSUM"),
-            asByteBuffer("file1"),
-            asByteBuffer("file2"),
-            asByteBuffer("file3"));
+        .containsExactly(asByteBuffer("file1"), asByteBuffer("file2"), asByteBuffer("file3"));
 
     assertThat(snapshotChunks)
-        .filteredOn(chunk -> !chunk.getChunkName().equals("CHECKSUM"))
         .extracting(SnapshotChunk::getContent)
         .extracting(String::new)
         .containsExactly("this", "is", "content");

@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.test.util.asserts.DirectoryAssert;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -188,12 +189,14 @@ public class FileBasedTransientSnapshotTest {
     // when
     final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).orElseThrow();
     newSnapshot.take(this::writeSnapshot);
-    final var persistedSnapshot = newSnapshot.persist().join();
+    final var persistedSnapshot = (FileBasedSnapshot) newSnapshot.persist().join();
 
     // then
     assertThat(snapshotsDir)
+        .asInstanceOf(DirectoryAssert.factory())
         .as("the committed snapshots directory only contains the latest snapshot")
-        .isDirectoryNotContaining(p -> !p.equals(persistedSnapshot.getPath()));
+        .isDirectoryContainingExactly(
+            persistedSnapshot.getPath(), persistedSnapshot.getChecksumFile());
   }
 
   @Test
@@ -300,25 +303,24 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldPersistIdempotently() throws IOException {
+  public void shouldPersistIdempotently() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).orElseThrow();
     transientSnapshot.take(this::writeSnapshot).join();
-    final var firstSnapshot = transientSnapshot.persist().join();
-    final var expectedChecksum = SnapshotChecksum.calculate(firstSnapshot.getPath());
+    final var firstSnapshot = (FileBasedSnapshot) transientSnapshot.persist().join();
 
     // when
     final var secondSnapshot = transientSnapshot.persist().join();
 
     // then
-    final var actualChecksum = SnapshotChecksum.read(secondSnapshot.getPath());
     assertThat(secondSnapshot).as("did persist the same snapshot twice").isEqualTo(firstSnapshot);
-    assertThat(actualChecksum)
+    assertThat(secondSnapshot.getChecksum())
         .as("the content of the snapshot remains unchanged")
-        .isEqualTo(expectedChecksum);
+        .isEqualTo(firstSnapshot.getChecksum());
     assertThat(snapshotsDir)
+        .asInstanceOf(DirectoryAssert.factory())
         .as("snapshots directory only contains snapshot %s", firstSnapshot.getId())
-        .isDirectoryNotContaining(p -> !p.equals(firstSnapshot.getPath()));
+        .isDirectoryContainingExactly(firstSnapshot.getPath(), firstSnapshot.getChecksumFile());
   }
 
   private boolean writeSnapshot(final Path path) {
