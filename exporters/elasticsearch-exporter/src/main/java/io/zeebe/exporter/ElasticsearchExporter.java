@@ -135,6 +135,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.deployment) {
         createValueIndexTemplate(ValueType.DEPLOYMENT);
       }
+      if (index.process) {
+        createValueIndexTemplate(ValueType.PROCESS);
+      }
       if (index.error) {
         createValueIndexTemplate(ValueType.ERROR);
       }
