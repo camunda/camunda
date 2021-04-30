@@ -23,10 +23,10 @@ import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.RaftFailureListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Abstract partition. */
-public class RaftPartition implements Partition {
+public class RaftPartition implements Partition, FailureListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
   private static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
@@ -46,7 +46,7 @@ public class RaftPartition implements Partition {
   private final File dataDirectory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
-  private final Set<RaftFailureListener> raftFailureListeners = new CopyOnWriteArraySet<>();
+  private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
 
@@ -72,12 +72,12 @@ public class RaftPartition implements Partition {
     server.removeRoleChangeListener(listener);
   }
 
-  public void addFailureListener(final RaftFailureListener failureListener) {
-    raftFailureListeners.add(failureListener);
+  public void addFailureListener(final FailureListener failureListener) {
+    failureListeners.add(failureListener);
   }
 
-  public void removeFailureListener(final RaftFailureListener failureListener) {
-    raftFailureListeners.remove(failureListener);
+  public void removeFailureListener(final FailureListener failureListener) {
+    failureListeners.remove(failureListener);
   }
 
   /**
@@ -122,7 +122,7 @@ public class RaftPartition implements Partition {
       deferredRoleChangeListeners.forEach(server::addRoleChangeListener);
       deferredRoleChangeListeners.clear();
     }
-    server.addFailureListener(this::onFailure);
+    server.addFailureListener(this);
   }
 
   /** Creates a Raft server. */
@@ -213,11 +213,18 @@ public class RaftPartition implements Partition {
     return server.goInactive();
   }
 
-  private void onFailure() {
-    CompletableFuture.allOf(
-            raftFailureListeners.stream()
-                .map(RaftFailureListener::onRaftFailed)
-                .toArray(CompletableFuture[]::new))
-        .join();
+  @Override
+  public void onFailure() {
+    failureListeners.forEach(FailureListener::onFailure);
+  }
+
+  @Override
+  public void onRecovered() {
+    failureListeners.forEach(FailureListener::onRecovered);
+  }
+
+  @Override
+  public void onUnrecoverableFailure() {
+    failureListeners.forEach(FailureListener::onUnrecoverableFailure);
   }
 }

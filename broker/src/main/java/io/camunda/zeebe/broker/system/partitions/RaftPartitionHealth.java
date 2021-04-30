@@ -7,50 +7,55 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.atomix.raft.RaftFailureListener;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.ActorControl;
-import java.util.concurrent.CompletableFuture;
+import java.util.HashSet;
+import java.util.Set;
 
-public class RaftPartitionHealth implements HealthMonitorable, RaftFailureListener {
+public class RaftPartitionHealth implements HealthMonitorable, FailureListener {
 
   private final RaftPartition atomixRaftPartition;
-  private FailureListener healthMonitor;
   private final ActorControl actor;
-  private final RaftFailureListener raftFailureListener;
+  private final Set<FailureListener> listeners = new HashSet<>();
   private final String name;
+  private volatile HealthStatus status = HealthStatus.HEALTHY;
 
-  RaftPartitionHealth(
-      final RaftPartition atomixRaftPartition,
-      final ActorControl actor,
-      final RaftFailureListener listener) {
+  RaftPartitionHealth(final RaftPartition atomixRaftPartition, final ActorControl actor) {
     this.atomixRaftPartition = atomixRaftPartition;
     this.actor = actor;
-    raftFailureListener = listener;
     this.atomixRaftPartition.addFailureListener(this);
     name = "Raft-" + atomixRaftPartition.id().id();
   }
 
   @Override
   public HealthStatus getHealthStatus() {
-    final boolean isHealthy = atomixRaftPartition.getServer().isRunning();
-    return isHealthy ? HealthStatus.HEALTHY : HealthStatus.UNHEALTHY;
+    return status;
   }
 
   @Override
-  public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> healthMonitor = failureListener);
+  public void addFailureListener(final FailureListener listener) {
+    actor.run(() -> listeners.add(listener));
   }
 
   @Override
-  public CompletableFuture<Void> onRaftFailed() {
-    if (healthMonitor != null) {
-      healthMonitor.onFailure();
-    }
-    return raftFailureListener.onRaftFailed();
+  public void onFailure() {
+    status = HealthStatus.UNHEALTHY;
+    listeners.forEach(FailureListener::onFailure);
+  }
+
+  @Override
+  public void onUnrecoverableFailure() {
+    status = HealthStatus.DEAD;
+    listeners.forEach(FailureListener::onUnrecoverableFailure);
+  }
+
+  @Override
+  public void onRecovered() {
+    status = HealthStatus.HEALTHY;
+    listeners.forEach(FailureListener::onRecovered);
   }
 
   public void close() {
