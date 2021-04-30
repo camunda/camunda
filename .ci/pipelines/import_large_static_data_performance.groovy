@@ -91,9 +91,9 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
-            sh ("""
-                # install jq
-                apk add --no-cache jq gettext
+          sh("""
+                # install jq and postgres-client
+                apk add --no-cache jq gettext postgresql-client
                 # kubectl
                 gcloud components install kubectl --quiet
 
@@ -105,7 +105,7 @@ pipeline {
     stage('ImportTest') {
       steps {
         container('gcloud') {
-          sh ("""
+          sh("""
                 bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
 
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
@@ -118,13 +118,13 @@ pipeline {
                 NUMBER_OF_VARIABLES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0, "aggs": {"variables": {"nested": { "path": "variables" },  "aggs": { "variable_count": { "value_count": { "field": "variables.id" } } } } } }' | jq '.aggregations.variables.doc_count') || true
                 NUMBER_OF_DECISION_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-decision-instance/_count' | jq '.count') || true
 
-                # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
+                # note: each call here is followed by `|| true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
-                export EXPECTED_NUMBER_OF_PROCESS_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_process_instances | cut -f2 -d':'`
-                export EXPECTED_NUMBER_OF_USER_TASKS=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_user_tasks | cut -f2 -d':'`
-                export EXPECTED_NUMBER_OF_VARIABLES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_variables | cut -f2 -d':'`
-                export EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_activity_instances | cut -f2 -d':'`
-                export EXPECTED_NUMBER_OF_DECISION_INSTANCES=`gsutil ls -L gs://optimize-data/${SQL_DUMP} | grep expected_number_of_decision_instances | cut -f2 -d':'`
+                EXPECTED_NUMBER_OF_PROCESS_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_procinst;") || true
+                EXPECTED_NUMBER_OF_USER_TASKS=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) as total from act_hi_taskinst;") || true
+                EXPECTED_NUMBER_OF_VARIABLES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_varinst where var_type_ in (\'string\', \'double\', \'integer\', \'long\', \'short\', \'date\', \'boolean\' ) and CASE_INST_ID_  is  null;") || true
+                EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_actinst;") || true
+                EXPECTED_NUMBER_OF_DECISION_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_decinst;") || true
 
                 echo "NUMBER_OF_PROCESS_INSTANCES"
                 test "\$NUMBER_OF_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
@@ -137,7 +137,7 @@ pipeline {
                 echo "NUMBER_OF_DECISION_INSTANCES"
                 test "\$NUMBER_OF_DECISION_INSTANCES" = "\${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true
 
-                #Fail the build if there was an error
+                # Fail the build if there was an error
                 if [ \$error ]
                 then
                   exit -1
@@ -150,11 +150,11 @@ pipeline {
 
   post {
     changed {
-      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendNotification(currentBuild.result, null, null, [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
     }
     always {
       container('gcloud') {
-          sh ("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
+        sh("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
       }
       // Retrigger the build if the slave disconnected
       script {
