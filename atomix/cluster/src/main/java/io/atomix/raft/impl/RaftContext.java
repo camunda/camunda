@@ -58,6 +58,8 @@ import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
@@ -89,7 +91,7 @@ public class RaftContext implements AutoCloseable {
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
-  private final Set<Runnable> failureListeners = new CopyOnWriteArraySet<>();
+  private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
@@ -209,14 +211,19 @@ public class RaftContext implements AutoCloseable {
           error);
       close();
     }
-    notifyFailureListeners();
+
+    notifyFailureListeners(error);
   }
 
-  private void notifyFailureListeners() {
+  private void notifyFailureListeners(final Throwable error) {
     try {
-      failureListeners.forEach(Runnable::run);
-    } catch (final Exception exception) {
-      log.error("Could not notify failure listeners", exception);
+      if (error instanceof UnrecoverableException) {
+        failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+      } else {
+        failureListeners.forEach(FailureListener::onFailure);
+      }
+    } catch (final Exception e) {
+      log.error("Could not notify failure listeners", e);
     }
   }
 
@@ -281,13 +288,13 @@ public class RaftContext implements AutoCloseable {
   }
 
   /** Adds a failure listener which will be invoked when an uncaught exception occurs */
-  public void addFailureListener(final Runnable failureListener) {
-    failureListeners.add(failureListener);
+  public void addFailureListener(final FailureListener listener) {
+    failureListeners.add(listener);
   }
 
   /** Remove a failure listener */
-  public void removeFailureListener(final Runnable failureListener) {
-    failureListeners.remove(failureListener);
+  public void removeFailureListener(final FailureListener listener) {
+    failureListeners.remove(listener);
   }
 
   /**
@@ -510,6 +517,10 @@ public class RaftContext implements AutoCloseable {
       this.role.stop().get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new IllegalStateException("failed to close Raft state", e);
+    }
+
+    if (!this.role.role().active() && role.active()) {
+      failureListeners.forEach(FailureListener::onRecovered);
     }
 
     // Force state transitions to occur synchronously in order to prevent race conditions.

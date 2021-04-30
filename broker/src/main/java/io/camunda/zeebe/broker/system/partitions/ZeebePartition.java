@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -58,8 +57,8 @@ public final class ZeebePartition extends Actor
 
     actorName = buildActorName(context.getNodeId(), "ZeebePartition", context.getPartitionId());
     context.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
-    raftPartitionHealth =
-        new RaftPartitionHealth(context.getRaftPartition(), actor, this::onRaftFailed);
+    raftPartitionHealth = new RaftPartitionHealth(context.getRaftPartition(), actor);
+    raftPartitionHealth.addFailureListener(this);
     zeebePartitionHealth = new ZeebePartitionHealth(context.getPartitionId());
     healthMetrics = new HealthMetrics(context.getPartitionId());
     healthMetrics.setUnhealthy();
@@ -165,23 +164,6 @@ public final class ZeebePartition extends Actor
     zeebePartitionHealth.setServicesInstalled(false);
     final var inactiveTransitionFuture = transition.toInactive();
     currentTransitionFuture = inactiveTransitionFuture;
-    return inactiveTransitionFuture;
-  }
-
-  private CompletableFuture<Void> onRaftFailed() {
-    final CompletableFuture<Void> inactiveTransitionFuture = new CompletableFuture<>();
-    actor.run(
-        () -> {
-          final ActorFuture<Void> transitionComplete = transitionToInactive();
-          transitionComplete.onComplete(
-              (v, t) -> {
-                if (t != null) {
-                  inactiveTransitionFuture.completeExceptionally(t);
-                  return;
-                }
-                inactiveTransitionFuture.complete(null);
-              });
-        });
     return inactiveTransitionFuture;
   }
 

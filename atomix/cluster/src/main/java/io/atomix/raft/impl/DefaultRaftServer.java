@@ -29,6 +29,7 @@ import io.atomix.utils.concurrent.AtomixFuture;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -85,13 +86,13 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public void addFailureListener(final Runnable failureListener) {
-    context.addFailureListener(failureListener);
+  public void addFailureListener(final FailureListener listener) {
+    context.addFailureListener(listener);
   }
 
   @Override
-  public void removeFailureListener(final Runnable failureListener) {
-    context.removeFailureListener(failureListener);
+  public void removeFailureListener(final FailureListener listener) {
+    context.removeFailureListener(listener);
   }
 
   @Override
