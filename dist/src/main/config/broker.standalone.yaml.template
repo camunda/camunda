@@ -473,6 +473,7 @@
         #     rejection: false
         #
         #     deployment: true
+        #     process: true
         #     error: true
         #     incident: true
         #     job: true
