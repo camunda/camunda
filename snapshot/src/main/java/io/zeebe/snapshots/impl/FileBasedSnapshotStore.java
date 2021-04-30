@@ -128,6 +128,9 @@ public final class FileBasedSnapshotStore extends Actor
     return latestPersistedSnapshot;
   }
 
+  // TODO(npepinpe): using Either here would improve readability and observability, as validation
+  //  can have better error messages, and the return type better expresses what we attempt to do,
+  //  i.e. either it failed (with an error) or it succeeded
   private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
     final var optionalMeta = FileBasedSnapshotMetadata.ofPath(path);
     if (optionalMeta.isEmpty()) {
@@ -284,6 +287,9 @@ public final class FileBasedSnapshotStore extends Actor
     return newPendingSnapshot;
   }
 
+  // TODO(npepinpe): using Either here would improve readability and observability, as validation
+  //  can have better error messages, and the return type better expresses what we attempt to do,
+  //  i.e. either it failed (with an error) or it succeeded
   @Override
   public Optional<TransientSnapshot> newTransientSnapshot(
       final long index,
@@ -380,6 +386,8 @@ public final class FileBasedSnapshotStore extends Actor
     return (persistedSnapshot != null && persistedSnapshot.getMetadata().compareTo(metadata) >= 0);
   }
 
+  // TODO(npepinpe): using Either here would allow easy rollback regardless of when or where an
+  // exception is thrown, without having to catch and rollback for every possible case
   FileBasedSnapshot newSnapshot(
       final FileBasedSnapshotMetadata metadata, final Path directory, final long expectedChecksum) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
@@ -402,11 +410,13 @@ public final class FileBasedSnapshotStore extends Actor
       // copy/move that could occur
       actualChecksum = SnapshotChecksum.calculate(destination);
       if (actualChecksum != expectedChecksum) {
+        rollbackPartialSnapshot(destination);
         throw new InvalidSnapshotChecksum(directory, expectedChecksum, actualChecksum);
       }
 
       SnapshotChecksum.persist(checksumPath, actualChecksum);
     } catch (final IOException e) {
+      rollbackPartialSnapshot(destination);
       throw new UncheckedIOException(e);
     }
 
@@ -453,15 +463,20 @@ public final class FileBasedSnapshotStore extends Actor
           destination,
           e);
     } catch (final IOException e) {
-      try {
-        FileUtil.deleteFolderIfExists(destination);
-      } catch (final IOException ioException) {
-        LOGGER.debug(
-            "Snapshot {} could not be deleted on rollback, but will be ignored as a partial snapshot",
-            destination,
-            ioException);
-      }
+      rollbackPartialSnapshot(destination);
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private void rollbackPartialSnapshot(final Path destination) {
+    try {
+      FileUtil.deleteFolderIfExists(destination);
+    } catch (final IOException ioException) {
+      LOGGER.debug(
+          "Pending snapshot {} could not be deleted on rollback, but will be safely ignored as a "
+              + "partial snapshot",
+          destination,
+          ioException);
     }
   }
 
