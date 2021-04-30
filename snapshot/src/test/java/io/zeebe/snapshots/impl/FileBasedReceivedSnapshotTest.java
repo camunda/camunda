@@ -14,6 +14,7 @@ import io.zeebe.snapshots.PersistedSnapshot;
 import io.zeebe.snapshots.PersistedSnapshotListener;
 import io.zeebe.snapshots.ReceivedSnapshot;
 import io.zeebe.snapshots.SnapshotChunk;
+import io.zeebe.snapshots.SnapshotChunkWrapper;
 import io.zeebe.test.util.asserts.DirectoryAssert;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
