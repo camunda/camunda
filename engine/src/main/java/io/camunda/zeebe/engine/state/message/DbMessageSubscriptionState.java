@@ -213,7 +213,8 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
-  public void updateCommandSentTime(final MessageSubscriptionRecord record, final long sentTime) {
-    transientState.updateCommandSentTime(record, sentTime);
+  public void updateCommandSentTime(
+      final MessageSubscriptionRecord record, final long commandSentTime) {
+    transientState.updateCommandSentTime(record, commandSentTime);
   }
 }
