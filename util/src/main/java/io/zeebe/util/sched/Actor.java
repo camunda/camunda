@@ -80,8 +80,6 @@ public abstract class Actor implements CloseableSilently, AsyncClosable {
 
   /**
    * Invoked when a task throws an exception when the actor phase is not 'STARTING' and 'CLOSING'.
-   *
-   * @param failure
    */
   protected void handleFailure(final Exception failure) {
     Loggers.ACTOR_LOGGER.error(

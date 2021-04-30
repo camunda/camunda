@@ -15,6 +15,7 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class ExporterDirectorPartitionStep implements PartitionStep {
+
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
   @Override
@@ -31,6 +32,8 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
 
     final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
     context.setExporterDirector(director);
+    context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+
     final var startFuture = director.startAsync(context.getScheduler());
     startFuture.onComplete(
         (nothing, error) -> {
