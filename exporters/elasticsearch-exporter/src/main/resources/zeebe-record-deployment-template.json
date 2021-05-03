@@ -32,9 +32,6 @@
                 "resourceName": {
                   "type": "text"
                 },
-                "resource": {
-                  "enabled": false
-                },
                 "checksum": {
                   "enabled": false
                 }
