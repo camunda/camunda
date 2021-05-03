@@ -121,7 +121,9 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
   private ExecutionPathSegment buildStepsForFailedExecutions(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    if (random.nextBoolean()) {
+    // If we already have a timer boundary event we should not timeout the job,
+    // otherwise this makes the test too fragile (flaky).
+    if (!hasBoundaryTimerEvent && random.nextBoolean()) {
       result.appendDirectSuccessor(new StepActivateAndTimeoutJob(jobType));
     }
 
