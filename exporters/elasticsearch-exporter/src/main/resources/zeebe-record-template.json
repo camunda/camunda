@@ -1,17 +1,10 @@
 {
-  "index_patterns": [
-    "zeebe-record_*"
-  ],
-  "priority": 10,
   "version": 1,
   "template": {
     "settings": {
       "number_of_shards": 1,
       "number_of_replicas": 0,
       "index.queries.cache.enabled": false
-    },
-    "aliases": {
-      "zeebe-record": {}
     },
     "mappings": {
       "dynamic": "strict",
