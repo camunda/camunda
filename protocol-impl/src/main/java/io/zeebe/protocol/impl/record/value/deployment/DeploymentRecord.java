@@ -19,7 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
-  public static final String PROCESSES = "deployedProcesses";
+  public static final String PROCESSES = "processesMetadata";
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());

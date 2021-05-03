@@ -146,7 +146,7 @@ public final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'deployedProcesses':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}]}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
@@ -177,7 +177,7 @@ public final class JsonSerializableToJsonTest {
                   .setChecksum(checksum);
               return record;
             },
-        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'deployedProcesses':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource'}]}"
+        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'processesMetadata':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource'}]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// DeploymentDistributionRecord /////////////////////////////////
@@ -198,7 +198,7 @@ public final class JsonSerializableToJsonTest {
       new Object[] {
         "Empty DeploymentRecord",
         (Supplier<UnifiedRecordValue>) DeploymentRecord::new,
-        "{'resources':[],'deployedProcesses':[]}"
+        "{'resources':[],'processesMetadata':[]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ErrorRecord ///////////////////////////////////////////
