@@ -455,7 +455,7 @@
         "work": "Work",
         "total": "Total"
       },
-      "userTaskDistributedBy": "Distributed By",
+      "userTaskDistributedBy": "Distribution",
       "visibleNodes": {
         "legend": "Customize Node Display",
         "btn": "Select Flow Nodes...",

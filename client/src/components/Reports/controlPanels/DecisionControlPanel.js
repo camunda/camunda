@@ -32,7 +32,7 @@ export class DecisionControlPanel extends React.Component {
     scrolled: false,
     showSource: true,
     showSetup: true,
-    showFilter: true,
+    showFilter: false,
   };
 
   componentDidMount() {
@@ -166,12 +166,12 @@ export class DecisionControlPanel extends React.Component {
             {t('common.dataSource')}
             <Button
               icon
-              className="sectionToggle"
+              className={classnames('sectionToggle', {open: showSource})}
               onClick={() => {
                 this.setState({showSource: !showSource});
               }}
             >
-              <Icon type={showSource ? 'up' : 'down'} />
+              <Icon type="down" />
             </Button>
           </h3>
           <DefinitionSelection
@@ -189,12 +189,12 @@ export class DecisionControlPanel extends React.Component {
             {t('report.reportSetup')}
             <Button
               icon
-              className="sectionToggle"
+              className={classnames('sectionToggle', {open: showSetup})}
               onClick={() => {
                 this.setState({showSetup: !showSetup});
               }}
             >
-              <Icon type={showSetup ? 'up' : 'down'} />
+              <Icon type="down" />
             </Button>
           </h3>
           <ul>
@@ -227,12 +227,12 @@ export class DecisionControlPanel extends React.Component {
             {t('common.filter.label')}
             <Button
               icon
-              className="sectionToggle"
+              className={classnames('sectionToggle', {open: showFilter})}
               onClick={() => {
                 this.setState({showFilter: !showFilter});
               }}
             >
-              <Icon type={showFilter ? 'up' : 'down'} />
+              <Icon type="down" />
             </Button>
             {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
           </h3>

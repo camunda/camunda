@@ -37,7 +37,7 @@ export default withErrorHandling(
         scrolled: false,
         showSource: true,
         showSetup: true,
-        showFilter: true,
+        showFilter: false,
       };
     }
 
@@ -216,12 +216,12 @@ export default withErrorHandling(
               {t('common.dataSource')}
               <Button
                 icon
-                className="sectionToggle"
+                className={classnames('sectionToggle', {open: showSource})}
                 onClick={() => {
                   this.setState({showSource: !showSource});
                 }}
               >
-                <Icon type={showSource ? 'up' : 'down'} />
+                <Icon type="down" />
               </Button>
             </h3>
             <DefinitionSelection
@@ -240,30 +240,15 @@ export default withErrorHandling(
               {t('report.reportSetup')}
               <Button
                 icon
-                className="sectionToggle"
+                className={classnames('sectionToggle', {open: showSetup})}
                 onClick={() => {
                   this.setState({showSetup: !showSetup});
                 }}
               >
-                <Icon type={showSetup ? 'up' : 'down'} />
+                <Icon type="down" />
               </Button>
             </h3>
             <ul>
-              <li className="addMeasure">
-                <Button
-                  small
-                  disabled={!shouldAllowAddingMeasure}
-                  onClick={() =>
-                    this.updateReport('view', {
-                      ...data.view,
-                      properties: ['frequency', 'duration'],
-                    })
-                  }
-                >
-                  <Icon type="plus" />
-                  {t('report.addMeasure')}
-                </Button>
-              </li>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
                 <ReportSelect
@@ -287,6 +272,20 @@ export default withErrorHandling(
                   }
                   updateAggregation={this.props.updateReport}
                 />
+              )}
+              {shouldAllowAddingMeasure && (
+                <li className="addMeasure">
+                  <Button
+                    onClick={() =>
+                      this.updateReport('view', {
+                        ...data.view,
+                        properties: ['frequency', 'duration'],
+                      })
+                    }
+                  >
+                    + {t('report.addMeasure')}
+                  </Button>
+                </li>
               )}
               <li className="select">
                 <span className="label">{t(`report.groupBy.label`)}</span>
@@ -342,12 +341,12 @@ export default withErrorHandling(
               {t('common.filter.label')}
               <Button
                 icon
-                className="sectionToggle"
+                className={classnames('sectionToggle', {open: showFilter})}
                 onClick={() => {
                   this.setState({showFilter: !showFilter});
                 }}
               >
-                <Icon type={showFilter ? 'up' : 'down'} />
+                <Icon type="down" />
               </Button>
               {data.filter?.length > 0 && <span className="filterCount">{data.filter.length}</span>}
             </h3>

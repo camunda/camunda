@@ -176,6 +176,8 @@ test('filters', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
 
+  await t.click(Report.sectionToggle('Filters'));
+
   await t
     .resizeWindow(1400, 700)
     .click(Report.filterButton)

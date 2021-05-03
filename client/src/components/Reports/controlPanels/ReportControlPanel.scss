@@ -6,7 +6,7 @@
   border-bottom: 1px solid var(--silver-darken-87);
   margin-left: 20px;
   flex-shrink: 0;
-  width: 308px;
+  width: 320px;
   display: flex;
   flex-direction: column;
 
@@ -48,9 +48,14 @@
       width: 16px;
       height: 16px;
       margin-left: 10px;
+      transition: transform 0.1s;
 
       .Icon {
         margin: 0;
+      }
+
+      &:not(.open) {
+        transform: rotate(-90deg);
       }
     }
   }
@@ -99,9 +104,13 @@
     margin-top: 20px;
 
     > li {
-      margin-bottom: 10px;
+      margin-top: 15px;
       display: flex;
       align-items: center;
+
+      &.Measure ~ .Measure {
+        margin-top: 5px;
+      }
 
       > * {
         width: 100%;
@@ -112,19 +121,33 @@
       }
 
       &.addMeasure {
-        float: right;
+        margin-top: 5px;
+        width: 200px;
+        margin-left: 79px;
+
+        font-size: 12px;
+
+        .Button {
+          background-color: var(--silver-darken-94);
+          border: 1.5px dashed var(--silver-darken-80);
+          text-align: left;
+          color: var(--grey-base-40);
+          height: 32px;
+        }
       }
 
       > .label {
         color: var(--grey-base-40);
         font-size: 12px;
         display: inline-block;
-        flex: 0 0 80px;
+        flex: 0 0 79px;
         vertical-align: middle;
+        text-align: right;
+        padding-right: 6px;
       }
 
       > .Select {
-        flex: 0 1 187px;
+        flex: 0 1 200px;
         min-width: 0;
 
         .activateButton {

@@ -455,7 +455,7 @@
         "work": "Arbeitszeit",
         "total": "Summe"
       },
-      "userTaskDistributedBy": "Aufgeteilt nach",
+      "userTaskDistributedBy": "Aufteilung",
       "visibleNodes": {
         "legend": "Anzuzeigende Prozessknoten anpassen",
         "btn": "Prozessknoten auswählen....",

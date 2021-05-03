@@ -24,3 +24,7 @@ export const gradientBarsSwitch = Selector('.Popover label').withText('Show Grad
 export const reportNumber = reportRenderer.find('.Number .data');
 export const report = Selector('.Report');
 export const modalDecisionTable = Selector('.DiagramModal .DMNDiagram');
+export const sectionToggle = (sectionName) =>
+  Selector('.ReportControlPanel .sectionTitle')
+    .withText(new RegExp(sectionName, 'i')) // we are using CSS text-transform uppercase, which is handled inconsistently across browsers: https://github.com/DevExpress/testcafe/issues/3335
+    .find('.sectionToggle');

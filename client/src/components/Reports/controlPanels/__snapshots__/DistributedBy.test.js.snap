@@ -7,7 +7,7 @@ exports[`should load and render variables for process instance count reports 1`]
   <span
     className="label"
   >
-    Distributed By
+    Distribution
   </span>
   <Select
     className="ReportSelect"
@@ -53,7 +53,7 @@ exports[`should match snapshot 1`] = `
   <span
     className="label"
   >
-    Distributed By
+    Distribution
   </span>
   <Select
     className="ReportSelect"

@@ -83,7 +83,7 @@ export const showFlowNodes = Selector('.Button').withText('Select Flow Nodes...'
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
-export const distributedBySelect = Selector('.label').withText('Distributed By').nextSibling();
+export const distributedBySelect = Selector('.label').withText('Distribution').nextSibling();
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
@@ -114,3 +114,7 @@ export const nextPageButton = Selector('.Table .Button.next');
 export const rowsPerPageButton = Selector('.Table .size .Button');
 export const addMeasureButton = Selector('.addMeasure button');
 export const heatDropdown = Selector('.Heatmap .Select');
+export const sectionToggle = (sectionName) =>
+  Selector('.ReportControlPanel .sectionTitle')
+    .withText(new RegExp(sectionName, 'i')) // we are using CSS text-transform uppercase, which is handled inconsistently across browsers: https://github.com/DevExpress/testcafe/issues/3335
+    .find('.sectionToggle');

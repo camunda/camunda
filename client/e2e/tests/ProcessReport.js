@@ -474,6 +474,7 @@ test('aggregators', async (t) => {
   await u.selectDefinition(t, 'Embedded Subprocess');
   await u.selectView(t, 'Process Instance', 'Duration');
 
+  await t.click(e.sectionToggle('Filters'));
   await t.click(e.filterButton);
   await t.click(e.filterOption('Instance state'));
   await t.click(e.subFilterOption('Completed Instances Only'));
