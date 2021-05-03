@@ -51,7 +51,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
+import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
@@ -59,6 +59,7 @@ import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestD
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
@@ -1083,11 +1084,20 @@ public class OptimizeRequestExecutor {
     this.path = "/definition/" + type + "/" + key + "/_resolveTenantsForVersions";
     this.method = POST;
     this.body = getBody(
-      DefinitionTenantsRequest.builder()
+      DefinitionTenantsRequestDto.builder()
         .versions(versions)
         .filterByCollectionScope(filterByCollectionScope)
         .build()
     );
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+    final String type,
+    final MultiDefinitionTenantsRequestDto request) {
+    this.path = "/definition/" + type + "/_resolveTenantsForVersions";
+    this.method = POST;
+    this.body = getBody(request);
     return this;
   }
 

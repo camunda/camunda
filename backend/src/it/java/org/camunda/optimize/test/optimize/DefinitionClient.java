@@ -16,6 +16,8 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -148,6 +150,23 @@ public class DefinitionClient {
       .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(type.getId(), key, versions, filterByCollectionScope)
       .withUserAuthentication(username, password)
       .executeAndReturnList(TenantResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public List<DefinitionWithTenantsResponseDto> resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+    final DefinitionType type,
+    final MultiDefinitionTenantsRequestDto request) {
+    return resolveDefinitionTenantsByTypeMultipleKeyAndVersions(type, request, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  public List<DefinitionWithTenantsResponseDto> resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+    final DefinitionType type,
+    final MultiDefinitionTenantsRequestDto request,
+    final String username,
+    final String password) {
+    return getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(type.getId(), request)
+      .withUserAuthentication(username, password)
+      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant() {

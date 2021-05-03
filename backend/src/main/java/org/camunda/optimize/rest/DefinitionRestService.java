@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -15,8 +16,10 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
+import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
@@ -26,6 +29,7 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.validation.Valid;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
@@ -74,6 +78,31 @@ public class DefinitionRestService {
                                                             @QueryParam("includeXml") boolean includeXml) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
+  }
+
+  @POST
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/{type}/_resolveTenantsForVersions")
+  public List<DefinitionWithTenantsResponseDto> getDefinitionTenantsForMultipleKeys(
+    @Context final ContainerRequestContext requestContext,
+    @PathParam("type") final DefinitionType type,
+    @Valid @RequestBody final MultiDefinitionTenantsRequestDto request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+
+    if (CollectionUtils.isEmpty(request.getDefinitions())) {
+      return Collections.emptyList();
+    }
+
+    return request.getDefinitions().stream()
+      .map(definition -> {
+        final List<TenantResponseDto> tenantsForDefinitionVersions = getTenantsForDefinitionVersions(
+          definition.getKey(), type, definition.getVersions(), request.getFilterByCollectionScope(), userId
+        );
+        return new DefinitionWithTenantsResponseDto(
+          definition.getKey(), definition.getVersions(), tenantsForDefinitionVersions
+        );
+      })
+      .collect(Collectors.toList());
   }
 
   @GET
@@ -126,30 +155,12 @@ public class DefinitionRestService {
   public List<TenantResponseDto> getDefinitionTenants(@Context final ContainerRequestContext requestContext,
                                                       @PathParam("type") final DefinitionType type,
                                                       @PathParam("key") final String key,
-                                                      @RequestBody final DefinitionTenantsRequest request) {
+                                                      @RequestBody final DefinitionTenantsRequestDto request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    if (request.getVersions() != null && request.getVersions().isEmpty()) {
-      return Collections.emptyList();
-    }
-
-    final List<TenantDto> tenants = request.getFilterByCollectionScope()
-      .map(collectionId -> collectionScopeService.getCollectionDefinitionTenantsByKeyAndType(
-        type, key, userId, request.getVersions(), collectionId
-      ))
-      .orElseGet(() -> definitionService.getDefinitionTenants(type, key, userId, request.getVersions()));
-
-    if (tenants.isEmpty()) {
-      final String reason = String.format(
-        "Was not able to find definition tenants for type [%s], key [%s], versions [%s] in scope of collection [%s].",
-        type, key, request.getVersions(), request.getFilterByCollectionScope()
-      );
-      log.error(reason);
-      throw new NotFoundException(reason);
-    }
-    return tenants.stream()
-      .map(tenantDto -> new TenantResponseDto(tenantDto.getId(), tenantDto.getName()))
-      .collect(Collectors.toList());
+    return getTenantsForDefinitionVersions(
+      key, type, request.getVersions(), request.getFilterByCollectionScope(), userId
+    );
   }
 
   @GET
@@ -228,9 +239,33 @@ public class DefinitionRestService {
     return responseBuilder.build();
   }
 
+  private List<TenantResponseDto> getTenantsForDefinitionVersions(final String definitionKey,
+                                                                  final DefinitionType type,
+                                                                  final List<String> versions,
+                                                                  final String scopeCollectionId,
+                                                                  final String userId) {
+    final List<TenantDto> tenants = Optional.ofNullable(scopeCollectionId)
+      .map(collectionId -> collectionScopeService.getCollectionDefinitionTenantsByKeyAndType(
+        type, definitionKey, userId, versions, collectionId
+      ))
+      .orElseGet(() -> definitionService.getDefinitionTenants(type, definitionKey, userId, versions));
+
+    if (tenants.isEmpty()) {
+      final String reason = String.format(
+        "Was not able to find definition tenants for type [%s], key [%s], versions [%s] in scope of collection [%s].",
+        type, definitionKey, versions, scopeCollectionId
+      );
+      log.error(reason);
+      throw new NotFoundException(reason);
+    }
+    return tenants.stream()
+      .map(tenantDto -> new TenantResponseDto(tenantDto.getId(), tenantDto.getName()))
+      .collect(Collectors.toList());
+  }
+
   private List<DefinitionResponseDto> getDefinitions(final DefinitionType type, final String collectionId,
-                                                     final boolean camundaEventImportedOnly,
-                                                     final String userId) {
+                                                              final boolean camundaEventImportedOnly,
+                                                              final String userId) {
     if (collectionId != null) {
       return getDefinitionKeysForCollection(type, camundaEventImportedOnly, userId, collectionId);
     } else {

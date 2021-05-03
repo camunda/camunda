@@ -412,9 +412,9 @@ public class DefinitionReader {
       .filter(termQuery(DEFINITION_KEY, key))
       .filter(termQuery(DEFINITION_DELETED, false));
 
-    if (versions != null
+    if (!CollectionUtils.isEmpty(versions) &&
       // if all is among the versions, no filtering needed
-      && versions.stream().noneMatch(ALL_VERSIONS::equalsIgnoreCase)) {
+      !DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versions)) {
       filterQuery.filter(termsQuery(
         DEFINITION_VERSION,
         versions.stream()

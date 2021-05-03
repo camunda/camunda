@@ -15,8 +15,12 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto.DefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -29,6 +33,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -40,6 +46,13 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   private static final String TENANT_ID_1 = "tenant1";
   private static final String TENANT_ID_2 = "tenant2";
   private static final String TENANT_ID_3 = "tenant3";
+
+  private static final TenantResponseDto TENANT_NOT_DEFINED_RESPONSE_DTO = new TenantResponseDto(
+    TENANT_NOT_DEFINED_ID, TENANT_NOT_DEFINED.getName()
+  );
+  private static final TenantResponseDto TENANT_1_RESPONSE_DTO = new TenantResponseDto(TENANT_ID_1, TENANT_ID_1);
+  private static final TenantResponseDto TENANT_2_RESPONSE_DTO = new TenantResponseDto(TENANT_ID_2, TENANT_ID_2);
+  private static final TenantResponseDto TENANT_3_RESPONSE_DTO = new TenantResponseDto(TENANT_ID_3, TENANT_ID_3);
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
@@ -764,6 +777,405 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     assertThat(tenantsForAllVersions)
       .extracting(TenantResponseDto::getId)
       .containsExactly(TENANT_ID_1, TENANT_ID_2);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_invalidCollectionId(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+        type.getId(),
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey1).version(ALL_VERSIONS).build())
+          .filterByCollectionScope("invalid")
+          .build()
+      )
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_tenantSpecificDefinitions_specificVersions_fullScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey, "2", TENANT_ID_2, "the name");
+    // also create a definition of another type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !type.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey, "1", TENANT_ID_3, "other");
+    createDefinition(otherDefinitionType, definitionKey, "2", TENANT_ID_3, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1, TENANT_ID_2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(otherDefinitionType, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then all tenants are returned
+    assertThat(definitionTenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_2_RESPONSE_DTO));
+
+    // when only some versions are included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForVersion1 =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then only the tenants belonging to those versions are included
+    assertThat(definitionTenantsForVersion1)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Collections.singletonList(TENANT_1_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_tenantSpecificDefinitions_specificVersions_reducedScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey, "2", TENANT_ID_2, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant1 is in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    // (this is an artificial case as usually no more versions are provided than within the scope, still it ensures
+    // the scope cannot be breached by the versions provided by the user)
+    final List<DefinitionWithTenantsResponseDto> tenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then still only the tenant within the scope is returned
+    assertThat(tenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Collections.singletonList(TENANT_1_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_tenantSpecificDefinitions_allVersion_reducedScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey, "2", TENANT_ID_2, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant2 is in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when the "all" version is included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then still only the tenant within the scope is returned
+    assertThat(definitionTenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Collections.singletonList(TENANT_2_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_tenantSpecificDefinitions_latestVersion_reducedScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey, "2", TENANT_ID_2, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant1 is in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when the "latest" version is included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForLatestVersion =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version(LATEST_VERSION).build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then still only the tenant within the scope is returned, latest version is now 1
+    assertThat(definitionTenantsForLatestVersion)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Collections.singletonList(TENANT_1_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_sharedDefinition_specificVersions_fullScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", null, "the name");
+    createDefinition(type, definitionKey, "2", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // all tenants are in scope
+    final List<String> scopeTenantIds = Lists.newArrayList(
+      TENANT_NOT_DEFINED_ID,
+      TENANT_ID_1,
+      TENANT_ID_2,
+      TENANT_ID_3
+    );
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then all tenants are returned
+    assertThat(definitionTenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Arrays.asList(
+        TENANT_NOT_DEFINED_RESPONSE_DTO, TENANT_1_RESPONSE_DTO, TENANT_2_RESPONSE_DTO, TENANT_3_RESPONSE_DTO
+      ));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_sharedDefinition_specificVersions_reducedScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", null, "the name");
+    createDefinition(type, definitionKey, "2", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only some tenants are in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then only the scope tenants are returned
+    assertThat(definitionTenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Arrays.asList(TENANT_NOT_DEFINED_RESPONSE_DTO, TENANT_1_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_sharedDefinition_specificVersions_notDefinedNotInScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", null, "the name");
+    createDefinition(type, definitionKey, "2", null, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only tenant1 is in scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_ID_1);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then only the scope tenants are returned
+    assertThat(definitionTenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Collections.singletonList(TENANT_1_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_sharedAndTenantSpecificDefinitions_specificVersions_reducedScope(final DefinitionType type) {
+    // given
+    createTenant(TENANT_ID_1);
+    createTenant(TENANT_ID_2);
+    createTenant(TENANT_ID_3);
+    final String definitionKey = "key";
+    createDefinition(type, definitionKey, "1", null, "the name");
+    createDefinition(type, definitionKey, "1", TENANT_ID_1, "the name");
+    createDefinition(type, definitionKey, "1", TENANT_ID_3, "the name");
+    createDefinition(type, definitionKey, "2", TENANT_ID_2, "the name");
+    createDefinition(type, definitionKey, "2", null, "the name");
+    createDefinition(type, definitionKey, "3", TENANT_ID_3, "the name");
+    final String collectionId = collectionClient.createNewCollection();
+    // only some tenants are in the scope
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, TENANT_ID_1, TENANT_ID_2);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    // when all versions are included
+    final List<DefinitionWithTenantsResponseDto> definitionTenantsForAllVersions =
+      definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        type,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey).version("1").version("2").version("3").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      );
+
+    // then only the scope tenants are returned
+    assertThat(definitionTenantsForAllVersions)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(Arrays.asList(TENANT_NOT_DEFINED_RESPONSE_DTO, TENANT_1_RESPONSE_DTO, TENANT_2_RESPONSE_DTO));
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_definitionNotInScope(final DefinitionType type) {
+    // given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(type, definitionKey1, "1", null, "the name");
+    final String definitionKey2 = "definitionKey2";
+    createDefinition(type, definitionKey2, "1", null, "the name");
+    // create definitionKey2 of other type, should not affect result
+    final DefinitionType otherDefinitionType = Arrays.stream(DefinitionType.values())
+      .filter(value -> !type.equals(value))
+      .findFirst()
+      .orElseThrow(OptimizeIntegrationTestException::new);
+    createDefinition(otherDefinitionType, definitionKey2, "1", null, "other");
+    final String collectionId = collectionClient.createNewCollection();
+    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when trying to get tenants for a definition key that is not in the scope
+    final Response responseForWrongKey = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+        type.getId(),
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      )
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongKey.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+
+    // when trying to get tenants for a definition type that is not in the scope but key that is in the scope
+    final Response responseForWrongType = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+        otherDefinitionType.getId(),
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey1).version("1").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      )
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongType.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+
+    // when trying to get tenants for a definition version that is not in the scope but key that is in the scope
+    final Response responseForWrongVersion = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+        otherDefinitionType.getId(),
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(DefinitionDto.builder().key(definitionKey1).version("99").build())
+          .filterByCollectionScope(collectionId)
+          .build()
+      )
+      .execute();
+
+    // then a 404 is returned
+    assertThat(responseForWrongVersion.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private void createDefinition(final DefinitionType definitionType,

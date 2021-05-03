@@ -21,13 +21,17 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -984,6 +988,104 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
 
     // then only the authorized tenant2 is returned
     assertThat(tenants).extracting(TenantResponseDto::getId).containsExactly(TENANT_ID_2);
+  }
+
+  @ParameterizedTest(name = "Unauthorized definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeDefinitionAuthorizationsUser_getDefinitionTenantsByTypeForMultipleKeyAndVersions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, engineResourceType);
+
+    deployAndImportDefinition(definitionType, definitionKey, null);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+        definitionType.getId(),
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build())
+          .build()
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeTenantAuthorizationsUser_getDefinitionTenantsByTypeForMultipleKeyAndVersions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    engineIntegrationExtension.createTenant(TENANT_ID_1);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(TENANT_ID_1, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_1);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+        definitionType.getId(),
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build())
+          .build()
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  public void revokeJustOneTenantAuthorizationsUser_getDefinitionTenantsByTypeForMultipleKeyAndVersions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    engineIntegrationExtension.createTenant(TENANT_ID_1);
+    engineIntegrationExtension.createTenant(TENANT_ID_2);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    // access to tenant1 is revoked
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(TENANT_ID_1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(TENANT_ID_2, RESOURCE_TYPE_TENANT);
+
+    // definition exists for both tenants
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_1);
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_2);
+
+    // when I get the definition tenants
+    final List<DefinitionWithTenantsResponseDto> definitionsWithTenants = definitionClient
+      .resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+        definitionType,
+        MultiDefinitionTenantsRequestDto.builder()
+          .definition(MultiDefinitionTenantsRequestDto.DefinitionDto.builder().key(definitionKey).build())
+          .build(),
+        KERMIT_USER, KERMIT_USER
+      );
+
+    // then only the authorized tenant2 is returned
+    assertThat(definitionsWithTenants)
+      .extracting(DefinitionWithTenantsResponseDto::getTenants)
+      .containsExactly(
+        Collections.singletonList(new TenantResponseDto(TENANT_ID_2, TENANT_ID_2))
+      );
   }
 
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions grouped by tenant result")
