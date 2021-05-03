@@ -38,14 +38,14 @@
   <dependencies>
     <dependency>
       <artifactId>atomix-cluster</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
     </dependency>
     <dependency>
       <artifactId>atomix-utils</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-snapshots</artifactId>
       <scope>test</scope>
     </dependency>
@@ -75,13 +75,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <artifactId>zeebe-test-util</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -97,7 +97,7 @@
 
   <parent>
     <artifactId>atomix-parent</artifactId>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 </project>

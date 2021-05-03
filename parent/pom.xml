@@ -9,7 +9,7 @@
   <url>http://zeebe.io/</url>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-bom</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
@@ -194,7 +194,7 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda.zeebe</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
         <classifier>tests</classifier>
@@ -202,7 +202,7 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda.zeebe</groupId>
         <artifactId>zeebe-workflow-engine</artifactId>
         <version>${project.version}</version>
         <classifier>tests</classifier>
@@ -210,7 +210,7 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda.zeebe</groupId>
         <artifactId>zeebe-logstreams</artifactId>
         <version>${project.version}</version>
         <classifier>tests</classifier>
@@ -218,7 +218,7 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda.zeebe</groupId>
         <artifactId>zeebe-client-java</artifactId>
         <version>${project.version}</version>
         <classifier>tests</classifier>
@@ -722,7 +722,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-build-tools</artifactId>
       <scope>test</scope>
     </dependency>
@@ -848,7 +848,7 @@
           <!-- dependency on build tool to reference the checkstyle cfg -->
           <dependencies>
             <dependency>
-              <groupId>io.zeebe</groupId>
+              <groupId>io.camunda.zeebe</groupId>
               <artifactId>zeebe-build-tools</artifactId>
               <version>${project.version}</version>
             </dependency>
@@ -888,7 +888,7 @@
             <properties>
               <property>
                 <name>listener</name>
-                <value>io.zeebe.ZeebeTestListener</value>
+                <value>io.camunda.zeebe.ZeebeTestListener</value>
               </property>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
@@ -922,7 +922,7 @@
             <properties>
               <property>
                 <name>listener</name>
-                <value>io.zeebe.ZeebeTestListener</value>
+                <value>io.camunda.zeebe.ZeebeTestListener</value>
               </property>
             </properties>
           </configuration>
@@ -1172,8 +1172,8 @@
                 <ignoredUnusedDeclaredDependencies combine.children="append">
                   <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
                   <dep>org.apache.logging.log4j:log4j-core</dep>
-                  <dep>io.zeebe:zeebe-build-tools</dep>
-                  <dep>io.zeebe:zeebe-gateway-protocol</dep>
+                  <dep>io.camunda.zeebe:zeebe-build-tools</dep>
+                  <dep>io.camunda.zeebe:zeebe-gateway-protocol</dep>
                   <dep>org.ow2.asm:asm</dep>
                   <dep>org.apache.maven.surefire:surefire-junit4</dep>
                   <dep>org.apache.maven.surefire:surefire-junit47</dep>
@@ -1297,7 +1297,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <excludedGroups>io.zeebe.UnstableTest</excludedGroups>
+              <excludedGroups>io.camunda.zeebe.UnstableTest</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -1312,7 +1312,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <excludedGroups>io.zeebe.UnstableCI</excludedGroups>
+              <excludedGroups>io.camunda.zeebe.UnstableCI</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -1435,7 +1435,7 @@
             <!-- dependency on build tool to reference the spotbugs filter-->
             <dependencies>
               <dependency>
-                <groupId>io.zeebe</groupId>
+                <groupId>io.camunda.zeebe</groupId>
                 <artifactId>zeebe-build-tools</artifactId>
                 <version>${project.version}</version>
               </dependency>
@@ -1523,7 +1523,7 @@
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
         <sonar.links.issue>${project.scm.url}/issues</sonar.links.issue>
         <sonar.cpd.exclusions>
-          broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/Gradient2Cfg.java,broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/GradientCfg.java
+          broker/src/main/java/io/camunda/zeebe/broker/system/configuration/backpressure/Gradient2Cfg.java,broker/src/main/java/io/camunda/zeebe/broker/system/configuration/backpressure/GradientCfg.java
         </sonar.cpd.exclusions>
         <sonar.java.source>${version.java}</sonar.java.source>
       </properties>

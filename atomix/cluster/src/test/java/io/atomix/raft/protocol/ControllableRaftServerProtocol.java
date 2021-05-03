@@ -18,7 +18,7 @@ package io.atomix.raft.protocol;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Futures;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.net.ConnectException;
 import java.util.LinkedList;
 import java.util.Map;

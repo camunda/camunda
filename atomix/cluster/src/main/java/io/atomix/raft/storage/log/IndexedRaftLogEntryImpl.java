@@ -20,7 +20,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
-import io.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.JournalRecord;
 import java.util.Objects;
 
 /** Indexed journal entry. */

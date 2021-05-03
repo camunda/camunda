@@ -666,7 +666,7 @@
           },
           {
             "name": "java_package",
-            "value": "io.zeebe.gateway.protocol"
+            "value": "io.camunda.zeebe.gateway.protocol"
           },
           {
             "name": "go_package",

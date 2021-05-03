@@ -6,7 +6,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
@@ -24,47 +24,47 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-test-util</artifactId>
     </dependency>
 

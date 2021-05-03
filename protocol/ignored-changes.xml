@@ -1,6 +1,6 @@
 <differences>
   <difference>
-    <className>io/zeebe/protocol/record/*Decoder</className>
+    <className>io/camunda/zeebe/protocol/record/*Decoder</className>
     <!-- protected fields were downgraded to package visibility -->
     <differenceType>6010</differenceType>
     <field>*</field>
@@ -8,7 +8,7 @@
     <to>package</to>
   </difference>
   <difference>
-    <className>io/zeebe/protocol/record/*Encoder</className>
+    <className>io/camunda/zeebe/protocol/record/*Encoder</className>
     <!-- protected fields were downgraded to package visibility -->
     <differenceType>6010</differenceType>
     <field>*</field>
@@ -16,28 +16,28 @@
     <to>package</to>
   </difference>
   <difference>
-    <className>io/zeebe/protocol/record/*Encoder</className>
+    <className>io/camunda/zeebe/protocol/record/*Encoder</className>
     <!-- final modifier was added to class -->
     <differenceType>3003</differenceType>
   </difference>
   <difference>
-    <className>io/zeebe/protocol/record/*Decoder</className>
+    <className>io/camunda/zeebe/protocol/record/*Decoder</className>
     <!-- final modifier was added to class -->
     <differenceType>3003</differenceType>
   </difference>
   <!-- same intents are renamed for version 1.0.0 -->
   <difference>
-    <className>io/zeebe/protocol/record/intent/MessageIntent</className>
+    <className>io/camunda/zeebe/protocol/record/intent/MessageIntent</className>
     <differenceType>6001</differenceType>
     <field>*</field>
   </difference>
   <difference>
-    <className>io/zeebe/protocol/record/intent/MessageSubscriptionIntent</className>
+    <className>io/camunda/zeebe/protocol/record/intent/MessageSubscriptionIntent</className>
     <differenceType>6001</differenceType>
     <field>*</field>
   </difference>
   <difference>
-    <className>io/zeebe/protocol/record/intent/MessageStartEventSubscriptionIntent</className>
+    <className>io/camunda/zeebe/protocol/record/intent/MessageStartEventSubscriptionIntent</className>
     <differenceType>6001</differenceType>
     <field>*</field>
   </difference>

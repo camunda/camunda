@@ -6,7 +6,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
@@ -19,7 +19,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -34,7 +34,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <scope>test</scope>
     </dependency>
@@ -49,7 +49,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
       <scope>test</scope>
     </dependency>
@@ -74,7 +74,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
     </dependency>

@@ -15,15 +15,15 @@
  */
 package io.atomix.raft.snapshot;
 
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.ReceivedSnapshot;
-import io.zeebe.snapshots.SnapshotChunk;
-import io.zeebe.snapshots.SnapshotChunkReader;
-import io.zeebe.snapshots.SnapshotId;
-import io.zeebe.util.StringUtil;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotChunk;
+import io.camunda.zeebe.snapshots.SnapshotChunkReader;
+import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.util.StringUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;

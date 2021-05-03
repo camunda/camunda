@@ -31,7 +31,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
-import io.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;

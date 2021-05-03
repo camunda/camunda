@@ -6,74 +6,74 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-qa</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-broker</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-logstreams</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-snapshots</artifactId>
       <scope>test</scope>
     </dependency>
@@ -85,19 +85,19 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>atomix-cluster</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>atomix-utils</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>atomix</artifactId>
       <scope>test</scope>
     </dependency>
@@ -121,13 +121,13 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-broker</artifactId>
       <type>test-jar</type>
       <classifier>tests</classifier>
@@ -165,7 +165,7 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-protocol-asserts</artifactId>
       <scope>test</scope>
     </dependency>

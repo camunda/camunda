@@ -8,7 +8,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.zeebe" level="debug"/>
+    <Logger name="io.camunda.zeebe" level="debug"/>
     <Logger name="org.camunda.feel" level="info"/>
 
     <Root level="info">

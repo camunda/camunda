@@ -40,7 +40,7 @@ import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
-import io.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;

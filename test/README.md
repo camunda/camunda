@@ -10,7 +10,7 @@ Add `zeebe-test` as test dependency to your project.
 <dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-bom</artifactId>
       <version>${ZEEBE_VERSION}</version>
       <scope>import</scope>
@@ -22,12 +22,12 @@ Add `zeebe-test` as test dependency to your project.
 <dependencies>
 
   <dependency>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-client-java</artifactId>
   </dependency>
 
   <dependency>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-test</artifactId>
     <scope>test</scope>
   </dependency>
@@ -38,8 +38,8 @@ Add `zeebe-test` as test dependency to your project.
 Use the `ZeebeTestRule` in your test case to start an embedded broker and client.
 
 ```java
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

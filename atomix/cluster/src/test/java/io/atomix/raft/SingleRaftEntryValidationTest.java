@@ -22,7 +22,7 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
-import io.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.test.util.TestUtil;
 import java.util.Collection;
 import java.util.function.BiFunction;
 import org.junit.Rule;
