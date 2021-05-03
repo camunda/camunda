@@ -9,7 +9,7 @@ import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface EngineImportMediator {
+public interface ImportMediator {
 
   CompletableFuture<Void> runImport();
 

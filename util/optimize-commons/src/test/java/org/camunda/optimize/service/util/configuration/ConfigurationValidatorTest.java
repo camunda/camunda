@@ -12,7 +12,6 @@ import org.camunda.optimize.service.util.configuration.extension.SystemPropertie
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.junit.jupiter.api.Order;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -46,9 +45,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations).hasSize(1);
-    assertThat(deprecations.get("alerting.email.username"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
+    assertThat(deprecations)
+      .hasSize(1)
+      .containsEntry("alerting.email.username", generateExpectedDocUrl("/technical-guide/configuration/#email"));
   }
 
   @Test
@@ -62,9 +61,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations).hasSize(1);
-    assertThat(deprecations.get("alerting.email"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
+    assertThat(deprecations)
+      .hasSize(1)
+      .containsEntry("alerting.email", generateExpectedDocUrl("/technical-guide/configuration/#email"));
   }
 
   @Test
@@ -79,9 +78,9 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations).hasSize(1);
-    assertThat(deprecations.get("alerting.email"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
+    assertThat(deprecations)
+      .hasSize(1)
+      .containsEntry("alerting.email", generateExpectedDocUrl("/technical-guide/configuration/#email"));
   }
 
   @Test
@@ -101,11 +100,10 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations).hasSize(2);
-    assertThat(deprecations.get("alerting.email"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#email"));
-    assertThat(deprecations.get("somethingelse.email"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/configuration/#somethingelse"));
+    assertThat(deprecations)
+      .hasSize(2)
+      .containsEntry("alerting.email", generateExpectedDocUrl("/technical-guide/configuration/#email"))
+      .containsEntry("somethingelse.email", generateExpectedDocUrl("/technical-guide/configuration/#somethingelse"));
   }
 
   @Test
@@ -119,9 +117,12 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations).hasSize(1);
-    assertThat(deprecations.get("es.connection.nodes[*].tcpPort"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/setup/configuration/#connection-settings"));
+    assertThat(deprecations)
+      .hasSize(1)
+      .containsEntry(
+        "es.connection.nodes[*].tcpPort",
+        generateExpectedDocUrl("/technical-guide/setup/configuration/#connection-settings")
+      );
   }
 
   @Test
@@ -136,9 +137,12 @@ public class ConfigurationValidatorTest {
     Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
 
     // then
-    assertThat(deprecations).hasSize(1);
-    assertThat(deprecations.get("auth.cookie.same-site"))
-      .isEqualTo(generateExpectedDocUrl("/technical-guide/setup/configuration/#security"));
+    assertThat(deprecations)
+      .hasSize(1)
+      .containsEntry(
+        "auth.cookie.same-site",
+        generateExpectedDocUrl("/technical-guide/setup/configuration/#security")
+      );
   }
 
   @Test
@@ -154,7 +158,7 @@ public class ConfigurationValidatorTest {
       validateForAndReturnDeprecations(configurationService, underTest);
 
     // then
-    assertThat(deprecations.isPresent()).isFalse();
+    assertThat(deprecations).isNotPresent();
   }
 
   @Test
@@ -168,7 +172,7 @@ public class ConfigurationValidatorTest {
     Optional<Map<String, String>> deprecations = validateForAndReturnDeprecations(configurationService, underTest);
 
     // then
-    assertThat(deprecations.isPresent()).isFalse();
+    assertThat(deprecations).isNotPresent();
   }
 
   @Test

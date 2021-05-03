@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.PersistEventIndexHandlerStateMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
@@ -47,8 +47,8 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   }
 
   public Future<Void> runImportRound(final boolean forceImport) {
-    final List<EngineImportMediator> allImportMediators = getImportMediators();
-    final List<EngineImportMediator> currentImportRound = allImportMediators
+    final List<ImportMediator> allImportMediators = getImportMediators();
+    final List<ImportMediator> currentImportRound = allImportMediators
       .stream()
       .filter(mediator -> forceImport || mediator.canImport())
       .collect(Collectors.toList());
@@ -64,7 +64,7 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
 
     final CompletableFuture<?>[] importTaskFutures = currentImportRound
       .stream()
-      .map(EngineImportMediator::runImport)
+      .map(ImportMediator::runImport)
       .toArray(CompletableFuture[]::new);
 
     if (importTaskFutures.length == 0 && !forceImport) {
@@ -74,7 +74,7 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     return CompletableFuture.allOf(importTaskFutures);
   }
 
-  public List<EngineImportMediator> getImportMediators() {
+  public List<ImportMediator> getImportMediators() {
     return Stream.concat(
       Stream.of(eventProcessingProgressMediator),
       eventTraceImportMediatorManager.getEventTraceImportMediators().stream()
@@ -106,10 +106,10 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     super.stopScheduling();
   }
 
-  private void doBackoff(final List<EngineImportMediator> mediators) {
+  private void doBackoff(final List<ImportMediator> mediators) {
     long timeToSleep = mediators
       .stream()
-      .map(EngineImportMediator::getBackoffTimeInMs)
+      .map(ImportMediator::getBackoffTimeInMs)
       .min(Long::compare)
       .orElse(5000L);
     try {

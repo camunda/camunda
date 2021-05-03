@@ -10,7 +10,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.IdentityLinkLogInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
-public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final IdentityLinkLogWriter identityLinkLogWriter;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
@@ -39,7 +39,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMe
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return configurationService.isImportUserTaskWorkerDataEnabled() ?
       ImmutableList.of(createIdentityLinkLogEngineImportMediator(engineContext))
       : Collections.emptyList();

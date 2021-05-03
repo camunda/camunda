@@ -23,6 +23,7 @@ public class ConfigurationServiceConstants {
   public static final String RESPONSE_HEADER_CONTENT_SECURITY_POLICY = "$.security.responseHeaders.Content-Security-Policy";
 
   public static final String CONFIGURED_ENGINES = "$.engines";
+  public static final String CONFIGURED_ZEEBE = "$.zeebe";
 
   public static final String QUARTZ_JOB_STORE_CLASS = "$.alerting.quartz.jobStore";
 

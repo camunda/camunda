@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDa
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
@@ -542,13 +542,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   @SneakyThrows
   private void importCompletedActivityAndProcessInstances() {
     for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getImportSchedulers()) {
-      final List<EngineImportMediator> mediators = scheduler.getImportMediators()
+      .getEngineImportSchedulers()) {
+      final List<ImportMediator> mediators = scheduler.getImportMediators()
         .stream()
         .filter(mediator -> CompletedActivityInstanceEngineImportMediator.class.equals(mediator.getClass()) ||
           CompletedProcessInstanceEngineImportMediator.class.equals(mediator.getClass()))
         .collect(Collectors.toList());
-      for (EngineImportMediator mediator : mediators) {
+      for (ImportMediator mediator : mediators) {
         mediator.runImport().get(10, TimeUnit.SECONDS);
       }
     }

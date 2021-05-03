@@ -135,6 +135,14 @@ engine-commons:
     # infinite amount of time.
     timeout: 0
 
+zeebe:
+  # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
+  enabled: false
+  # The name suffix of the exported Zeebe records. This must match the record-prefix configured in the exporter of the instance
+  name: 'zeebe-record'
+  # The number of partitions configured for the Zeebe record source
+  partitionCount: 1
+
 import:
   data:
     activity-instance:

@@ -10,7 +10,6 @@ import io.github.classgraph.ScanResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.DefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,10 +101,6 @@ public class EngineImportIndexHandlerProvider {
 
   public List<TimestampBasedEngineImportIndexHandler> getTimestampBasedEngineHandlers() {
     return timestampBasedEngineHandlers;
-  }
-
-  public List<DefinitionXmlImportIndexHandler> getScrollBasedHandlers() {
-    return scrollBasedHandlers;
   }
 
   @SuppressWarnings(UNCHECKED_CAST)

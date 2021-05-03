@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
-import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionXmlImportService;

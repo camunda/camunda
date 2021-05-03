@@ -33,12 +33,12 @@ import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
-import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
-import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.ImportMediator;
+import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.engine.mediator.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
@@ -203,7 +203,7 @@ public class EmbeddedOptimizeExtension
     boolean isDoneImporting;
     do {
       isDoneImporting = true;
-      for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
+      for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
         scheduler.runImportRound(false);
         isDoneImporting &= !scheduler.isImporting();
       }
@@ -220,7 +220,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public void importAllEngineEntitiesFromLastIndex() {
-    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
       log.debug("scheduling import round");
       scheduleImportAndWaitUntilIsFinished(scheduler);
     }
@@ -282,7 +282,7 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   private void runOnlyScrollBasedMediators(EngineImportScheduler scheduler) {
-    final List<EngineImportMediator> definitionXmlMediators = scheduler.getImportMediators()
+    final List<ImportMediator> definitionXmlMediators = scheduler.getImportMediators()
       .stream()
       .filter(mediator -> mediator instanceof DefinitionXmlImportMediator)
       .collect(Collectors.toList());
@@ -291,7 +291,7 @@ public class EmbeddedOptimizeExtension
 
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()
           .stream()
@@ -317,8 +317,9 @@ public class EmbeddedOptimizeExtension
   }
 
   public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
-    final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerManager().getImportSchedulers().size());
-    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
+    final CountDownLatch importIdleLatch = new CountDownLatch(
+      getImportSchedulerManager().getEngineImportSchedulers().size());
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
       if (scheduler.isImporting()) {
         log.info("Scheduler is still importing, waiting for it to finish.");
         final ImportObserver importObserver = new ImportObserver() {
@@ -349,8 +350,8 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  public EngineImportSchedulerManagerService getImportSchedulerManager() {
-    return getOptimize().getApplicationContext().getBean(EngineImportSchedulerManagerService.class);
+  public ImportSchedulerManagerService getImportSchedulerManager() {
+    return getOptimize().getApplicationContext().getBean(ImportSchedulerManagerService.class);
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {

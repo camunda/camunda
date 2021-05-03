@@ -8,8 +8,8 @@ package org.camunda.optimize.service.importing.engine.mediator;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class StoreIndexesEngineImportMediator implements EngineImportMediator {
+public class StoreIndexesEngineImportMediator implements ImportMediator {
   protected EngineContext engineContext;
   private ConfigurationService configurationService;
   private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;

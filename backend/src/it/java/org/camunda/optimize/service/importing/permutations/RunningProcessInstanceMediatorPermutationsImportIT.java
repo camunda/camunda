@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
@@ -40,7 +40,7 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
 
   @ParameterizedTest(name = "Running Activities are fully imported with mediator order {0}")
   @MethodSource("runningActivityRelatedMediators")
-  public void runningInstanceIsFullyImported(final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+  public void runningInstanceIsFullyImported(final List<Class<? extends ImportMediator>> mediatorOrder) {
     // when
     performOrderedImport(mediatorOrder);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -83,7 +83,7 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  private static Stream<List<Class<? extends EngineImportMediator>>> runningActivityRelatedMediators() {
+  private static Stream<List<Class<? extends ImportMediator>>> runningActivityRelatedMediators() {
     return getMediatorPermutationsStream(ImmutableList.of(
       RunningActivityInstanceEngineImportMediator.class,
       RunningUserTaskInstanceEngineImportMediator.class,

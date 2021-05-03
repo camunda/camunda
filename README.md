@@ -54,6 +54,15 @@ The services are exposed to localhost on the following ports:
 - PostgreSQL: 5432
 - CamBPM: 8080
 
+If you need a Zeebe instance, you can use a different docker-compose
+file. In this case the command is: ``` docker-compose -f
+docker-compose.zeebe.yml up -d ```
+
+This will start Elasticsearch and a Zeebe instance, but no Camunda Platform.
+The services are exposed to localhost on the following ports:
+- Elasticsearch: 9200, 9300
+- Zeebe: 26500
+
 Services can be shutdown again using
 ```
 docker-compose down

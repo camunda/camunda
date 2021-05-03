@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.permutations;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
@@ -39,7 +39,7 @@ public class CompletedProcessInstanceMediatorPermutationsImportIT extends Abstra
   @ParameterizedTest(name = "Completed Process Instances are fully imported with mediator order {0}")
   @MethodSource("completedActivityRelatedMediators")
   public void completedInstanceIsFullyImportedCamundaEventImportEnabled(
-    final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+    final List<Class<? extends ImportMediator>> mediatorOrder) {
     // when
     performOrderedImport(mediatorOrder);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -88,7 +88,7 @@ public class CompletedProcessInstanceMediatorPermutationsImportIT extends Abstra
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(6);
   }
 
-  private static Stream<List<Class<? extends EngineImportMediator>>> completedActivityRelatedMediators() {
+  private static Stream<List<Class<? extends ImportMediator>>> completedActivityRelatedMediators() {
     return getMediatorPermutationsStream(ImmutableList.of(
       CompletedActivityInstanceEngineImportMediator.class,
       CompletedUserTaskEngineImportMediator.class,

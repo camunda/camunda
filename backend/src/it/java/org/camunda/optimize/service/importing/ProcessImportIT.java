@@ -107,8 +107,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()).hasSizeGreaterThan(0);
-    embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()
+    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()).hasSizeGreaterThan(0);
+    embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
     assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
     assertThat(indexExist(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();

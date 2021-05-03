@@ -161,8 +161,9 @@ public class ElasticsearchReaderUtil {
     return results;
   }
 
-  public static <T> void clearScroll(final Class<T> itemClass, final OptimizeElasticsearchClient esClient,
-                                     final String scrollId) {
+  private static <T> void clearScroll(final Class<T> itemClass,
+                                      final OptimizeElasticsearchClient esClient,
+                                      final String scrollId) {
     try {
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);

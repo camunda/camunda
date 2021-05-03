@@ -10,7 +10,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ProcessDefinitionEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -45,7 +45,7 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractImport
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
       createProcessDefinitionEngineImportMediator(engineContext),
       createProcessDefinitionXmlEngineImportMediator(engineContext)

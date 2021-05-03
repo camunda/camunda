@@ -204,8 +204,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   }
 
   public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest,
-                                               final RequestOptions options)
-    throws IOException {
+                                               final RequestOptions options) throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
     return highLevelClient.clearScroll(clearScrollRequest, options);
   }

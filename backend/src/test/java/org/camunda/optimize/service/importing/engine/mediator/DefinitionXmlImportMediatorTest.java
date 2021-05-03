@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
@@ -26,8 +26,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -75,7 +78,9 @@ public class DefinitionXmlImportMediatorTest {
     });
 
     // then
-    assertThat(result, is(false));
+    assertThat(result).isFalse();
+    verify(importIndexHandler, never()).updateIndex(anyInt());
+    verify(importService, never()).executeImport(anyList(), any(Runnable.class));
   }
 
   @Test
@@ -99,7 +104,7 @@ public class DefinitionXmlImportMediatorTest {
     final boolean result = underTest.importNextPage(importCompleteCallback);
 
     // then
-    assertThat(result, is(true));
+    assertThat(result).isTrue();
     verify(importIndexHandler, times(1)).updateIndex(testIds.size());
     verify(importService, times(1)).executeImport(resultList, importCompleteCallback);
   }

@@ -57,6 +57,18 @@
       <version>2.7.0</version>
     </dependency>
 
+    <!-- Zeebe dependencies -->
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+
     <!-- Javax XML -->
     <dependency>
       <groupId>javax.xml.bind</groupId>

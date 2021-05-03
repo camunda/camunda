@@ -8,7 +8,7 @@ package org.camunda.optimize.jetty;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
+import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
@@ -255,7 +255,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return jerseyCamundaOptimize.getApplicationContext();
   }
 
-  private EngineImportSchedulerManagerService getImportSchedulerManager() {
-    return getOptimizeApplicationContext().getBean(EngineImportSchedulerManagerService.class);
+  private ImportSchedulerManagerService getImportSchedulerManager() {
+    return getOptimizeApplicationContext().getBean(ImportSchedulerManagerService.class);
   }
 }

@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
@@ -46,7 +46,7 @@ public class RunningSuspendedProcessInstanceExtendedMediatorPermutationsImportIT
     "Running Activities of a suspended process instance are fully imported with mediator order {0}"
   )
   @MethodSource("runningActivityRelatedMediators")
-  public void runningSuspendedInstanceIsFullyImported(final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+  public void runningSuspendedInstanceIsFullyImported(final List<Class<? extends ImportMediator>> mediatorOrder) {
 
     logMediatorOrder(mediatorOrder);
 
@@ -89,7 +89,7 @@ public class RunningSuspendedProcessInstanceExtendedMediatorPermutationsImportIT
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(1 + numberOfEventsToImport);
   }
 
-  private static Stream<List<Class<? extends EngineImportMediator>>> runningActivityRelatedMediators() {
+  private static Stream<List<Class<? extends ImportMediator>>> runningActivityRelatedMediators() {
     return getMediatorPermutationsStream(
       ImmutableList.of(
         RunningActivityInstanceEngineImportMediator.class,

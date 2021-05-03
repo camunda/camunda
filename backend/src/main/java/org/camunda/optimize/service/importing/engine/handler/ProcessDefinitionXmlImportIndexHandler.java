@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing.engine.handler;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.importing.DefinitionXmlImportIndexHandler;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;

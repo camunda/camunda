@@ -3,8 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.engine.mediator;
 
+import org.camunda.optimize.service.importing.BackoffImportMediator;
+import org.camunda.optimize.service.importing.engine.handler.DefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 
 import java.util.List;

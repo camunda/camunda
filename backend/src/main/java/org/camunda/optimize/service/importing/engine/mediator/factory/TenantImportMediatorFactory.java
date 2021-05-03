@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.TenantWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.TenantFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.TenantImportMediator;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class TenantImportMediatorFactory extends AbstractImportMediatorFactory {
+public class TenantImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final TenantWriter tenantWriter;
 
   public TenantImportMediatorFactory(final BeanFactory beanFactory,
@@ -34,7 +34,7 @@ public class TenantImportMediatorFactory extends AbstractImportMediatorFactory {
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(createTenantImportMediator(engineContext));
   }
 

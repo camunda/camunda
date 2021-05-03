@@ -11,6 +11,8 @@ import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.DataImportSourceDto;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
@@ -63,6 +65,7 @@ public class ConfigurationService {
   private ReadContext configJsonContext;
 
   private Map<String, EngineConfiguration> configuredEngines;
+  private ZeebeConfiguration configuredZeebe;
   private Integer tokenLifeTime;
   private String tokenSecret;
   private Boolean sameSiteCookieFlagEnabled;
@@ -220,6 +223,16 @@ public class ConfigurationService {
       configuredEngines = configJsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, ENGINES_MAP_TYPEREF);
     }
     return configuredEngines;
+  }
+
+  public ZeebeConfiguration getConfiguredZeebe() {
+    if (configuredZeebe == null) {
+      configuredZeebe = configJsonContext.read(
+        ConfigurationServiceConstants.CONFIGURED_ZEEBE,
+        ZeebeConfiguration.class
+      );
+    }
+    return configuredZeebe;
   }
 
   public Optional<String> getTokenSecret() {
@@ -816,9 +829,14 @@ public class ConfigurationService {
       .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public boolean isEngineImportEnabled(String engineAlias) {
-    return getEngineConfiguration(engineAlias).map(EngineConfiguration::isImportEnabled)
-      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
+  public boolean isImportEnabled(DataImportSourceDto dataImportSourceDto) {
+    if (DataImportSourceType.ENGINE.equals(dataImportSourceDto.getType())) {
+      return getEngineConfiguration(dataImportSourceDto.getAlias()).map(EngineConfiguration::isImportEnabled)
+        .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + dataImportSourceDto.getAlias()));
+    } else if (DataImportSourceType.ZEEBE.equals(dataImportSourceDto.getType())) {
+      return getConfiguredZeebe().getName().equals(dataImportSourceDto.getAlias()) && getConfiguredZeebe().isEnabled();
+    }
+    throw new OptimizeConfigurationException("Invalid data import source");
   }
 
   public Optional<EngineConfiguration> getEngineConfiguration(String engineAlias) {
@@ -1010,7 +1028,10 @@ public class ConfigurationService {
 
   public UserIdentityCacheConfiguration getUserIdentityCacheConfiguration() {
     if (userIdentityCacheConfiguration == null) {
-      userIdentityCacheConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, UserIdentityCacheConfiguration.class);
+      userIdentityCacheConfiguration = configJsonContext.read(
+        IDENTITY_SYNC_CONFIGURATION,
+        UserIdentityCacheConfiguration.class
+      );
     }
     return userIdentityCacheConfiguration;
   }
