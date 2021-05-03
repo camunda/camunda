@@ -34,6 +34,9 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
     this.exporterPosition = exporterPosition;
   }
 
+  // TODO(npepinpe): using Either here would improve readability and observability, as validation
+  //  can have better error messages, and the return type better expresses what we attempt to do,
+  //  i.e. either it failed (with an error) or it succeeded
   public static Optional<FileBasedSnapshotMetadata> ofPath(final Path path) {
     return ofFileName(path.getFileName().toString());
   }
@@ -55,7 +58,10 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
       } catch (final NumberFormatException e) {
         LOGGER.warn("Failed to parse part of snapshot metadata", e);
       }
+    } else {
+      LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d, but was {}", name);
     }
+
     return metadata;
   }
 

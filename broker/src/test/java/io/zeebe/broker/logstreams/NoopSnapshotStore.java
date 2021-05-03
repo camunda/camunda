@@ -66,6 +66,11 @@ public class NoopSnapshotStore implements PersistedSnapshotStore {
                   }
 
                   @Override
+                  public long getChecksum() {
+                    return 0;
+                  }
+
+                  @Override
                   public void close() {}
                 }));
   }

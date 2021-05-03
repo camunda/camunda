@@ -30,6 +30,8 @@ import java.nio.file.Path;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.zip.CRC32C;
+import java.util.zip.Checksum;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
@@ -39,6 +41,9 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   private final long term;
   private final String id;
   private final NavigableMap<String, String> chunks = new TreeMap<>();
+  private final Checksum checksumCalculator = new CRC32C();
+
+  private long checksum;
 
   InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final String snapshotId) {
     this.testSnapshotStore = testSnapshotStore;
@@ -67,6 +72,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
   void writeChunks(final String id, final byte[] chunk) {
     chunks.put(id, StringUtil.fromBytes(chunk));
+    checksumCalculator.update(chunk);
   }
 
   @Override
@@ -142,6 +148,11 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
+  public long getChecksum() {
+    return 0;
+  }
+
+  @Override
   public void close() {}
 
   @Override
@@ -163,6 +174,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     testSnapshotStore.newSnapshot(this);
+    checksum = checksumCalculator.getValue();
     return CompletableActorFuture.completed(this);
   }
 

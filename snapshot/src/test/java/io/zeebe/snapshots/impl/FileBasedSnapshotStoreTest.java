@@ -9,20 +9,16 @@ package io.zeebe.snapshots.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.snapshots.PersistedSnapshot;
 import io.zeebe.snapshots.TransientSnapshot;
+import io.zeebe.test.util.asserts.DirectoryAssert;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
 import org.agrona.IoUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,8 +41,8 @@ public class FileBasedSnapshotStoreTest {
   @Before
   public void before() throws IOException {
     final var root = temporaryFolder.newFolder("snapshots").toPath();
-    snapshotsDir = root.resolve(PENDING_DIRECTORY);
-    pendingSnapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
+    snapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
+    pendingSnapshotsDir = root.resolve(PENDING_DIRECTORY);
     snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
   }
 
@@ -79,46 +75,32 @@ public class FileBasedSnapshotStoreTest {
   @Test
   public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() {
     // given
-    final List<FileBasedSnapshotMetadata> snapshots = new ArrayList<>();
-    snapshots.add(new FileBasedSnapshotMetadata(1, 1, 1, 1));
-    snapshots.add(new FileBasedSnapshotMetadata(10, 1, 10, 10));
-    snapshots.add(new FileBasedSnapshotMetadata(2, 1, 2, 2));
-
-    // We can't use FileBasedSnapshotStore to create multiple snapshot as it always delete the
-    // previous snapshot during normal execution. However, due to errors or crashes during
-    // persisting a snapshot, it might end up with more than one snapshot directory on disk.
-    snapshots.forEach(
-        snapshotId -> {
-          try {
-            final var snapshot = snapshotsDir.resolve(snapshotId.getSnapshotIdAsString()).toFile();
-            assertThat(snapshot.mkdir()).isTrue();
-            createSnapshotDir(snapshot.toPath());
-            final var checksum = SnapshotChecksum.calculate(snapshot.toPath());
-            SnapshotChecksum.persist(snapshot.toPath(), checksum);
-          } catch (final IOException e) {
-            fail("Failed to create directory", e);
-          }
-        });
+    final FileBasedSnapshotStore otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
+    final var olderSnapshot = takeTransientSnapshot(1L, otherStore).persist().join();
+    final var newerSnapshot =
+        (FileBasedSnapshot) takeTransientSnapshot(2L, snapshotStore).persist().join();
 
     // when
+    assertThat(snapshotsDir)
+        .asInstanceOf(DirectoryAssert.factory())
+        .as("ensure both the older and newer snapshots exist")
+        .isDirectoryContainingAllOf(olderSnapshot.getPath(), newerSnapshot.getPath());
     snapshotStore.close();
     snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
 
     // then
-    assertThat(snapshotStore.getCurrentSnapshotIndex()).isEqualTo(10L);
-    final var latestSnapshotPath =
-        snapshotStore.getLatestSnapshot().map(PersistedSnapshot::getPath).orElseThrow();
+    assertThat(snapshotStore.getLatestSnapshot()).hasValue(newerSnapshot);
     assertThat(snapshotsDir)
-        .as("The older snapshots should have been deleted")
-        .isDirectoryNotContaining(p -> !p.equals(latestSnapshotPath));
+        .asInstanceOf(DirectoryAssert.factory())
+        .as("the older snapshots should have been deleted")
+        .isDirectoryContainingExactly(newerSnapshot.getPath(), newerSnapshot.getChecksumFile());
   }
 
   @Test
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
-    final var persistedSnapshot = takeTransientSnapshot().persist().join();
-
-    corruptSnapshot(persistedSnapshot);
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+    SnapshotChecksum.persist(persistedSnapshot.getChecksumFile(), 0xCAFEL);
 
     // when
     snapshotStore.close();
@@ -126,6 +108,21 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+  }
+
+  @Test
+  public void shouldDeleteSnapshotWithoutChecksumFile() throws IOException {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
+    Files.delete(persistedSnapshot.getChecksumFile());
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(snapshotsDir, pendingSnapshotsDir);
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+    assertThat(persistedSnapshot.getDirectory()).doesNotExist();
   }
 
   @Test
@@ -138,14 +135,6 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(pendingSnapshotsDir).isEmptyDirectory();
-  }
-
-  private void corruptSnapshot(final PersistedSnapshot persistedSnapshot) throws IOException {
-    final var corruptedFile =
-        persistedSnapshot.getPath().resolve(SNAPSHOT_CONTENT_FILE_NAME).toFile();
-    try (final RandomAccessFile file = new RandomAccessFile(corruptedFile, "rw")) {
-      file.writeLong(12346L);
-    }
   }
 
   private boolean createSnapshotDir(final Path path) {
@@ -163,7 +152,12 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private TransientSnapshot takeTransientSnapshot() {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1, 1, 1, 0).orElseThrow();
+    return takeTransientSnapshot(1L, snapshotStore);
+  }
+
+  private TransientSnapshot takeTransientSnapshot(
+      final long index, final FileBasedSnapshotStore store) {
+    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0).orElseThrow();
     transientSnapshot.take(this::createSnapshotDir);
     return transientSnapshot;
   }

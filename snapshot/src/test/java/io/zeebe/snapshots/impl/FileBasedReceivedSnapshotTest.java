@@ -14,6 +14,8 @@ import io.zeebe.snapshots.PersistedSnapshot;
 import io.zeebe.snapshots.PersistedSnapshotListener;
 import io.zeebe.snapshots.ReceivedSnapshot;
 import io.zeebe.snapshots.SnapshotChunk;
+import io.zeebe.snapshots.SnapshotChunkWrapper;
+import io.zeebe.test.util.asserts.DirectoryAssert;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.IoUtil;
@@ -125,12 +128,15 @@ public class FileBasedReceivedSnapshotTest {
     // when
     final PersistedSnapshot secondPersistedSnapshot = takePersistedSnapshot(2L);
     final var secondReceivedPersistedSnapshot =
-        receiveSnapshot(secondPersistedSnapshot).persist().join();
+        (FileBasedSnapshot) receiveSnapshot(secondPersistedSnapshot).persist().join();
 
     // then
     assertThat(receiverSnapshotsDir)
+        .asInstanceOf(DirectoryAssert.factory())
         .as("there is only the latest snapshot in the receiver's snapshot directory")
-        .isDirectoryNotContaining(p -> !p.equals(secondReceivedPersistedSnapshot.getPath()));
+        .isDirectoryContainingExactly(
+            secondReceivedPersistedSnapshot.getPath(),
+            secondReceivedPersistedSnapshot.getChecksumFile());
   }
 
   @Test
@@ -146,10 +152,32 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThat(receiverPendingDir)
+        .asInstanceOf(DirectoryAssert.factory())
         .as(
             "the latest pending snapshot should not be deleted because it is newer than the persisted one")
-        .isDirectoryContaining(p -> p.equals(receivedSnapshot.getPath()))
-        .isDirectoryNotContaining(p -> !p.equals(receivedSnapshot.getPath()));
+        .isDirectoryContainingExactly(receivedSnapshot.getPath());
+  }
+
+  @Test
+  public void shouldDeletePartialSnapshotOnInvalidChecksumPersist() throws Exception {
+    // given
+    final var persistedSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    final var corruptedSnapshot =
+        new FileBasedSnapshot(
+            persistedSnapshot.getDirectory(),
+            persistedSnapshot.getChecksumFile(),
+            0xDEADBEEFL,
+            persistedSnapshot.getMetadata());
+
+    // when
+    final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);
+    final var didPersist = receivedSnapshot.persist();
+
+    // then
+    assertThat(didPersist)
+        .as("the snapshot was not persisted as it has a checksum mismatch")
+        .failsWithin(Duration.ofSeconds(5));
+    assertThat(receiverSnapshotsDir).as("the partial snapshot was rolled back").isEmptyDirectory();
   }
 
   @Test
@@ -207,9 +235,10 @@ public class FileBasedReceivedSnapshotTest {
     }
 
     assertThat(receivedSnapshot.getPath())
+        .asInstanceOf(DirectoryAssert.factory())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryNotContaining(
-            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryContainingExactly(
+            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
   }
 
   @Test
@@ -231,9 +260,10 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThat(receivedSnapshot.getPath())
+        .asInstanceOf(DirectoryAssert.factory())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryNotContaining(
-            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryContainingExactly(
+            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
   }
 
   @Test
@@ -256,9 +286,10 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThat(receivedSnapshot.getPath())
+        .asInstanceOf(DirectoryAssert.factory())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryNotContaining(
-            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryContainingExactly(
+            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
   }
 
   @Test
@@ -281,9 +312,10 @@ public class FileBasedReceivedSnapshotTest {
 
     // then
     assertThat(receivedSnapshot.getPath())
+        .asInstanceOf(DirectoryAssert.factory())
         .as("the received snapshot should contain only the first chunk")
-        .isDirectoryNotContaining(
-            p -> !p.getFileName().toString().equals(firstChunk.getChunkName()));
+        .isDirectoryContainingExactly(
+            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
   }
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot)

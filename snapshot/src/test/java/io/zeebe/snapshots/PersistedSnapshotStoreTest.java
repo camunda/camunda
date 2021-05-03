@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots.impl;
+package io.zeebe.snapshots;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.snapshots.ReceivableSnapshotStore;
+import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;

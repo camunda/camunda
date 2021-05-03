@@ -5,15 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots.impl;
+package io.zeebe.snapshots;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.SnapshotChunk;
+import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -35,7 +34,7 @@ public class SnapshotChunkReaderTest {
 
   private static final Map<String, String> SNAPSHOT_CHUNK =
       Map.of("file3", "content", "file1", "this", "file2", "is");
-  private static final int EXPECTED_CHUNK_COUNT = 4;
+  private static final int EXPECTED_CHUNK_COUNT = 3;
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
   private PersistedSnapshot persistedSnapshot;
@@ -57,9 +56,9 @@ public class SnapshotChunkReaderTest {
   }
 
   @Test
-  public void shouldReadSnapshotChunks() throws IOException {
+  public void shouldReadSnapshotChunks() {
     // given
-    final var expectedSnapshotChecksum = SnapshotChecksum.calculate(persistedSnapshot.getPath());
+    final var expectedSnapshotChecksum = persistedSnapshot.getChecksum();
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       for (int i = 0; i < EXPECTED_CHUNK_COUNT; i++) {
@@ -70,12 +69,10 @@ public class SnapshotChunkReaderTest {
 
         // then
         assertThat(asByteBuffer(chunk.getChunkName())).isNotNull().isEqualTo(nextId);
-
         assertThat(chunk.getSnapshotId()).isEqualTo(persistedSnapshot.getId());
         assertThat(chunk.getTotalCount()).isEqualTo(EXPECTED_CHUNK_COUNT);
         assertThat(chunk.getSnapshotChecksum()).isEqualTo(expectedSnapshotChecksum);
-        assertThat(chunk.getChecksum())
-            .isEqualTo(SnapshotChunkUtil.createChecksum(chunk.getContent()));
+        assertThat(chunk.getChecksum()).as("the chunk has a checksum").isNotNegative();
       }
     }
   }
@@ -94,14 +91,9 @@ public class SnapshotChunkReaderTest {
 
     // then
     assertThat(snapshotChunkIds)
-        .containsExactly(
-            asByteBuffer("CHECKSUM"),
-            asByteBuffer("file1"),
-            asByteBuffer("file2"),
-            asByteBuffer("file3"));
+        .containsExactly(asByteBuffer("file1"), asByteBuffer("file2"), asByteBuffer("file3"));
 
     assertThat(snapshotChunks)
-        .filteredOn(chunk -> !chunk.getChunkName().equals("CHECKSUM"))
         .extracting(SnapshotChunk::getContent)
         .extracting(String::new)
         .containsExactly("this", "is", "content");

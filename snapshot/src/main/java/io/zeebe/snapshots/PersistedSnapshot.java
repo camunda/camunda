@@ -64,4 +64,11 @@ public interface PersistedSnapshot extends CloseableSilently {
 
   /** @return the identifier of the snapshot */
   String getId();
+
+  /**
+   * Returns the checksum of the snapshot, which can be used to verify integrity.
+   *
+   * @return the checksum of the snapshot
+   */
+  long getChecksum();
 }
