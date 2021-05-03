@@ -5,6 +5,8 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.zeebe.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -26,7 +28,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "graphql.servlet.exception-handlers-enabled = true",
-      "management.endpoints.web.exposure.include = info,prometheus,loggers"
+      "management.endpoints.web.exposure.include = info,prometheus,loggers",
+      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestExecutionListeners(

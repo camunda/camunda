@@ -64,6 +64,7 @@ services:
       - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - zeebe.tasklist.zeebe.gatewayAddress=zeebe:26500
+      #- server.servlet.context-path=/tasklist/
       - spring.profiles.active=dev,dev-data,auth
       - zeebe.tasklist.csrfPreventionEnabled=false
       - graphql.playground.enabled=true

@@ -40,6 +40,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 @EnableAutoConfiguration
 public class Application {
 
+  public static final String SPRING_THYMELEAF_PREFIX_KEY = "spring.thymeleaf.prefix";
+  public static final String SPRING_THYMELEAF_PREFIX_VALUE = "classpath:/META-INF/resources/";
   private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
   public static void main(String[] args) {
@@ -58,6 +60,7 @@ public class Application {
     final Map<String, Object> defaultProperties = new HashMap<>();
     defaultProperties.putAll(getManagementProperties());
     defaultProperties.putAll(getGraphqlProperties());
+    defaultProperties.put(SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE);
     springApplication.setDefaultProperties(defaultProperties);
   }
 

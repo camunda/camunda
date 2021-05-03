@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="utf-8" />
+    <% if (process.env.NODE_ENV === 'production') { %>
+    <base href="/" th:attr="href=${contextPath}" />
+    <% } %>
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <script type="text/javascript" src="%PUBLIC_URL%/client-config.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
