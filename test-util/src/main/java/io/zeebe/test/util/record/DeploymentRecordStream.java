@@ -37,10 +37,10 @@ public final class DeploymentRecordStream
 
   public DeploymentRecordStream withDeployedProcesses(
       final List<DeployedProcess> deployedProcesses) {
-    return valueFilter(v -> deployedProcesses.equals(v.getDeployedProcesses()));
+    return valueFilter(v -> deployedProcesses.equals(v.getProcessesMetadata()));
   }
 
   public DeploymentRecordStream withDeployedProcess(final DeployedProcess deployedProcess) {
-    return valueFilter(v -> v.getDeployedProcesses().contains(deployedProcess));
+    return valueFilter(v -> v.getProcessesMetadata().contains(deployedProcess));
   }
 }

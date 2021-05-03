@@ -245,7 +245,7 @@ public class CompactRecordLogger {
   private String summarizeDeployment(final Record<?> record) {
     final var value = (DeploymentRecordValue) record.getValue();
 
-    return value.getDeployedProcesses().stream()
+    return value.getProcessesMetadata().stream()
         .map(DeployedProcessMetadataValue::getResourceName)
         .collect(Collectors.joining());
   }
