@@ -30,5 +30,5 @@ public interface DeploymentRecordValue extends RecordValue {
   /** @return the resources to deploy */
   List<DeploymentResource> getResources();
 
-  List<DeployedProcessMetadataValue> getDeployedProcesses();
+  List<DeployedProcessMetadataValue> getProcessesMetadata();
 }
