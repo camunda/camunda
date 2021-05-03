@@ -173,7 +173,7 @@ public final class DeploymentTransformer {
             new UnsafeBuffer(digestGenerator.digest(deploymentResource.getResource()));
 
         // adds process record to deployment record
-        final var processMetadata = deploymentEvent.processes().add();
+        final var processMetadata = deploymentEvent.processesMetadata().add();
         processMetadata
             .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
             .setChecksum(resourceDigest)

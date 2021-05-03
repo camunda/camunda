@@ -92,7 +92,7 @@ public final class JobInputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedProcesses()
+        .getProcessesMetadata()
         .get(0)
         .getProcessDefinitionKey();
 

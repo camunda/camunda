@@ -57,7 +57,7 @@ public final class TypedEventSerializationTest {
     final DeploymentRecord record = new DeploymentRecord();
     record.resources().add().setResourceName(wrapString(resourceName)).setResource(resource);
     record
-        .processes()
+        .processesMetadata()
         .add()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setKey(processDefinitionKey)

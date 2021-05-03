@@ -97,7 +97,7 @@ public final class TimerStartEventTest {
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     // then
@@ -125,7 +125,7 @@ public final class TimerStartEventTest {
             .withXmlResource(FEEL_DATE_TIME_EXPRESSION_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     // then
@@ -156,7 +156,7 @@ public final class TimerStartEventTest {
             .withXmlResource(FEEL_CYCLE_EXPRESSION_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     // then
@@ -184,7 +184,7 @@ public final class TimerStartEventTest {
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
@@ -247,7 +247,7 @@ public final class TimerStartEventTest {
             .withXmlResource(THREE_SEC_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 
@@ -306,7 +306,7 @@ public final class TimerStartEventTest {
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
 
@@ -336,7 +336,7 @@ public final class TimerStartEventTest {
             .withXmlResource(SIMPLE_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -362,7 +362,7 @@ public final class TimerStartEventTest {
             .withXmlResource(REPEATING_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -390,7 +390,7 @@ public final class TimerStartEventTest {
             .withXmlResource(REPEATING_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     final long repeatingProcessDefinitionKey = repeatingProcess.getProcessDefinitionKey();
     assertThat(
@@ -416,7 +416,7 @@ public final class TimerStartEventTest {
             .withXmlResource(nonTimerModel)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     engine.increaseTime(Duration.ofSeconds(2));
 
@@ -456,7 +456,7 @@ public final class TimerStartEventTest {
             .withXmlResource(THREE_SEC_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
@@ -492,7 +492,7 @@ public final class TimerStartEventTest {
             .withXmlResource(slowerModel)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     // then
@@ -530,7 +530,7 @@ public final class TimerStartEventTest {
             .withXmlResource(THREE_SEC_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     final var secondDeployment =
@@ -539,7 +539,7 @@ public final class TimerStartEventTest {
             .withXmlResource(REPEATING_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     assertThat(
@@ -594,7 +594,7 @@ public final class TimerStartEventTest {
             .withXmlResource(MULTI_TIMER_START_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -641,7 +641,7 @@ public final class TimerStartEventTest {
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     // when
@@ -684,7 +684,7 @@ public final class TimerStartEventTest {
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     // when
@@ -712,7 +712,7 @@ public final class TimerStartEventTest {
             .withXmlResource(MULTIPLE_START_EVENTS_MODEL)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
     final long processDefinitionKey = deployedProcess.getProcessDefinitionKey();
 

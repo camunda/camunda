@@ -66,7 +66,7 @@ public final class MappingIncidentTest {
             .withXmlResource(PROCESS_INPUT_MAPPING)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0)
             .getProcessDefinitionKey();
 

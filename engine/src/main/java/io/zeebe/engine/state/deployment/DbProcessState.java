@@ -102,7 +102,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void putDeployment(final DeploymentRecord deploymentRecord) {
-    for (final DeployedProcessMetadata metadata : deploymentRecord.processes()) {
+    for (final DeployedProcessMetadata metadata : deploymentRecord.processesMetadata()) {
       for (final DeploymentResource resource : deploymentRecord.getResources()) {
         if (resource.getResourceName().equals(metadata.getResourceName())) {
           processRecordForDeployments.reset();

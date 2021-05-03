@@ -134,7 +134,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedRecord<DeploymentRecord> record,
       final TypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
-    for (final DeployedProcessMetadata processMetadata : record.getValue().processes()) {
+    for (final DeployedProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       final List<ExecutableStartEvent> startEvents =
           processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 

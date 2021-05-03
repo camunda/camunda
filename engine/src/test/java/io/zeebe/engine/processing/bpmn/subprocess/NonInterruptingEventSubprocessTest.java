@@ -313,7 +313,7 @@ public class NonInterruptingEventSubprocessTest {
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     final long processInstanceKey =

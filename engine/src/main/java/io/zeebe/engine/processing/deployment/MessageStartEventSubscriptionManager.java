@@ -44,7 +44,7 @@ public class MessageStartEventSubscriptionManager {
   public void tryReOpenMessageStartEventSubscription(
       final DeploymentRecord deploymentRecord, final StateWriter stateWriter) {
 
-    for (final DeployedProcessMetadata processRecord : deploymentRecord.processes()) {
+    for (final DeployedProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
       if (isLatestProcess(processRecord)) {
         closeExistingMessageStartEventSubscriptions(processRecord, stateWriter);
         openMessageStartEventSubscriptions(processRecord, stateWriter);

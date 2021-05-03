@@ -146,7 +146,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
     Assertions.assertThat(resource).hasResource(bpmnXml(PROCESS));
 
     final List<DeployedProcessMetadataValue> deployedProcesses =
-        createdDeployment.getValue().getDeployedProcesses();
+        createdDeployment.getValue().getProcessesMetadata();
 
     assertThat(deployedProcesses).hasSize(1);
     Assertions.assertThat(deployedProcesses.get(0))
@@ -228,7 +228,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(distributedDeployments)
         .hasSize(PARTITION_COUNT - 1)
         .extracting(Record::getValue)
-        .flatExtracting(DeploymentRecordValue::getDeployedProcesses)
+        .flatExtracting(DeploymentRecordValue::getProcessesMetadata)
         .extracting(DeployedProcessMetadataValue::getBpmnProcessId)
         .containsOnly("process", "process2");
   }
@@ -255,7 +255,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .withRecordKey(firstDeployment.getKey())
             .getFirst();
 
-    var deployedProcesses = firstCreatedDeployment.getValue().getDeployedProcesses();
+    var deployedProcesses = firstCreatedDeployment.getValue().getProcessesMetadata();
     assertThat(deployedProcesses)
         .flatExtracting(DeployedProcessMetadataValue::getVersion)
         .containsOnly(1);
@@ -266,7 +266,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .withRecordKey(secondDeployment.getKey())
             .getFirst();
 
-    deployedProcesses = secondCreatedDeployments.getValue().getDeployedProcesses();
+    deployedProcesses = secondCreatedDeployments.getValue().getProcessesMetadata();
     assertThat(deployedProcesses)
         .flatExtracting(DeployedProcessMetadataValue::getVersion)
         .containsOnly(2);
@@ -285,8 +285,8 @@ public final class CreateDeploymentMultiplePartitionsTest {
     // then
     assertThat(repeated.getKey()).isGreaterThan(original.getKey());
 
-    final var originalProcesses = original.getValue().getDeployedProcesses();
-    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getProcessesMetadata();
+    final var repeatedProcesses = repeated.getValue().getProcessesMetadata();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertThat(
@@ -300,7 +300,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
         RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
-            .map(r -> r.getValue().getDeployedProcesses().get(0))
+            .map(r -> r.getValue().getProcessesMetadata().get(0))
             .collect(Collectors.toList());
 
     assertThat(repeatedWfs.size()).isEqualTo(PARTITION_COUNT - 1);
@@ -320,8 +320,8 @@ public final class CreateDeploymentMultiplePartitionsTest {
         ENGINE.deployment().withXmlResource("process.bpmn", sameBpmnIdModel).deploy();
 
     // then
-    final var originalProcesses = original.getValue().getDeployedProcesses();
-    final var repeatedProcesses = repeated.getValue().getDeployedProcesses();
+    final var originalProcesses = original.getValue().getProcessesMetadata();
+    final var repeatedProcesses = repeated.getValue().getProcessesMetadata();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isOne();
 
     assertDifferentResources(originalProcesses.get(0), repeatedProcesses.get(0));
@@ -337,7 +337,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
         RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
-            .map(r -> r.getValue().getDeployedProcesses().get(0))
+            .map(r -> r.getValue().getProcessesMetadata().get(0))
             .collect(Collectors.toList());
 
     assertThat(repeatedWfs.size()).isEqualTo(PARTITION_COUNT - 1);
@@ -369,7 +369,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   @SuppressWarnings("unchecked")
   private DeployedProcessMetadataValue getDeployedProcess(
       final Record<DeploymentRecordValue> record, final int offset) {
-    return record.getValue().getDeployedProcesses().get(offset);
+    return record.getValue().getProcessesMetadata().get(offset);
   }
 
   private void assertDeploymentEventResources(

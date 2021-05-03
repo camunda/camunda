@@ -242,15 +242,15 @@ public final class ProcessStateTest {
 
     // when
     processState.putDeployment(deploymentRecord);
-    deploymentRecord.processes().iterator().next().setKey(212).setBpmnProcessId("other");
+    deploymentRecord.processesMetadata().iterator().next().setKey(212).setBpmnProcessId("other");
 
     // then
     final DeployedProcess deployedProcess =
         processState.getProcessByProcessIdAndVersion(wrapString("processId"), 1);
 
     Assertions.assertThat(deployedProcess.getKey())
-        .isNotEqualTo(deploymentRecord.processes().iterator().next().getKey());
-    assertThat(deploymentRecord.processes().iterator().next().getBpmnProcessIdBuffer())
+        .isNotEqualTo(deploymentRecord.processesMetadata().iterator().next().getKey());
+    assertThat(deploymentRecord.processesMetadata().iterator().next().getBpmnProcessIdBuffer())
         .isEqualTo(BufferUtil.wrapString("other"));
     Assertions.assertThat(deployedProcess.getBpmnProcessId())
         .isEqualTo(BufferUtil.wrapString("processId"));
@@ -545,7 +545,7 @@ public final class ProcessStateTest {
     final long key = keyGenerator.nextKey();
 
     deploymentRecord
-        .processes()
+        .processesMetadata()
         .add()
         .setBpmnProcessId(BufferUtil.wrapString(processId))
         .setVersion(version)
