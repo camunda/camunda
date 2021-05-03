@@ -254,7 +254,7 @@ public final class ProcessExecutionCleanStateTest {
             .deploy();
 
     final var processDefinitionKey =
-        deployment.getValue().getDeployedProcesses().get(0).getProcessDefinitionKey();
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
     // when
     final var timeToLive = Duration.ofSeconds(10);

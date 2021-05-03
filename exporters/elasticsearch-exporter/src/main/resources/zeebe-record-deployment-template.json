@@ -18,7 +18,7 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "deployedProcesses": {
+            "processesMetadata": {
               "properties": {
                 "bpmnProcessId": {
                   "type": "keyword"
@@ -31,9 +31,6 @@
                 },
                 "resourceName": {
                   "type": "text"
-                },
-                "resource": {
-                  "enabled": false
                 },
                 "checksum": {
                   "enabled": false

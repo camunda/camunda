@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value;
+package io.zeebe.protocol.record.value.deployment;
 
 import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
-import java.util.List;
 
-/**
- * Represents a single deployment event or command.
- *
- * <p>See {@link DeploymentIntent} for intents.
- */
-public interface DeploymentRecordValue extends RecordValue {
-  /** @return the resources to deploy */
-  List<DeploymentResource> getResources();
+/** Represents deployed process meta data, so all important properties of an deployed process. */
+public interface ProcessMetadataValue extends RecordValue {
+  /** @return the bpmn process ID of this process */
+  String getBpmnProcessId();
 
-  List<ProcessMetadataValue> getProcessesMetadata();
+  /** @return the version of this process */
+  int getVersion();
+
+  /** @return the key of this process */
+  long getProcessDefinitionKey();
+
+  /** @return the name of the resource through which this process was deployed */
+  String getResourceName();
+
+  /** @return the checksum of the process (MD5) */
+  byte[] getChecksum();
 }

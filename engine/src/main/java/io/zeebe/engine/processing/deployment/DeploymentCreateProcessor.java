@@ -34,7 +34,7 @@ import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.Either;
@@ -134,11 +134,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedRecord<DeploymentRecord> record,
       final TypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
-    for (final ProcessRecord processRecord : record.getValue().processes()) {
+    for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       final List<ExecutableStartEvent> startEvents =
-          processState.getProcessByKey(processRecord.getKey()).getProcess().getStartEvents();
+          processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
-      unsubscribeFromPreviousTimers(streamWriter, processRecord);
+      unsubscribeFromPreviousTimers(streamWriter, processMetadata);
 
       for (final ExecutableCatchEventElement startEvent : startEvents) {
         if (startEvent.isTimer()) {
@@ -155,7 +155,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,
               NO_ELEMENT_INSTANCE,
-              processRecord.getKey(),
+              processMetadata.getKey(),
               startEvent.getId(),
               timerOrError.get(),
               streamWriter,
@@ -166,7 +166,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedStreamWriter streamWriter, final ProcessRecord processRecord) {
+      final TypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
         timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
@@ -174,12 +174,12 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private void unsubscribeFromPreviousTimer(
       final TypedStreamWriter streamWriter,
-      final ProcessRecord processRecord,
+      final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
         processState.getProcessByKey(timer.getProcessDefinitionKey()).getBpmnProcessId();
 
-    if (timerBpmnId.equals(processRecord.getBpmnProcessIdBuffer())) {
+    if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer, streamWriter);
     }
   }

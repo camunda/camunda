@@ -57,14 +57,13 @@ public final class TypedEventSerializationTest {
     final DeploymentRecord record = new DeploymentRecord();
     record.resources().add().setResourceName(wrapString(resourceName)).setResource(resource);
     record
-        .processes()
+        .processesMetadata()
         .add()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setKey(processDefinitionKey)
         .setResourceName(wrapString(resourceName))
         .setVersion(processVersion)
-        .setChecksum(wrapString("checksum"))
-        .setResource(resource);
+        .setChecksum(wrapString("checksum"));
 
     final long key = 1234;
     final long position = 4321;

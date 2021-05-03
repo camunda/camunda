@@ -82,7 +82,7 @@ public final class SuccessfulDeploymentTest {
 
     // then
     assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
-    assertThat(deployment.getValue().getDeployedProcesses()).hasSize(1);
+    assertThat(deployment.getValue().getProcessesMetadata()).hasSize(1);
   }
 
   @Test

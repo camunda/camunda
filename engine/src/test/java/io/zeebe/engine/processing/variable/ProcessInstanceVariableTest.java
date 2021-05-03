@@ -50,7 +50,7 @@ public final class ProcessInstanceVariableTest {
             .withXmlResource(PROCESS)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0)
             .getProcessDefinitionKey();
   }
@@ -116,7 +116,7 @@ public final class ProcessInstanceVariableTest {
                     .done())
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0)
             .getProcessDefinitionKey();
 
@@ -236,7 +236,7 @@ public final class ProcessInstanceVariableTest {
                     .done())
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0)
             .getProcessDefinitionKey();
 

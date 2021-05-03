@@ -175,7 +175,7 @@ public final class JobOutputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedProcesses()
+        .getProcessesMetadata()
         .get(0)
         .getProcessDefinitionKey();
 

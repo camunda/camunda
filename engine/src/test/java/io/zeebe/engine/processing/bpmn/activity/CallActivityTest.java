@@ -121,7 +121,7 @@ public final class CallActivityTest {
 
     final var secondDeployment =
         ENGINE.deployment().withXmlResource("wf-child.bpmn", processChildV2).deploy();
-    final var secondVersion = secondDeployment.getValue().getDeployedProcesses().get(0);
+    final var secondVersion = secondDeployment.getValue().getProcessesMetadata().get(0);
 
     // when
     final var processInstanceKey =

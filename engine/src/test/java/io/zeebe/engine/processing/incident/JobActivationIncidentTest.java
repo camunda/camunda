@@ -61,7 +61,7 @@ public final class JobActivationIncidentTest {
             .withXmlResource(createProcess(processId, jobType))
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0)
             .getProcessDefinitionKey();
   }

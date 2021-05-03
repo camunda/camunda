@@ -8,18 +8,17 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
+import io.zeebe.protocol.record.value.deployment.Process;
 import java.util.stream.Stream;
 
-public final class ProcessRecordStream
-    extends ExporterRecordStream<DeployedProcess, ProcessRecordStream> {
+public final class ProcessRecordStream extends ExporterRecordStream<Process, ProcessRecordStream> {
 
-  public ProcessRecordStream(final Stream<Record<DeployedProcess>> wrappedStream) {
+  public ProcessRecordStream(final Stream<Record<Process>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected ProcessRecordStream supply(final Stream<Record<DeployedProcess>> wrappedStream) {
+  protected ProcessRecordStream supply(final Stream<Record<Process>> wrappedStream) {
     return new ProcessRecordStream(wrappedStream);
   }
 

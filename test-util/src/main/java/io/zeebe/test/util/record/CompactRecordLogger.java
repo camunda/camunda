@@ -33,8 +33,8 @@ import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
-import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.deployment.Process;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -86,6 +86,7 @@ public class CompactRecordLogger {
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
+    valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
     valueLoggers.put(ValueType.INCIDENT, this::summarizeIncident);
     valueLoggers.put(ValueType.JOB, this::summarizeJob);
     valueLoggers.put(ValueType.JOB_BATCH, this::summarizeJobBatch);
@@ -93,7 +94,6 @@ public class CompactRecordLogger {
     valueLoggers.put(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, this::summarizeMessageStartEventSubscription);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
-    valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
@@ -245,10 +245,23 @@ public class CompactRecordLogger {
   private String summarizeDeployment(final Record<?> record) {
     final var value = (DeploymentRecordValue) record.getValue();
 
-    return value.getResources().stream()
-        .peek(res -> processes.put(res.getResourceName(), new String(res.getResource())))
-        .map(DeploymentResource::getResourceName)
+    return value.getProcessesMetadata().stream()
+        .map(ProcessMetadataValue::getResourceName)
         .collect(Collectors.joining());
+  }
+
+  private String summarizeProcess(final Record<?> record) {
+    final var value = (Process) record.getValue();
+    processes.put(value.getResourceName(), new String(value.getResource()));
+
+    return new StringBuilder()
+        .append(value.getResourceName())
+        .append("->")
+        .append(formatId(value.getBpmnProcessId()))
+        .append(" (version:")
+        .append(value.getVersion())
+        .append(")")
+        .toString();
   }
 
   private String summarizeElementInformation(
@@ -419,19 +432,6 @@ public class CompactRecordLogger {
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeVariables(value.getVariables()));
     return result.toString();
-  }
-
-  private String summarizeProcess(final Record<?> record) {
-    final var value = (DeployedProcess) record.getValue();
-
-    return new StringBuilder()
-        .append(value.getResourceName())
-        .append("->")
-        .append(formatId(value.getBpmnProcessId()))
-        .append(" (version:")
-        .append(value.getVersion())
-        .append(")")
-        .toString();
   }
 
   private String summarizeProcessInstance(final Record<?> record) {

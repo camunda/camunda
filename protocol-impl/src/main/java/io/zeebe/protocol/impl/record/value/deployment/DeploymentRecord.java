@@ -11,7 +11,7 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -19,20 +19,20 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
-  public static final String PROCESSES = "deployedProcesses";
+  public static final String PROCESSES = "processesMetadata";
 
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
 
-  private final ArrayProperty<ProcessRecord> processesProp =
-      new ArrayProperty<>(PROCESSES, new ProcessRecord());
+  private final ArrayProperty<ProcessMetadata> processesMetadataProp =
+      new ArrayProperty<>(PROCESSES, new ProcessMetadata());
 
   public DeploymentRecord() {
-    declareProperty(resourcesProp).declareProperty(processesProp);
+    declareProperty(resourcesProp).declareProperty(processesMetadataProp);
   }
 
-  public ValueArray<ProcessRecord> processes() {
-    return processesProp;
+  public ValueArray<ProcessMetadata> processesMetadata() {
+    return processesMetadataProp;
   }
 
   public ValueArray<DeploymentResource> resources() {
@@ -58,19 +58,19 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  public List<DeployedProcess> getDeployedProcesses() {
-    final List<DeployedProcess> processes = new ArrayList<>();
+  public List<ProcessMetadataValue> getProcessesMetadata() {
+    final List<ProcessMetadataValue> processesMeta = new ArrayList<>();
 
-    for (final ProcessRecord processRecord : processesProp) {
+    for (final ProcessMetadata processRecord : processesMetadataProp) {
       final byte[] bytes = new byte[processRecord.getLength()];
       final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
       processRecord.write(copyBuffer, 0);
 
-      final ProcessRecord copiedProcessRecord = new ProcessRecord();
+      final ProcessMetadata copiedProcessRecord = new ProcessMetadata();
       copiedProcessRecord.wrap(copyBuffer);
-      processes.add(copiedProcessRecord);
+      processesMeta.add(copiedProcessRecord);
     }
 
-    return processes;
+    return processesMeta;
   }
 }

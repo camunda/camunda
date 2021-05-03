@@ -98,7 +98,7 @@ public final class ActivityInputMappingTest {
                 .done())
         .deploy()
         .getValue()
-        .getDeployedProcesses()
+        .getProcessesMetadata()
         .get(0)
         .getProcessDefinitionKey();
 

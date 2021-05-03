@@ -51,14 +51,13 @@ public final class DeployProcessStub
         .forEachRemaining(
             r -> {
               deploymentRecord
-                  .processes()
+                  .processesMetadata()
                   .add()
                   .setBpmnProcessId(r.getResourceNameBuffer())
                   .setResourceName(r.getResourceNameBuffer())
                   .setVersion(PROCESS_VERSION)
                   .setKey(PROCESS_KEY)
-                  .setChecksum(CHECKSUM)
-                  .setResource(r.getResourceBuffer());
+                  .setChecksum(CHECKSUM);
             });
     return new BrokerResponse<>(deploymentRecord, 0, KEY);
   }

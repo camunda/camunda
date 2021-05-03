@@ -17,35 +17,27 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.deployment.Process;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class ProcessRecord extends UnifiedRecordValue implements Process {
+/**
+ * This class is used in the DeploymentRecord, only to send the process meta information back to the
+ * user. It is similar to {@link ProcessRecord} except that it doesn't contain the actual resources.
+ */
+public final class ProcessMetadata extends UnifiedRecordValue implements ProcessMetadataValue {
   private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION);
   private final LongProperty keyProp = new LongProperty(PROP_PROCESS_KEY);
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
-  public ProcessRecord() {
+  public ProcessMetadata() {
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp)
-        .declareProperty(resourceProp);
-  }
-
-  public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
-    bpmnProcessIdProp.setValue(metadata.getBpmnProcessIdBuffer());
-    versionProp.setValue(metadata.getVersion());
-    checksumProp.setValue(metadata.getChecksumBuffer());
-    keyProp.setValue(metadata.getKey());
-    resourceNameProp.setValue(metadata.getResourceNameBuffer());
-    resourceProp.setValue(BufferUtil.wrapArray(resource));
-    return this;
+        .declareProperty(checksumProp);
   }
 
   @Override
@@ -72,32 +64,32 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     return BufferUtil.bufferAsArray(checksumProp.getValue());
   }
 
-  public ProcessRecord setChecksum(final DirectBuffer checksumBuffer) {
+  public ProcessMetadata setChecksum(final DirectBuffer checksumBuffer) {
     checksumProp.setValue(checksumBuffer);
     return this;
   }
 
-  public ProcessRecord setResourceName(final String resourceName) {
+  public ProcessMetadata setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public ProcessRecord setResourceName(final DirectBuffer resourceName) {
+  public ProcessMetadata setResourceName(final DirectBuffer resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public ProcessRecord setVersion(final int version) {
+  public ProcessMetadata setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
 
-  public ProcessRecord setBpmnProcessId(final String bpmnProcessId) {
+  public ProcessMetadata setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public ProcessRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public ProcessMetadata setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
@@ -107,21 +99,12 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     return checksumProp.getValue();
   }
 
-  @Override
-  public byte[] getResource() {
-    return BufferUtil.bufferAsArray(resourceProp.getValue());
-  }
-
-  public ProcessRecord setResource(final DirectBuffer resource) {
-    return setResource(resource, 0, resource.capacity());
-  }
-
   @JsonIgnore
   public long getKey() {
     return keyProp.getValue();
   }
 
-  public ProcessRecord setKey(final long key) {
+  public ProcessMetadata setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }
@@ -148,20 +131,9 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     return resourceNameProp.getValue();
   }
 
-  public ProcessRecord setBpmnProcessId(
+  public ProcessMetadata setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
     bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
     return this;
-  }
-
-  public ProcessRecord setResource(
-      final DirectBuffer resource, final int offset, final int length) {
-    resourceProp.setValue(resource, offset, length);
-    return this;
-  }
-
-  @JsonIgnore
-  public DirectBuffer getResourceBuffer() {
-    return resourceProp.getValue();
   }
 }

@@ -44,7 +44,7 @@ public final class ResponseMapper {
         DeployProcessResponse.newBuilder().setKey(key);
 
     brokerResponse
-        .processes()
+        .processesMetadata()
         .forEach(
             process ->
                 responseBuilder

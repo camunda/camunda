@@ -15,25 +15,8 @@
  */
 package io.zeebe.protocol.record.value.deployment;
 
-import io.zeebe.protocol.record.RecordValue;
-
-/** Represents a deployed process. */
-public interface DeployedProcess extends RecordValue {
-  /** @return the bpmn process ID of this process */
-  String getBpmnProcessId();
-
-  /** @return the version of this process */
-  int getVersion();
-
-  /** @return the key of this process */
-  long getProcessDefinitionKey();
-
-  /** @return the name of the resource through which this process was deployed */
-  String getResourceName();
-
-  /** @return the checksum of the process (MD5) */
-  byte[] getChecksum();
-
+/** Represents a deployed process, which extends the meta data with the acutal resources */
+public interface Process extends ProcessMetadataValue {
   /** @return returns the corresponding binary resource */
   byte[] getResource();
 }

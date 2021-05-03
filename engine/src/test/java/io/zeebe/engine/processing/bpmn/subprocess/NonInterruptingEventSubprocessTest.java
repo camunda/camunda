@@ -25,7 +25,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -59,7 +59,7 @@ public class NonInterruptingEventSubprocessTest {
   @Parameterized.Parameter(2)
   public Consumer<Long> triggerEventSubprocess;
 
-  private DeployedProcess currentProcess;
+  private ProcessMetadataValue currentProcess;
 
   @Parameterized.Parameters(name = "{0} event subprocess")
   public static Object[][] parameters() {
@@ -313,7 +313,7 @@ public class NonInterruptingEventSubprocessTest {
             .withXmlResource(model)
             .deploy()
             .getValue()
-            .getDeployedProcesses()
+            .getProcessesMetadata()
             .get(0);
 
     final long processInstanceKey =

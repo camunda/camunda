@@ -130,14 +130,13 @@ public final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setResource(resource);
               record
-                  .processes()
+                  .processesMetadata()
                   .add()
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
-                  .setChecksum(checksum)
-                  .setResource(resource);
+                  .setChecksum(checksum);
 
               final int key = 1234;
               final int position = 4321;
@@ -147,7 +146,7 @@ public final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'deployedProcesses':[{'resource':'Y29udGVudHM=','version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'processesMetadata':[{'version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}]}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
@@ -169,17 +168,16 @@ public final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setResource(resource);
               record
-                  .processes()
+                  .processesMetadata()
                   .add()
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
-                  .setChecksum(checksum)
-                  .setResource(resource);
+                  .setChecksum(checksum);
               return record;
             },
-        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'deployedProcesses':[{'resource':'Y29udGVudHM=','checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource'}]}"
+        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'processesMetadata':[{'checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource'}]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// DeploymentDistributionRecord /////////////////////////////////
@@ -200,7 +198,7 @@ public final class JsonSerializableToJsonTest {
       new Object[] {
         "Empty DeploymentRecord",
         (Supplier<UnifiedRecordValue>) DeploymentRecord::new,
-        "{'resources':[],'deployedProcesses':[]}"
+        "{'resources':[],'processesMetadata':[]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////////// ErrorRecord ///////////////////////////////////////////
