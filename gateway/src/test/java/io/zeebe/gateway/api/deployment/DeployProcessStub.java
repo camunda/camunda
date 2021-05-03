@@ -51,7 +51,7 @@ public final class DeployProcessStub
         .forEachRemaining(
             r -> {
               deploymentRecord
-                  .processes()
+                  .processesMetadata()
                   .add()
                   .setBpmnProcessId(r.getResourceNameBuffer())
                   .setResourceName(r.getResourceNameBuffer())
