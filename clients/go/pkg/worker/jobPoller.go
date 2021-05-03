@@ -17,9 +17,9 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io"
@@ -119,7 +119,7 @@ func (poller *jobPoller) openStream(ctx context.Context) (pb.Gateway_ActivateJob
 		if poller.shouldRetry(ctx, err) {
 			return poller.openStream(ctx)
 		}
-		return nil, errors.Wrapf(err, "Worker '%s' failed to open job stream", poller.request.Worker)
+		return nil, fmt.Errorf("worker '%s' failed to open job stream: %w", poller.request.Worker, err)
 	}
 
 	return stream, nil

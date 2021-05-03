@@ -287,7 +287,7 @@ public final class UserTaskTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
     assertThat(
-            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(1))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATED);
 
@@ -307,7 +307,7 @@ public final class UserTaskTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
 
     assertThat(
-            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(3))
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
