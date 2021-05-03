@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.iobound;
+package io.camunda.zeebe.util.sched.iobound;
 
-import static io.zeebe.util.sched.SchedulingHints.ioBound;
+import static io.camunda.zeebe.util.sched.SchedulingHints.ioBound;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.ActorThreadGroup;
-import io.zeebe.util.sched.CpuThreadGroup;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorThread;
+import io.camunda.zeebe.util.sched.ActorThreadGroup;
+import io.camunda.zeebe.util.sched.CpuThreadGroup;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;

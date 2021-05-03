@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn;
+package io.camunda.zeebe.engine.processing.bpmn;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
 public final class BpmnElementContextImpl implements BpmnElementContext {

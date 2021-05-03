@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.channel;
+package io.camunda.zeebe.util.sched.channel;
 
-import io.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.ActorCondition;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class ActorConditions {

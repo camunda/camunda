@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.command;
+package io.camunda.zeebe.client.api.command;
 
-import io.zeebe.client.api.response.CompleteJobResponse;
+import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
 

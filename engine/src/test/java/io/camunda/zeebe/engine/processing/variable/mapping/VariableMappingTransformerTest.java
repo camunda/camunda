@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.variable.mapping;
+package io.camunda.zeebe.engine.processing.variable.mapping;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.el.ExpressionLanguageFactory;
-import io.zeebe.el.ResultType;
-import io.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.List;
 import org.junit.Test;
 

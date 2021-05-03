@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 
 /** @author Sebastian Menski */
 public class ScriptTaskBuilder extends AbstractScriptTaskBuilder<ScriptTaskBuilder> {

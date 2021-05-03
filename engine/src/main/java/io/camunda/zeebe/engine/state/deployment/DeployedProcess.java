@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.deployment;
+package io.camunda.zeebe.engine.state.deployment;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import org.agrona.DirectBuffer;
 
 public final class DeployedProcess {

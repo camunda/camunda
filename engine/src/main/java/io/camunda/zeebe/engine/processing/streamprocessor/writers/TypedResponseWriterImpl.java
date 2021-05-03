@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor.writers;
+package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

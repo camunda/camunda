@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
-import static io.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
+import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 import static org.awaitility.Awaitility.await;
 
-import io.zeebe.test.PartitionsActuatorClient.PartitionStatus;
-import io.zeebe.util.Either;
+import io.camunda.zeebe.test.PartitionsActuatorClient.PartitionStatus;
+import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Map;
 import org.assertj.core.api.AbstractObjectAssert;

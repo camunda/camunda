@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.channel;
+package io.camunda.zeebe.util.sched.channel;
 
 public interface ChannelSubscription {
   void cancel();

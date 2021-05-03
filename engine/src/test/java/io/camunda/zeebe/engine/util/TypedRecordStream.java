@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.test.util.stream.StreamWrapper;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
 public final class TypedRecordStream<T extends UnifiedRecordValue>

@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker;
+package io.camunda.zeebe.gateway.impl.broker;
 
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.BrokerRejectionException;
-import io.zeebe.gateway.cmd.BrokerResponseException;
-import io.zeebe.gateway.cmd.ClientResponseException;
-import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
-import io.zeebe.gateway.cmd.NoTopologyAvailableException;
-import io.zeebe.gateway.cmd.PartitionNotFoundException;
-import io.zeebe.gateway.impl.ErrorResponseHandler;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
-import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.gateway.metrics.GatewayMetrics;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
+import io.camunda.zeebe.gateway.cmd.BrokerResponseException;
+import io.camunda.zeebe.gateway.cmd.ClientResponseException;
+import io.camunda.zeebe.gateway.cmd.IllegalBrokerResponseException;
+import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
+import io.camunda.zeebe.gateway.cmd.PartitionNotFoundException;
+import io.camunda.zeebe.gateway.impl.ErrorResponseHandler;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.gateway.metrics.GatewayMetrics;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.transport.ClientRequest;
+import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;

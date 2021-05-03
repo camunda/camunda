@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.processing;
+package io.camunda.zeebe.engine.state.processing;
 
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.state.KeyGeneratorControls;
-import io.zeebe.engine.state.NextValueManager;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.protocol.Protocol;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.KeyGeneratorControls;
+import io.camunda.zeebe.engine.state.NextValueManager;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.Protocol;
 
 public final class DbKeyGenerator implements KeyGeneratorControls {
 

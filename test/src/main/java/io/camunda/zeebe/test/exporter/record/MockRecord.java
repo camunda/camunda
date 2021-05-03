@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter.record;
+package io.camunda.zeebe.test.exporter.record;
 
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Objects;
 
 public class MockRecord extends ExporterMappedObject implements Record, Cloneable {

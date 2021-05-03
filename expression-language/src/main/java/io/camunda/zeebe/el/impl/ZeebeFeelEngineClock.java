@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl;
+package io.camunda.zeebe.el.impl;
 
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;

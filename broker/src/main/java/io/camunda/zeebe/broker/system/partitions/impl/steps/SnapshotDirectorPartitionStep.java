@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl.steps;
+package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.zeebe.broker.system.partitions.PartitionContext;
-import io.zeebe.broker.system.partitions.PartitionStep;
-import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 
 public class SnapshotDirectorPartitionStep implements PartitionStep {

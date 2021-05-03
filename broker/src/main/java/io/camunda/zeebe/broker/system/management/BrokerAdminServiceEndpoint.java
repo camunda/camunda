@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.management;
+package io.camunda.zeebe.broker.system.management;
 
-import io.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;

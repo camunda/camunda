@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.zeebe.protocol.record"
+  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
   id="0" version="${protocol.version}" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
 

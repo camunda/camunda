@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_NS;
 
 import java.util.Arrays;
 import java.util.Collection;

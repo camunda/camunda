@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.impl.record.CopiedRecord;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.test.util.JsonUtil;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 

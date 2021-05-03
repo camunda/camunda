@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.logstreams.storage.LogStorageReader;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.dispatcher.Dispatchers;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.util.ByteValue;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;

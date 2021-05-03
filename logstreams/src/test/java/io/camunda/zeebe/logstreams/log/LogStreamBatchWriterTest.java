@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.log;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.impl.log.LoggedEventImpl;
-import io.zeebe.logstreams.util.LogStreamReaderRule;
-import io.zeebe.logstreams.util.LogStreamRule;
-import io.zeebe.logstreams.util.LogStreamWriterRule;
-import io.zeebe.logstreams.util.SynchronousLogStream;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
+import io.camunda.zeebe.logstreams.util.LogStreamRule;
+import io.camunda.zeebe.logstreams.util.LogStreamWriterRule;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;

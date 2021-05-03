@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.monitoring;
+package io.camunda.zeebe.broker.system.monitoring;
 
 import io.prometheus.client.Gauge;
 

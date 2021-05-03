@@ -5,29 +5,29 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.appliers;
+package io.camunda.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.Loggers;
-import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.ProcessEventIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.ProcessIntent;
-import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;

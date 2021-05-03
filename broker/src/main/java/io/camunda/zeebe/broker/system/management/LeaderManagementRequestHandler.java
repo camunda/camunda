@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.management;
+package io.camunda.zeebe.broker.system.management;
 
 import io.atomix.core.Atomix;
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
-import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.protocol.impl.encoding.ErrorResponse;
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;

@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.process;
+package io.camunda.zeebe.gateway.api.process;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.test.util.JsonUtil;
-import io.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
 import org.junit.Test;
 

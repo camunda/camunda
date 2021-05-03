@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.process;
+package io.camunda.zeebe.gateway.api.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import org.junit.Test;
 
 public final class CreateProcessInstanceTest extends GatewayTest {

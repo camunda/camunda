@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el;
+package io.camunda.zeebe.el;
 
 /** The possible types of an evaluation result. */
 public enum ResultType {

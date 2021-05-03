@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.storage;
+package io.camunda.zeebe.logstreams.storage;
 
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -28,9 +28,9 @@ public interface LogStorageReader extends Iterator<DirectBuffer>, Closeable {
 
   /**
    * Positions the reader such that the next call to {@link #next()} would return a block which
-   * contains a {@link io.zeebe.logstreams.log.LoggedEvent} with {@link LoggedEvent#getPosition()}
-   * equal to the given {@code position}, or the highest one which is less than the given {@code
-   * position}.
+   * contains a {@link io.camunda.zeebe.logstreams.log.LoggedEvent} with {@link
+   * LoggedEvent#getPosition()} equal to the given {@code position}, or the highest one which is
+   * less than the given {@code position}.
    *
    * <p>If the {@code position} is negative, it should seek to the first position.
    *

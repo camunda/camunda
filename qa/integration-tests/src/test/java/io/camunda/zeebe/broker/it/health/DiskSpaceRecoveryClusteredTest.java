@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.health;
+package io.camunda.zeebe.broker.it.health;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertProcessInstanceCompleted;
+import static io.camunda.zeebe.broker.it.util.ZeebeAssertHelper.assertProcessInstanceCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.engine.processing.message.MessageObserver;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.engine.processing.message.MessageObserver;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;

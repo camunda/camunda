@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.probes.liveness;
+package io.camunda.zeebe.gateway.impl.probes.liveness;
 
-import io.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
-import io.zeebe.util.health.DelayedHealthIndicator;
-import io.zeebe.util.health.MemoryHealthIndicator;
+import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
+import io.camunda.zeebe.util.health.DelayedHealthIndicator;
+import io.camunda.zeebe.util.health.MemoryHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;

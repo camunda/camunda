@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.api.job;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
-import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.test.util.JsonUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;

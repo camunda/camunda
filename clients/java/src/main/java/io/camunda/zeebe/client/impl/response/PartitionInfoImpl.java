@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
-import io.zeebe.client.api.response.PartitionBrokerHealth;
-import io.zeebe.client.api.response.PartitionBrokerRole;
-import io.zeebe.client.api.response.PartitionInfo;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
+import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
+import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.Arrays;
 
 public class PartitionInfoImpl implements PartitionInfo {

@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor.writers;
+package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import static io.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
+import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.HashMap;
 import java.util.Map;
 

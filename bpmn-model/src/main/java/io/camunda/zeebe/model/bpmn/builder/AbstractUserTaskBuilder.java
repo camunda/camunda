@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import static io.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY_BPMN_LOCATION;
-import static io.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY_BPMN_LOCATION;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.UserTask;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 
 /** @author Sebastian Menski */
 public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<B>>

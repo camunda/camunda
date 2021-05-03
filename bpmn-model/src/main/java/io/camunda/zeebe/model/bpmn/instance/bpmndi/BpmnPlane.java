@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.instance.bpmndi;
 
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.di.Plane;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.di.Plane;
 
 /**
  * The BPMNDI BPMNPlane element

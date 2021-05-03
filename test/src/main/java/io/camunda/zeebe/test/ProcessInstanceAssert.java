@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.test.util.record.ProcessInstanceRecordStream;
-import io.zeebe.test.util.record.ProcessInstances;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.stream.StreamWrapperException;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
+import io.camunda.zeebe.test.util.record.ProcessInstances;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.stream.StreamWrapperException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

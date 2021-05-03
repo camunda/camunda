@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.Event;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.Event;
 
 /** @author Sebastian Menski */
 public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>, E extends Event>

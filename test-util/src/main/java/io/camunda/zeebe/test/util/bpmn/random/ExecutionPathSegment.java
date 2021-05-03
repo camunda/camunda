@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random;
+package io.camunda.zeebe.test.util.bpmn.random;
 
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

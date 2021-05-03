@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
 /** @author Sebastian Menski */
 public class ParallelGatewayTest extends AbstractGatewayTest<ParallelGateway> {}

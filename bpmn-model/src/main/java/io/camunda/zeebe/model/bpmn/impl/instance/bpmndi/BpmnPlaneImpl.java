@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.impl.instance.bpmndi;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_BPMN_ELEMENT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_PLANE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_BPMN_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_PLANE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.di.PlaneImpl;
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnPlane;
-import io.zeebe.model.bpmn.instance.di.Plane;
+import io.camunda.zeebe.model.bpmn.impl.instance.di.PlaneImpl;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnPlane;
+import io.camunda.zeebe.model.bpmn.instance.di.Plane;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

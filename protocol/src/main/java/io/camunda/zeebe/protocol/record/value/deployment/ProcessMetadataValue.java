@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value.deployment;
+package io.camunda.zeebe.protocol.record.value.deployment;
 
-import io.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
 /** Represents deployed process meta data, so all important properties of an deployed process. */
 public interface ProcessMetadataValue extends RecordValue {

@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message;
+package io.camunda.zeebe.engine.processing.message;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 
 public final class MessageExpireProcessor implements TypedRecordProcessor<MessageRecord> {
 

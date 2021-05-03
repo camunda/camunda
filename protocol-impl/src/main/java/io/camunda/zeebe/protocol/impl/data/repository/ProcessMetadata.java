@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.data.repository;
+package io.camunda.zeebe.protocol.impl.data.repository;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class ProcessMetadata extends UnpackedObject {

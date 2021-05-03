@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.partitions.PartitionContext;
-import io.zeebe.broker.system.partitions.PartitionStep;
-import io.zeebe.broker.system.partitions.PartitionTransition;
-import io.zeebe.util.exception.UnrecoverableException;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransition;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

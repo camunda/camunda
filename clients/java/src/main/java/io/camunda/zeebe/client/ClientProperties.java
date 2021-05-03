@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
 import java.time.Duration;
 
@@ -49,7 +49,7 @@ public final class ClientProperties {
   /** @see ZeebeClientBuilder#caCertificatePath(String) */
   public static final String CA_CERTIFICATE_PATH = "zeebe.client.security.certpath";
 
-  /** @see io.zeebe.client.ZeebeClientBuilder#keepAlive(Duration) */
+  /** @see io.camunda.zeebe.client.ZeebeClientBuilder#keepAlive(Duration) */
   public static final String KEEP_ALIVE = "zeebe.client.keepalive";
 
   /** @see ZeebeClientCloudBuilderStep1#withClusterId(java.lang.String) */

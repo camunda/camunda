@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.socket;
+package io.camunda.zeebe.test.util.socket;
 
-import io.zeebe.test.util.TestEnvironment;
+import io.camunda.zeebe.test.util.TestEnvironment;
 import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SocketUtil {
-  static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test.util.SocketUtil");
+  static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test.util.SocketUtil");
 
   private static final String DEFAULT_HOST = "localhost";
   // Docker maps exposed ports to random local ports, starting at 32768; this is undocumented, but

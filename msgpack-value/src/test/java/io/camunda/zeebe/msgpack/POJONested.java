@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack;
+package io.camunda.zeebe.msgpack;
 
-import io.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 
 public final class POJONested extends UnpackedObject {
   private final LongProperty longProp = new LongProperty("foo", -1L);

@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb;
+package io.camunda.zeebe.db.impl.rocksdb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.db.impl.DefaultColumnFamily;
-import io.zeebe.util.ByteValue;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
+import io.camunda.zeebe.util.ByteValue;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Properties;

@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.process;
+package io.camunda.zeebe.gateway.api.process;
 
-import io.zeebe.gateway.api.util.StubbedBrokerClient;
-import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 
 public final class CancelProcessInstanceStub
     implements RequestStub<

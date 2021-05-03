@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.SendTask;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.SendTask;
 
 /** @author Sebastian Menski */
 public class SendTaskBuilder extends AbstractSendTaskBuilder<SendTaskBuilder> {

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.EndEvent;
-import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 
 /** @author Sebastian Menski */
 public abstract class AbstractEndEventBuilder<B extends AbstractEndEventBuilder<B>>

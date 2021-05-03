@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.startup;
+package io.camunda.zeebe.broker.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.response.PublishMessageResponse;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;

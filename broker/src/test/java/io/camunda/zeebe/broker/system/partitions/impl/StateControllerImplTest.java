@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
-import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.logstreams.util.RocksDBWrapper;
-import io.zeebe.snapshots.ConstructableSnapshotStore;
-import io.zeebe.snapshots.PersistableSnapshot;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.TransientSnapshot;
-import io.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
-import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.logstreams.util.RocksDBWrapper;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistableSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

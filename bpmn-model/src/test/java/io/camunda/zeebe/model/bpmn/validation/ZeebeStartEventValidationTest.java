@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation;
+package io.camunda.zeebe.model.bpmn.validation;
 
-import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.model.bpmn.instance.SignalEventDefinition;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.runners.Parameterized.Parameters;

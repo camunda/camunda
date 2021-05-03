@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file;
+package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
-import io.zeebe.journal.Journal;
-import io.zeebe.journal.JournalException;
-import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.JournalRecord;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;

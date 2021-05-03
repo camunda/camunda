@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.network;
+package io.camunda.zeebe.broker.it.network;
 
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeTopologyWaitStrategy;
-import io.zeebe.test.util.asserts.TopologyAssert;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

@@ -5,32 +5,32 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn.behavior;
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
-import io.zeebe.engine.processing.common.CatchEventBehavior;
-import io.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
-import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.engine.processing.message.MessageCorrelationKeyException;
-import io.zeebe.engine.processing.message.MessageNameException;
-import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.ErrorType;
-import io.zeebe.util.Either;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
+import io.camunda.zeebe.engine.processing.message.MessageNameException;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 
 public final class BpmnEventSubscriptionBehavior {

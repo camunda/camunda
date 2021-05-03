@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.backpressure;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
-import io.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.impl.Loggers;
 import java.util.Optional;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 public final class AppendEntryLimiter extends AbstractLimiter<Long> implements AppendLimiter {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger("io.zeebe.logstreams.impl.backpressure");
+      LoggerFactory.getLogger("io.camunda.zeebe.logstreams.impl.backpressure");
   private final Long2ObjectHashMap<Listener> appendedListeners = new Long2ObjectHashMap<>();
   private final AppendBackpressureMetrics metrics;
 

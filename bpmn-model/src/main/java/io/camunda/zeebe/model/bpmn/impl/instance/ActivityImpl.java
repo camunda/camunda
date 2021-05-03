@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_COMPLETION_QUANTITY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_DEFAULT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_FOR_COMPENSATION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_START_QUANTITY;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_ACTIVITY;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_COMPLETION_QUANTITY;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_DEFAULT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_FOR_COMPENSATION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_START_QUANTITY;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_ACTIVITY;
 
-import io.zeebe.model.bpmn.Query;
-import io.zeebe.model.bpmn.impl.BpmnModelConstants;
-import io.zeebe.model.bpmn.impl.QueryImpl;
-import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
-import io.zeebe.model.bpmn.instance.DataInputAssociation;
-import io.zeebe.model.bpmn.instance.DataOutputAssociation;
-import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.IoSpecification;
-import io.zeebe.model.bpmn.instance.LoopCharacteristics;
-import io.zeebe.model.bpmn.instance.Property;
-import io.zeebe.model.bpmn.instance.ResourceRole;
-import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.camunda.zeebe.model.bpmn.Query;
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.model.bpmn.impl.QueryImpl;
+import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.DataInputAssociation;
+import io.camunda.zeebe.model.bpmn.instance.DataOutputAssociation;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.IoSpecification;
+import io.camunda.zeebe.model.bpmn.instance.LoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.Property;
+import io.camunda.zeebe.model.bpmn.instance.ResourceRole;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.ModelBuilder;

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.test;
+package io.camunda.zeebe.broker.test;
 
-import io.zeebe.broker.exporter.debug.DebugHttpExporter;
-import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.broker.exporter.debug.DebugHttpExporter;
+import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Consumer;

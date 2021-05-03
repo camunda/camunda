@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.asserts.grpc;
+package io.camunda.zeebe.test.util.asserts.grpc;
 
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.grpc.Status;
-import io.zeebe.client.api.command.ClientStatusException;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.api.InstanceOfAssertFactory;

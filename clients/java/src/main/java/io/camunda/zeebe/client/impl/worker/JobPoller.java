@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.worker;
+package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.impl.Loggers;
-import io.zeebe.client.impl.response.ActivatedJobImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;

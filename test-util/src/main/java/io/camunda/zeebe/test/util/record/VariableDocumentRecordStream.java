@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.record;
+package io.camunda.zeebe.test.util.record;
 
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.test.util.collection.Maps;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;

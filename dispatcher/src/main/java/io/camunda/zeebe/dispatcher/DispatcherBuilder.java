@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher;
+package io.camunda.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
 
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.camunda.zeebe.util.ByteValue;
+import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.allocation.AllocatedBuffer;
+import io.camunda.zeebe.util.allocation.BufferAllocators;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.util.Objects;
 import org.agrona.BitUtil;
 

@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /**
  * High-level record processor abstraction that implements the common behavior of most

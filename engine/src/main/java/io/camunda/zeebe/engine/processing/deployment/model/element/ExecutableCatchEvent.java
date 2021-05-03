@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.element;
+package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.model.bpmn.util.time.Timer;
-import io.zeebe.util.Either;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.util.Either;
 import java.util.function.BiFunction;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {

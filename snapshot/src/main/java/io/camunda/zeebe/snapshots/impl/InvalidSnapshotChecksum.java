@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots.impl;
+package io.camunda.zeebe.snapshots.impl;
 
-import io.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.nio.file.Path;
 
 @SuppressWarnings("unused")

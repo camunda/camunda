@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.di;
+package io.camunda.zeebe.model.bpmn.impl.instance.di;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_WAYPOINT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_WAYPOINT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.dc.PointImpl;
-import io.zeebe.model.bpmn.instance.dc.Point;
-import io.zeebe.model.bpmn.instance.di.Waypoint;
+import io.camunda.zeebe.model.bpmn.impl.instance.dc.PointImpl;
+import io.camunda.zeebe.model.bpmn.instance.dc.Point;
+import io.camunda.zeebe.model.bpmn.instance.di.Waypoint;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

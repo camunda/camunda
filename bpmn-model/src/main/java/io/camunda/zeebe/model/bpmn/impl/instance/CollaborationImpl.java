@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_CLOSED;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_COLLABORATION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_CLOSED;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_COLLABORATION;
 
-import io.zeebe.model.bpmn.instance.Artifact;
-import io.zeebe.model.bpmn.instance.Collaboration;
-import io.zeebe.model.bpmn.instance.ConversationAssociation;
-import io.zeebe.model.bpmn.instance.ConversationLink;
-import io.zeebe.model.bpmn.instance.ConversationNode;
-import io.zeebe.model.bpmn.instance.CorrelationKey;
-import io.zeebe.model.bpmn.instance.MessageFlow;
-import io.zeebe.model.bpmn.instance.MessageFlowAssociation;
-import io.zeebe.model.bpmn.instance.Participant;
-import io.zeebe.model.bpmn.instance.ParticipantAssociation;
-import io.zeebe.model.bpmn.instance.RootElement;
+import io.camunda.zeebe.model.bpmn.instance.Artifact;
+import io.camunda.zeebe.model.bpmn.instance.Collaboration;
+import io.camunda.zeebe.model.bpmn.instance.ConversationAssociation;
+import io.camunda.zeebe.model.bpmn.instance.ConversationLink;
+import io.camunda.zeebe.model.bpmn.instance.ConversationNode;
+import io.camunda.zeebe.model.bpmn.instance.CorrelationKey;
+import io.camunda.zeebe.model.bpmn.instance.MessageFlow;
+import io.camunda.zeebe.model.bpmn.instance.MessageFlowAssociation;
+import io.camunda.zeebe.model.bpmn.instance.Participant;
+import io.camunda.zeebe.model.bpmn.instance.ParticipantAssociation;
+import io.camunda.zeebe.model.bpmn.instance.RootElement;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

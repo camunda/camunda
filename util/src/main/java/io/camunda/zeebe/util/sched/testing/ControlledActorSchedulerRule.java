@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.testing;
+package io.camunda.zeebe.util.sched.testing;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
-import io.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.ActorThreadGroup;
-import io.zeebe.util.sched.ActorTimerQueue;
-import io.zeebe.util.sched.TaskScheduler;
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.ActorScheduler.ActorThreadFactory;
+import io.camunda.zeebe.util.sched.ActorThread;
+import io.camunda.zeebe.util.sched.ActorThreadGroup;
+import io.camunda.zeebe.util.sched.ActorTimerQueue;
+import io.camunda.zeebe.util.sched.TaskScheduler;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
 import org.junit.rules.ExternalResource;
 

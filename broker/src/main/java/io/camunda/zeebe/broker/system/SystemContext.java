@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system;
+package io.camunda.zeebe.broker.system;
 
-import static io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
+import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.ThreadsCfg;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;

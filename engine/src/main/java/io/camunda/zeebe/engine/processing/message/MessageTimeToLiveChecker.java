@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message;
+package io.camunda.zeebe.engine.processing.message;
 
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.immutable.MessageState;
-import io.zeebe.engine.state.message.StoredMessage;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class MessageTimeToLiveChecker implements Runnable {
 

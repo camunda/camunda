@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.spec;
+package io.camunda.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackType.ARRAY;
-import static io.zeebe.msgpack.spec.MsgPackType.BINARY;
-import static io.zeebe.msgpack.spec.MsgPackType.BOOLEAN;
-import static io.zeebe.msgpack.spec.MsgPackType.FLOAT;
-import static io.zeebe.msgpack.spec.MsgPackType.INTEGER;
-import static io.zeebe.msgpack.spec.MsgPackType.MAP;
-import static io.zeebe.msgpack.spec.MsgPackType.NIL;
-import static io.zeebe.msgpack.spec.MsgPackType.STRING;
-import static io.zeebe.msgpack.spec.MsgPackUtil.toByte;
-import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.ARRAY;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.BINARY;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.BOOLEAN;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.FLOAT;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.INTEGER;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.MAP;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.NIL;
+import static io.camunda.zeebe.msgpack.spec.MsgPackType.STRING;
+import static io.camunda.zeebe.msgpack.spec.MsgPackUtil.toByte;
+import static io.camunda.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;

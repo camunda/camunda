@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.SubProcess;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.dc.Bounds;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.function.Consumer;
 
 public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBuilder<B>>

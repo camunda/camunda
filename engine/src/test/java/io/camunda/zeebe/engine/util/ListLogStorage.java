@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;

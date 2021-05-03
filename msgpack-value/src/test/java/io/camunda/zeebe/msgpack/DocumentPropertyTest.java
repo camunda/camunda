@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack;
+package io.camunda.zeebe.msgpack;
 
-import static io.zeebe.msgpack.MsgPackUtil.encodeMsgPack;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.msgpack.MsgPackUtil.encodeMsgPack;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.msgpack.property.DocumentProperty;
-import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import static io.zeebe.model.bpmn.builder.AbstractBaseElementBuilder.SPACE;
+import static io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder.SPACE;
 
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.SubProcess;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.function.Consumer;
 
 /** @author Sebastian Menski */

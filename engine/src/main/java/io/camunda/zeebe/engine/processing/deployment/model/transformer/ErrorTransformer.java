@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.transformer;
+package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableError;
-import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
-import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.Error;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.Error;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
 public class ErrorTransformer implements ModelElementTransformer<Error> {

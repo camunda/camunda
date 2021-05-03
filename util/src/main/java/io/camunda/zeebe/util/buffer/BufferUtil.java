@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.buffer;
+package io.camunda.zeebe.util.buffer;
 
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
-import static io.zeebe.util.StringUtil.getBytes;
+import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
+import static io.camunda.zeebe.util.StringUtil.getBytes;
 
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;

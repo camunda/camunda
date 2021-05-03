@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.engine;
+package io.camunda.zeebe.broker.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.util.BrokerClassRuleHelper;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.VersionUtil;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;

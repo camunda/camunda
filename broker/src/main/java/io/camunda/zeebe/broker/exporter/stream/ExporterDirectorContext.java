@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.stream;
+package io.camunda.zeebe.broker.exporter.stream;
 
-import io.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import java.util.Collection;
 
 public final class ExporterDirectorContext {

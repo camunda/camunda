@@ -5,27 +5,27 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
-import static io.zeebe.broker.system.configuration.BrokerCfg.ENV_DEBUG_EXPORTER;
-import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CLUSTER_SIZE;
-import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
-import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
-import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
-import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
-import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
-import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
-import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
-import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
-import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.broker.system.configuration.BrokerCfg.ENV_DEBUG_EXPORTER;
+import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CLUSTER_SIZE;
+import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
+import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
+import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
+import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
+import static io.camunda.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
+import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
+import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
+import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.broker.exporter.metrics.MetricsExporter;
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
+import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
@@ -610,7 +610,7 @@ public final class BrokerCfgTest {
   public void shouldReadExporterConfigWithMinimalInfo() {
     // given
     final ExporterCfg expected = new ExporterCfg();
-    expected.setClassName("io.zeebe.exporter.ElasticsearchExporter");
+    expected.setClassName("io.camunda.zeebe.exporter.ElasticsearchExporter");
 
     final BrokerCfg actual = TestConfigReader.readConfig("exporters", environment);
 

@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
-import io.zeebe.model.bpmn.instance.CatchEvent;
-import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
-import io.zeebe.model.bpmn.instance.ConditionalEventDefinition;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.SignalEventDefinition;
-import io.zeebe.model.bpmn.instance.TimeCycle;
-import io.zeebe.model.bpmn.instance.TimeDate;
-import io.zeebe.model.bpmn.instance.TimeDuration;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
+import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.TimeCycle;
+import io.camunda.zeebe.model.bpmn.instance.TimeDate;
+import io.camunda.zeebe.model.bpmn.instance.TimeDuration;
+import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.function.Consumer;
 
 /** @author Sebastian Menski */

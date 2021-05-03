@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.monitoring;
+package io.camunda.zeebe.broker.system.monitoring;
 
-import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
+import static io.camunda.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartitionGroup;
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.util.health.CriticalComponentsHealthMonitor;
-import io.zeebe.util.health.HealthMonitor;
-import io.zeebe.util.health.HealthMonitorable;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
+import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;

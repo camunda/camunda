@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.function.Consumer;
 
 // todo (#6202): remove TypedStreamWriter from this interface's method signatures

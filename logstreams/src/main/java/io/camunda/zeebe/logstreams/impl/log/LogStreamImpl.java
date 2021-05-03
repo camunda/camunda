@@ -5,27 +5,27 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.logstreams.storage.LogStorageReader;
-import io.zeebe.util.exception.UnrecoverableException;
-import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.channel.ActorConditions;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.dispatcher.Dispatchers;
+import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.channel.ActorConditions;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;

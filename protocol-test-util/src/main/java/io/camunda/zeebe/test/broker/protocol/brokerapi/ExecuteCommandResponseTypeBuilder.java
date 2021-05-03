@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.brokerapi;
+package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 

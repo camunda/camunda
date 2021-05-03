@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.commandapi;
+package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 
 public final class ErrorResponseException extends RuntimeException {
 

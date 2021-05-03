@@ -15,9 +15,9 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.zeebe.journal.Journal;
-import io.zeebe.journal.file.SegmentedJournal;
-import io.zeebe.journal.file.SegmentedJournalBuilder;
+import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import java.io.File;
 
 public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {

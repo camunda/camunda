@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record.value.timer;
+package io.camunda.zeebe.protocol.impl.record.value.timer;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class TimerRecord extends UnifiedRecordValue implements TimerRecordValue {

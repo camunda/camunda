@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.clustering.atomix;
+package io.camunda.zeebe.broker.clustering.atomix;
 
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
@@ -19,14 +19,14 @@ import io.atomix.core.AtomixConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.MembershipCfg;
-import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.logstreams.impl.log.ZeebeEntryValidator;
-import io.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
+import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
+import io.camunda.zeebe.logstreams.impl.log.ZeebeEntryValidator;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;

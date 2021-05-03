@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record.value.variable;
+package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.msgpack.property.DocumentProperty;
-import io.zeebe.msgpack.property.EnumProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;

@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher;
+package io.camunda.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchBegin;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagBatchEnd;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -27,11 +27,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.camunda.zeebe.util.allocation.AllocatedBuffer;
+import io.camunda.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;

@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.job;
+package io.camunda.zeebe.gateway.impl.job;
 
-import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
+import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.grpc.protobuf.StatusProto;
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.grpc.ServerStreamObserver;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.metrics.LongPollingMetrics;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ScheduledTimer;
-import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;

@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher.impl.log;
+package io.camunda.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_CLEAN;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_STATUS_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_CLEAN;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_STATUS_OFFSET;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
 
 import org.agrona.concurrent.UnsafeBuffer;
 

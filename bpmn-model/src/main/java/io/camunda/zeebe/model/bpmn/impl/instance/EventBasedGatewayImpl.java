@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EVENT_GATEWAY_TYPE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_INSTANTIATE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_EVENT_BASED_GATEWAY;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EVENT_GATEWAY_TYPE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_INSTANTIATE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_EVENT_BASED_GATEWAY;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.EventBasedGatewayType;
-import io.zeebe.model.bpmn.builder.EventBasedGatewayBuilder;
-import io.zeebe.model.bpmn.instance.EventBasedGateway;
-import io.zeebe.model.bpmn.instance.Gateway;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.EventBasedGatewayType;
+import io.camunda.zeebe.model.bpmn.builder.EventBasedGatewayBuilder;
+import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
+import io.camunda.zeebe.model.bpmn.instance.Gateway;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

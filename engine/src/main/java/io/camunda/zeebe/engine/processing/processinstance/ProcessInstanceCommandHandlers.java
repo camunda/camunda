@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.processinstance;
+package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.HashMap;
 import java.util.Map;
 

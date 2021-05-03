@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_CLOSED;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_EXECUTABLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_PROCESS_TYPE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_PROCESS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_CLOSED;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_EXECUTABLE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_PROCESS_TYPE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_PROCESS;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.ProcessType;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.Artifact;
-import io.zeebe.model.bpmn.instance.Auditing;
-import io.zeebe.model.bpmn.instance.CallableElement;
-import io.zeebe.model.bpmn.instance.CorrelationSubscription;
-import io.zeebe.model.bpmn.instance.FlowElement;
-import io.zeebe.model.bpmn.instance.LaneSet;
-import io.zeebe.model.bpmn.instance.Monitoring;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.model.bpmn.instance.Property;
-import io.zeebe.model.bpmn.instance.ResourceRole;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.ProcessType;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.Artifact;
+import io.camunda.zeebe.model.bpmn.instance.Auditing;
+import io.camunda.zeebe.model.bpmn.instance.CallableElement;
+import io.camunda.zeebe.model.bpmn.instance.CorrelationSubscription;
+import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.LaneSet;
+import io.camunda.zeebe.model.bpmn.instance.Monitoring;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.Property;
+import io.camunda.zeebe.model.bpmn.instance.ResourceRole;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

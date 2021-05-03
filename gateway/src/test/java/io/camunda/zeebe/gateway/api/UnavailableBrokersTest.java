@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api;
+package io.camunda.zeebe.gateway.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
+import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.grpc.Status.Code;
 import io.netty.util.NetUtil;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.ClientStatusException;
-import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.gateway.Gateway;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.impl.configuration.NetworkCfg;
-import io.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
-import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;

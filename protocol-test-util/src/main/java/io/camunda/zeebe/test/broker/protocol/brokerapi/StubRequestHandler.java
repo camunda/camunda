@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.brokerapi;
+package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.RequestHandler;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.impl.ServerResponseImpl;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.transport.RequestHandler;
+import io.camunda.zeebe.transport.ServerOutput;
+import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

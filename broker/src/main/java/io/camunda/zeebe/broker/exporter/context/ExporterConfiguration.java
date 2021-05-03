@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.context;
+package io.camunda.zeebe.broker.exporter.context;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import io.zeebe.exporter.api.ExporterException;
-import io.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
 public final class ExporterConfiguration implements Configuration {

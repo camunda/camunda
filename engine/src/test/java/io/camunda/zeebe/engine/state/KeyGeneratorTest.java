@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state;
+package io.camunda.zeebe.engine.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.Protocol;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.protocol.Protocol;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

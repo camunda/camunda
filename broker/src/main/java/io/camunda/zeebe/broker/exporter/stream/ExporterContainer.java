@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.stream;
+package io.camunda.zeebe.broker.exporter.stream;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.context.ExporterContext;
-import io.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.exporter.api.Exporter;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.context.ScheduledTask;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.exporter.context.ExporterContext;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import org.slf4j.Logger;
 

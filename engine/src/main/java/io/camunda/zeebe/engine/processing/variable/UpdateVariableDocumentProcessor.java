@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.variable;
+package io.camunda.zeebe.engine.processing.variable;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.msgpack.spec.MsgpackReaderException;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 
 public final class UpdateVariableDocumentProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {

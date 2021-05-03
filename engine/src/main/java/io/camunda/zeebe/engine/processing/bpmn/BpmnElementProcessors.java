@@ -5,25 +5,25 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn;
+package io.camunda.zeebe.engine.processing.bpmn;
 
-import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.zeebe.engine.processing.bpmn.container.CallActivityProcessor;
-import io.zeebe.engine.processing.bpmn.container.EventSubProcessProcessor;
-import io.zeebe.engine.processing.bpmn.container.MultiInstanceBodyProcessor;
-import io.zeebe.engine.processing.bpmn.container.ProcessProcessor;
-import io.zeebe.engine.processing.bpmn.container.SubProcessProcessor;
-import io.zeebe.engine.processing.bpmn.event.BoundaryEventProcessor;
-import io.zeebe.engine.processing.bpmn.event.EndEventProcessor;
-import io.zeebe.engine.processing.bpmn.event.IntermediateCatchEventProcessor;
-import io.zeebe.engine.processing.bpmn.event.StartEventProcessor;
-import io.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
-import io.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
-import io.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
-import io.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
-import io.zeebe.engine.processing.bpmn.task.ServiceTaskProcessor;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.container.CallActivityProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.container.EventSubProcessProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.container.MultiInstanceBodyProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.container.ProcessProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.container.SubProcessProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.event.BoundaryEventProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.event.EndEventProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.event.IntermediateCatchEventProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.event.StartEventProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.task.ServiceTaskProcessor;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.EnumMap;
 import java.util.Map;
 

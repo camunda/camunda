@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.TimerInstanceState;
-import io.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
 
 public interface MutableTimerInstanceState extends TimerInstanceState {
 

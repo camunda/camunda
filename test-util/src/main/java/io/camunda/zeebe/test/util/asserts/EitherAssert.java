@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.asserts;
+package io.camunda.zeebe.test.util.asserts;
 
-import io.zeebe.util.Either;
+import io.camunda.zeebe.util.Either;
 import org.assertj.core.api.AbstractObjectAssert;
 
 public final class EitherAssert<L, R>

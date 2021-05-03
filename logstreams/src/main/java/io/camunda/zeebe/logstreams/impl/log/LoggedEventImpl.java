@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
 
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.log.ReadableFragment;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.ReadableFragment;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
 /** @author Sebastian Menski */
 @SuppressWarnings("rawtypes")

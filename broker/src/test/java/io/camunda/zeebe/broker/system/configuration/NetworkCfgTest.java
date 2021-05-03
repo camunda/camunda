@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.impl.configuration.NetworkCfg;
+import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import java.net.InetSocketAddress;
 import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Test;

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record.value.error;
+package io.camunda.zeebe.protocol.impl.record.value.error;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.ErrorRecordValue;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Objects;

@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.stream;
+package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
-import io.zeebe.protocol.record.ValueType;
 
 public final class ExporterMetrics {
 

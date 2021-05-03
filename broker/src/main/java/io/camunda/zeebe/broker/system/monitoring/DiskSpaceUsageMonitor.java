@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.monitoring;
+package io.camunda.zeebe.broker.system.monitoring;
 
-import static io.zeebe.broker.Broker.LOG;
+import static io.camunda.zeebe.broker.Broker.LOG;
 
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.util.sched.Actor;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.util.sched.Actor;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;

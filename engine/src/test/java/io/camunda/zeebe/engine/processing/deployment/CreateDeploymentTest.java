@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment;
+package io.camunda.zeebe.engine.processing.deployment;
 
-import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
+import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.engine.util.EngineRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.protocol.record.Assertions;
-import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.ProcessIntent;
-import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
-import io.zeebe.test.util.Strings;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -652,7 +652,7 @@ public final class CreateDeploymentTest {
 
   private void assertSameResource(
       final ProcessMetadataValue original, final ProcessMetadataValue repeated) {
-    io.zeebe.protocol.record.Assertions.assertThat(repeated)
+    io.camunda.zeebe.protocol.record.Assertions.assertThat(repeated)
         .hasVersion(original.getVersion())
         .hasProcessDefinitionKey(original.getProcessDefinitionKey())
         .hasResourceName(original.getResourceName())

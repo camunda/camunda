@@ -5,37 +5,37 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway;
+package io.camunda.zeebe.gateway;
 
+import io.camunda.zeebe.gateway.grpc.ErrorMappingStreamObserver;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.grpc.ErrorMappingStreamObserver;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 
 public class GatewayGrpcService extends GatewayImplBase {
   private final EndpointManager endpointManager;

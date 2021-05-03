@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 
 public final class RecordProtocolVersionFilter implements MetadataFilter {
 

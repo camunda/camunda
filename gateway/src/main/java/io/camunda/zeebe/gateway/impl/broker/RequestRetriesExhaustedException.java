@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker;
+package io.camunda.zeebe.gateway.impl.broker;
 
-import io.zeebe.gateway.cmd.ClientException;
+import io.camunda.zeebe.gateway.cmd.ClientException;
 
 public final class RequestRetriesExhaustedException extends ClientException {
 

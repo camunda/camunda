@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_GATEWAY_DIRECTION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_GATEWAY;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_GATEWAY_DIRECTION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_GATEWAY;
 
-import io.zeebe.model.bpmn.GatewayDirection;
-import io.zeebe.model.bpmn.builder.AbstractGatewayBuilder;
-import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.Gateway;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.GatewayDirection;
+import io.camunda.zeebe.model.bpmn.builder.AbstractGatewayBuilder;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.Gateway;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

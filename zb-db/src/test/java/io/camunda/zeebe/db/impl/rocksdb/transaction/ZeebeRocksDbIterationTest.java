@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.db.impl.DbCompositeKey;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.db.impl.DbNil;
-import io.zeebe.db.impl.DefaultColumnFamily;
-import io.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
+import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;

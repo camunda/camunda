@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.configuration;
+package io.camunda.zeebe.gateway.impl.configuration;
 
-import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
+import static io.camunda.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.zeebe.util.exception.UncheckedExecutionException;
+import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.Objects;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

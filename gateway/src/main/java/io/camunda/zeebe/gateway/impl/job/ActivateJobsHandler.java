@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.job;
+package io.camunda.zeebe.gateway.impl.job;
 
-import io.zeebe.gateway.grpc.ServerStreamObserver;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 
 /** Can handle an 'activate jobs' request from a client. */
 public interface ActivateJobsHandler {

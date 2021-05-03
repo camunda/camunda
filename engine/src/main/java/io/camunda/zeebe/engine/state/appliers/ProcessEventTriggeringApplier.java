@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.appliers;
+package io.camunda.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableProcessState;
-import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
-import io.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.command;
+package io.camunda.zeebe.client.api.command;
 
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;

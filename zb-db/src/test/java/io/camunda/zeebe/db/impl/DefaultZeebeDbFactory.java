@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl;
+package io.camunda.zeebe.db.impl;
 
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 
 public final class DefaultZeebeDbFactory {
 

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.clock;
+package io.camunda.zeebe.util.sched.clock;
 
 /**
  * Default actor clock implementation; minimizes calls to {@link System#currentTimeMillis()} to once

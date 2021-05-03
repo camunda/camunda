@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.Collaboration;
-import io.zeebe.model.bpmn.instance.Conversation;
-import io.zeebe.model.bpmn.instance.ConversationLink;
-import io.zeebe.model.bpmn.instance.ConversationNode;
-import io.zeebe.model.bpmn.instance.Event;
-import io.zeebe.model.bpmn.instance.MessageFlow;
-import io.zeebe.model.bpmn.instance.Participant;
-import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.Collaboration;
+import io.camunda.zeebe.model.bpmn.instance.Conversation;
+import io.camunda.zeebe.model.bpmn.instance.ConversationLink;
+import io.camunda.zeebe.model.bpmn.instance.ConversationNode;
+import io.camunda.zeebe.model.bpmn.instance.Event;
+import io.camunda.zeebe.model.bpmn.instance.MessageFlow;
+import io.camunda.zeebe.model.bpmn.instance.Participant;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import java.util.Collection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

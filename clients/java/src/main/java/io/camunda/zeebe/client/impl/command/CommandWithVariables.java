@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.camunda.zeebe.client.impl.command;
 
-import io.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.JsonMapper;
 import java.io.InputStream;
 import java.util.Map;
 

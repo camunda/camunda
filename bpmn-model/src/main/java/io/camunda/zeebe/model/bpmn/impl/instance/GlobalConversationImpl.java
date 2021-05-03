@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_GLOBAL_CONVERSATION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_GLOBAL_CONVERSATION;
 
-import io.zeebe.model.bpmn.instance.Collaboration;
-import io.zeebe.model.bpmn.instance.GlobalConversation;
+import io.camunda.zeebe.model.bpmn.instance.Collaboration;
+import io.camunda.zeebe.model.bpmn.instance.GlobalConversation;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

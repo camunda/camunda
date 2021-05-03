@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.command;
+package io.camunda.zeebe.client.api.command;
 
-import io.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import java.time.Duration;
 
 public interface FinalCommandStep<T> {
 
   /**
    * Sets the request timeout for the command. The default request timeout can be configured using
-   * {@link io.zeebe.client.ZeebeClientBuilder#defaultRequestTimeout(Duration)}.
+   * {@link io.camunda.zeebe.client.ZeebeClientBuilder#defaultRequestTimeout(Duration)}.
    *
    * @param requestTimeout the request timeout
    * @return the configured command

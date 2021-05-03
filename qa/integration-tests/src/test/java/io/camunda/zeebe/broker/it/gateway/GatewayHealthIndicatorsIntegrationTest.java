@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.gateway;
+package io.camunda.zeebe.broker.it.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.broker.it.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
-import io.zeebe.gateway.Gateway.Status;
-import io.zeebe.gateway.impl.SpringGatewayBridge;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.probes.health.ClusterAwarenessHealthIndicator;
-import io.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
-import io.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
-import io.zeebe.util.health.MemoryHealthIndicator;
+import io.camunda.zeebe.broker.it.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
+import io.camunda.zeebe.gateway.Gateway.Status;
+import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.impl.probes.health.ClusterAwarenessHealthIndicator;
+import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealthIndicator;
+import io.camunda.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
+import io.camunda.zeebe.util.health.MemoryHealthIndicator;
 import java.util.List;
 import java.util.function.Supplier;
 import org.junit.After;
@@ -135,6 +135,6 @@ public class GatewayHealthIndicatorsIntegrationTest {
   }
 
   @Configuration
-  @ComponentScan({"io.zeebe.gateway.impl", "io.zeebe.util.health"})
+  @ComponentScan({"io.camunda.zeebe.gateway.impl", "io.camunda.zeebe.util.health"})
   static class Config {}
 }

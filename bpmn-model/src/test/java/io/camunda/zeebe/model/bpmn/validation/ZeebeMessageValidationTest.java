@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation;
+package io.camunda.zeebe.model.bpmn.validation;
 
-import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.EndEvent;
-import io.zeebe.model.bpmn.instance.IntermediateThrowEvent;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.ReceiveTask;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 

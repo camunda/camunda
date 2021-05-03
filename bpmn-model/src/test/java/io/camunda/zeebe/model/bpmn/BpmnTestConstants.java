@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import java.util.Arrays;
 import java.util.List;

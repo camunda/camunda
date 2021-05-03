@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway;
+package io.camunda.zeebe.gateway;
 
 import static java.net.InetAddress.getByName;
 
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.util.exception.UncheckedExecutionException;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.net.UnknownHostException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;

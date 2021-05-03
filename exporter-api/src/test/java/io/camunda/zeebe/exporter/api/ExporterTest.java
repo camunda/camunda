@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.api;
+package io.camunda.zeebe.exporter.api;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import org.junit.Test;
 

@@ -5,29 +5,29 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.common;
+package io.camunda.zeebe.engine.processing.common;
 
-import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
-import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
-import io.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
-import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.processing.variable.VariableBehavior;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.record.intent.ProcessEventIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -231,7 +231,7 @@ public class EventTriggerBehavior {
    * @param processDefinitionKey the event's corresponding process definition key
    * @param processInstanceKey the event's corresponding process instance key
    * @param eventScopeKey the event's scope key, which used to index the trigger in {@link
-   *     io.zeebe.engine.state.immutable.EventScopeInstanceState}
+   *     io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState}
    * @param catchEventId the ID of the element which should be triggered by the event
    * @param variables the variables/payload of the event (can be empty)
    * @return the key of the process event

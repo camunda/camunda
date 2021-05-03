@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
-import static io.zeebe.test.ContainerStateAssert.assertThat;
-import static io.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
+import static io.camunda.zeebe.test.ContainerStateAssert.assertThat;
+import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;

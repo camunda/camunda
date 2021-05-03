@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.distribute;
+package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.state.immutable.DeploymentState;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 
 public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
 

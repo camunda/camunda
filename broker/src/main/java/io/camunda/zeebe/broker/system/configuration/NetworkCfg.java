@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
-import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
-import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
+import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 

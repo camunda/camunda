@@ -18,7 +18,7 @@ package io.atomix.raft.partition;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.utils.memory.MemorySize;
-import io.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 
 /** Raft storage configuration. */
 public class RaftStorageConfig {

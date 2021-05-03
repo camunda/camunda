@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.MultiInstanceFlowCondition;
-import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
+import io.camunda.zeebe.model.bpmn.MultiInstanceFlowCondition;
+import io.camunda.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
 import java.util.Collection;
 
 /**

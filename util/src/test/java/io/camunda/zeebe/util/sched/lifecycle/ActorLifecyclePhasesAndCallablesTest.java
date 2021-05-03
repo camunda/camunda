@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.lifecycle;
+package io.camunda.zeebe.util.sched.lifecycle;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.concurrent.Callable;
 import org.junit.Rule;
 import org.junit.Test;

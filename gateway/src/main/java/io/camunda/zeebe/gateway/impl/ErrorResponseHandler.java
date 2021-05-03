@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl;
+package io.camunda.zeebe.gateway.impl;
 
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.ErrorResponseDecoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class ErrorResponseHandler {

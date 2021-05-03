@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.immutable;
+package io.camunda.zeebe.engine.state.immutable;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 

@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import org.agrona.DirectBuffer;
 
 public final class BrokerResolveIncidentRequest extends BrokerExecuteCommand<IncidentRecord> {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.instance.bpmndi;
 
 /**
  * The BPMNDI ParticipantBandKind simpleType

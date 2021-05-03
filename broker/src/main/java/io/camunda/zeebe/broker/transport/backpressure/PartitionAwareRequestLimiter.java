@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.transport.backpressure;
+package io.camunda.zeebe.broker.transport.backpressure;
 
-import static io.zeebe.broker.Broker.LOG;
+import static io.camunda.zeebe.broker.Broker.LOG;
 
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.AIMDLimit;
@@ -16,14 +16,14 @@ import com.netflix.concurrency.limits.limit.Gradient2Limit;
 import com.netflix.concurrency.limits.limit.GradientLimit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
-import io.zeebe.broker.system.configuration.backpressure.AIMDCfg;
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
-import io.zeebe.broker.system.configuration.backpressure.FixedCfg;
-import io.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
-import io.zeebe.broker.system.configuration.backpressure.GradientCfg;
-import io.zeebe.broker.system.configuration.backpressure.VegasCfg;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.broker.system.configuration.backpressure.AIMDCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.backpressure.FixedCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.GradientCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.VegasCfg;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;

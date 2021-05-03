@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
-import io.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

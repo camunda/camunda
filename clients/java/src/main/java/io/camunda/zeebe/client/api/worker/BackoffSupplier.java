@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.worker;
+package io.camunda.zeebe.client.api.worker;
 
-import io.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
+import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import java.time.Duration;
 
 /**
  * The {@link JobWorker} uses this interface to determine the retry delay after each failed request.
  * After a successful request, or if no requests have been sent yet, the delay is reset to the job
  * worker's polling interval (see {@link
- * io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3#pollInterval(Duration)}).
+ * io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3#pollInterval(Duration)}).
  *
  * <p>The supplier is called after a failed request. The worker will then await the supplied delay
  * before sending the next request.
@@ -32,7 +32,7 @@ public interface BackoffSupplier {
 
   /**
    * @return a builder to configure and create a new exponential backoff {@link
-   *     io.zeebe.client.impl.worker.ExponentialBackoff}.
+   *     io.camunda.zeebe.client.impl.worker.ExponentialBackoff}.
    */
   static ExponentialBackoffBuilder newBackoffBuilder() {
     return new ExponentialBackoffBuilderImpl();

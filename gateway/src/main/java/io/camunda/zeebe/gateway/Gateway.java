@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway;
+package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
+import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
 import io.grpc.netty.NettyServerBuilder;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.impl.configuration.NetworkCfg;
-import io.zeebe.gateway.impl.configuration.SecurityCfg;
-import io.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.zeebe.util.VersionUtil;
-import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;

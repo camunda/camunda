@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.probes.health;
+package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static java.util.Objects.requireNonNull;
 
-import io.zeebe.gateway.Gateway.Status;
-import io.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.Gateway.Status;
+import io.camunda.zeebe.gateway.Loggers;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;

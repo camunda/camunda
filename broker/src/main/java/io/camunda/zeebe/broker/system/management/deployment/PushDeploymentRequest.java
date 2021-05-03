@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.management.deployment;
+package io.camunda.zeebe.broker.system.management.deployment;
 
-import static io.zeebe.clustering.management.PushDeploymentRequestDecoder.deploymentHeaderLength;
+import static io.camunda.zeebe.clustering.management.PushDeploymentRequestDecoder.deploymentHeaderLength;
 
-import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
-import io.zeebe.clustering.management.PushDeploymentRequestEncoder;
-import io.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
+import io.camunda.zeebe.clustering.management.PushDeploymentRequestDecoder;
+import io.camunda.zeebe.clustering.management.PushDeploymentRequestEncoder;
+import io.camunda.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

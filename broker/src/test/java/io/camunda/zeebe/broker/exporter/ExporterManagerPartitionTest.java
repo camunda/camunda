@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter;
+package io.camunda.zeebe.broker.exporter;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;

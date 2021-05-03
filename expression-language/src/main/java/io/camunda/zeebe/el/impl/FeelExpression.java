@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl;
+package io.camunda.zeebe.el.impl;
 
-import io.zeebe.el.Expression;
+import io.camunda.zeebe.el.Expression;
 import java.util.Optional;
 import org.camunda.feel.syntaxtree.Exp;
 import org.camunda.feel.syntaxtree.ParsedExpression;

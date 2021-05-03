@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class Loggers {
 
   public static final Logger JOB_POLLER_LOGGER =
-      LoggerFactory.getLogger("io.zeebe.client.job.poller");
+      LoggerFactory.getLogger("io.camunda.zeebe.client.job.poller");
   public static final Logger JOB_WORKER_LOGGER =
-      LoggerFactory.getLogger("io.zeebe.client.job.worker");
-  public static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.client");
+      LoggerFactory.getLogger("io.camunda.zeebe.client.job.worker");
+  public static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.client");
 }

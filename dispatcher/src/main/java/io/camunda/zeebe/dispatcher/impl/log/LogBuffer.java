@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher.impl.log;
+package io.camunda.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_ACTIVE_PARTITION_ID_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_MAX_FRAME_LENGTH_OFFSET;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_META_DATA_LENGTH;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.logMetadataOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_ACTIVE_PARTITION_ID_OFFSET;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_MAX_FRAME_LENGTH_OFFSET;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_NEEDS_CLEANING;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.logMetadataOffset;
 
-import io.zeebe.dispatcher.Loggers;
-import io.zeebe.util.allocation.AllocatedBuffer;
+import io.camunda.zeebe.dispatcher.Loggers;
+import io.camunda.zeebe.util.allocation.AllocatedBuffer;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;

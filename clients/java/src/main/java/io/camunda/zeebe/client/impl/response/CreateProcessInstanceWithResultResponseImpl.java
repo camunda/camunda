@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.response.ProcessInstanceResult;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import java.util.Map;
 
 public final class CreateProcessInstanceWithResultResponseImpl implements ProcessInstanceResult {

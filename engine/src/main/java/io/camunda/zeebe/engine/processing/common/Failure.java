@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.common;
+package io.camunda.zeebe.engine.processing.common;
 
-import io.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.Objects;
 
 /** Simple String wrapper for when something fails and a message needs to be used. */

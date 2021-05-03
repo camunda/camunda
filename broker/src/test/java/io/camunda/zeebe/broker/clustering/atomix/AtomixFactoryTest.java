@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.clustering.atomix;
+package io.camunda.zeebe.broker.clustering.atomix;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -13,9 +13,9 @@ import static org.mockito.Mockito.mock;
 import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.zeebe.util.Environment;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.util.Environment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

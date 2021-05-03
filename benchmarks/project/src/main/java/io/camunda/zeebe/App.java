@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe;
+package io.camunda.zeebe;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigBeanFactory;
 import com.typesafe.config.ConfigFactory;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.config.AppCfg;
 import io.prometheus.client.exporter.HTTPServer;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.config.AppCfg;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;

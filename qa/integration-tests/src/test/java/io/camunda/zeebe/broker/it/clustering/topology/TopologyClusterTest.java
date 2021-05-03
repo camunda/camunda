@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.clustering.topology;
+package io.camunda.zeebe.broker.it.clustering.topology;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.client.api.response.BrokerInfo;
-import io.zeebe.client.api.response.PartitionBrokerRole;
-import io.zeebe.client.api.response.PartitionInfo;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.gateway.Gateway;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.gateway.Gateway;
 import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;

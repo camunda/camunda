@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_PARAMETER_REF;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_RESOURCE_PARAMETER_BINDING;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_PARAMETER_REF;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_RESOURCE_PARAMETER_BINDING;
 
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.Expression;
-import io.zeebe.model.bpmn.instance.ResourceParameter;
-import io.zeebe.model.bpmn.instance.ResourceParameterBinding;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.Expression;
+import io.camunda.zeebe.model.bpmn.instance.ResourceParameter;
+import io.camunda.zeebe.model.bpmn.instance.ResourceParameterBinding;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

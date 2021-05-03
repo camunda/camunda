@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.immutable.BlackListState;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.state.immutable.BlackListState;
 import java.util.function.Consumer;
 
 public interface MutableBlackListState extends BlackListState {

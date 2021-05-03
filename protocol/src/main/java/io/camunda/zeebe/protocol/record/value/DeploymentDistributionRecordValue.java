@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value;
+package io.camunda.zeebe.protocol.record.value;
 
-import io.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
 public interface DeploymentDistributionRecordValue extends RecordValue {
 

@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 

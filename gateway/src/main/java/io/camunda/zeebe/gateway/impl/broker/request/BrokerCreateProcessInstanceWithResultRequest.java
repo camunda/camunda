@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;
 

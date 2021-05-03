@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
+import io.camunda.zeebe.client.impl.response.ActivateJobsResponseImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
-import io.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
-import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.impl.RetriableStreamingFutureImpl;
-import io.zeebe.client.impl.response.ActivateJobsResponseImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;

@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.SpringBrokerBridge;
-import io.zeebe.broker.system.EmbeddedGatewayService;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.allocation.DirectBufferAllocator;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.test.util.TestConfigurationFactory;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +51,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int DEFAULT_TIMEOUT = 25;
   public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
-  protected static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
+  protected static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =

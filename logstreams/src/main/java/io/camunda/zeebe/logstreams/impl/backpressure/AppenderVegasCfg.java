@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.backpressure;
 
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_BETA_LIMIT;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_INIT_LIMIT;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_BETA_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_INIT_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
-import io.zeebe.util.Environment;
+import io.camunda.zeebe.util.Environment;
 
 /**
  * This class should be later be located in the broker configs - due to the primitive usage

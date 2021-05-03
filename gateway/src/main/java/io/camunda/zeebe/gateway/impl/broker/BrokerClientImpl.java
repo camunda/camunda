@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker;
+package io.camunda.zeebe.gateway.impl.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.messaging.Subscription;
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.gateway.impl.configuration.ClusterCfg;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.transport.impl.AtomixClientTransportAdapter;
-import io.zeebe.util.exception.UncheckedExecutionException;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
+import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;

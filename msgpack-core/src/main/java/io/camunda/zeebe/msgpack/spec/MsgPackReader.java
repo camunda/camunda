@@ -5,35 +5,35 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.spec;
+package io.camunda.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackCodes.ARRAY16;
-import static io.zeebe.msgpack.spec.MsgPackCodes.ARRAY32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.BIN16;
-import static io.zeebe.msgpack.spec.MsgPackCodes.BIN32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.BIN8;
-import static io.zeebe.msgpack.spec.MsgPackCodes.BYTE_ORDER;
-import static io.zeebe.msgpack.spec.MsgPackCodes.FALSE;
-import static io.zeebe.msgpack.spec.MsgPackCodes.FLOAT32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.FLOAT64;
-import static io.zeebe.msgpack.spec.MsgPackCodes.INT16;
-import static io.zeebe.msgpack.spec.MsgPackCodes.INT32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.INT64;
-import static io.zeebe.msgpack.spec.MsgPackCodes.INT8;
-import static io.zeebe.msgpack.spec.MsgPackCodes.MAP16;
-import static io.zeebe.msgpack.spec.MsgPackCodes.MAP32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.STR16;
-import static io.zeebe.msgpack.spec.MsgPackCodes.STR32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.STR8;
-import static io.zeebe.msgpack.spec.MsgPackCodes.TRUE;
-import static io.zeebe.msgpack.spec.MsgPackCodes.UINT16;
-import static io.zeebe.msgpack.spec.MsgPackCodes.UINT32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.UINT64;
-import static io.zeebe.msgpack.spec.MsgPackCodes.UINT8;
-import static io.zeebe.msgpack.spec.MsgPackCodes.isFixInt;
-import static io.zeebe.msgpack.spec.MsgPackCodes.isFixStr;
-import static io.zeebe.msgpack.spec.MsgPackCodes.isFixedArray;
-import static io.zeebe.msgpack.spec.MsgPackCodes.isFixedMap;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.ARRAY16;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.ARRAY32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.BIN16;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.BIN32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.BIN8;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.BYTE_ORDER;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.FALSE;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.FLOAT32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.FLOAT64;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.INT16;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.INT32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.INT64;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.INT8;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.MAP16;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.MAP32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.STR16;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.STR32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.STR8;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.TRUE;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.UINT16;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.UINT32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.UINT64;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.UINT8;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.isFixInt;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.isFixStr;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.isFixedArray;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.isFixedMap;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 

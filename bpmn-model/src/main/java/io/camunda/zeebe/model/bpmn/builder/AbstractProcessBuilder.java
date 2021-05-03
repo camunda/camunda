@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.ProcessType;
-import io.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.ProcessType;
+import io.camunda.zeebe.model.bpmn.instance.Process;
 
 /** @author Sebastian Menski */
 public abstract class AbstractProcessBuilder<B extends AbstractProcessBuilder<B>>

@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.timer;
+package io.camunda.zeebe.engine.processing.timer;
 
-import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.immutable.TimerInstanceState;
-import io.zeebe.engine.state.instance.TimerInstance;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ScheduledTimer;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 
 public class DueDateTimerChecker implements StreamProcessorLifecycleAware {

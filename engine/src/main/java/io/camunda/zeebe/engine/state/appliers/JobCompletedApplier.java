@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.appliers;
+package io.camunda.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableJobState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
 class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 

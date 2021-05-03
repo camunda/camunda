@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
-import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
-import io.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
-import io.zeebe.protocol.record.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
+import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
+import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

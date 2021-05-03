@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.msgpack.value.StringValue;
-import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
 

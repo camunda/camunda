@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.incident;
+package io.camunda.zeebe.engine.processing.incident;
 
-import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.IncidentState;
-import io.zeebe.engine.state.immutable.JobState;
-import io.zeebe.engine.state.immutable.JobState.State;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.util.Either;
+import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.util.Either;
 import java.util.function.Consumer;
 
 public final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord> {

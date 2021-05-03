@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack;
+package io.camunda.zeebe.msgpack;
 
-import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.value.ValueArray;
 
 public final class POJOArray extends UnpackedObject {
 

@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
 public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecord> {

@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbException;
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.db.ZeebeDbTransaction;
-import io.zeebe.db.impl.DefaultColumnFamily;
-import io.zeebe.db.impl.DefaultZeebeDbFactory;
-import io.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
+import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import java.io.File;
 import org.junit.Before;
 import org.junit.Rule;

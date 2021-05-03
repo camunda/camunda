@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
+import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.command.ThrowErrorCommandStep1;
-import io.zeebe.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
-import io.zeebe.client.impl.RetriableClientFutureImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;

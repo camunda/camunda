@@ -5,25 +5,25 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.variable.mapping;
+package io.camunda.zeebe.engine.processing.variable.mapping;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 
-import io.zeebe.engine.util.EngineRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
-import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import io.zeebe.model.bpmn.instance.ReceiveTask;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.SubProcess;
-import io.zeebe.protocol.record.Assertions;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;

@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl.feel
+package io.camunda.zeebe.el.impl.feel
 
-import io.zeebe.el.impl.Loggers.LOGGER
-import io.zeebe.msgpack.spec.MsgPackWriter
+import io.camunda.zeebe.el.impl.Loggers.LOGGER
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter
 import org.agrona.concurrent.UnsafeBuffer
 import org.agrona.{DirectBuffer, ExpandableArrayBuffer}
 import org.camunda.feel.syntaxtree.{Val, _}

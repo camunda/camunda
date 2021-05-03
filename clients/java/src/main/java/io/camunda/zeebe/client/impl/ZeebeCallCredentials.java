@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
+import io.camunda.zeebe.client.CredentialsProvider;
 import io.grpc.Metadata;
 import io.grpc.SecurityLevel;
 import io.grpc.Status;
-import io.zeebe.client.CredentialsProvider;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;

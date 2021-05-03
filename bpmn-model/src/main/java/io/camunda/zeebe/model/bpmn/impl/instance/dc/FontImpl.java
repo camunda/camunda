@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.dc;
+package io.camunda.zeebe.model.bpmn.impl.instance.dc;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_BOLD;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_ITALIC;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_STRIKE_THROUGH;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_UNDERLINE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_NAME;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_SIZE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ELEMENT_FONT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_BOLD;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_ITALIC;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_STRIKE_THROUGH;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_IS_UNDERLINE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_NAME;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_SIZE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ELEMENT_FONT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_NS;
 
-import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
-import io.zeebe.model.bpmn.instance.dc.Font;
+import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
+import io.camunda.zeebe.model.bpmn.instance.dc.Font;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

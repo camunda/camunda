@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots;
+package io.camunda.zeebe.snapshots;
 
 public interface ReceivableSnapshotStore extends PersistedSnapshotStore {
 

@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher.integration;
+package io.camunda.zeebe.dispatcher.integration;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.ClaimedFragmentBatch;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.dispatcher.BlockPeek;
+import io.camunda.zeebe.dispatcher.ClaimedFragmentBatch;
+import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.dispatcher.Dispatchers;
+import io.camunda.zeebe.dispatcher.Subscription;
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.util.ByteValue;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.After;

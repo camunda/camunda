@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.builder.di;
+package io.camunda.zeebe.model.bpmn.builder.di;
 
-import static io.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SEQUENCE_FLOW_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SEQUENCE_FLOW_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;

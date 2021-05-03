@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record.value.deployment;
+package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 
 public class DeploymentDistributionRecord extends UnifiedRecordValue
     implements DeploymentDistributionRecordValue {

@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn.behavior;
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashSet;
 import java.util.Set;
 import org.agrona.DirectBuffer;

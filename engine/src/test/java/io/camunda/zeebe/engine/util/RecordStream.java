@@ -5,26 +5,26 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import io.zeebe.engine.processing.streamprocessor.CopiedRecords;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.test.util.stream.StreamWrapper;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.processing.streamprocessor.CopiedRecords;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.test.util.stream.StreamWrapper;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 

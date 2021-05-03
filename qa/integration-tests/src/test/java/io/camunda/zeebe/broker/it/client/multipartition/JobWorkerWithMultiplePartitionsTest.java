@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client.multipartition;
+package io.camunda.zeebe.broker.it.client.multipartition;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.it.util.RecordingJobHandler;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

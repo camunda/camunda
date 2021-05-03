@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.util.time;
+package io.camunda.zeebe.model.bpmn.util.time;
 
-import static io.zeebe.model.bpmn.util.time.TimeDateTimer.parse;
+import static io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer.parse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.ZoneId;

@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.validation;
+package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
-import io.zeebe.model.bpmn.instance.ConditionExpression;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
+import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;

@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.variable;
+package io.camunda.zeebe.engine.processing.variable;
 
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.variable.DocumentEntry;
-import io.zeebe.engine.state.variable.IndexedDocument;
-import io.zeebe.engine.state.variable.VariableInstance;
-import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
-import io.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.variable.DocumentEntry;
+import io.camunda.zeebe.engine.state.variable.IndexedDocument;
+import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
@@ -22,8 +22,8 @@ import org.agrona.DirectBuffer;
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
  * would want to set a variable during processing.
  *
- * <p>Note that for {@link io.zeebe.engine.state.EventApplier}, you should just use the mutable
- * state directly.
+ * <p>Note that for {@link io.camunda.zeebe.engine.state.EventApplier}, you should just use the
+ * mutable state directly.
  */
 public final class VariableBehavior {
 

@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.log;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertNotNull;
 
-import io.zeebe.logstreams.util.LogStreamRule;
-import io.zeebe.logstreams.util.SynchronousLogStream;
-import io.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.logstreams.util.LogStreamRule;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.test.util.TestUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;

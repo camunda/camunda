@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state;
+package io.camunda.zeebe.engine.state;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbString;
 import org.agrona.DirectBuffer;
 
 public final class NextValueManager {

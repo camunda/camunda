@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots.impl;
+package io.camunda.zeebe.snapshots.impl;
 
-import io.zeebe.snapshots.ConstructableSnapshotStore;
-import io.zeebe.snapshots.PersistedSnapshotStore;
-import io.zeebe.snapshots.ReceivableSnapshotStore;
-import io.zeebe.snapshots.ReceivableSnapshotStoreFactory;
-import io.zeebe.snapshots.SnapshotStoreSupplier;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.SchedulingHints;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.SchedulingHints;
 import java.nio.file.Path;
 import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;

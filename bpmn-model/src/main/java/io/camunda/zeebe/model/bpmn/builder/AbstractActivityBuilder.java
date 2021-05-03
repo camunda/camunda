@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
-import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.dc.Bounds;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;

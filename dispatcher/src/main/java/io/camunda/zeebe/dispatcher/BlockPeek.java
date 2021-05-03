@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher;
+package io.camunda.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.position;
 
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;

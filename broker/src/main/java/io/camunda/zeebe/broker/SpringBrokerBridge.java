@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker;
+package io.camunda.zeebe.broker;
 
-import io.zeebe.broker.system.management.BrokerAdminService;
-import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;

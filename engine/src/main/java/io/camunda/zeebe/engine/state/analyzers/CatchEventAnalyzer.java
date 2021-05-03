@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.analyzers;
+package io.camunda.zeebe.engine.state.analyzers;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.zeebe.engine.state.immutable.ElementInstanceState;
-import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import org.agrona.DirectBuffer;
 
 /**

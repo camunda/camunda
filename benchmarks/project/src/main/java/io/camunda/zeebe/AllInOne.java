@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe;
+package io.camunda.zeebe;
 
-import io.zeebe.config.AppCfg;
+import io.camunda.zeebe.config.AppCfg;
 import java.util.Arrays;
 import java.util.List;
 

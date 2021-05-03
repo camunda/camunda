@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.jar;
+package io.camunda.zeebe.broker.exporter.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assume.assumeTrue;
 
-import io.zeebe.broker.exporter.util.JarCreatorRule;
-import io.zeebe.broker.exporter.util.TestJarExporter;
+import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
+import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Ignore;

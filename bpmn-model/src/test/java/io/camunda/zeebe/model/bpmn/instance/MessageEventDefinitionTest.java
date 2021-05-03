@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.impl.instance.OperationRef;
+import io.camunda.zeebe.model.bpmn.impl.instance.OperationRef;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.Test;

@@ -28,7 +28,7 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.Journal;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

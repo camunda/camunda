@@ -5,27 +5,27 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.variable;
+package io.camunda.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.appliers.EventAppliers;
-import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.RecordingTypedEventWriter;
-import io.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
-import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.VariableRecordValueAssert;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.ZeebeDbState;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
+import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValueAssert;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.List;
 import java.util.Map;

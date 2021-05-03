@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.test.UpdateTestCase.TestCaseBuilder;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.test.UpdateTestCase.TestCaseBuilder;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Stream;

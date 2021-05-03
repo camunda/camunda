@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
 
 /**
  * The BPMN messageFlow element

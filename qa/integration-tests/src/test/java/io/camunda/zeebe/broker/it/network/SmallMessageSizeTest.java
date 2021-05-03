@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.network;
+package io.camunda.zeebe.broker.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.broker.it.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;

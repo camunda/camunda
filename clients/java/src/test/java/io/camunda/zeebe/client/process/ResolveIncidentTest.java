@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.process;
+package io.camunda.zeebe.client.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import java.time.Duration;
 import org.junit.Test;
 

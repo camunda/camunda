@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record;
+package io.camunda.zeebe.protocol.impl.record;
 
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.protocol.record.RecordMetadataDecoder;
-import io.zeebe.protocol.record.RecordMetadataEncoder;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.util.VersionUtil;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
+import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.agrona.DirectBuffer;

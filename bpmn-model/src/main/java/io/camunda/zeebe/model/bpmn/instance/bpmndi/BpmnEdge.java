@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.instance.bpmndi;
 
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.di.DiagramElement;
-import io.zeebe.model.bpmn.instance.di.LabeledEdge;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.di.DiagramElement;
+import io.camunda.zeebe.model.bpmn.instance.di.LabeledEdge;
 
 /**
  * The BPMNDI BPMNEdge element

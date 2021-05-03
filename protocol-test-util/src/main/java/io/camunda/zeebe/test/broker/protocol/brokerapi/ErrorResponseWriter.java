@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.brokerapi;
+package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.ErrorResponseEncoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
 import java.nio.charset.StandardCharsets;
 import org.agrona.MutableDirectBuffer;
 

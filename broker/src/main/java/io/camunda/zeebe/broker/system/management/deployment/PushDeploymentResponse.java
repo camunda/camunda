@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.management.deployment;
+package io.camunda.zeebe.broker.system.management.deployment;
 
-import io.zeebe.clustering.management.PushDeploymentResponseDecoder;
-import io.zeebe.clustering.management.PushDeploymentResponseEncoder;
-import io.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
+import io.camunda.zeebe.clustering.management.PushDeploymentResponseDecoder;
+import io.camunda.zeebe.clustering.management.PushDeploymentResponseEncoder;
+import io.camunda.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

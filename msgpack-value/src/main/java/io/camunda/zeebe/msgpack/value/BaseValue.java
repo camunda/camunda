@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.value;
+package io.camunda.zeebe.msgpack.value;
 
-import io.zeebe.msgpack.Recyclable;
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.Recyclable;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 
 public abstract class BaseValue implements Recyclable {
   public abstract void writeJSON(StringBuilder builder);

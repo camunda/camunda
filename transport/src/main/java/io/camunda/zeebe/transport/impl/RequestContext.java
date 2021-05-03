@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.transport.impl;
+package io.camunda.zeebe.transport.impl;
 
-import static io.zeebe.transport.impl.AtomixServerTransport.topicName;
+import static io.camunda.zeebe.transport.impl.AtomixServerTransport.topicName;
 
 import io.atomix.utils.net.Address;
-import io.zeebe.util.sched.ScheduledTimer;
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;

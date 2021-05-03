@@ -5,27 +5,27 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.util;
+package io.camunda.zeebe.broker.it.util;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.TestLoggers;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.netty.util.NetUtil;
-import io.zeebe.broker.TestLoggers;
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.PartitionInfo;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;

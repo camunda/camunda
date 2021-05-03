@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.stream.ExporterDirector;
-import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.zeebe.broker.system.monitoring.HealthMetrics;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.snapshots.PersistedSnapshotStore;
-import io.zeebe.util.exception.UnrecoverableException;
-import io.zeebe.util.health.CriticalComponentsHealthMonitor;
-import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthMonitorable;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.brokerapi;
+package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl;
+package io.camunda.zeebe.db.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;

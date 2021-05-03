@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl;
+package io.camunda.zeebe.protocol.impl;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionHashCode;
-import static io.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionPartitionId;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionHashCode;
+import static io.camunda.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionPartitionId;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.concurrent.UnsafeBuffer;

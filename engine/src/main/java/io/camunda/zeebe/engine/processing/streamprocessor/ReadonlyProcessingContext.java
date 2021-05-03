@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.db.TransactionContext;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
 
 public interface ReadonlyProcessingContext {

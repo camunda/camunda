@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;

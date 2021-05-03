@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.instance;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.engine.metrics.IncidentMetrics;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.immutable.IncidentState;
-import io.zeebe.engine.state.mutable.MutableIncidentState;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {

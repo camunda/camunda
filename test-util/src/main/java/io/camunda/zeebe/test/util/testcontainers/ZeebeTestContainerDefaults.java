@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.testcontainers;
+package io.camunda.zeebe.test.util.testcontainers;
 
 import org.testcontainers.utility.DockerImageName;
 

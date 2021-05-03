@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.HumanPerformer;
-import io.zeebe.model.bpmn.instance.Performer;
-import io.zeebe.model.bpmn.instance.PotentialOwner;
-import io.zeebe.model.bpmn.instance.ResourceRole;
-import io.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.HumanPerformer;
+import io.camunda.zeebe.model.bpmn.instance.Performer;
+import io.camunda.zeebe.model.bpmn.instance.PotentialOwner;
+import io.camunda.zeebe.model.bpmn.instance.ResourceRole;
+import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.Test;

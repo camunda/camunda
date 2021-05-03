@@ -5,34 +5,34 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway;
+package io.camunda.zeebe.gateway;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.msgpack.value.LongValue;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
-import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 

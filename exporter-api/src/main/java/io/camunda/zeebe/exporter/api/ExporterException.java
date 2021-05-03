@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.api;
+package io.camunda.zeebe.exporter.api;
 
 public final class ExporterException extends RuntimeException {
   private static final long serialVersionUID = 9144017472787012481L;

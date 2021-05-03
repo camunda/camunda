@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
@@ -17,7 +17,7 @@ public interface MutableVariableState extends VariableState {
    * setting its value to the given {@code value}.
    *
    * <p>This method is expected to be called directly ONLY from an {@link
-   * io.zeebe.engine.state.EventApplier} or from tests.
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
    *
    * @param key the variable key
    * @param scopeKey the local scope of the variable
@@ -33,7 +33,7 @@ public interface MutableVariableState extends VariableState {
    * setting its value to the given {@code value}.
    *
    * <p>This method is expected to be called directly ONLY from an {@link
-   * io.zeebe.engine.state.EventApplier} or from tests.
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
    *
    * @param key the variable key
    * @param scopeKey the local scope of the variable

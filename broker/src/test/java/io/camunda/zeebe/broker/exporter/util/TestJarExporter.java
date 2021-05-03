@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.util;
+package io.camunda.zeebe.broker.exporter.util;
 
-import io.zeebe.exporter.api.Exporter;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.protocol.record.Record;
 
 /** Simple exported meant to be embedded into a JAR for testing */
 public final class TestJarExporter implements Exporter {

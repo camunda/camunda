@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.metrics;
+package io.camunda.zeebe.engine.metrics;
 
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
-import io.zeebe.protocol.record.RecordType;
 
 public final class StreamProcessorMetrics {
 

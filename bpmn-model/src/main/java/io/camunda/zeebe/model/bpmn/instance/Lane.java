@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.impl.instance.ChildLaneSet;
-import io.zeebe.model.bpmn.impl.instance.PartitionElement;
+import io.camunda.zeebe.model.bpmn.impl.instance.ChildLaneSet;
+import io.camunda.zeebe.model.bpmn.impl.instance.PartitionElement;
 import java.util.Collection;
 
 /**

@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.commandapi;
+package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.TransportFactory;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;

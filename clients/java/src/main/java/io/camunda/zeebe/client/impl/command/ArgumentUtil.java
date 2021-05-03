@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.camunda.zeebe.client.impl.command;
 
 public final class ArgumentUtil {
 

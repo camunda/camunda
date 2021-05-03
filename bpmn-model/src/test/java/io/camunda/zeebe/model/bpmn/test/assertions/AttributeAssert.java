@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.test.assertions;
+package io.camunda.zeebe.model.bpmn.test.assertions;
 
 import java.util.Arrays;
 import java.util.List;

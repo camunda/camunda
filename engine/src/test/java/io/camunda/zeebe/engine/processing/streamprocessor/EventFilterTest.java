@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import org.junit.Test;
 
 public final class EventFilterTest {

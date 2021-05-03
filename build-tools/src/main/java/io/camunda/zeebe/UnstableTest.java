@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe;
+package io.camunda.zeebe;
 
 /**
  * Marker interface used to categorize unstable tests.
@@ -21,7 +21,7 @@ package io.zeebe;
  * <pre>
  * Usage:
  *   {@literal @}Test
- *   {@literal @}Category(io.zeebe.UnstableTest)
+ *   {@literal @}Category(io.camunda.zeebe.UnstableTest)
  *    public void myUnstableTest()
  * </pre>
  */

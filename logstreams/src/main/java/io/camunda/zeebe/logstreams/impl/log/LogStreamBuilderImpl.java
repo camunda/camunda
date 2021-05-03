@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBuilder;
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.channel.ActorConditions;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.channel.ActorConditions;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
 
 public final class LogStreamBuilderImpl implements LogStreamBuilder {

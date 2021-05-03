@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.deployment;
+package io.camunda.zeebe.gateway.api.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import org.junit.Test;
 
 public final class DeployProcessTest extends GatewayTest {

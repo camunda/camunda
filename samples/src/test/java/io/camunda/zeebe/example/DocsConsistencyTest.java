@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.example;
+package io.camunda.zeebe.example;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.example.cluster.TopologyViewer;
-import io.zeebe.example.data.HandleVariablesAsPojo;
-import io.zeebe.example.job.JobWorkerCreator;
-import io.zeebe.example.process.NonBlockingProcessInstanceCreator;
-import io.zeebe.example.process.ProcessDeployer;
-import io.zeebe.example.process.ProcessInstanceCreator;
+import io.camunda.zeebe.example.cluster.TopologyViewer;
+import io.camunda.zeebe.example.data.HandleVariablesAsPojo;
+import io.camunda.zeebe.example.job.JobWorkerCreator;
+import io.camunda.zeebe.example.process.NonBlockingProcessInstanceCreator;
+import io.camunda.zeebe.example.process.ProcessDeployer;
+import io.camunda.zeebe.example.process.ProcessInstanceCreator;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.Test;
@@ -35,15 +35,15 @@ public final class DocsConsistencyTest {
   public static Collection<Object[]> data() {
     return Arrays.asList(
         new Object[][] {
-          {TopologyViewer.class, "io.zeebe.example.cluster.TopologyViewer"},
-          {JobWorkerCreator.class, "io.zeebe.example.job.JobWorkerCreator"},
+          {TopologyViewer.class, "io.camunda.zeebe.example.cluster.TopologyViewer"},
+          {JobWorkerCreator.class, "io.camunda.zeebe.example.job.JobWorkerCreator"},
           {
             NonBlockingProcessInstanceCreator.class,
-            "io.zeebe.example.process.NonBlockingProcessInstanceCreator"
+            "io.camunda.zeebe.example.process.NonBlockingProcessInstanceCreator"
           },
-          {ProcessDeployer.class, "io.zeebe.example.process.ProcessDeployer"},
-          {ProcessInstanceCreator.class, "io.zeebe.example.process.ProcessInstanceCreator"},
-          {HandleVariablesAsPojo.class, "io.zeebe.example.data.HandleVariablesAsPojo"},
+          {ProcessDeployer.class, "io.camunda.zeebe.example.process.ProcessDeployer"},
+          {ProcessInstanceCreator.class, "io.camunda.zeebe.example.process.ProcessInstanceCreator"},
+          {HandleVariablesAsPojo.class, "io.camunda.zeebe.example.data.HandleVariablesAsPojo"},
         });
   }
 

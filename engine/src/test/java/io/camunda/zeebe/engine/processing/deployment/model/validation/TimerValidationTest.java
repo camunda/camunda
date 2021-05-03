@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.validation;
+package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import static io.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
+import static io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.el.ExpressionLanguageFactory;
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.zeebe.model.bpmn.traversal.ModelWalker;
-import io.zeebe.model.bpmn.validation.ValidationVisitor;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
+import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Collectors;

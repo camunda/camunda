@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.api.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.test.util.JsonUtil;
-import io.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.util.JsonUtil;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
 import org.junit.Test;
 

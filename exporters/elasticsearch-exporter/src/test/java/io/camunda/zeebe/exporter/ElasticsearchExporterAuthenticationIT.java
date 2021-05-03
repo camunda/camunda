@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.exporter;
+package io.camunda.zeebe.exporter;
 
-import io.zeebe.exporter.util.ElasticsearchNode;
+import io.camunda.zeebe.exporter.util.ElasticsearchNode;
 import java.util.function.Consumer;
 import org.junit.Test;
 import org.junit.runner.RunWith;

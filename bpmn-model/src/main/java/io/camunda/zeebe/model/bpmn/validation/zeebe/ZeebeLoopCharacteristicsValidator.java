@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation.zeebe;
+package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;

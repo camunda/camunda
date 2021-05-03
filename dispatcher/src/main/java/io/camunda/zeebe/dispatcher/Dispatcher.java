@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher;
+package io.camunda.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferAppender;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.FutureUtil;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.FutureUtil;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;

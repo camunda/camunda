@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.Definitions;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import org.junit.Test;
 
 public class GenerateIdTest {

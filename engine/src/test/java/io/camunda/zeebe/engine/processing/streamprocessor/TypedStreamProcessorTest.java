@@ -5,34 +5,34 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.util.RecordStream;
-import io.zeebe.engine.util.Records;
-import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.util.SynchronousLogStream;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.util.RecordStream;
+import io.camunda.zeebe.engine.util.Records;
+import io.camunda.zeebe.engine.util.TestStreams;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;

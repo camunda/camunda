@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.broker.clustering.topology;
 
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 
 public interface TopologyPartitionListener {
   void onPartitionLeaderUpdated(int partitionId, BrokerInfo member);

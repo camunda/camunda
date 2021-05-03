@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.monitoring;
+package io.camunda.zeebe.broker.system.monitoring;
 
-import io.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

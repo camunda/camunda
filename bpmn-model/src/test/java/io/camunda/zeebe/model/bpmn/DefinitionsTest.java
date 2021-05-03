@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XML_SCHEMA_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XPATH_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XML_SCHEMA_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XPATH_NS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.Definitions;
-import io.zeebe.model.bpmn.instance.ExtensionElements;
-import io.zeebe.model.bpmn.instance.Import;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.model.bpmn.instance.Property;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.util.BpmnModelResource;
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
+import io.camunda.zeebe.model.bpmn.instance.Import;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.Property;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.util.BpmnModelResource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

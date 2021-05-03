@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter;
+package io.camunda.zeebe.test.exporter;
 
 import java.time.Duration;
 

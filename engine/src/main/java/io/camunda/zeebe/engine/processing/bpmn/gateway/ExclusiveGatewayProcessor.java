@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn.gateway;
+package io.camunda.zeebe.engine.processing.bpmn.gateway;
 
-import io.zeebe.el.Expression;
-import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.processing.bpmn.BpmnElementProcessor;
-import io.zeebe.engine.processing.bpmn.BpmnProcessingException;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.ErrorType;
-import io.zeebe.util.Either;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ExclusiveGatewayProcessor
     implements BpmnElementProcessor<ExecutableExclusiveGateway> {

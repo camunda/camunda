@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor.sideeffect;
+package io.camunda.zeebe.engine.processing.streamprocessor.sideeffect;
 
 /**
  * An action that is executed at the end of the processing. It will <b>not</b> be executed during

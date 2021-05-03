@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.logstreams;
+package io.camunda.zeebe.broker.logstreams;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.PersistedSnapshotListener;
-import io.zeebe.snapshots.PersistedSnapshotStore;
-import io.zeebe.util.sched.Actor;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.util.sched.Actor;
 
 public final class LogDeletionService extends Actor implements PersistedSnapshotListener {
   private final LogCompactor logCompactor;

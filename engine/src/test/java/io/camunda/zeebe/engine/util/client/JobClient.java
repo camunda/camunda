@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util.client;
+package io.camunda.zeebe.engine.util.client;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.engine.util.StreamProcessorRule;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;

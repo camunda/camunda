@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.di;
+package io.camunda.zeebe.model.bpmn.instance.di;
 
 /**
  * The DI LabeledEdge element

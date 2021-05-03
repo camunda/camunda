@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system;
+package io.camunda.zeebe.broker.system;
 
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.camunda.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

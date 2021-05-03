@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
-import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
-import io.zeebe.model.bpmn.instance.EscalationEventDefinition;
-import io.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 
 /** @author Sebastian Menski */
 public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuilder<B>>

@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.instance;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.immutable.IncidentState;
-import io.zeebe.engine.state.mutable.MutableIncidentState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

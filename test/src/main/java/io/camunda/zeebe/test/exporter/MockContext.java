@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter;
+package io.camunda.zeebe.test.exporter;
 
-import io.zeebe.exporter.api.context.Configuration;
-import io.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Context;
 import org.slf4j.Logger;
 
 public class MockContext implements Context {

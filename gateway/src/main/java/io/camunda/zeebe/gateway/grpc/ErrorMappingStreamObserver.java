@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.grpc;
+package io.camunda.zeebe.gateway.grpc;
 
+import io.camunda.zeebe.gateway.Loggers;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.Loggers;
 
 /**
  * A {@link ServerCallStreamObserver} decorator which will map errors to {@link StatusException}

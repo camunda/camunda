@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_DEFINITION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_MUST_UNDERSTAND;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_EXTENSION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_DEFINITION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_MUST_UNDERSTAND;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_EXTENSION;
 
-import io.zeebe.model.bpmn.instance.Documentation;
-import io.zeebe.model.bpmn.instance.Extension;
+import io.camunda.zeebe.model.bpmn.instance.Documentation;
+import io.camunda.zeebe.model.bpmn.instance.Extension;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

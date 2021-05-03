@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.asserts;
+package io.camunda.zeebe.test.util.asserts;
 
-import io.zeebe.client.api.response.BrokerInfo;
-import io.zeebe.client.api.response.PartitionInfo;
-import io.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.Topology;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;

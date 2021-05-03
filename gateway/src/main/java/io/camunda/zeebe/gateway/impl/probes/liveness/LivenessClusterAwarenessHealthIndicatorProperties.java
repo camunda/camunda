@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.probes.liveness;
+package io.camunda.zeebe.gateway.impl.probes.liveness;
 
-import io.zeebe.util.health.AbstractDelayedHealthIndicatorProperties;
+import io.camunda.zeebe.util.health.AbstractDelayedHealthIndicatorProperties;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

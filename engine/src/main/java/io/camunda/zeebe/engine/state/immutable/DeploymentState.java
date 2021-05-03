@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.immutable;
+package io.camunda.zeebe.engine.state.immutable;
 
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import org.agrona.DirectBuffer;
 
 public interface DeploymentState {

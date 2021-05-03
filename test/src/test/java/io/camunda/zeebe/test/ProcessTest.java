@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;

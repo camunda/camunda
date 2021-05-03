@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message.command;
+package io.camunda.zeebe.engine.processing.message.command;
 
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface PartitionCommandSender {
 

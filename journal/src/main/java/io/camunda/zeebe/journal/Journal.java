@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal;
+package io.camunda.zeebe.journal;
 
-import io.zeebe.journal.JournalException.InvalidChecksum;
-import io.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
+import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import org.agrona.DirectBuffer;
 
 public interface Journal extends AutoCloseable {

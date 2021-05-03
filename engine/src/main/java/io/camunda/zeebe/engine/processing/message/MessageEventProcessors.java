@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message;
+package io.camunda.zeebe.engine.processing.message;
 
-import io.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 
 public final class MessageEventProcessors {
 

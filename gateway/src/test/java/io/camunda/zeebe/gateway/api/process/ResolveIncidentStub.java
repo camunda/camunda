@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.process;
+package io.camunda.zeebe.gateway.api.process;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.gateway.api.util.StubbedBrokerClient;
-import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
 public final class ResolveIncidentStub

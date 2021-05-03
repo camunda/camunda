@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.Map;
 
 public final class ActivatedJobImpl implements ActivatedJob {

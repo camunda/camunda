@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import static io.zeebe.engine.util.StreamProcessingComposite.getLogName;
+import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.EventApplier;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
-import io.zeebe.engine.util.TestStreams.FluentLogWriter;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.util.SynchronousLogStream;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.allocation.DirectBufferAllocator;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 
 public final class StreamProcessorRule implements TestRule {
 
-  private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.broker.test");
+  private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.broker.test");
 
   private static final int PARTITION_ID = 0;
 

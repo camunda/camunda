@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.data.repository;
+package io.camunda.zeebe.protocol.impl.data.repository;
 
-import io.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public final class ProcessMetadataAndResource extends ProcessMetadata {

@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el;
+package io.camunda.zeebe.el;
 
-import io.zeebe.el.impl.FeelExpressionLanguage;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 /** The entry point to create the default {@link ExpressionLanguage}. */
 public class ExpressionLanguageFactory {

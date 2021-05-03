@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.builder.ScriptTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ScriptTaskBuilder;
 
 /**
  * The BPMN scriptTask element

@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client.command;
+package io.camunda.zeebe.broker.it.client.command;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertProcessInstanceCanceled;
+import static io.camunda.zeebe.broker.it.util.ZeebeAssertHelper.assertProcessInstanceCanceled;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status.Code;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.command.ClientStatusException;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.test.util.BrokerClassRuleHelper;
-import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

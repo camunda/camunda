@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.property;
+package io.camunda.zeebe.msgpack.property;
 
-import io.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.LongValue;
 
 public final class LongProperty extends BaseProperty<LongValue> {
   public LongProperty(final String key) {

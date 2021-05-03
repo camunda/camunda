@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.transport.backpressure;
+package io.camunda.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
-import io.zeebe.broker.Loggers;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
@@ -24,7 +24,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     implements RequestLimiter<Intent> {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger("io.zeebe.broker.transport.backpressure");
+      LoggerFactory.getLogger("io.camunda.zeebe.broker.transport.backpressure");
   private static final Set<? extends Intent> WHITE_LISTED_COMMANDS =
       EnumSet.of(JobIntent.COMPLETE, JobIntent.FAIL);
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();

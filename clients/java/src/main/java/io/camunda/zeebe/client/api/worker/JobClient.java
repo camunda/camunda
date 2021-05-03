@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.worker;
+package io.camunda.zeebe.client.api.worker;
 
-import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.FailJobCommandStep1;
-import io.zeebe.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 
 /**
  * A client with access to all job-related operation:

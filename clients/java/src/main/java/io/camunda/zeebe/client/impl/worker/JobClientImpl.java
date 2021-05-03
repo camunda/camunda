@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.worker;
+package io.camunda.zeebe.client.impl.worker;
 
-import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.FailJobCommandStep1;
-import io.zeebe.client.api.command.ThrowErrorCommandStep1;
-import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.client.impl.command.CompleteJobCommandImpl;
-import io.zeebe.client.impl.command.FailJobCommandImpl;
-import io.zeebe.client.impl.command.ThrowErrorCommandImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.impl.command.CompleteJobCommandImpl;
+import io.camunda.zeebe.client.impl.command.FailJobCommandImpl;
+import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.util.function.Predicate;
 
 public final class JobClientImpl implements JobClient {

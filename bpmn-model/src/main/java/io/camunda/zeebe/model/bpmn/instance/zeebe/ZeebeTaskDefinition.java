@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance.zeebe;
+package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 public interface ZeebeTaskDefinition extends BpmnModelElementInstance {
 

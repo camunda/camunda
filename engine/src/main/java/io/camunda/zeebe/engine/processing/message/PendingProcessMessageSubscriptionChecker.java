@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message;
+package io.camunda.zeebe.engine.processing.message;
 
-import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ScheduledTimer;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 
 public final class PendingProcessMessageSubscriptionChecker

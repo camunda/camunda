@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
-import static io.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
+import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;

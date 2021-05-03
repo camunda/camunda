@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.validation;
+package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import io.zeebe.el.Expression;
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.model.bpmn.instance.CatchEvent;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
-import io.zeebe.util.Either;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.camunda.zeebe.util.Either;
 import java.time.format.DateTimeParseException;
 import java.util.function.Function;
 import java.util.function.Predicate;

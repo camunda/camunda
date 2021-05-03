@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.response;
+package io.camunda.zeebe.gateway.impl.broker.response;
 
-import io.zeebe.protocol.impl.encoding.ErrorResponse;
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class BrokerError {
 

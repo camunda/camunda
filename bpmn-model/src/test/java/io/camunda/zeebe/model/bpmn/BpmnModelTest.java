@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
-import io.zeebe.model.bpmn.util.ParseBpmnModelRule;
+import io.camunda.zeebe.model.bpmn.util.ParseBpmnModelRule;
 import org.junit.Before;
 import org.junit.Rule;
 

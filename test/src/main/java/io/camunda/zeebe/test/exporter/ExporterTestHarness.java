@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter;
+package io.camunda.zeebe.test.exporter;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.exporter.api.Exporter;
-import io.zeebe.exporter.api.context.Configuration;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.test.exporter.record.MockRecord;
-import io.zeebe.test.exporter.record.MockRecordMetadata;
-import io.zeebe.test.exporter.record.MockRecordStream;
-import io.zeebe.test.util.TestConfigurationFactory;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.test.exporter.record.MockRecord;
+import io.camunda.zeebe.test.exporter.record.MockRecordMetadata;
+import io.camunda.zeebe.test.exporter.record.MockRecordStream;
+import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ExporterTestHarness {
 
-  private final Logger logger = LoggerFactory.getLogger("io.zeebe.broker.exporter");
+  private final Logger logger = LoggerFactory.getLogger("io.camunda.zeebe.broker.exporter");
   private final MockController controller = new MockController();
   private final Exporter exporter;
   private final int partitionId = 0;
@@ -72,7 +72,7 @@ public class ExporterTestHarness {
    *   broker:
    *     exporters:
    *       elasticsearsch:
-   *         className: io.zeebe.exporter.ElasticsearchExporter
+   *         className: io.camunda.zeebe.exporter.ElasticsearchExporter
    *         args:
    *         ...
    * </code>

@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state;
+package io.camunda.zeebe.engine.state;
 
-import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Applies the state changes for a specific event. */
 public interface EventApplier {

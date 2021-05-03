@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb;
+package io.camunda.zeebe.db.impl.rocksdb;
 
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;

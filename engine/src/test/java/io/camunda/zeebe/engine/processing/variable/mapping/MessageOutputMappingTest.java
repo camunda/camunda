@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.variable.mapping;
+package io.camunda.zeebe.engine.processing.variable.mapping;
 
-import static io.zeebe.engine.processing.variable.mapping.VariableValue.variable;
+import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.util.EngineRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
-import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.intent.VariableIntent;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;

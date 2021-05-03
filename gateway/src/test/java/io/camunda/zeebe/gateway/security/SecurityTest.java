@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.security;
+package io.camunda.zeebe.gateway.security;
 
 import io.atomix.cluster.AtomixCluster;
-import io.zeebe.gateway.Gateway;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.impl.configuration.NetworkCfg;
-import io.zeebe.gateway.impl.configuration.SecurityCfg;
-import io.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
+import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Rule;

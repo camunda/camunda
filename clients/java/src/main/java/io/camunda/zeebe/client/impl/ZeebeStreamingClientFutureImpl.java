@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
 import java.util.function.Consumer;
 

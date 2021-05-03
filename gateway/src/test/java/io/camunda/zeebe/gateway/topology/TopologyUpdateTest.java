@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.topology;
+package io.camunda.zeebe.gateway.topology;
 
-import static io.zeebe.gateway.impl.broker.cluster.BrokerClusterState.NODE_ID_NULL;
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState.NODE_ID_NULL;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;

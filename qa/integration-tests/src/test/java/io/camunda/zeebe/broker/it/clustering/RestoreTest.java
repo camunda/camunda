@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.clustering;
+package io.camunda.zeebe.broker.it.clustering;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.netty.util.NetUtil;
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;

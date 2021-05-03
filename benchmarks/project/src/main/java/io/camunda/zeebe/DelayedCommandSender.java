@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe;
+package io.camunda.zeebe;
 
-import io.zeebe.Worker.DelayedCommand;
+import io.camunda.zeebe.Worker.DelayedCommand;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;

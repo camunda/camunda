@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.future;
+package io.camunda.zeebe.util.sched.future;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ActorTask;
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.FutureUtil;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.ActorTask;
+import io.camunda.zeebe.util.sched.ActorThread;
+import io.camunda.zeebe.util.sched.FutureUtil;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;

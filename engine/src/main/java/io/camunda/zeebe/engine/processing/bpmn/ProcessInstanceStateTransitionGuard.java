@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn;
+package io.camunda.zeebe.engine.processing.bpmn;
 
-import io.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
-import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.util.Either;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 
 /**

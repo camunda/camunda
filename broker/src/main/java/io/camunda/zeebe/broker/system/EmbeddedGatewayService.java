@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system;
+package io.camunda.zeebe.broker.system;
 
 import io.atomix.core.Atomix;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.gateway.Gateway;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.Gateway;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Function;

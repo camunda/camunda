@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.TransactionMethod;
-import io.zeebe.model.bpmn.instance.Transaction;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.TransactionMethod;
+import io.camunda.zeebe.model.bpmn.instance.Transaction;
 
 /** @author Thorben Lindhauer */
 public class AbstractTransactionBuilder<B extends AbstractTransactionBuilder<B>>

@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn.behavior;
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.processing.common.Failure;
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.immutable.IncidentState;
-import io.zeebe.engine.state.immutable.ZeebeState;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 
 public final class BpmnIncidentBehavior {
 

@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.builder.di;
+package io.camunda.zeebe.model.bpmn.builder.di;
 
-import static io.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SEND_TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SEQUENCE_FLOW_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SERVICE_TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SUB_PROCESS_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SEND_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SEQUENCE_FLOW_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SERVICE_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SUB_PROCESS_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.dc.Bounds;
-import io.zeebe.model.bpmn.instance.di.Waypoint;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.di.Waypoint;
 import java.util.Collection;
 import java.util.Iterator;
 import org.junit.Test;

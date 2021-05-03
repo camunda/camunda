@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.data;
+package io.camunda.zeebe.gateway.data;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;

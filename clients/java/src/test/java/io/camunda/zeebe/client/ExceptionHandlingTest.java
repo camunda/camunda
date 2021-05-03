@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.grpc.StatusRuntimeException;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 

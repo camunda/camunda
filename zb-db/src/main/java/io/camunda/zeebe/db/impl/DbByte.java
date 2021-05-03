@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl;
+package io.camunda.zeebe.db.impl;
 
-import io.zeebe.db.DbKey;
-import io.zeebe.db.DbValue;
+import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 

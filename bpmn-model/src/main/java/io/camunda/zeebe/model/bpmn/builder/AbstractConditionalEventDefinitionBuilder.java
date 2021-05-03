@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.Condition;
-import io.zeebe.model.bpmn.instance.ConditionalEventDefinition;
-import io.zeebe.model.bpmn.instance.Event;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.Condition;
+import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Event;
 
 public class AbstractConditionalEventDefinitionBuilder<
         B extends AbstractConditionalEventDefinitionBuilder<B>>

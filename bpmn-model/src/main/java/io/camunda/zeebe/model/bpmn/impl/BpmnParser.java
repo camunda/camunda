@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl;
+package io.camunda.zeebe.model.bpmn.impl;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_20_SCHEMA_LOCATION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_20_SCHEMA_LOCATION;
 
-import io.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.validation.SchemaFactory;

@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeDbState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.protocol.Protocol;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.ZeebeDbState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.Protocol;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 

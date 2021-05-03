@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.brokerapi;
+package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
+import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.atomix.cluster.AtomixCluster;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.Loggers;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
-import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.TransportFactory;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.Loggers;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.test.broker.protocol.brokerapi.data.Topology;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.ServerTransport;
+import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;

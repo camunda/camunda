@@ -5,11 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl;
+package io.camunda.zeebe.el.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class Loggers {
-  public static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.expression-language");
+  public static final Logger LOGGER =
+      LoggerFactory.getLogger("io.camunda.zeebe.expression-language");
 }

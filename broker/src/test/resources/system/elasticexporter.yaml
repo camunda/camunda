@@ -7,7 +7,7 @@ zeebe:
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
       #
       elasticsearch:
-        className: io.zeebe.exporter.ElasticsearchExporter
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter
         #
         args:
           url: http://localhost:9200

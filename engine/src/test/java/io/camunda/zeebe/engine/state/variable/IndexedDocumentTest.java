@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.variable;
+package io.camunda.zeebe.engine.state.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

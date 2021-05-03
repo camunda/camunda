@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.job;
+package io.camunda.zeebe.gateway.impl.job;
 
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.RequestMapper;
-import io.zeebe.gateway.ResponseMapper;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.BrokerRejectionException;
-import io.zeebe.gateway.grpc.ServerStreamObserver;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.PartitionIdIterator;
-import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
-import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.RequestMapper;
+import io.camunda.zeebe.gateway.ResponseMapper;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
+import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
+import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
+import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;

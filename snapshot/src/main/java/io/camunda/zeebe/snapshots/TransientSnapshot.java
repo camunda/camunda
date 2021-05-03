@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots;
+package io.camunda.zeebe.snapshots;
 
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.nio.file.Path;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;

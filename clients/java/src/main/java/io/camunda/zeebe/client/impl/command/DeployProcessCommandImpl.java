@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.camunda.zeebe.client.impl.command;
 
-import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
-import static io.zeebe.client.impl.command.StreamUtil.readInputStream;
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.response.DeploymentEventImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.DeployProcessCommandStep1;
-import io.zeebe.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
-import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.impl.RetriableClientFutureImpl;
-import io.zeebe.client.impl.response.DeploymentEventImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

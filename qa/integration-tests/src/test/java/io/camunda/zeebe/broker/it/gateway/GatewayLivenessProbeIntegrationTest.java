@@ -5,10 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.gateway;
+package io.camunda.zeebe.broker.it.gateway;
 
 import static io.restassured.RestAssured.given;
 
+import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
@@ -17,7 +18,6 @@ import io.restassured.specification.RequestSpecification;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
 import io.zeebe.containers.ZeebePort;
-import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;

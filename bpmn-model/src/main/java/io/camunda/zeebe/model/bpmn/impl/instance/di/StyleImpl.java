@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.di;
+package io.camunda.zeebe.model.bpmn.impl.instance.di;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_ID;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_STYLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_ID;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_STYLE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
-import io.zeebe.model.bpmn.instance.di.Style;
+import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
+import io.camunda.zeebe.model.bpmn.instance.di.Style;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

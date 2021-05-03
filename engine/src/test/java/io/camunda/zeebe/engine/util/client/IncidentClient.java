@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util.client;
+package io.camunda.zeebe.engine.util.client;
 
-import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.engine.util.StreamProcessorRule;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 
 public final class IncidentClient {
 

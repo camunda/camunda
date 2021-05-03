@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.di;
+package io.camunda.zeebe.model.bpmn.impl.instance.di;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_PLANE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_PLANE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
 
-import io.zeebe.model.bpmn.instance.di.DiagramElement;
-import io.zeebe.model.bpmn.instance.di.Node;
-import io.zeebe.model.bpmn.instance.di.Plane;
+import io.camunda.zeebe.model.bpmn.instance.di.DiagramElement;
+import io.camunda.zeebe.model.bpmn.instance.di.Node;
+import io.camunda.zeebe.model.bpmn.instance.di.Plane;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

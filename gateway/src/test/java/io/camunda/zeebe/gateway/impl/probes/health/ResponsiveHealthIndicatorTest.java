@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.probes.health;
+package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,10 +13,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.TopologyRequestStep1;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;

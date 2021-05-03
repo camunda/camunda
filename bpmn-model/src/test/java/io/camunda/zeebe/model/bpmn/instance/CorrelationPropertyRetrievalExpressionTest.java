@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.impl.instance.MessagePath;
+import io.camunda.zeebe.model.bpmn.impl.instance.MessagePath;
 import java.util.Arrays;
 import java.util.Collection;
 

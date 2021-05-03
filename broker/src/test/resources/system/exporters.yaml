@@ -2,4 +2,4 @@ zeebe:
   broker:
     exporters:
       elasticsearch:
-        className: io.zeebe.exporter.ElasticsearchExporter
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter

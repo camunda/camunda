@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.exporter;
+package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.dto.BulkItemError;
+import io.camunda.zeebe.exporter.dto.BulkResponse;
+import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.util.VersionUtil;
 import io.prometheus.client.Histogram;
-import io.zeebe.exporter.dto.BulkItemError;
-import io.zeebe.exporter.dto.BulkResponse;
-import io.zeebe.exporter.dto.PutIndexTemplateResponse;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

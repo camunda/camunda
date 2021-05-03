@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots.impl;
+package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.test.util.asserts.DirectoryAssert;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;

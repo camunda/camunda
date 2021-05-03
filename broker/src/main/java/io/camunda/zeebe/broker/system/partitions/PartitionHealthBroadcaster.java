@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
-import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthStatus;
 
 /** Informs its delegate of partition health changes */
 public final class PartitionHealthBroadcaster implements FailureListener {

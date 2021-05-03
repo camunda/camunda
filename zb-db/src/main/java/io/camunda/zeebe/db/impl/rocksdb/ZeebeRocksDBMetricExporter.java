@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb;
+package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.ZeebeDb;
 import io.prometheus.client.Gauge;
-import io.zeebe.db.ZeebeDb;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

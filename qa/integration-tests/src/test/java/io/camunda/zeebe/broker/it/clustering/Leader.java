@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.clustering;
+package io.camunda.zeebe.broker.it.clustering;
 
-import io.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import java.util.Objects;
 
 public class Leader {

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.command.InternalClientException;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.InternalClientException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;

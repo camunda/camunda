@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.broker.clustering.topology;
 
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.util.LogUtil;
-import io.zeebe.util.VersionUtil;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.util.LogUtil;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;

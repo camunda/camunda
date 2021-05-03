@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.bpmn.behavior;
+package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.zeebe.engine.processing.common.EventHandle;
-import io.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.engine.state.KeyGenerator;
-import io.zeebe.engine.state.deployment.DeployedProcess;
-import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
-import io.zeebe.engine.state.immutable.MessageState;
-import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.immutable.ZeebeState;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 

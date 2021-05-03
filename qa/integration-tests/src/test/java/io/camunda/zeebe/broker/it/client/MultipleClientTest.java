@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client;
+package io.camunda.zeebe.broker.it.client;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.it.util.RecordingJobHandler;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

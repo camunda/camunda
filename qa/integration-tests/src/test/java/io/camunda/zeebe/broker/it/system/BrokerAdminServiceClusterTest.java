@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.system;
+package io.camunda.zeebe.broker.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.RaftServer.Role;
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.system.management.BrokerAdminService;
-import io.zeebe.broker.system.management.PartitionStatus;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
+import io.camunda.zeebe.broker.system.management.PartitionStatus;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Before;

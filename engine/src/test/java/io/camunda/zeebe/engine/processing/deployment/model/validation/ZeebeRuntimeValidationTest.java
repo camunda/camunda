@@ -5,27 +5,27 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.validation;
+package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import static io.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
+import static io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
 import static org.junit.Assert.fail;
 
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.el.ExpressionLanguageFactory;
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.ConditionExpression;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import io.zeebe.model.bpmn.traversal.ModelWalker;
-import io.zeebe.model.bpmn.validation.ValidationVisitor;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
+import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;

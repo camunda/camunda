@@ -5,25 +5,25 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.variable;
+package io.camunda.zeebe.engine.state.variable;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static io.zeebe.test.util.MsgPackUtil.assertEquality;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
+import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.state.immutable.VariableState;
-import io.zeebe.engine.state.instance.ElementInstance;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;

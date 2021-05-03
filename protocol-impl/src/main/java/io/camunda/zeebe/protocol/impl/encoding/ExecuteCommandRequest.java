@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.encoding;
+package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
-import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
-import io.zeebe.protocol.record.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

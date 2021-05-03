@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots;
+package io.camunda.zeebe.snapshots;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.zeebe.snapshots.impl.InvalidSnapshotChecksum;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;

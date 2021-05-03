@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_CALLABLE_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_CALLABLE_ELEMENT;
 
-import io.zeebe.model.bpmn.instance.CallableElement;
-import io.zeebe.model.bpmn.instance.Interface;
-import io.zeebe.model.bpmn.instance.IoBinding;
-import io.zeebe.model.bpmn.instance.IoSpecification;
-import io.zeebe.model.bpmn.instance.RootElement;
+import io.camunda.zeebe.model.bpmn.instance.CallableElement;
+import io.camunda.zeebe.model.bpmn.instance.Interface;
+import io.camunda.zeebe.model.bpmn.instance.IoBinding;
+import io.camunda.zeebe.model.bpmn.instance.IoSpecification;
+import io.camunda.zeebe.model.bpmn.instance.RootElement;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

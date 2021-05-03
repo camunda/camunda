@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.api.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;

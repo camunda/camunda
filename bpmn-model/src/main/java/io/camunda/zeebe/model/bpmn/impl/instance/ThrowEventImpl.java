@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_THROW_EVENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_THROW_EVENT;
 
-import io.zeebe.model.bpmn.instance.DataInput;
-import io.zeebe.model.bpmn.instance.DataInputAssociation;
-import io.zeebe.model.bpmn.instance.Event;
-import io.zeebe.model.bpmn.instance.EventDefinition;
-import io.zeebe.model.bpmn.instance.InputSet;
-import io.zeebe.model.bpmn.instance.ThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.DataInput;
+import io.camunda.zeebe.model.bpmn.instance.DataInputAssociation;
+import io.camunda.zeebe.model.bpmn.instance.Event;
+import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.InputSet;
+import io.camunda.zeebe.model.bpmn.instance.ThrowEvent;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

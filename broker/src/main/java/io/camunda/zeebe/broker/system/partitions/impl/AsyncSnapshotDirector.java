@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
-import io.zeebe.broker.system.partitions.StateController;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.snapshots.TransientSnapshot;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.SchedulingHints;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.SchedulingHints;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import org.slf4j.Logger;
 

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
+import io.camunda.zeebe.client.CredentialsProvider;
 import io.grpc.Metadata;
-import io.zeebe.client.CredentialsProvider;
 
 public final class NoopCredentialsProvider implements CredentialsProvider {
 

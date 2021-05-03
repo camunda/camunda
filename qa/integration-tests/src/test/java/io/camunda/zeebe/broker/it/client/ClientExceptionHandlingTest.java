@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client;
+package io.camunda.zeebe.broker.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.grpc.StatusRuntimeException;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.command.ClientException;
 import java.net.ConnectException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.cmd;
+package io.camunda.zeebe.gateway.cmd;
 
 /**
  * Represents exceptional errors that occur in the gateway-broker client on the client side (i.e.

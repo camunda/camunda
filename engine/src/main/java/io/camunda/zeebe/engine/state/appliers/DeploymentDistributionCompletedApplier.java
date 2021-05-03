@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.appliers;
+package io.camunda.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.mutable.MutableDeploymentState;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
-import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 
 public class DeploymentDistributionCompletedApplier
     implements TypedEventApplier<DeploymentDistributionIntent, DeploymentDistributionRecord> {

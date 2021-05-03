@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static org.rocksdb.Status.Code.Aborted;
 import static org.rocksdb.Status.Code.Busy;

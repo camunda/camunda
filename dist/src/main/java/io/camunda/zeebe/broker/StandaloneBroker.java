@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker;
+package io.camunda.zeebe.broker;
 
 import static java.lang.Runtime.getRuntime;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.shared.EnvironmentHelper;
-import io.zeebe.util.FileUtil;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.shared.EnvironmentHelper;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -28,7 +28,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.env.Environment;
 
 @SpringBootApplication(exclude = ElasticsearchRestClientAutoConfiguration.class)
-@ComponentScan({"io.zeebe.broker", "io.zeebe.shared"})
+@ComponentScan({"io.camunda.zeebe.broker", "io.camunda.zeebe.shared"})
 public class StandaloneBroker implements CommandLineRunner {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 

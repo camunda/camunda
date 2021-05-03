@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
+import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import java.util.Optional;
 
 public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {

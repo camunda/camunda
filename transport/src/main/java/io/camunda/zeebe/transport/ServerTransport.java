@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.transport;
+package io.camunda.zeebe.transport;
 
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 public interface ServerTransport extends ServerOutput, AutoCloseable {
 

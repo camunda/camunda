@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.instance;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.engine.state.immutable.JobState;
-import io.zeebe.engine.state.immutable.JobState.State;
-import io.zeebe.engine.state.mutable.MutableJobState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.test.util.BufferAssert;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.test.util.BufferAssert;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

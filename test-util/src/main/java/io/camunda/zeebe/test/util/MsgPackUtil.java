@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util;
+package io.camunda.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotNull;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.zeebe.test.util.collection.MapBuilder;
+import io.camunda.zeebe.test.util.collection.MapBuilder;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;

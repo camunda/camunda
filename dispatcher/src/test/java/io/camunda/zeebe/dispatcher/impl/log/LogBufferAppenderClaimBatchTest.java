@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher.impl.log;
+package io.camunda.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_TAIL_COUNTER_OFFSET;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.dispatcher.ClaimedFragmentBatch;
+import io.camunda.zeebe.dispatcher.ClaimedFragmentBatch;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;

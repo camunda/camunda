@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system;
+package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import org.junit.Rule;

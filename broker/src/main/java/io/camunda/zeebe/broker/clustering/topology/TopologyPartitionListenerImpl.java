@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.clustering.topology;
+package io.camunda.zeebe.broker.clustering.topology;
 
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.protocol.record.PartitionRole;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.util.sched.ActorControl;
 import org.agrona.collections.Int2IntHashMap;
 
 public final class TopologyPartitionListenerImpl implements TopologyPartitionListener {

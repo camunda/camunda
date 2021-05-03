@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.testing;
+package io.camunda.zeebe.util.sched.testing;
 
-import io.zeebe.util.sched.ActorThread;
-import io.zeebe.util.sched.ActorThreadGroup;
-import io.zeebe.util.sched.ActorTimerQueue;
-import io.zeebe.util.sched.TaskScheduler;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.ActorThread;
+import io.camunda.zeebe.util.sched.ActorThreadGroup;
+import io.camunda.zeebe.util.sched.ActorTimerQueue;
+import io.camunda.zeebe.util.sched.TaskScheduler;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import org.agrona.LangUtil;

@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.worker;
+package io.camunda.zeebe.client.impl.worker;
 
-import static io.zeebe.client.impl.command.ArgumentUtil.ensureGreaterThan;
-import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
-import static io.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureGreaterThan;
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 
-import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.worker.BackoffSupplier;
-import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.client.api.worker.JobHandler;
-import io.zeebe.client.api.worker.JobWorker;
-import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
-import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Arrays;

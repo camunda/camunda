@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state;
+package io.camunda.zeebe.engine.state;
 
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
-import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import java.util.Properties;
 import java.util.function.BiFunction;
 

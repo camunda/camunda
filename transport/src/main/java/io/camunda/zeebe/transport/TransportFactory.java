@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.transport;
+package io.camunda.zeebe.transport;
 
 import io.atomix.cluster.messaging.MessagingService;
-import io.zeebe.transport.impl.AtomixClientTransportAdapter;
-import io.zeebe.transport.impl.AtomixServerTransport;
-import io.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 
 public final class TransportFactory {
 

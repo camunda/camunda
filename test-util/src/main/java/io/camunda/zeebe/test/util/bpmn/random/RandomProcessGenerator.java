@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random;
+package io.camunda.zeebe.test.util.bpmn.random;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.test.util.bpmn.random.blocks.BlockSequenceBuilder.BlockSequenceBuilderFactory;
-import io.zeebe.test.util.bpmn.random.blocks.ProcessBuilder;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.test.util.bpmn.random.blocks.BlockSequenceBuilder.BlockSequenceBuilderFactory;
+import io.camunda.zeebe.test.util.bpmn.random.blocks.ProcessBuilder;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;

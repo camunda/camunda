@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.clustering.topology;
+package io.camunda.zeebe.broker.it.clustering.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.api.response.PartitionInfo;
-import io.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;

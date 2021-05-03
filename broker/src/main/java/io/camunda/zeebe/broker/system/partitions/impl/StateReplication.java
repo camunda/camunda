@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
-import static io.zeebe.util.sched.Actor.buildActorName;
+import static io.camunda.zeebe.util.sched.Actor.buildActorName;
 
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
-import io.zeebe.broker.system.partitions.PartitionMessagingService;
-import io.zeebe.broker.system.partitions.SnapshotReplication;
-import io.zeebe.engine.Loggers;
-import io.zeebe.snapshots.SnapshotChunk;
+import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
+import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
+import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

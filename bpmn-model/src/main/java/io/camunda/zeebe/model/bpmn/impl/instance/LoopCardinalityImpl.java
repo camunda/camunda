@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_LOOP_CARDINALITY;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_LOOP_CARDINALITY;
 
-import io.zeebe.model.bpmn.instance.Expression;
-import io.zeebe.model.bpmn.instance.LoopCardinality;
+import io.camunda.zeebe.model.bpmn.instance.Expression;
+import io.camunda.zeebe.model.bpmn.instance.LoopCardinality;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

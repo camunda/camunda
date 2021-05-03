@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.engine.impl;
+package io.camunda.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.zeebe.broker.clustering.topology.TopologyManager;
-import io.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
-import io.zeebe.engine.processing.message.command.PartitionCommandSender;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.broker.clustering.topology.TopologyManager;
+import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
+import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.sched.ActorControl;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;

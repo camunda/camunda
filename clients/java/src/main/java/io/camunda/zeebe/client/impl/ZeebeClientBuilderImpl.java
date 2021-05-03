@@ -13,24 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
-import static io.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
-import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
-import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
-import static io.zeebe.client.ClientProperties.KEEP_ALIVE;
-import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.zeebe.client.impl.BuilderUtils.appendProperty;
+import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
+import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
 
+import io.camunda.zeebe.client.ClientProperties;
+import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.CredentialsProvider;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.zeebe.client.impl.util.Environment;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;

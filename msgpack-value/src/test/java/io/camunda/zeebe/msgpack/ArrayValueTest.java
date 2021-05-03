@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack;
+package io.camunda.zeebe.msgpack;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.msgpack.spec.MsgPackWriter;
-import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.BaseValue;
-import io.zeebe.msgpack.value.IntegerValue;
-import io.zeebe.msgpack.value.StringValue;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.value.ArrayValue;
+import io.camunda.zeebe.msgpack.value.BaseValue;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;

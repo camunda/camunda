@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.grpc;
+package io.camunda.zeebe.gateway.grpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.util.logging.RecordingAppender;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.Level;

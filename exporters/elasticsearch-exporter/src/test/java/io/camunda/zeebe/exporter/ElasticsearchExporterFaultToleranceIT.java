@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.exporter;
+package io.camunda.zeebe.exporter;
 
-import io.zeebe.protocol.record.Record;
-import io.zeebe.test.util.TestUtil;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import org.junit.Test;
 
 public class ElasticsearchExporterFaultToleranceIT

@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.clustering;
+package io.camunda.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
 import java.net.InetSocketAddress;
 import java.util.List;
 import org.junit.Rule;

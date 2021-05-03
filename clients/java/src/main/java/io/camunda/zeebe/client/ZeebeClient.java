@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
-import io.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
-import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployProcessCommandStep1;
-import io.zeebe.client.api.command.PublishMessageCommandStep1;
-import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
-import io.zeebe.client.api.command.SetVariablesCommandStep1;
-import io.zeebe.client.api.command.TopologyRequestStep1;
-import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {

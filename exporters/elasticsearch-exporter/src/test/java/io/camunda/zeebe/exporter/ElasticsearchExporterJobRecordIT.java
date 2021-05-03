@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.exporter;
+package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.api.worker.JobWorker;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Before;

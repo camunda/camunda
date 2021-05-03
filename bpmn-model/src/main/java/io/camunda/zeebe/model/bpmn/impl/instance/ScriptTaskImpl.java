@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_SCRIPT_FORMAT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SCRIPT_TASK;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_SCRIPT_FORMAT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SCRIPT_TASK;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ScriptTaskBuilder;
-import io.zeebe.model.bpmn.instance.Script;
-import io.zeebe.model.bpmn.instance.ScriptTask;
-import io.zeebe.model.bpmn.instance.Task;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ScriptTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.Script;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.zeebe.clustering.management" id="5" version="2"
+  package="io.camunda.zeebe.clustering.management" id="5" version="2"
   semanticVersion="0.1.0" description="Zeebe Cluster Management Protocol" byteOrder="littleEndian">
 
   <xi:include href="../../../../protocol/src/main/resources/common-types.xml"/>

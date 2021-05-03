@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.ordering;
+package io.camunda.zeebe.util.sched.ordering;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;

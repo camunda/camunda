@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation;
+package io.camunda.zeebe.model.bpmn.validation;
 
-import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.EventBasedGateway;
-import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 

@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.element;
+package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import io.zeebe.el.Expression;
+import io.camunda.zeebe.el.Expression;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

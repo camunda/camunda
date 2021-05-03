@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value.deployment;
+package io.camunda.zeebe.protocol.record.value.deployment;
 
 /** Represents a deployed process, which extends the meta data with the acutal resources */
 public interface Process extends ProcessMetadataValue {

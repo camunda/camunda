@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.Query;
-import io.zeebe.model.bpmn.impl.QueryImpl;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.Query;
+import io.camunda.zeebe.model.bpmn.impl.QueryImpl;
 import java.io.InputStream;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
@@ -45,7 +45,7 @@ public abstract class AbstractEventDefinitionTest extends BpmnModelElementInstan
   @Before
   public void getEvent() {
     final InputStream inputStream =
-        ReflectUtil.getResourceAsStream("io/zeebe/model/bpmn/EventDefinitionsTest.xml");
+        ReflectUtil.getResourceAsStream("io/camunda/zeebe/model/bpmn/EventDefinitionsTest.xml");
     final IntermediateThrowEvent event =
         Bpmn.readModelFromStream(inputStream).getModelElementById("event");
     eventDefinitionQuery = new QueryImpl<>(event.getEventDefinitions());

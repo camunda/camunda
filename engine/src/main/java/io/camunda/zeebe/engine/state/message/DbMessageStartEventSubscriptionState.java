@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.message;
+package io.camunda.zeebe.engine.state.message;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbCompositeKey;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.db.impl.DbNil;
-import io.zeebe.db.impl.DbString;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
 public final class DbMessageStartEventSubscriptionState

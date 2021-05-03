@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file.record;
+package io.camunda.zeebe.journal.file.record;
 
-import io.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 
 public final class CorruptedLogException extends UnrecoverableException {
 

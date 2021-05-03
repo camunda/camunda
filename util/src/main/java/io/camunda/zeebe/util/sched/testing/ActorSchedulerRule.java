@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.testing;
+package io.camunda.zeebe.util.sched.testing;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import org.agrona.LangUtil;
 import org.junit.rules.ExternalResource;
 

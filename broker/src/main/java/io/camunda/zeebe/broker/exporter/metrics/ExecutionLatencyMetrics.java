@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.metrics;
+package io.camunda.zeebe.broker.exporter.metrics;
 
 import io.prometheus.client.Histogram;
 

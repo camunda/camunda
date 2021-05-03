@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.journal.file;
+package io.camunda.zeebe.journal.file;
 
-import io.zeebe.journal.file.record.JournalRecordReaderUtil;
-import io.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.file.record.JournalRecordReaderUtil;
+import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;

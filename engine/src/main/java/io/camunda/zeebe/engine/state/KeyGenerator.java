@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state;
+package io.camunda.zeebe.engine.state;
 
 /** Generate unique keys. Should be used for records only. */
 @FunctionalInterface

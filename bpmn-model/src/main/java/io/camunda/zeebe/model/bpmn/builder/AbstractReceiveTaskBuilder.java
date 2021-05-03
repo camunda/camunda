@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
-import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.Operation;
-import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
+import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.Operation;
+import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import java.util.function.Consumer;
 
 /** @author Sebastian Menski */

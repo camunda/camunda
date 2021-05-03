@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.spec;
+package io.camunda.zeebe.msgpack.spec;
 
-import io.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
+import io.camunda.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
 import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

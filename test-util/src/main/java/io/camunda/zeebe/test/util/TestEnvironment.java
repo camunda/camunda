@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util;
+package io.camunda.zeebe.test.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class TestEnvironment {
-  private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test.util");
+  private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test.util");
 
   private static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
   private static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";

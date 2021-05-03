@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.Gateway;
-import io.zeebe.model.bpmn.instance.Task;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.Gateway;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

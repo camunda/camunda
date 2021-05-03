@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation.zeebe;
+package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
-import io.zeebe.model.bpmn.instance.EventDefinition;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;

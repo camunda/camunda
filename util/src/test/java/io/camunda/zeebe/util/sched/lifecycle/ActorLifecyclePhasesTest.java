@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.lifecycle;
+package io.camunda.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.FAILED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
-import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.FAILED;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
+import static io.camunda.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
-import io.zeebe.util.TestUtil;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.util.TestUtil;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;

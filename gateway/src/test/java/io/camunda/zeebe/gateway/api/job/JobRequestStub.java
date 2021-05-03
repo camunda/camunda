@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.api.job;
 
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import org.agrona.DirectBuffer;
 
 public class JobRequestStub {

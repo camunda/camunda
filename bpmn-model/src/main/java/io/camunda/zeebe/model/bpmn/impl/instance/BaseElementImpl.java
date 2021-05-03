@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ID;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_BASE_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ID;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_BASE_ELEMENT;
 
-import io.zeebe.model.bpmn.Query;
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import io.zeebe.model.bpmn.instance.Documentation;
-import io.zeebe.model.bpmn.instance.ExtensionElements;
-import io.zeebe.model.bpmn.instance.di.DiagramElement;
+import io.camunda.zeebe.model.bpmn.Query;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.Documentation;
+import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
+import io.camunda.zeebe.model.bpmn.instance.di.DiagramElement;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;

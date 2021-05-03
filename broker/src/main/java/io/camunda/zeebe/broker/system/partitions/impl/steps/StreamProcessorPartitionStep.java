@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl.steps;
+package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.zeebe.broker.system.partitions.PartitionContext;
-import io.zeebe.broker.system.partitions.PartitionStep;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.engine.state.appliers.EventAppliers;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class StreamProcessorPartitionStep implements PartitionStep {
 

@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.system;
+package io.camunda.zeebe.broker.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.exporter.stream.ExporterPhase;
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.system.management.BrokerAdminService;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
-import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Before;

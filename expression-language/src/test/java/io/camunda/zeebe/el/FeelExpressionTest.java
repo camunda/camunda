@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el;
+package io.camunda.zeebe.el;
 
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.el.impl.FeelExpressionLanguage;
-import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.el.impl.FeelExpressionLanguage;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;

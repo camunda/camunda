@@ -8,11 +8,11 @@ If you observing that the elasticsearch exporter is not able to export data it i
 
 Check the log if you some logs statements which are similar to the following:
 ```
-I 2019-10-17T12:39:27.467341628Z 2019-10-17 12:39:27.467 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-4] WARN  io.zeebe.broker.exporter.elasticsearch - Failed to flush bulk completely
+I 2019-10-17T12:39:27.467341628Z 2019-10-17 12:39:27.467 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-4] WARN  io.camunda.zeebe.broker.exporter.elasticsearch - Failed to flush bulk completely
  
-I 2019-10-17T12:39:29.379064699Z 2019-10-17 12:39:29.378 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-1] WARN  io.zeebe.broker.exporter.elasticsearch - Failed to flush at least one bulk request ElasticsearchException[Elasticsearch exception [type=cluster_block_exception, reason=blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];]]
+I 2019-10-17T12:39:29.379064699Z 2019-10-17 12:39:29.378 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-1] WARN  io.camunda.zeebe.broker.exporter.elasticsearch - Failed to flush at least one bulk request ElasticsearchException[Elasticsearch exception [type=cluster_block_exception, reason=blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];]]
  
-I 2019-10-17T12:39:29.379268820Z 2019-10-17 12:39:29.379 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-1] WARN  io.zeebe.broker.exporter.elasticsearch - Failed to flush bulk completely
+I 2019-10-17T12:39:29.379268820Z 2019-10-17 12:39:29.379 [exporter] [zeebe-1.zeebe.default.svc.cluster.local:26501-zb-fs-workers-1] WARN  io.camunda.zeebe.broker.exporter.elasticsearch - Failed to flush bulk completely
 ```
 
 Please also check the grafana board or directly the nodes.

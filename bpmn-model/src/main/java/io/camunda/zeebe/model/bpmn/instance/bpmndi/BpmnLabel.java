@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.instance.bpmndi;
 
-import io.zeebe.model.bpmn.instance.di.Label;
+import io.camunda.zeebe.model.bpmn.instance.di.Label;
 
 /**
  * The BPMNDI BPMNLabel element

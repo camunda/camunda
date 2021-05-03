@@ -6,7 +6,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
@@ -19,32 +19,32 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>atomix-cluster</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>atomix-utils</artifactId>
     </dependency>
 
@@ -166,11 +166,11 @@
           </platforms>
           <programs>
             <program>
-              <mainClass>io.zeebe.broker.StandaloneBroker</mainClass>
+              <mainClass>io.camunda.zeebe.broker.StandaloneBroker</mainClass>
               <id>broker</id>
             </program>
             <program>
-              <mainClass>io.zeebe.gateway.StandaloneGateway</mainClass>
+              <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
               <id>gateway</id>
             </program>
           </programs>
@@ -233,7 +233,7 @@
         <configuration>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
-            <dependency>io.zeebe:zeebe-elasticsearch-exporter</dependency>
+            <dependency>io.camunda.zeebe:zeebe-elasticsearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>

@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.message;
+package io.camunda.zeebe.engine.state.message;
 
-import io.zeebe.db.DbValue;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 
 public final class MessageSubscription extends UnpackedObject implements DbValue {
 

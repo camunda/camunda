@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.commandapi;
+package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.util.collection.MapBuilder;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.test.util.collection.MapBuilder;
+import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
 
 public final class ExecuteCommandRequestBuilder {

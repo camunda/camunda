@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.util;
+package io.camunda.zeebe.logstreams.util;
 
 import io.atomix.raft.storage.RaftStorage.Builder;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBuilder;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;

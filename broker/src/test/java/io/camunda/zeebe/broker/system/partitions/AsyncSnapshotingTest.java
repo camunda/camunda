@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -18,21 +18,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
-import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.snapshots.ConstructableSnapshotStore;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
+import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;

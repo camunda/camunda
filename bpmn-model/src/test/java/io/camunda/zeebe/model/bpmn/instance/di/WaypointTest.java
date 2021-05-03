@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.di;
+package io.camunda.zeebe.model.bpmn.instance.di;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
-import io.zeebe.model.bpmn.instance.dc.Point;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
+import io.camunda.zeebe.model.bpmn.instance.dc.Point;
 import java.util.Collection;
 
 /** @author Sebastian Menski */

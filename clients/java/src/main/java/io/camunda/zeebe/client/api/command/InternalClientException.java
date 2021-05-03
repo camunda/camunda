@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.command;
+package io.camunda.zeebe.client.api.command;
 
 /** Exception which is thrown on internal errors inside the client itself. */
 public final class InternalClientException extends ClientException {

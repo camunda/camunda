@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.storage.atomix;
+package io.camunda.zeebe.logstreams.storage.atomix;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
-import io.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -32,7 +32,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * already copies the data from disk. When switching to zero-copy, however, because of the
  * look-ahead, this reader will have to copy the block. At that point, we may want to look into
  * doing more than a single-step look-ahead (either here or in the {@link
- * io.zeebe.logstreams.log.LogStreamReader}).
+ * io.camunda.zeebe.logstreams.log.LogStreamReader}).
  */
 public final class AtomixLogStorageReader implements LogStorageReader {
 

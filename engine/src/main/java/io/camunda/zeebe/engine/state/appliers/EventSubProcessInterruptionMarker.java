@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.appliers;
+package io.camunda.zeebe.engine.state.appliers;
 
-import io.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
 public class EventSubProcessInterruptionMarker {

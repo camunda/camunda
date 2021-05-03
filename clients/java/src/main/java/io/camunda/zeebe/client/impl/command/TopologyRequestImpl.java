@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.response.TopologyImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.command.TopologyRequestStep1;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.client.impl.RetriableClientFutureImpl;
-import io.zeebe.client.impl.response.TopologyImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;

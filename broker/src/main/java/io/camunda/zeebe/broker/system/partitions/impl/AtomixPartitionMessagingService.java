@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.zeebe.broker.system.partitions.PartitionMessagingService;
+import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;

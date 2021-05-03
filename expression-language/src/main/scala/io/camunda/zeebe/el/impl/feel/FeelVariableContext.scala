@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl.feel
+package io.camunda.zeebe.el.impl.feel
 
-import io.zeebe.el.EvaluationContext
+import io.camunda.zeebe.el.EvaluationContext
 import org.camunda.feel.context.{CustomContext, VariableProvider}
 
 class FeelVariableContext(context: EvaluationContext) extends CustomContext {

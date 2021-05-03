@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor.writers;
+package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
 public interface TypedStreamWriter

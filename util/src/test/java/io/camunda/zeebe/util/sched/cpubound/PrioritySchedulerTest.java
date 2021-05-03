@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.cpubound;
+package io.camunda.zeebe.util.sched.cpubound;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -15,9 +15,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.util.sched.ActorTask;
-import io.zeebe.util.sched.PriorityScheduler;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.ActorTask;
+import io.camunda.zeebe.util.sched.PriorityScheduler;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import org.junit.Test;

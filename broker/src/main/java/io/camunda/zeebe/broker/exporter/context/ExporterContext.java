@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.context;
+package io.camunda.zeebe.broker.exporter.context;
 
-import io.zeebe.exporter.api.context.Configuration;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.EnsureUtil;
 import org.slf4j.Logger;
 
 public final class ExporterContext implements Context {

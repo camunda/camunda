@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb;
+package io.camunda.zeebe.db.impl.rocksdb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class Loggers {
 
-  public static final Logger DB_LOGGER = LoggerFactory.getLogger("io.zeebe.db");
+  public static final Logger DB_LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.db");
 }

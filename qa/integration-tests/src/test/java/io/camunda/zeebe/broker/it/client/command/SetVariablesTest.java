@@ -5,26 +5,26 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client.command;
+package io.camunda.zeebe.broker.it.client.command;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertVariableDocumentUpdated;
+import static io.camunda.zeebe.broker.it.util.ZeebeAssertHelper.assertVariableDocumentUpdated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.api.response.SetVariablesResponse;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status.Code;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.ClientStatusException;
-import io.zeebe.client.api.response.SetVariablesResponse;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.test.util.BrokerClassRuleHelper;
-import io.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
-import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.Before;

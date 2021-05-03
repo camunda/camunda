@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.repo;
+package io.camunda.zeebe.broker.exporter.repo;
 
-import io.zeebe.broker.exporter.context.ExporterConfiguration;
-import io.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
+import io.camunda.zeebe.exporter.api.Exporter;
 import java.util.Map;
 
 public class ExporterDescriptor {

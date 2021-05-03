@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.variable;
+package io.camunda.zeebe.engine.state.variable;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbCompositeKey;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.db.impl.DbString;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.instance.ParentScopeKey;
-import io.zeebe.engine.state.instance.TemporaryVariables;
-import io.zeebe.engine.state.mutable.MutableVariableState;
-import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.instance.ParentScopeKey;
+import io.camunda.zeebe.engine.state.instance.TemporaryVariables;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;

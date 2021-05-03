@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file;
+package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.journal.Journal;
-import io.zeebe.journal.JournalException.InvalidChecksum;
-import io.zeebe.journal.JournalException.InvalidIndex;
-import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.record.CorruptedLogException;
-import io.zeebe.journal.file.record.PersistedJournalRecord;
-import io.zeebe.journal.file.record.RecordData;
-import io.zeebe.journal.file.record.RecordMetadata;
+import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
+import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.journal.file.record.PersistedJournalRecord;
+import io.camunda.zeebe.journal.file.record.RecordData;
+import io.camunda.zeebe.journal.file.record.RecordMetadata;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

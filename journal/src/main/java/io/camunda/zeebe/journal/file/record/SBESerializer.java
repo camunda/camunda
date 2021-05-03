@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file.record;
+package io.camunda.zeebe.journal.file.record;
 
-import io.zeebe.journal.file.MessageHeaderDecoder;
-import io.zeebe.journal.file.MessageHeaderEncoder;
-import io.zeebe.journal.file.RecordDataDecoder;
-import io.zeebe.journal.file.RecordDataEncoder;
-import io.zeebe.journal.file.RecordMetadataDecoder;
-import io.zeebe.journal.file.RecordMetadataEncoder;
+import io.camunda.zeebe.journal.file.MessageHeaderDecoder;
+import io.camunda.zeebe.journal.file.MessageHeaderEncoder;
+import io.camunda.zeebe.journal.file.RecordDataDecoder;
+import io.camunda.zeebe.journal.file.RecordDataEncoder;
+import io.camunda.zeebe.journal.file.RecordMetadataDecoder;
+import io.camunda.zeebe.journal.file.RecordMetadataEncoder;
 import java.nio.BufferOverflowException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.log;
 
-import io.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Iterator;
 
 /**

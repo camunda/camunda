@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
+import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.transport.ServerTransport;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 

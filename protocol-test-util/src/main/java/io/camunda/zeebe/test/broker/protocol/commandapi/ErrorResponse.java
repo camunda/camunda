@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.commandapi;
+package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.ErrorResponseDecoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
 public final class ErrorResponse implements BufferReader {

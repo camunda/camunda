@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched;
+package io.camunda.zeebe.util.sched;
 
-import io.zeebe.util.CloseableSilently;
-import io.zeebe.util.Loggers;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 

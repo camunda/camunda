@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import static io.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.RECOVERABLE_ERROR_CODES;
+import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.RECOVERABLE_ERROR_CODES;
 
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.TransactionOperation;
-import io.zeebe.db.ZeebeDbException;
-import io.zeebe.db.ZeebeDbTransaction;
-import io.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionOperation;
+import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
 

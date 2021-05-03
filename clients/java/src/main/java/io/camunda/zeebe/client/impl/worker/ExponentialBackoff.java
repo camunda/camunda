@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.worker;
+package io.camunda.zeebe.client.impl.worker;
 
-import io.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import java.util.Random;
 
 /**

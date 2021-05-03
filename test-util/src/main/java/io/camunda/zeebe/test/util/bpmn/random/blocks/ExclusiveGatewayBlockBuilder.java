@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random.blocks;
+package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
-import io.zeebe.test.util.bpmn.random.ConstructionContext;
-import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.zeebe.test.util.bpmn.random.IDGenerator;
-import io.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
-import io.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
-import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
+import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
+import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickConditionCase;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepPickDefaultCase;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

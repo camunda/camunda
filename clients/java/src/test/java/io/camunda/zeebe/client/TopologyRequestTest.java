@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
-import static io.zeebe.client.util.RecordingGatewayService.broker;
-import static io.zeebe.client.util.RecordingGatewayService.partition;
-import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY;
-import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY;
-import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER;
-import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.INACTIVE;
-import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.LEADER;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.broker;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.partition;
+import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY;
+import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY;
+import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER;
+import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.INACTIVE;
+import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.BrokerInfo;
-import io.zeebe.client.api.response.PartitionBrokerHealth;
-import io.zeebe.client.api.response.PartitionBrokerRole;
-import io.zeebe.client.api.response.PartitionInfo;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
+import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.time.Duration;
 import java.util.List;
 import org.junit.Test;

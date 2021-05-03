@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.transport.impl;
+package io.camunda.zeebe.transport.impl;
 
 import io.atomix.cluster.messaging.MessagingService;
-import io.zeebe.transport.RequestHandler;
-import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.transport.RequestHandler;
+import io.camunda.zeebe.transport.ServerResponse;
+import io.camunda.zeebe.transport.ServerTransport;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;

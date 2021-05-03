@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.Metadata;
-import io.zeebe.client.impl.oauth.OAuthCredentialsProvider;
-import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import java.io.IOException;
 
 public interface CredentialsProvider {

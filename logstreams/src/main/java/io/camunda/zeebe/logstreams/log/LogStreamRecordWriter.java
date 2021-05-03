@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.log;
 
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 public interface LogStreamRecordWriter extends LogStreamWriter {

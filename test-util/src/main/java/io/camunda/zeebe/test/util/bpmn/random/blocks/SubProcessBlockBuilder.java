@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random.blocks;
+package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
-import io.zeebe.model.bpmn.builder.SubProcessBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
-import io.zeebe.test.util.bpmn.random.ConstructionContext;
-import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.zeebe.test.util.bpmn.random.IDGenerator;
-import io.zeebe.test.util.bpmn.random.RandomProcessGenerator;
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
-import io.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
-import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
+import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
+import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
+import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
+import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
+import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import java.util.Random;
 
 /**

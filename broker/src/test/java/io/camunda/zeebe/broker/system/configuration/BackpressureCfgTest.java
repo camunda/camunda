@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
-import io.zeebe.broker.system.configuration.backpressure.FixedCfg;
-import io.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
-import io.zeebe.broker.system.configuration.backpressure.GradientCfg;
-import io.zeebe.broker.system.configuration.backpressure.VegasCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
+import io.camunda.zeebe.broker.system.configuration.backpressure.FixedCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.GradientCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.VegasCfg;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;

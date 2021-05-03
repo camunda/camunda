@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.response;
+package io.camunda.zeebe.gateway.impl.broker.response;
 
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class BrokerRejection {

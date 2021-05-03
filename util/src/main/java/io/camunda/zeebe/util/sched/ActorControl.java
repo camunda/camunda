@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched;
+package io.camunda.zeebe.util.sched;
 
-import static io.zeebe.util.sched.ActorThread.ensureCalledFromActorThread;
+import static io.camunda.zeebe.util.sched.ActorThread.ensureCalledFromActorThread;
 
-import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
-import io.zeebe.util.sched.channel.ChannelConsumerCondition;
-import io.zeebe.util.sched.channel.ChannelSubscription;
-import io.zeebe.util.sched.channel.ConsumableChannel;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
-import io.zeebe.util.sched.future.FutureContinuationRunnable;
+import io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
+import io.camunda.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.camunda.zeebe.util.sched.channel.ChannelSubscription;
+import io.camunda.zeebe.util.sched.channel.ConsumableChannel;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.AllCompletedFutureConsumer;
+import io.camunda.zeebe.util.sched.future.FutureContinuationRunnable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;

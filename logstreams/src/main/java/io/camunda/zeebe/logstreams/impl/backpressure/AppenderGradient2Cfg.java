@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.backpressure;
 
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_INIT_LIMIT;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_LONG_WINDOW;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MAX_CONCURRENCY;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MIN_LIMIT;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_QUEUE_SIZE;
-import static io.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_RTT_TOLERANCE;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_INIT_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_LONG_WINDOW;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MAX_CONCURRENCY;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MIN_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_QUEUE_SIZE;
+import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_RTT_TOLERANCE;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.Gradient2Limit;
-import io.zeebe.util.Environment;
+import io.camunda.zeebe.util.Environment;
 
 /**
  * This class should be later be located in the broker configs - due to the primitive usage

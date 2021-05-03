@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.job;
+package io.camunda.zeebe.gateway.impl.job;
 
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.LinkedList;
 import java.util.Queue;
 import org.slf4j.Logger;

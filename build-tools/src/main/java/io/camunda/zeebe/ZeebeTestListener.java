@@ -1,4 +1,4 @@
-package io.zeebe;
+package io.camunda.zeebe;
 
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunListener;
@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 
 public final class ZeebeTestListener extends RunListener {
 
-  private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
+  private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
 
   @Override
   public void testStarted(final Description description) throws Exception {

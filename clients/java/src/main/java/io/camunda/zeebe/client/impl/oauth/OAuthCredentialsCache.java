@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.oauth;
+package io.camunda.zeebe.client.impl.oauth;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

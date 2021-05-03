@@ -5,16 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl.feel
+package io.camunda.zeebe.el.impl.feel
 
-import java.time.{Duration, Period, ZoneId, ZonedDateTime}
-import java.{lang, util}
-
-import io.zeebe.el.{EvaluationResult, Expression, ResultType}
-import io.zeebe.util.buffer.BufferUtil.cloneBuffer
+import io.camunda.zeebe.el.{EvaluationResult, Expression, ResultType}
+import io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer
 import org.agrona.DirectBuffer
 import org.camunda.feel.syntaxtree._
 
+import java.time.{Duration, Period, ZoneId, ZonedDateTime}
+import java.{lang, util}
 import scala.collection.JavaConverters._
 
 class FeelEvaluationResult(

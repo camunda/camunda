@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.jar;
+package io.camunda.zeebe.broker.exporter.jar;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -22,7 +22,7 @@ public final class ExporterJarClassLoader extends URLClassLoader {
 
   /** lists of packages from broker base that are exposed at runtime to the external exporters */
   private static final String[] EXPOSED_PACKAGE_PREFIXES =
-      new String[] {"io.zeebe.exporter.api", "org.slf4j.", "org.apache.logging.log4j."};
+      new String[] {"io.camunda.zeebe.exporter.api", "org.slf4j.", "org.apache.logging.log4j."};
 
   private ExporterJarClassLoader(final URL[] urls) {
     super(urls);

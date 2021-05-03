@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter;
+package io.camunda.zeebe.test.exporter;
 
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;

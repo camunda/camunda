@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl;
+package io.camunda.zeebe.model.bpmn.impl;
 
-import io.zeebe.model.bpmn.BpmnModelException;
-import io.zeebe.model.bpmn.Query;
+import io.camunda.zeebe.model.bpmn.BpmnModelException;
+import io.camunda.zeebe.model.bpmn.Query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

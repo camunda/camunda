@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message;
+package io.camunda.zeebe.engine.processing.message;
 
-import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.state.immutable.MessageState;
-import io.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {

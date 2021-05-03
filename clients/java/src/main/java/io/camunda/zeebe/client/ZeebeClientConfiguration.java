@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
-import io.zeebe.client.api.JsonMapper;
 import java.time.Duration;
 import java.util.List;
 
@@ -59,6 +59,6 @@ public interface ZeebeClientConfiguration {
 
   List<ClientInterceptor> getInterceptors();
 
-  /** @see ZeebeClientBuilder#withJsonMapper(io.zeebe.client.api.JsonMapper) */
+  /** @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper) */
   JsonMapper getJsonMapper();
 }

@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.util.LogStreamReaderRule;
-import io.zeebe.logstreams.util.LogStreamRule;
-import io.zeebe.logstreams.util.LogStreamWriterRule;
-import io.zeebe.util.ByteValue;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
+import io.camunda.zeebe.logstreams.util.LogStreamRule;
+import io.camunda.zeebe.logstreams.util.LogStreamWriterRule;
+import io.camunda.zeebe.util.ByteValue;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;

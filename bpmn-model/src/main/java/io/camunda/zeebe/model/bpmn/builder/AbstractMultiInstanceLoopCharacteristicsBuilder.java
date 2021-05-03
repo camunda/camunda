@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.CompletionCondition;
-import io.zeebe.model.bpmn.instance.LoopCardinality;
-import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
+import io.camunda.zeebe.model.bpmn.instance.LoopCardinality;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 
 /** @author Thorben Lindhauer */
 public class AbstractMultiInstanceLoopCharacteristicsBuilder<

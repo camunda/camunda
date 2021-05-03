@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file;
+package io.camunda.zeebe.journal.file;
 
-import static io.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
+import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
-import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;
 
 class SegmentedJournalReader implements JournalReader {

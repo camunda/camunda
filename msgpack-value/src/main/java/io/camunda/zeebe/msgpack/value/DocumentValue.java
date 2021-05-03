@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.value;
+package io.camunda.zeebe.msgpack.value;
 
-import io.zeebe.msgpack.spec.MsgPackCodes;
-import io.zeebe.msgpack.spec.MsgPackFormat;
-import io.zeebe.msgpack.spec.MsgPackHelper;
-import io.zeebe.msgpack.spec.MsgPackType;
+import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
+import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

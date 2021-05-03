@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,15 +13,15 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
+import io.camunda.zeebe.broker.clustering.atomix.AtomixFactory;
+import io.camunda.zeebe.broker.system.management.BrokerAdminService;
+import io.camunda.zeebe.broker.system.management.PartitionStatus;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.netty.util.NetUtil;
-import io.zeebe.broker.clustering.atomix.AtomixFactory;
-import io.zeebe.broker.system.management.BrokerAdminService;
-import io.zeebe.broker.system.management.PartitionStatus;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.snapshots.SnapshotId;
-import io.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.agrona.CloseHelper;

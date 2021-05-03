@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.repo;
+package io.camunda.zeebe.broker.exporter.repo;
 
 public final class ExporterInstantiationException extends RuntimeException {
   private static final long serialVersionUID = -7231999951981994615L;

@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.util;
+package io.camunda.zeebe.gateway.api.util;
 
+import io.camunda.zeebe.gateway.EndpointManager;
+import io.camunda.zeebe.gateway.GatewayGrpcService;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
-import io.zeebe.gateway.EndpointManager;
-import io.zeebe.gateway.GatewayGrpcService;
-import io.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.zeebe.gateway.protocol.GatewayGrpc;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
-import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 
 @SuppressWarnings({"rawtypes", "unchecked"})

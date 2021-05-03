@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random.blocks;
+package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilderFactory;
-import io.zeebe.test.util.bpmn.random.ConstructionContext;
-import io.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.zeebe.test.util.bpmn.random.IDGenerator;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
+import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
+import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import java.util.Random;
 
 /** Generates a call activity. The called process is a Process that contains any block sequence. */

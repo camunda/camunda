@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.repo;
+package io.camunda.zeebe.broker.exporter.repo;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
-import io.zeebe.broker.exporter.util.ControlledTestExporter;
-import io.zeebe.broker.exporter.util.JarCreatorRule;
-import io.zeebe.broker.exporter.util.TestJarExporter;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.exporter.api.Exporter;
-import io.zeebe.exporter.api.context.Context;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
+import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
+import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
+import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.protocol.record.Record;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;

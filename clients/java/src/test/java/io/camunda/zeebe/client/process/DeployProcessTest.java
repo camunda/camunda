@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.process;
+package io.camunda.zeebe.client.process;
 
-import static io.zeebe.client.util.RecordingGatewayService.deployedProcess;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.Process;
-import io.zeebe.client.impl.command.StreamUtil;
-import io.zeebe.client.impl.response.ProcessImpl;
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.impl.command.StreamUtil;
+import io.camunda.zeebe.client.impl.response.ProcessImpl;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

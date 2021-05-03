@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation;
+package io.camunda.zeebe.model.bpmn.validation;
 
 import static java.util.stream.Collectors.groupingBy;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import io.zeebe.model.bpmn.traversal.TypeHierarchyVisitor;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.traversal.TypeHierarchyVisitor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;

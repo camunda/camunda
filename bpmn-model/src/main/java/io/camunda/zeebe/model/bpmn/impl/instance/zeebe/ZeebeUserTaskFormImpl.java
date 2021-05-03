@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.impl.instance.zeebe;
+package io.camunda.zeebe.model.bpmn.impl.instance.zeebe;
 
-import io.zeebe.model.bpmn.impl.BpmnModelConstants;
-import io.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.zeebe.model.bpmn.impl.instance.BaseElementImpl;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.camunda.zeebe.model.bpmn.impl.instance.BaseElementImpl;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

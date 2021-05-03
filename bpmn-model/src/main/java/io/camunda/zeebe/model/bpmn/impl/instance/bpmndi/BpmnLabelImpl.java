@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.impl.instance.bpmndi;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_LABEL_STYLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_LABEL;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_LABEL_STYLE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_LABEL;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.di.LabelImpl;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnLabel;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnLabelStyle;
-import io.zeebe.model.bpmn.instance.di.Label;
+import io.camunda.zeebe.model.bpmn.impl.instance.di.LabelImpl;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnLabel;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnLabelStyle;
+import io.camunda.zeebe.model.bpmn.instance.di.Label;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

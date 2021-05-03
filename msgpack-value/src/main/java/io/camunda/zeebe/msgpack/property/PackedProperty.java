@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.property;
+package io.camunda.zeebe.msgpack.property;
 
-import io.zeebe.msgpack.value.PackedValue;
+import io.camunda.zeebe.msgpack.value.PackedValue;
 import org.agrona.DirectBuffer;
 
 public class PackedProperty extends BaseProperty<PackedValue> {

@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_BEHAVIOR;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_IS_SEQUENTIAL;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_MULTI_INSTANCE_LOOP_CHARACTERISTICS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_NONE_BEHAVIOR_EVENT_REF;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_ONE_BEHAVIOR_EVENT_REF;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_BEHAVIOR;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_IS_SEQUENTIAL;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_MULTI_INSTANCE_LOOP_CHARACTERISTICS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_NONE_BEHAVIOR_EVENT_REF;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_ONE_BEHAVIOR_EVENT_REF;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.MultiInstanceFlowCondition;
-import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
-import io.zeebe.model.bpmn.instance.CompletionCondition;
-import io.zeebe.model.bpmn.instance.ComplexBehaviorDefinition;
-import io.zeebe.model.bpmn.instance.DataInput;
-import io.zeebe.model.bpmn.instance.DataOutput;
-import io.zeebe.model.bpmn.instance.EventDefinition;
-import io.zeebe.model.bpmn.instance.InputDataItem;
-import io.zeebe.model.bpmn.instance.LoopCardinality;
-import io.zeebe.model.bpmn.instance.LoopCharacteristics;
-import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
-import io.zeebe.model.bpmn.instance.OutputDataItem;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.MultiInstanceFlowCondition;
+import io.camunda.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
+import io.camunda.zeebe.model.bpmn.instance.ComplexBehaviorDefinition;
+import io.camunda.zeebe.model.bpmn.instance.DataInput;
+import io.camunda.zeebe.model.bpmn.instance.DataOutput;
+import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.InputDataItem;
+import io.camunda.zeebe.model.bpmn.instance.LoopCardinality;
+import io.camunda.zeebe.model.bpmn.instance.LoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.OutputDataItem;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker;
+package io.camunda.zeebe.broker;
 
-import static io.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;

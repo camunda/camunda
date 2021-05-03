@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
 import io.atomix.raft.RaftException.NoLeader;
-import io.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.util.NoSuchElementException;
 
 public final class Listener implements AppendListener {

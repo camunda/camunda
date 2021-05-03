@@ -5,30 +5,30 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
-import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.record.intent.TimerIntent;
-import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
-import io.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
-import io.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
-import io.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
-import io.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
-import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
-import io.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
-import io.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
-import io.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
-import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
-import io.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndFailJob;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndTimeoutJob;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishStartMessage;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepRaiseIncidentThenResolveAndPickConditionCase;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepStartProcessInstance;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerStartEvent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.awaitility.Awaitility;
 

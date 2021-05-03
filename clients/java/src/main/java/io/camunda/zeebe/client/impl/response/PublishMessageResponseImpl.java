@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
-import io.zeebe.client.api.response.PublishMessageResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class PublishMessageResponseImpl implements PublishMessageResponse {
 

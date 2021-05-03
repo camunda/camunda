@@ -100,7 +100,7 @@ pipeline {
                     // to simplify building the Docker image, we copy the distribution to a fixed
                     // filename that doesn't include the version
                     runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
-                    stash name: "zeebe-build", includes: "m2-repository/io/zeebe/*/${VERSION}/*"
+                    stash name: "zeebe-build", includes: "m2-repository/io/camunda/zeebe/*/${VERSION}/*"
                     stash name: "zeebe-distro", includes: "camunda-cloud-zeebe.tar.gz"
                 }
             }
@@ -132,6 +132,7 @@ pipeline {
             when { not { expression { params.SKIP_VERIFY } } }
             parallel {
                 stage('Analyse') {
+                    when { expression { return false } } // disable SonarCloud until new artifact id is linked to project
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
@@ -543,9 +544,9 @@ def checkCodeCoverage() {
         execPattern: '**/*.exec',
         classPattern: '**/target/classes',
         sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
-        exclusionPattern: '**/io/zeebe/gateway/protocol/**,'
+        exclusionPattern: '**/io/camunda/zeebe/gateway/protocol/**,'
             + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
-            + '**/io/zeebe/protocol/record/**/*Assert.class,**/io/zeebe/protocol/record/Assertions.class,', // classes from generated resources
+            + '**/io/camunda/zeebe/protocol/record/**/*Assert.class,**/io/camunda/zeebe/protocol/record/Assertions.class,', // classes from generated resources
         runAlways: true
     )
     zip zipFile: "test-coverage-reports.zip", archive: true, glob: '**/target/site/jacoco/**'

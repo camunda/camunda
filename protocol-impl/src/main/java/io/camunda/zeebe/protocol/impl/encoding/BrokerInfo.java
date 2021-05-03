@@ -5,33 +5,33 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.encoding;
+package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
-import static io.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
-import static io.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
-import static io.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
-import static io.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
+import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.protocol.impl.Loggers;
-import io.zeebe.protocol.record.BrokerInfoDecoder;
-import io.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
-import io.zeebe.protocol.record.BrokerInfoDecoder.PartitionHealthDecoder;
-import io.zeebe.protocol.record.BrokerInfoDecoder.PartitionLeaderTermsDecoder;
-import io.zeebe.protocol.record.BrokerInfoDecoder.PartitionRolesDecoder;
-import io.zeebe.protocol.record.BrokerInfoEncoder;
-import io.zeebe.protocol.record.BrokerInfoEncoder.AddressesEncoder;
-import io.zeebe.protocol.record.BrokerInfoEncoder.PartitionHealthEncoder;
-import io.zeebe.protocol.record.BrokerInfoEncoder.PartitionLeaderTermsEncoder;
-import io.zeebe.protocol.record.BrokerInfoEncoder.PartitionRolesEncoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.protocol.record.PartitionHealthStatus;
-import io.zeebe.protocol.record.PartitionRole;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.protocol.impl.Loggers;
+import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.PartitionHealthDecoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.PartitionLeaderTermsDecoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.PartitionRolesDecoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoEncoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.AddressesEncoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.PartitionHealthEncoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.PartitionLeaderTermsEncoder;
+import io.camunda.zeebe.protocol.record.BrokerInfoEncoder.PartitionRolesEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

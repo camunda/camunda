@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record;
+package io.camunda.zeebe.protocol.record;
 
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 
 /** Represents a record published to the log stream. */
 public interface Record<T extends RecordValue> extends JsonSerializable, Cloneable {
@@ -79,7 +79,7 @@ public interface Record<T extends RecordValue> extends JsonSerializable, Cloneab
 
   /**
    * Returns the raw value of the record, which should implement one of the interfaces in the {@link
-   * io.zeebe.exporter.record.value} package.
+   * io.camunda.zeebe.exporter.record.value} package.
    *
    * <p>The record value is essentially the record specific data, e.g. for a process instance
    * creation event, it would contain information relevant to the process instance being created.

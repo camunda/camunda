@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.ActivationCondition;
-import io.zeebe.model.bpmn.instance.ComplexGateway;
-import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.ActivationCondition;
+import io.camunda.zeebe.model.bpmn.instance.ComplexGateway;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 
 /** @author Sebastian Menski */
 public class AbstractComplexGatewayBuilder<B extends AbstractComplexGatewayBuilder<B>>

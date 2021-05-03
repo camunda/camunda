@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db;
+package io.camunda.zeebe.db;
 
 /**
  * Represents an function that accepts a zeebe key value pair and produces an primitive boolean as

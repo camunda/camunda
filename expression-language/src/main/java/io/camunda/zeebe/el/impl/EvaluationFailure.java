@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl;
+package io.camunda.zeebe.el.impl;
 
-import io.zeebe.el.EvaluationResult;
-import io.zeebe.el.Expression;
-import io.zeebe.el.ResultType;
+import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ResultType;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;

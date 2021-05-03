@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.util;
+package io.camunda.zeebe.client.impl.util;
 
 import java.util.Map;
 import org.junit.rules.ExternalResource;

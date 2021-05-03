@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record.value.deployment;
+package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,8 +40,8 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  public List<io.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
-    final List<io.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
+  public List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
+    final List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
         new ArrayList<>();
 
     for (final DeploymentResource resource : resourcesProp) {

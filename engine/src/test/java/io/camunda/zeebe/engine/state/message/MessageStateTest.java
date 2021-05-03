@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.message;
+package io.camunda.zeebe.engine.state.message;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.state.mutable.MutableMessageState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.engine.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;

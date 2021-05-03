@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway;
+package io.camunda.zeebe.gateway;
 
 import static java.lang.Runtime.getRuntime;
 
@@ -14,14 +14,14 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.utils.net.Address;
-import io.zeebe.gateway.impl.SpringGatewayBridge;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.zeebe.gateway.impl.configuration.ClusterCfg;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.impl.configuration.MembershipCfg;
-import io.zeebe.util.VersionUtil;
-import io.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
+import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
@@ -119,7 +119,7 @@ public class StandaloneGateway {
   }
 
   @SpringBootApplication(exclude = {ElasticsearchRestClientAutoConfiguration.class})
-  @ComponentScan({"io.zeebe.gateway", "io.zeebe.shared", "io.zeebe.util"})
+  @ComponentScan({"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared", "io.camunda.zeebe.util"})
   public static class Launcher implements CommandLineRunner {
 
     @Autowired GatewayCfg configuration;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.worker;
+package io.camunda.zeebe.client.api.worker;
 
 /**
  * Represents an active job worker that perfors jobs of a certain type. While a registration is

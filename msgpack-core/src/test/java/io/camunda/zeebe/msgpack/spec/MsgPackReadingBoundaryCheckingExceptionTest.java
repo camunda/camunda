@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.spec;
+package io.camunda.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackCodes.ARRAY32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.BIN32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.FIXSTR_PREFIX;
-import static io.zeebe.msgpack.spec.MsgPackCodes.MAP32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.STR32;
-import static io.zeebe.msgpack.spec.MsgPackCodes.UINT64;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.ARRAY32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.BIN32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.FIXSTR_PREFIX;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.MAP32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.STR32;
+import static io.camunda.zeebe.msgpack.spec.MsgPackCodes.UINT64;
 
 import java.util.Arrays;
 import java.util.function.Consumer;

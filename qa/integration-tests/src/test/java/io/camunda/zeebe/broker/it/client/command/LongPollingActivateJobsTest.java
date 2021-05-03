@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client.command;
+package io.camunda.zeebe.broker.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.netty.util.NetUtil;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.test.util.BrokerClassRuleHelper;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.buffer;
+package io.camunda.zeebe.util.buffer;
 
-import static io.zeebe.util.StringUtil.getBytes;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.StringUtil.getBytes;
+import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;

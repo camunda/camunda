@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.value;
+package io.camunda.zeebe.msgpack.value;
 
-import io.zeebe.msgpack.property.BaseProperty;
-import io.zeebe.msgpack.property.UndeclaredProperty;
-import io.zeebe.msgpack.spec.MsgPackReader;
-import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.property.BaseProperty;
+import io.camunda.zeebe.msgpack.property.UndeclaredProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

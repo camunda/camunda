@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
-import io.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableProcessMessageSubscriptionState extends ProcessMessageSubscriptionState {

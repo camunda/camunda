@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol;
+package io.camunda.zeebe.protocol;
 
-import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import java.nio.ByteOrder;
 
 public final class Protocol {

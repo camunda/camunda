@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.engine;
+package io.camunda.zeebe.broker.engine;
 
-import static io.zeebe.protocol.record.intent.MessageIntent.PUBLISH;
+import static io.camunda.zeebe.protocol.record.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.test.broker.protocol.commandapi.CommandApiRule;
-import io.zeebe.test.broker.protocol.commandapi.ExecuteCommandRequestBuilder;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
+import io.camunda.zeebe.test.broker.protocol.commandapi.ExecuteCommandRequestBuilder;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

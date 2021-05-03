@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.property;
+package io.camunda.zeebe.msgpack.property;
 
-import io.zeebe.msgpack.value.EnumValue;
+import io.camunda.zeebe.msgpack.value.EnumValue;
 
 public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValue<E>> {
   public EnumProperty(final String key, final Class<E> type) {

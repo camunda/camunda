@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack;
+package io.camunda.zeebe.msgpack;
 
-import io.zeebe.msgpack.POJO.POJOEnum;
-import io.zeebe.msgpack.property.BinaryProperty;
-import io.zeebe.msgpack.property.EnumProperty;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.msgpack.property.PackedProperty;
-import io.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.POJO.POJOEnum;
+import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.PackedProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public final class AllTypesDefaultValuesPOJO extends UnpackedObject {

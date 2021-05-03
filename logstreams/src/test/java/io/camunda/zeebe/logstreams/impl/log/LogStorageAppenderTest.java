@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,20 +17,20 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.zeebe.logstreams.util.AtomixLogStorageRule;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.dispatcher.BlockPeek;
+import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.dispatcher.Dispatchers;
+import io.camunda.zeebe.dispatcher.Subscription;
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.util.ByteValue;
+import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;

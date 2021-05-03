@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.instance.bpmndi;
 
-import io.zeebe.model.bpmn.instance.dc.Font;
-import io.zeebe.model.bpmn.instance.di.Style;
+import io.camunda.zeebe.model.bpmn.instance.dc.Font;
+import io.camunda.zeebe.model.bpmn.instance.di.Style;
 
 /**
  * The BPMNDI BPMNLabelStyle element

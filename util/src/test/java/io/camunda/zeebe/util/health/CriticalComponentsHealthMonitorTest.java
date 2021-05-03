@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.health;
+package io.camunda.zeebe.util.health;
 
-import static io.zeebe.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

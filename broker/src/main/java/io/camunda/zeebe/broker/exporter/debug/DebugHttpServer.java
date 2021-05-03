@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.debug;
+package io.camunda.zeebe.broker.exporter.debug;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Charsets;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

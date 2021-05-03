@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.management;
+package io.camunda.zeebe.broker.system.management;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.stream.ExporterDirector;
-import io.zeebe.broker.system.partitions.ZeebePartition;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

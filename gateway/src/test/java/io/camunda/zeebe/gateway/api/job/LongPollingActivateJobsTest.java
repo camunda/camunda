@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.api.job;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -16,24 +16,24 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
+import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import io.grpc.Status.Code;
 import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.api.util.StubbedBrokerClient;
-import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
-import io.zeebe.gateway.grpc.ServerStreamObserver;
-import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
-import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;

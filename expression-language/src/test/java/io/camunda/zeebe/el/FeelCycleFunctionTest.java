@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el;
+package io.camunda.zeebe.el;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Map;
 import org.junit.Test;
 

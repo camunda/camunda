@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.util;
+package io.camunda.zeebe.broker.it.util;
 
-import io.zeebe.test.util.record.RecordLogger;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordLogger;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public final class BrokerClassRuleHelper extends TestWatcher {
 
-  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
+  public static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
 
   private String currentTestMethod;
 

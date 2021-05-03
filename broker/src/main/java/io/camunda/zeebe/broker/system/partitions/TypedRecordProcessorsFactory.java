@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
-import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.util.sched.ActorControl;
 
 @FunctionalInterface
 public interface TypedRecordProcessorsFactory {

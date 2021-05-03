@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.ErrorResponseDecoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;

@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.property;
+package io.camunda.zeebe.msgpack.property;
 
-import io.zeebe.msgpack.MsgpackPropertyException;
-import io.zeebe.msgpack.value.ArrayValue;
-import io.zeebe.msgpack.value.BaseValue;
-import io.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.msgpack.MsgpackPropertyException;
+import io.camunda.zeebe.msgpack.value.ArrayValue;
+import io.camunda.zeebe.msgpack.value.BaseValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
 import java.util.Iterator;
 
 public final class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>>

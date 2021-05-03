@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.spec;
+package io.camunda.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackUtil.toByte;
-import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
+import static io.camunda.zeebe.msgpack.spec.MsgPackUtil.toByte;
+import static io.camunda.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
+import io.camunda.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;

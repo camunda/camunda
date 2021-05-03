@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.logstreams;
+package io.camunda.zeebe.broker.logstreams;
 
 import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.Loggers;
 import java.util.concurrent.CompletableFuture;
 
 public final class AtomixLogCompactor implements LogCompactor {

@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util;
+package io.camunda.zeebe.test.util;
 
-import io.zeebe.util.Environment;
-import io.zeebe.util.Loggers;
+import io.camunda.zeebe.util.Environment;
+import io.camunda.zeebe.util.Loggers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;

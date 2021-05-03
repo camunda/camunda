@@ -5,31 +5,31 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.impl.backpressure.AlgorithmCfg;
-import io.zeebe.logstreams.impl.backpressure.AppendBackpressureMetrics;
-import io.zeebe.logstreams.impl.backpressure.AppendEntryLimiter;
-import io.zeebe.logstreams.impl.backpressure.AppendLimiter;
-import io.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
-import io.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
-import io.zeebe.logstreams.impl.backpressure.BackpressureConstants;
-import io.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.util.Environment;
-import io.zeebe.util.collection.Tuple;
-import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthMonitorable;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.dispatcher.BlockPeek;
+import io.camunda.zeebe.dispatcher.Subscription;
+import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.impl.backpressure.AlgorithmCfg;
+import io.camunda.zeebe.logstreams.impl.backpressure.AppendBackpressureMetrics;
+import io.camunda.zeebe.logstreams.impl.backpressure.AppendEntryLimiter;
+import io.camunda.zeebe.logstreams.impl.backpressure.AppendLimiter;
+import io.camunda.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
+import io.camunda.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
+import io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants;
+import io.camunda.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.util.Environment;
+import io.camunda.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.LongConsumer;

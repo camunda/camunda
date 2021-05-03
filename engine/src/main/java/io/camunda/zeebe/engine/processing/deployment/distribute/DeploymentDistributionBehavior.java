@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.distribute;
+package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

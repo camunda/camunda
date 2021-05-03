@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
-import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.camunda.zeebe.dispatcher.ClaimedFragment;
+import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;

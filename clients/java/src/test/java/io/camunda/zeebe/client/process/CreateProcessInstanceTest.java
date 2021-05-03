@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.process;
+package io.camunda.zeebe.client.process;
 
-import static io.zeebe.client.api.command.CreateProcessInstanceCommandStep1.LATEST_VERSION;
-import static io.zeebe.client.util.JsonUtil.fromJsonAsMap;
+import static io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.LATEST_VERSION;
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.dc;
+package io.camunda.zeebe.model.bpmn.impl.instance.dc;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_X;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_Y;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ELEMENT_POINT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DC_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_X;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ATTRIBUTE_Y;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_ELEMENT_POINT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DC_NS;
 
-import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
-import io.zeebe.model.bpmn.instance.dc.Point;
+import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
+import io.camunda.zeebe.model.bpmn.instance.dc.Point;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

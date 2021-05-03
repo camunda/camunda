@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker;
+package io.camunda.zeebe.gateway.impl.broker;
 
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.NoTopologyAvailableException;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.ArrayList;

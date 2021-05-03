@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
-import io.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.Loggers;
 import java.io.File;
 import java.time.Duration;
 import java.util.Optional;

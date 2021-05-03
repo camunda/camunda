@@ -5,26 +5,26 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import static io.zeebe.engine.util.StreamProcessingComposite.getLogName;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.util.ListLogStorage;
-import io.zeebe.engine.util.RecordStream;
-import io.zeebe.engine.util.StreamProcessingComposite;
-import io.zeebe.engine.util.TestStreams;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.util.ListLogStorage;
+import io.camunda.zeebe.engine.util.RecordStream;
+import io.camunda.zeebe.engine.util.StreamProcessingComposite;
+import io.camunda.zeebe.engine.util.TestStreams;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;

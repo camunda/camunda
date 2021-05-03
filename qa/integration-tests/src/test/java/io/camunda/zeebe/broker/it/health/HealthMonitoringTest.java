@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.health;
+package io.camunda.zeebe.broker.it.health;
 
-import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Rule;

@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.topology;
+package io.camunda.zeebe.gateway.api.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import java.util.Optional;
 import org.junit.Test;
 

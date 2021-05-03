@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random.steps;
+package io.camunda.zeebe.test.util.bpmn.random.steps;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -20,7 +20,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * process is created)
  *
  * <p>New implementations should also extends the execution logic in {@code
- * io.zeebe.engine.util.ProcessExecutor}
+ * io.camunda.zeebe.engine.util.ProcessExecutor}
  *
  * <p>Contract: each implementing class must implement {@code equals(...)/hashCode()} This is mostly
  * in order to be able to compare two randomly generated execution paths to see if they are the same

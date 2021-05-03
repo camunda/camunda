@@ -5,25 +5,25 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.grpc;
+package io.camunda.zeebe.gateway.grpc;
 
 import com.google.protobuf.Any;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import com.google.rpc.Status.Builder;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
+import io.camunda.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
+import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
+import io.camunda.zeebe.gateway.cmd.PartitionNotFoundException;
+import io.camunda.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
+import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.netty.channel.ConnectTimeoutException;
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.BrokerRejectionException;
-import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
-import io.zeebe.gateway.cmd.NoTopologyAvailableException;
-import io.zeebe.gateway.cmd.PartitionNotFoundException;
-import io.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
-import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.msgpack.MsgpackPropertyException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;

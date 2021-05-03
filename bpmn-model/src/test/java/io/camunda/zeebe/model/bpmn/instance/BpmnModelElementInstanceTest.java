@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.impl.BpmnModelConstants;
-import io.zeebe.model.bpmn.test.AbstractModelElementInstanceTest;
-import io.zeebe.model.bpmn.util.GetBpmnModelElementTypeRule;
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.model.bpmn.test.AbstractModelElementInstanceTest;
+import io.camunda.zeebe.model.bpmn.util.GetBpmnModelElementTypeRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 

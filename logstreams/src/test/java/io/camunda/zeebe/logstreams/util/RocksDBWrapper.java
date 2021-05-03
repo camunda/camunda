@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.util;
+package io.camunda.zeebe.logstreams.util;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.db.impl.DbString;
-import io.zeebe.db.impl.DefaultColumnFamily;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 
 public final class RocksDBWrapper {
 

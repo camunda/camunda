@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.util;
+package io.camunda.zeebe.model.bpmn.util;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import org.camunda.bpm.model.xml.impl.util.IoUtil;
 import org.junit.rules.TestWatcher;

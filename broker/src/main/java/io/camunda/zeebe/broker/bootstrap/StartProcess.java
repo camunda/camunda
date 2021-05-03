@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.bootstrap;
+package io.camunda.zeebe.broker.bootstrap;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.monitoring.BrokerStepMetrics;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;

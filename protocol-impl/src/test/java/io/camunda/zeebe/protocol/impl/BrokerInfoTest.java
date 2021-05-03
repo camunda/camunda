@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl;
+package io.camunda.zeebe.protocol.impl;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.protocol.record.BrokerInfoEncoder;
-import io.zeebe.protocol.record.PartitionHealthStatus;
-import io.zeebe.protocol.record.PartitionRole;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.BrokerInfoEncoder;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import io.camunda.zeebe.protocol.record.PartitionRole;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;

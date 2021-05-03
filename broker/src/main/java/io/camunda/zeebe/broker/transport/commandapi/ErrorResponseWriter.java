@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
-import io.zeebe.broker.Loggers;
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.ErrorResponseEncoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.impl.ServerResponseImpl;
-import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.transport.ServerOutput;
+import io.camunda.zeebe.transport.impl.ServerResponseImpl;
+import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;

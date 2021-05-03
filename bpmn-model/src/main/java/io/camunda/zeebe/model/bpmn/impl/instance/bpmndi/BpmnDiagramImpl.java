@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.impl.instance.bpmndi;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_DIAGRAM;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_DIAGRAM;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.di.DiagramImpl;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnLabelStyle;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnPlane;
-import io.zeebe.model.bpmn.instance.di.Diagram;
+import io.camunda.zeebe.model.bpmn.impl.instance.di.DiagramImpl;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnLabelStyle;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnPlane;
+import io.camunda.zeebe.model.bpmn.instance.di.Diagram;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.response;
+package io.camunda.zeebe.client.api.response;
 
 public interface Process {
   /** @return the BPMN process id of the process */

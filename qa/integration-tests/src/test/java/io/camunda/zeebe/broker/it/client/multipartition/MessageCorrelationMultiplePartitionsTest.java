@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client.multipartition;
+package io.camunda.zeebe.broker.it.client.multipartition;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.test.util.BrokerClassRuleHelper;
-import io.zeebe.test.util.record.ProcessInstances;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.ProcessInstances;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

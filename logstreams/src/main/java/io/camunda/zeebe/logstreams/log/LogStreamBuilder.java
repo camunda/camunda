@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.log;
 
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {

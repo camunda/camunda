@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.oauth;
+package io.camunda.zeebe.client.impl.oauth;
 
-import io.zeebe.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;

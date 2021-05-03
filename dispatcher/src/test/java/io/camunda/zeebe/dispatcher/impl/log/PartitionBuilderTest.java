@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher.impl.log;
+package io.camunda.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
-import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_META_DATA_LENGTH;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
+import static io.camunda.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_META_DATA_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.allocation.AllocatedBuffer;
-import io.zeebe.util.allocation.BufferAllocators;
+import io.camunda.zeebe.util.allocation.AllocatedBuffer;
+import io.camunda.zeebe.util.allocation.BufferAllocators;
 import org.junit.Before;
 import org.junit.Test;
 

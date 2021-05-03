@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util.client;
+package io.camunda.zeebe.engine.util.client;
 
-import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.msgpack.value.StringValue;
-import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.JobBatchIntent;
-import io.zeebe.protocol.record.value.JobBatchRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.util.StreamProcessorRule;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;

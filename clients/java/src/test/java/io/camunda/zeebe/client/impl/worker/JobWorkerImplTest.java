@@ -13,10 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.worker;
+package io.camunda.zeebe.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -24,16 +34,6 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcCleanupRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.worker.JobHandler;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.gateway.protocol.GatewayGrpc;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;

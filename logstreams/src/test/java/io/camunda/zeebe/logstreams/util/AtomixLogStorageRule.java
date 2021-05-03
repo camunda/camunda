@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.util;
+package io.camunda.zeebe.logstreams.util;
 
 import static org.mockito.Mockito.spy;
 
@@ -20,11 +20,11 @@ import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.zeebe.logstreams.storage.LogStorage;
-import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
-import io.zeebe.util.FileUtil;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;

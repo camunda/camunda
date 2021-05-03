@@ -13,31 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.builder.di;
+package io.camunda.zeebe.model.bpmn.builder.di;
 
-import static io.zeebe.model.bpmn.BpmnTestConstants.BOUNDARY_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.CALL_ACTIVITY_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.CATCH_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.CONDITION_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SEND_TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SERVICE_TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.SUB_PROCESS_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TASK_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TEST_CONDITION;
-import static io.zeebe.model.bpmn.BpmnTestConstants.TRANSACTION_ID;
-import static io.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.BOUNDARY_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.CALL_ACTIVITY_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.CATCH_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.CONDITION_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.END_EVENT_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SEND_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SERVICE_TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.START_EVENT_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.SUB_PROCESS_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.TASK_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.TEST_CONDITION;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.TRANSACTION_ID;
+import static io.camunda.zeebe.model.bpmn.BpmnTestConstants.USER_TASK_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;

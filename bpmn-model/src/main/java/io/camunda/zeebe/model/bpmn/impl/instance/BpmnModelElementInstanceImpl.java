@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.BpmnModelException;
-import io.zeebe.model.bpmn.builder.AbstractBaseElementBuilder;
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-import io.zeebe.model.bpmn.instance.SubProcess;
+import io.camunda.zeebe.model.bpmn.BpmnModelException;
+import io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import org.camunda.bpm.model.xml.impl.instance.ModelElementInstanceImpl;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 
@@ -44,7 +44,8 @@ public abstract class BpmnModelElementInstanceImpl extends ModelElementInstanceI
 
   @Override
   public boolean isScope() {
-    return this instanceof io.zeebe.model.bpmn.instance.Process || this instanceof SubProcess;
+    return this instanceof io.camunda.zeebe.model.bpmn.instance.Process
+        || this instanceof SubProcess;
   }
 
   @Override

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zeebe.client.impl;
+package io.camunda.zeebe.client.impl;
 
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.ClientStatusException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;

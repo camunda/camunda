@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record.value.deployment;
+package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapArray;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.BinaryProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentResource extends UnpackedObject
-    implements io.zeebe.protocol.record.value.deployment.DeploymentResource {
+    implements io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource {
 
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");

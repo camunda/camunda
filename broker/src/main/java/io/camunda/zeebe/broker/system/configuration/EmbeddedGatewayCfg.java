@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.netty.util.NetUtil;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
 
 public final class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry {
 

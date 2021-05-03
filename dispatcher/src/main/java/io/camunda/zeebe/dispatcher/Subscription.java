@@ -5,30 +5,30 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher;
+package io.camunda.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionId;
-import static io.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.partitionId;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.partitionOffset;
+import static io.camunda.zeebe.dispatcher.impl.PositionUtil.position;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchBegin;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagBatchEnd;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagFailed;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.dispatcher.impl.log.LogBuffer;
-import io.zeebe.dispatcher.impl.log.LogBufferPartition;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.channel.ActorConditions;
-import io.zeebe.util.sched.channel.ConsumableChannel;
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.dispatcher.impl.log.LogBuffer;
+import io.camunda.zeebe.dispatcher.impl.log.LogBufferPartition;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.channel.ActorConditions;
+import io.camunda.zeebe.util.sched.channel.ConsumableChannel;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;

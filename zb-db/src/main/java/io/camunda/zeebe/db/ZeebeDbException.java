@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db;
+package io.camunda.zeebe.db;
 
-import io.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.util.exception.RecoverableException;
 
 /** Wraps the exceptions which are thrown by the database implementation. */
 public final class ZeebeDbException extends RecoverableException {

@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.transformation;
+package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 public interface ModelElementTransformer<T extends BpmnModelElementInstance> {
 

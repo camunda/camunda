@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
-import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
-import static io.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
-import static io.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.client.impl.NoopCredentialsProvider;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.oauth.OAuthCredentialsProvider;
-import io.zeebe.client.impl.util.Environment;
-import io.zeebe.client.impl.util.EnvironmentRule;
-import io.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.EnvironmentRule;
+import io.camunda.zeebe.client.util.ClientTest;
 import java.io.FileNotFoundException;
 import java.time.Duration;
 import java.util.Properties;

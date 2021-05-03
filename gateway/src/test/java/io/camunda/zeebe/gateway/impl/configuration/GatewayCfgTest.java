@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.configuration;
+package io.camunda.zeebe.gateway.impl.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.util.Environment;
+import io.camunda.zeebe.test.util.TestConfigurationFactory;
+import io.camunda.zeebe.util.Environment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;

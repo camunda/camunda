@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.di;
+package io.camunda.zeebe.model.bpmn.impl.instance.di;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_DOCUMENTATION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_ID;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_NAME;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_RESOLUTION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_DIAGRAM;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_DOCUMENTATION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_ID;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_NAME;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ATTRIBUTE_RESOLUTION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_ELEMENT_DIAGRAM;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.DI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
-import io.zeebe.model.bpmn.instance.di.Diagram;
+import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
+import io.camunda.zeebe.model.bpmn.instance.di.Diagram;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.clustering;
+package io.camunda.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.exporter.api.Exporter;
-import io.zeebe.exporter.api.context.Controller;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;

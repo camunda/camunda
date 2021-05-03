@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.job;
+package io.camunda.zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.client.util.JsonUtil;
-import io.zeebe.client.util.StringUtil;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
+import io.camunda.zeebe.client.util.StringUtil;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.Collections;

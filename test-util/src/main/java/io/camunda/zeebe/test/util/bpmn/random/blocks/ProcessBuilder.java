@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.bpmn.random.blocks;
+package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.zeebe.test.util.bpmn.random.BlockBuilder;
-import io.zeebe.test.util.bpmn.random.ConstructionContext;
-import io.zeebe.test.util.bpmn.random.ExecutionPath;
-import io.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
-import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.camunda.zeebe.test.util.bpmn.random.StartEventBlockBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -66,7 +66,7 @@ public final class ProcessBuilder {
 
   private boolean initEventSubProcess(
       final ConstructionContext context,
-      final io.zeebe.test.util.bpmn.random.IDGenerator idGenerator) {
+      final io.camunda.zeebe.test.util.bpmn.random.IDGenerator idGenerator) {
     final boolean hasEventSubProcess = context.getRandom().nextBoolean();
     if (hasEventSubProcess) {
       eventSubProcessId = "eventSubProcess_" + idGenerator.nextId();
@@ -80,7 +80,7 @@ public final class ProcessBuilder {
   public List<BpmnModelInstance> buildProcess() {
     final var result = new ArrayList<BpmnModelInstance>();
 
-    final io.zeebe.model.bpmn.builder.ProcessBuilder processBuilder =
+    final io.camunda.zeebe.model.bpmn.builder.ProcessBuilder processBuilder =
         Bpmn.createExecutableProcess(processId);
 
     if (hasEventSubProcess) {
@@ -99,7 +99,7 @@ public final class ProcessBuilder {
   }
 
   private void buildEventSubProcess(
-      final io.zeebe.model.bpmn.builder.ProcessBuilder processBuilder) {
+      final io.camunda.zeebe.model.bpmn.builder.ProcessBuilder processBuilder) {
     processBuilder
         .eventSubProcess(eventSubProcessId)
         .startEvent("start_event_" + eventSubProcessId)
@@ -136,7 +136,7 @@ public final class ProcessBuilder {
 
   private void executionPathForEventSubProcess(
       final Random random,
-      final io.zeebe.test.util.bpmn.random.ExecutionPathSegment followingPath) {
+      final io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment followingPath) {
     // We don't want to trigger the event sub process at the end of the process instance execution,
     // which is the reason why we decrement by one. With that we avoid a race condition, which can
     // happen on triggering the event sub process and completing the process instance.

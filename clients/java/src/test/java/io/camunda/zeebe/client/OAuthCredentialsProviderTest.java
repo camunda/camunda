@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_AUTHORIZATION_SERVER;
-import static io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID;
-import static io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET;
+import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_AUTHORIZATION_SERVER;
+import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID;
+import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,6 +31,15 @@ import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.EnvironmentRule;
+import io.camunda.zeebe.client.util.RecordingGatewayService;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.ServerCall;
@@ -38,15 +47,6 @@ import io.grpc.ServerInterceptors;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.testing.GrpcServerRule;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientCredentials;
-import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.impl.oauth.OAuthCredentialsCache;
-import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.zeebe.client.impl.util.Environment;
-import io.zeebe.client.impl.util.EnvironmentRule;
-import io.zeebe.client.util.RecordingGatewayService;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;

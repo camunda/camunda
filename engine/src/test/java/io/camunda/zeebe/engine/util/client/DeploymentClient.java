@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util.client;
+package io.camunda.zeebe.engine.util.client;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapArray;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.engine.util.StreamProcessorRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.function.BiFunction;

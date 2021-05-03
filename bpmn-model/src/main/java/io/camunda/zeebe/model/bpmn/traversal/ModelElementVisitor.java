@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.traversal;
+package io.camunda.zeebe.model.bpmn.traversal;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 @FunctionalInterface
 public interface ModelElementVisitor {

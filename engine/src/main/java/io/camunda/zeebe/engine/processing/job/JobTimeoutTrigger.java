@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.job;
+package io.camunda.zeebe.engine.processing.job;
 
-import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
+import static io.camunda.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
-import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.zeebe.engine.state.immutable.JobState;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 
 public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {

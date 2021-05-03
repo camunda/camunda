@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
-import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.util.Environment;
+import io.camunda.zeebe.test.util.TestConfigurationFactory;
+import io.camunda.zeebe.util.Environment;
 import java.util.Map;
 
 public final class TestConfigReader {

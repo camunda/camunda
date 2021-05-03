@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.logstreams;
+package io.camunda.zeebe.broker.logstreams;
 
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.PersistedSnapshotListener;
-import io.zeebe.snapshots.PersistedSnapshotStore;
-import io.zeebe.snapshots.SnapshotChunkReader;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotChunkReader;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;

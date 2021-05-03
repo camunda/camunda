@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.transformer;
+package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
-import io.zeebe.el.Expression;
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

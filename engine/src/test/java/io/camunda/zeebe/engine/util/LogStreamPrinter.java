@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import static io.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
+import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.util.SynchronousLogStream;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.util.ReflectUtil;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.util.EnumMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public final class LogStreamPrinter {
   private static final String HEADER_INDENTATION = "\t\t\t";
   private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";
 
-  private static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.broker.test");
+  private static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.broker.test");
 
   public static void printRecords(final SynchronousLogStream logStream) {
     final StringBuilder sb = new StringBuilder();

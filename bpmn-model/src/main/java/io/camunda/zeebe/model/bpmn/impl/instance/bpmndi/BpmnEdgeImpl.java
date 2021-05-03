@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.impl.instance.bpmndi;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_BPMN_ELEMENT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_MESSAGE_VISIBLE_KIND;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_SOURCE_ELEMENT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_TARGET_ELEMENT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_EDGE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_BPMN_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_MESSAGE_VISIBLE_KIND;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_SOURCE_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_TARGET_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_EDGE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.di.LabeledEdgeImpl;
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnLabel;
-import io.zeebe.model.bpmn.instance.bpmndi.MessageVisibleKind;
-import io.zeebe.model.bpmn.instance.di.DiagramElement;
-import io.zeebe.model.bpmn.instance.di.LabeledEdge;
+import io.camunda.zeebe.model.bpmn.impl.instance.di.LabeledEdgeImpl;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnLabel;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.MessageVisibleKind;
+import io.camunda.zeebe.model.bpmn.instance.di.DiagramElement;
+import io.camunda.zeebe.model.bpmn.instance.di.LabeledEdge;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

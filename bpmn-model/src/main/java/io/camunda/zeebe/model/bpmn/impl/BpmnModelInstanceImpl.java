@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl;
+package io.camunda.zeebe.model.bpmn.impl;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
-import io.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.ModelImpl;
 import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;

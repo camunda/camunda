@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client;
+package io.camunda.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.client.util.RecordingGatewayService;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.ServerInterceptors;
 import io.grpc.Status;
 import io.grpc.testing.GrpcServerRule;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
-import io.zeebe.client.util.RecordingGatewayService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

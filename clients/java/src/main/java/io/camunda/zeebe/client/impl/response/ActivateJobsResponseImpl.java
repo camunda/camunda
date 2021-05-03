@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
-import io.zeebe.client.api.JsonMapper;
-import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +31,8 @@ public final class ActivateJobsResponseImpl implements ActivateJobsResponse {
   }
 
   public void addResponse(
-      final io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse activateJobsResponse) {
+      final io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse
+          activateJobsResponse) {
     activateJobsResponse.getJobsList().stream()
         .map(r -> new ActivatedJobImpl(jsonMapper, r))
         .forEach(jobs::add);

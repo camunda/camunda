@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.api.job;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.api.util.StubbedBrokerClient;
-import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.LongStream;

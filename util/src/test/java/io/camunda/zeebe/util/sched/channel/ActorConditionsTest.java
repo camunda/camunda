@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.channel;
+package io.camunda.zeebe.util.sched.channel;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.ActorCondition;
 import org.junit.Test;
 
 public final class ActorConditionsTest {

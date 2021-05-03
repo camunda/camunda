@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
-import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthMonitorable;
-import io.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
 
 /**
  * Reflects the health of ZeebePartition. The health is updated by ZeebePartition when role

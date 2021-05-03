@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.oauth;
+package io.camunda.zeebe.client.impl.oauth;
 
 import static java.lang.Math.toIntExact;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Status;
 import io.grpc.Status.Code;
-import io.zeebe.client.CredentialsProvider;
-import io.zeebe.client.impl.ZeebeClientCredentials;
-import io.zeebe.client.impl.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

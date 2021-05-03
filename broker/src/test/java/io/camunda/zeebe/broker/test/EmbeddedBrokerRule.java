@@ -5,37 +5,37 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.test;
+package io.camunda.zeebe.broker.test;
 
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.HTTP_EXPORTER;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.HTTP_EXPORTER;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
+import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
+import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.core.Atomix;
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.SpringBrokerBridge;
-import io.zeebe.broker.TestLoggers;
-import io.zeebe.broker.system.EmbeddedGatewayService;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.allocation.DirectBufferAllocator;
-import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.SpringBrokerBridge;
+import io.camunda.zeebe.broker.TestLoggers;
+import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.test.util.TestConfigurationFactory;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
+import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

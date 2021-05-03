@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el.impl.feel
+package io.camunda.zeebe.el.impl.feel
 
-import io.zeebe.el.impl.Loggers.LOGGER
-import io.zeebe.msgpack.spec.{MsgPackReader, MsgPackToken, MsgPackType}
-import io.zeebe.util.buffer.BufferUtil.bufferAsString
+import io.camunda.zeebe.el.impl.Loggers.LOGGER
+import io.camunda.zeebe.msgpack.spec.{MsgPackReader, MsgPackToken, MsgPackType}
+import io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString
 import org.agrona.DirectBuffer
 import org.camunda.feel.syntaxtree.{Val, _}
 import org.camunda.feel.valuemapper.CustomValueMapper

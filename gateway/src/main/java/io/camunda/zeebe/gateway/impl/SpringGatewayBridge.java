@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl;
+package io.camunda.zeebe.gateway.impl;
 
-import io.zeebe.gateway.Gateway.Status;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.gateway.Gateway.Status;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;

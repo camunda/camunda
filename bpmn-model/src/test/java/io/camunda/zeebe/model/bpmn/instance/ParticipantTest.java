@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.impl.instance.EndPointRef;
-import io.zeebe.model.bpmn.impl.instance.InterfaceRef;
+import io.camunda.zeebe.model.bpmn.impl.instance.EndPointRef;
+import io.camunda.zeebe.model.bpmn.impl.instance.InterfaceRef;
 import java.util.Arrays;
 import java.util.Collection;
 

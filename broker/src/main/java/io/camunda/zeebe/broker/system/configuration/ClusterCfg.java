@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.zeebe.util.StringUtil.LIST_SANITIZER;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import java.util.Collections;
 import java.util.List;

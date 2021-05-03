@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance.bpmndi;
+package io.camunda.zeebe.model.bpmn.impl.instance.bpmndi;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_BPMN_ELEMENT;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_CHOREOGRAPHY_ACTIVITY_SHAPE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_EXPANDED;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_HORIZONTAL;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_MARKER_VISIBLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_MESSAGE_VISIBLE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_PARTICIPANT_BAND_KIND;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_SHAPE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_BPMN_ELEMENT;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_CHOREOGRAPHY_ACTIVITY_SHAPE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_EXPANDED;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_HORIZONTAL;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_MARKER_VISIBLE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_IS_MESSAGE_VISIBLE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ATTRIBUTE_PARTICIPANT_BAND_KIND;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_ELEMENT_BPMN_SHAPE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMNDI_NS;
 
-import io.zeebe.model.bpmn.impl.instance.di.LabeledShapeImpl;
-import io.zeebe.model.bpmn.instance.BaseElement;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnLabel;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
-import io.zeebe.model.bpmn.instance.bpmndi.ParticipantBandKind;
-import io.zeebe.model.bpmn.instance.di.LabeledShape;
+import io.camunda.zeebe.model.bpmn.impl.instance.di.LabeledShapeImpl;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnLabel;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.ParticipantBandKind;
+import io.camunda.zeebe.model.bpmn.instance.di.LabeledShape;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;

@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import static io.zeebe.engine.util.Records.processInstance;
+import static io.camunda.zeebe.engine.util.Records.processInstance;
 
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.zeebe.engine.state.immutable.LastProcessedPositionState;
-import io.zeebe.engine.state.mutable.MutableZeebeState;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.state.immutable.LastProcessedPositionState;
+import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.function.Consumer;
 
 public class StreamProcessingComposite {

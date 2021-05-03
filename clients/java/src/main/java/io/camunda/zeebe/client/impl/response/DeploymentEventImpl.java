@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.response;
+package io.camunda.zeebe.client.impl.response;
 
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.Process;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 

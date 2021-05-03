@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.deployment;
+package io.camunda.zeebe.engine.state.deployment;
 
-import io.zeebe.db.DbValue;
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.ObjectProperty;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

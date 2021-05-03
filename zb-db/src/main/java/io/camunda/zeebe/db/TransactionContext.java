@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db;
+package io.camunda.zeebe.db;
 
 /** Represents the transaction context to interact with the database in a transaction. */
 public interface TransactionContext {

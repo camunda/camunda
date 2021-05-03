@@ -5,29 +5,32 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test;
+package io.camunda.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.test.PartitionsActuatorClient.PartitionStatus;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeGatewayNode;
+import io.zeebe.containers.ZeebeNode;
 import io.zeebe.containers.ZeebeVolume;
 import io.zeebe.containers.cluster.ZeebeCluster;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.test.PartitionsActuatorClient.PartitionStatus;
-import io.zeebe.test.util.asserts.EitherAssert;
-import io.zeebe.test.util.asserts.TopologyAssert;
-import io.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
-import io.zeebe.util.Either;
-import io.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -85,7 +88,7 @@ public class RollingUpdateTest {
     updateBroker(broker);
 
     // then
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = newClientBuilder().build()) {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
@@ -106,7 +109,7 @@ public class RollingUpdateTest {
     cluster.start();
 
     // when
-    try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+    try (final var client = newClientBuilder().build()) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -122,7 +125,7 @@ public class RollingUpdateTest {
     final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(brokerId);
     broker.stop();
 
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = newClientBuilder().build()) {
       // until previous version points to 0.24, we cannot yet tune failure detection to be fast,
       // so wait long enough for the broker to be removed even in slower systems
       Awaitility.await("broker is removed from topology")
@@ -308,5 +311,21 @@ public class RollingUpdateTest {
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
     broker.setDockerImageName(
         ZeebeTestContainerDefaults.defaultTestImage().withTag(OLD_VERSION).asCanonicalNameString());
+  }
+
+  // TODO(menski): replace with test container after update to new package names
+  private ZeebeClientBuilder newClientBuilder() {
+    final ZeebeGatewayNode<?> gateway =
+        cluster.getGateways().values().stream()
+            .filter(ZeebeNode::isStarted)
+            .findAny()
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "Expected at least one gateway for the client to connect to, but there is none"));
+
+    return ZeebeClient.newClientBuilder()
+        .gatewayAddress(gateway.getExternalGatewayAddress())
+        .usePlaintext();
   }
 }

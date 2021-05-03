@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file;
+package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.journal.JournalReader;
-import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.record.RecordData;
-import io.zeebe.journal.file.record.SBESerializer;
+import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.record.RecordData;
+import io.camunda.zeebe.journal.file.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

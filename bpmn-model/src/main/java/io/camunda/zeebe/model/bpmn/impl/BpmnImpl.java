@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.impl;
+package io.camunda.zeebe.model.bpmn.impl;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnTypeHierarchy;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnTypeHierarchy;
 import java.util.List;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 

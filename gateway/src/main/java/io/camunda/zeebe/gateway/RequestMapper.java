@@ -5,35 +5,35 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway;
+package io.camunda.zeebe.gateway;
 
-import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
-import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
-import io.zeebe.msgpack.value.DocumentValue;
-import io.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployProcessRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.process;
+package io.camunda.zeebe.gateway.api.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.util.GatewayTest;
-import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.gateway.api.util.GatewayTest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import org.junit.Test;
 
 public final class ResolveIncidentTest extends GatewayTest {

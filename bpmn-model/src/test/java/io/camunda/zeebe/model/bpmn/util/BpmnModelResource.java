@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.util;
+package io.camunda.zeebe.model.bpmn.util;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

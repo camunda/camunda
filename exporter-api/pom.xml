@@ -6,7 +6,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
@@ -32,7 +32,7 @@
           <ignored>
             <ignored>
               <!-- ignore new methods in the Zeebe element instance interfaces -->
-              <className>io/zeebe/exporter/api/context/Controller</className>
+              <className>io/camunda/zeebe/exporter/api/context/Controller</className>
               <differenceType>7012</differenceType>
               <method>*</method>
             </ignored>
@@ -43,7 +43,7 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 

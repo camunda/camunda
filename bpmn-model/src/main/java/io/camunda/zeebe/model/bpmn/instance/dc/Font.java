@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.dc;
+package io.camunda.zeebe.model.bpmn.instance.dc;
 
-import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 /**
  * The DC font element

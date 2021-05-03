@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.TransactionMethod;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.TransactionMethod;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -60,7 +60,7 @@ public class TransactionTest extends BpmnModelElementInstanceTest {
   @Test
   public void shouldReadTransaction() {
     final InputStream inputStream =
-        ReflectUtil.getResourceAsStream("io/zeebe/model/bpmn/TransactionTest.xml");
+        ReflectUtil.getResourceAsStream("io/camunda/zeebe/model/bpmn/TransactionTest.xml");
     final Transaction transaction =
         Bpmn.readModelFromStream(inputStream).getModelElementById("transaction");
 

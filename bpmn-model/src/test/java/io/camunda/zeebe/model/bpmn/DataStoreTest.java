@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.DataStore;
-import io.zeebe.model.bpmn.instance.DataStoreReference;
+import io.camunda.zeebe.model.bpmn.instance.DataStore;
+import io.camunda.zeebe.model.bpmn.instance.DataStoreReference;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

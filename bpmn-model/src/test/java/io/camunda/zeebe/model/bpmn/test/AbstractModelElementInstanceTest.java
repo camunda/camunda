@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.test;
+package io.camunda.zeebe.model.bpmn.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.model.xml.test.assertions.ModelAssertions.assertThat;

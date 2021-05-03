@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.record;
+package io.camunda.zeebe.protocol.impl.record;
 
 import java.util.Objects;
 import java.util.regex.Pattern;

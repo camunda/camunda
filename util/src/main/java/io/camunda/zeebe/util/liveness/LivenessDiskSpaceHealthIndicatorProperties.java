@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.liveness;
+package io.camunda.zeebe.util.liveness;
 
 import java.io.File;
 import org.springframework.boot.context.properties.ConfigurationProperties;

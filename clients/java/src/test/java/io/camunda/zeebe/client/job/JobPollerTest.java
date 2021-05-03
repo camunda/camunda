@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.job;
+package io.camunda.zeebe.client.job;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -21,14 +21,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.client.impl.worker.JobPoller;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.client.impl.worker.JobPoller;
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;

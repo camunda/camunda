@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util;
+package io.camunda.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.util.Environment;
+import io.camunda.zeebe.util.Environment;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.HashMap;

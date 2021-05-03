@@ -5,24 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message;
+package io.camunda.zeebe.engine.processing.message;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.data.MapEntry.entry;
 
-import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.client.ProcessInstanceClient.ProcessInstanceCreationClient;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.zeebe.test.util.collection.Maps;
-import io.zeebe.test.util.record.ProcessInstances;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.client.ProcessInstanceClient.ProcessInstanceCreationClient;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.test.util.collection.Maps;
+import io.camunda.zeebe.test.util.record.ProcessInstances;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

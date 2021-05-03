@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.validation;
+package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import io.zeebe.el.EvaluationResult;
-import io.zeebe.el.Expression;
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.el.ResultType;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.Process;
-import io.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 

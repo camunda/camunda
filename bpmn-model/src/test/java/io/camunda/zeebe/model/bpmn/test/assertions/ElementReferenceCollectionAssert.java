@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.test.assertions;
+package io.camunda.zeebe.model.bpmn.test.assertions;
 
 import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 

@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.common;
+package io.camunda.zeebe.engine.processing.common;
 
-import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThan;
 
-import io.zeebe.el.EvaluationContext;
-import io.zeebe.el.EvaluationResult;
-import io.zeebe.el.Expression;
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.el.ResultType;
-import io.zeebe.engine.processing.message.MessageCorrelationKeyException;
-import io.zeebe.model.bpmn.util.time.Interval;
-import io.zeebe.protocol.record.value.ErrorType;
-import io.zeebe.util.Either;
+import io.camunda.zeebe.el.EvaluationContext;
+import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ResultType;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
+import io.camunda.zeebe.model.bpmn.util.time.Interval;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;

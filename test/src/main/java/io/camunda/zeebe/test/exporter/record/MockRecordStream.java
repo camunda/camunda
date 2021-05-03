@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter.record;
+package io.camunda.zeebe.test.exporter.record;
 
-import io.zeebe.test.util.stream.StreamWrapper;
+import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
 public class MockRecordStream extends StreamWrapper<MockRecord, MockRecordStream> {

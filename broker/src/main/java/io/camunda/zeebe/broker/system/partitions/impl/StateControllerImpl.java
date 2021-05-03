@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions.impl;
+package io.camunda.zeebe.broker.system.partitions.impl;
 
-import io.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
-import io.zeebe.broker.system.partitions.SnapshotReplication;
-import io.zeebe.broker.system.partitions.StateController;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.snapshots.ConstructableSnapshotStore;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.PersistedSnapshotListener;
-import io.zeebe.snapshots.ReceivableSnapshotStore;
-import io.zeebe.snapshots.ReceivedSnapshot;
-import io.zeebe.snapshots.SnapshotChunk;
-import io.zeebe.snapshots.TransientSnapshot;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
+import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
+import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotChunk;
+import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

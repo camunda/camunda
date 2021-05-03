@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance.di;
+package io.camunda.zeebe.model.bpmn.instance.di;
 
-import io.zeebe.model.bpmn.instance.dc.Point;
+import io.camunda.zeebe.model.bpmn.instance.dc.Point;
 
 /**
  * The DI waypoint element of the DI Edge type

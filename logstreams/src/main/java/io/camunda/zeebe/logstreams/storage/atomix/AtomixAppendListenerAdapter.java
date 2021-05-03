@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.storage.atomix;
+package io.camunda.zeebe.logstreams.storage.atomix;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
-import io.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 
 public final class AtomixAppendListenerAdapter implements AppendListener {
   private final LogStorage.AppendListener delegate;

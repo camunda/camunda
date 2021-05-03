@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftFailureListener;
 import io.atomix.raft.partition.RaftPartition;
-import io.zeebe.util.health.FailureListener;
-import io.zeebe.util.health.HealthMonitorable;
-import io.zeebe.util.health.HealthStatus;
-import io.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.sched.ActorControl;
 import java.util.concurrent.CompletableFuture;
 
 public class RaftPartitionHealth implements HealthMonitorable, RaftFailureListener {

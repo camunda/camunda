@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker;
+package io.camunda.zeebe.broker;
 
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 /**
  * Can be implemented and used to react on partition role changes, like on Leader on Actor should be
@@ -19,8 +19,8 @@ import io.zeebe.util.sched.future.ActorFuture;
 public interface PartitionListener {
 
   /**
-   * Is called by the {@link io.zeebe.broker.system.partitions.ZeebePartition} on becoming partition
-   * follower after all partition installation/clean up related things are done.
+   * Is called by the {@link io.camunda.zeebe.broker.system.partitions.ZeebePartition} on becoming
+   * partition follower after all partition installation/clean up related things are done.
    *
    * @param partitionId the corresponding partition id
    * @param term the current term
@@ -29,8 +29,8 @@ public interface PartitionListener {
   ActorFuture<Void> onBecomingFollower(int partitionId, long term);
 
   /**
-   * Is called by the {@link io.zeebe.broker.system.partitions.ZeebePartition} on becoming partition
-   * leader after all partition installation/clean up related things are done.
+   * Is called by the {@link io.camunda.zeebe.broker.system.partitions.ZeebePartition} on becoming
+   * partition leader after all partition installation/clean up related things are done.
    *
    * @param partitionId the corresponding partition id
    * @param term the current term
@@ -40,8 +40,8 @@ public interface PartitionListener {
   ActorFuture<Void> onBecomingLeader(int partitionId, long term, LogStream logStream);
 
   /**
-   * Is called by the {@link io.zeebe.broker.system.partitions.ZeebePartition} on becoming inactive
-   * after a Raft role change or a failed transition.
+   * Is called by the {@link io.camunda.zeebe.broker.system.partitions.ZeebePartition} on becoming
+   * inactive after a Raft role change or a failed transition.
    *
    * @param partitionId the corresponding partition id
    * @param term the current term

@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.protocol.impl.encoding;
+package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import static io.camunda.zeebe.util.StringUtil.getBytes;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -19,8 +19,8 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.JsonSerializable;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.protocol.record.JsonSerializable;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

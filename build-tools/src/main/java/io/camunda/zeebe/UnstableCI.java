@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe;
+package io.camunda.zeebe;
 
 /**
  * Marker interface used to categorize tests which fail on CI.
@@ -21,7 +21,7 @@ package io.zeebe;
  * <pre>
  * Usage:
  *   {@literal @}Test
- *   {@literal @}Category(io.zeebe.UnstableCI)
+ *   {@literal @}Category(io.camunda.zeebe.UnstableCI)
  *    public void failingTestOnCi()
  * </pre>
  */

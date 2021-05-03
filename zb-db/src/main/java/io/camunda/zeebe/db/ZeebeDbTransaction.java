@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db;
+package io.camunda.zeebe.db;
 
 /** Represents an Zeebe DB transaction, which can be committed or on error it can be rolled back. */
 public interface ZeebeDbTransaction {

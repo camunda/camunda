@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.channel;
+package io.camunda.zeebe.util.sched.channel;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.ActorJob;
-import io.zeebe.util.sched.ActorSubscription;
-import io.zeebe.util.sched.ActorTask;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.ActorJob;
+import io.camunda.zeebe.util.sched.ActorSubscription;
+import io.camunda.zeebe.util.sched.ActorTask;
 
 @SuppressWarnings("restriction")
 public final class ChannelConsumerCondition

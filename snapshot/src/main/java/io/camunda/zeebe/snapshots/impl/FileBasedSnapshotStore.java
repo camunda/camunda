@@ -5,19 +5,19 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.snapshots.impl;
+package io.camunda.zeebe.snapshots.impl;
 
-import io.zeebe.snapshots.ConstructableSnapshotStore;
-import io.zeebe.snapshots.PersistableSnapshot;
-import io.zeebe.snapshots.PersistedSnapshot;
-import io.zeebe.snapshots.PersistedSnapshotListener;
-import io.zeebe.snapshots.ReceivableSnapshotStore;
-import io.zeebe.snapshots.SnapshotId;
-import io.zeebe.snapshots.TransientSnapshot;
-import io.zeebe.util.FileUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistableSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;

@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl;
+package io.camunda.zeebe.db.impl;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
+import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 
-import io.zeebe.db.DbKey;
-import io.zeebe.db.DbValue;
-import io.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

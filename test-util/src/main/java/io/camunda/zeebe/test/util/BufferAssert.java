@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util;
+package io.camunda.zeebe.test.util;
 
-import static io.zeebe.util.buffer.BufferUtil.NO_WRAP;
-import static io.zeebe.util.buffer.BufferUtil.bytesAsHexString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.NO_WRAP;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bytesAsHexString;
 
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

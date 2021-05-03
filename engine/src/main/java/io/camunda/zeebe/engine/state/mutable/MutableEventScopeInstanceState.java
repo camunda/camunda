@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.state.mutable;
 
-import io.zeebe.engine.state.immutable.EventScopeInstanceState;
-import io.zeebe.engine.state.instance.EventTrigger;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 

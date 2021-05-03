@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn;
+package io.camunda.zeebe.model.bpmn;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.instance.DataInputAssociation;
-import io.zeebe.model.bpmn.instance.DataObject;
-import io.zeebe.model.bpmn.instance.DataObjectReference;
-import io.zeebe.model.bpmn.instance.DataOutputAssociation;
-import io.zeebe.model.bpmn.instance.ItemAwareElement;
-import io.zeebe.model.bpmn.instance.ItemDefinition;
-import io.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.DataInputAssociation;
+import io.camunda.zeebe.model.bpmn.instance.DataObject;
+import io.camunda.zeebe.model.bpmn.instance.DataObjectReference;
+import io.camunda.zeebe.model.bpmn.instance.DataOutputAssociation;
+import io.camunda.zeebe.model.bpmn.instance.ItemAwareElement;
+import io.camunda.zeebe.model.bpmn.instance.ItemDefinition;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import java.util.Collection;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.record;
+package io.camunda.zeebe.test.util.record;
 
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.Record;
 import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class RecordLogger {
   public static final String STYLE_PROPERTY = "RECORD_LOGGER_STYLE";
   public static final String STYLE_RAW = "RAW";
-  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
+  public static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
 
   public static void logRecords() {
     LOG.info("Test failed, following records were exported:");

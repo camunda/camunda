@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.commandapi;
+package io.camunda.zeebe.test.broker.protocol.commandapi;
 
-import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
-import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
-import io.zeebe.protocol.record.ExecuteCommandRequestEncoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.test.broker.protocol.MsgPackHelper;
+import io.camunda.zeebe.transport.ClientRequest;
+import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Map;
 import org.agrona.DirectBuffer;

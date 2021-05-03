@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value;
+package io.camunda.zeebe.protocol.record.value;
 
-import io.zeebe.protocol.record.RecordValueWithVariables;
-import io.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 
 /**
  * Represents a message event or command.

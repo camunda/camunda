@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.builder;
+package io.camunda.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
 /** @author Sebastian Menski */
 public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBuilder<B>>

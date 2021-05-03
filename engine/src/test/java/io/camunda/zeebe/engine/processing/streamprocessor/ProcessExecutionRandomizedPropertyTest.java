@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.ProcessExecutor;
-import io.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.test.util.bpmn.random.ExecutionPath;
-import io.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
-import io.zeebe.test.util.bpmn.random.TestDataGenerator;
-import io.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.ProcessExecutor;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
+import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
+import io.camunda.zeebe.test.util.bpmn.random.TestDataGenerator;
+import io.camunda.zeebe.test.util.bpmn.random.TestDataGenerator.TestDataRecord;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Collection;
 import org.junit.Rule;
 import org.junit.Test;

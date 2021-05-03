@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.message.command;
+package io.camunda.zeebe.engine.processing.message.command;
 
-import io.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
+import io.camunda.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

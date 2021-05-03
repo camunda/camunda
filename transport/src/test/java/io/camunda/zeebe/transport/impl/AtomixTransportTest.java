@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.transport.impl;
+package io.camunda.zeebe.transport.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,14 +15,14 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
-import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RequestHandler;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.TransportFactory;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.ClientRequest;
+import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.transport.RequestHandler;
+import io.camunda.zeebe.transport.ServerOutput;
+import io.camunda.zeebe.transport.ServerTransport;
+import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;

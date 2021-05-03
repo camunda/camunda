@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbKey;
-import io.zeebe.db.DbValue;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.ZeebeDbException;
-import io.zeebe.db.impl.DbNil;
-import io.zeebe.db.impl.rocksdb.Loggers;
-import io.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.rocksdb.Loggers;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;

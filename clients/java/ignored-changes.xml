@@ -1,30 +1,30 @@
 <differences>
   <difference>
-    <className>io/zeebe/client/util/Environment</className>
+    <className>io/camunda/zeebe/client/util/Environment</className>
     <differenceType>8001</differenceType>
   </difference>
   <difference>
-    <className>io/zeebe/client/util/VersionUtil</className>
+    <className>io/camunda/zeebe/client/util/VersionUtil</className>
     <differenceType>8001</differenceType>
   </difference>
   <difference>
-    <className>io/zeebe/client/ZeebeClientBuilder</className>
-    <method>io.zeebe.client.ZeebeClientBuilder withJsonMapper(io.zeebe.client.api.JsonMapper)</method>
+    <className>io/camunda/zeebe/client/ZeebeClientBuilder</className>
+    <method>io.camunda.zeebe.client.ZeebeClientBuilder withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)</method>
     <differenceType>7012</differenceType>
   </difference>
   <difference>
-    <className>io/zeebe/client/ZeebeClientConfiguration</className>
-    <method>io.zeebe.client.api.JsonMapper getJsonMapper()</method>
+    <className>io/camunda/zeebe/client/ZeebeClientConfiguration</className>
+    <method>io.camunda.zeebe.client.api.JsonMapper getJsonMapper()</method>
     <differenceType>7012</differenceType>
   </difference>
   <difference>
-    <className>io/zeebe/client/api/worker/JobWorkerBuilderStep1$JobWorkerBuilderStep3</className>
+    <className>io/camunda/zeebe/client/api/worker/JobWorkerBuilderStep1$JobWorkerBuilderStep3</className>
     <differenceType>7012</differenceType>
-    <method>io.zeebe.client.api.worker.JobWorkerBuilderStep1$JobWorkerBuilderStep3 backoffSupplier(io.zeebe.client.api.worker.BackoffSupplier)</method>
+    <method>io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1$JobWorkerBuilderStep3 backoffSupplier(io.camunda.zeebe.client.api.worker.BackoffSupplier)</method>
   </difference>
   <difference>
-    <className>io/zeebe/client/ZeebeClient</className>
+    <className>io/camunda/zeebe/client/ZeebeClient</className>
     <differenceType>7012</differenceType>
-    <method>io.zeebe.client.ZeebeClientCloudBuilderStep1 newCloudClientBuilder()</method>
+    <method>io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1 newCloudClientBuilder()</method>
   </difference>
 </differences>

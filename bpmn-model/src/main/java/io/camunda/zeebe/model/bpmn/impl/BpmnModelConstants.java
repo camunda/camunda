@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl;
+package io.camunda.zeebe.model.bpmn.impl;
 
 /**
  * Constants used in the BPMN 2.0 Language (DI + Semantic)

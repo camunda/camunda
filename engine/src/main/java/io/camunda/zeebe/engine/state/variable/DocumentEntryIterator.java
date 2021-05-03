@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.variable;
+package io.camunda.zeebe.engine.state.variable;
 
-import io.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;

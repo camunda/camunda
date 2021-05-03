@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter;
+package io.camunda.zeebe.test.exporter;
 
-import io.zeebe.exporter.api.context.Configuration;
+import io.camunda.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
 /** A mock implementation of {@link Configuration} providing easy control over all properties. */

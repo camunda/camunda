@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.allocation;
+package io.camunda.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;

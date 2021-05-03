@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.exporter.record;
+package io.camunda.zeebe.test.exporter.record;
 
-import io.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
 public class MockRecordValue extends ExporterMappedObject implements RecordValue {
 

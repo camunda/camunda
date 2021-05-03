@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.lifecycle;
+package io.camunda.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSED;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
+import static io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
 
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;

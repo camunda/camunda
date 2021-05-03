@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.Query;
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.Query;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.util.Collection;
 
 /**

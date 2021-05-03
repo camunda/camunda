@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.network;
+package io.camunda.zeebe.broker.it.network;
 
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.it.util.ZeebeAssertHelper;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.test.util.BrokerClassRuleHelper;
-import io.zeebe.util.ByteValue;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.broker.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.util.ByteValue;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;

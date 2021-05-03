@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model.validation;
+package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import io.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;

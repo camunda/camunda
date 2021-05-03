@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.util.sched.future;
+package io.camunda.zeebe.util.sched.future;
 
-import io.zeebe.util.sched.ActorTask;
+import io.camunda.zeebe.util.sched.ActorTask;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;

@@ -16,7 +16,7 @@
 package io.atomix.raft;
 
 import io.atomix.cluster.MemberId;
-import io.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

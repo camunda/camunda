@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.GatewayDirection;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.GatewayDirection;
 import java.io.InputStream;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
@@ -50,7 +50,7 @@ public abstract class AbstractGatewayTest<G extends Gateway> extends BpmnModelEl
   @SuppressWarnings("unchecked")
   public void getGateway() {
     final InputStream inputStream =
-        ReflectUtil.getResourceAsStream("io/zeebe/model/bpmn/GatewaysTest.xml");
+        ReflectUtil.getResourceAsStream("io/camunda/zeebe/model/bpmn/GatewaysTest.xml");
     final Collection<ModelElementInstance> elementInstances =
         Bpmn.readModelFromStream(inputStream).getModelElementsByType(modelElementType);
     assertThat(elementInstances).hasSize(1);

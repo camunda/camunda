@@ -5,17 +5,17 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.cluster;
+package io.camunda.zeebe.gateway.impl.broker.cluster;
 
-import static io.zeebe.gateway.impl.broker.cluster.BrokerClusterState.NODE_ID_NULL;
+import static io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState.NODE_ID_NULL;
 
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
-import io.zeebe.gateway.Loggers;
-import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.util.sched.Actor;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.util.sched.Actor;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;

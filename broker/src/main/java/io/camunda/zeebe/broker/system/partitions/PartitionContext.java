@@ -5,28 +5,28 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.exporter.repo.ExporterRepository;
-import io.zeebe.broker.exporter.stream.ExporterDirector;
-import io.zeebe.broker.logstreams.LogDeletionService;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
-import io.zeebe.broker.system.partitions.impl.PartitionProcessingState;
-import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.zeebe.broker.transport.commandapi.CommandApiService;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
-import io.zeebe.snapshots.SnapshotStoreSupplier;
-import io.zeebe.util.health.HealthMonitor;
-import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.logstreams.LogDeletionService;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
+import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
+import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.sched.ActorControl;
+import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;

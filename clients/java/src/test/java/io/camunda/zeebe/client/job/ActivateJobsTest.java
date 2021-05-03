@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.job;
+package io.camunda.zeebe.client.job;
 
-import static io.zeebe.client.util.JsonUtil.fromJsonAsMap;
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.impl.ZeebeObjectMapper;
-import io.zeebe.client.impl.response.ActivatedJobImpl;
-import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -86,7 +86,7 @@ public final class ActivateJobsTest extends ClientTest {
     // then
     assertThat(response.getJobs()).hasSize(2);
 
-    io.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
+    io.camunda.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
     assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());

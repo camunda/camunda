@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.partitions;
+package io.camunda.zeebe.broker.system.partitions;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -14,10 +14,10 @@ import static org.mockito.Mockito.when;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
-import io.zeebe.broker.system.partitions.impl.TestPartitionStep;
-import io.zeebe.util.health.CriticalComponentsHealthMonitor;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.TestPartitionStep;
+import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;

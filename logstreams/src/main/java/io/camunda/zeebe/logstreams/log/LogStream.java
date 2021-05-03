@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.log;
 
-import io.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
-import io.zeebe.util.health.HealthMonitorable;
-import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.AsyncClosable;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.AsyncClosable;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 /**
  * Represents a stream of events. New events are append to the end of the log. With {@link

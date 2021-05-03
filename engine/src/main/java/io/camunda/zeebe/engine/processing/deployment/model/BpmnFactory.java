@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.deployment.model;
+package io.camunda.zeebe.engine.processing.deployment.model;
 
-import io.zeebe.el.ExpressionLanguage;
-import io.zeebe.el.ExpressionLanguageFactory;
-import io.zeebe.engine.processing.common.ExpressionProcessor;
-import io.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
-import io.zeebe.engine.processing.deployment.transform.BpmnValidator;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidator;
 
 public final class BpmnFactory {
 

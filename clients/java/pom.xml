@@ -7,7 +7,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../../parent</relativePath>
@@ -27,7 +27,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
@@ -47,7 +47,7 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-gateway-protocol-impl</artifactId>
     </dependency>
 
@@ -170,7 +170,7 @@
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>io/zeebe/client/impl/**</exclude>
+            <exclude>io/camunda/zeebe/client/impl/**</exclude>
           </excludes>
         </configuration>
       </plugin>

@@ -5,23 +5,23 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.transport.commandapi;
+package io.camunda.zeebe.broker.transport.commandapi;
 
-import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValue;
-import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
+import static io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
 
-import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.record.ExecuteCommandResponseEncoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.impl.ServerResponseImpl;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.ExecuteCommandResponseEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.transport.ServerOutput;
+import io.camunda.zeebe.transport.impl.ServerResponseImpl;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

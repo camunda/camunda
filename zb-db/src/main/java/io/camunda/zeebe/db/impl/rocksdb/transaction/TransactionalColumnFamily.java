@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
-import static io.zeebe.util.buffer.BufferUtil.startsWith;
+import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.DbKey;
-import io.zeebe.db.DbValue;
-import io.zeebe.db.KeyValuePairVisitor;
-import io.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
+import io.camunda.zeebe.db.TransactionContext;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

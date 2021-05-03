@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.validation;
+package io.camunda.zeebe.model.bpmn.validation;
 
 import static org.junit.Assert.fail;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.traversal.ModelWalker;
-import io.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
+import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;

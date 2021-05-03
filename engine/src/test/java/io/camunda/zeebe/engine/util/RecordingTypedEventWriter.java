@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.util;
+package io.camunda.zeebe.engine.util;
 
-import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
-import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * An event writer which simply records follow up events in a thread-safe way. Can be passed to a
- * {@link io.zeebe.engine.processing.streamprocessor.writers.StateWriter} for easy unit testing of
- * behaviors and processors.
+ * {@link io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter} for easy unit
+ * testing of behaviors and processors.
  */
 public final class RecordingTypedEventWriter implements TypedEventWriter {
 

@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.impl.instance;
+package io.camunda.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EXPORTER;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EXPORTER_VERSION;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EXPRESSION_LANGUAGE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ID;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TARGET_NAMESPACE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TYPE_LANGUAGE;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_DEFINITIONS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XML_SCHEMA_NS;
-import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XPATH_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EXPORTER;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EXPORTER_VERSION;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_EXPRESSION_LANGUAGE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_ID;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TARGET_NAMESPACE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_TYPE_LANGUAGE;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_DEFINITIONS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XML_SCHEMA_NS;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.XPATH_NS;
 
-import io.zeebe.model.bpmn.instance.Definitions;
-import io.zeebe.model.bpmn.instance.Extension;
-import io.zeebe.model.bpmn.instance.Import;
-import io.zeebe.model.bpmn.instance.Relationship;
-import io.zeebe.model.bpmn.instance.RootElement;
-import io.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.instance.Extension;
+import io.camunda.zeebe.model.bpmn.instance.Import;
+import io.camunda.zeebe.model.bpmn.instance.Relationship;
+import io.camunda.zeebe.model.bpmn.instance.RootElement;
+import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnDiagram;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;

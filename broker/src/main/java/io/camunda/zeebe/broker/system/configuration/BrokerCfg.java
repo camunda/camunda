@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.configuration;
+package io.camunda.zeebe.broker.system.configuration;
 
-import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
+import static io.camunda.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.broker.exporter.metrics.MetricsExporter;
-import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.zeebe.util.Environment;
-import io.zeebe.util.exception.UncheckedExecutionException;
+import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.util.Environment;
+import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;

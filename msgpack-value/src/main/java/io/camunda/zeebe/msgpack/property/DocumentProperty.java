@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.msgpack.property;
+package io.camunda.zeebe.msgpack.property;
 
-import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
+import static io.camunda.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
 
-import io.zeebe.msgpack.MsgpackPropertyException;
-import io.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.msgpack.MsgpackPropertyException;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import org.agrona.DirectBuffer;
 
 public final class DocumentProperty extends BaseProperty<DocumentValue> {

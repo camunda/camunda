@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.command;
+package io.camunda.zeebe.client.api.command;
 
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 

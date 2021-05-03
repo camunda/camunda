@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.broker.protocol.brokerapi.data;
+package io.camunda.zeebe.test.broker.protocol.brokerapi.data;
 
-import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
+import static io.camunda.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
 
-import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;

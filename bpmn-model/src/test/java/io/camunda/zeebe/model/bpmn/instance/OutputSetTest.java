@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zeebe.model.bpmn.instance;
+package io.camunda.zeebe.model.bpmn.instance;
 
-import io.zeebe.model.bpmn.impl.instance.DataOutputRefs;
-import io.zeebe.model.bpmn.impl.instance.InputSetRefs;
-import io.zeebe.model.bpmn.impl.instance.OptionalOutputRefs;
-import io.zeebe.model.bpmn.impl.instance.WhileExecutingOutputRefs;
+import io.camunda.zeebe.model.bpmn.impl.instance.DataOutputRefs;
+import io.camunda.zeebe.model.bpmn.impl.instance.InputSetRefs;
+import io.camunda.zeebe.model.bpmn.impl.instance.OptionalOutputRefs;
+import io.camunda.zeebe.model.bpmn.impl.instance.WhileExecutingOutputRefs;
 import java.util.Arrays;
 import java.util.Collection;
 

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.api.util;
+package io.camunda.zeebe.gateway.api.util;
 
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 
 public final class StubbedGatewayRule extends ExternalResource {

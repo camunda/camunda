@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.test.util.record;
+package io.camunda.zeebe.test.util.record;
 
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 public final class RecordingExporterTestWatcher extends TestWatcher {
 
-  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test.records");
+  public static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test.records");
 
   @Override
   protected void failed(final Throwable e, final Description description) {

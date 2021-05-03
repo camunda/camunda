@@ -5,20 +5,20 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.gateway.Loggers;
-import io.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
-import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.encoding.ErrorResponse;
-import io.zeebe.protocol.record.ErrorResponseDecoder;
-import io.zeebe.protocol.record.ErrorResponseEncoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientRequest;
-import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.gateway.Loggers;
+import io.camunda.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.transport.ClientRequest;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;

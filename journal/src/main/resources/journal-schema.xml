@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.zeebe.journal.file" id="7" version="1"
+  package="io.camunda.zeebe.journal.file" id="7" version="1"
   semanticVersion="${project.version}" description="Zeebe Journal Record Schema"
   byteOrder="littleEndian">
 

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.util;
+package io.camunda.zeebe.client.impl.util;
 
-import io.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.impl.Loggers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;

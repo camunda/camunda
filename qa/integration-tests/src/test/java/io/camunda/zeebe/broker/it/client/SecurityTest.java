@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.it.client;
+package io.camunda.zeebe.broker.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
+import io.camunda.zeebe.broker.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.netty.util.NetUtil;
-import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -49,7 +49,7 @@ public final class SecurityTest {
 
   private ZeebeClientBuilder configureClientForTls(final ZeebeClientBuilder clientBuilder) {
     return clientBuilder.caCertificatePath(
-        io.zeebe.broker.it.clustering.DeploymentClusteredTest.class
+        io.camunda.zeebe.broker.it.clustering.DeploymentClusteredTest.class
             .getClassLoader()
             .getResource("security/test-chain.cert.pem")
             .getPath());

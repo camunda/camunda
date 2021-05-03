@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.instance;
 
-import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.TransactionContext;
-import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbCompositeKey;
-import io.zeebe.db.impl.DbLong;
-import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;

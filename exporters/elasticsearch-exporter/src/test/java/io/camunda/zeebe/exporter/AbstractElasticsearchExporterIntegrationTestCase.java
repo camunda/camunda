@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.exporter;
+package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.exporter.dto.GetDocumentResponse;
-import io.zeebe.exporter.dto.GetSettingsForIndicesResponse;
-import io.zeebe.exporter.dto.GetSettingsForIndicesResponse.IndexSettings;
-import io.zeebe.exporter.util.ElasticsearchContainer;
-import io.zeebe.exporter.util.ElasticsearchNode;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.test.exporter.ExporterIntegrationRule;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.exporter.dto.GetDocumentResponse;
+import io.camunda.zeebe.exporter.dto.GetSettingsForIndicesResponse;
+import io.camunda.zeebe.exporter.dto.GetSettingsForIndicesResponse.IndexSettings;
+import io.camunda.zeebe.exporter.util.ElasticsearchContainer;
+import io.camunda.zeebe.exporter.util.ElasticsearchNode;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.test.exporter.ExporterIntegrationRule;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -106,7 +106,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   protected ElasticsearchTestClient createElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration) {
     return new ElasticsearchTestClient(
-        configuration, LoggerFactory.getLogger("io.zeebe.exporter.elasticsearch"));
+        configuration, LoggerFactory.getLogger("io.camunda.zeebe.exporter.elasticsearch"));
   }
 
   protected Map<String, Object> recordToMap(final Record<?> record) {

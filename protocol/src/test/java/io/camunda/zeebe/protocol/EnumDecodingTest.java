@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol;
+package io.camunda.zeebe.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.protocol.record.ErrorCode;
-import io.zeebe.protocol.record.ErrorResponseDecoder;
-import io.zeebe.protocol.record.ErrorResponseEncoder;
-import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.protocol.record.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ErrorResponseDecoder;
+import io.camunda.zeebe.protocol.record.ErrorResponseEncoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 

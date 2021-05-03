@@ -5,18 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.dispatcher.integration;
+package io.camunda.zeebe.dispatcher.integration;
 
-import io.zeebe.dispatcher.BlockPeek;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.dispatcher.Subscription;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import io.camunda.zeebe.dispatcher.BlockPeek;
+import io.camunda.zeebe.dispatcher.ClaimedFragment;
+import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.dispatcher.Dispatchers;
+import io.camunda.zeebe.dispatcher.FragmentHandler;
+import io.camunda.zeebe.dispatcher.Subscription;
+import io.camunda.zeebe.util.ByteValue;
+import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import org.agrona.DirectBuffer;

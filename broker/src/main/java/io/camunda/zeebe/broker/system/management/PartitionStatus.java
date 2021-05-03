@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.system.management;
+package io.camunda.zeebe.broker.system.management;
 
 import io.atomix.raft.RaftServer.Role;
-import io.zeebe.broker.exporter.stream.ExporterPhase;
-import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 
 public final class PartitionStatus {
 

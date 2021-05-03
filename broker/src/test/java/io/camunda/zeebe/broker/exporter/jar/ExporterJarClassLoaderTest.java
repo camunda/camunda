@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.broker.exporter.jar;
+package io.camunda.zeebe.broker.exporter.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.exporter.util.JarCreatorRule;
-import io.zeebe.broker.exporter.util.TestJarExporter;
-import io.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
+import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
+import io.camunda.zeebe.exporter.api.Exporter;
 import java.io.File;
 import org.apache.logging.log4j.LogManager;
 import org.junit.Rule;

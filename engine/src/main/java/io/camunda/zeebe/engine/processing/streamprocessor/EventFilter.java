@@ -5,9 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.processing.streamprocessor;
+package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import java.util.Objects;
 
 /** Implement to control which events should be handled by a {@link StreamProcessor}. */

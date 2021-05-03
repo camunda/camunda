@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.el;
+package io.camunda.zeebe.el;
 
 /**
  * A parser and interpreter for the expression language. An expression can be parsed and stored as

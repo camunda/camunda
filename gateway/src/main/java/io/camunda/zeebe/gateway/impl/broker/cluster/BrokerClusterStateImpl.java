@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.gateway.impl.broker.cluster;
+package io.camunda.zeebe.gateway.impl.broker.cluster;
 
 import static org.agrona.collections.IntArrayList.DEFAULT_NULL_VALUE;
 

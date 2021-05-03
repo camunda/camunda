@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.journal.file.record;
+package io.camunda.zeebe.journal.file.record;
 
-import io.zeebe.journal.JournalException.InvalidIndex;
-import io.zeebe.journal.JournalRecord;
-import io.zeebe.journal.file.ChecksumGenerator;
+import io.camunda.zeebe.journal.JournalException.InvalidIndex;
+import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.ChecksumGenerator;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 

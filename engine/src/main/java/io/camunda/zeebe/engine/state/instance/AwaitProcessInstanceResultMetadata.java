@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.instance;
 
-import io.zeebe.db.DbValue;
-import io.zeebe.msgpack.property.ArrayProperty;
-import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.LongProperty;
-import io.zeebe.msgpack.value.StringValue;
-import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.Objects;
 
 public final class AwaitProcessInstanceResultMetadata extends UnifiedRecordValue
