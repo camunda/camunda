@@ -463,7 +463,6 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("flaky test")
   public void testMetadataIncidentOnInputMapping() throws Exception {
     // having
     String processId = "demoProcess";

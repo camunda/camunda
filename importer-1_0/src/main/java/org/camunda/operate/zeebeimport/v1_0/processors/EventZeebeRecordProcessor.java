@@ -153,7 +153,7 @@ public class EventZeebeRecordProcessor {
         eventEntity.setFlowNodeInstanceKey(record.getKey());
       }
 
-      persistEvent(eventEntity, bulkRequest);
+      persistEvent(eventEntity, record.getPosition(), bulkRequest);
     }
   }
 
@@ -200,7 +200,7 @@ public class EventZeebeRecordProcessor {
 
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, bulkRequest);
+    persistEvent(eventEntity, record.getPosition(), bulkRequest);
 
   }
 
@@ -228,7 +228,7 @@ public class EventZeebeRecordProcessor {
     }
     eventEntity.setMetadata(eventMetadata);
 
-    persistEvent(eventEntity, bulkRequest);
+    persistEvent(eventEntity, record.getPosition(), bulkRequest);
   }
 
   private boolean isProcessEvent(ProcessInstanceRecordValueImpl recordValue) {
@@ -252,7 +252,7 @@ public class EventZeebeRecordProcessor {
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
   }
 
-  private void persistEvent(EventEntity entity, BulkRequest bulkRequest) throws PersistenceException {
+  private void persistEvent(EventEntity entity, long position, BulkRequest bulkRequest) throws PersistenceException {
     try {
       logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}", entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getProcessInstanceKey());
@@ -260,7 +260,7 @@ public class EventZeebeRecordProcessor {
       //write event
       bulkRequest.add(new IndexRequest(eventTemplate.getFullQualifiedName()).id(entity.getId())
         .source(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .version(entity.getDateTime().toInstant().toEpochMilli())
+        .version(position)
         .versionType(VersionType.EXTERNAL_GTE));
 
     } catch (JsonProcessingException e) {
