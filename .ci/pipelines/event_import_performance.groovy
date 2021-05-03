@@ -208,6 +208,10 @@ pipeline {
 
                 bash .ci/pipelines/event_import_performance/create-and-publish-event-process.sh ${NAMESPACE} .ci/pipelines/event_import_performance/externalInvoiceEventProcessMapping.json
 
+                # sleep for one more minute to avoid a race condition if the last page of the publish did not include
+                # all events of the last batch (can be the case if import batch size < ingest batch size)
+                sleep 1m
+
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
