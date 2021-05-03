@@ -9,6 +9,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ALERTS;
+import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_BPMN_PROCESS_ID;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_CREATION_TIME;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ERROR_MESSAGE;
 import static org.camunda.operate.zeebeimport.IncidentNotifier.FIELD_NAME_ERROR_TYPE;
@@ -99,6 +100,7 @@ public class IncidentNotifierTest {
   private final Long processDefinitionKey = 345L;
   private final Long jobKey = 456L;
   private final IncidentState incidentState = IncidentState.ACTIVE;
+  private final String bpmnProcessId = "testProcessId";
   private final String processName = "processName";
   private final int processVersion = 234;
 
@@ -109,6 +111,7 @@ public class IncidentNotifierTest {
             Optional.of(
                 new ProcessEntity()
                     .setId("123")
+                    .setBpmnProcessId(bpmnProcessId)
                     .setName(processName)
                     .setVersion(processVersion)));
   }
@@ -231,6 +234,7 @@ public class IncidentNotifierTest {
     assertThat(incidentFields.get(FIELD_NAME_MESSAGE)).isEqualTo(MESSAGE);
     assertThat(incidentFields.get(FIELD_NAME_JOB_KEY)).isEqualTo(jobKey.intValue());
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_KEY)).isEqualTo(processDefinitionKey.intValue());
+    assertThat(incidentFields.get(FIELD_NAME_BPMN_PROCESS_ID)).isEqualTo(bpmnProcessId);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_NAME)).isEqualTo(processName);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION)).isEqualTo(processVersion);
     assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_INSTANCE_KEY))

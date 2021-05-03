@@ -51,6 +51,7 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
   protected static final String FIELD_NAME_JOB_KEY = "jobKey";
   protected static final String FIELD_NAME_PROCESS_KEY = "processDefinitionKey";
+  protected static final String FIELD_NAME_BPMN_PROCESS_ID = "bpmnProcessId";
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
 
@@ -128,6 +129,7 @@ public class IncidentNotifier {
       final Optional<ProcessEntity> process = processCache
           .findOrWaitProcess(inc.getProcessDefinitionKey(), 2, 1000L);
       if (process.isPresent()) {
+        incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, process.get().getBpmnProcessId());
         incidentFields.put(FIELD_NAME_PROCESS_NAME, process.get().getName());
         incidentFields.put(FIELD_NAME_PROCESS_VERSION, process.get().getVersion());
       }
