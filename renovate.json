@@ -1,9 +1,0 @@
-{
-  "extends": [
-    "config:base"
-  ],
-
-  "ignoreDeps": ["github.com/docker/engine", "github.com/docker/docker", "github.com/docker/distribution", "github.com/docker/go-connections", "github.com/docker/go-units"],
-
-  "postUpdateOptions": ["gomodTidy"]
-}
