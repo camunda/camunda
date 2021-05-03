@@ -185,9 +185,8 @@ public final class Gateway {
     return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
-  public void listenAndServe() throws InterruptedException, IOException {
+  public void listenAndServe() throws IOException {
     start();
-    server.awaitTermination();
   }
 
   public void stop() {
