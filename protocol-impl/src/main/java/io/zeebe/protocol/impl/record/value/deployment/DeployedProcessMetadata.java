@@ -25,7 +25,7 @@ import org.agrona.DirectBuffer;
  * This class is used in the DeploymentRecord, only to send the process meta information back to the
  * user. It is similar to {@link ProcessRecord} except that it doesn't contain the actual resources.
  */
-public class DeployedProcessMetadata extends UnifiedRecordValue
+public final class DeployedProcessMetadata extends UnifiedRecordValue
     implements DeployedProcessMetadataValue {
   private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION);
