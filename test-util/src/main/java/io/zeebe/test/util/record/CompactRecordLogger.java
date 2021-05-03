@@ -33,8 +33,8 @@ import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
 import io.zeebe.protocol.record.value.deployment.Process;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -246,7 +246,7 @@ public class CompactRecordLogger {
     final var value = (DeploymentRecordValue) record.getValue();
 
     return value.getProcessesMetadata().stream()
-        .map(DeployedProcessMetadataValue::getResourceName)
+        .map(ProcessMetadataValue::getResourceName)
         .collect(Collectors.joining());
   }
 

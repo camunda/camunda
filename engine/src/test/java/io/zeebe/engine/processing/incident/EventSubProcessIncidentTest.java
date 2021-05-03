@@ -24,7 +24,7 @@ import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -55,7 +55,7 @@ public class EventSubProcessIncidentTest {
   @Parameterized.Parameter(2)
   public Consumer<Long> triggerEventSubprocess;
 
-  private DeployedProcessMetadataValue currentProcess;
+  private ProcessMetadataValue currentProcess;
 
   @Parameterized.Parameters(name = "{0} event subprocess")
   public static Object[][] parameters() {

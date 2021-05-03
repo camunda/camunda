@@ -18,7 +18,7 @@ package io.zeebe.protocol.record.value.deployment;
 import io.zeebe.protocol.record.RecordValue;
 
 /** Represents deployed process meta data, so all important properties of an deployed process. */
-public interface DeployedProcessMetadataValue extends RecordValue {
+public interface ProcessMetadataValue extends RecordValue {
   /** @return the bpmn process ID of this process */
   String getBpmnProcessId();
 

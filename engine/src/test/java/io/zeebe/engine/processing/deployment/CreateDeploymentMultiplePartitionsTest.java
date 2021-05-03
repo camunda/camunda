@@ -20,8 +20,8 @@ import io.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
@@ -145,7 +145,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
 
     Assertions.assertThat(resource).hasResource(bpmnXml(PROCESS));
 
-    final List<DeployedProcessMetadataValue> deployedProcesses =
+    final List<ProcessMetadataValue> deployedProcesses =
         createdDeployment.getValue().getProcessesMetadata();
 
     assertThat(deployedProcesses).hasSize(1);
@@ -229,7 +229,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
         .hasSize(PARTITION_COUNT - 1)
         .extracting(Record::getValue)
         .flatExtracting(DeploymentRecordValue::getProcessesMetadata)
-        .extracting(DeployedProcessMetadataValue::getBpmnProcessId)
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
         .containsOnly("process", "process2");
   }
 
@@ -256,9 +256,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .getFirst();
 
     var deployedProcesses = firstCreatedDeployment.getValue().getProcessesMetadata();
-    assertThat(deployedProcesses)
-        .flatExtracting(DeployedProcessMetadataValue::getVersion)
-        .containsOnly(1);
+    assertThat(deployedProcesses).flatExtracting(ProcessMetadataValue::getVersion).containsOnly(1);
 
     final Record<DeploymentRecordValue> secondCreatedDeployments =
         RecordingExporter.deploymentRecords()
@@ -267,9 +265,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .getFirst();
 
     deployedProcesses = secondCreatedDeployments.getValue().getProcessesMetadata();
-    assertThat(deployedProcesses)
-        .flatExtracting(DeployedProcessMetadataValue::getVersion)
-        .containsOnly(2);
+    assertThat(deployedProcesses).flatExtracting(ProcessMetadataValue::getVersion).containsOnly(2);
   }
 
   @Test
@@ -333,7 +329,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .count())
         .isEqualTo(PARTITION_COUNT - 1);
 
-    final List<DeployedProcessMetadataValue> repeatedWfs =
+    final List<ProcessMetadataValue> repeatedWfs =
         RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
             .withRecordKey(repeated.getKey())
             .limit(PARTITION_COUNT - 1)
@@ -346,7 +342,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   private void assertSameResource(
-      final DeployedProcessMetadataValue original, final DeployedProcessMetadataValue repeated) {
+      final ProcessMetadataValue original, final ProcessMetadataValue repeated) {
     Assertions.assertThat(repeated)
         .hasVersion(original.getVersion())
         .hasProcessDefinitionKey(original.getProcessDefinitionKey())
@@ -355,7 +351,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   private void assertDifferentResources(
-      final DeployedProcessMetadataValue original, final DeployedProcessMetadataValue repeated) {
+      final ProcessMetadataValue original, final ProcessMetadataValue repeated) {
     assertThat(original.getProcessDefinitionKey()).isLessThan(repeated.getProcessDefinitionKey());
     assertThat(original.getVersion()).isLessThan(repeated.getVersion());
   }
@@ -367,7 +363,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   @SuppressWarnings("unchecked")
-  private DeployedProcessMetadataValue getDeployedProcess(
+  private ProcessMetadataValue getDeployedProcess(
       final Record<DeploymentRecordValue> record, final int offset) {
     return record.getValue().getProcessesMetadata().get(offset);
   }

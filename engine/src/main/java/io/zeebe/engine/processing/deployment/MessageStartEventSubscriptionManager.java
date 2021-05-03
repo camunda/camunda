@@ -16,8 +16,8 @@ import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
 import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.immutable.ProcessState;
-import io.zeebe.protocol.impl.record.value.deployment.DeployedProcessMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -44,7 +44,7 @@ public class MessageStartEventSubscriptionManager {
   public void tryReOpenMessageStartEventSubscription(
       final DeploymentRecord deploymentRecord, final StateWriter stateWriter) {
 
-    for (final DeployedProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
+    for (final ProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
       if (isLatestProcess(processRecord)) {
         closeExistingMessageStartEventSubscriptions(processRecord, stateWriter);
         openMessageStartEventSubscriptions(processRecord, stateWriter);
@@ -52,7 +52,7 @@ public class MessageStartEventSubscriptionManager {
     }
   }
 
-  private boolean isLatestProcess(final DeployedProcessMetadata processRecord) {
+  private boolean isLatestProcess(final ProcessMetadata processRecord) {
     return processState
             .getLatestProcessVersionByProcessId(processRecord.getBpmnProcessIdBuffer())
             .getVersion()
@@ -60,7 +60,7 @@ public class MessageStartEventSubscriptionManager {
   }
 
   private void closeExistingMessageStartEventSubscriptions(
-      final DeployedProcessMetadata processRecord, final StateWriter stateWriter) {
+      final ProcessMetadata processRecord, final StateWriter stateWriter) {
     final DeployedProcess lastMsgProcess = findLastMessageStartProcess(processRecord);
     if (lastMsgProcess == null) {
       return;
@@ -75,7 +75,7 @@ public class MessageStartEventSubscriptionManager {
                 subscription.getRecord()));
   }
 
-  private DeployedProcess findLastMessageStartProcess(final DeployedProcessMetadata processRecord) {
+  private DeployedProcess findLastMessageStartProcess(final ProcessMetadata processRecord) {
     for (int version = processRecord.getVersion() - 1; version > 0; --version) {
       final DeployedProcess lastMsgProcess =
           processState.getProcessByProcessIdAndVersion(
@@ -91,7 +91,7 @@ public class MessageStartEventSubscriptionManager {
   }
 
   private void openMessageStartEventSubscriptions(
-      final DeployedProcessMetadata processRecord, final StateWriter stateWriter) {
+      final ProcessMetadata processRecord, final StateWriter stateWriter) {
     final long processDefinitionKey = processRecord.getKey();
     final DeployedProcess processDefinition = processState.getProcessByKey(processDefinitionKey);
     final ExecutableProcess process = processDefinition.getProcess();

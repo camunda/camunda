@@ -17,7 +17,7 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -25,15 +25,14 @@ import org.agrona.DirectBuffer;
  * This class is used in the DeploymentRecord, only to send the process meta information back to the
  * user. It is similar to {@link ProcessRecord} except that it doesn't contain the actual resources.
  */
-public final class DeployedProcessMetadata extends UnifiedRecordValue
-    implements DeployedProcessMetadataValue {
+public final class ProcessMetadata extends UnifiedRecordValue implements ProcessMetadataValue {
   private final StringProperty bpmnProcessIdProp = new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION);
   private final LongProperty keyProp = new LongProperty(PROP_PROCESS_KEY);
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
 
-  public DeployedProcessMetadata() {
+  public ProcessMetadata() {
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -65,32 +64,32 @@ public final class DeployedProcessMetadata extends UnifiedRecordValue
     return BufferUtil.bufferAsArray(checksumProp.getValue());
   }
 
-  public DeployedProcessMetadata setChecksum(final DirectBuffer checksumBuffer) {
+  public ProcessMetadata setChecksum(final DirectBuffer checksumBuffer) {
     checksumProp.setValue(checksumBuffer);
     return this;
   }
 
-  public DeployedProcessMetadata setResourceName(final String resourceName) {
+  public ProcessMetadata setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public DeployedProcessMetadata setResourceName(final DirectBuffer resourceName) {
+  public ProcessMetadata setResourceName(final DirectBuffer resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public DeployedProcessMetadata setVersion(final int version) {
+  public ProcessMetadata setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
 
-  public DeployedProcessMetadata setBpmnProcessId(final String bpmnProcessId) {
+  public ProcessMetadata setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public DeployedProcessMetadata setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+  public ProcessMetadata setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
@@ -105,7 +104,7 @@ public final class DeployedProcessMetadata extends UnifiedRecordValue
     return keyProp.getValue();
   }
 
-  public DeployedProcessMetadata setKey(final long key) {
+  public ProcessMetadata setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }
@@ -132,7 +131,7 @@ public final class DeployedProcessMetadata extends UnifiedRecordValue
     return resourceNameProp.getValue();
   }
 
-  public DeployedProcessMetadata setBpmnProcessId(
+  public ProcessMetadata setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
     bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
     return this;

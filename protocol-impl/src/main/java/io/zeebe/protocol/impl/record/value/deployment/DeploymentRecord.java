@@ -11,7 +11,7 @@ import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -24,14 +24,14 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
 
-  private final ArrayProperty<DeployedProcessMetadata> processesMetadataProp =
-      new ArrayProperty<>(PROCESSES, new DeployedProcessMetadata());
+  private final ArrayProperty<ProcessMetadata> processesMetadataProp =
+      new ArrayProperty<>(PROCESSES, new ProcessMetadata());
 
   public DeploymentRecord() {
     declareProperty(resourcesProp).declareProperty(processesMetadataProp);
   }
 
-  public ValueArray<DeployedProcessMetadata> processesMetadata() {
+  public ValueArray<ProcessMetadata> processesMetadata() {
     return processesMetadataProp;
   }
 
@@ -58,15 +58,15 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  public List<DeployedProcessMetadataValue> getProcessesMetadata() {
-    final List<DeployedProcessMetadataValue> processesMeta = new ArrayList<>();
+  public List<ProcessMetadataValue> getProcessesMetadata() {
+    final List<ProcessMetadataValue> processesMeta = new ArrayList<>();
 
-    for (final DeployedProcessMetadata processRecord : processesMetadataProp) {
+    for (final ProcessMetadata processRecord : processesMetadataProp) {
       final byte[] bytes = new byte[processRecord.getLength()];
       final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
       processRecord.write(copyBuffer, 0);
 
-      final DeployedProcessMetadata copiedProcessRecord = new DeployedProcessMetadata();
+      final ProcessMetadata copiedProcessRecord = new ProcessMetadata();
       copiedProcessRecord.wrap(copyBuffer);
       processesMeta.add(copiedProcessRecord);
     }

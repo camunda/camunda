@@ -16,8 +16,8 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.record.value.deployment.DeployedProcessMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -143,7 +143,7 @@ public final class PartitionTestClient {
     return commandResponse;
   }
 
-  public DeployedProcessMetadata deployProcess(final BpmnModelInstance process) {
+  public ProcessMetadata deployProcess(final BpmnModelInstance process) {
     final DeploymentRecord request = new DeploymentRecord();
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, process);
@@ -151,7 +151,7 @@ public final class PartitionTestClient {
     request.resources().add().setResource(outStream.toByteArray()).setResourceName("process.bpmn");
 
     final DeploymentRecord response = deploy(request);
-    final Iterator<DeployedProcessMetadata> iterator = response.processesMetadata().iterator();
+    final Iterator<ProcessMetadata> iterator = response.processesMetadata().iterator();
     assertThat(iterator).as("Expected at least one deployed process, but none returned").hasNext();
 
     return iterator.next();

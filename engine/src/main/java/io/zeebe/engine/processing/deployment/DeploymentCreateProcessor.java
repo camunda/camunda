@@ -33,8 +33,8 @@ import io.zeebe.engine.state.immutable.TimerInstanceState;
 import io.zeebe.engine.state.immutable.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.model.bpmn.util.time.Timer;
-import io.zeebe.protocol.impl.record.value.deployment.DeployedProcessMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.util.Either;
@@ -134,7 +134,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedRecord<DeploymentRecord> record,
       final TypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
-    for (final DeployedProcessMetadata processMetadata : record.getValue().processesMetadata()) {
+    for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       final List<ExecutableStartEvent> startEvents =
           processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
@@ -166,7 +166,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void unsubscribeFromPreviousTimers(
-      final TypedStreamWriter streamWriter, final DeployedProcessMetadata processRecord) {
+      final TypedStreamWriter streamWriter, final ProcessMetadata processRecord) {
     timerInstanceState.forEachTimerForElementInstance(
         NO_ELEMENT_INSTANCE,
         timer -> unsubscribeFromPreviousTimer(streamWriter, processRecord, timer));
@@ -174,7 +174,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private void unsubscribeFromPreviousTimer(
       final TypedStreamWriter streamWriter,
-      final DeployedProcessMetadata processMetadata,
+      final ProcessMetadata processMetadata,
       final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
         processState.getProcessByKey(timer.getProcessDefinitionKey()).getBpmnProcessId();

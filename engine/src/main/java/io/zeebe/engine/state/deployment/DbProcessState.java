@@ -24,8 +24,8 @@ import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.impl.record.value.deployment.DeployedProcessMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.util.buffer.BufferUtil;
@@ -102,7 +102,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void putDeployment(final DeploymentRecord deploymentRecord) {
-    for (final DeployedProcessMetadata metadata : deploymentRecord.processesMetadata()) {
+    for (final ProcessMetadata metadata : deploymentRecord.processesMetadata()) {
       for (final DeploymentResource resource : deploymentRecord.getResources()) {
         if (resource.getResourceName().equals(metadata.getResourceName())) {
           processRecordForDeployments.reset();

@@ -25,8 +25,8 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.ProcessIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -171,7 +171,7 @@ public final class CreateDeploymentTest {
     var deployedProcesses = firstDeployment.getValue().getProcessesMetadata();
     assertThat(deployedProcesses).hasSize(1);
 
-    DeployedProcessMetadataValue deployedProcess = deployedProcesses.get(0);
+    ProcessMetadataValue deployedProcess = deployedProcesses.get(0);
     assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(processId);
     assertThat(deployedProcess.getResourceName()).isEqualTo("wf1.bpmn");
 
@@ -196,7 +196,7 @@ public final class CreateDeploymentTest {
 
     // then
     assertThat(deployment.getValue().getProcessesMetadata())
-        .extracting(DeployedProcessMetadataValue::getBpmnProcessId)
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
         .contains("process1", "process2");
   }
 
@@ -214,7 +214,7 @@ public final class CreateDeploymentTest {
 
     // then
     assertThat(deployment.getValue().getProcessesMetadata())
-        .extracting(DeployedProcessMetadataValue::getBpmnProcessId)
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
         .contains(processId, processId2);
 
     assertThat(deployment.getValue().getResources())
@@ -243,7 +243,7 @@ public final class CreateDeploymentTest {
     // then
     final var processDefinitionKeyList =
         deployment.getProcessesMetadata().stream()
-            .map(DeployedProcessMetadataValue::getProcessDefinitionKey)
+            .map(ProcessMetadataValue::getProcessDefinitionKey)
             .collect(Collectors.toList());
 
     final var processRecordKeys =
@@ -532,7 +532,7 @@ public final class CreateDeploymentTest {
     final var repeatedProcesses = repeated.getValue().getProcessesMetadata();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isEqualTo(2);
 
-    for (final DeployedProcessMetadataValue process : originalProcesses) {
+    for (final ProcessMetadataValue process : originalProcesses) {
       assertSameResource(process, findProcess(repeatedProcesses, process.getBpmnProcessId()));
     }
   }
@@ -642,8 +642,8 @@ public final class CreateDeploymentTest {
                 + "'INVALID_CYCLE_EXPRESSION')\n");
   }
 
-  private DeployedProcessMetadataValue findProcess(
-      final List<DeployedProcessMetadataValue> processes, final String processId) {
+  private ProcessMetadataValue findProcess(
+      final List<ProcessMetadataValue> processes, final String processId) {
     return processes.stream()
         .filter(w -> w.getBpmnProcessId().equals(processId))
         .findFirst()
@@ -651,7 +651,7 @@ public final class CreateDeploymentTest {
   }
 
   private void assertSameResource(
-      final DeployedProcessMetadataValue original, final DeployedProcessMetadataValue repeated) {
+      final ProcessMetadataValue original, final ProcessMetadataValue repeated) {
     io.zeebe.protocol.record.Assertions.assertThat(repeated)
         .hasVersion(original.getVersion())
         .hasProcessDefinitionKey(original.getProcessDefinitionKey())
@@ -660,7 +660,7 @@ public final class CreateDeploymentTest {
   }
 
   private void assertDifferentResources(
-      final DeployedProcessMetadataValue original, final DeployedProcessMetadataValue repeated) {
+      final ProcessMetadataValue original, final ProcessMetadataValue repeated) {
     assertThat(original.getProcessDefinitionKey()).isLessThan(repeated.getProcessDefinitionKey());
     assertThat(original.getVersion()).isLessThan(repeated.getVersion());
   }

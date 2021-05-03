@@ -17,8 +17,8 @@ package io.zeebe.protocol.record.value;
 
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.DeployedProcessMetadataValue;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.List;
 
 /**
@@ -30,5 +30,5 @@ public interface DeploymentRecordValue extends RecordValue {
   /** @return the resources to deploy */
   List<DeploymentResource> getResources();
 
-  List<DeployedProcessMetadataValue> getProcessesMetadata();
+  List<ProcessMetadataValue> getProcessesMetadata();
 }

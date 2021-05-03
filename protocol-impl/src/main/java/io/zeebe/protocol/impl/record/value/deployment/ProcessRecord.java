@@ -38,7 +38,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(resourceProp);
   }
 
-  public ProcessRecord wrap(final DeployedProcessMetadata metadata, final byte[] resource) {
+  public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
     bpmnProcessIdProp.setValue(metadata.getBpmnProcessIdBuffer());
     versionProp.setValue(metadata.getVersion());
     checksumProp.setValue(metadata.getChecksumBuffer());
