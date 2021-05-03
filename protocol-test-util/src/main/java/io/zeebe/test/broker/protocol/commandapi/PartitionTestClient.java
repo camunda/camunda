@@ -151,7 +151,7 @@ public final class PartitionTestClient {
     request.resources().add().setResource(outStream.toByteArray()).setResourceName("process.bpmn");
 
     final DeploymentRecord response = deploy(request);
-    final Iterator<DeployedProcessMetadata> iterator = response.processes().iterator();
+    final Iterator<DeployedProcessMetadata> iterator = response.processesMetadata().iterator();
     assertThat(iterator).as("Expected at least one deployed process, but none returned").hasNext();
 
     return iterator.next();
