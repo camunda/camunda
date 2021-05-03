@@ -39,7 +39,7 @@ import io.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
 import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
+import io.zeebe.protocol.record.value.deployment.Process;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
@@ -148,7 +148,7 @@ public final class RecordingExporter implements Exporter {
   }
 
   public static ProcessRecordStream processRecords() {
-    return new ProcessRecordStream(records(ValueType.PROCESS, DeployedProcess.class));
+    return new ProcessRecordStream(records(ValueType.PROCESS, Process.class));
   }
 
   public static DeploymentDistributionRecordStream deploymentDistributionRecords() {

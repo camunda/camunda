@@ -16,7 +16,7 @@
 package io.zeebe.protocol.record.value.deployment;
 
 /** Represents a deployed process, which extends the meta data with the acutal resources */
-public interface DeployedProcess extends DeployedProcessMetadataValue {
+public interface Process extends DeployedProcessMetadataValue {
   /** @return returns the corresponding binary resource */
   byte[] getResource();
 }
