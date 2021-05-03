@@ -29,7 +29,8 @@ zeebe:
         #     event: true
         #     rejection: false
         #
-        #     deployment: true
+        #     deployment: false
+        #     process: true
         #     error: true
         #     incident: true
         #     job: true
