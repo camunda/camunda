@@ -106,6 +106,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements DeployedP
     return checksumProp.getValue();
   }
 
+  @Override
   public byte[] getResource() {
     return BufferUtil.bufferAsArray(resourceProp.getValue());
   }
