@@ -20,6 +20,7 @@ import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.client.ClientProperties.KEEP_ALIVE;
 import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.zeebe.client.impl.BuilderUtils.appendProperty;
 
 import io.grpc.ClientInterceptor;
 import io.zeebe.client.ClientProperties;
@@ -40,9 +41,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
+  public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
-  private String gatewayAddress = "0.0.0.0:26500";
+  private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
@@ -336,10 +338,5 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
 
     return builder.build();
-  }
-
-  private static void appendProperty(
-      final StringBuilder sb, final String propertyName, final Object value) {
-    sb.append(propertyName).append(": ").append(value).append("\n");
   }
 }

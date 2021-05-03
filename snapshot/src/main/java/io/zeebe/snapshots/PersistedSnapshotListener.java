@@ -11,6 +11,7 @@ package io.zeebe.snapshots;
  * Represents a listener which can be added to the {@link PersistedSnapshotStore} to be notified
  * when a new {@link PersistedSnapshot} is persisted at this store.
  */
+@FunctionalInterface
 public interface PersistedSnapshotListener {
 
   /**

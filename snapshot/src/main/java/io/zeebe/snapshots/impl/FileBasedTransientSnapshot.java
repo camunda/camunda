@@ -137,6 +137,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     return metadata;
   }
 
+  @Override
+  public Path getPath() {
+    return directory;
+  }
+
   private void abortInternal() {
     try {
       isValid = false;
@@ -148,10 +153,6 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     } finally {
       snapshotStore.removePendingSnapshot(this);
     }
-  }
-
-  private Path getPath() {
-    return directory;
   }
 
   @Override

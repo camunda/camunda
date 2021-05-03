@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record_process-instance-creation_*"
+    "zeebe-record_process_*"
   ],
   "priority": 20,
   "version": 1,
@@ -11,7 +11,7 @@
       "index.queries.cache.enabled": false
     },
     "aliases": {
-      "zeebe-record-process-instance-creation": {}
+      "zeebe-record-process": {}
     },
     "mappings": {
       "properties": {
@@ -22,15 +22,18 @@
               "type": "keyword"
             },
             "version": {
-              "type": "integer"
+              "type": "long"
             },
             "processDefinitionKey": {
               "type": "long"
             },
-            "processInstanceKey": {
-              "type": "long"
+            "resourceName": {
+              "type": "text"
             },
-            "variables": {
+            "resource": {
+              "enabled": false
+            },
+            "checksum": {
               "enabled": false
             }
           }

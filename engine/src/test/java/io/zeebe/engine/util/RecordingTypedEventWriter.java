@@ -8,12 +8,10 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.UnaryOperator;
 
 /**
  * An event writer which simply records follow up events in a thread-safe way. Can be passed to a
@@ -31,15 +29,6 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     events.add(new RecordedEvent<>(key, intent, value));
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
-    appendFollowUpEvent(key, intent, value);
   }
 
   public static final class RecordedEvent<T extends RecordValue> {

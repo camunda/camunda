@@ -3,7 +3,7 @@ package gateway_protocol;
 
 option java_multiple_files = false;
 option java_package = "io.zeebe.gateway.protocol";
-option go_package = "pb";
+option go_package = "./;pb";
 
 // For a more complete documentation, refer to Zeebe documentation at:
 // https://docs.camunda.io/docs/reference/grpc
@@ -147,23 +147,10 @@ message DeployProcessRequest {
 }
 
 message ProcessRequestObject {
-  enum ResourceType {
-    // FILE type means the gateway will try to detect the resource type
-    // using the file extension of the name field
-    FILE = 0;
-    BPMN = 1; // extension 'bpmn'
-    YAML = 2 [deprecated = true]; // extension 'yaml'; deprecated as of release 1.0
-  }
-
   // the resource basename, e.g. myProcess.bpmn
   string name = 1;
-  // the resource type; if set to BPMN or YAML then the file extension
-  // is ignored
-  // As of release 1.0, YAML support was removed and BPMN is the only supported resource type.
-  // The field was kept to not break clients.
-  ResourceType type = 2 [deprecated = true];
   // the process definition as a UTF8-encoded string
-  bytes definition = 3;
+  bytes definition = 2;
 }
 
 message DeployProcessResponse {
@@ -402,7 +389,6 @@ service Gateway {
       INVALID_ARGUMENT:
         - no resources given.
         - if at least one resource is invalid. A resource is considered invalid if:
-          - it is not a BPMN or YAML file (currently detected through the file extension)
           - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
           - the process is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
    */

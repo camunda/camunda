@@ -49,7 +49,6 @@ class JournalSegment implements AutoCloseable {
   public JournalSegment(
       final JournalSegmentFile file,
       final JournalSegmentDescriptor descriptor,
-      final int maxEntrySize,
       final long maxWrittenIndex,
       final JournalIndex journalIndex) {
     this.file = file;
@@ -59,7 +58,7 @@ class JournalSegment implements AutoCloseable {
         IoUtil.mapExistingFile(
             file.file(), MapMode.READ_WRITE, file.name(), 0, descriptor.maxSegmentSize());
     buffer.order(ENDIANNESS);
-    writer = createWriter(maxEntrySize, maxWrittenIndex);
+    writer = createWriter(maxWrittenIndex);
   }
 
   /**
@@ -146,9 +145,8 @@ class JournalSegment implements AutoCloseable {
         buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
   }
 
-  private MappedJournalSegmentWriter createWriter(
-      final int maxEntrySize, final long lastWrittenIndex) {
-    return new MappedJournalSegmentWriter(buffer, this, maxEntrySize, index, lastWrittenIndex);
+  private MappedJournalSegmentWriter createWriter(final long lastWrittenIndex) {
+    return new MappedJournalSegmentWriter(buffer, this, index, lastWrittenIndex);
   }
 
   /**

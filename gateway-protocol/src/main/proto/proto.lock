@@ -5,28 +5,6 @@
       "def": {
         "enums": [
           {
-            "name": "ProcessRequestObject.ResourceType",
-            "enum_fields": [
-              {
-                "name": "FILE"
-              },
-              {
-                "name": "BPMN",
-                "integer": 1
-              },
-              {
-                "name": "YAML",
-                "integer": 2,
-                "options": [
-                  {
-                    "name": "deprecated",
-                    "value": "true"
-                  }
-                ]
-              }
-            ]
-          },
-          {
             "name": "Partition.PartitionBrokerRole",
             "enum_fields": [
               {
@@ -326,17 +304,6 @@
               },
               {
                 "id": 2,
-                "name": "type",
-                "type": "ResourceType",
-                "options": [
-                  {
-                    "name": "deprecated",
-                    "value": "true"
-                  }
-                ]
-              },
-              {
-                "id": 3,
                 "name": "definition",
                 "type": "bytes"
               }
@@ -703,7 +670,7 @@
           },
           {
             "name": "go_package",
-            "value": "pb"
+            "value": "./;pb"
           }
         ]
       }

@@ -10,13 +10,13 @@ package io.zeebe.engine.state.instance;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.TransactionContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbInt;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
+import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableVariableState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -25,6 +25,8 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
@@ -37,20 +39,22 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final ElementInstance elementInstance;
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
 
-  private final DbLong recordKey;
-  private final StoredRecord storedRecord;
-  private final ColumnFamily<DbLong, StoredRecord> recordColumnFamily;
-
-  private final DbLong recordParentKey;
-  private final DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong> recordParentStateRecordKey;
-  private final DbByte stateKey;
-  private final DbCompositeKey<DbLong, DbByte> recordParentStateKey;
-  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
-      recordParentChildColumnFamily;
-
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
       awaitProcessInstanceResultMetadataColumnFamily;
+
+  private final DbLong flowScopeKey = new DbLong();
+  private final DbString gatewayElementId = new DbString();
+  private final DbString sequenceFlowElementId = new DbString();
+  private final DbInt numberOfTakenSequenceFlows = new DbInt();
+  private final DbCompositeKey<DbLong, DbString> flowScopeKeyAndElementId;
+  private final DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>
+      numberOfTakenSequenceFlowsKey;
+  /**
+   * [flow scope key | gateway element id | sequence flow id] => [times the sequence flow was taken]
+   */
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>, DbInt>
+      numberOfTakenSequenceFlowsColumnFamily;
 
   private final MutableVariableState variableState;
 
@@ -79,23 +83,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             elementInstanceKey,
             elementInstance);
 
-    recordKey = new DbLong();
-    storedRecord = new StoredRecord();
-    recordColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.STORED_INSTANCE_EVENTS, transactionContext, recordKey, storedRecord);
-
-    recordParentKey = new DbLong();
-    stateKey = new DbByte();
-    recordParentStateKey = new DbCompositeKey<>(recordParentKey, stateKey);
-    recordParentStateRecordKey = new DbCompositeKey<>(recordParentStateKey, recordKey);
-    recordParentChildColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.STORED_INSTANCE_EVENTS_PARENT_CHILD,
-            transactionContext,
-            recordParentStateRecordKey,
-            DbNil.INSTANCE);
-
     awaitResultMetadata = new AwaitProcessInstanceResultMetadata();
     awaitProcessInstanceResultMetadataColumnFamily =
         zeebeDb.createColumnFamily(
@@ -103,6 +90,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             elementInstanceKey,
             awaitResultMetadata);
+
+    flowScopeKeyAndElementId = new DbCompositeKey<>(flowScopeKey, gatewayElementId);
+    numberOfTakenSequenceFlowsKey =
+        new DbCompositeKey<>(flowScopeKeyAndElementId, sequenceFlowElementId);
+    numberOfTakenSequenceFlowsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS,
+            transactionContext,
+            numberOfTakenSequenceFlowsKey,
+            numberOfTakenSequenceFlows);
   }
 
   @Override
@@ -141,16 +138,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       parentChildColumnFamily.delete(parentChildKey);
       elementInstanceColumnFamily.delete(elementInstanceKey);
 
-      recordParentChildColumnFamily.whileEqualPrefix(
-          elementInstanceKey,
-          (compositeKey, nil) -> {
-            recordParentChildColumnFamily.delete(compositeKey);
-            recordColumnFamily.delete(compositeKey.getSecond());
-          });
-
       variableState.removeScope(key);
 
       awaitProcessInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
+      removeNumberOfTakenSequenceFlows(key);
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -178,34 +169,50 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void storeRecord(
-      final long key,
-      final long scopeKey,
-      final ProcessInstanceRecord value,
-      final ProcessInstanceIntent intent,
-      final Purpose purpose) {
-    final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
-    final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
-
-    setRecordKeys(scopeKey, key, purpose);
-
-    recordColumnFamily.put(recordKey, storedRecord);
-    recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
-  }
-
-  @Override
-  public void removeStoredRecord(final long scopeKey, final long recordKey, final Purpose purpose) {
-    setRecordKeys(scopeKey, recordKey, purpose);
-
-    recordColumnFamily.delete(this.recordKey);
-    recordParentChildColumnFamily.delete(recordParentStateRecordKey);
-  }
-
-  @Override
   public void setAwaitResultRequestMetadata(
       final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(processInstanceKey);
     awaitProcessInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
+  }
+
+  @Override
+  public void incrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
+
+    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+
+    var newValue = 1;
+    if (number != null) {
+      newValue = number.getValue() + 1;
+    }
+    numberOfTakenSequenceFlows.wrapInt(newValue);
+
+    numberOfTakenSequenceFlowsColumnFamily.put(
+        numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+  }
+
+  @Override
+  public void decrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        (key, number) -> {
+          final var newValue = number.getValue() - 1;
+          if (newValue > 0) {
+            numberOfTakenSequenceFlows.wrapInt(newValue);
+            numberOfTakenSequenceFlowsColumnFamily.put(key, numberOfTakenSequenceFlows);
+          } else {
+            numberOfTakenSequenceFlowsColumnFamily.delete(key);
+          }
+        });
   }
 
   private void handleMissingParentInstance(
@@ -239,12 +246,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public StoredRecord getStoredRecord(final long recordKey) {
-    this.recordKey.wrapLong(recordKey);
-    return recordColumnFamily.get(this.recordKey);
-  }
-
-  @Override
   public List<ElementInstance> getChildren(final long parentKey) {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
@@ -265,72 +266,26 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public List<IndexedRecord> getDeferredRecords(final long scopeKey) {
-    return collectRecords(scopeKey, Purpose.DEFERRED);
-  }
-
-  @Override
-  public IndexedRecord getFailedRecord(final long key) {
-    final StoredRecord storedRecord = getStoredRecord(key);
-    if (storedRecord != null && storedRecord.getPurpose() == Purpose.FAILED) {
-      return storedRecord.getRecord();
-    } else {
-      return null;
-    }
-  }
-
-  @Override
   public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
       final long processInstanceKey) {
     elementInstanceKey.wrapLong(processInstanceKey);
     return awaitProcessInstanceResultMetadataColumnFamily.get(elementInstanceKey);
   }
 
-  private void setRecordKeys(final long scopeKey, final long recordKey, final Purpose purpose) {
-    recordParentKey.wrapLong(scopeKey);
-    stateKey.wrapByte((byte) purpose.ordinal());
-    this.recordKey.wrapLong(recordKey);
-  }
+  @Override
+  public int getNumberOfTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
 
-  private List<IndexedRecord> collectRecords(final long scopeKey, final Purpose purpose) {
-    final List<IndexedRecord> records = new ArrayList<>();
-    visitRecords(
-        scopeKey,
-        purpose,
-        (indexedRecord) -> {
-          // the visited elements are only transient
-          // they will change on next iteration we have to copy them
-          // if we need to store the values
-
-          // for now we simply copy them into buffer and wrap the buffer
-          // which does another copy
-          // this could be improve if UnpackedObject has a clone method
-          final byte[] bytes = new byte[indexedRecord.getLength()];
-          final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
-
-          indexedRecord.write(buffer, 0);
-          final IndexedRecord copiedRecord = new IndexedRecord();
-          copiedRecord.wrap(buffer, 0, indexedRecord.getLength());
-
-          records.add(copiedRecord);
+    final var count = new MutableInteger(0);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        (key, number) -> {
+          count.increment();
         });
-    return records;
-  }
 
-  private void visitRecords(
-      final long scopeKey, final Purpose purpose, final RecordVisitor visitor) {
-    recordParentKey.wrapLong(scopeKey);
-    stateKey.wrapByte((byte) purpose.ordinal());
-
-    recordParentChildColumnFamily.whileEqualPrefix(
-        recordParentStateKey,
-        (compositeKey, value) -> {
-          final DbLong recordKey = compositeKey.getSecond();
-          final StoredRecord storedRecord = recordColumnFamily.get(recordKey);
-          if (storedRecord != null) {
-            visitor.visitRecord(storedRecord.getRecord());
-          }
-        });
+    return count.get();
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
@@ -344,6 +299,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       return copiedElementInstance;
     }
     return null;
+  }
+
+  private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey,
+        (key, number) -> {
+          numberOfTakenSequenceFlowsColumnFamily.delete(key);
+        });
   }
 
   @FunctionalInterface

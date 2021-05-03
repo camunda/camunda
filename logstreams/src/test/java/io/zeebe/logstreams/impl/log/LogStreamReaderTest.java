@@ -38,7 +38,7 @@ public final class LogStreamReaderTest {
       LogStreamRule.startByDefault(
           temporaryFolder,
           builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE),
-          builder -> builder.withMaxEntrySize(LOG_SEGMENT_SIZE));
+          builder -> builder);
   private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 

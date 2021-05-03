@@ -13,7 +13,7 @@ jobKey=""
 
 while true; do
     "${zbctl}" activate jobs "$businessKey" > activationresponse.txt 2>/dev/null
-    jobKey=$(jq -r '.[0].key' < activationresponse.txt)
+    jobKey=$(jq -r '.jobs[0].key' < activationresponse.txt)
 
     if [[ -z "$jobKey" || "$jobKey" == "null" ]]; then
         echo "Still waiting"
@@ -25,7 +25,7 @@ while true; do
 done
 
 echo "Job key is: $jobKey"
-variables=$(jq -r '.[0].variables' < activationresponse.txt)
+variables=$(jq -r '.jobs[0].variables' < activationresponse.txt)
 echo "Job variables are: $variables"
 
 testResult=$(echo "$variables" | jq -r '.aggregatedTestResult')

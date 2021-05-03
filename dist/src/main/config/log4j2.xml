@@ -37,8 +37,7 @@
 
   <Loggers>
     <Logger name="io.zeebe" level="${env:ZEEBE_LOG_LEVEL:-info}"/>
-
-    <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-warn}"/>
+    <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-info}"/>
 
     <Root level="info">
       <AppenderRef ref="RollingFile"/>

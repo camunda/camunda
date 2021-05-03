@@ -26,7 +26,6 @@ final class ProcessMessageSubscriptionDeletingApplier
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
     // TODO (npepinpe): the send time for the retry should be deterministic (#6364)
-    // TODO (npepinpe): the subscription should have a key (#2805)
     state.updateToClosingState(value, ActorClock.currentTimeMillis());
   }
 }

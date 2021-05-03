@@ -56,7 +56,8 @@ public final class FileBasedSnapshotStore extends Actor
   private final SnapshotMetrics snapshotMetrics;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
-  private final AtomicReference<FileBasedSnapshot> currentPersistedSnapshotRef;
+  private final AtomicReference<FileBasedSnapshot> currentPersistedSnapshotRef =
+      new AtomicReference<>();
   // used to write concurrently received snapshots in different pending directories
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
@@ -75,10 +76,6 @@ public final class FileBasedSnapshotStore extends Actor
 
     listeners = new CopyOnWriteArraySet<>();
     actorName = buildActorName(nodeId, "SnapshotStore", partitionId);
-
-    // load previous snapshots
-    currentPersistedSnapshotRef = new AtomicReference<>(loadLatestSnapshot(snapshotsDirectory));
-    purgePendingSnapshotsDirectory();
   }
 
   @Override
@@ -87,7 +84,13 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
-  public void close() {
+  protected void onActorStarting() {
+    currentPersistedSnapshotRef.set(loadLatestSnapshot(snapshotsDirectory));
+    purgePendingSnapshotsDirectory();
+  }
+
+  @Override
+  protected void onActorClosing() {
     listeners.clear();
   }
 
@@ -230,6 +233,11 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
+  public Path getPath() {
+    return snapshotsDirectory;
+  }
+
+  @Override
   public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
     final var optMetadata = FileBasedSnapshotMetadata.ofFileName(snapshotId);
     final var metadata =
@@ -340,10 +348,6 @@ public final class FileBasedSnapshotStore extends Actor
             e);
       }
     }
-  }
-
-  public Path getPath() {
-    return snapshotsDirectory;
   }
 
   private boolean isCurrentSnapshotNewer(final FileBasedSnapshotMetadata metadata) {

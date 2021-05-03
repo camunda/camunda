@@ -13,8 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value.deployment;
+package io.zeebe.client.impl;
 
-public enum ResourceType {
-  BPMN_XML
+final class BuilderUtils {
+
+  private BuilderUtils() {}
+
+  static void appendProperty(
+      final StringBuilder sb, final String propertyName, final Object value) {
+    sb.append(propertyName).append(": ").append(value).append("\n");
+  }
 }

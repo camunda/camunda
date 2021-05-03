@@ -21,6 +21,8 @@ import io.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
+import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
@@ -45,6 +47,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
+
+  private final SideEffectQueue sideEffects = new SideEffectQueue();
 
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
@@ -73,7 +77,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
-    messageStartEventSubscriptionManager = new MessageStartEventSubscriptionManager(processState);
+    messageStartEventSubscriptionManager =
+        new MessageStartEventSubscriptionManager(
+            processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(writers, partitionsCount, deploymentDistributor, actor);
   }
@@ -84,6 +90,11 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
+
+    // need to add multiple side-effects for sending a response and scheduling timers
+    sideEffects.add(responseWriter);
+    sideEffect.accept(sideEffects);
+
     final DeploymentRecord deploymentEvent = command.getValue();
 
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
@@ -91,7 +102,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, streamWriter, sideEffect);
+        createTimerIfTimerStartEvent(command, streamWriter, sideEffects);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
         responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
@@ -100,6 +111,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       }
 
       responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
       deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
@@ -121,7 +133,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private void createTimerIfTimerStartEvent(
       final TypedRecord<DeploymentRecord> record,
       final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffects) {
+      final SideEffects sideEffects) {
     for (final ProcessRecord processRecord : record.getValue().processes()) {
       final List<ExecutableStartEvent> startEvents =
           processState.getProcessByKey(processRecord.getKey()).getProcess().getStartEvents();
@@ -147,7 +159,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
               startEvent.getId(),
               timerOrError.get(),
               streamWriter,
-              sideEffects::accept);
+              sideEffects);
         }
       }
     }

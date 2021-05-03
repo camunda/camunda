@@ -20,6 +20,10 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.util.exception.UnrecoverableException;
+import io.zeebe.util.health.FailureListener;
+import io.zeebe.util.health.HealthMonitorable;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.retry.BackOffRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
@@ -30,6 +34,7 @@ import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +45,7 @@ import java.util.stream.Collectors;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
-public final class ExporterDirector extends Actor {
+public final class ExporterDirector extends Actor implements HealthMonitorable {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
@@ -57,9 +62,11 @@ public final class ExporterDirector extends Actor {
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
+  private final List<FailureListener> listeners = new ArrayList<>();
   private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
   private ExportersState state;
+  private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
 
   private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
@@ -94,7 +101,6 @@ public final class ExporterDirector extends Actor {
         () -> {
           isPaused = true;
           exporterPhase = ExporterPhase.PAUSED;
-          return;
         });
   }
 
@@ -104,7 +110,6 @@ public final class ExporterDirector extends Actor {
           isPaused = false;
           exporterPhase = ExporterPhase.EXPORTING;
           actor.submit(this::readNextEvent);
-          return;
         });
   }
 
@@ -183,6 +188,26 @@ public final class ExporterDirector extends Actor {
   protected void onActorCloseRequested() {
     isOpened.set(false);
     containers.forEach(ExporterContainer::close);
+  }
+
+  @Override
+  protected void handleFailure(final Exception failure) {
+    LOG.error("Actor '{}' failed in phase {} with: {} .", name, actor.getLifecyclePhase(), failure);
+    actor.fail();
+
+    if (failure instanceof UnrecoverableException) {
+      healthStatus = HealthStatus.DEAD;
+
+      for (final var listener : listeners) {
+        listener.onUnrecoverableFailure();
+      }
+    } else {
+      healthStatus = HealthStatus.UNHEALTHY;
+
+      for (final var listener : listeners) {
+        listener.onFailure();
+      }
+    }
   }
 
   private void recoverFromSnapshot() {
@@ -340,6 +365,16 @@ public final class ExporterDirector extends Actor {
 
   private boolean isClosed() {
     return !isOpened.get();
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener listener) {
+    actor.run(() -> listeners.add(listener));
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return healthStatus;
   }
 
   private static class RecordExporter {

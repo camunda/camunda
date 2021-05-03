@@ -39,12 +39,10 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 		Processes: []*pb.ProcessRequestObject{
 			{
 				Name:       demoName,
-				Type:       pb.ProcessRequestObject_FILE,
 				Definition: demoBytes,
 			},
 			{
 				Name:       anotherName,
-				Type:       pb.ProcessRequestObject_FILE,
 				Definition: anotherBytes,
 			},
 		},
@@ -82,7 +80,6 @@ func TestDeployCommand_AddResource(t *testing.T) {
 		Processes: []*pb.ProcessRequestObject{
 			{
 				Name:       demoName,
-				Type:       pb.ProcessRequestObject_BPMN,
 				Definition: demoBytes,
 			},
 		},
@@ -97,7 +94,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	defer cancel()
 
 	response, err := command.
-		AddResource(demoBytes, demoName, pb.ProcessRequestObject_BPMN).
+		AddResource(demoBytes, demoName).
 		Send(ctx)
 
 	if err != nil {

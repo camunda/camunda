@@ -22,9 +22,13 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
   private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.STATE_OPENING);
+  private final LongProperty keyProp = new LongProperty("key");
 
   public ProcessMessageSubscription() {
-    declareProperty(recordProp).declareProperty(commandSentTimeProp).declareProperty(stateProp);
+    declareProperty(recordProp)
+        .declareProperty(commandSentTimeProp)
+        .declareProperty(stateProp)
+        .declareProperty(keyProp);
   }
 
   public ProcessMessageSubscriptionRecord getRecord() {
@@ -60,6 +64,15 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
 
   public ProcessMessageSubscription setClosing() {
     stateProp.setValue(State.STATE_CLOSING);
+    return this;
+  }
+
+  public long getKey() {
+    return keyProp.getValue();
+  }
+
+  public ProcessMessageSubscription setKey(final long key) {
+    keyProp.setValue(key);
     return this;
   }
 

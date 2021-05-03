@@ -31,7 +31,7 @@ public final class MessageStartEventSubscriptionDeletedApplier
   public void applyState(final long key, final MessageStartEventSubscriptionRecord value) {
     final var processDefinitionKey = value.getProcessDefinitionKey();
 
-    subscriptionState.removeSubscriptionsOfProcess(processDefinitionKey);
+    subscriptionState.remove(processDefinitionKey, value.getMessageNameBuffer());
 
     eventScopeInstanceState.deleteInstance(processDefinitionKey);
   }

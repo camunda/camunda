@@ -40,7 +40,6 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.JsonUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -118,7 +117,6 @@ public final class JsonSerializableToJsonTest {
                   .requestStreamId(requestStreamId);
 
               final String resourceName = "resource";
-              final ResourceType resourceType = ResourceType.BPMN_XML;
               final DirectBuffer resource = wrapString("contents");
               final String bpmnProcessId = "testProcess";
               final long processDefinitionKey = 123;
@@ -130,7 +128,6 @@ public final class JsonSerializableToJsonTest {
                   .resources()
                   .add()
                   .setResourceName(wrapString(resourceName))
-                  .setResourceType(resourceType)
                   .setResource(resource);
               record
                   .processes()
@@ -150,7 +147,7 @@ public final class JsonSerializableToJsonTest {
               return new CopiedRecord<>(
                   record, recordMetadata, key, 0, position, sourcePosition, timestamp);
             },
-        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'deployedProcesses':[{'resource':'Y29udGVudHM=','version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123}],'resources':[{'resourceName':'resource','resourceType':'BPMN_XML','resource':'Y29udGVudHM='}]}}"
+        "{'valueType':'DEPLOYMENT','key':1234,'position':4321,'timestamp':2191,'recordType':'COMMAND','intent':'CREATE','partitionId':0,'rejectionType':'INVALID_ARGUMENT','rejectionReason':'fails','brokerVersion':'1.2.3','sourceRecordPosition':231,'value':{'deployedProcesses':[{'resource':'Y29udGVudHM=','version':12,'bpmnProcessId':'testProcess','resourceName':'resource','checksum':'Y2hlY2tzdW0=','processDefinitionKey':123}],'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}]}}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// DeploymentRecord ///////////////////////////////////////
@@ -160,7 +157,6 @@ public final class JsonSerializableToJsonTest {
         (Supplier<UnifiedRecordValue>)
             () -> {
               final String resourceName = "resource";
-              final ResourceType resourceType = ResourceType.BPMN_XML;
               final DirectBuffer resource = wrapString("contents");
               final String bpmnProcessId = "testProcess";
               final long processDefinitionKey = 123;
@@ -171,7 +167,6 @@ public final class JsonSerializableToJsonTest {
                   .resources()
                   .add()
                   .setResourceName(wrapString(resourceName))
-                  .setResourceType(resourceType)
                   .setResource(resource);
               record
                   .processes()
@@ -184,7 +179,7 @@ public final class JsonSerializableToJsonTest {
                   .setResource(resource);
               return record;
             },
-        "{'resources':[{'resourceType':'BPMN_XML','resourceName':'resource','resource':'Y29udGVudHM='}],'deployedProcesses':[{'resource':'Y29udGVudHM=','checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource'}]}"
+        "{'resources':[{'resourceName':'resource','resource':'Y29udGVudHM='}],'deployedProcesses':[{'resource':'Y29udGVudHM=','checksum':'Y2hlY2tzdW0=','bpmnProcessId':'testProcess','version':12,'processDefinitionKey':123,'resourceName':'resource'}]}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// DeploymentDistributionRecord /////////////////////////////////

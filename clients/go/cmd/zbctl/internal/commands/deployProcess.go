@@ -16,7 +16,6 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 )
@@ -40,7 +39,7 @@ var deployProcessCmd = &cobra.Command{
 				return err
 			}
 
-			zbCmd.AddResource(bytes, resourceNamesFlag[i], pb.ProcessRequestObject_FILE)
+			zbCmd.AddResource(bytes, resourceNamesFlag[i])
 		}
 
 		for i := len(resourceNamesFlag); i < len(args); i++ {

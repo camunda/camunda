@@ -9,7 +9,6 @@ package io.zeebe.engine.state.appliers;
 
 import io.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.state.TypedEventApplier;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableProcessState;
 import io.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -52,17 +51,11 @@ final class ProcessInstanceSequenceFlowTakenApplier
             ExecutableSequenceFlow.class);
     final var target = sequenceFlow.getTarget();
 
-    if (target.getElementType() != BpmnElementType.PARALLEL_GATEWAY) {
-      return;
+    if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
+      // stores which sequence flows of the parallel gateway are taken
+      // - the gateway is only activated if all incoming sequence flows are taken at least once
+      elementInstanceState.incrementNumberOfTakenSequenceFlows(
+          value.getFlowScopeKey(), target.getId(), sequenceFlow.getId());
     }
-
-    // store which sequence flows are taken as deferred records
-    // these are cleaned up on ParallelGateway:Element_Activating
-    elementInstanceState.storeRecord(
-        key,
-        value.getFlowScopeKey(),
-        value,
-        ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-        Purpose.DEFERRED);
   }
 }

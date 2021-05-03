@@ -12,42 +12,54 @@ import io.zeebe.snapshots.SnapshotChunk;
 public final class SnapshotChunkWrapper implements SnapshotChunk {
 
   private final SnapshotChunk wrappedChunk;
-  private final String snapshotId;
-  private final Integer totalCount;
-  private final Long checksum;
-  private final Long snapshotChecksum;
 
-  private SnapshotChunkWrapper(
-      final SnapshotChunk wrappedChunk,
-      final String snapshotId,
-      final Integer totalCount,
-      final Long checksum,
-      final Long snapshotChecksum) {
+  private String snapshotId;
+  private Integer totalCount;
+  private Long checksum;
+  private Long snapshotChecksum;
+  private byte[] contents;
+
+  private SnapshotChunkWrapper(final SnapshotChunk wrappedChunk) {
     this.wrappedChunk = wrappedChunk;
-    this.snapshotId = snapshotId;
-    this.totalCount = totalCount;
-    this.checksum = checksum;
-    this.snapshotChecksum = snapshotChecksum;
   }
 
-  public static SnapshotChunk withDifferentSnapshotId(
+  public static SnapshotChunk withSnapshotId(
       final SnapshotChunk wrappedChunk, final String snapshotId) {
-    return new SnapshotChunkWrapper(wrappedChunk, snapshotId, null, null, null);
+    final var wrapper = new SnapshotChunkWrapper(wrappedChunk);
+    wrapper.snapshotId = snapshotId;
+
+    return wrapper;
   }
 
-  public static SnapshotChunk withDifferentTotalCount(
+  public static SnapshotChunk withTotalCount(
       final SnapshotChunk wrappedChunk, final Integer totalCount) {
-    return new SnapshotChunkWrapper(wrappedChunk, null, totalCount, null, null);
+    final var wrapper = new SnapshotChunkWrapper(wrappedChunk);
+    wrapper.totalCount = totalCount;
+
+    return wrapper;
   }
 
-  public static SnapshotChunk withDifferentChecksum(
-      final SnapshotChunk wrappedChunk, final Long checksum) {
-    return new SnapshotChunkWrapper(wrappedChunk, null, null, checksum, null);
+  public static SnapshotChunk withChecksum(final SnapshotChunk wrappedChunk, final Long checksum) {
+    final var wrapper = new SnapshotChunkWrapper(wrappedChunk);
+    wrapper.checksum = checksum;
+
+    return wrapper;
   }
 
-  public static SnapshotChunk withDifferentSnapshotChecksum(
+  public static SnapshotChunk withSnapshotChecksum(
       final SnapshotChunk wrappedChunk, final Long snapshotChecksum) {
-    return new SnapshotChunkWrapper(wrappedChunk, null, null, null, snapshotChecksum);
+    final var wrapper = new SnapshotChunkWrapper(wrappedChunk);
+    wrapper.snapshotChecksum = snapshotChecksum;
+
+    return wrapper;
+  }
+
+  public static SnapshotChunk withContents(
+      final SnapshotChunk wrappedChunk, final byte[] contents) {
+    final var wrapper = new SnapshotChunkWrapper(wrappedChunk);
+    wrapper.contents = contents;
+
+    return wrapper;
   }
 
   @Override
@@ -81,7 +93,10 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
 
   @Override
   public byte[] getContent() {
-    return wrappedChunk.getContent();
+    if (contents == null) {
+      return wrappedChunk.getContent();
+    }
+    return contents;
   }
 
   @Override

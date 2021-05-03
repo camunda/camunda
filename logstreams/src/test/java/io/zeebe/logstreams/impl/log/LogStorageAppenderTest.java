@@ -68,8 +68,7 @@ public final class LogStorageAppenderTest {
 
   @Before
   public void setUp() {
-    logStorageRule.open(
-        b -> b.withMaxSegmentSize(MAX_FRAGMENT_SIZE * 100).withMaxEntrySize(MAX_FRAGMENT_SIZE));
+    logStorageRule.open(b -> b.withMaxSegmentSize(MAX_FRAGMENT_SIZE * 100));
     logStorage = spy(logStorageRule.get());
 
     dispatcher =

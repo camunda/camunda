@@ -10,14 +10,14 @@ package io.zeebe.engine.processing.bpmn.behavior;
 import io.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.zeebe.engine.processing.common.EventHandle;
 import io.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.deployment.DeployedProcess;
+import io.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.immutable.MessageState;
 import io.zeebe.engine.state.immutable.ProcessState;
 import io.zeebe.engine.state.immutable.ZeebeState;
-import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -26,6 +26,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   private final MessageState messageState;
   private final ProcessState processState;
+  private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
 
   private final EventHandle eventHandle;
 
@@ -36,6 +37,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final Writers writers) {
     messageState = zeebeState.getMessageState();
     processState = zeebeState.getProcessState();
+    messageStartEventSubscriptionState = zeebeState.getMessageStartEventSubscriptionState();
 
     eventHandle =
         new EventHandle(
@@ -75,8 +77,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
               final var storedMessage = messageState.getMessage(messageCorrelation.messageKey);
 
               eventHandle.triggerMessageStartEvent(
-                  process.getKey(),
-                  messageCorrelation.elementId,
+                  messageCorrelation.subscriptionKey,
+                  messageCorrelation.subscriptionRecord,
                   storedMessage.getMessageKey(),
                   storedMessage.getMessage());
             });
@@ -87,37 +89,37 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
     final var messageCorrelation = new Correlation();
 
-    for (final ExecutableStartEvent startEvent : process.getProcess().getStartEvents()) {
-      if (startEvent.isMessage()) {
+    messageStartEventSubscriptionState.visitSubscriptionsByProcessDefinition(
+        process.getKey(),
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var messageName = subscriptionRecord.getMessageNameBuffer();
 
-        final DirectBuffer messageNameBuffer =
-            startEvent.getMessage().getMessageName().map(BufferUtil::wrapString).orElseThrow();
+          messageState.visitMessages(
+              messageName,
+              correlationKey,
+              storedMessage -> {
+                // correlate the first message with same correlation key that was not correlated yet
+                if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
+                    && !messageState.existMessageCorrelation(
+                        storedMessage.getMessageKey(), process.getBpmnProcessId())) {
 
-        messageState.visitMessages(
-            messageNameBuffer,
-            correlationKey,
-            storedMessage -> {
-              // correlate the first message with same correlation key that was not correlated yet
-              if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
-                  && !messageState.existMessageCorrelation(
-                      storedMessage.getMessageKey(), process.getBpmnProcessId())) {
+                  // correlate the first published message across all message start events
+                  // - using the message key to decide which message was published before
+                  if (storedMessage.getMessageKey() < messageCorrelation.messageKey) {
+                    messageCorrelation.messageKey = storedMessage.getMessageKey();
+                    messageCorrelation.subscriptionKey = subscription.getKey();
+                    messageCorrelation.subscriptionRecord.wrap(subscription.getRecord());
+                  }
 
-                // correlate the first published message across all message start events
-                // - using the message key to decide which message was published before
-                if (storedMessage.getMessageKey() < messageCorrelation.messageKey) {
-                  messageCorrelation.messageKey = storedMessage.getMessageKey();
-                  messageCorrelation.elementId = startEvent.getId();
+                  return false;
                 }
 
-                return false;
-              }
+                return true;
+              });
+        });
 
-              return true;
-            });
-      }
-    }
-
-    if (messageCorrelation.elementId != null) {
+    if (messageCorrelation.subscriptionKey > 0) {
       return Optional.of(messageCorrelation);
     } else {
       return Optional.empty();
@@ -126,6 +128,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
 
   private static class Correlation {
     private long messageKey = Long.MAX_VALUE;
-    private DirectBuffer elementId = null;
+    private long subscriptionKey = -1L;
+    private final MessageStartEventSubscriptionRecord subscriptionRecord =
+        new MessageStartEventSubscriptionRecord();
   }
 }

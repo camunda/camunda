@@ -8,10 +8,8 @@
 package io.zeebe.engine.processing.streamprocessor.writers;
 
 import io.zeebe.engine.state.EventApplier;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.intent.Intent;
-import java.util.function.UnaryOperator;
 
 /**
  * A state writer that uses the event applier, to alter the state for each written event.
@@ -22,8 +20,6 @@ import java.util.function.UnaryOperator;
  * <p>Note that it does not change the state itself, but delegates this to the {@link EventApplier}.
  */
 public final class EventApplyingStateWriter implements StateWriter {
-
-  private static final UnaryOperator<RecordMetadata> NO_MODIFIER = UnaryOperator.identity();
 
   private final TypedEventWriter eventWriter;
   private final EventApplier eventApplier;
@@ -36,16 +32,7 @@ public final class EventApplyingStateWriter implements StateWriter {
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    appendFollowUpEvent(key, intent, value, NO_MODIFIER);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key,
-      final Intent intent,
-      final RecordValue value,
-      final UnaryOperator<RecordMetadata> modifier) {
-    eventWriter.appendFollowUpEvent(key, intent, value, modifier);
+    eventWriter.appendFollowUpEvent(key, intent, value);
     eventApplier.applyState(key, intent, value);
   }
 }

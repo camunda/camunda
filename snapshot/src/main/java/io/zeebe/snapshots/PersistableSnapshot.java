@@ -8,6 +8,7 @@
 package io.zeebe.snapshots;
 
 import io.zeebe.util.sched.future.ActorFuture;
+import java.nio.file.Path;
 
 /** A volatile snapshot which can be persisted. */
 public interface PersistableSnapshot {
@@ -28,4 +29,11 @@ public interface PersistableSnapshot {
 
   /** @return the snapshotId of the snapshot */
   SnapshotId snapshotId();
+
+  /**
+   * Returns the pending snapshot's path.
+   *
+   * @return the path of the pending snapshot
+   */
+  Path getPath();
 }

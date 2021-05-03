@@ -19,7 +19,6 @@ import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.StreamProcessorRule;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.RejectionType;
@@ -31,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -236,28 +234,10 @@ public class StreamProcessorHealthTest {
         final String reason) {}
 
     @Override
-    public void appendRejection(
-        final TypedRecord<? extends RecordValue> command,
-        final RejectionType type,
-        final String reason,
-        final UnaryOperator<RecordMetadata> modifier) {}
-
-    @Override
     public void configureSourceContext(final long sourceRecordPosition) {}
 
     @Override
     public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-      if (shouldFailErrorHandlingInTransaction.get()) {
-        throw new RuntimeException("Expected failure on append followup event");
-      }
-    }
-
-    @Override
-    public void appendFollowUpEvent(
-        final long key,
-        final Intent intent,
-        final RecordValue value,
-        final UnaryOperator<RecordMetadata> modifier) {
       if (shouldFailErrorHandlingInTransaction.get()) {
         throw new RuntimeException("Expected failure on append followup event");
       }
@@ -269,13 +249,6 @@ public class StreamProcessorHealthTest {
     @Override
     public void appendFollowUpCommand(
         final long key, final Intent intent, final RecordValue value) {}
-
-    @Override
-    public void appendFollowUpCommand(
-        final long key,
-        final Intent intent,
-        final RecordValue value,
-        final UnaryOperator<RecordMetadata> modifier) {}
 
     @Override
     public void reset() {}

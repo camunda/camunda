@@ -96,8 +96,6 @@ public final class ReplicateStateControllerTest {
 
     autoCloseableRule.manage(replicatorSnapshotController);
     autoCloseableRule.manage(receiverSnapshotController);
-    autoCloseableRule.manage(senderStore);
-    autoCloseableRule.manage(receiverStore);
 
     final RocksDBWrapper wrapper = new RocksDBWrapper();
     wrapper.wrap(replicatorSnapshotController.openDb());

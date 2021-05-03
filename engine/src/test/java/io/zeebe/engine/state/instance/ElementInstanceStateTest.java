@@ -12,7 +12,6 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.zeebe.engine.state.mutable.MutableZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
@@ -280,88 +279,6 @@ public final class ElementInstanceStateTest {
     Assertions.assertThat(children).hasSize(2);
     assertChildInstance(children.get(0), 101, "subProcess");
     assertChildInstance(children.get(1), 102, "subProcess2");
-  }
-
-  @Test
-  public void shouldStoreAndCollectRecord() {
-    // given
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
-    elementInstanceState.newInstance(
-        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    // when
-    elementInstanceState.storeRecord(
-        123L,
-        100,
-        createProcessInstanceRecord(),
-        ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        Purpose.DEFERRED);
-
-    // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredRecords(100);
-
-    Assertions.assertThat(storedRecords).hasSize(1);
-    final IndexedRecord indexedRecord = storedRecords.get(0);
-    Assertions.assertThat(indexedRecord.getKey()).isEqualTo(123L);
-    Assertions.assertThat(indexedRecord.getState())
-        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    assertProcessInstanceRecord(indexedRecord.getValue());
-  }
-
-  @Test
-  public void shouldRemoveSingleRecord() {
-    // given
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
-    elementInstanceState.newInstance(
-        100, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    elementInstanceState.storeRecord(
-        123L,
-        100,
-        createProcessInstanceRecord(),
-        ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        Purpose.DEFERRED);
-    elementInstanceState.storeRecord(
-        124L,
-        100,
-        createProcessInstanceRecord(),
-        ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        Purpose.DEFERRED);
-
-    // when
-    elementInstanceState.removeStoredRecord(100, 123, Purpose.DEFERRED);
-
-    // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredRecords(100);
-
-    Assertions.assertThat(storedRecords).hasSize(1);
-    final IndexedRecord indexedRecord = storedRecords.get(0);
-    Assertions.assertThat(indexedRecord.getKey()).isEqualTo(124L);
-    Assertions.assertThat(indexedRecord.getState())
-        .isEqualTo(ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    assertProcessInstanceRecord(indexedRecord.getValue());
-  }
-
-  @Test
-  public void shouldRemoveStoredRecordsOnInstanceRemoval() {
-    // given
-    final int key = 100;
-
-    final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
-    elementInstanceState.newInstance(
-        key, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    elementInstanceState.storeRecord(
-        123L,
-        100,
-        createProcessInstanceRecord(),
-        ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        Purpose.DEFERRED);
-
-    // when
-    elementInstanceState.removeInstance(key);
-
-    // then
-    Assertions.assertThat(elementInstanceState.getDeferredRecords(key)).isEmpty();
   }
 
   @Test

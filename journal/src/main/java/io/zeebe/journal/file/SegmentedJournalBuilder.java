@@ -27,14 +27,12 @@ public class SegmentedJournalBuilder {
   private static final String DEFAULT_NAME = "journal";
   private static final String DEFAULT_DIRECTORY = System.getProperty("user.dir");
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-  private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
   private static final long DEFAULT_MIN_FREE_DISK_SPACE = 1024L * 1024 * 1024;
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
   protected String name = DEFAULT_NAME;
   protected File directory = new File(DEFAULT_DIRECTORY);
   protected int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
-  protected int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
@@ -102,19 +100,6 @@ public class SegmentedJournalBuilder {
   }
 
   /**
-   * Sets the maximum entry size in bytes, returning the builder for method chaining.
-   *
-   * @param maxEntrySize the maximum entry size in bytes
-   * @return the storage builder
-   * @throws IllegalArgumentException if the {@code maxEntrySize} is not positive
-   */
-  public SegmentedJournalBuilder withMaxEntrySize(final int maxEntrySize) {
-    checkArgument(maxEntrySize > 0, "maxEntrySize must be positive");
-    this.maxEntrySize = maxEntrySize;
-    return this;
-  }
-
-  /**
    * Sets the minimum free disk space to leave when allocating a new segment
    *
    * @param freeDiskSpace free disk space in bytes
@@ -146,12 +131,6 @@ public class SegmentedJournalBuilder {
   public SegmentedJournal build() {
     final JournalIndex journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentedJournal(
-        name,
-        directory,
-        maxSegmentSize,
-        maxEntrySize,
-        freeDiskSpace,
-        journalIndex,
-        lastWrittenIndex);
+        name, directory, maxSegmentSize, freeDiskSpace, journalIndex, lastWrittenIndex);
   }
 }

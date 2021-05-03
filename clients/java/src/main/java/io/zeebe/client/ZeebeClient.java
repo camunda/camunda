@@ -27,6 +27,7 @@ import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
@@ -50,6 +51,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   /** @return a builder to configure and create a new {@link ZeebeClient}. */
   static ZeebeClientBuilder newClientBuilder() {
     return new ZeebeClientBuilderImpl();
+  }
+
+  /** @return a builder with convenient methods to connect to the Camunda Cloud cluster. */
+  static ZeebeClientCloudBuilderStep1 newCloudClientBuilder() {
+    return new ZeebeClientCloudBuilderImpl();
   }
 
   /**

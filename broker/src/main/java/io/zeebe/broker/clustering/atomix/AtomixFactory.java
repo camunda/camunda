@@ -116,9 +116,7 @@ public final class AtomixFactory {
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity());
 
-    // by default, the Atomix max entry size is 1 MB
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
-    partitionGroupBuilder.withMaxEntrySize(maxMessageSize);
 
     final var segmentSize = dataCfg.getLogSegmentSizeInBytes();
     if (segmentSize < maxMessageSize) {

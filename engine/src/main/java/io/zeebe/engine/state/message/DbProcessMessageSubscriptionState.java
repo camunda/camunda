@@ -65,11 +65,12 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void put(final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+  public void put(
+      final long key, final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
-    processMessageSubscription.setRecord(record).setCommandSentTime(commandSentTime);
+    processMessageSubscription.setKey(key).setRecord(record).setCommandSentTime(commandSentTime);
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
 

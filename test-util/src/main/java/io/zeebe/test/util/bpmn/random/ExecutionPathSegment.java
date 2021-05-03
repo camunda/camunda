@@ -8,7 +8,6 @@
 package io.zeebe.test.util.bpmn.random;
 
 import io.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
-import io.zeebe.test.util.bpmn.random.steps.StepPublishMessage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -178,28 +177,36 @@ public final class ExecutionPathSegment {
     return finalCutOffPoint;
   }
 
-  @Deprecated // use interruptAtRandomPosition instead
-  public void replace(final int index, final AbstractExecutionStep executionStep) {
-    scheduledSteps.subList(index, scheduledSteps.size()).clear();
-    appendDirectSuccessor(executionStep);
-  }
-
   /**
-   * Deprecated for several reasons:
+   * Inserts given execution step at the given index, this is mostly done for execution steps which
+   * can happen in parallel to the normal flow, like non interrupting boundary events or event sub
+   * processes.
    *
-   * <p>a) not clear why a specific step is part of the signature; should be a more general class
+   * <p>The existing execution step at this index and all exceutions steps come after are moved to
+   * the right. The related ScheduledSteps which are before and come immediately after are updated.
    *
-   * <p>b) overall, not clear what the method should achieve.
-   *
-   * <p>It might be better to have a look at
-   * ParallelGatewayBlockBuilder#shuffleStepsFromDifferentLists(...) which demonstrates how to merge
-   * different parallel execution paths into a single execution path
+   * @param index the index where the execution step should be inserted
+   * @param executionStep the step which should be inserted
    */
-  @Deprecated
-  public void insert(final int index, final StepPublishMessage stepPublishMessage) {
-    final var tail = scheduledSteps.subList(index, scheduledSteps.size());
-    replace(index, stepPublishMessage);
-    tail.forEach(scheduledStep -> append(scheduledStep));
+  public void insertExecutionStepAt(final int index, final AbstractExecutionStep executionStep) {
+
+    if (index >= scheduledSteps.size()) {
+      appendDirectSuccessor(executionStep);
+      return;
+    }
+
+    final var successor = scheduledSteps.remove(index);
+    final ScheduledExecutionStep newStep;
+    if (index == 0) {
+      newStep = new ScheduledExecutionStep(null, null, executionStep);
+    } else {
+      final var predecessor = scheduledSteps.get(index - 1);
+      newStep = new ScheduledExecutionStep(predecessor, predecessor, executionStep);
+    }
+
+    // add at index will move all elements to the right, including the object on the given index
+    scheduledSteps.add(index, new ScheduledExecutionStep(newStep, newStep, successor.getStep()));
+    scheduledSteps.add(index, newStep);
   }
 
   public List<ScheduledExecutionStep> getScheduledSteps() {
