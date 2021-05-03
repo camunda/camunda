@@ -130,7 +130,7 @@ public final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setResource(resource);
               record
-                  .processes()
+                  .processesMetadata()
                   .add()
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)
@@ -168,7 +168,7 @@ public final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setResource(resource);
               record
-                  .processes()
+                  .processesMetadata()
                   .add()
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setKey(processDefinitionKey)

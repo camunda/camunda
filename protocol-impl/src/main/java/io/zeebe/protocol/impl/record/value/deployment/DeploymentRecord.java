@@ -24,15 +24,15 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<DeploymentResource> resourcesProp =
       new ArrayProperty<>(RESOURCES, new DeploymentResource());
 
-  private final ArrayProperty<DeployedProcessMetadata> processesProp =
+  private final ArrayProperty<DeployedProcessMetadata> processesMetadataProp =
       new ArrayProperty<>(PROCESSES, new DeployedProcessMetadata());
 
   public DeploymentRecord() {
-    declareProperty(resourcesProp).declareProperty(processesProp);
+    declareProperty(resourcesProp).declareProperty(processesMetadataProp);
   }
 
-  public ValueArray<DeployedProcessMetadata> processes() {
-    return processesProp;
+  public ValueArray<DeployedProcessMetadata> processesMetadata() {
+    return processesMetadataProp;
   }
 
   public ValueArray<DeploymentResource> resources() {
@@ -58,10 +58,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  public List<DeployedProcessMetadataValue> getDeployedProcesses() {
+  public List<DeployedProcessMetadataValue> getProcessesMetadata() {
     final List<DeployedProcessMetadataValue> processesMeta = new ArrayList<>();
 
-    for (final DeployedProcessMetadata processRecord : processesProp) {
+    for (final DeployedProcessMetadata processRecord : processesMetadataProp) {
       final byte[] bytes = new byte[processRecord.getLength()];
       final UnsafeBuffer copyBuffer = new UnsafeBuffer(bytes);
       processRecord.write(copyBuffer, 0);
