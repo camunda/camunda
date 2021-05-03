@@ -22,7 +22,8 @@ docker push "gcr.io/zeebe-io/zeebe:$benchmark"
 cd benchmarks/project
 
 sed_inplace "s/:SNAPSHOT/:$benchmark/" docker-compose.yml
-docker-compose build
+# Use --no-cache to force re-build the application. Without this flag, changes to zeebe-client were not picked up. This can take longer to build than usual.
+docker-compose build --no-cache
 docker-compose push
 git restore -- docker-compose.yml
 
