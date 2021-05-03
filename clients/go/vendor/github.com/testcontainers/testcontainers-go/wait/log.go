@@ -21,7 +21,7 @@ type LogStrategy struct {
 	PollInterval time.Duration
 }
 
-// NewLogStrategy constructs a HTTP strategy waiting on port 80 and status code 200
+// NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
 		startupTimeout: defaultStartupTimeout(),
@@ -49,7 +49,7 @@ func (ws *LogStrategy) WithPollInterval(pollInterval time.Duration) *LogStrategy
 }
 
 func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
-	// the number of occurence needs to be positive
+	// the number of occurrence needs to be positive
 	if o <= 0 {
 		o = 1
 	}
