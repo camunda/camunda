@@ -6,6 +6,7 @@
 package org.camunda.operate.zeebeimport.v1_0.processors;
 
 import io.zeebe.protocol.record.intent.ProcessIntent;
+import io.zeebe.protocol.record.value.deployment.Process;
 import javax.xml.parsers.SAXParserFactory;
 import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import java.nio.charset.Charset;
@@ -37,7 +38,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 
 @Component
@@ -80,7 +80,7 @@ public class ProcessZeebeRecordProcessor {
 
   }
 
-  private void persistProcess(DeployedProcess process, BulkRequest bulkRequest) throws PersistenceException {
+  private void persistProcess(Process process, BulkRequest bulkRequest) throws PersistenceException {
     String resourceName = process.getResourceName();
 
     final ProcessEntity processEntity = createEntity(process);
@@ -111,7 +111,7 @@ public class ProcessZeebeRecordProcessor {
     }
   }
 
-  private ProcessEntity createEntity(DeployedProcess process) {
+  private ProcessEntity createEntity(Process process) {
     ProcessEntity processEntity = new ProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
