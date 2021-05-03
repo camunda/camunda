@@ -18,7 +18,7 @@
         "value": {
           "dynamic": "strict",
           "properties": {
-            "deployedProcesses": {
+            "processesMetadata": {
               "properties": {
                 "bpmnProcessId": {
                   "type": "keyword"
