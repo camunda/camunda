@@ -12,7 +12,6 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebe.ImportValueType;
-import org.camunda.operate.zeebeimport.v1_0.record.value.DeploymentRecordValueImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.VariableDocumentRecordImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.VariableRecordValueImpl;
@@ -21,6 +20,7 @@ import org.camunda.operate.zeebeimport.ImportBatch;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.JobRecordValueImpl;
 import org.camunda.operate.zeebeimport.v1_0.record.value.ProcessInstanceRecordValueImpl;
+import org.camunda.operate.zeebeimport.v1_0.record.value.deployment.DeployedProcessImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,7 +112,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         operationZeebeRecordProcessor.processVariableDocumentRecords(record, bulkRequest);
       }
       break;
-    case DEPLOYMENT:
+      case PROCESS:
       for (Record record : zeebeRecords) {
         // deployment records can be processed one by one
         processZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
@@ -133,8 +133,8 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   protected Class<? extends RecordValue> getRecordValueClass(ImportValueType importValueType) {
     switch (importValueType) {
-    case DEPLOYMENT:
-      return DeploymentRecordValueImpl.class;
+      case PROCESS:
+      return DeployedProcessImpl.class;
     case PROCESS_INSTANCE:
       return ProcessInstanceRecordValueImpl.class;
     case JOB:

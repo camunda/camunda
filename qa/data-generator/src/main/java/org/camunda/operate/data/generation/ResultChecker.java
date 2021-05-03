@@ -65,7 +65,7 @@ public class ResultChecker {
     final int expectedCount = dataGeneratorProperties.getProcessCount() + 1;
     final Supplier<Integer> processCounter = () -> {
       try {
-        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedProcesses.bpmnProcessId");
+        return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.PROCESS_INDEX_NAME), "value.bpmnProcessId");
       } catch (IOException e) {
         throw new DataGenerationException("Exception occurred while performing assertions", e);
       }

@@ -44,7 +44,7 @@ spec:
       - mountPath: /etc/vault-output
         name: vault-output
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
       command:
       - "sh"
       args:
@@ -57,7 +57,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
       command:
       - "sh"
       args:
@@ -96,7 +96,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+      image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
@@ -133,8 +133,8 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:1.0.0-alpha7
-      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+      image: camunda/zeebe:SNAPSHOT
+      imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
       volumeMounts:
         - name: zeebe-configuration

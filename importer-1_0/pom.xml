@@ -61,7 +61,7 @@
           <relocations>
             <relocation>
               <pattern>io.zeebe.protocol</pattern>
-              <shadedPattern>io.zeebe.protocol.v027</shadedPattern>
+              <shadedPattern>io.zeebe.protocol.v100</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

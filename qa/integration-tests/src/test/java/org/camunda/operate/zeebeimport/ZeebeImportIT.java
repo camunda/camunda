@@ -78,7 +78,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //when
     //1st load process instance index, then deployment
     processImportTypeAndWait(ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
-    processImportTypeAndWait(ImportValueType.DEPLOYMENT, processIsDeployedCheck, processDefinitionKey);
+    processImportTypeAndWait(ImportValueType.PROCESS, processIsDeployedCheck, processDefinitionKey);
 
     //then
     final ProcessInstanceForListViewEntity processInstanceEntity = processInstanceReader.getProcessInstanceByKey(processInstanceKey);

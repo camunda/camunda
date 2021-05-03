@@ -21,6 +21,7 @@ import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-1288")
   public void testProcessInstancesCompletedNextDay() {
     // having
     String processId = "demoProcess";

@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.processors;
 
+import io.zeebe.protocol.record.intent.ProcessIntent;
 import javax.xml.parsers.SAXParserFactory;
 import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import java.nio.charset.Charset;
@@ -24,7 +25,7 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
 import org.camunda.operate.zeebeimport.util.XMLUtil;
-import org.camunda.operate.zeebeimport.v1_0.record.value.DeploymentRecordValueImpl;
+import org.camunda.operate.zeebeimport.v1_0.record.value.deployment.DeployedProcessImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -36,7 +37,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.DeployedProcess;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 
@@ -49,7 +49,7 @@ public class ProcessZeebeRecordProcessor {
 
   private final static Set<String> STATES = new HashSet<>();
   static {
-    STATES.add(DeploymentIntent.CREATED.name());
+    STATES.add(ProcessIntent.CREATED.name());
   }
 
   @Autowired
@@ -74,20 +74,16 @@ public class ProcessZeebeRecordProcessor {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl)record.getValue();
-      Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
-      for (DeployedProcess process : recordValue.getDeployedProcesses()) {
-        persistProcess(process, resources, record, bulkRequest);
-      }
+      DeployedProcessImpl recordValue = (DeployedProcessImpl)record.getValue();
+      persistProcess(recordValue, bulkRequest);
     }
 
   }
 
-  private void persistProcess(DeployedProcess process, Map<String, DeploymentResource> resources, Record record, BulkRequest bulkRequest) throws PersistenceException {
+  private void persistProcess(DeployedProcess process, BulkRequest bulkRequest) throws PersistenceException {
     String resourceName = process.getResourceName();
-    DeploymentResource resource = resources.get(resourceName);
 
-    final ProcessEntity processEntity = createEntity(process, resource);
+    final ProcessEntity processEntity = createEntity(process);
     logger.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(), processEntity.getBpmnProcessId());
 
     try {
@@ -115,7 +111,7 @@ public class ProcessZeebeRecordProcessor {
     }
   }
 
-  private ProcessEntity createEntity(DeployedProcess process, DeploymentResource resource) {
+  private ProcessEntity createEntity(DeployedProcess process) {
     ProcessEntity processEntity = new ProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
@@ -123,12 +119,12 @@ public class ProcessZeebeRecordProcessor {
     processEntity.setBpmnProcessId(process.getBpmnProcessId());
     processEntity.setVersion(process.getVersion());
 
-    byte[] byteArray = resource.getResource();
+    byte[] byteArray = process.getResource();
 
     String bpmn = new String(byteArray, CHARSET);
     processEntity.setBpmnXml(bpmn);
 
-    String resourceName = resource.getResourceName();
+    String resourceName = process.getResourceName();
     processEntity.setResourceName(resourceName);
 
     final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);

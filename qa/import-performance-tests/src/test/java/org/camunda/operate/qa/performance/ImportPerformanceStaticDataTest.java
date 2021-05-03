@@ -88,7 +88,7 @@ public class ImportPerformanceStaticDataTest {
     final RestHighLevelClient zeebeEsClient = applicationContext.getBean("zeebeEsClient", RestHighLevelClient.class);
 
     //assert process count
-    int expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedProcesses.bpmnProcessId");
+    int expectedCount = ElasticsearchUtil.getFieldCardinality(zeebeEsClient, getZeebeAliasName(ZeebeESConstants.PROCESS_INDEX_NAME), "value.bpmnProcessId");
     final ProcessIndex processIndex = applicationContext.getBean(ProcessIndex.class);
     int count = ElasticsearchUtil.getDocCount(esClient, processIndex.getAlias());
     assertThat(count).isEqualTo(expectedCount);
