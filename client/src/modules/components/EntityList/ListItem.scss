@@ -7,9 +7,19 @@
   background-color: var(--white);
   margin-bottom: 14px;
   list-style: none;
+  position: relative;
 
-  > a:hover {
+  &:not(.active) > a:hover {
     background-color: var(--silver-lighten-99);
+  }
+
+  &.active.selectable {
+    background-color: var(--blue-lighten-93);
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px var(--blue-base-65);
+
+    .ListItemAction {
+      visibility: hidden;
+    }
   }
 
   > a,
@@ -33,7 +43,6 @@
     margin-right: 0;
     flex: 0 0 18px;
     height: 18px;
-    visibility: hidden;
   }
 
   .name {
@@ -87,9 +96,20 @@
     }
   }
 
-  &:not(:hover) .ListItemAction {
-    .Button,
-    &.Button {
+  &:not(:hover) {
+    .ListItemAction {
+      .Button,
+      &.Button {
+        opacity: 0;
+
+        &.active,
+        &.focus-visible {
+          opacity: 1;
+        }
+      }
+    }
+
+    .Input[type='checkbox'] {
       opacity: 0;
 
       &.active,
@@ -97,5 +117,23 @@
         opacity: 1;
       }
     }
+
+    &.active .Input[type='checkbox'] {
+      opacity: 1;
+    }
+  }
+
+  &:not(.selectable) .Input[type='checkbox'] {
+    visibility: hidden;
+  }
+
+  .Input[type='checkbox']:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 60px;
+    height: 58px;
+    cursor: pointer;
   }
 }

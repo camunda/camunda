@@ -88,6 +88,8 @@ export default withErrorHandling(
                 const isLastManager = role === 'manager' && numberOfManagers === 1;
 
                 return {
+                  id: identity.id,
+                  entityType: 'user',
                   className: identity.type,
                   icon: identity.type === 'group' ? 'user-group' : 'user',
                   type: formatType(identity.type),

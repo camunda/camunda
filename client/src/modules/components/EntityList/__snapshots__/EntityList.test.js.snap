@@ -18,6 +18,10 @@ exports[`should match snapshot 1`] = `
         onChange={[Function]}
         value=""
       />
+      <BulkMenuErrorHandler
+        selectedEntries={Array []}
+        setSelected={[Function]}
+      />
       <div
         className="action"
       >
@@ -44,6 +48,7 @@ exports[`should match snapshot 1`] = `
               },
             ],
             "icon": "iconType",
+            "id": "aCollectionId",
             "meta": Array [
               "Some info",
               "Some additional info",
@@ -55,12 +60,15 @@ exports[`should match snapshot 1`] = `
         }
         hasWarning={false}
         key="0"
+        onSelectionChange={[Function]}
+        selected={false}
         singleAction={true}
       />
       <ListItem
         data={
           Object {
             "icon": "iconType",
+            "id": "aDashboardId",
             "meta": Array [
               "Some info",
               "Some additional info",
@@ -72,12 +80,15 @@ exports[`should match snapshot 1`] = `
         }
         hasWarning={false}
         key="1"
+        onSelectionChange={[Function]}
+        selected={false}
         singleAction={true}
       />
       <ListItem
         data={
           Object {
             "icon": "iconType",
+            "id": "aReportId",
             "link": "link/to/somewhere",
             "meta": Array [
               "Some info",
@@ -91,6 +102,8 @@ exports[`should match snapshot 1`] = `
         }
         hasWarning={false}
         key="2"
+        onSelectionChange={[Function]}
+        selected={false}
         singleAction={true}
       />
     </ul>
@@ -105,6 +118,13 @@ exports[`should not show a header entry for column entries that are hidden 1`] =
 <div
   className="columnHeaders"
 >
+  <ForwardRef(Input)
+    checked={false}
+    onChange={[Function]}
+    onClick={[Function]}
+    selected={Array []}
+    type="checkbox"
+  />
   <Tooltip
     content="Name"
     key="0"
@@ -142,6 +162,13 @@ exports[`should show a column header if specified 1`] = `
 <div
   className="columnHeaders"
 >
+  <ForwardRef(Input)
+    checked={false}
+    onChange={[Function]}
+    onClick={[Function]}
+    selected={Array []}
+    type="checkbox"
+  />
   <Tooltip
     content="Name"
     key="0"

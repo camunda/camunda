@@ -62,7 +62,7 @@ it('should show a ReportTemplateModal', () => {
 it('should load collection entities with sort parameters', () => {
   const node = shallow(<Home {...props} />);
 
-  node.find('EntityList').simulate('sortingChange', 'lastModifier', 'desc');
+  node.find('EntityList').prop('reload')('lastModifier', 'desc');
 
   expect(loadEntities).toHaveBeenCalledWith('lastModifier', 'desc');
 });
@@ -74,7 +74,7 @@ it('should set the loading state of the entity list', async () => {
   await flushPromises();
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
 
-  node.find('EntityList').simulate('sortingChange', 'lastModifier', 'desc');
+  node.find('EntityList').prop('reload')('lastModifier', 'desc');
 
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();

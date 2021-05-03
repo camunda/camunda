@@ -82,17 +82,29 @@
           margin-top: -6px;
         }
       }
+
+      .BulkMenu {
+        margin-left: 20px;
+      }
     }
   }
 
   .columnHeaders {
     display: flex;
     padding-bottom: 11px;
-    padding-left: 97px;
+    padding-left: 0px;
     padding-right: 61px;
     color: var(--grey-lighten-56);
     font-size: 14px;
     line-height: 18px;
+
+    > .Input[type='checkbox'] {
+      margin-left: 20px;
+      margin-right: 0;
+      flex: 0 0 18px;
+      height: 18px;
+      margin-right: 60px;
+    }
 
     > div {
       text-overflow: ellipsis;
@@ -131,6 +143,31 @@
 
     .meta {
       flex: 0 0 200px;
+    }
+
+    &:not(:hover) {
+      .Input[type='checkbox'] {
+        opacity: 0;
+
+        &.active,
+        &.focus-visible {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  &.selectionMode {
+    .ListItem:not(.selectable) {
+      opacity: 0.5;
+
+      .Input[type='checkbox'] {
+        visibility: hidden;
+      }
+    }
+
+    .columnHeaders:not(:hover) .Input[type='checkbox'] {
+      opacity: 1;
     }
   }
 

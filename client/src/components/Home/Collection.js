@@ -191,7 +191,7 @@ export class Collection extends React.Component {
               empty={t('home.empty')}
               isLoading={isLoading}
               sorting={sorting}
-              onSortingChange={this.loadEntities}
+              reload={this.loadEntities}
               columns={[
                 {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
                 {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
@@ -248,6 +248,8 @@ export class Collection extends React.Component {
                   }
 
                   return {
+                    id,
+                    entityType,
                     className: entityType,
                     link: formatLink(id, entityType),
                     icon: entityType,

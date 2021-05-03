@@ -706,6 +706,7 @@
     "editName": "Edit {name}",
     "delete": "Delete",
     "deleteEntity": "Delete {entity}",
+    "deleteItems": "Delete items",
     "remove": "Remove",
     "removeEntity": "Remove {entity}",
     "save": "Save",
@@ -792,6 +793,10 @@
     "userTask": {
       "label": "User Task",
       "label-plural": "User Tasks"
+    },
+    "itemSelected": {
+      "label": "item selected",
+      "label-plural": "items selected"
     },
     "multiSelect": {
       "selectAll": "Select all in view",
@@ -1060,7 +1065,8 @@
         "collection": "Collection",
         "process": "Process",
         "processEvents": "process events",
-        "ingestedEvents": "Events"
+        "ingestedEvents": "Events",
+        "items": "Items"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",
@@ -1081,9 +1087,14 @@
           "combined_report": "This will remove the Report from the Combined Report(s):",
           "dashboard": "This will remove the Report from the Dashboard(s):",
           "alert": "The following Alert(s) will also be deleted:"
+        },
+        "bulk": {
+          "report": "Any selected Reports will be removed from associated Dashboards, Combined Reports and their Alerts will be deleted.",
+          "process": "Removing Data Sources deletes any associated Reports and their Alerts."
         }
       },
-      "areYouSure": "Are you sure you want to proceed?"
+      "areYouSure": "Are you sure you want to proceed?",
+      "areYouSureSelected": "Are you sure you want to delete the selected items?"
     },
     "unit": {
       "automatic": "automatic",

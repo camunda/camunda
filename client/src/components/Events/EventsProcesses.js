@@ -178,8 +178,10 @@ export class EventsProcesses extends React.Component {
               }
 
               return {
+                id,
                 icon: 'process',
                 type: t('events.label'),
+                entityType: 'process',
                 name,
                 link,
                 meta: [

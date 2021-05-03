@@ -706,6 +706,7 @@
     "editName": "{name} bearbeiten",
     "delete": "Löschen",
     "deleteEntity": "{entity} Löschen",
+    "deleteItems": "Elemente Löschen",
     "remove": "Entfernen",
     "removeEntity": "{entity} entfernen",
     "save": "Speichern",
@@ -792,6 +793,10 @@
     "userTask": {
       "label": "Benutzeraufgabe",
       "label-plural": "Benutzeraufgaben"
+    },
+    "itemSelected": {
+      "label": "ausgewählter Element",
+      "label-plural": "ausgewählte Elemente"
     },
     "multiSelect": {
       "selectAll": "Alles in Ansicht auswählen",
@@ -1060,7 +1065,8 @@
         "collection": "Sammlung",
         "process": "Prozess",
         "processEvents": "Prozessevents",
-        "ingestedEvents": "Events"
+        "ingestedEvents": "Events",
+        "items": "Elemente"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -1081,9 +1087,14 @@
           "combined_report": "Der Bericht wird aus diesen kombinierten Berichten entfernt:",
           "dashboard": "Der Bericht wird aus diesen Dashboards entfernt:",
           "alert": "Diese Alarme werden gelöscht:"
+        },
+        "bulk": {
+          "report": "Alle ausgewählten Berichte werden von zugehörigen Dashboards und kombinierte Berichte entfernt und ihre Alarme werden gelöscht.",
+          "process": "Das Entfernen von Datenquellen löscht alle zugehörigen Berichte und deren Alarme."
         }
       },
-      "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"
+      "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?",
+      "areYouSureSelected": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?"
     },
     "unit": {
       "automatic": "Automatisch",

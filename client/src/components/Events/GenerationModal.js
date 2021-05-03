@@ -72,6 +72,7 @@ export function GenerationModal({onClose, mightFail}) {
 
             if (type === 'external') {
               return {
+                id: 'allExternal',
                 icon: 'data-source',
                 type: t('events.sources.externalEvents'),
                 name: t('events.sources.allExternal'),
@@ -79,6 +80,7 @@ export function GenerationModal({onClose, mightFail}) {
               };
             } else {
               return {
+                id: processDefinitionKey,
                 icon: 'camunda-source',
                 type: t('events.sources.camundaProcess'),
                 name: processDefinitionName || processDefinitionKey,

@@ -1,4 +1,10 @@
-.GenerationModal .description {
-  font-size: 0.875em;
-  color: var(--grey-lighten-56);
+.GenerationModal {
+  .description {
+    font-size: 0.875em;
+    color: var(--grey-lighten-56);
+  }
+
+  .ListItem .Input[type='checkbox'] {
+    visibility: hidden;
+  }
 }

@@ -18,7 +18,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": false,
           "className": "user",
+          "entityType": "user",
           "icon": "user",
+          "id": "kermit",
           "meta": Array [
             false,
             "Manager",
@@ -30,7 +32,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": false,
           "className": "group",
+          "entityType": "user",
           "icon": "user-group",
+          "id": "sales",
           "meta": Array [
             "2 Users",
             "Manager",
@@ -118,7 +122,9 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "user",
+          "entityType": "user",
           "icon": "user",
+          "id": "kermit",
           "meta": Array [
             false,
             "Manager",
@@ -141,7 +147,9 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "group",
+          "entityType": "user",
           "icon": "user-group",
+          "id": "sales",
           "meta": Array [
             "2 Users",
             "Manager",

@@ -39,3 +39,12 @@ it('should have a warning column even if no specific warning exists for this Lis
 
   expect(node.find('.warning')).toExist();
 });
+
+it('should invoke onSelectionChange when checkbox is triggered', () => {
+  const spy = jest.fn();
+  const node = shallow(<ListItem data={{}} onSelectionChange={spy} />);
+
+  node.find({type: 'checkbox'}).simulate('change', 'test');
+
+  expect(spy).toHaveBeenCalledWith('test');
+});

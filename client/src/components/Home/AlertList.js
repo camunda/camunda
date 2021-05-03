@@ -131,10 +131,12 @@ export default withErrorHandling(
             data={
               !isLoading &&
               this.state.alerts.map((alert) => {
-                const {name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
+                const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
                 const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
 
                 return {
+                  id,
+                  entityType: 'alert',
                   icon: 'alert',
                   type: t('alert.label'),
                   name,

@@ -8,12 +8,13 @@ import React, {useState} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Dropdown, Tooltip} from 'components';
+import {LoadingIndicator, Icon, Dropdown, Tooltip, Input} from 'components';
 
 import SearchField from './SearchField';
 import ListItem from './ListItem';
 
 import './EntityList.scss';
+import BulkMenu from './BulkMenu';
 
 export default function EntityList({
   name,
@@ -25,12 +26,17 @@ export default function EntityList({
   embedded,
   columns,
   sorting,
-  onSortingChange,
+  reload,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  const [selected, setSelected] = useState([]);
 
   const entries = data || [];
+  const entriesIds = entries
+    .filter((entry) => entry.actions?.length > 0)
+    .map((entry, idx) => entry.id || idx);
+  const selectionMode = selected.length > 0;
 
   const matches = (value) =>
     typeof value == 'string' && value.toLowerCase().includes(searchQuery.toLowerCase());
@@ -44,7 +50,7 @@ export default function EntityList({
 
   return (
     <div
-      className={classnames('EntityList', {scrolled, embedded})}
+      className={classnames('EntityList', {scrolled, embedded, selectionMode})}
       onScroll={(evt) => setScrolled(evt.target.scrollTop > 0)}
     >
       <div className="header">
@@ -59,17 +65,35 @@ export default function EntityList({
                   <Dropdown.Option
                     checked={sorting?.key === key}
                     key={key}
-                    onClick={() => onSortingChange(key, defaultOrder)}
+                    onClick={() => reload(key, defaultOrder)}
                   >
                     {name}
                   </Dropdown.Option>
                 ))}
             </Dropdown>
           )}
+          <BulkMenu
+            selectedEntries={entries
+              .filter((entity) => selected.includes(entity.id))
+              .map(({id, entityType}) => ({id, entityType}))}
+            setSelected={setSelected}
+            reload={reload}
+          />
           <div className="action">{action}</div>
         </div>
         {columns && hasResults && (
           <div className="columnHeaders">
+            <Input
+              selected={selected}
+              onClick={(evt) => evt.stopPropagation()}
+              type="checkbox"
+              checked={selected.length === entriesIds.length}
+              onChange={({target: {checked}}) =>
+                checked
+                  ? setSelected([...new Set([...selected, ...entriesIds])])
+                  : setSelected(selected.filter((id) => !entriesIds.includes(id)))
+              }
+            />
             {columns
               .filter((config) => !config?.hidden)
               .map((titleOrConfig, idx) => {
@@ -79,7 +103,7 @@ export default function EntityList({
 
                 function changeSorting() {
                   if (sortable) {
-                    onSortingChange(
+                    reload(
                       titleOrConfig.key,
                       sorted ? reverseOrder(sorting.order) : titleOrConfig.defaultOrder
                     );
@@ -118,6 +142,12 @@ export default function EntityList({
             {searchFilteredData.map((data, idx) => (
               <ListItem
                 key={idx}
+                selected={selected.includes(data.id)}
+                onSelectionChange={(evt) => {
+                  evt.target.checked
+                    ? setSelected([...selected, data.id])
+                    : setSelected(selected.filter((id) => id !== data.id));
+                }}
                 data={data}
                 hasWarning={hasWarning}
                 singleAction={hasSingleAction}

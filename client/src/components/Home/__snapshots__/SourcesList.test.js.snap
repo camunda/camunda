@@ -17,7 +17,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": Array [],
           "className": "process",
+          "entityType": "process",
           "icon": "data-source",
+          "id": "defKey",
           "meta": Array [
             "Not defined, Sales, (Unauthorized Tenant)",
           ],
@@ -27,7 +29,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": Array [],
           "className": "decision",
+          "entityType": "process",
           "icon": "data-source",
+          "id": "defKey2",
           "meta": Array [
             "Not defined, Marketing",
           ],
@@ -100,7 +104,9 @@ Object {
     },
   ],
   "className": "decision",
+  "entityType": "process",
   "icon": "data-source",
+  "id": "defKey2",
   "meta": Array [
     false,
   ],
@@ -140,7 +146,9 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "process",
+          "entityType": "process",
           "icon": "data-source",
+          "id": "defKey",
           "meta": Array [
             "Not defined, Sales, (Unauthorized Tenant)",
           ],
@@ -161,7 +169,9 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "decision",
+          "entityType": "process",
           "icon": "data-source",
+          "id": "defKey2",
           "meta": Array [
             "Not defined, Marketing",
           ],

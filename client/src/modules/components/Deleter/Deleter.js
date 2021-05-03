@@ -38,15 +38,19 @@ export default withErrorHandling(
           this.setState({loading: true});
           this.props.mightFail(
             checkConflicts(entity),
-            ({conflictedItems}) => {
-              this.setState({
-                conflicts: conflictedItems.reduce((obj, conflict) => {
-                  obj[conflict.type] = obj[conflict.type] || [];
-                  obj[conflict.type].push(conflict);
-                  return obj;
-                }, {}),
-                loading: false,
-              });
+            async ({conflictedItems}) => {
+              if (this.props.onConflict) {
+                this.props.onConflict(conflictedItems);
+              } else {
+                this.setState({
+                  conflicts: conflictedItems.reduce((obj, conflict) => {
+                    obj[conflict.type] = obj[conflict.type] || [];
+                    obj[conflict.type].push(conflict);
+                    return obj;
+                  }, {}),
+                });
+              }
+              this.setState({loading: false});
             },
             (error) => {
               showError(error);

@@ -126,7 +126,7 @@ export class Home extends React.Component {
             empty={t('home.empty')}
             isLoading={isLoading}
             sorting={sorting}
-            onSortingChange={this.loadList}
+            reload={this.loadList}
             columns={[
               {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
               {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
@@ -184,6 +184,8 @@ export class Home extends React.Component {
                 }
 
                 return {
+                  id,
+                  entityType,
                   link: formatLink(id, entityType),
                   icon: entityType,
                   type: formatType(entityType, reportType, combined),

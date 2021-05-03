@@ -141,6 +141,8 @@ export default withErrorHandling(
                 }
 
                 return {
+                  id: definitionKey,
+                  entityType: 'process',
                   className: definitionType,
                   icon: 'data-source',
                   type: formatType(definitionType),
