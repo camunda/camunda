@@ -145,8 +145,10 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   }, [taskState, variables]);
 
   useEffect(() => {
-    formRef.current = null;
-    setIsFormValid(false);
+    return () => {
+      formRef.current = null;
+      setIsFormValid(false);
+    };
   }, [task.id]);
 
   return (

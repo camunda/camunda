@@ -16,7 +16,7 @@ export async function setup() {
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
-    createInstances('user_registration', 1, 1),
+    createInstances('user_registration', 1, 2),
     createInstances('user_registration_with_vars', 1, 1, {
       name: 'Jane',
       age: '50',

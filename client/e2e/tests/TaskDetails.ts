@@ -156,7 +156,7 @@ test('complete task', async (t) => {
 
 test('task completion with form', async (t) => {
   await t
-    .click(screen.findByText(/^user registration$/i))
+    .click(screen.findAllByText(/^user registration$/i).nth(0))
     .click(screen.findByRole('button', {name: /claim/i}))
     .typeText(screen.findByLabelText(/name/i), 'Jon')
     .typeText(screen.findByLabelText(/address/i), 'Earth')
@@ -171,6 +171,27 @@ test('task completion with form', async (t) => {
     .eql('Earth')
     .expect(screen.findByLabelText(/age/i).value)
     .eql('21');
+});
+
+test('task completion with form on Claimed by Me filter', async (t) => {
+  await t
+    .click(screen.findByText(/^user registration$/i))
+    .click(screen.findByRole('button', {name: /claim/i}))
+    .expect(
+      screen
+        .getByRole('button', {name: /complete task/i})
+        .hasAttribute('disabled'),
+    )
+    .notOk()
+    .click(screen.getByRole('combobox', {name: /filter/i}))
+    .click(screen.findByRole('option', {name: /claimed by me/i}))
+    .click(screen.findByText(/^user registration$/i))
+    .typeText(screen.findByLabelText(/name/i), 'Gaius Julius Caesar')
+    .typeText(screen.findByLabelText(/address/i), 'Rome')
+    .typeText(screen.findByLabelText(/age/i), '55')
+    .click(screen.getByRole('button', {name: /complete task/i}))
+    .expect(screen.findByText(/^user registration$/i).exists)
+    .notOk();
 });
 
 test('task completion with prefilled form', async (t) => {
