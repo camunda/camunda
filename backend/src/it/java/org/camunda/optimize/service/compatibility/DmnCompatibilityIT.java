@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
@@ -211,10 +211,10 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = embeddedOptimizeExtension
+    final List<DefinitionResponseDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions)

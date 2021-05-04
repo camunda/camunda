@@ -23,43 +23,43 @@ import java.util.Set;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class DefinitionWithTenantsResponseDto extends SimpleDefinitionDto {
+public class DefinitionResponseDto extends SimpleDefinitionDto {
   @NonNull
   private List<TenantDto> tenants;
 
-  public DefinitionWithTenantsResponseDto(@NonNull final String key,
-                                          final String name,
-                                          @NonNull final DefinitionType type,
-                                          final Boolean isEventProcess,
-                                          @NonNull final List<TenantDto> tenants,
-                                          @NonNull final String engine) {
+  public DefinitionResponseDto(@NonNull final String key,
+                               final String name,
+                               @NonNull final DefinitionType type,
+                               final Boolean isEventProcess,
+                               @NonNull final List<TenantDto> tenants,
+                               @NonNull final String engine) {
     super(key, name, type, isEventProcess, Collections.singleton(engine));
     this.tenants = tenants;
   }
 
-  public DefinitionWithTenantsResponseDto(@NonNull final String key,
-                                          final String name,
-                                          @NonNull final DefinitionType type,
-                                          final Boolean isEventProcess,
-                                          @NonNull final List<TenantDto> tenants,
-                                          @NonNull final Set<String> engines) {
+  public DefinitionResponseDto(@NonNull final String key,
+                               final String name,
+                               @NonNull final DefinitionType type,
+                               final Boolean isEventProcess,
+                               @NonNull final List<TenantDto> tenants,
+                               @NonNull final Set<String> engines) {
     super(key, name, type, isEventProcess, engines);
     this.tenants = tenants;
   }
 
-  public DefinitionWithTenantsResponseDto(@NonNull final String key,
-                                          final String name,
-                                          @NonNull final DefinitionType type,
-                                          @NonNull final List<TenantDto> tenants,
-                                          @NonNull final String engine) {
+  public DefinitionResponseDto(@NonNull final String key,
+                               final String name,
+                               @NonNull final DefinitionType type,
+                               @NonNull final List<TenantDto> tenants,
+                               @NonNull final String engine) {
     super(key, name, type, false, Collections.singleton(engine));
     this.tenants = tenants;
   }
 
-  public static DefinitionWithTenantsResponseDto from(
+  public static DefinitionResponseDto from(
     final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,
     final List<TenantDto> authorizedTenants) {
-    return new DefinitionWithTenantsResponseDto(
+    return new DefinitionResponseDto(
       definitionWithTenantIdsDto.getKey(),
       definitionWithTenantIdsDto.getName(),
       definitionWithTenantIdsDto.getType(),

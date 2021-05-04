@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
@@ -53,12 +53,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
       KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitions).extracting(DefinitionWithTenantsResponseDto::getKey).containsExactly(definitionKey1);
+    assertThat(definitions).extracting(DefinitionResponseDto::getKey).containsExactly(definitionKey1);
   }
 
   @Test
@@ -77,12 +77,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
       KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitions).extracting(DefinitionWithTenantsResponseDto::getKey).containsExactly(definitionKey1);
+    assertThat(definitions).extracting(DefinitionResponseDto::getKey).containsExactly(definitionKey1);
   }
 
   @Test
@@ -100,7 +100,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
       KERMIT_USER,
       KERMIT_USER
     );
@@ -123,7 +123,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
       KERMIT_USER, KERMIT_USER
     );
 
@@ -145,12 +145,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
       KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitions).extracting(DefinitionWithTenantsResponseDto::getKey).containsExactly(definitionKey);
+    assertThat(definitions).extracting(DefinitionResponseDto::getKey).containsExactly(definitionKey);
   }
 
   @Test
@@ -169,12 +169,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitionsAsUser(
       KERMIT_USER, KERMIT_USER
     );
 
     // then
-    assertThat(definitions).extracting(DefinitionWithTenantsResponseDto::getKey).containsExactly(definitionKey);
+    assertThat(definitions).extracting(DefinitionResponseDto::getKey).containsExactly(definitionKey);
   }
 
   @Test

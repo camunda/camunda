@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
@@ -61,7 +61,7 @@ public class DefinitionRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<DefinitionWithTenantsResponseDto> getDefinitions(@Context ContainerRequestContext requestContext) {
+  public List<DefinitionResponseDto> getDefinitions(@Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedDefinitions(userId);
   }
@@ -79,9 +79,9 @@ public class DefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}/{key}")
-  public DefinitionWithTenantsResponseDto getDefinition(@Context ContainerRequestContext requestContext,
-                                                        @PathParam("type") DefinitionType type,
-                                                        @PathParam("key") String key) {
+  public DefinitionResponseDto getDefinition(@Context ContainerRequestContext requestContext,
+                                             @PathParam("type") DefinitionType type,
+                                             @PathParam("key") String key) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getDefinitionWithAvailableTenants(type, key, userId)
       .orElseThrow(() -> {
@@ -161,7 +161,7 @@ public class DefinitionRestService {
                                                           @QueryParam("camundaEventImportedOnly") final boolean camundaEventImportedOnly) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    List<DefinitionWithTenantsResponseDto> definitions = getDefinitions(
+    List<DefinitionResponseDto> definitions = getDefinitions(
       type,
       collectionId,
       camundaEventImportedOnly,
@@ -228,9 +228,9 @@ public class DefinitionRestService {
     return responseBuilder.build();
   }
 
-  private List<DefinitionWithTenantsResponseDto> getDefinitions(final DefinitionType type, final String collectionId,
-                                                                final boolean camundaEventImportedOnly,
-                                                                final String userId) {
+  private List<DefinitionResponseDto> getDefinitions(final DefinitionType type, final String collectionId,
+                                                     final boolean camundaEventImportedOnly,
+                                                     final String userId) {
     if (collectionId != null) {
       return getDefinitionKeysForCollection(type, camundaEventImportedOnly, userId, collectionId);
     } else {
@@ -238,9 +238,9 @@ public class DefinitionRestService {
     }
   }
 
-  private List<DefinitionWithTenantsResponseDto> getDefinitionKeys(final DefinitionType type,
-                                                                   final boolean camundaEventImportedOnly,
-                                                                   final String userId) {
+  private List<DefinitionResponseDto> getDefinitionKeys(final DefinitionType type,
+                                                        final boolean camundaEventImportedOnly,
+                                                        final String userId) {
     if (camundaEventImportedOnly) {
       if (!DefinitionType.PROCESS.equals(type)) {
         throw new BadRequestException(
@@ -252,10 +252,10 @@ public class DefinitionRestService {
     }
   }
 
-  private List<DefinitionWithTenantsResponseDto> getDefinitionKeysForCollection(final DefinitionType type,
-                                                                                final boolean camundaEventImportedOnly,
-                                                                                final String userId,
-                                                                                final String collectionId) {
+  private List<DefinitionResponseDto> getDefinitionKeysForCollection(final DefinitionType type,
+                                                                     final boolean camundaEventImportedOnly,
+                                                                     final String userId,
+                                                                     final String collectionId) {
     if (camundaEventImportedOnly) {
       throw new BadRequestException("Cannot apply \"camundaEventImportedOnly\" in the context of a collection");
     }

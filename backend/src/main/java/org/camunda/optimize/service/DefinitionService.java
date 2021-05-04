@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
@@ -92,12 +92,12 @@ public class DefinitionService implements ConfigurationReloadable {
     latestDecisionDefinitionCache.invalidateAll();
   }
 
-  public Optional<DefinitionWithTenantsResponseDto> getDefinitionWithAvailableTenants(final DefinitionType type,
-                                                                                      final String key,
-                                                                                      final String userId) {
+  public Optional<DefinitionResponseDto> getDefinitionWithAvailableTenants(final DefinitionType type,
+                                                                           final String key,
+                                                                           final String userId) {
     return definitionReader.getDefinitionWithAvailableTenants(type, key)
       .map(definitionWithTenantIdsDto -> {
-        final Optional<DefinitionWithTenantsResponseDto> authorizedDefinition =
+        final Optional<DefinitionResponseDto> authorizedDefinition =
           filterAndMapDefinitionsWithTenantIdsByAuthorizations(
             userId,
             Collections.singleton(definitionWithTenantIdsDto)
@@ -120,7 +120,7 @@ public class DefinitionService implements ConfigurationReloadable {
                                                                   final List<String> tenantIds) {
     final List<DefinitionVersionResponseDto> definitionVersions = new ArrayList<>();
 
-    final Optional<DefinitionWithTenantsResponseDto> optionalDefinition = getDefinitionWithAvailableTenants(
+    final Optional<DefinitionResponseDto> optionalDefinition = getDefinitionWithAvailableTenants(
       type,
       key,
       userId
@@ -203,9 +203,9 @@ public class DefinitionService implements ConfigurationReloadable {
       .collect(Collectors.toList());
   }
 
-  public List<DefinitionWithTenantsResponseDto> getFullyImportedCamundaEventImportedDefinitions(final String userId) {
+  public List<DefinitionResponseDto> getFullyImportedCamundaEventImportedDefinitions(final String userId) {
     final Set<String> camundaEventImportedKeys = camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
-    final List<DefinitionWithTenantsResponseDto> allProcessDefs = getFullyImportedDefinitions(
+    final List<DefinitionResponseDto> allProcessDefs = getFullyImportedDefinitions(
       DefinitionType.PROCESS,
       userId
     );
@@ -214,19 +214,19 @@ public class DefinitionService implements ConfigurationReloadable {
       .collect(toList());
   }
 
-  public List<DefinitionWithTenantsResponseDto> getFullyImportedDefinitions(@NonNull final String userId) {
+  public List<DefinitionResponseDto> getFullyImportedDefinitions(@NonNull final String userId) {
     return getFullyImportedDefinitions(null, null, null, userId);
   }
 
-  public List<DefinitionWithTenantsResponseDto> getFullyImportedDefinitions(final DefinitionType definitionType,
-                                                                            @NonNull final String userId) {
+  public List<DefinitionResponseDto> getFullyImportedDefinitions(final DefinitionType definitionType,
+                                                                 @NonNull final String userId) {
     return getFullyImportedDefinitions(definitionType, null, null, userId);
   }
 
-  public List<DefinitionWithTenantsResponseDto> getFullyImportedDefinitions(final DefinitionType definitionType,
-                                                                            final Set<String> keys,
-                                                                            final List<String> tenantIds,
-                                                                            @NonNull final String userId) {
+  public List<DefinitionResponseDto> getFullyImportedDefinitions(final DefinitionType definitionType,
+                                                                 final Set<String> keys,
+                                                                 final List<String> tenantIds,
+                                                                 @NonNull final String userId) {
     final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(tenantIds, userId);
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
       .getFullyImportedDefinitionsWithTenantIds(definitionType, keys, tenantsToFilterFor);
@@ -477,12 +477,12 @@ public class DefinitionService implements ConfigurationReloadable {
     }
   }
 
-  private Stream<DefinitionWithTenantsResponseDto> filterAndMapDefinitionsWithTenantIdsByAuthorizations(
+  private Stream<DefinitionResponseDto> filterAndMapDefinitionsWithTenantIdsByAuthorizations(
     final String userId,
     final Collection<DefinitionWithTenantIdsDto> definitionsWithTenantIds) {
     return definitionsWithTenantIds
       .stream()
-      .map(definitionWithTenantIdsDto -> DefinitionWithTenantsResponseDto.from(
+      .map(definitionWithTenantIdsDto -> DefinitionResponseDto.from(
         definitionWithTenantIdsDto,
         definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
           userId,

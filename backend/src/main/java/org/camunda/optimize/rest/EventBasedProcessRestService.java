@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
@@ -276,7 +276,7 @@ public class EventBasedProcessRestService {
 
   private String getDefinitionName(final String userId, final String eventSource) {
     return definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource, userId)
-      .map(DefinitionWithTenantsResponseDto::getName)
+      .map(DefinitionResponseDto::getName)
       .orElse(eventSource);
   }
 }

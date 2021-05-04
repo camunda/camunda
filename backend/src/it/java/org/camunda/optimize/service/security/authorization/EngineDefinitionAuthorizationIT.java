@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
@@ -642,11 +642,11 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionType, definitionKey, tenant2);
 
     // when
-    final DefinitionWithTenantsResponseDto definition = embeddedOptimizeExtension
+    final DefinitionResponseDto definition = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), definitionKey)
-      .execute(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .execute(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definition).isNotNull();
@@ -672,11 +672,11 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionType, definitionKey, null);
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = embeddedOptimizeExtension
+    final List<DefinitionResponseDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions).isEmpty();
@@ -699,11 +699,11 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionType, definitionKey, tenant1);
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = embeddedOptimizeExtension
+    final List<DefinitionResponseDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions).isEmpty();
@@ -730,15 +730,15 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionType, definitionKey, tenant2);
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = embeddedOptimizeExtension
+    final List<DefinitionResponseDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions)
-      .flatExtracting(DefinitionWithTenantsResponseDto::getTenants)
+      .flatExtracting(DefinitionResponseDto::getTenants)
       .extracting(TenantDto::getId)
       .containsExactly(tenant2);
   }

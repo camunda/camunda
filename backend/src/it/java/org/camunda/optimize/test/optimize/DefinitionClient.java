@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
@@ -28,17 +28,17 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 public class DefinitionClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public DefinitionWithTenantsResponseDto getDefinitionByTypeAndKey(DefinitionType definitionType,
-                                                                    DefinitionOptimizeResponseDto expectedDefinition) {
+  public DefinitionResponseDto getDefinitionByTypeAndKey(DefinitionType definitionType,
+                                                         DefinitionOptimizeResponseDto expectedDefinition) {
     return getRequestExecutor()
       .buildGetDefinitionByTypeAndKeyRequest(
         definitionType.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .execute(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionWithTenantsResponseDto> getAllDefinitions() {
+  public List<DefinitionResponseDto> getAllDefinitions() {
     return getAllDefinitionsAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
@@ -48,11 +48,11 @@ public class DefinitionClient {
       .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionWithTenantsResponseDto> getAllDefinitionsAsUser(String username, String password) {
+  public List<DefinitionResponseDto> getAllDefinitionsAsUser(String username, String password) {
     return getRequestExecutor()
       .buildGetDefinitions()
       .withUserAuthentication(username, password)
-      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<DefinitionKeyResponseDto> getDefinitionKeysByType(final DefinitionType definitionType) {
