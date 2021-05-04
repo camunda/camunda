@@ -21,7 +21,7 @@ zeebe.tasklist:
 logging:
   level:
     ROOT: INFO
-    io.zeebe.tasklist: DEBUG
+    io.camunda.tasklist: DEBUG
 #Spring Boot Actuator endpoints to be exposed
 management.metrics.export.prometheus.enabled: true
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus

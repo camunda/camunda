@@ -10,7 +10,7 @@
 
   </Appenders>
   <Loggers>
-    <Logger name="io.zeebe.tasklist" level="debug" />
+    <Logger name="io.camunda.tasklist" level="debug" />
     <Logger name="org.springframework" level="warn" />
 
     <Root level="info">

@@ -17,15 +17,15 @@
     <dependencySet>
       <outputDirectory>lib/</outputDirectory>
       <includes>
-        <include>io.zeebe.tasklist:tasklist-webapp:jar:exec</include>
+        <include>io.camunda:tasklist-webapp:jar:exec</include>
       </includes>
     </dependencySet>
 	
 	
-	 <dependencySet>
+    <dependencySet>
       <outputDirectory>schema/</outputDirectory>
       <includes>
-        <include>io.zeebe.tasklist:tasklist-els-schema:zip</include>
+        <include>io.camunda:tasklist-els-schema:zip</include>
       </includes>
     </dependencySet>
     
