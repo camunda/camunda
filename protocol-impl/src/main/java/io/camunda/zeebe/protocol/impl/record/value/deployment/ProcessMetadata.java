@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -32,12 +33,16 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
 
+  // should be set to true if the process was already deployed - property should not be exported
+  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
+
   public ProcessMetadata() {
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp);
+        .declareProperty(checksumProp)
+        .declareProperty(isDuplicateProp);
   }
 
   @Override
@@ -135,5 +140,15 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
     bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
     return this;
+  }
+
+  public ProcessMetadata markAsDuplicate() {
+    isDuplicateProp.setValue(true);
+    return this;
+  }
+
+  @JsonIgnore
+  public boolean isDuplicate() {
+    return isDuplicateProp.getValue();
   }
 }
