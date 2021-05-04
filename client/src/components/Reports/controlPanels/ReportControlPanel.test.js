@@ -48,9 +48,13 @@ jest.mock('services', () => {
 
 const report = {
   data: {
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['aVersion'],
-    tenantIds: [],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['aVersion'],
+        tenantIds: [],
+      },
+    ],
     view: {entity: 'processInstance', properties: ['frequency']},
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
@@ -471,7 +475,7 @@ it('should allow collapsing sections', () => {
 it('should reset columnOrder only when changing definition', async () => {
   const reportWithConfig = update(report, {
     data: {
-      processDefinitionKey: {$set: 'original'},
+      definitions: {0: {key: {$set: 'original'}}},
       configuration: {
         tableColumns: {
           columnOrder: {
@@ -497,7 +501,7 @@ it('should reset columnOrder only when changing definition', async () => {
 it('should not reset columnOrder when changing version', async () => {
   const reportWithConfig = update(report, {
     data: {
-      processDefinitionKey: {$set: 'same'},
+      definitions: {0: {key: {$set: 'same'}}},
       configuration: {
         tableColumns: {
           columnOrder: {

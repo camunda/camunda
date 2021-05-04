@@ -38,9 +38,13 @@ const props = {
   report: {
     data: {
       filter: [{type: 'runningInstancesOnly'}],
-      processDefinitionKey: 'aKey',
-      processDefinitionVersions: ['1'],
-      tenantIds: ['tenantId'],
+      definitions: [
+        {
+          key: 'aKey',
+          versions: ['1'],
+          tenantIds: ['tenantId'],
+        },
+      ],
     },
     result: {
       instanceCount: 123,
@@ -146,11 +150,6 @@ it('should load variable names for process reports', async () => {
 
 it('should load variable names for decision reports', async () => {
   const decisionReport = update(props.report, {
-    data: {
-      $unset: ['processDefinitionKey', 'processDefinitionVersions'],
-      decisionDefinitionKey: {$set: 'aKey'},
-      decisionDefinitionVersions: {$set: ['1']},
-    },
     reportType: {$set: 'decision'},
   });
   const node = shallow(

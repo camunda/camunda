@@ -28,17 +28,15 @@ export function calculateTargetValueHeat(durationData, targetValues) {
 
 export function getConfig(data, flowNodeId) {
   const {
-    processDefinitionKey,
-    processDefinitionVersions,
-    tenantIds,
+    definitions,
     configuration: {heatmapTargetValue},
   } = data;
   const {value, unit} = heatmapTargetValue.values[flowNodeId];
 
   return {
-    processDefinitionKey,
-    processDefinitionVersions,
-    tenantIds,
+    processDefinitionKey: definitions[0].key,
+    processDefinitionVersions: definitions[0].versions,
+    tenantIds: definitions[0].tenantIds,
     includedColumns: ['processInstanceId'],
     filter: [
       ...data.filter,

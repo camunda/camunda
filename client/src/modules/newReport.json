@@ -76,10 +76,13 @@
           "baselineUnit": "minute"
         }
       },
-      "processDefinitionKey": null,
-      "processDefinitionVersions": null,
-      "processDefinitionName": null,
-      "tenantIds": [null],
+      "definitions": [{
+        "key": null,
+        "versions": null,
+        "name": null,
+        "displayName": null,
+        "tenantIds": [null]
+      }],
       "filter": [],
       "view": null,
       "groupBy": null,
@@ -185,10 +188,13 @@
         "xlabel": "",
         "sorting": null
       },
-      "decisionDefinitionKey": null,
-      "decisionDefinitionVersions": null,
-      "decisionDefinitionName": null,
-      "tenantIds": [null],
+      "definitions": [{
+        "key": null,
+        "versions": null,
+        "name": null,
+        "displayName": null,
+        "tenantIds": [null]
+      }],
       "filter": [],
       "view": null,
       "groupBy": null,

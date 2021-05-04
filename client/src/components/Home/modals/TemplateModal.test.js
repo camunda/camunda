@@ -91,11 +91,16 @@ it('should call the templateToState prop to determine link state', () => {
 
   expect(spy).toHaveBeenCalledWith({
     name: 'New Report',
-    definitionKey: 'processDefinition',
-    definitionName: 'Process Definition Name',
+    definitions: [
+      {
+        key: 'processDefinition',
+        name: 'Process Definition Name',
+        displayName: 'Process Definition Name',
+        tenantIds: [null],
+        versions: ['1'],
+      },
+    ],
     template: undefined,
-    tenants: [null],
-    versions: ['1'],
     xml: 'processXML',
   });
   expect(node.find('.confirm.Button').prop('to').state).toEqual({data: 'stateData'});

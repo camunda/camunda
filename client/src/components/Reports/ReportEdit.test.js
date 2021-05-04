@@ -37,9 +37,13 @@ const report = {
   reportType: 'process',
   combined: false,
   data: {
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['aVersion'],
-    tenantIds: [],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['aVersion'],
+        tenantIds: [],
+      },
+    ],
     configuration: {},
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
@@ -164,7 +168,13 @@ it('should use original data as result data if report cant be evaluated on cance
     originalData: {
       ...report,
       data: {
-        processDefinitionKey: '123',
+        definitions: [
+          {
+            key: '123',
+            versions: ['1'],
+            tenantIds: [null],
+          },
+        ],
         configuration: {},
       },
     },
@@ -173,7 +183,7 @@ it('should use original data as result data if report cant be evaluated on cance
   evaluateReport.mockReturnValueOnce(null);
   node.instance().cancel();
 
-  expect(node.state().report.data.processDefinitionKey).toEqual('123');
+  expect(node.state().report.data.definitions[0].key).toEqual('123');
 });
 
 it('should set conflict state when conflict happens on save button click', async () => {

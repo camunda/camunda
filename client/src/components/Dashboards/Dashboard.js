@@ -84,10 +84,7 @@ export class Dashboard extends React.Component {
               data: {
                 ...newReport.new.data,
                 ...config.report.data,
-                processDefinitionKey: initialData.definitionKey,
-                processDefinitionVersions: initialData.versions,
-                tenantIds: initialData.tenants,
-                processDefinitionName: initialData.definitionName,
+                definitions: initialData.definitions,
                 configuration: {
                   ...newReport.new.data.configuration,
                   ...(config.report.data?.configuration ?? {}),

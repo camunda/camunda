@@ -21,6 +21,7 @@ jest.mock('services', () => ({
 }));
 
 const data = {
+  definitions: [{}],
   visualization: 'heat',
   view: {entity: 'userTask', properties: ['frequency']},
   groupBy: {type: 'userTasks'},

@@ -15,9 +15,7 @@ import {loadVariables} from 'services';
 export function DistributedBy({
   report: {
     data: {
-      processDefinitionKey,
-      processDefinitionVersions,
-      tenantIds,
+      definitions: [{key, versions, tenantIds}],
       distributedBy,
       view,
       groupBy,
@@ -33,20 +31,18 @@ export function DistributedBy({
   useEffect(() => {
     if (isInstanceDateReport(view, groupBy)) {
       mightFail(
-        loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
+        loadVariables([
+          {
+            processDefinitionKey: key,
+            processDefinitionVersions: versions,
+            tenantIds,
+          },
+        ]),
         setVariables,
         showError
       );
     }
-  }, [
-    view,
-    groupBy,
-    mightFail,
-    processDefinitionKey,
-    processDefinitionVersions,
-    tenantIds,
-    setVariables,
-  ]);
+  }, [view, groupBy, mightFail, key, versions, tenantIds, setVariables]);
 
   if (canDistributeData(view, groupBy)) {
     return (

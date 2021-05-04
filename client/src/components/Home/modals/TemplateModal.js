@@ -116,10 +116,15 @@ export function TemplateModal({
             state: templateToState({
               name,
               template,
-              definitionKey,
-              versions,
-              definitionName,
-              tenants,
+              definitions: [
+                {
+                  key: definitionKey,
+                  name: definitionName,
+                  displayName: definitionName,
+                  versions,
+                  tenantIds: tenants,
+                },
+              ],
               xml,
             }),
           }}

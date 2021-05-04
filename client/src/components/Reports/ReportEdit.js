@@ -260,7 +260,8 @@ export class ReportEdit extends React.Component {
                     report={report}
                     previous={[data.view, data.groupBy]}
                     disabled={
-                      (!data.processDefinitionKey && !data.decisionDefinitionKey) ||
+                      !data.definitions.length ||
+                      !data.definitions[0].key ||
                       !data.view ||
                       !data.groupBy
                     }

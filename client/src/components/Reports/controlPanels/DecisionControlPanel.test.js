@@ -44,9 +44,13 @@ jest.mock('services', () => {
 
 const report = {
   data: {
-    decisionDefinitionKey: 'aKey',
-    decisionDefinitionVersions: ['aVersion'],
-    tenantIds: [null],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['aVersion'],
+        tenantIds: [null],
+      },
+    ],
     view: {property: 'rawData'},
     groupBy: {type: 'none', unit: null},
     visualization: 'table',

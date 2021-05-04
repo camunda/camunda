@@ -4,8 +4,19 @@ exports[`should include the selected parameters in the link state when creating 
 Object {
   "pathname": "report/new/edit",
   "state": Object {
-    "definitionKey": "processDefinition",
-    "definitionName": "Process Definition Name",
+    "definitions": Array [
+      Object {
+        "displayName": "Process Definition Name",
+        "key": "processDefinition",
+        "name": "Process Definition Name",
+        "tenantIds": Array [
+          null,
+        ],
+        "versions": Array [
+          "1",
+        ],
+      },
+    ],
     "name": "Heatmap: Flownode count",
     "template": Object {
       "view": Object {
@@ -15,12 +26,6 @@ Object {
         ],
       },
     },
-    "tenants": Array [
-      null,
-    ],
-    "versions": Array [
-      "1",
-    ],
     "xml": "processXML",
   },
 }

@@ -27,10 +27,15 @@ jest.mock('./service', () => ({
 const props = {
   report: {
     data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionName: 'aName',
-      processDefinitionVersions: ['2', '1'],
-      tenantIds: ['sales', 'consulting'],
+      definitions: [
+        {
+          key: 'aKey',
+          name: 'aName',
+          displayName: 'aName',
+          versions: ['2', '1'],
+          tenantIds: ['sales', 'consulting'],
+        },
+      ],
       view: {properties: ['frequency'], entity: 'processInstance'},
       groupBy: {type: 'startDate', value: {unit: 'automatic'}},
     },

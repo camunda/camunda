@@ -36,12 +36,14 @@ export class DecisionControlPanel extends React.Component {
   };
 
   componentDidMount() {
-    this.loadVariables(this.props.report.data);
+    this.loadVariables(this.props.report.data?.definitions?.[0]);
   }
 
-  loadVariables = ({decisionDefinitionKey, decisionDefinitionVersions, tenantIds}) => {
-    if (decisionDefinitionKey && decisionDefinitionVersions && tenantIds) {
-      const payload = [{decisionDefinitionKey, decisionDefinitionVersions, tenantIds}];
+  loadVariables = ({key, versions, tenantIds}) => {
+    if (key && versions && tenantIds) {
+      const payload = [
+        {decisionDefinitionKey: key, decisionDefinitionVersions: versions, tenantIds},
+      ];
       return new Promise((resolve, reject) => {
         this.props.mightFail(
           Promise.all([loadInputVariables(payload), loadOutputVariables(payload)]),
@@ -53,15 +55,11 @@ export class DecisionControlPanel extends React.Component {
     }
   };
 
-  loadXml = ({decisionDefinitionKey, decisionDefinitionVersions, tenantIds}) => {
-    if (decisionDefinitionKey && decisionDefinitionVersions?.[0] && tenantIds) {
+  loadXml = ({key, versions, tenantIds}) => {
+    if (key && versions?.[0] && tenantIds) {
       return new Promise((resolve, reject) => {
         this.props.mightFail(
-          loadDecisionDefinitionXml(
-            decisionDefinitionKey,
-            decisionDefinitionVersions[0],
-            tenantIds[0]
-          ),
+          loadDecisionDefinitionXml(key, versions[0], tenantIds[0]),
           resolve,
           (error) => reject(showError(error))
         );
@@ -96,9 +94,11 @@ export class DecisionControlPanel extends React.Component {
     const {groupBy, configuration} = this.props.report.data;
     const {columnOrder, includedColumns, excludedColumns} = configuration.tableColumns;
     const definitionData = {
-      decisionDefinitionKey: key,
-      decisionDefinitionVersions: versions,
+      key,
+      versions,
       tenantIds,
+      name,
+      displayName: name,
     };
 
     this.props.setLoading(true);
@@ -108,10 +108,7 @@ export class DecisionControlPanel extends React.Component {
     ]);
 
     const change = {
-      decisionDefinitionKey: {$set: key},
-      decisionDefinitionName: {$set: name},
-      decisionDefinitionVersions: {$set: versions},
-      tenantIds: {$set: tenantIds},
+      definitions: {$set: [definitionData]},
       configuration: {xml: {$set: xml}},
     };
 
@@ -150,13 +147,13 @@ export class DecisionControlPanel extends React.Component {
   render() {
     const {data, result} = this.props.report;
     const {
-      decisionDefinitionKey,
-      decisionDefinitionVersions,
-      tenantIds,
+      definitions,
       filter,
       configuration: {xml},
     } = data;
     const {showSource, showSetup, showFilter, scrolled} = this.state;
+
+    const {key, versions, tenantIds} = definitions?.[0] ?? {};
 
     return (
       <div className="DecisionControlPanel ReportControlPanel">
@@ -175,8 +172,8 @@ export class DecisionControlPanel extends React.Component {
           </Button>
           <DefinitionSelection
             type="decision"
-            definitionKey={decisionDefinitionKey}
-            versions={decisionDefinitionVersions}
+            definitionKey={key}
+            versions={versions}
             tenants={tenantIds}
             xml={xml}
             onChange={this.changeDefinition}
@@ -211,7 +208,7 @@ export class DecisionControlPanel extends React.Component {
                     value={data[field]}
                     variables={this.state.variables}
                     previous={previous}
-                    disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
+                    disabled={!key || previous.some((entry) => !entry)}
                     onChange={(newValue) => this.updateReport(field, newValue)}
                   />
                 </li>
@@ -242,8 +239,8 @@ export class DecisionControlPanel extends React.Component {
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}
-              decisionDefinitionKey={decisionDefinitionKey}
-              decisionDefinitionVersions={decisionDefinitionVersions}
+              decisionDefinitionKey={key}
+              decisionDefinitionVersions={versions}
               tenants={tenantIds}
               variables={this.state.variables}
             />
