@@ -86,19 +86,19 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>atomix-utils</artifactId>
+      <artifactId>zeebe-atomix-utils</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>atomix</artifactId>
+      <artifactId>zeebe-atomix</artifactId>
       <scope>test</scope>
     </dependency>
 

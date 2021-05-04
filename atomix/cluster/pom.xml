@@ -14,14 +14,12 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <artifactId>atomix-cluster</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <artifactId>zeebe-atomix-cluster</artifactId>
 
   <dependencies>
     <dependency>
-      <artifactId>atomix-utils</artifactId>
+      <artifactId>zeebe-atomix-utils</artifactId>
       <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
@@ -181,11 +179,11 @@
   </dependencies>
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Atomix Cluster</name>
+  <name>Zeebe Atomix Cluster</name>
   <packaging>jar</packaging>
 
   <parent>
-    <artifactId>atomix-parent</artifactId>
+    <artifactId>zeebe-atomix-parent</artifactId>
     <groupId>io.camunda</groupId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>

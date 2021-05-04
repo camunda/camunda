@@ -79,7 +79,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 
   </dependencies>

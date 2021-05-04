@@ -17,12 +17,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>atomix-utils</artifactId>
+      <artifactId>zeebe-atomix-utils</artifactId>
     </dependency>
 
 
