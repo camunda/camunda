@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -62,6 +63,10 @@ public final class VariableClient {
   public VariableClient withDocument(final DirectBuffer variables) {
     variableDocumentRecord.setVariables(variables);
     return this;
+  }
+
+  public VariableClient withDocument(final String variables) {
+    return withDocument(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
   }
 
   public VariableClient withUpdateSemantic(final VariableDocumentUpdateSemantic semantic) {
