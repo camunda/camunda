@@ -32,7 +32,6 @@ import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -48,11 +47,13 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.client.indices.PutComponentTemplateRequest;
+import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.common.bytes.BytesArray;
@@ -209,18 +210,16 @@ public class RetryElasticsearchClient {
   private boolean templatesExist(final String templatePattern) throws IOException {
     return esClient
         .indices()
-        .existsTemplate(new IndexTemplatesExistRequest(templatePattern), requestOptions);
+        .existsIndexTemplate(
+            new ComposableIndexTemplateExistRequest(templatePattern), requestOptions);
   }
 
-  public boolean createTemplate(PutIndexTemplateRequest putIndexTemplateRequest) {
+  public boolean createTemplate(PutComposableIndexTemplateRequest request) {
     return executeWithRetries(
-        "CreateTemplate " + putIndexTemplateRequest.name(),
+        "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(putIndexTemplateRequest.name())) {
-            return esClient
-                .indices()
-                .putTemplate(putIndexTemplateRequest, requestOptions)
-                .isAcknowledged();
+          if (!templatesExist(request.name())) {
+            return esClient.indices().putIndexTemplate(request, requestOptions).isAcknowledged();
           }
           return true;
         });
@@ -233,7 +232,8 @@ public class RetryElasticsearchClient {
           if (templatesExist(templateNamePattern)) {
             return esClient
                 .indices()
-                .deleteTemplate(new DeleteIndexTemplateRequest(templateNamePattern), requestOptions)
+                .deleteIndexTemplate(
+                    new DeleteComposableIndexTemplateRequest(templateNamePattern), requestOptions)
                 .isAcknowledged();
           }
           return true;
@@ -510,5 +510,19 @@ public class RetryElasticsearchClient {
               + " seconds waiting.",
           e);
     }
+  }
+
+  public boolean createComponentTemplate(final PutComponentTemplateRequest request) {
+    return executeWithRetries(
+        "CreateComponentTemplate " + request.name(),
+        () -> {
+          if (!templatesExist(request.name())) {
+            return esClient
+                .cluster()
+                .putComponentTemplate(request, requestOptions)
+                .isAcknowledged();
+          }
+          return false;
+        });
   }
 }
