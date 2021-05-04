@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import {Collapse} from '../Collapse';
 import {PanelListItem} from '../PanelListItem';
 import {
@@ -20,6 +20,15 @@ import {StatusMessage} from 'modules/components/StatusMessage';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 import {Locations} from 'modules/routes';
+import truncate from 'lodash/truncate';
+
+function truncateErrorMessage(errorMessage: string) {
+  return truncate(errorMessage, {
+    length: 100,
+    separator: ' ',
+    omission: '',
+  });
+}
 
 const IncidentsByError = observer(() => {
   useEffect(() => {
@@ -48,7 +57,7 @@ const IncidentsByError = observer(() => {
                   Locations.filters(location, {
                     process: item.bpmnProcessId,
                     version: item.version,
-                    errorMessage,
+                    errorMessage: truncateErrorMessage(errorMessage),
                     incidents: true,
                   })
                 }
@@ -79,7 +88,7 @@ const IncidentsByError = observer(() => {
       <PanelListItem
         to={(location) =>
           Locations.filters(location, {
-            errorMessage,
+            errorMessage: truncateErrorMessage(errorMessage),
             incidents: true,
           })
         }

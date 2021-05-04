@@ -19,10 +19,17 @@ import {
   mockIncidentsByError,
   mockErrorResponse,
   mockEmptyResponse,
+  mockIncidentsByErrorWithBigErrorMessage,
+  bigErrorMessage,
+  truncatedBigErrorMessage,
 } from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+
+function getParam(search: string, param: string) {
+  return new URLSearchParams(search).get(param);
+}
 
 const createWrapper = (historyMock = createMemoryHistory()) => ({
   children,
@@ -186,6 +193,47 @@ describe('IncidentsByError', () => {
     userEvent.click(firstVersion);
     expect(historyMock.location.search).toBe(
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true'
+    );
+  });
+
+  it('should truncate the error message search param', async () => {
+    mockServer.use(
+      rest.get('/api/incidents/byError', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidentsByErrorWithBigErrorMessage))
+      )
+    );
+
+    const historyMock = createMemoryHistory({
+      initialEntries: ['/'],
+    });
+
+    render(<IncidentsByError />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    userEvent.click(
+      await screen.findByTitle(
+        `View 36 Instances with error ${bigErrorMessage}`
+      )
+    );
+
+    expect(getParam(historyMock.location.search, 'errorMessage')).toBe(
+      truncatedBigErrorMessage
+    );
+
+    historyMock.push('/');
+
+    expect(getParam(historyMock.location.search, 'errorMessage')).toBeNull();
+
+    userEvent.click(screen.getByTestId('arrow-icon'));
+    userEvent.click(
+      await screen.findByTitle(
+        `View 37 Instances with error ${bigErrorMessage} in version 1 of Process mockProcess`
+      )
+    );
+
+    expect(getParam(historyMock.location.search, 'errorMessage')).toBe(
+      truncatedBigErrorMessage
     );
   });
 });
