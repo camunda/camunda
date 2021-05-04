@@ -22,22 +22,22 @@
   <dependencies>
     <dependency>
       <artifactId>atomix-utils</artifactId>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
       <artifactId>zeebe-util</artifactId>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
       <artifactId>zeebe-protocol</artifactId>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-journal</artifactId>
     </dependency>
     <dependency>
@@ -110,7 +110,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -172,7 +172,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-journal</artifactId>
       <scope>test</scope>
       <version>${parent.version}</version>
@@ -186,7 +186,7 @@
 
   <parent>
     <artifactId>atomix-parent</artifactId>
-    <groupId>io.camunda.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 

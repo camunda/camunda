@@ -6,7 +6,7 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.camunda.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
@@ -15,7 +15,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 

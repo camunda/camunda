@@ -8,7 +8,7 @@ pom.
 <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.camunda.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-bom</artifactId>
         <version>X.Y.Z</version>
         <scope>import</scope>

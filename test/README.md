@@ -10,7 +10,7 @@ Add `zeebe-test` as test dependency to your project.
 <dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-bom</artifactId>
       <version>${ZEEBE_VERSION}</version>
       <scope>import</scope>
@@ -22,12 +22,12 @@ Add `zeebe-test` as test dependency to your project.
 <dependencies>
 
   <dependency>
-    <groupId>io.camunda.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-client-java</artifactId>
   </dependency>
 
   <dependency>
-    <groupId>io.camunda.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-test</artifactId>
     <scope>test</scope>
   </dependency>
