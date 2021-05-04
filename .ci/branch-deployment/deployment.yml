@@ -121,7 +121,7 @@ spec:
           args: ["-c", "sleep 20 && tini -s /usr/local/bin/startup.sh"]
           env:
             - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-              value: io.zeebe.exporter.ElasticsearchExporter
+              value: io.camunda.zeebe.exporter.ElasticsearchExporter
             - name: ZEEBE_HOST
               value: 0.0.0.0
             - name: JAVA_TOOL_OPTIONS

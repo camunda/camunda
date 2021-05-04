@@ -1,6 +1,6 @@
 zeebe.broker:
   exporters.elasticsearch:
-    className: io.zeebe.exporter.ElasticsearchExporter
+    className: io.camunda.zeebe.exporter.ElasticsearchExporter
     args:
       url: "http://elasticsearch:9200"
       index.prefix: "several-versions-zeebe"

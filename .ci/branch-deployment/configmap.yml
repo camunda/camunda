@@ -9,7 +9,7 @@ data:
   zeebe.cfg.toml: |
     [[exporters]]
     id = "elasticsearch"
-    className = "io.zeebe.exporter.ElasticsearchExporter"
+    className = "io.camunda.zeebe.exporter.ElasticsearchExporter"
 
       [exporters.args]
       url = "http://localhost:9200"
