@@ -135,11 +135,13 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
-      final List<ExecutableStartEvent> startEvents =
-          processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
+      if (!processMetadata.isDuplicate()) {
+        final List<ExecutableStartEvent> startEvents =
+            processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
-      unsubscribeFromPreviousTimers(streamWriter, processMetadata);
-      subscribeToTimerStartEventIfExists(streamWriter, sideEffects, processMetadata, startEvents);
+        unsubscribeFromPreviousTimers(streamWriter, processMetadata);
+        subscribeToTimerStartEventIfExists(streamWriter, sideEffects, processMetadata, startEvents);
+      }
     }
   }
 
