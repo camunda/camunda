@@ -16,6 +16,8 @@ import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -53,6 +55,8 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .addUpgradeSteps(migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(dependencies))
       .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
       .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
+      .addUpgradeStep(migrateProcessReports())
+      .addUpgradeStep(migrateDecisionReports())
       .build();
   }
 
@@ -206,5 +210,49 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       result.put(node.getId(), flowNode);
     }
     return result;
+  }
+
+  private UpgradeStep migrateProcessReports() {
+    final String script =
+    //@formatter:off
+      "ctx._source.data.definitions = [];\n" +
+      "String definitionKey = ctx._source.data.processDefinitionKey;\n" +
+      "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
+      "  ctx._source.data.definitions.add([\n" +
+      "    \"key\" : definitionKey,\n" +
+      "    \"name\" : ctx._source.data.processDefinitionName,\n" +
+      "    \"displayName\" : null,\n" +
+      "    \"versions\" : ctx._source.data.processDefinitionVersions,\n" +
+      "    \"tenantIds\" : ctx._source.data.tenantIds\n" +
+      "  ]);\n" +
+      "}\n" +
+      "ctx._source.data.remove(\"processDefinitionKey\");\n" +
+      "ctx._source.data.remove(\"processDefinitionName\");\n" +
+      "ctx._source.data.remove(\"processDefinitionVersions\");\n" +
+      "ctx._source.data.remove(\"tenantIds\");\n";
+    //@formatter:on
+    return new UpdateIndexStep(new SingleProcessReportIndex(), script);
+  }
+
+  private UpgradeStep migrateDecisionReports() {
+    final String script =
+    //@formatter:off
+      "ctx._source.data.definitions = [];\n" +
+      "String definitionKey = ctx._source.data.decisionDefinitionKey;\n" +
+      "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
+      "  ctx._source.data.definitions.add([\n" +
+      "    \"key\" : definitionKey,\n" +
+      "    \"name\" : ctx._source.data.decisionDefinitionName,\n" +
+      "    \"displayName\" : null,\n" +
+      "    \"versions\" : ctx._source.data.decisionDefinitionVersions,\n" +
+      "    \"tenantIds\" : ctx._source.data.tenantIds\n" +
+      "  ]);\n" +
+      "}\n" +
+      "ctx._source.data.remove(\"decisionDefinitionKey\");\n" +
+      "ctx._source.data.remove(\"decisionDefinitionName\");\n" +
+      "ctx._source.data.remove(\"decisionDefinitionVersions\");\n" +
+      "ctx._source.data.remove(\"tenantIds\");\n";
+    //@formatter:on
+    return new UpdateIndexStep(new SingleDecisionReportIndex(), script);
   }
 }

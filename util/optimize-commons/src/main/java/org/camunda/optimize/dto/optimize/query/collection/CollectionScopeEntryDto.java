@@ -80,13 +80,12 @@ public class CollectionScopeEntryDto {
       this.definitionKey.equals(definitionKey);
   }
 
-  private boolean isInTenantScope(final List<String> tenants) {
-    return Optional.ofNullable(tenants)
-      .map(tenantList -> this.tenants.containsAll(tenantList))
-      .orElse(false);
+  private boolean isInTenantScope(final List<String> givenTenants) {
+    return givenTenants != null && this.tenants.containsAll(givenTenants);
   }
 
-  public static String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType, final String definitionKey) {
+  public static String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType,
+                                                       final String definitionKey) {
     return definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
   }
 }

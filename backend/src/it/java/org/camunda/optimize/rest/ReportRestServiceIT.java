@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -24,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,6 +50,8 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
@@ -90,6 +95,43 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void createNewSingleReportFromDefinition(final ReportType reportType) {
     // when
     String id = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
+    // then
+    assertThat(id).isNotNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void createNewSingleReportWithMultipleDefinitions(final ReportType reportType) {
+    // given
+    final List<ReportDataDefinitionDto> definitions = Arrays.asList(
+      ReportDataDefinitionDto.builder()
+        .key(RANDOM_KEY)
+        .name(RANDOM_STRING)
+        .versions(Collections.singletonList(ALL_VERSIONS))
+        .tenantIds(DEFAULT_TENANT_IDS)
+        .build(),
+      ReportDataDefinitionDto.builder()
+        .key(RANDOM_KEY + 2)
+        .name(RANDOM_STRING + 2)
+        .versions(Collections.singletonList(ALL_VERSIONS))
+        .tenantIds(DEFAULT_TENANT_IDS)
+        .build()
+    );
+
+    // when
+
+    final String id;
+    switch (reportType) {
+      case PROCESS:
+        id = addSingleProcessReportWithDefinition(ProcessReportDataDto.builder().definitions(definitions).build());
+        break;
+      case DECISION:
+        id = addSingleDecisionReportWithDefinition(DecisionReportDataDto.builder().definitions(definitions).build());
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
+    }
+
     // then
     assertThat(id).isNotNull();
   }

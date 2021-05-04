@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
@@ -206,7 +206,10 @@ public class ReportReader {
   private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(final String definitionKey) {
     log.debug("Fetching all available process reports for process definition key {}", definitionKey);
     final BoolQueryBuilder processReportQuery = boolQuery()
-      .must(termQuery(String.join(".", DATA, PROCESS_DEFINITION_KEY), definitionKey));
+      .must(termQuery(
+        String.join(".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key),
+        definitionKey
+      ));
     SearchResponse searchResponse = performGetReportRequestOmitXml(
       processReportQuery,
       new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},

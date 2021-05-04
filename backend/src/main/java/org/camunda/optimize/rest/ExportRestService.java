@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
@@ -35,6 +36,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,9 +119,13 @@ public class ExportRestService {
         .combined(false)
         .data(
           ProcessReportDataDto.builder()
-            .processDefinitionKey(request.getProcessDefinitionKey())
-            .processDefinitionVersions(request.getProcessDefinitionVersions())
-            .tenantIds(request.getTenantIds())
+            .definitions(Arrays.asList(
+              ReportDataDefinitionDto.builder()
+                .key(request.getProcessDefinitionKey())
+                .versions(request.getProcessDefinitionVersions())
+                .tenantIds(request.getTenantIds())
+                .build()
+            ))
             .filter(request.getFilter())
             .configuration(SingleReportConfigurationDto.builder()
                              .tableColumns(TableColumnDto.builder()

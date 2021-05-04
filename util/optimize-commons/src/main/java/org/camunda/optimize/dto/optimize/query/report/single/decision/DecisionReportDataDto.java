@@ -6,10 +6,14 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Lists;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import lombok.experimental.SuperBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
@@ -17,48 +21,69 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
-import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
 @FieldNameConstants
+@NoArgsConstructor
+@SuperBuilder
 public class DecisionReportDataDto extends SingleReportDataDto {
 
-  protected String decisionDefinitionKey;
-  protected List<String> decisionDefinitionVersions = new ArrayList<>();
-  protected String decisionDefinitionName;
-  protected List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
+  @Builder.Default
   protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
+  @Builder.Default
   protected ProcessDistributedByDto<?> distributedBy = new NoneDistributedByDto();
   protected DecisionVisualization visualization;
 
-  @JsonIgnore
-  @Override
-  public String getDefinitionKey() {
-    return decisionDefinitionKey;
+  public String getDecisionDefinitionKey() {
+    return getDefinitionKey();
   }
 
   @JsonIgnore
-  @Override
-  public List<String> getDefinitionVersions() {
-    return decisionDefinitionVersions;
+  public void setDecisionDefinitionKey(final String key) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setKey(key);
   }
 
   @JsonIgnore
-  @Override
-  public String getDefinitionName() {
-    return decisionDefinitionName;
+  public void setDecisionDefinitionName(String name) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setName(name);
+  }
+
+  public List<String> getDecisionDefinitionVersions() {
+    return getDefinitionVersions();
   }
 
   @JsonIgnore
-  public void setDecisionDefinitionVersion(String definitionVersion) {
-    this.decisionDefinitionVersions = Lists.newArrayList(definitionVersion);
+  public void setDecisionDefinitionVersions(final List<String> versions) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setVersions(versions);
+  }
+
+  @JsonIgnore
+  public void setDecisionDefinitionVersion(final String version) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setVersion(version);
   }
 
   @Override
@@ -77,10 +102,6 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
     return viewCommandKey + "_" + groupByCommandKey;
-  }
-
-  public List<String> getTenantIds() {
-    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 
 }

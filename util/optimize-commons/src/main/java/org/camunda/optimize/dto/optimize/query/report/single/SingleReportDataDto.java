@@ -16,8 +16,12 @@ import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @AllArgsConstructor
 @FieldNameConstants
@@ -30,13 +34,50 @@ public abstract class SingleReportDataDto implements ReportDataDto {
   @Builder.Default
   private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
-  public abstract String getDefinitionKey();
+  @Getter
+  @Setter
+  @Builder.Default
+  private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
 
-  public abstract List<String> getDefinitionVersions();
+  @JsonIgnore
+  public Optional<ReportDataDefinitionDto> getFirstDefinition() {
+    return definitions.stream().findFirst();
+  }
 
-  public abstract String getDefinitionName();
+  @JsonIgnore
+  public String getDefinitionKey() {
+    return getDefinitions().stream().findFirst().map(ReportDataDefinitionDto::getKey).orElse(null);
+  }
 
-  public abstract List<String> getTenantIds();
+  @JsonIgnore
+  public List<String> getDefinitionVersions() {
+    return getDefinitions().stream()
+      .findFirst()
+      .map(ReportDataDefinitionDto::getVersions)
+      .orElse(Collections.emptyList());
+  }
+
+  @JsonIgnore
+  public String getDefinitionName() {
+    return getDefinitions().stream().findFirst().map(ReportDataDefinitionDto::getName).orElse(null);
+  }
+
+  @JsonIgnore
+  public List<String> getTenantIds() {
+    return getFirstDefinition()
+      .map(definition -> TenantListHandlingUtil.sortAndReturnTenantIdList(definition.getTenantIds()))
+      // this is a special case as in case there is no definition or in case the source list is indeed a null reference
+      // this should get forwarded as such as the tenant logic handles both cases differently
+      .orElse(null);
+  }
+
+  @JsonIgnore
+  public void setTenantIds(final List<String> tenantIds) {
+    if (this.definitions.isEmpty()) {
+      this.definitions.add(new ReportDataDefinitionDto());
+    }
+    this.definitions.get(0).setTenantIds(tenantIds);
+  }
 
   @JsonIgnore
   public abstract List<ViewProperty> getViewProperties();

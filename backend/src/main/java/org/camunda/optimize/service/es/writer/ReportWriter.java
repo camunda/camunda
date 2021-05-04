@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -74,7 +76,7 @@ public class ReportWriter {
     NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE
   );
   private static final String PROCESS_DEFINITION_PROPERTY = String.join(
-    ".", DATA, ProcessReportDataDto.Fields.processDefinitionKey
+    ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key
   );
 
   private final ObjectMapper objectMapper;

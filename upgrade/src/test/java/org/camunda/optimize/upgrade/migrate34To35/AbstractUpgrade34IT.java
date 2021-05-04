@@ -12,6 +12,8 @@ import org.camunda.optimize.upgrade.migrate34To35.indices.EventProcessDefinition
 import org.camunda.optimize.upgrade.migrate34To35.indices.EventProcessInstanceIndexV6Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessDefinitionIndexV4Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessInstanceIndexV6Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.SingleDecisionReportIndexV6Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.SingleProcessReportIndexV6Old;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +33,8 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
     new EventProcessInstanceIndexV6Old(EVENT_PROCESS_INSTANCE_INDEX_ID);
   protected static final ProcessInstanceIndexV6Old PROCESS_INSTANCE_INDEX =
     new ProcessInstanceIndexV6Old(PROCESS_INSTANCE_INDEX_ID);
+  protected static final SingleProcessReportIndexV6Old SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV6Old();
+  protected static final SingleDecisionReportIndexV6Old SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV6Old();
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -40,7 +44,9 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
         PROCESS_DEFINITION_INDEX,
         EVENT_PROCESS_DEFINITION_INDEX,
         PROCESS_INSTANCE_INDEX,
-        EVENT_PROCESS_INSTANCE_INDEX
+        EVENT_PROCESS_INSTANCE_INDEX,
+        SINGLE_PROCESS_REPORT_INDEX,
+        SINGLE_DECISION_REPORT_INDEX
       )
     );
     setMetadataVersion(FROM_VERSION);

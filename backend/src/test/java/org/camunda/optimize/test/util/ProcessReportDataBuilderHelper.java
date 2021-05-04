@@ -7,6 +7,7 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
@@ -22,10 +23,10 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByCandidateGroup;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByEndDateDto;
@@ -46,8 +47,8 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
 
 public class ProcessReportDataBuilderHelper {
-  private String processDefinitionKey;
-  private List<String> processDefinitionVersions;
+  private List<ReportDataDefinitionDto> definitions =
+    Collections.singletonList(ReportDataDefinitionDto.builder().build());
 
   private ProcessViewEntity viewEntity = null;
   private ViewProperty viewProperty = ViewProperty.RAW_DATA;
@@ -71,14 +72,14 @@ public class ProcessReportDataBuilderHelper {
       processPart = createProcessPart(processPartStart, processPartEnd);
     }
 
-    final ProcessReportDataDto reportData = new ProcessReportDataDto();
-    reportData.setProcessDefinitionKey(processDefinitionKey);
-    reportData.setProcessDefinitionVersions(processDefinitionVersions);
-    reportData.setVisualization(visualization);
-    reportData.setView(view);
-    reportData.setGroupBy(groupBy);
+    final ProcessReportDataDto reportData = ProcessReportDataDto.builder()
+      .definitions(definitions)
+      .visualization(visualization)
+      .view(view)
+      .groupBy(groupBy)
+      .distributedBy(distributedBy)
+      .build();
     reportData.getConfiguration().setProcessPart(processPart);
-    reportData.setDistributedBy(distributedBy);
     return reportData;
   }
 
@@ -132,18 +133,23 @@ public class ProcessReportDataBuilderHelper {
     }
   }
 
+  public ProcessReportDataBuilderHelper definitions(final List<ReportDataDefinitionDto> definitions) {
+    this.definitions = definitions;
+    return this;
+  }
+
   public ProcessReportDataBuilderHelper processDefinitionKey(String processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
+    this.definitions.get(0).setKey(processDefinitionKey);
     return this;
   }
 
   public ProcessReportDataBuilderHelper processDefinitionVersions(List<String> processDefinitionVersions) {
-    this.processDefinitionVersions = processDefinitionVersions;
+    this.definitions.get(0).setVersions(processDefinitionVersions);
     return this;
   }
 
   public ProcessReportDataBuilderHelper processDefinitionVersion(final String processDefinitionVersion) {
-    this.processDefinitionVersions = newArrayList(processDefinitionVersion);
+    this.definitions.get(0).setVersion(processDefinitionVersion);
     return this;
   }
 
