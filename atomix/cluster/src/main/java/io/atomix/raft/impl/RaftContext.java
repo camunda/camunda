@@ -204,11 +204,8 @@ public class RaftContext implements AutoCloseable {
     try {
       // to prevent further operations submitted to the threadcontext to execute
       transition(Role.INACTIVE);
-    } catch (final Throwable e) {
-      log.error(
-          "An error occurred when transitioning to {}, closing the raft context",
-          Role.INACTIVE,
-          error);
+    } catch (final Exception e) {
+      log.error("An error occurred when transitioning to inactive, closing the raft context", e);
       close();
     }
 
@@ -345,15 +342,6 @@ public class RaftContext implements AutoCloseable {
    */
   public void addCommitListener(final RaftCommitListener commitListener) {
     commitListeners.add(commitListener);
-  }
-
-  /**
-   * Removes a previously registered commit listener, or does nothing.
-   *
-   * @param commitListener the listener to remove
-   */
-  public void removeCommitListener(final RaftCommitListener commitListener) {
-    commitListeners.remove(commitListener);
   }
 
   /**
