@@ -11,7 +11,7 @@
   <artifactId>tasklist-qa-util</artifactId>
 
   <properties>
-    <plugin.version.license>3.0</plugin.version.license>
+    <plugin.version.license>4.1</plugin.version.license>
     <license.header>${project.baseUri}/../../license/license-header</license.header>
   </properties>
 
