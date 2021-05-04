@@ -55,9 +55,6 @@ public class SchemaCreationIT extends OperateIntegrationTest {
       assertIndexAndAlias(indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias());
     }
 
-    assertTemplateOrder(processInstanceTemplate.getTemplateName(), 30);
-    assertTemplateOrder(eventTemplate.getTemplateName(), 30);
-
     //assert schema creation won't be performed for the second time
     assertThat(elsIndicesCheck.indicesArePresent()).isTrue();
   }

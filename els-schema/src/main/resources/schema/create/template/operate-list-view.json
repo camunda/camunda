@@ -1,5 +1,4 @@
 {
-	"order": 30,
 	"settings": {
 		"index": {
 			"refresh_interval": "2s",

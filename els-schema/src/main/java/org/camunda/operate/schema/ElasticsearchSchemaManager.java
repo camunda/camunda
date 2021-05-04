@@ -18,7 +18,14 @@ import org.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.PutComponentTemplateRequest;
+import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.cluster.metadata.ComponentTemplate;
+import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
+import org.elasticsearch.cluster.metadata.Template;
+import org.elasticsearch.common.compress.CompressedXContent;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -34,11 +41,9 @@ public class ElasticsearchSchemaManager {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
-  private static final String NUMBER_OF_SHARDS = "number_of_shards";
-  private static final String NUMBER_OF_REPLICAS = "number_of_replicas";
+  private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
+  private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
   private static final String ALIASES = "aliases";
-  private static final String INDEX_PATTERNS = "index_patterns";
-  public static final int TEMPLATE_ORDER = 15;
 
   @Autowired
   private List<AbstractIndexDescriptor> indexDescriptors;
@@ -58,23 +63,28 @@ public class ElasticsearchSchemaManager {
      createIndices();
   }
 
+  private String settingsTemplateName() {
+    final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    return String.format("%s_template", elsConfig.getIndexPrefix());
+  }
+
   private void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    final String settingsTemplate = String.format("%s_template", elsConfig.getIndexPrefix());
-
-    final List<String> patterns = List.of(String.format("%s-*", elsConfig.getIndexPrefix()));
+    final String settingsTemplate = settingsTemplateName();
     logger.info("Create default settings from '{}' with {} shards and {} replicas per index.", settingsTemplate,
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
-    final PutIndexTemplateRequest putIndexTemplateRequest = new PutIndexTemplateRequest(settingsTemplate)
-        .order(TEMPLATE_ORDER) // order of template applying
-        .patterns(patterns)
-        .settings(Settings.builder()
-            .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
-            .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas()).build());
+    Settings settings = Settings.builder()
+        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
+        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas()).build();
 
-    putIndexTemplate(putIndexTemplateRequest, settingsTemplate);
+    final Template template = new Template(settings, null, null);
+    final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
+    final PutComponentTemplateRequest request = new PutComponentTemplateRequest()
+        .name(settingsTemplate)
+        .componentTemplate(componentTemplate);
+    retryElasticsearchClient.createComponentTemplate(request);
   }
 
   private void createIndices() {
@@ -92,15 +102,35 @@ public class ElasticsearchSchemaManager {
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename = String.format("/schema/create/template/operate-%s.json", templateDescriptor.getIndexName());
-    final Map<String, Object> template = readJSONFileToMap(templateFilename);
-    // Adjust prefixes and aliases in case of other configured indexNames, e.g. non-default prefix
-    template.put(INDEX_PATTERNS, Collections.singletonList(templateDescriptor.getIndexPattern()));
-    template.put(ALIASES, Collections.singletonMap(templateDescriptor.getAlias(), Collections.emptyMap()));
-    putIndexTemplate(new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template), templateDescriptor.getTemplateName());
+    Template template = getTemplateFrom(templateDescriptor);
+    ComposableIndexTemplate composableTemplate = new ComposableIndexTemplate.Builder()
+        .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
+        .template(template)
+        .componentTemplates(List.of(settingsTemplateName()))
+        .build();
+    putIndexTemplate(new PutComposableIndexTemplateRequest()
+        .name(templateDescriptor.getTemplateName())
+        .indexTemplate(composableTemplate));
     // This is necessary, otherwise operate won't find indexes at startup
     String indexName = templateDescriptor.getFullQualifiedName();
     createIndex(new CreateIndexRequest(indexName), indexName);
+  }
+
+  private Template getTemplateFrom(final TemplateDescriptor templateDescriptor) {
+    final String templateFilename = String.format("/schema/create/template/operate-%s.json", templateDescriptor
+        .getIndexName());
+    // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
+    final Map<String, Object> templateConfig = readJSONFileToMap(templateFilename);
+    PutIndexTemplateRequest ptr = new PutIndexTemplateRequest(templateDescriptor.getTemplateName())
+        .source(templateConfig);
+    try {
+      final Map<String, AliasMetadata> aliases = Map.of(
+          templateDescriptor.getAlias(),AliasMetadata.builder(templateDescriptor.getAlias()).build());
+      return new Template(ptr.settings(), new CompressedXContent(ptr.mappings()), aliases);
+    } catch (IOException e) {
+     throw new OperateRuntimeException(
+         String.format("Error in reading mappings for %s ",templateDescriptor.getTemplateName()), e );
+    }
   }
 
   private Map<String, Object> prepareCreateIndex(String fileName, String alias) {
@@ -133,12 +163,12 @@ public class ElasticsearchSchemaManager {
     }
   }
 
-  private void putIndexTemplate(final PutIndexTemplateRequest putIndexTemplateRequest, String templateName) {
-    boolean created = retryElasticsearchClient.createTemplate(putIndexTemplateRequest);
+  private void putIndexTemplate(final PutComposableIndexTemplateRequest request) {
+    boolean created = retryElasticsearchClient.createTemplate(request);
     if (created) {
-      logger.debug("Template [{}] was successfully created", templateName);
+      logger.debug("Template [{}] was successfully created", request.name());
     } else {
-      logger.debug("Template [{}] was NOT created", templateName);
+      logger.debug("Template [{}] was NOT created", request.name());
     }
   }
 
