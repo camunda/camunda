@@ -18,6 +18,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompactionPriority;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -30,27 +31,26 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private final Class<ColumnFamilyType> columnFamilyTypeClass;
-  private final Properties userProvidedColumnFamilyOptions;
+  private final RocksDbConfiguration rocksDbConfiguration;
 
   private ZeebeRocksDbFactory(
       final Class<ColumnFamilyType> columnFamilyTypeClass,
-      final Properties userProvidedColumnFamilyOptions) {
+      final RocksDbConfiguration rocksDbConfiguration) {
     this.columnFamilyTypeClass = columnFamilyTypeClass;
-    this.userProvidedColumnFamilyOptions = Objects.requireNonNull(userProvidedColumnFamilyOptions);
+    this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> newFactory(
           final Class<ColumnFamilyType> columnFamilyTypeClass) {
-    final var columnFamilyOptions = new Properties();
-    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass, columnFamilyOptions);
+    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass, new RocksDbConfiguration());
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> newFactory(
           final Class<ColumnFamilyType> columnFamilyTypeClass,
-          final Properties userProvidedColumnFamilyOptions) {
-    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass, userProvidedColumnFamilyOptions);
+          final RocksDbConfiguration rocksDbConfiguration) {
+    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass, rocksDbConfiguration);
   }
 
   @Override
@@ -75,12 +75,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
       final List<ColumnFamilyDescriptor> columnFamilyDescriptors =
           createFamilyDescriptors(columnFamilyNames, columnFamilyOptions);
-      final DBOptions dbOptions =
-          new DBOptions()
-              .setCreateMissingColumnFamilies(true)
-              .setErrorIfExists(false)
-              .setCreateIfMissing(true)
-              .setParanoidChecks(true);
+      final DBOptions dbOptions = createDefaultDbOptions();
       closeables.add(dbOptions);
 
       db =
@@ -113,26 +108,42 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
   /** @return Options which are used on all column families */
   public ColumnFamilyOptions createColumnFamilyOptions() {
-    // start with some defaults
-    final var columnFamilyOptionProps = new Properties();
-    // look for cf_options.h to find available keys
-    // look for options_helper.cc to find available values
-    columnFamilyOptionProps.put("compaction_pri", "kOldestSmallestSeqFirst");
+    final var userProvidedColumnFamilyOptions = rocksDbConfiguration.getColumnFamilyOptions();
+    final var hasUserOptions = !userProvidedColumnFamilyOptions.isEmpty();
 
-    // apply custom options
-    columnFamilyOptionProps.putAll(userProvidedColumnFamilyOptions);
+    if (hasUserOptions) {
+      return createFromUserOptions(userProvidedColumnFamilyOptions);
+    }
 
+    return createDefaultColumnFamilyOptions();
+  }
+
+  private ColumnFamilyOptions createDefaultColumnFamilyOptions() {
+    final var columnFamilyOptions = new ColumnFamilyOptions();
+    return columnFamilyOptions.setCompactionPriority(CompactionPriority.OldestSmallestSeqFirst);
+  }
+
+  private ColumnFamilyOptions createFromUserOptions(
+      final Properties userProvidedColumnFamilyOptions) {
     final var columnFamilyOptions =
-        ColumnFamilyOptions.getColumnFamilyOptionsFromProps(columnFamilyOptionProps);
+        ColumnFamilyOptions.getColumnFamilyOptionsFromProps(userProvidedColumnFamilyOptions);
     if (columnFamilyOptions == null) {
       throw new IllegalStateException(
           String.format(
               "Expected to create column family options for RocksDB, "
                   + "but one or many values are undefined in the context of RocksDB "
-                  + "[Compiled ColumnFamilyOptions: %s; User-provided ColumnFamilyOptions: %s]. "
+                  + "[User-provided ColumnFamilyOptions: %s]. "
                   + "See RocksDB's cf_options.h and options_helper.cc for available keys and values.",
-              columnFamilyOptionProps, userProvidedColumnFamilyOptions));
+              userProvidedColumnFamilyOptions));
     }
     return columnFamilyOptions;
+  }
+
+  private DBOptions createDefaultDbOptions() {
+    return new DBOptions()
+        .setCreateMissingColumnFamilies(true)
+        .setErrorIfExists(false)
+        .setCreateIfMissing(true)
+        .setParanoidChecks(true);
   }
 }

@@ -75,7 +75,9 @@ public final class ZeebeRocksDbFactoryTest {
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class);
     final var factoryWithCustomOptions =
         (ZeebeRocksDbFactory<DefaultColumnFamily>)
-            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class, customProperties);
+            ZeebeRocksDbFactory.newFactory(
+                DefaultColumnFamily.class,
+                new RocksDbConfiguration().setColumnFamilyOptions(customProperties));
 
     // when
     final var defaults = factoryWithDefaults.createColumnFamilyOptions();

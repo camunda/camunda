@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Properties;
@@ -42,6 +43,10 @@ public final class RocksdbCfg implements ConfigurationEntry {
 
   public void setColumnFamilyOptions(final Properties columnFamilyOptions) {
     this.columnFamilyOptions = columnFamilyOptions;
+  }
+
+  public RocksDbConfiguration createRocksDbConfiguration() {
+    return new RocksDbConfiguration().setColumnFamilyOptions(columnFamilyOptions);
   }
 
   private static final class RocksDBColumnFamilyOption {
