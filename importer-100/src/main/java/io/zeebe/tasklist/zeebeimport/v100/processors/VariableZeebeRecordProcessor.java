@@ -8,7 +8,7 @@ package io.zeebe.tasklist.zeebeimport.v100.processors;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.Record;
 import io.zeebe.tasklist.entities.VariableEntity;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.schema.indices.VariableIndex;

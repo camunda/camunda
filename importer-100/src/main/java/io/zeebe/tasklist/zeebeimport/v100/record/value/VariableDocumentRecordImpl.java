@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.tasklist.zeebeimport.v100.record.RecordValueImpl;
 import java.util.Map;
 

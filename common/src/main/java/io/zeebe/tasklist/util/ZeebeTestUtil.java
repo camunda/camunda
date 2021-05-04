@@ -7,17 +7,17 @@ package io.zeebe.tasklist.util;
 
 import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployProcessCommandStep1;
-import io.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

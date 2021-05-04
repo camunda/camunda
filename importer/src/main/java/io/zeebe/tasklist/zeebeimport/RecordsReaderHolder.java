@@ -7,7 +7,7 @@ package io.zeebe.tasklist.zeebeimport;
 
 import static io.zeebe.tasklist.zeebe.ImportValueType.IMPORT_VALUE_TYPES;
 
-import io.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.Protocol;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.CollectionUtil;
 import io.zeebe.tasklist.zeebe.ImportValueType;
@@ -52,7 +52,7 @@ public class RecordsReaderHolder {
       // TODO what if it's not the final list of partitions
       for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
         // we load deployments only from deployment partition
-        if (!importValueType.equals(ImportValueType.DEPLOYMENT)
+        if (!importValueType.equals(ImportValueType.PROCESS)
             || partitionId.equals(Protocol.DEPLOYMENT_PARTITION)) {
           recordsReaders.add(
               beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));

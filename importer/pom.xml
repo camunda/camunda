@@ -20,7 +20,7 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <version>${version.zeebe}</version>
     </dependency>

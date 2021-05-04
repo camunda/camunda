@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.zeebe;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.CollectionUtil;
 import io.zeebe.tasklist.util.ThreadUtil;

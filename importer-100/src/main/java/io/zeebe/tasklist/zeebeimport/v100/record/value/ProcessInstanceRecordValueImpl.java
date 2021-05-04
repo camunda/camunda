@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
-import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.zeebe.tasklist.zeebeimport.v100.record.RecordValueWithPayloadImpl;
 
 public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl

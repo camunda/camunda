@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.zeebe;
 
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.tasklist.property.TasklistProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
-import io.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.tasklist.zeebeimport.v100.record.RecordValueWithPayloadImpl;
 import java.util.Map;
 import java.util.Objects;

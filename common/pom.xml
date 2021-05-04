@@ -47,12 +47,12 @@
 
 		<!-- ZEEBE -->
 		<dependency>
-			<groupId>io.zeebe</groupId>
+			<groupId>io.camunda.zeebe</groupId>
 			<artifactId>zeebe-client-java</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>io.zeebe</groupId>
+			<groupId>io.camunda.zeebe</groupId>
 			<artifactId>zeebe-util</artifactId>
 		</dependency>
 

@@ -7,11 +7,11 @@ package io.zeebe.tasklist.util;
 
 import static io.zeebe.tasklist.util.ConversionUtils.toHostAndPortAsString;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.Topology;
-import io.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 

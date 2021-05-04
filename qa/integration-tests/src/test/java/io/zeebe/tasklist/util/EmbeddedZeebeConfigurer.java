@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.util;
 
-import io.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
 
 public interface EmbeddedZeebeConfigurer {
 

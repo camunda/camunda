@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record.value;
 
-import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.tasklist.zeebeimport.v100.record.RecordValueImpl;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {

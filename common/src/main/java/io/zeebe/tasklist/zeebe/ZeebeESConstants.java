@@ -11,7 +11,7 @@ public interface ZeebeESConstants {
   String POSITION_FIELD_NAME = "position";
   String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   String JOB_INDEX_NAME = "job";
-  String DEPLOYMENT_INDEX_NAME = "deployment";
+  String PROCESS_INDEX_NAME = "process";
   String VARIABLE_INDEX_NAME = "variable";
   String VARIABLE_DOCUMENT_INDEX_NAME = "variable-document";
 }

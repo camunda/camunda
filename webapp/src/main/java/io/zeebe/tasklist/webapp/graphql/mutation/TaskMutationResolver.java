@@ -10,8 +10,8 @@ import static io.zeebe.tasklist.webapp.es.TaskValidator.CAN_COMPLETE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.kickstart.tools.GraphQLMutationResolver;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.exceptions.TaskValidationException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;

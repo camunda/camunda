@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record;
 
-import io.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
 public abstract class RecordValueImpl implements RecordValue {
 

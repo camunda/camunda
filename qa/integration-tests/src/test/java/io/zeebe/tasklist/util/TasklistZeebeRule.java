@@ -7,12 +7,12 @@ package io.zeebe.tasklist.util;
 
 import static io.zeebe.tasklist.util.ConversionUtils.toHostAndPortAsString;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.ClientProperties;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.ClientProperties;
+import io.camunda.zeebe.test.ClientRule;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.test.ClientRule;
-import io.zeebe.test.EmbeddedBrokerRule;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;

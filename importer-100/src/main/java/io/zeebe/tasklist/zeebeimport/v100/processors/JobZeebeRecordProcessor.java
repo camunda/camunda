@@ -11,8 +11,8 @@ import static io.zeebe.tasklist.zeebeimport.v100.record.Intent.COMPLETED;
 import static io.zeebe.tasklist.zeebeimport.v100.record.Intent.CREATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Record;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.exceptions.PersistenceException;

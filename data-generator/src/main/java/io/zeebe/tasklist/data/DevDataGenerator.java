@@ -7,7 +7,7 @@ package io.zeebe.tasklist.data;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.tasklist.entities.UserEntity;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.schema.indices.FormIndex;

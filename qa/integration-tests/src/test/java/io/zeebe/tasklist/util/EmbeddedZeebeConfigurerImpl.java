@@ -5,8 +5,8 @@
  */
 package io.zeebe.tasklist.util;
 
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.springframework.stereotype.Component;

@@ -14,8 +14,8 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.archiver.Archiver;
 import io.zeebe.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;

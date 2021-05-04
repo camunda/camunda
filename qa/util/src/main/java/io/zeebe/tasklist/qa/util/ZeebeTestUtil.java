@@ -7,15 +7,15 @@ package io.zeebe.tasklist.qa.util;
 
 import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.zeebe.client.api.command.DeployProcessCommandStep1;
-import io.zeebe.client.api.response.DeploymentEvent;
-import io.zeebe.client.api.response.ProcessInstanceEvent;
-import io.zeebe.client.api.worker.JobWorker;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Random;
 import org.slf4j.Logger;

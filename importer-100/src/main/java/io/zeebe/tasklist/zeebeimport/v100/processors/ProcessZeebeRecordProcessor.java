@@ -7,10 +7,10 @@ package io.zeebe.tasklist.zeebeimport.v100.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
-import io.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.zeebe.tasklist.entities.FormEntity;
 import io.zeebe.tasklist.entities.ProcessEntity;
 import io.zeebe.tasklist.exceptions.PersistenceException;
@@ -18,7 +18,7 @@ import io.zeebe.tasklist.schema.indices.FormIndex;
 import io.zeebe.tasklist.schema.indices.ProcessIndex;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.zeebeimport.util.XMLUtil;
-import io.zeebe.tasklist.zeebeimport.v100.record.value.DeploymentRecordValueImpl;
+import io.zeebe.tasklist.zeebeimport.v100.record.value.deployment.DeployedProcessImpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,7 +44,7 @@ public class ProcessZeebeRecordProcessor {
   private static final Set<String> STATES = new HashSet<>();
 
   static {
-    STATES.add(DeploymentIntent.CREATED.name());
+    STATES.add(ProcessIntent.CREATED.name());
   }
 
   @Autowired private ObjectMapper objectMapper;
@@ -60,43 +60,32 @@ public class ProcessZeebeRecordProcessor {
     final String intentStr = record.getIntent().name();
 
     if (STATES.contains(intentStr)) {
-      final DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl) record.getValue();
-      final Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
-      for (DeployedProcess process : recordValue.getDeployedProcesses()) {
+      final DeployedProcessImpl recordValue = (DeployedProcessImpl) record.getValue();
 
-        final Map<String, String> userTaskForms = new HashMap<>();
-        persistProcess(
-            process,
-            resources,
-            bulkRequest,
-            (formKey, schema) -> userTaskForms.put(formKey, schema));
+      final Map<String, String> userTaskForms = new HashMap<>();
+      persistProcess(
+          recordValue, bulkRequest, (formKey, schema) -> userTaskForms.put(formKey, schema));
 
-        final List<PersistenceException> exceptions = new ArrayList<>();
-        userTaskForms.forEach(
-            (formKey, schema) -> {
-              try {
-                persistForm(process.getProcessDefinitionKey(), formKey, schema, bulkRequest);
-              } catch (PersistenceException e) {
-                exceptions.add(e);
-              }
-            });
-        if (!exceptions.isEmpty()) {
-          throw exceptions.get(0);
-        }
+      final List<PersistenceException> exceptions = new ArrayList<>();
+      userTaskForms.forEach(
+          (formKey, schema) -> {
+            try {
+              persistForm(recordValue.getProcessDefinitionKey(), formKey, schema, bulkRequest);
+            } catch (PersistenceException e) {
+              exceptions.add(e);
+            }
+          });
+      if (!exceptions.isEmpty()) {
+        throw exceptions.get(0);
       }
     }
   }
 
   private void persistProcess(
-      DeployedProcess process,
-      Map<String, DeploymentResource> resources,
-      BulkRequest bulkRequest,
-      BiConsumer<String, String> userTaskFormCollector)
+      Process process, BulkRequest bulkRequest, BiConsumer<String, String> userTaskFormCollector)
       throws PersistenceException {
-    final String resourceName = process.getResourceName();
-    final DeploymentResource resource = resources.get(resourceName);
 
-    final ProcessEntity processEntity = createEntity(process, resource, userTaskFormCollector);
+    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     try {
@@ -113,15 +102,13 @@ public class ProcessZeebeRecordProcessor {
   }
 
   private ProcessEntity createEntity(
-      DeployedProcess process,
-      DeploymentResource resource,
-      BiConsumer<String, String> userTaskFormCollector) {
+      Process process, BiConsumer<String, String> userTaskFormCollector) {
     final ProcessEntity processEntity = new ProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
     processEntity.setKey(process.getProcessDefinitionKey());
 
-    final byte[] byteArray = resource.getResource();
+    final byte[] byteArray = process.getResource();
 
     xmlUtil.extractDiagramData(
         byteArray,

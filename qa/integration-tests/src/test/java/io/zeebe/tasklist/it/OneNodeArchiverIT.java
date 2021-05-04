@@ -10,8 +10,8 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.archiver.Archiver;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;
 import io.zeebe.tasklist.entities.TaskEntity;

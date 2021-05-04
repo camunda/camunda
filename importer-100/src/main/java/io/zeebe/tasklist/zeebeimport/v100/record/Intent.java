@@ -5,7 +5,7 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record;
 
-public enum Intent implements io.zeebe.protocol.record.intent.Intent {
+public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
   CREATED,
 
   RESOLVED,

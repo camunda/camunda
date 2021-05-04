@@ -5,11 +5,11 @@
  */
 package io.zeebe.tasklist.zeebeimport.v100.record.value.deployment;
 
-import io.zeebe.protocol.record.value.deployment.DeployedProcess;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class DeployedProcessImpl implements DeployedProcess {
+public class DeployedProcessImpl implements Process {
 
   private String bpmnProcessId;
   private String resourceName;
