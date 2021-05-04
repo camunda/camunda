@@ -130,7 +130,7 @@ public class ElasticsearchExporter implements Exporter {
     final IndexConfiguration index = configuration.index;
 
     if (index.createTemplate) {
-      createRootIndexTemplate();
+      createComponentTemplate();
 
       if (index.deployment) {
         createValueIndexTemplate(ValueType.DEPLOYMENT);
@@ -176,11 +176,11 @@ public class ElasticsearchExporter implements Exporter {
     indexTemplatesCreated = true;
   }
 
-  private void createRootIndexTemplate() {
+  private void createComponentTemplate() {
     final String templateName = configuration.index.prefix;
     final String aliasName = configuration.index.prefix;
     final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
-    if (!client.putIndexTemplate(templateName, aliasName, filename)) {
+    if (!client.putComponentTemplate(templateName, aliasName, filename)) {
       log.warn("Put index template {} from file {} was not acknowledged", templateName, filename);
     }
   }

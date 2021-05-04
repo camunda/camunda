@@ -211,22 +211,11 @@ public class ElasticsearchClient {
   /** @return true if request was acknowledged */
   public boolean putIndexTemplate(
       final String templateName, final String aliasName, final String filename) {
-    final Map<String, Object> template;
-    try (final InputStream inputStream =
-        ElasticsearchExporter.class.getResourceAsStream(filename)) {
-      if (inputStream != null) {
-        template = convertToMap(XContentType.JSON.xContent(), inputStream);
-      } else {
-        throw new ElasticsearchExporterException(
-            "Failed to find index template in classpath " + filename);
-      }
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          "Failed to load index template from classpath " + filename, e);
-    }
+    final Map<String, Object> template = getTemplateFromClasspath(filename);
 
     // update prefix in template in case it was changed in configuration
     template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
+    template.put("composed_of", Collections.singletonList(configuration.index.prefix));
 
     // update alias in template in case it was changed in configuration
     final Object templateProperties =
@@ -246,6 +235,30 @@ public class ElasticsearchClient {
   }
 
   /** @return true if request was acknowledged */
+  public boolean putComponentTemplate(
+      final String templateName, final String aliasName, final String filename) {
+    final Map<String, Object> template = getTemplateFromClasspath(filename);
+    return putComponentTemplate(templateName, template);
+  }
+
+  private Map<String, Object> getTemplateFromClasspath(final String filename) {
+    final Map<String, Object> template;
+    try (final InputStream inputStream =
+        ElasticsearchExporter.class.getResourceAsStream(filename)) {
+      if (inputStream != null) {
+        template = convertToMap(XContentType.JSON.xContent(), inputStream);
+      } else {
+        throw new ElasticsearchExporterException(
+            "Failed to find index template in classpath " + filename);
+      }
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to load index template from classpath " + filename, e);
+    }
+    return template;
+  }
+
+  /** @return true if request was acknowledged */
   private boolean putIndexTemplate(final String templateName, final Object body) {
     try {
       final var request = new Request("PUT", "/_index_template/" + templateName);
@@ -257,6 +270,21 @@ public class ElasticsearchClient {
       return putIndexTemplateResponse.isAcknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put index template", e);
+    }
+  }
+
+  /** @return true if request was acknowledged */
+  private boolean putComponentTemplate(final String templateName, final Object body) {
+    try {
+      final var request = new Request("PUT", "/_component_template/" + templateName);
+      request.setJsonEntity(MAPPER.writeValueAsString(body));
+
+      final var response = client.performRequest(request);
+      final var putIndexTemplateResponse =
+          MAPPER.readValue(response.getEntity().getContent(), PutIndexTemplateResponse.class);
+      return putIndexTemplateResponse.isAcknowledged();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to put component template", e);
     }
   }
 
