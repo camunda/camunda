@@ -12,7 +12,7 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.camunda.operate" level="info" />
+    <Logger name="io.camunda.operate" level="info" />
     <Root level="info">
       <AppenderRef ref="${env:OPERATE_LOG_APPENDER:-Console}"/>
     </Root>

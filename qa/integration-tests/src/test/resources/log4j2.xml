@@ -10,7 +10,7 @@
 
   </Appenders>
   <Loggers>
-    <Logger name="org.camunda.operate" level="debug" />
+    <Logger name="io.camunda.operate" level="debug" />
     <Logger name="org.springframework" level="warn" />
 
     <Root level="info">

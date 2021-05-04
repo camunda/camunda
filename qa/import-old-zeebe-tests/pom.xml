@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>qa</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-qa</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Operate Import from old Zeebe tests</name>
-  <artifactId>import-old-zeebe-tests</artifactId>
+  <name>Operate QA Import From Old Zeebe Tests</name>
+  <artifactId>operate-qa-import-old-zeebe-tests</artifactId>
 
   <properties>
     <plugin.version.license>3.0</plugin.version.license>
@@ -34,8 +34,8 @@
 
     <!-- tests to run -->
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-it-tests</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-it-tests</artifactId>
       <version>${project.version}</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
@@ -43,29 +43,29 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-webapp</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-importer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-archiver</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-archiver</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-qa-util</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -185,10 +185,10 @@
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <failIfNoTests>true</failIfNoTests>
           <dependenciesToScan>
-            <dependency>org.camunda.operate:camunda-operate-it-tests</dependency>
+            <dependency>io.camunda:operate-qa-it-tests</dependency>
           </dependenciesToScan>
           <includes>
-            <include>org/camunda/operate/zeebeimport/**/*.java</include>
+            <include>io/camunda/operate/zeebeimport/**/*.java</include>
           </includes>
           <excludes>
             <exclude>**/ImportSeveralVersionsTest.java</exclude>

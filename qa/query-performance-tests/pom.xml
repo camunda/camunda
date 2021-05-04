@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>qa</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-qa</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Operate Query performace tests</name>
-  <artifactId>query-performance-tests</artifactId>
+  <name>Operate QA Query Performace Tests</name>
+  <artifactId>operate-qa-query-performance-tests</artifactId>
 
   <properties>
     <plugin.version.license>3.0</plugin.version.license>
@@ -19,15 +19,15 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-webapp</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-qa-util</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

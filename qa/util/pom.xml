@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>qa</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-qa</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>camunda-operate-qa-util</artifactId>
+  <name>Operate QA Util</name>
+  <artifactId>operate-qa-util</artifactId>
 
   <properties>
     <plugin.version.license>4.1</plugin.version.license>
@@ -16,14 +17,14 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-common</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-els-schema</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-els-schema</artifactId>
       <version>${project.version}</version>
     </dependency>
 

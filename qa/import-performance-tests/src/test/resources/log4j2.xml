@@ -10,9 +10,9 @@
 
   </Appenders>
   <Loggers>
-    <Logger name="org.camunda.operate.zeebeimport" level="OFF" />
-    <Logger name="org.camunda.operate.util.ElasticsearchUtil" level="OFF" />
-    <Logger name="org.camunda.operate.qa.performance.ImportPerformanceStaticDataTest" level="INFO"/>
+    <Logger name="io.camunda.operate.zeebeimport" level="OFF" />
+    <Logger name="io.camunda.operate.util.ElasticsearchUtil" level="OFF" />
+    <Logger name="io.camunda.operate.qa.performance.ImportPerformanceStaticDataTest" level="INFO"/>
     <Root level="OFF">
       <AppenderRef ref="Console"/>
     </Root>

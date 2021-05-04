@@ -9,7 +9,7 @@
       </Console>
   </Appenders>
   <Loggers>
-    <Logger name="org.camunda.operate" level="debug" />
+    <Logger name="io.camunda.operate" level="debug" />
     <Root level="info">
       <AppenderRef ref="Stackdriver"/>
     </Root>

@@ -10,10 +10,10 @@
 
   </Appenders>
   <Loggers>
-    <Logger name="org.camunda.operate.util.ElasticsearchUtil" level="OFF" />
-    <Logger name="org.camunda.operate.webapp.es.reader.ListViewReader" level="OFF" />
-    <Logger name="org.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler" level="OFF" />
-    <Logger name="org.camunda.operate.qa.performance.BatchOperationPerformanceTest" level="INFO"/>
+    <Logger name="io.camunda.operate.util.ElasticsearchUtil" level="OFF" />
+    <Logger name="io.camunda.operate.webapp.es.reader.ListViewReader" level="OFF" />
+    <Logger name="io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler" level="OFF" />
+    <Logger name="io.camunda.operate.qa.performance.BatchOperationPerformanceTest" level="INFO"/>
     <Root level="OFF">
       <AppenderRef ref="Console"/>
     </Root>

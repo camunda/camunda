@@ -3,25 +3,25 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <name>Operate Importer</name>
-  <artifactId>camunda-operate-importer</artifactId>
+  <artifactId>operate-qa-importer</artifactId>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer-common</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-importer-common</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer-1_0</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-importer-1_0</artifactId>
       <version>${project.version}</version>
     </dependency>
 

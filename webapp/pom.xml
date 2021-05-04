@@ -3,43 +3,43 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <name>Operate Webapp</name>
-  <artifactId>camunda-operate-webapp</artifactId>
+  <artifactId>operate-webapp</artifactId>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-common</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
       <version>${project.version}</version>
     </dependency>
 
      <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-els-schema</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-els-schema</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-data-generator</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-data-generator</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-importer</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-archiver</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-archiver</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -130,8 +130,8 @@
     <!-- WEBJAR -->
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-webjar</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-webjar</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -191,7 +191,7 @@
             <configuration>
               <classifier>exec</classifier>
               <layout>ZIP</layout>
-              <mainClass>org.camunda.operate.Application</mainClass>
+              <mainClass>io.camunda.operate.Application</mainClass>
             </configuration>
           </execution>
         </executions>

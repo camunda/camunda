@@ -17,7 +17,7 @@
     <dependencySet>
       <outputDirectory>lib/</outputDirectory>
       <includes>
-        <include>org.camunda.operate:camunda-operate-webapp:jar:exec</include>
+        <include>io.camunda:operate-webapp:jar:exec</include>
       </includes>
     </dependencySet>
     

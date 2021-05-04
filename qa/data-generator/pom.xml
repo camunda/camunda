@@ -3,25 +3,25 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>qa</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-qa</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Operate Data Generator</name>
-  <artifactId>data-generator</artifactId>
+  <name>Operate QA Data Generator</name>
+  <artifactId>operate-qa-data-generator</artifactId>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-importer</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-importer</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-qa-util</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-qa-util</artifactId>
       <version>${project.version}</version>
     </dependency>
 

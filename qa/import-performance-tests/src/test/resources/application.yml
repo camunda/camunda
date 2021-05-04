@@ -22,4 +22,4 @@ camunda.operate:
 logging:
   level:
     ROOT: INFO
-    org.camunda.operate: DEBUG
+    io.camunda.operate: DEBUG

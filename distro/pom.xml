@@ -3,20 +3,20 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <name>Operate - Distro</name>
-  <artifactId>camunda-operate-distro</artifactId>
+  <name>Operate Distro</name>
+  <artifactId>operate-distro</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-webapp</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>exec</classifier>
     </dependency>
@@ -51,7 +51,7 @@
             </program>
             <program>
               <jvmSettings>
-              	<extraArgument>-Dloader.main=org.camunda.operate.schema.migration.SchemaMigration</extraArgument>
+              	<extraArgument>-Dloader.main=io.camunda.operate.schema.migration.SchemaMigration</extraArgument>
               </jvmSettings>
               <mainClass>org.springframework.boot.loader.PropertiesLauncher</mainClass>
               <id>migrate</id>

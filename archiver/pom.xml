@@ -3,25 +3,25 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.camunda.operate</groupId>
-    <artifactId>parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <artifactId>operate-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <name>Operate Archiver</name>
-  <artifactId>camunda-operate-archiver</artifactId>
+  <artifactId>operate-archiver</artifactId>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-common</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     
     <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-els-schema</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-els-schema</artifactId>
       <version>${project.version}</version>
     </dependency>
 

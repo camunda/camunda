@@ -3,13 +3,13 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.camunda.operate</groupId>
-		<artifactId>qa</artifactId>
+		<groupId>io.camunda</groupId>
+		<artifactId>operate-qa</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Operate Migration tests parent</name>
-	<artifactId>migration-tests-parent</artifactId>
+	<name>Operate QA Migration Tests Parent</name>
+	<artifactId>operate-qa-migration-tests-parent</artifactId>
 	<packaging>pom</packaging>
 
 	<modules>
