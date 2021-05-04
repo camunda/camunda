@@ -32,7 +32,7 @@
     <version.elasticsearch>7.12.1</version.elasticsearch>
     <version.spring.boot>2.4.3</version.spring.boot>
     <version.spring.session>1.3.5.RELEASE</version.spring.session>
-    <version.junit>4.13.1</version.junit>
+    <version.junit>4.13.2</version.junit>
     <version.swagger>3.0.0</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.6.6</version.micrometer>
