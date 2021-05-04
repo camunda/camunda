@@ -39,7 +39,7 @@
 
     <!-- ZEEBE -->
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 

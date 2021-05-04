@@ -20,7 +20,7 @@
 
     <!-- Record classes and interfaces -->
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
       <version>${version.zeebe}</version>
@@ -56,13 +56,13 @@
         <configuration>
           <artifactSet>
             <includes>
-              <include>io.zeebe:zeebe-protocol</include>
+              <include>io.camunda:zeebe-protocol</include>
             </includes>
           </artifactSet>
           <relocations>
             <relocation>
-              <pattern>io.zeebe.protocol</pattern>
-              <shadedPattern>io.zeebe.protocol.v025</shadedPattern>
+              <pattern>io.camunda.zeebe.protocol</pattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v100</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

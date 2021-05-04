@@ -28,7 +28,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>1.0.0-SNAPSHOT</version.zeebe>
+    <version.zeebe>1.0.0-rc1</version.zeebe>
 
     <version.elasticsearch>7.12.1</version.elasticsearch>
     <version.spring.boot>2.4.5</version.spring.boot>
@@ -74,7 +74,7 @@
       </dependency>
 
       <dependency>
-        <groupId>io.camunda.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-bom</artifactId>
         <version>${version.zeebe}</version>
         <type>pom</type>

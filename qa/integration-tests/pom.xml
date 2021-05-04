@@ -49,22 +49,22 @@
     <!-- ZEEBE -->
 
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
       <scope>test</scope>
       <exclusions>

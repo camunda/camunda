@@ -4,7 +4,7 @@ zeebe.broker:
 
   exporters:
     #    debug:
-    #      className: io.zeebe.broker.exporter.DebugExporter
+    #      className: io.camunda.zeebe.broker.exporter.DebugExporter
     #      args:
     #        logLevel: "debug"
     #        prettyPrint: true
