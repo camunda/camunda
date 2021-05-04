@@ -182,7 +182,10 @@ public final class DeploymentTransformer {
         final var isDuplicate =
             isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);
         if (isDuplicate) {
-          processMetadata.setVersion(lastProcess.getVersion()).setKey(lastProcess.getKey());
+          processMetadata
+              .setVersion(lastProcess.getVersion())
+              .setKey(lastProcess.getKey())
+              .markAsDuplicate();
         } else {
           final var key = keyGenerator.nextKey();
           processMetadata.setKey(key).setVersion(processState.getProcessVersion(bpmnProcessId) + 1);
