@@ -173,7 +173,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-journal</artifactId>
       <scope>test</scope>
-      <version>${parent.version}</version>
+      <version>${project.parent.version}</version>
       <type>test-jar</type>
     </dependency>
   </dependencies>
