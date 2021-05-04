@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.camunda</groupId>
     <artifactId>camunda-release-parent</artifactId>
-    <version>3.7</version>
+    <version>3.8.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
@@ -24,6 +24,7 @@
     </nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
+    <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
     <version.netty>4.1.63.Final</version.netty>
 
