@@ -12,7 +12,7 @@ import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 
 /**

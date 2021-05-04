@@ -7,8 +7,8 @@ package org.camunda.operate.zeebeimport.v1_0.record.value;
 
 import java.util.Map;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordValueImpl;
-import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 
 public class VariableDocumentRecordImpl extends RecordValueImpl implements VariableDocumentRecordValue {
 

@@ -11,8 +11,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import org.camunda.operate.entities.FlowNodeInstanceEntity;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;

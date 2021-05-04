@@ -45,7 +45,7 @@
 
     <!-- ZEEBE -->
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 

@@ -9,8 +9,8 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
 
 @Component("embeddedZeebeCofigurer")
 public class EmbeddedZeebeCofigurerImpl implements EmbeddedZeebeConfigurer {

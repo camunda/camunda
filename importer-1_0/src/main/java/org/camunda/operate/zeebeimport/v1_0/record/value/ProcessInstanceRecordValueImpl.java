@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.record.value;
 
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordValueWithPayloadImpl;
-import io.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements ProcessInstanceRecordValue {

@@ -19,8 +19,8 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
 public class SequenceFlowIT extends OperateZeebeIntegrationTest {
 

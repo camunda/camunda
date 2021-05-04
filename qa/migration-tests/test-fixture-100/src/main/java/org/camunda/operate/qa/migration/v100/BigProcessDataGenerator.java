@@ -13,7 +13,7 @@ import static org.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;

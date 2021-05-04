@@ -7,14 +7,14 @@ package org.camunda.operate.util;
 
 import static org.camunda.operate.util.ConversionUtils.toHostAndPortAsString;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
 
 public class ZeebeClientRule extends ExternalResource {
 

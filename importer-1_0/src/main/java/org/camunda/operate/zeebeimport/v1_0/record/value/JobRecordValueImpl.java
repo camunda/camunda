@@ -8,7 +8,7 @@ package org.camunda.operate.zeebeimport.v1_0.record.value;
 import java.util.Map;
 import java.util.Objects;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordValueWithPayloadImpl;
-import io.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 
 public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements JobRecordValue {
 

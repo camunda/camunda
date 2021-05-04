@@ -18,8 +18,8 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;

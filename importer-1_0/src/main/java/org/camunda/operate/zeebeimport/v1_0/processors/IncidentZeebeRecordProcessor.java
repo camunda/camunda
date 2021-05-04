@@ -34,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.Record;
 
 @Component
 public class IncidentZeebeRecordProcessor {

@@ -4,12 +4,12 @@ zeebe.broker:
 
   exporters:
 #    debug:
-#      className: io.zeebe.broker.exporter.DebugExporter
+#      className: io.camunda.zeebe.broker.exporter.DebugExporter
 #      args:
 #        logLevel: "debug"
 #        prettyPrint: true
     elasticsearch:
-      className: io.zeebe.exporter.ElasticsearchExporter
+      className: io.camunda.zeebe.exporter.ElasticsearchExporter
       args:
         bulk:
           delay: 1

@@ -6,11 +6,11 @@
 package org.camunda.operate.zeebeimport.v1_0.record;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.zeebe.protocol.record.RecordType;
-import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
 public class RecordImpl<T extends RecordValue> implements Record<T> {
 

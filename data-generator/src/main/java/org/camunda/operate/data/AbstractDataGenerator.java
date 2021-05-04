@@ -18,7 +18,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
 

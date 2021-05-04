@@ -39,8 +39,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
 public class ImportIT extends OperateZeebeIntegrationTest {
 

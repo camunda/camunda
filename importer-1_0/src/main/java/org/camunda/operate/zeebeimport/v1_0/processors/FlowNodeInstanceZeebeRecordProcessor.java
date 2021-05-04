@@ -5,16 +5,16 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.processors;
 
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;

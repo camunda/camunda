@@ -5,18 +5,18 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.processors;
 
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
 import static org.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;

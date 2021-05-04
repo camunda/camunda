@@ -24,10 +24,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 
 public class ProcessIT extends OperateZeebeIntegrationTest {
 

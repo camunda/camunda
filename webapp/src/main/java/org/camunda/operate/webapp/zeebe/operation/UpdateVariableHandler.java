@@ -9,8 +9,8 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.SetVariablesResponse;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 
 /**
  * Update the variable.

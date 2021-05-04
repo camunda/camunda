@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.record.value;
 
-import io.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import org.camunda.operate.zeebeimport.v1_0.record.RecordValueWithPayloadImpl;
-import io.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
 public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl implements IncidentRecordValue {
 

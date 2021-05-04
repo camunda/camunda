@@ -41,12 +41,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component

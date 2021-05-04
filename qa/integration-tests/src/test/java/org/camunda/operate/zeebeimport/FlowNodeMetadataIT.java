@@ -11,8 +11,8 @@ import static org.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
 import static org.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
 import static org.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

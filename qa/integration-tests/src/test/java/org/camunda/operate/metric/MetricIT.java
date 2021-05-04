@@ -9,8 +9,8 @@ import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.util.MetricAssert;

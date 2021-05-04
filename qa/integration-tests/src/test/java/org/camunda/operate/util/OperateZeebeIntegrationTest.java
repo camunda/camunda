@@ -13,11 +13,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.test.ClientRule;
-import io.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.test.ClientRule;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;

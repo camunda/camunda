@@ -7,7 +7,7 @@ package org.camunda.operate.zeebeimport.severalversions;
 
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebePort;
 import java.io.File;

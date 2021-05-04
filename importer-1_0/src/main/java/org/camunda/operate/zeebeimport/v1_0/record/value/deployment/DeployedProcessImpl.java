@@ -7,7 +7,7 @@ package org.camunda.operate.zeebeimport.v1_0.record.value.deployment;
 
 import java.util.Arrays;
 import java.util.Objects;
-import io.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public class DeployedProcessImpl implements Process {
   private String bpmnProcessId;

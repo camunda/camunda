@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.data.generation;
 
-import io.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.util.concurrent.ThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;

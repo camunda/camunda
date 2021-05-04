@@ -9,8 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

@@ -5,8 +5,8 @@
  */
 package org.camunda.operate.zeebeimport.v1_0.record;
 
-import io.zeebe.protocol.record.RecordValue;
-import io.zeebe.protocol.record.RecordValueWithVariables;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.Map;
 import java.util.Objects;
 

@@ -30,11 +30,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.ClientProperties;
-import io.zeebe.test.ClientRule;
-import io.zeebe.test.EmbeddedBrokerRule;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.ClientProperties;
+import io.camunda.zeebe.test.ClientRule;
+import io.camunda.zeebe.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 
 public class OperateZeebeRule extends TestWatcher {
 

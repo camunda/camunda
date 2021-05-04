@@ -8,8 +8,8 @@ package org.camunda.operate.data.develop;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;

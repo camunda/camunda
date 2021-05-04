@@ -6,7 +6,7 @@
 package org.camunda.operate.zeebeimport.v1_0.record.value;
 
 import org.camunda.operate.zeebeimport.v1_0.record.RecordValueImpl;
-import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableRecordValueImpl extends RecordValueImpl implements VariableRecordValue {
 

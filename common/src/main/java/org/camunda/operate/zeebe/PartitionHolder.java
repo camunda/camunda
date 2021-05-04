@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.Topology;
 
 @Component
 public class PartitionHolder {

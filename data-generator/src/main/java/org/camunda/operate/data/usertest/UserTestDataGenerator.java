@@ -7,13 +7,13 @@ package org.camunda.operate.data.usertest;
 
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.command.FailJobCommandStep1;
-import io.zeebe.client.api.command.FinalCommandStep;
-import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.api.worker.JobClient;
-import io.zeebe.client.api.worker.JobHandler;
-import io.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;

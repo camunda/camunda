@@ -13,12 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.value.IncidentRecordValue;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;

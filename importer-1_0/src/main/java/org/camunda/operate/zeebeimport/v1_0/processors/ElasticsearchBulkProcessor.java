@@ -28,8 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
 @Component
 public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {

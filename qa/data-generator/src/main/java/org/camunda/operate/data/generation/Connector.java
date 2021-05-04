@@ -11,8 +11,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 
 @Configuration
 public class Connector {
