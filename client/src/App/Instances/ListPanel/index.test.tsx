@@ -250,6 +250,8 @@ describe('ListPanel', () => {
 
   describe('spinner', () => {
     it('should display spinners on batch operation', async () => {
+      jest.useFakeTimers();
+
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
           res.once(ctx.json(mockProcessInstances))
@@ -288,7 +290,10 @@ describe('ListPanel', () => {
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
       expect(screen.queryAllByTestId('operation-spinner').length).toBe(0);
       expect(expandOperationsMock).toHaveBeenCalledTimes(1);
-    });
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }, 20000);
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
       mockServer.use(
@@ -329,9 +334,11 @@ describe('ListPanel', () => {
       );
 
       expect(expandOperationsMock).not.toHaveBeenCalled();
-    });
+    }, 20000);
 
     it('should remove spinners after batch operation if a network error occurs', async () => {
+      jest.useFakeTimers();
+
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
           res.once(ctx.json(mockProcessInstances))
@@ -355,10 +362,12 @@ describe('ListPanel', () => {
       userEvent.click(
         screen.getByRole('checkbox', {name: 'Select all instances'})
       );
+
       userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
       userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
       userEvent.click(screen.getByRole('button', {name: 'Apply'}));
       expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+
       await waitFor(() =>
         expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)
       );
@@ -367,7 +376,10 @@ describe('ListPanel', () => {
       await waitFor(() =>
         expect(instancesStore.state.filteredInstancesCount).toBe(1000)
       );
-    });
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }, 20000);
   });
 
   it('should show an error message', async () => {

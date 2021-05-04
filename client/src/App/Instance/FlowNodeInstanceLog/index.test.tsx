@@ -40,7 +40,7 @@ describe('FlowNodeInstanceLog', () => {
       )
     );
 
-    await currentInstanceStore.init('1');
+    currentInstanceStore.init('1');
   });
 
   afterAll(() => {

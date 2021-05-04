@@ -55,15 +55,12 @@ describe('<FlowNodeInstancesTree />', () => {
         res.once(ctx.text(multiInstanceProcess))
       )
     );
-
-    await Promise.all([
-      currentInstanceStore.init(processInstanceId),
-      singleInstanceDiagramStore.fetchProcessXml(processId),
-    ]);
+    await singleInstanceDiagramStore.fetchProcessXml(processId);
 
     jest.useFakeTimers();
 
-    await flowNodeInstanceStore.init();
+    currentInstanceStore.init(processInstanceId);
+    flowNodeInstanceStore.init();
   });
 
   afterEach(() => {
@@ -99,6 +96,10 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should be able to unfold and fold subprocesses', async () => {
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
     mockServer.use(
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(ctx.json(flowNodeInstances.level2))
@@ -107,9 +108,6 @@ describe('<FlowNodeInstancesTree />', () => {
         res.once(ctx.json(flowNodeInstances.level3))
       )
     );
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-    });
 
     render(
       <FlowNodeInstancesTree
@@ -183,13 +181,6 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    // poll request
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1Poll))
-      )
-    );
-
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
@@ -218,6 +209,15 @@ describe('<FlowNodeInstancesTree />', () => {
       withinMultiInstanceFlowNode.queryByTestId('COMPLETED-icon')
     ).not.toBeInTheDocument();
 
+    // poll request
+    mockServer.use(
+      rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
+        res.once(ctx.json({...CURRENT_INSTANCE}))
+      ),
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level1Poll))
+      )
+    );
     jest.runOnlyPendingTimers();
 
     expect(

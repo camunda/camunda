@@ -27,7 +27,7 @@ fixture('Multi Instance Flow Node Selection')
   });
 
 test('Should select multi instance flow nodes', async (t) => {
-  await t.expect(screen.queryByText('Instance History').exists).ok();
+  await t.expect(screen.queryByTestId('instance-history').exists).ok();
 
   const withinInstanceHistory = within(
     screen.queryByTestId('instance-history')
