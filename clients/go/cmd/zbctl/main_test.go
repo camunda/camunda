@@ -15,7 +15,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
@@ -186,44 +188,56 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				t.Fatal(err)
 			}
 
-			var comparer cmp.Option
 			if test.jsonOutput {
-				comparer = jsonComparer()
-			} else {
-				comparer = textComparer()
+				cmdOut, err = reformatJSON(cmdOut)
+				if err != nil {
+					t.Fatalf("failed to reformat JSON: %s", err.Error())
+				}
+
+				goldenOut, err = reformatJSON(goldenOut)
+				if err != nil {
+					t.Fatalf("failed to reformat JSON: %s", err.Error())
+				}
 			}
 
-			assertEq(t, test, comparer, goldenOut, cmdOut)
+			assertEq(t, test, goldenOut, cmdOut)
 		})
 	}
 }
 
-func assertEq(t *testing.T, test testCase, comparer cmp.Option, golden, cmdOut []byte) {
+// reformatJSON formats the JSON files in the same way so that whitespace differences are ignored
+func reformatJSON(in []byte) ([]byte, error) {
+	buf := &bytes.Buffer{}
+
+	// must compact before calling json.Indent because event though that will remove leading whitespace, it won't remove
+	// trailing whitespace.
+	if err := json.Compact(buf, in); err != nil {
+		return nil, err
+	}
+
+	compacted := make([]byte, buf.Len())
+	copy(compacted, buf.Bytes())
+	buf.Reset()
+
+	if err := json.Indent(buf, compacted, "", "\t"); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func assertEq(t *testing.T, test testCase, golden, cmdOut []byte) {
 	wantLines := strings.Split(string(golden), "\n")
 	gotLines := strings.Split(string(cmdOut), "\n")
 
-	if diff := cmp.Diff(wantLines, gotLines, comparer); diff != "" {
+	opt := composeComparers(cmpIgnoreVersion, cmpIgnoreNums)
+	if diff := cmp.Diff(wantLines, gotLines, opt); diff != "" {
 		t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
 	}
 }
 
-func jsonComparer() cmp.Option {
-	return composeComparer(func(x string) string {
-		// ignore whitespace
-		pattern := regexp.MustCompile(`\s+`)
-		x = pattern.ReplaceAllString(x, "")
-		return x
-	}, cmpIgnoreVersion, cmpIgnoreNums)
-}
-
-func textComparer() cmp.Option {
-	return composeComparer(func(x string) string { return x }, cmpIgnoreVersion, cmpIgnoreNums)
-}
-
-func composeComparer(transf func(string) string, cmpFuncs ...func(x, y string) bool) cmp.Option {
+func composeComparers(cmpFuncs ...func(x string, y string) bool) cmp.Option {
 	return cmp.Comparer(func(x, y string) bool {
-		x, y = transf(x), transf(y)
-
 		for _, cmpFunc := range cmpFuncs {
 			if cmpFunc(x, y) {
 				return true
