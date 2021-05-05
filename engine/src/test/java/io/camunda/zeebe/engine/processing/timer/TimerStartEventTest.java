@@ -234,12 +234,16 @@ public final class TimerStartEventTest {
             .getProcessesMetadata()
             .get(0);
 
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
-        .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
-        .await();
+    engine.awaitProcessingOf(
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+            .getFirst());
 
     // when
     engine.increaseTime(Duration.ofMinutes(1));
+    RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+        .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+        .await();
     engine.deployment().withXmlResource(firstVersion).deploy();
     engine.increaseTime(Duration.ofMinutes(1));
 
@@ -252,10 +256,14 @@ public final class TimerStartEventTest {
             .getValue()
             .getProcessesMetadata()
             .get(0);
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
+    engine.awaitProcessingOf(
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(secondVersionMetadata.getProcessDefinitionKey())
+            .getFirst());
+    engine.increaseTime(Duration.ofMinutes(1));
+    RecordingExporter.timerRecords(TimerIntent.TRIGGER)
         .withProcessDefinitionKey(secondVersionMetadata.getProcessDefinitionKey())
         .await();
-    engine.increaseTime(Duration.ofMinutes(1));
 
     // expect only two process instances created by a timer
     final var processInstanceRecords =
