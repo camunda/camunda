@@ -5,7 +5,8 @@
  */
 package io.camunda.tasklist.webapp;
 
-import org.springframework.beans.factory.annotation.Value;
+import javax.servlet.ServletContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,12 +14,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class IndexController {
 
-  @Value("${server.servlet.context-path:/}")
-  private String contextPath;
+  @Autowired private ServletContext context;
 
   @GetMapping("/index.html")
   public String index(Model model) {
-    model.addAttribute("contextPath", contextPath);
+    model.addAttribute("contextPath", context.getContextPath() + "/");
     return "index";
   }
 }

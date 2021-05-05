@@ -6,8 +6,8 @@
 package io.camunda.tasklist.webapp.rest;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import javax.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,13 +18,12 @@ public class ClientConfigRestService {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Value("${server.servlet.context-path:/}")
-  private String contextPath;
+  @Autowired private ServletContext context;
 
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
     return String.format(
         "window.clientConfig = { \"isEnterprise\": %s, \"contextPath\": \"%s\" };",
-        tasklistProperties.isEnterprise(), contextPath);
+        tasklistProperties.isEnterprise(), context.getContextPath());
   }
 }
