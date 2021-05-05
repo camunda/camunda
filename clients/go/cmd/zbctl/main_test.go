@@ -188,6 +188,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				t.Fatal(err)
 			}
 
+			var comparer cmp.Option
 			if test.jsonOutput {
 				cmdOut, err = reformatJSON(cmdOut)
 				if err != nil {
