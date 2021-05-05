@@ -27,16 +27,6 @@ public class ProcessCreatedApplier implements TypedEventApplier<ProcessIntent, P
 
   @Override
   public void applyState(final long processDefinitionKey, final ProcessRecord value) {
-
-    final var earlierProcessVersion =
-        processState.getLatestProcessVersionByProcessId(value.getBpmnProcessIdBuffer());
-    final var earlierProcessHasTimerStartEvent =
-        earlierProcessVersion != null && earlierProcessVersion.getProcess().hasTimerStartEvent();
-    if (earlierProcessHasTimerStartEvent) {
-      // we need to clean up the event scope for the previous timer start event
-      eventScopeInstanceState.deleteInstance(earlierProcessVersion.getKey());
-    }
-
     processState.putProcess(processDefinitionKey, value);
 
     final var currentProcessHasTimerStartEvent =
