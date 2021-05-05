@@ -1,5 +1,5 @@
 {
-  "name": "zeebe-tasklist",
+  "name": "camunda-cloud-tasklist",
   "version": "1.0.0-SNAPSHOT",
   "private": true,
   "dependencies": {

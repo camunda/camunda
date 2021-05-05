@@ -212,7 +212,7 @@
         <artifactId>jib-maven-plugin</artifactId>
         <configuration>
           <to>
-            <image>docker.io/camunda/zeebe-tasklist</image>
+            <image>docker.io/camunda/tasklist</image>
           </to>
           <container>
             <ports>

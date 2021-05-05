@@ -9,7 +9,7 @@
     <format>zip</format>
   </formats>
 
-  <baseDirectory>zeebe-tasklist-${project.version}</baseDirectory>
+  <baseDirectory>camunda-cloud-tasklist-${project.version}</baseDirectory>
   <includeBaseDirectory>true</includeBaseDirectory>
 
   <dependencySets>
@@ -33,7 +33,7 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/zeebe-tasklist</directory>
+      <directory>${project.build.directory}/camunda-cloud-tasklist</directory>
       <outputDirectory></outputDirectory>
     </fileSet>
   </fileSets>

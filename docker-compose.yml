@@ -55,9 +55,9 @@ services:
       - zeebe_network
     restart: always
 
-  zeebe-tasklist:
-    container_name: zeebe-tasklist
-    image: camunda/zeebe-tasklist:latest
+  tasklist:
+    container_name: tasklist
+    image: camunda/tasklist:latest
     ports:
       - 8080:8080
     environment:
@@ -113,9 +113,9 @@ services:
       - zeebe_network
     restart: always
 
-  zeebe-tasklist-e2e:
-    container_name: zeebe-tasklist-e2e
-    image: camunda/zeebe-tasklist:latest
+  tasklist-e2e:
+    container_name: tasklist-e2e
+    image: camunda/tasklist:latest
     ports:
       - 8081:8080
     environment:
@@ -136,9 +136,9 @@ services:
       - zeebe_network
     restart: always
 
-  zeebe-tasklist-sso:
-    container_name: zeebe-tasklist
-    image: camunda/zeebe-tasklist:latest
+  tasklist-sso:
+    container_name: tasklist
+    image: camunda/tasklist:latest
     ports:
       - 8080:8080
     environment:

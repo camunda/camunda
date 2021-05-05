@@ -6,7 +6,7 @@ def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 // We can't use maven-alpine because 'frontend-maven-plugin' is incompatible
 // Issue: https://github.com/eirslett/frontend-maven-plugin/issues/633
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-11" }
-def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/zeebe-tasklist" }
+def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/tasklist" }
 
 String getGitCommitMsg() {
   return sh(script: 'git log --format=%B -n 1 HEAD', returnStdout: true).trim()
@@ -38,7 +38,7 @@ void runRelease(params) {
 def githubRelease = '''\
 #!/bin/bash
 
-ARTIFACT="zeebe-tasklist"
+ARTIFACT="camunda-cloud-tasklist"
 ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
 cd target/checkout/distro/target
@@ -168,7 +168,7 @@ pipeline {
     stage('Upload Docker Image') {
       when { expression { return params.PUSH_CHANGES } }
       environment {
-        IMAGE_NAME = 'camunda/zeebe-tasklist'
+        IMAGE_NAME = 'camunda/tasklist'
         IMAGE_TAG = "${params.RELEASE_VERSION}"
         DOCKER_HUB = credentials('camunda-dockerhub')
         IS_LATEST = "${params.IS_LATEST}"

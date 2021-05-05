@@ -89,7 +89,7 @@ pipeline {
               ./cmd/k8s/cleanup-branch-deployment \
               camunda-cloud/tasklist \
               zeebe-tasklist \
-              gcr.io/ci-30-162810/zeebe-tasklist \
+              gcr.io/ci-30-162810/tasklist \
               ${GITHUB_APP}:${GITHUB_ACCESS_TOKEN}
             """)
           }

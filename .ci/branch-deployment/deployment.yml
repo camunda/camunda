@@ -38,8 +38,8 @@ spec:
         securityContext:
           privileged: true
       containers:
-      - name: zeebe-tasklist
-        image: gcr.io/ci-30-162810/zeebe-tasklist:@VERSION@
+      - name: tasklist
+        image: gcr.io/ci-30-162810/tasklist:@VERSION@
         imagePullPolicy: Always
         env:
         - name: JAVA_OPTS

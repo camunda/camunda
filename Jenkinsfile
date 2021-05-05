@@ -5,7 +5,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/zeebe-tasklist" }
+def static ZEEBE_TASKLIST_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/tasklist" }
 
 String getBranchSlug() {
   return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
@@ -189,7 +189,7 @@ pipeline {
               branch 'master'
           }
           environment {
-            IMAGE_NAME = 'camunda/zeebe-tasklist'
+            IMAGE_NAME = 'camunda/tasklist'
             IMAGE_TAG = 'SNAPSHOT'
             DOCKER_HUB = credentials('camunda-dockerhub')
           }

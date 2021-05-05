@@ -24,7 +24,7 @@
   </dependencies>
 
   <build>
-    <finalName>zeebe-tasklist-${project.version}</finalName>
+    <finalName>camunda-cloud-tasklist-${project.version}</finalName>
     <plugins>
 
       <plugin>
@@ -38,7 +38,7 @@
           <repositoryName>lib</repositoryName>
           <generateRepository>false</generateRepository>
           <useWildcardClassPath>true</useWildcardClassPath>
-          <assembleDirectory>${project.build.directory}/zeebe-tasklist</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/camunda-cloud-tasklist</assembleDirectory>
 
           <platforms>
             <platform>windows</platform>
