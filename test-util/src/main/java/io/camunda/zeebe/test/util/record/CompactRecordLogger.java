@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -82,7 +83,7 @@ public class CompactRecordLogger {
   private final Map<Long, String> substitutions = new HashMap<>();
   private final ArrayList<Record<?>> records;
 
-  private final Map<String, String> processes = new HashMap<>();
+  private final List<Process> processes = new ArrayList<>();
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
@@ -180,7 +181,14 @@ public class CompactRecordLogger {
   private void addDeployedProcesses(final StringBuilder bulkMessage) {
     bulkMessage.append("\n-------------- Deployed Processes ----------------------\n");
     processes.forEach(
-        (name, resource) -> bulkMessage.append(name).append(" ------ \n").append(resource));
+        process ->
+            bulkMessage
+                .append(summarizeProcessInformation(process))
+                .append(
+                    String.format(
+                        "[%s] ------%n%s%n",
+                        formatKey(process.getProcessDefinitionKey()),
+                        new String(process.getResource()))));
   }
 
   private void addDecomposedKeys(final StringBuilder bulkMessage) {
@@ -247,21 +255,19 @@ public class CompactRecordLogger {
 
     return value.getProcessesMetadata().stream()
         .map(ProcessMetadataValue::getResourceName)
-        .collect(Collectors.joining());
+        .collect(Collectors.joining(", "));
   }
 
   private String summarizeProcess(final Record<?> record) {
     final var value = (Process) record.getValue();
-    processes.put(value.getResourceName(), new String(value.getResource()));
+    processes.add(value);
+    return summarizeProcessInformation(value);
+  }
 
-    return new StringBuilder()
-        .append(value.getResourceName())
-        .append("->")
-        .append(formatId(value.getBpmnProcessId()))
-        .append(" (version:")
-        .append(value.getVersion())
-        .append(")")
-        .toString();
+  private String summarizeProcessInformation(final Process value) {
+    return String.format(
+        "%s -> %s (version:%d)",
+        value.getResourceName(), formatId(value.getBpmnProcessId()), value.getVersion());
   }
 
   private String summarizeElementInformation(
