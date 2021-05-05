@@ -28,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -145,6 +146,141 @@ public final class TimerStartEventTest {
             .toInstant()
             .toEpochMilli();
     assertThat(timerRecord.getDueDate()).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldNotReCreateTimerOnDuplicateDeployment() {
+    // when
+    final var firstVersion =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start_5")
+            .timerWithDateExpression("now() + duration(\"PT15S\")")
+            .endEvent("end_5")
+            .done();
+
+    final var secondVersion =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start_6")
+            .timerWithDateExpression("now() + duration(\"PT15S\")")
+            .endEvent("end_5")
+            .done();
+
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(firstVersion)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    final TimerRecordValue timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+            .getFirst()
+            .getValue();
+
+    // when
+    engine.deployment().withXmlResource(firstVersion).deploy();
+
+    // then
+    final var secondVersionMetadata =
+        engine
+            .deployment()
+            .withXmlResource(secondVersion)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    // expect only two timer creations
+
+    final var actualTimerCount =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .limit(
+                timerRecordValueRecord ->
+                    timerRecordValueRecord.getValue().getProcessDefinitionKey()
+                        == secondVersionMetadata.getProcessDefinitionKey())
+            .count();
+
+    assertThat(actualTimerCount)
+        .describedAs("Timer.CREATED count should be %d, but was %d", 2, actualTimerCount)
+        .isEqualTo(2);
+  }
+
+  @Test
+  public void shouldNotReTriggerTimerAfterDuplicateDeployment() {
+    // when
+    final var firstVersion =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start_5")
+            .timerWithDateExpression("now() + duration(\"PT15S\")")
+            .endEvent("end_5")
+            .done();
+
+    final var secondVersion =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start_6")
+            .timerWithDateExpression("now() + duration(\"PT15S\")")
+            .endEvent("end_5")
+            .done();
+
+    final var deployedProcess =
+        engine
+            .deployment()
+            .withXmlResource(firstVersion)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+        .await();
+
+    // when
+    engine.increaseTime(Duration.ofMinutes(1));
+    engine.deployment().withXmlResource(firstVersion).deploy();
+    engine.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    final var secondVersionMetadata =
+        engine
+            .deployment()
+            .withXmlResource(secondVersion)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(secondVersionMetadata.getProcessDefinitionKey())
+        .await();
+    engine.increaseTime(Duration.ofMinutes(1));
+
+    // expect only two process instances created by a timer
+    final var processInstanceRecords =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                record ->
+                    record.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT
+                        && record.getValue().getProcessDefinitionKey()
+                            == secondVersionMetadata.getProcessDefinitionKey())
+            .collect(Collectors.toList());
+
+    final var processInstanceActivateList =
+        processInstanceRecords.stream()
+            .filter(record -> record.getValue().getBpmnElementType() == BpmnElementType.PROCESS)
+            .filter(record -> record.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .collect(Collectors.toList());
+
+    assertThat(processInstanceActivateList)
+        .describedAs(
+            "Expect to trigger timer start events only for new deployments, but duplicate deployment causes retriggering of timer start event.")
+        .hasSize(2)
+        .extracting(record -> record.getValue().getProcessDefinitionKey())
+        .containsExactly(
+            deployedProcess.getProcessDefinitionKey(),
+            secondVersionMetadata.getProcessDefinitionKey());
   }
 
   @Test
