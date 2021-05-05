@@ -96,6 +96,8 @@ public class TypedStreamWriterImpl implements TypedStreamWriter {
 
   @Override
   public void reset() {
+    sourceRecordPosition = -1;
+    metadata.reset();
     batchWriter.reset();
   }
 
