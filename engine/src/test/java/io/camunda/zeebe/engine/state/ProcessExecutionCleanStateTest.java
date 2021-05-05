@@ -630,6 +630,40 @@ public final class ProcessExecutionCleanStateTest {
   }
 
   @Test
+  public void testProcessWithTriggerTimerStartEvent() {
+    // given
+    final var deployment =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .timerWithDate("=now() + duration(\"PT15S\")")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    engineRule.awaitProcessingOf(
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst());
+
+    engineRule.increaseTime(Duration.ofSeconds(15));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
+  @Test
   public void testProcessWithTimerStartEventRedeployment() {
     // given
     final var deployment =
