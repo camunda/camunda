@@ -9,7 +9,7 @@
   </parent>
 
   <name>Tasklist Distro</name>
-  <artifactId>tasklist-distro</artifactId>
+  <artifactId>camunda-cloud-tasklist</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
