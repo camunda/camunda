@@ -28,9 +28,11 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -118,7 +120,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId()).isEqualTo(processInstance.getId());
     assertThat(rawDataProcessInstanceDto.getStartDate()).isNotNull();
     assertThat(rawDataProcessInstanceDto.getEndDate()).isNull();
-    assertThat(rawDataProcessInstanceDto.getDuration()).isNull();
+    assertThat(rawDataProcessInstanceDto.getDuration()).isNotNull();
     assertThat(rawDataProcessInstanceDto.getEngineName()).isEqualTo(DEFAULT_ENGINE_ALIAS);
     assertThat(rawDataProcessInstanceDto.getBusinessKey()).isEqualTo(BUSINESS_KEY);
     assertThat(rawDataProcessInstanceDto.getVariables()).isNotNull().isEmpty();
@@ -589,6 +591,106 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertBasicResultData(evaluationResult2, processInstance, 1);
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result2.getData().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId()).isEqualTo(processInstance.getId());
+    assertThat(rawDataProcessInstanceDto.getDuration()).isNotNull();
+  }
+
+  @EnumSource(SortOrder.class)
+  @ParameterizedTest
+  public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final OffsetDateTime oneDayAgo = now.minusDays(1L);
+    final OffsetDateTime twoDaysAgo = now.minusDays(2L);
+    final OffsetDateTime threeDaysAgo = now.minusDays(3L);
+    final OffsetDateTime oneWeekAgo = now.minusWeeks(1L);
+    final OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+
+    final ProcessInstanceEngineDto completedInstanceOneWeek =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceOneWeek.getId());
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(completedInstanceOneWeek.getId(), twoWeeksAgo, oneWeekAgo);
+
+    final ProcessInstanceEngineDto completedInstanceOneDay =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceOneDay.getId());
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(completedInstanceOneDay.getId(), threeDaysAgo, twoDaysAgo);
+
+    final ProcessInstanceEngineDto runningInstanceOneDay =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceOneDay.getId(), oneDayAgo);
+
+    final ProcessInstanceEngineDto runningInstanceTwoWeeks =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceTwoWeeks.getId(), twoWeeksAgo);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
+      .processDefinitionKey(processDefinition.getKey())
+      .processDefinitionVersions(Collections.singletonList(processDefinition.getVersionAsString()))
+      .viewProperty(ViewProperty.RAW_DATA)
+      .visualization(ProcessVisualization.TABLE)
+      .build();
+
+    reportData.getConfiguration().setSorting(new ReportSortingDto(ProcessInstanceIndex.DURATION, order));
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    List<RawDataProcessInstanceDto> rawDataList = result.getData();
+    assertThat(rawDataList).isNotNull().hasSize(4);
+    assertThat(result.getData()).isNotNull().hasSize(4)
+      .extracting(RawDataProcessInstanceDto::getDuration)
+      .isSortedAccordingTo(SortOrder.ASC.equals(order) ? Comparator.naturalOrder() : Comparator.reverseOrder())
+      .containsExactlyInAnyOrder(
+        now.toInstant().toEpochMilli() - oneDayAgo.toInstant().toEpochMilli(),
+        twoDaysAgo.toInstant().toEpochMilli() - threeDaysAgo.toInstant().toEpochMilli(),
+        oneWeekAgo.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli(),
+        now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli()
+      );
+  }
+
+  @Test
+  public void durationIsSetCorrectlyEvenWhenNotSortingByDuration() {
+    // given
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final OffsetDateTime threeDaysAgo = now.minusDays(3L);
+    final OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+
+    final ProcessInstanceEngineDto runningInstanceOneWeek =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceOneWeek.getId(), twoWeeksAgo);
+
+    final ProcessInstanceEngineDto runningInstanceOneDay =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceOneDay.getId(), threeDaysAgo);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
+      .processDefinitionKey(processDefinition.getKey())
+      .processDefinitionVersions(Collections.singletonList(processDefinition.getVersionAsString()))
+      .viewProperty(ViewProperty.RAW_DATA)
+      .visualization(ProcessVisualization.TABLE)
+      .build();
+
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    List<RawDataProcessInstanceDto> rawDataList = result.getData();
+    assertThat(rawDataList).isNotNull().hasSize(2);
+    assertThat(result.getData()).isNotNull().hasSize(2)
+      .extracting(RawDataProcessInstanceDto::getDuration)
+      .containsExactlyInAnyOrder(
+        now.toInstant().toEpochMilli() - threeDaysAgo.toInstant().toEpochMilli(),
+        now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli()
+      );
   }
 
   @Test
@@ -615,6 +717,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(result.getData()).hasSize(1);
     RawDataProcessInstanceDto rawDataProcessInstanceDto = result.getData().get(0);
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId()).isEqualTo(processInstance.getId());
+    assertThat(rawDataProcessInstanceDto.getDuration()).isNotNull();
   }
 
   @Test
@@ -1193,4 +1296,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     variableFilterDto.setFilterLevel(FilterApplicationLevel.INSTANCE);
     return Collections.singletonList(variableFilterDto);
   }
+
 }
+

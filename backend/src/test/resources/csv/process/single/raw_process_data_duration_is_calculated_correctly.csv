@@ -1,0 +1,2 @@
+"processDefinitionKey","processDefinitionId","processInstanceId","businessKey","startDate","endDate","duration","engineName","tenantId"
+"aProcess","${PD_ID_1}","${PI_ID_1}","aBusinessKey","${START_DATE_1}",,"${DURATION}","camunda-bpm",

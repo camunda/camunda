@@ -124,12 +124,12 @@ public class ElasticsearchReaderUtil {
     return currentScrollResp;
   }
 
-  private static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
-                                                            final Class<T> itemClass,
-                                                            final Function<SearchHit, T> mappingFunction,
-                                                            final OptimizeElasticsearchClient esClient,
-                                                            final Integer scrollingTimeoutInSeconds,
-                                                            final Integer limit) {
+  public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
+                                                           final Class<T> itemClass,
+                                                           final Function<SearchHit, T> mappingFunction,
+                                                           final OptimizeElasticsearchClient esClient,
+                                                           final Integer scrollingTimeoutInSeconds,
+                                                           final Integer limit) {
     final List<T> results = new ArrayList<>();
 
     SearchResponse currentScrollResp = initialScrollResponse;
