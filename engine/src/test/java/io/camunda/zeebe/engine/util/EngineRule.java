@@ -73,6 +73,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -368,6 +369,13 @@ public final class EngineRule extends ExternalResource {
                                   MsgPackConverter.convertToJson(value.getDirectBuffer())));
                   return entries;
                 }));
+  }
+
+  public void awaitProcessingOf(final Record<?> record) {
+    final var recordPosition = record.getPosition();
+
+    Awaitility.await("await the record to be processed")
+        .until(() -> getLastProcessedPosition() >= recordPosition);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {
