@@ -218,4 +218,26 @@ public final class PublishMessageTest {
         .hasTimeToLive(0L)
         .hasMessageId("");
   }
+
+  // regression test for https://github.com/camunda-cloud/zeebe/issues/5420
+  @Test
+  public void shouldHaveNoSourceRecordPositionOnExpire() {
+    // given
+    final long timeToLive = 50L;
+
+    // when
+    final Record<MessageRecordValue> publishedRecord =
+        messageClient.withTimeToLive(timeToLive).publish();
+    ENGINE_RULE.increaseTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+
+    // then
+    final Record<MessageRecordValue> deleteCommand =
+        RecordingExporter.messageRecords()
+            .withIntent(MessageIntent.EXPIRE)
+            .withRecordKey(publishedRecord.getKey())
+            .getFirst();
+
+    // then
+    assertThat(deleteCommand.getSourceRecordPosition()).isLessThan(0);
+  }
 }
