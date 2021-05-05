@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -28,14 +27,21 @@ public class ProcessCreatedApplier implements TypedEventApplier<ProcessIntent, P
 
   @Override
   public void applyState(final long processDefinitionKey, final ProcessRecord value) {
+
+    final var earlierProcessVersion =
+        processState.getLatestProcessVersionByProcessId(value.getBpmnProcessIdBuffer());
+    final var earlierProcessHasTimerStartEvent =
+        earlierProcessVersion != null && earlierProcessVersion.getProcess().hasTimerStartEvent();
+    if (earlierProcessHasTimerStartEvent) {
+      // we need to clean up the event scope for the previous timer start event
+      eventScopeInstanceState.deleteInstance(earlierProcessVersion.getKey());
+    }
+
     processState.putProcess(processDefinitionKey, value);
 
-    // timer start events
-    final var hasAtLeastOneTimer =
-        processState.getProcessByKey(processDefinitionKey).getProcess().getStartEvents().stream()
-            .anyMatch(ExecutableCatchEventElement::isTimer);
-
-    if (hasAtLeastOneTimer) {
+    final var currentProcessHasTimerStartEvent =
+        processState.getProcessByKey(processDefinitionKey).getProcess().hasTimerStartEvent();
+    if (currentProcessHasTimerStartEvent) {
       eventScopeInstanceState.createIfNotExists(processDefinitionKey, Collections.emptyList());
     }
   }
