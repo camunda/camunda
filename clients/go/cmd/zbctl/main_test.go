@@ -169,7 +169,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 		s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
 				if _, err := s.runCommand(cmd); err != nil {
-					t.Fatal(fmt.Errorf("failed while executing set up command '%s': %w", cmd, err))
+					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
 				}
 			}
 
@@ -180,7 +180,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 
 			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
 			if errors.Is(err, context.DeadlineExceeded) {
-				t.Fatal(fmt.Errorf("timed out while executing command '%s': %w", strings.Join(test.cmd, " "), err))
+				t.Fatalf("timed out while executing command '%s': %v", strings.Join(test.cmd, " "), err)
 			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
@@ -191,12 +191,12 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			if test.jsonOutput {
 				cmdOut, err = reformatJSON(cmdOut)
 				if err != nil {
-					t.Fatalf("failed to reformat JSON: %s", err.Error())
+					t.Fatalf("failed to reformat JSON: %v", err)
 				}
 
 				goldenOut, err = reformatJSON(goldenOut)
 				if err != nil {
-					t.Fatalf("failed to reformat JSON: %s", err.Error())
+					t.Fatalf("failed to reformat JSON: %v", err)
 				}
 			}
 
