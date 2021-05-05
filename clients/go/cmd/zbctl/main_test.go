@@ -169,7 +169,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 		s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
 				if _, err := s.runCommand(cmd); err != nil {
-					t.Fatalf("failed while executing set up command '%s': %v", cmd, err)
+					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
 				}
 			}
 
