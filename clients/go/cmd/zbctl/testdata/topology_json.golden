@@ -6,7 +6,7 @@
       "port":  26501,
       "partitions":  [
         {
-          "partitionId":  1,
+          "partitionId":  12,
           "role":  "LEADER",
           "health":  "HEALTHY"
         }

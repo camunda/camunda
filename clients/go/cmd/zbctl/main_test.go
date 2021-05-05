@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/camunda-cloud/zeebe/clients/go/internal/containersuite"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
 )
@@ -170,43 +169,44 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				t.Fatal(err)
 			}
 
+			var comparer cmp.Option
 			if test.jsonOutput {
-				assertEqJSON(t, test, goldenOut, cmdOut)
+				comparer = jsonComparer()
 			} else {
-				assertEqText(t, test, goldenOut, cmdOut)
+				comparer = textComparer()
 			}
+
+			assertEq(t, test, comparer, goldenOut, cmdOut)
 		})
 	}
 }
 
-func assertEqText(t *testing.T, test testCase, golden, cmdOut []byte) {
+func assertEq(t *testing.T, test testCase, comparer cmp.Option, golden, cmdOut []byte) {
 	wantLines := strings.Split(string(golden), "\n")
 	gotLines := strings.Split(string(cmdOut), "\n")
 
-	if diff := cmp.Diff(wantLines, gotLines, cmp.Comparer(composeComparer(cmpIgnoreNums, cmpIgnoreVersion))); diff != "" {
+	if diff := cmp.Diff(wantLines, gotLines, comparer); diff != "" {
 		t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
 	}
 }
 
-func assertEqJSON(t *testing.T, test testCase, golden, cmdOut []byte) {
-	want := string(golden)
-	got := string(cmdOut)
-
-	// remove versions
-	ignorePattern := regexp.MustCompile(semVer)
-	want = ignorePattern.ReplaceAllString(want, "")
-	got = ignorePattern.ReplaceAllString(got, "")
-
-	// remove numbers
-	ignorePattern = regexp.MustCompile(`\d`)
-	want = ignorePattern.ReplaceAllString(want, "1")
-	got = ignorePattern.ReplaceAllString(got, "1")
-
-	require.JSONEqf(t, want, got, "expected JSON output from '%s' to match golden file '%s'", test.cmd, test.goldenFile)
+func jsonComparer() cmp.Option {
+	return composeComparer(func(x string) string {
+		// ignore whitespace
+		pattern := regexp.MustCompile(`\s+`)
+		x = pattern.ReplaceAllString(x, "")
+		return x
+	}, cmpIgnoreVersion, cmpIgnoreNums)
 }
 
-func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool {
-	return func(x, y string) bool {
+func textComparer() cmp.Option {
+	return composeComparer(func(x string) string { return x }, cmpIgnoreVersion, cmpIgnoreNums)
+}
+
+func composeComparer(transf func(string) string, cmpFuncs ...func(x, y string) bool) cmp.Option {
+	return cmp.Comparer(func(x, y string) bool {
+		x, y = transf(x), transf(y)
+
 		for _, cmpFunc := range cmpFuncs {
 			if cmpFunc(x, y) {
 				return true
@@ -214,7 +214,7 @@ func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool 
 		}
 
 		return false
-	}
+	})
 }
 
 func cmpIgnoreVersion(x, y string) bool {
@@ -226,7 +226,7 @@ func cmpIgnoreVersion(x, y string) bool {
 }
 
 func cmpIgnoreNums(x, y string) bool {
-	numbersRegex := regexp.MustCompile(`\d`)
+	numbersRegex := regexp.MustCompile(`\d+`)
 	newX := numbersRegex.ReplaceAllString(x, "")
 	newY := numbersRegex.ReplaceAllString(y, "")
 
