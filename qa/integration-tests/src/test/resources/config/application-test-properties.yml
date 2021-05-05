@@ -1,4 +1,4 @@
-zeebe.tasklist:
+camunda.tasklist:
   csrfPreventionEnabled: false
   batchOperationMaxSize: 500
   elasticsearch:

@@ -1,4 +1,4 @@
-zeebe.tasklist:
+camunda.tasklist:
   elasticsearch:
     clusterName: docker-cluster
   zeebeElasticsearch:

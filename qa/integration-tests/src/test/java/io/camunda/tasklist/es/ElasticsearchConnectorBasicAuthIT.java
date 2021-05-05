@@ -66,16 +66,16 @@ public class ElasticsearchConnectorBasicAuthIT {
       elasticsearch.start();
       final String elsUrl = String.format("http://%s", elasticsearch.getHttpHostAddress());
       TestPropertyValues.of(
-              // "zeebe.tasklist.elasticsearch.host="+elasticsearch.getHost(),
-              // "zeebe.tasklist.elasticsearch.port="+elasticsearch.getFirstMappedPort(),
-              "zeebe.tasklist.elasticsearch.username=elastic",
-              "zeebe.tasklist.elasticsearch.password=changeme",
-              "zeebe.tasklist.elasticsearch.clusterName=docker-cluster",
-              "zeebe.tasklist.zeebeElasticsearch.url=" + elsUrl,
-              "zeebe.tasklist.zeebeElasticsearch.username=elastic",
-              "zeebe.tasklist.zeebeElasticsearch.password=changeme",
-              "zeebe.tasklist.zeebeElasticsearch.clusterName=docker-cluster",
-              "zeebe.tasklist.zeebeElasticsearch.prefix=zeebe-record")
+              // "camunda.tasklist.elasticsearch.host="+elasticsearch.getHost(),
+              // "camunda.tasklist.elasticsearch.port="+elasticsearch.getFirstMappedPort(),
+              "camunda.tasklist.elasticsearch.username=elastic",
+              "camunda.tasklist.elasticsearch.password=changeme",
+              "camunda.tasklist.elasticsearch.clusterName=docker-cluster",
+              "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
+              "camunda.tasklist.zeebeElasticsearch.username=elastic",
+              "camunda.tasklist.zeebeElasticsearch.password=changeme",
+              "camunda.tasklist.zeebeElasticsearch.clusterName=docker-cluster",
+              "camunda.tasklist.zeebeElasticsearch.prefix=zeebe-record")
           .applyTo(applicationContext.getEnvironment());
     }
   }

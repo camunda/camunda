@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(TasklistProperties.PREFIX)
 public class TasklistProperties {
 
-  public static final String PREFIX = "zeebe.tasklist";
+  public static final String PREFIX = "camunda.tasklist";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
 
   private boolean importerEnabled = true;

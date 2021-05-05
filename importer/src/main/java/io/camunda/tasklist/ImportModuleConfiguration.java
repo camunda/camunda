@@ -18,7 +18,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     basePackages = "io.camunda.tasklist.zeebeimport",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "zeebe.tasklist.importerEnabled",
+    name = "camunda.tasklist.importerEnabled",
     havingValue = "true",
     matchIfMissing = true)
 public class ImportModuleConfiguration {

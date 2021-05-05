@@ -1,6 +1,6 @@
 # Tasklist configuration file
 
-zeebe.tasklist:
+camunda.tasklist:
   # Set Tasklist username and password.
   # If user with <username> does not exists it will be created.
   # Default: demo/demo

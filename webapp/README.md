@@ -21,12 +21,12 @@ In case of high load you may need to scale importing of data from Zeebe and arch
 In order to achieve this you can run any of the modules separately: Webapp, Importer and Archiver.
 
 For this you can use following configuration parameters:
-* `zeebe.tasklist.importerEnabled`: when `true` will include the Importer in current run, default: true
-* `zeebe.tasklist.webappEnabled`: when `true` will include the Webapp in current run, default: true
-* `zeebe.tasklist.archiverEnabled`: when `true` will include the Archiver in current run, default: true
-* `zeebe.tasklist.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer (or Archiver) node must be responsible for, default: empty array, meaning all partitions data is loaded
-* `zeebe.tasklist.clusterNode.nodeCount`: total amount of Importer (or Archiver) nodes in cluster
-* `zeebe.tasklist.clusterNode.currentNodeId`: id of current Importer (or Archiver) node, starting from 0
+* `camunda.tasklist.importerEnabled`: when `true` will include the Importer in current run, default: true
+* `camunda.tasklist.webappEnabled`: when `true` will include the Webapp in current run, default: true
+* `camunda.tasklist.archiverEnabled`: when `true` will include the Archiver in current run, default: true
+* `camunda.tasklist.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer (or Archiver) node must be responsible for, default: empty array, meaning all partitions data is loaded
+* `camunda.tasklist.clusterNode.nodeCount`: total amount of Importer (or Archiver) nodes in cluster
+* `camunda.tasklist.clusterNode.currentNodeId`: id of current Importer (or Archiver) node, starting from 0
 
 It's enough to configure either `partitionIds` or pair of `nodeCount` and `currentNodeId`.
 

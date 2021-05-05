@@ -61,12 +61,12 @@ services:
     ports:
       - 8080:8080
     environment:
-      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebe.gatewayAddress=zeebe:26500
+      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       #- server.servlet.context-path=/tasklist/
       - spring.profiles.active=dev,dev-data,auth
-      - zeebe.tasklist.csrfPreventionEnabled=false
+      - camunda.tasklist.csrfPreventionEnabled=false
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
     volumes:
@@ -119,13 +119,13 @@ services:
     ports:
       - 8081:8080
     environment:
-      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.elasticsearch.indexPrefix=e2etasklist
-      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebeElasticsearch.prefix=e2e
-      - zeebe.tasklist.zeebe.gatewayAddress=zeebe-e2e:26503
-      - zeebe.tasklist.importer.readerBackoff=0
-      - zeebe.tasklist.importer.schedulerBackoff=0
+      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.elasticsearch.indexPrefix=e2etasklist
+      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebeElasticsearch.prefix=e2e
+      - camunda.tasklist.zeebe.gatewayAddress=zeebe-e2e:26503
+      - camunda.tasklist.importer.readerBackoff=0
+      - camunda.tasklist.importer.schedulerBackoff=0
     volumes:
       - ./distro/src/main/config/application.yml:/app/resources/application.yaml
       - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
@@ -142,17 +142,17 @@ services:
     ports:
       - 8080:8080
     environment:
-      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebe.gatewayAdress=zeebe:26500
+      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - camunda.tasklist.zeebe.gatewayAdress=zeebe:26500
       - spring.profiles.active=dev,dev-data,sso-auth
-      - zeebe.tasklist.csrfPreventionEnabled=false
-      - zeebe.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
-      - zeebe.tasklist.auth0.claimName=https://camunda.com/orgs
-      - zeebe.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3
-      - zeebe.tasklist.auth0.clientSecret=${ZEEBE_TASKLIST_AUTH0_CLIENTSECRET}
-      - zeebe.tasklist.auth0.domain=weblogin.cloud.ultrawombat.com
-      - zeebe.tasklist.auth0.organization=ebe81097-6657-4481-8fba-be5d94cac4ce
+      - camunda.tasklist.csrfPreventionEnabled=false
+      - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
+      - camunda.tasklist.auth0.claimName=https://camunda.com/orgs
+      - camunda.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3
+      - camunda.tasklist.auth0.clientSecret=${ZEEBE_TASKLIST_AUTH0_CLIENTSECRET}
+      - camunda.tasklist.auth0.domain=weblogin.cloud.ultrawombat.com
+      - camunda.tasklist.auth0.organization=ebe81097-6657-4481-8fba-be5d94cac4ce
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
     volumes:

@@ -68,13 +68,13 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
       AuthSSOApplication.class,
     },
     properties = {
-      "zeebe.tasklist.auth0.clientId=1",
-      "zeebe.tasklist.auth0.clientSecret=2",
-      "zeebe.tasklist.auth0.organization=3",
-      "zeebe.tasklist.auth0.domain=domain",
-      "zeebe.tasklist.auth0.backendDomain=backendDomain",
-      "zeebe.tasklist.auth0.claimName=claimName",
-      "zeebe.tasklist.persistentSessionsEnabled = true"
+      "camunda.tasklist.auth0.clientId=1",
+      "camunda.tasklist.auth0.clientSecret=2",
+      "camunda.tasklist.auth0.organization=3",
+      "camunda.tasklist.auth0.domain=domain",
+      "camunda.tasklist.auth0.backendDomain=backendDomain",
+      "camunda.tasklist.auth0.claimName=claimName",
+      "camunda.tasklist.persistentSessionsEnabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})

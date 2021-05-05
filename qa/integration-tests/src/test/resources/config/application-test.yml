@@ -1,4 +1,4 @@
-zeebe.tasklist:
+camunda.tasklist:
   username: demo
   password: demo
   elasticsearch:
