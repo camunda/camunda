@@ -38,7 +38,7 @@ void runRelease(params) {
 def githubRelease = '''\
 #!/bin/bash
 
-ARTIFACT="camunda-operate"
+ARTIFACT="camunda-cloud-operate"
 ZEEBE_VERSION=$(mvn help:evaluate -Dexpression=version.zeebe -q -DforceStdout)
 
 cd target/checkout/distro/target

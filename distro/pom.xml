@@ -9,7 +9,7 @@
   </parent>
 
   <name>Operate Distro</name>
-  <artifactId>operate-distro</artifactId>
+  <artifactId>camunda-cloud-operate</artifactId>
   <packaging>pom</packaging>
 
   <dependencies>
