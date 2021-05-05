@@ -7,8 +7,8 @@
 import {post} from 'request';
 
 export async function loadTenants(key, versions, type) {
-  const params = {versions};
-  const response = await post(`api/definition/${type}/${key}/_resolveTenantsForVersions`, params);
+  const params = {definitions: [{versions, key}]};
+  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, params);
 
-  return await response.json();
+  return (await response.json())[0].tenants;
 }

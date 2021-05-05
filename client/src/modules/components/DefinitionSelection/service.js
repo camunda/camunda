@@ -29,12 +29,12 @@ export async function loadVersions(type, collectionId, key) {
 }
 
 export async function loadTenants(type, collectionId, key, versions) {
-  const params = {versions};
+  const params = {definitions: [{versions, key}]};
   if (collectionId) {
     params.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(`api/definition/${type}/${key}/_resolveTenantsForVersions`, params);
+  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, params);
 
-  return await response.json();
+  return (await response.json())[0].tenants;
 }
