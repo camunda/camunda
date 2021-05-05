@@ -208,7 +208,10 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.CORRELATED,
         new ProcessMessageSubscriptionCorrelatedApplier(
-            subscriptionState, state.getVariableState()));
+            subscriptionState,
+            state.getVariableState(),
+            state.getElementInstanceState(),
+            state.getProcessState()));
     register(
         ProcessMessageSubscriptionIntent.DELETING,
         new ProcessMessageSubscriptionDeletingApplier(subscriptionState));

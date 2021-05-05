@@ -489,15 +489,15 @@ public class CompactRecordLogger {
   private String summarizeVariable(final Record<?> record) {
     final var value = (VariableRecordValue) record.getValue();
 
-    return new StringBuilder()
-        .append(value.getName())
-        .append("->")
-        .append(value.getValue())
-        .append(" in <process ")
-        .append("[")
-        .append(shortenKey(value.getProcessInstanceKey()))
-        .append("]>")
-        .toString();
+    final var builder = new StringBuilder();
+    builder
+        .append(String.format("%s->%s", value.getName(), value.getValue()))
+        .append(String.format(" in <process [%s]", shortenKey(value.getProcessInstanceKey())));
+    if (value.getProcessInstanceKey() != value.getScopeKey()) {
+      // only add if they're different, no need to state things twice
+      builder.append(String.format(" at [%s]", shortenKey(value.getScopeKey())));
+    }
+    return builder.append(">").toString();
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
