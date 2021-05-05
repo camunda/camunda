@@ -5,7 +5,7 @@
   <id>distro</id>
 
   <includeBaseDirectory>true</includeBaseDirectory>
-  <baseDirectory>zeebe-broker-${project.version}/</baseDirectory>
+  <baseDirectory>camunda-cloud-zeebe-${project.version}/</baseDirectory>
 
   <formats>
     <format>zip</format>
@@ -14,7 +14,7 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/zeebe-broker</directory>
+      <directory>${project.build.directory}/camunda-cloud-zeebe</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
     <fileSet>
