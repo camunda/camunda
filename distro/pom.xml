@@ -24,7 +24,7 @@
   </dependencies>
 
   <build>
-    <finalName>camunda-operate-${project.version}</finalName>
+    <finalName>camunda-cloud-operate-${project.version}</finalName>
     <plugins>
 
       <plugin>
@@ -38,7 +38,7 @@
           <repositoryName>lib</repositoryName>
           <generateRepository>false</generateRepository>
           <useWildcardClassPath>true</useWildcardClassPath>
-          <assembleDirectory>${project.build.directory}/camunda-operate</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/camunda-cloud-operate</assembleDirectory>
 
           <platforms>
             <platform>windows</platform>

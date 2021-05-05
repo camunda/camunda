@@ -1,5 +1,5 @@
 {
-  "name": "camunda-operate",
+  "name": "camunda-cloud-operate",
   "version": "1.0.0-SNAPSHOT",
   "private": true,
   "dependencies": {
