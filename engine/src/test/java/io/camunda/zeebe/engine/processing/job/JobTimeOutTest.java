@@ -147,6 +147,29 @@ public final class JobTimeOutTest {
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }
 
+  // regression test for https://github.com/camunda-cloud/zeebe/issues/5420
+  @Test
+  public void shouldHaveNoSourceRecordPositionOnTimeOut() {
+    final long processInstanceKey = createInstance();
+
+    jobRecords(JobIntent.CREATED)
+        .withType(jobType)
+        .filter(r -> r.getValue().getProcessInstanceKey() == processInstanceKey)
+        .getFirst()
+        .getKey();
+    final long timeout = 10L;
+    ENGINE.jobs().withType(jobType).withTimeout(timeout).activate();
+
+    // when
+    jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
+    ENGINE.increaseTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
+    final Record<JobRecordValue> timedOutRecord =
+        jobRecords(TIME_OUT).withProcessInstanceKey(processInstanceKey).getFirst();
+
+    // then
+    assertThat(timedOutRecord.getSourceRecordPosition()).isLessThan(0);
+  }
+
   private long createInstance() {
     ENGINE
         .deployment()

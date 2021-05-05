@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -558,5 +559,56 @@ public final class TimerCatchEventTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(expectedRepetitions))
         .hasSize(expectedRepetitions);
+  }
+
+  // regression test for https://github.com/camunda-cloud/zeebe/issues/5420
+  @Test
+  public void shouldHaveNoSourceRecordPositionOnTimerTrigger() {
+    // given
+    final var process = Bpmn.createExecutableProcess("process1");
+
+    process
+        .eventSubProcess("eventSub")
+        .startEvent()
+        .interrupting(true)
+        .timerWithDuration("PT15S")
+        .endEvent();
+
+    final var modelInstance =
+        process
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlowId("s1")
+            .conditionExpression("foo < 5")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process1").create();
+
+    RecordingExporter.incidentRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withIntent(IncidentIntent.CREATED)
+        .await();
+
+    // when
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("eventSub")
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+        .await();
+
+    final var triggerTimer =
+        RecordingExporter.timerRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(TimerIntent.TRIGGER)
+            .getFirst();
+
+    assertThat(triggerTimer.getSourceRecordPosition()).isLessThan(0);
   }
 }
