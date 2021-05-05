@@ -84,53 +84,46 @@ public abstract class ElasticsearchUtil {
   public static long waitAndCheckTaskResult(String taskId, String sourceIndexName, String operation,
       RestHighLevelClient esClient)
       throws IOException {
-    try {
-      //extract nodeId and taskId
-      final String[] taskIdParts = taskId.split(":");
-      String nodeId = taskIdParts[0];
-      long smallTaskId = Long.parseLong(taskIdParts[1]);
+    //extract nodeId and taskId
+    final String[] taskIdParts = taskId.split(":");
+    String nodeId = taskIdParts[0];
+    long smallTaskId = Long.parseLong(taskIdParts[1]);
 
-      //wait till task is completed
-      boolean finished = false;
-      RawTaskStatus status = null;
-      while (!finished) {
-        final GetTaskRequest getTaskRequest = new GetTaskRequest(nodeId, smallTaskId);
-        final Optional<GetTaskResponse> getTaskResponseOptional = esClient.tasks()
-            .get(getTaskRequest, RequestOptions.DEFAULT);
-        if (getTaskResponseOptional.isEmpty()) {
-          throw new OperateRuntimeException("Task was not found: " + taskId);
-        } else if (!getTaskResponseOptional.get().isCompleted()) {
-          //retry
-          sleepFor(2000);
-        } else {
-          final GetTaskResponse getTaskResponse = getTaskResponseOptional.get();
-          status = (RawTaskStatus) getTaskResponse.getTaskInfo().getStatus();
+    //wait till task is completed
+    boolean finished = false;
+    RawTaskStatus status = null;
+    while (!finished) {
+      final GetTaskRequest getTaskRequest = new GetTaskRequest(nodeId, smallTaskId);
+      final Optional<GetTaskResponse> getTaskResponseOptional = esClient.tasks()
+          .get(getTaskRequest, RequestOptions.DEFAULT);
+      if (getTaskResponseOptional.isEmpty()) {
+        throw new OperateRuntimeException("Task was not found: " + taskId);
+      } else if (!getTaskResponseOptional.get().isCompleted()) {
+        //retry
+        sleepFor(2000);
+      } else {
+        final GetTaskResponse getTaskResponse = getTaskResponseOptional.get();
+        status = (RawTaskStatus) getTaskResponse.getTaskInfo().getStatus();
 
-          finished = true;
-        }
+        finished = true;
       }
-
-      //parse and check task status
-      final Map<String, Object> statusMap = status.toMap();
-      final long total = (Integer) statusMap.get("total");
-      final long created = (Integer) statusMap.get("created");
-      final long updated = (Integer) statusMap.get("updated");
-      final long deleted = (Integer) statusMap.get("deleted");
-      if (created + updated + deleted < total) {
-        //there were some failures
-        final String errorMsg = String.format(
-            "Failures occurred when performing operation %s on source index %s. Check Elasticsearch logs.",
-            operation, sourceIndexName);
-        throw new OperateRuntimeException(errorMsg);
-      }
-      logger.debug("Operation {} succeeded on source index {}.", operation, sourceIndexName);
-      return total;
-
-    } finally {
-      //remove task
-      DeleteRequest deleteRequest = new DeleteRequest().index(TASKS_INDEX_NAME).id(taskId);
-      esClient.delete(deleteRequest, RequestOptions.DEFAULT);
     }
+
+    //parse and check task status
+    final Map<String, Object> statusMap = status.toMap();
+    final long total = (Integer) statusMap.get("total");
+    final long created = (Integer) statusMap.get("created");
+    final long updated = (Integer) statusMap.get("updated");
+    final long deleted = (Integer) statusMap.get("deleted");
+    if (created + updated + deleted < total) {
+      //there were some failures
+      final String errorMsg = String.format(
+          "Failures occurred when performing operation %s on source index %s. Check Elasticsearch logs.",
+          operation, sourceIndexName);
+      throw new OperateRuntimeException(errorMsg);
+    }
+    logger.debug("Operation {} succeeded on source index {}.", operation, sourceIndexName);
+    return total;
   }
 
   public enum QueryType {
