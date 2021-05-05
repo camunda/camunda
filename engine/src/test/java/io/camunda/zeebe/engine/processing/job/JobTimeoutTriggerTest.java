@@ -73,15 +73,16 @@ public final class JobTimeoutTriggerTest {
     // then
     final InOrder inOrder = Mockito.inOrder(typedStreamWriter);
 
+    inOrder.verify(typedStreamWriter).reset();
     inOrder
         .verify(typedStreamWriter)
         .appendFollowUpCommand(eq(0L), eq(JobIntent.TIME_OUT), any(JobRecord.class));
     inOrder.verify(typedStreamWriter).flush();
+    inOrder.verify(typedStreamWriter).reset();
     inOrder
         .verify(typedStreamWriter)
         .appendFollowUpCommand(eq(1L), eq(JobIntent.TIME_OUT), any(JobRecord.class));
     inOrder.verify(typedStreamWriter).flush();
-    inOrder.verify(typedStreamWriter).reset();
     inOrder.verifyNoMoreInteractions();
   }
 }
