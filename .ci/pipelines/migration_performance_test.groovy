@@ -219,7 +219,7 @@ pipeline {
             steps {
                 container('maven') {
                     configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-performance-test/pom.xml exec:java -Dexec.mainClass=org.camunda.operate.qa.migration.performance.DataMultiplicator -Dexec.args=500')
+                        sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-performance-test/pom.xml exec:java -Dexec.mainClass=io.camunda.operate.qa.migration.performance.DataMultiplicator -Dexec.args=500')
                     }
                 }
             }
