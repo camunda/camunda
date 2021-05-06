@@ -69,9 +69,6 @@ env:
       fieldRef:
         fieldPath: metadata.namespace
   # Avoid tons of noise when exporting larger payloads
-  - name: JAVA_OPTS
-    value: >-
-      -Dzeebe.broker.exporters.elasticsearch.args.index.ignoreVariablesAbove=32767
   - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
     value: "true"
   - name: ATOMIX_LOG_LEVEL
