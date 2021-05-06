@@ -630,6 +630,39 @@ public final class ProcessExecutionCleanStateTest {
   }
 
   @Test
+  public void testProcessWithMessageStartEventAndRedeployWithout() {
+    // given
+    final var deployment =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .message(m -> m.name("msg").zeebeCorrelationKey("=123"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // deploy new process without msg start event to delete the subscription and event scope
+    engineRule
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.DELETED)
+        .withWorkfloKey(processDefinitionKey)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
+  @Test
   public void testProcessWithTriggerTimerStartEvent() {
     // given
     final var deployment =
