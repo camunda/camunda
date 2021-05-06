@@ -485,8 +485,6 @@
         #     processInstance: true
         #     processInstanceCreation: false
         #     processMessageSubscription: false
-        #
-        #     ignoreVariablesAbove: 32677
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
