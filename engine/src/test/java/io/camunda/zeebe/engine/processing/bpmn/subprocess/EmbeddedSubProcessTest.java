@@ -14,11 +14,13 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EmbeddedSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -64,12 +66,16 @@ public final class EmbeddedSubProcessTest {
 
   private static BpmnModelInstance processWithSubProcess(
       final Consumer<EmbeddedSubProcessBuilder> subProcessBuilder) {
+    return processWithSubProcessBuilder(subProcessBuilder).done();
+  }
+
+  private static EndEventBuilder processWithSubProcessBuilder(
+      final Consumer<EmbeddedSubProcessBuilder> subProcessBuilder) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .subProcess(
             "sub-process", subProcess -> subProcessBuilder.accept(subProcess.embeddedSubProcess()))
-        .endEvent()
-        .done();
+        .endEvent();
   }
 
   @Test
@@ -499,5 +505,63 @@ public final class EmbeddedSubProcessTest {
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldNotOverrideVariablesOnCompleteSubProcess() {
+    // given a process instance waiting for a job inside a sub process
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithSubProcessBuilder(
+                    subprocess ->
+                        subprocess
+                            .startEvent()
+                            .serviceTask("task", b -> b.zeebeJobType("task"))
+                            .endEvent())
+                .moveToActivity("sub-process")
+                .boundaryEvent(
+                    "msg-boundary",
+                    boundary ->
+                        boundary
+                            .cancelActivity(false)
+                            .message(msg -> msg.name("foo").zeebeCorrelationKeyExpression("bar")))
+                .endEvent("msg-end")
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("bar", "bar").create();
+    final var job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // and a message with variables is correlated to the non-interrupting boundary event
+    ENGINE.message().withName("foo").withCorrelationKey("bar").withVariables("{\"x\":1}").publish();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("msg-end")
+        .await();
+
+    // and we update the variables
+    ENGINE.variables().ofScope(processInstanceKey).withDocument("{\"x\":2}").update();
+    RecordingExporter.variableRecords(VariableIntent.UPDATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withName("x")
+        .withValue("2")
+        .await();
+
+    // when we complete the job
+    ENGINE.job().withKey(job.getKey()).complete();
+
+    // then the variable is overridden
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withName("x")
+                .withScopeKey(processInstanceKey))
+        .extracting(var -> tuple(var.getIntent(), var.getValue().getValue()))
+        .containsExactly(tuple(VariableIntent.CREATED, "1"), tuple(VariableIntent.UPDATED, "2"));
   }
 }
