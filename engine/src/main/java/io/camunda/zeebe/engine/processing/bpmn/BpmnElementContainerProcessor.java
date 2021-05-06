@@ -47,10 +47,12 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    * @param childContext process instance-related data of the child element that is completed. At
    *     this point in time the element is still present in the state
    */
-  void beforeExecutionPathCompleted(
+  default void beforeExecutionPathCompleted(
       final T element,
       final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext);
+      final BpmnElementContext childContext) {
+    // nothing to do
+  }
 
   /**
    * The execution path of a child element has completed.
