@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -73,6 +74,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -368,6 +370,21 @@ public final class EngineRule extends ExternalResource {
                                   MsgPackConverter.convertToJson(value.getDirectBuffer())));
                   return entries;
                 }));
+  }
+
+  public void awaitProcessingOf(final Record<?> record) {
+    final var recordPosition = record.getPosition();
+
+    Awaitility.await(
+            String.format(
+                "Await the %s.%s to be processed at position %d",
+                record.getValueType(), record.getIntent(), recordPosition))
+        .untilAsserted(
+            () ->
+                assertThat(getLastProcessedPosition())
+                    .describedAs(
+                        "Last process position should be greater or equal to " + recordPosition)
+                    .isGreaterThanOrEqualTo(recordPosition));
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {
