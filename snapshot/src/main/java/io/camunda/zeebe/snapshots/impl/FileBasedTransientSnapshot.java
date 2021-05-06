@@ -140,8 +140,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     try {
       isValid = false;
       snapshot = null;
-      LOGGER.debug("DELETE dir {}", directory);
-      FileUtil.deleteFolder(directory);
+      LOGGER.debug("Aborting transient snapshot {}", this);
+      FileUtil.deleteFolderIfExists(directory);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
     } finally {
