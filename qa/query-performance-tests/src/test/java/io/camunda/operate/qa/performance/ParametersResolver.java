@@ -6,6 +6,8 @@
 package io.camunda.operate.qa.performance;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -56,11 +58,8 @@ public class ParametersResolver {
   @Autowired
   private DateTimeFormatter df;
 
-  @Value("${camunda.operate.qa.queries.elasticsearch.host:localhost}")
-  private String elasticsearchHost;
-
-  @Value("${camunda.operate.qa.queries.elasticsearch.port:9200}")
-  private Integer elasticsearchPort;
+  @Value("${camunda.operate.qa.queries.elasticsearch.url:http://localhost:9200}")
+  private String elasticsearchUrl;
 
   @Value("${camunda.operate.qa.queries.elasticsearch.prefix:operate}")
   private String prefix;
@@ -84,8 +83,9 @@ public class ParametersResolver {
   private Random random = new Random();
 
   @PostConstruct
-  public void resolveParameters() {
-    esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(elasticsearchHost, elasticsearchPort, "http")));
+  public void resolveParameters() throws URISyntaxException {
+    URI uri = new URI(elasticsearchUrl);
+    esClient = new RestHighLevelClient(RestClient.builder(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme())));
     initProcessInstanceIds();
     initProcessIds();
     initStartDates();

@@ -5,8 +5,19 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.property.SslProperties;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -20,13 +31,17 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.ssl.SSLContexts;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 
 import io.camunda.operate.util.RetryOperation;
+import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -46,7 +61,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.springframework.util.StringUtils;
+
+import javax.net.ssl.SSLContext;
 
 @Component
 @Configuration
@@ -83,9 +99,9 @@ public class ElasticsearchConnector {
 
   public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
     logger.debug("Creating Elasticsearch connection...");
-    final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig))
-        .setHttpClientConfigCallback(
-            httpClientBuilder -> setupAuthentication(httpClientBuilder, elsConfig));
+    final RestClientBuilder restClientBuilder =
+        RestClient.builder(getHttpHost(elsConfig))
+        .setHttpClientConfigCallback(httpClientBuilder -> configureHttpClient(httpClientBuilder, elsConfig));
     if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
       restClientBuilder
           .setRequestConfigCallback(configCallback -> setTimeouts(configCallback, elsConfig));
@@ -97,6 +113,79 @@ public class ElasticsearchConnector {
       logger.debug("Elasticsearch connection was successfully created.");
     }
     return esClient;
+  }
+
+  private HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder httpAsyncClientBuilder, ElasticsearchProperties elsConfig) {
+    setupAuthentication(httpAsyncClientBuilder, elsConfig);
+    setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
+    return httpAsyncClientBuilder;
+  }
+
+  private void setupSSLContext(HttpAsyncClientBuilder httpAsyncClientBuilder, SslProperties sslConfig) {
+    try {
+      httpAsyncClientBuilder.setSSLContext(getSSLContext(sslConfig));
+      if (!sslConfig.isVerifyHostname()) {
+        httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+      }
+    } catch (Exception e) {
+      logger.error("Error in setting up SSLContext", e);
+    }
+  }
+
+  private SSLContext getSSLContext(SslProperties sslConfig)
+      throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+    final KeyStore truststore = loadCustomTrustStore(sslConfig);
+    final TrustStrategy trustStrategy = sslConfig.isSelfSigned() ? new TrustSelfSignedStrategy() : null; // default;
+    if (truststore.size() > 0) {
+      return SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
+    } else {
+      // default if custom truststore is empty
+      return SSLContext.getDefault();
+    }
+  }
+
+  private KeyStore loadCustomTrustStore(SslProperties sslConfig) {
+    try {
+      final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      trustStore.load(null);
+      // load custom es server certificate if configured
+      final String serverCertificate = sslConfig.getCertificatePath();
+      if (serverCertificate != null) {
+        setCertificateInTrustStore(trustStore, serverCertificate);
+      }
+      return trustStore;
+    } catch (Exception e) {
+      String message = "Could not create certificate trustStore for the secured Elasticsearch Connection!";
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private void setCertificateInTrustStore(final KeyStore trustStore, final String serverCertificate) {
+    try {
+      Certificate cert = loadCertificateFromPath(serverCertificate);
+      trustStore.setCertificateEntry("elasticsearch-host", cert);
+    } catch (Exception e) {
+      String message = "Could not load configured server certificate for the secured Elasticsearch Connection!";
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private Certificate loadCertificateFromPath(final String certificatePath)
+      throws IOException, CertificateException {
+    Certificate cert;
+    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+
+      if (bis.available() > 0) {
+        cert = cf.generateCertificate(bis);
+        logger.debug("Found certificate: {}", cert);
+      } else {
+        throw new OperateRuntimeException(
+            "Could not load certificate from file, file is empty. File: " + certificatePath
+        );
+      }
+    }
+    return cert;
   }
 
   private Builder setTimeouts(
@@ -112,27 +201,27 @@ public class ElasticsearchConnector {
   }
 
   private HttpHost getHttpHost(ElasticsearchProperties elsConfig) {
-    URI uri = elsConfig.getURI();
-    return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
+    try {
+      final URI uri = new URI(elsConfig.getUrl());
+      return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
+    } catch (URISyntaxException e) {
+      throw new OperateRuntimeException("Error in url: " + elsConfig.getUrl(), e);
+    }
   }
 
-  private HttpAsyncClientBuilder setupAuthentication(final HttpAsyncClientBuilder builder,
-      ElasticsearchProperties elsConfig) {
-    if (StringUtils.isEmpty(elsConfig.getUsername()) || StringUtils
-        .isEmpty(elsConfig.getPassword())) {
-      logger.warn(
-          "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
-      return builder;
+  private void setupAuthentication(final HttpAsyncClientBuilder builder, ElasticsearchProperties elsConfig) {
+    final String username = elsConfig.getUsername();
+    final String password = elsConfig.getPassword();
+
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      logger.warn("Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
+      return;
     }
     final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         AuthScope.ANY,
-        new UsernamePasswordCredentials(
-            elsConfig.getUsername(),
-            elsConfig.getPassword()));
-
+        new UsernamePasswordCredentials(username,password));
     builder.setDefaultCredentialsProvider(credentialsProvider);
-    return builder;
   }
 
   public boolean checkHealth(RestHighLevelClient esClient) {
@@ -142,10 +231,9 @@ public class ElasticsearchConnector {
           .noOfRetry(50)
           .retryOn(IOException.class, ElasticsearchException.class)
           .delayInterval(3, TimeUnit.SECONDS)
-          .message(String.format("Connect to Elasticsearch cluster [%s] %s:%d (URL: %s)",
+          .message(String.format("Connect to Elasticsearch cluster [%s] at %s",
               elsConfig.getClusterName(),
-              elsConfig.getHost(), elsConfig.getPort(),
-              elsConfig.getURI()))
+              elsConfig.getUrl()))
           .retryConsumer(() -> {
             final ClusterHealthResponse clusterHealthResponse = esClient.cluster()
                 .health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
@@ -203,43 +291,5 @@ public class ElasticsearchConnector {
       return Instant.ofEpochMilli(Long.valueOf(parser.getText()));
     }
   }
-
-//  public static class CustomLocalDateSerializer extends JsonSerializer<LocalDate> {
-//
-//    private DateTimeFormatter formatter;
-//
-//    public CustomLocalDateSerializer(DateTimeFormatter formatter) {
-//      this.formatter = formatter;
-//    }
-//
-//    @Override
-//    public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-//      gen.writeString(value.format(this.formatter));
-//    }
-//  }
-//
-//  public static class CustomLocalDateDeserializer extends JsonDeserializer<LocalDate> {
-//
-//    private DateTimeFormatter formatter;
-//
-//    public CustomLocalDateDeserializer(DateTimeFormatter formatter) {
-//      this.formatter = formatter;
-//    }
-//
-//    @Override
-//    public LocalDate deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-//
-//      LocalDate parsedDate;
-//      try {
-//        parsedDate = LocalDate.parse(parser.getText(), this.formatter);
-//      } catch(DateTimeParseException exception) {
-//        //
-//        parsedDate = LocalDate
-//          .parse(parser.getText(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-//      }
-//      return parsedDate;
-//    }
-//  }
-
 
 }

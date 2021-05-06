@@ -1,8 +1,7 @@
 camunda.operate:
   elasticsearch:
     clusterName: docker-cluster
-    host: localhost
-    port: 9200
+    url: http://localhost:9200
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     gatewayAddress: localhost:26500
@@ -11,8 +10,7 @@ camunda.operate:
     executorEnabled: false
   zeebeElasticsearch:
     clusterName: docker-cluster
-    host: localhost
-    port: 9200
+    url: http://localhost:9200
     prefix: zeebe-record
   importer:
     startLoadingDataOnStartup: false

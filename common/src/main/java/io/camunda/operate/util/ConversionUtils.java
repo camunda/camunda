@@ -32,4 +32,8 @@ public class ConversionUtils {
   public static String toHostAndPortAsString(InetSocketAddress address) {
     return String.format("%s:%d", address.getHostName(), address.getPort());
   }
+
+  public static boolean stringIsEmpty(String aString) {
+    return aString == null || aString.isEmpty();
+  }
 }

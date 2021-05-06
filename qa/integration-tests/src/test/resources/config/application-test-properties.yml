@@ -3,14 +3,12 @@ camunda.operate:
   batchOperationMaxSize: 500
   elasticsearch:
     clusterName: clusterName
-    host: someHost
-    port: 12345
+    url: http://someHost:12345
     dateFormat: yyyy-MM-dd
     batchSize: 111
   zeebeElasticsearch:
     clusterName: zeebeElasticClusterName
-    host: someOtherHost
-    port: 54321
+    url: http://someOtherHost:54321
     dateFormat: dd-MM-yyyy
     batchSize: 222
     prefix: somePrefix
