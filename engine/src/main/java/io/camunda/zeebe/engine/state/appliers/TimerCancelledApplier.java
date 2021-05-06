@@ -36,6 +36,14 @@ final class TimerCancelledApplier implements TypedEventApplier<TimerIntent, Time
     final TimerInstance timerInstance = timerInstanceState.get(value.getElementInstanceKey(), key);
     timerInstanceState.remove(timerInstance);
 
+    // We need to clean up the event scope for timer start events.
+    //
+    // We can't do it on applying the newest Process.CREATED event, since triggering the timer start
+    // event and deploying a new version concurrently, could then cause problems. The event scope
+    // would no longer exist if the timer was triggered before, which then causes issues on
+    // activating the process instance.
+    //
+    // See https://github.com/camunda-cloud/zeebe/pull/6969#issuecomment-832756813
     final var process = processState.getProcessByKey(value.getProcessDefinitionKey());
     process.getProcess().getStartEvents().stream()
         .filter(ExecutableCatchEventElement::isTimer)
