@@ -137,6 +137,15 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
+  public void triggerStartEvent(
+      final long processDefinitionKey,
+      final long eventKey,
+      final DirectBuffer elementId,
+      final DirectBuffer variables) {
+    createTrigger(processDefinitionKey, eventKey, elementId, variables);
+  }
+
+  @Override
   public void deleteTrigger(final long eventScopeKey, final long eventKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     eventTriggerEventKey.wrapLong(eventKey);
