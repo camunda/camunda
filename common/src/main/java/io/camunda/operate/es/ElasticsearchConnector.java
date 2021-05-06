@@ -117,7 +117,9 @@ public class ElasticsearchConnector {
 
   private HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder httpAsyncClientBuilder, ElasticsearchProperties elsConfig) {
     setupAuthentication(httpAsyncClientBuilder, elsConfig);
-    setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
+    if (elsConfig.getSsl() != null) {
+      setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
+    }
     return httpAsyncClientBuilder;
   }
 

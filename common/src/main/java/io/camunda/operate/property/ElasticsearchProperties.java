@@ -42,7 +42,7 @@ public class ElasticsearchProperties {
   private String password;
 
   @NestedConfigurationProperty
-  private SslProperties ssl = new SslProperties();
+  private SslProperties ssl;
 
   public String getClusterName() {
     return clusterName;

@@ -36,18 +36,19 @@ public class ElasticsearchConnectorSSLAuthIT {
 
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
-//  static ElasticsearchContainer elasticsearch =
-//      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.12.0")
-//          .withCopyFileToContainer(MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
-//          .withPassword("elastic")
-//          .withEnv(Map.of(
-//          "xpack.security.enabled", "true",
-//          "xpack.security.http.ssl.enabled", "true",
-//          "xpack.security.http.ssl.keystore.path", "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12"
-//        )).withExposedPorts(9200)
-//          .waitingFor(
-//              Wait.forHttps("/")
-//                  .withBasicCredentials("elastic", "elastic"));
+  static ElasticsearchContainer elasticsearch =
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:7.12.0")
+          .withCopyFileToContainer(MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
+          //.withCopyFileToContainer(MountableFile.forClasspathResource("/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
+          .withPassword("elastic")
+          .withEnv(Map.of(
+          "xpack.security.enabled", "true",
+          "xpack.security.http.ssl.enabled", "true",
+          "xpack.security.http.ssl.keystore.path", "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12"
+        )).withExposedPorts(9200)
+          .waitingFor(
+              Wait.forHttps("/")
+                  .withBasicCredentials("elastic", "elastic"));
 
   @Autowired
   RestHighLevelClient esClient;
@@ -58,21 +59,21 @@ public class ElasticsearchConnectorSSLAuthIT {
   static class ElasticsearchStarter implements ApplicationContextInitializer<ConfigurableApplicationContext>{
 
     @Override public void initialize(ConfigurableApplicationContext applicationContext) {
-      //elasticsearch.start();
+      elasticsearch.start();
 
-      String elsUrl = String.format("https://%s:%d/", "localhost", 9200 /*elasticsearch.getHost(), elasticsearch.getFirstMappedPort()*/);
+      String elsUrl = String.format("https://%s:%d/", elasticsearch.getHost(), elasticsearch.getFirstMappedPort());
       TestPropertyValues.of(
           "camunda.operate.elasticsearch.url=" + elsUrl,
           "camunda.operate.elasticsearch.username=elastic",
           "camunda.operate.elasticsearch.password=elastic",
           "camunda.operate.elasticsearch.clusterName=docker-cluster",
-          //"camunda.operate.elasticsearch.ssl.certificatePath="+certDir+"/localhost.crt",
+          //"camunda.operate.elasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
           //"camunda.operate.elasticsearch.ssl.selfSigned=true",
           //"camunda.operate.elasticsearch.ssl.verifyHostname=true",
           "camunda.operate.zeebeElasticsearch.url="+ elsUrl,
           "camunda.operate.zeebeElasticsearch.username=elastic",
           "camunda.operate.zeebeElasticsearch.password=elastic",
-          //"camunda.operate.zeebeElasticsearch.ssl.certificatePath="+certDir+"/localhost.crt",
+          //"camunda.operate.zeebeElasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
           //"camunda.operate.zeebeElasticsearch.ssl.selfSigned=true",
           //"camunda.operate.zeebeElasticsearch.ssl.verifyHostname=true",
           "camunda.operate.zeebeElasticsearch.clusterName=docker-cluster",
