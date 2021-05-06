@@ -107,7 +107,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean rejection = false;
 
     // value types to export
-    public boolean deployment = true;
+    public boolean deployment = false;
     public boolean process = true;
     public boolean error = true;
     public boolean incident = true;

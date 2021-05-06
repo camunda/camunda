@@ -135,32 +135,41 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final TypedStreamWriter streamWriter,
       final SideEffects sideEffects) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
-      final List<ExecutableStartEvent> startEvents =
-          processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
+      if (!processMetadata.isDuplicate()) {
+        final List<ExecutableStartEvent> startEvents =
+            processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
-      unsubscribeFromPreviousTimers(streamWriter, processMetadata);
+        unsubscribeFromPreviousTimers(streamWriter, processMetadata);
+        subscribeToTimerStartEventIfExists(streamWriter, sideEffects, processMetadata, startEvents);
+      }
+    }
+  }
 
-      for (final ExecutableCatchEventElement startEvent : startEvents) {
-        if (startEvent.isTimer()) {
-          // There are no variables when there is no process instance yet,
-          // we use a negative scope key to indicate this
-          final long scopeKey = -1L;
-          final Either<Failure, Timer> timerOrError =
-              startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
-          if (timerOrError.isLeft()) {
-            // todo(#4323): deal with this exceptional case without throwing an exception
-            throw new EvaluationException(timerOrError.getLeft().getMessage());
-          }
-
-          catchEventBehavior.subscribeToTimerEvent(
-              NO_ELEMENT_INSTANCE,
-              NO_ELEMENT_INSTANCE,
-              processMetadata.getKey(),
-              startEvent.getId(),
-              timerOrError.get(),
-              streamWriter,
-              sideEffects);
+  private void subscribeToTimerStartEventIfExists(
+      final TypedStreamWriter streamWriter,
+      final SideEffects sideEffects,
+      final ProcessMetadata processMetadata,
+      final List<ExecutableStartEvent> startEvents) {
+    for (final ExecutableCatchEventElement startEvent : startEvents) {
+      if (startEvent.isTimer()) {
+        // There are no variables when there is no process instance yet,
+        // we use a negative scope key to indicate this
+        final long scopeKey = -1L;
+        final Either<Failure, Timer> timerOrError =
+            startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
+        if (timerOrError.isLeft()) {
+          // todo(#4323): deal with this exceptional case without throwing an exception
+          throw new EvaluationException(timerOrError.getLeft().getMessage());
         }
+
+        catchEventBehavior.subscribeToTimerEvent(
+            NO_ELEMENT_INSTANCE,
+            NO_ELEMENT_INSTANCE,
+            processMetadata.getKey(),
+            startEvent.getId(),
+            timerOrError.get(),
+            streamWriter,
+            sideEffects);
       }
     }
   }
