@@ -45,9 +45,10 @@ for (( i=1; i<=$EXTERNAL_EVENT_COUNT; )); do
       # ingest completed batch
       printf "%(%Y-%m-%dT%H:%M:%S.000Z)T - Ingesting Batch of size $CURRENT_BATCH_SIZE...\n"
       # curl with generous retry, for cases when pod is unreachable which can happen due restart
-      curl -f -s\
-       -H 'Content-Type: application/json' -H "Authorization: $SECRET"\
-       --connect-timeout 5 --max-time 10 --retry 60 --retry-delay 0 --retry-max-time 600 --retry-connrefused\
+      # using -H 'Expect:' to disable 100-continue behavior of curl, see https://gms.tf/when-curl-sends-100-continue.html
+      curl -s\
+       -H 'Expect:' -H 'Content-Type: application/json' -H "Authorization: $SECRET"\
+       -f --connect-timeout 5 --max-time 10 --retry 60 --retry-delay 0 --retry-max-time 600 --retry-all-errors\
        --compressed -s -o /dev/null -w  "Status: %{http_code}, ResponseTime: %{time_total}s\n"\
        -XPOST optimize.${NAMESPACE}:8090/api/ingestion/event/batch --data-binary "@$BATCH_FILE"
       printf "%(%Y-%m-%dT%H:%M:%S.000Z)T - done\n"

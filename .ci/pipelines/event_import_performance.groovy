@@ -186,7 +186,9 @@ pipeline {
                 NUMBER_OF_EVENTS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-event/_count' | jq '.count') || true
 
                 echo "\$NUMBER_OF_EVENTS"
-                test "\$NUMBER_OF_EVENTS" = "\${EXTERNAL_EVENT_COUNT}" || error=true
+                # Asserting greater or equal as on pod failure ingest may get reingested which is supported by optimize
+                # as deduplication happens on processing the event log
+                test "\$NUMBER_OF_EVENTS" -ge "\${EXTERNAL_EVENT_COUNT}" || error=true
 
                 curl -s "http://elasticsearch.${NAMESPACE}:9200/_cat/indices?v" || true
 
