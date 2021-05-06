@@ -121,9 +121,6 @@ public class ElasticsearchExporterConfiguration {
     public boolean processInstanceCreation = false;
     public boolean processMessageSubscription = false;
 
-    // size limits
-    public int ignoreVariablesAbove = 8191;
-
     @Override
     public String toString() {
       return "IndexConfiguration{"
@@ -162,8 +159,6 @@ public class ElasticsearchExporterConfiguration {
           + processInstanceCreation
           + ", processMessageSubscription="
           + processMessageSubscription
-          + ", ignoreVariablesAbove="
-          + ignoreVariablesAbove
           + '}';
     }
   }

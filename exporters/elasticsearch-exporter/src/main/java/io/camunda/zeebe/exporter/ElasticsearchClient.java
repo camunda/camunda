@@ -13,7 +13,6 @@ import io.camunda.zeebe.exporter.dto.BulkResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.VersionUtil;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
@@ -87,30 +86,7 @@ public class ElasticsearchClient {
       metrics = new ElasticsearchMetrics(record.getPartitionId());
     }
 
-    checkRecord(record);
     bulk(newIndexCommand(record), record);
-  }
-
-  private void checkRecord(final Record<?> record) {
-    if (record.getValueType() == ValueType.VARIABLE) {
-      checkVariableRecordValue((Record<VariableRecordValue>) record);
-    }
-  }
-
-  private void checkVariableRecordValue(final Record<VariableRecordValue> record) {
-    final VariableRecordValue value = record.getValue();
-    final int size = value.getValue().getBytes().length;
-
-    if (size > configuration.index.ignoreVariablesAbove) {
-      log.warn(
-          "Variable {key: {}, name: {}, variableScope: {}, processInstanceKey: {}} exceeded max size of {} bytes with a size of {} bytes. As a consequence this variable is not index by elasticsearch.",
-          record.getKey(),
-          value.getName(),
-          value.getScopeKey(),
-          value.getProcessInstanceKey(),
-          configuration.index.ignoreVariablesAbove,
-          size);
-    }
   }
 
   public void bulk(final Map<String, Object> command, final Record<?> record) {
@@ -377,7 +353,7 @@ public class ElasticsearchClient {
   }
 
   private Map<String, Object> convertToMap(final XContent content, final InputStream input) {
-    try (XContentParser parser =
+    try (final XContentParser parser =
         content.createParser(
             NamedXContentRegistry.EMPTY, DeprecationHandler.THROW_UNSUPPORTED_OPERATION, input)) {
       return parser.mapOrdered();
