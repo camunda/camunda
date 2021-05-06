@@ -23,10 +23,10 @@ public final class TasklistURIs {
   public static final String CALLBACK_URI = "/sso-callback";
   public static final String NO_PERMISSION = "/noPermission";
 
-  public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
-  public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
-  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
-  public static final String COOKIE_JSESSIONID = "JSESSIONID";
+  public static final String X_CSRF_PARAM = "TASKLIST-X-CSRF-PARAM";
+  public static final String X_CSRF_HEADER = "TASKLIST-X-CSRF-HEADER";
+  public static final String X_CSRF_TOKEN = "TASKLIST-X-CSRF-TOKEN";
+  public static final String COOKIE_JSESSIONID = "TASKLIST-SESSION";
 
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
 

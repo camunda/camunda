@@ -70,9 +70,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public void configure(HttpSecurity http) throws Exception {
     if (tasklistProperties.isCsrfPreventionEnabled()) {
       cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
+      cookieCSRFTokenRepository.setHeaderName(X_CSRF_TOKEN);
+      cookieCSRFTokenRepository.setParameterName(X_CSRF_PARAM);
+      cookieCSRFTokenRepository.setCookieHttpOnly(false);
       http.csrf()
-          .ignoringAntMatchers(LOGIN_RESOURCE)
+          .csrfTokenRepository(cookieCSRFTokenRepository)
           .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class))
+          .ignoringAntMatchers(LOGIN_RESOURCE, LOGOUT_RESOURCE)
           .and()
           .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
     } else {
@@ -138,9 +142,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         response.setHeader(X_CSRF_HEADER, token.getHeaderName());
         response.setHeader(X_CSRF_PARAM, token.getParameterName());
         response.setHeader(X_CSRF_TOKEN, token.getToken());
-        // We need to access the CSRF Token Cookie from JavaScript too:
-        cookieCSRFTokenRepository.setCookieHttpOnly(false);
-        cookieCSRFTokenRepository.saveToken(token, request, response);
       }
     }
     return response;
@@ -149,10 +150,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   protected boolean shouldAddCSRF(HttpServletRequest request) {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     final String path = request.getRequestURI();
-    if (auth != null && auth.isAuthenticated() && (path == null || !path.contains("logout"))) {
-      return true;
-    }
-    return false;
+    return tasklistProperties.isCsrfPreventionEnabled()
+        && auth != null
+        && auth.isAuthenticated()
+        && (path == null || !path.contains("logout"));
   }
 
   private void successHandler(

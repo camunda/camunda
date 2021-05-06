@@ -10,6 +10,7 @@ import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -29,7 +30,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "graphql.servlet.exception-handlers-enabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers",
-      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE
+      SPRING_THYMELEAF_PREFIX_KEY + " = " + SPRING_THYMELEAF_PREFIX_VALUE,
+      "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestExecutionListeners(

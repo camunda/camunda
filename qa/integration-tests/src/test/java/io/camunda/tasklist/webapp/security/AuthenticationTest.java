@@ -25,6 +25,8 @@ import io.camunda.tasklist.webapp.security.es.UserStorage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.assertj.core.util.Lists;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -109,8 +111,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     assertThat(loginResponse.getHeaders()).containsKey(SET_COOKIE_HEADER);
-    assertThat(loginResponse.getHeaders().get(SET_COOKIE_HEADER).get(0))
-        .contains(COOKIE_JSESSIONID);
+    assertThat(getSessionCookie(loginResponse.getHeaders()).orElse("")).contains(COOKIE_JSESSIONID);
     // when
     final ResponseEntity<String> logoutResponse = logout(loginResponse);
 
@@ -241,7 +242,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
     final HttpHeaders headers = getHeaderWithCSRF(httpHeaders);
     headers.setContentType(APPLICATION_JSON);
-    headers.add("Cookie", httpHeaders.get(SET_COOKIE_HEADER).get(0));
+    headers.add("Cookie", getCookiesAsString(httpHeaders));
 
     final HashMap<String, String> body = new HashMap<>();
     if (graphQlQuery != null) {
@@ -270,7 +271,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
   private void assertThatCookiesAreSet(HttpHeaders headers) {
     assertThat(headers).containsKey(SET_COOKIE_HEADER);
-    assertThat(headers.get(SET_COOKIE_HEADER).get(0)).contains(COOKIE_JSESSIONID);
+    assertThat(getSessionCookie(headers).orElse("")).contains(COOKIE_JSESSIONID);
     if (tasklistProperties.isCsrfPreventionEnabled()) {
       assertThat(headers).containsKey(X_CSRF_TOKEN);
       assertThat(headers.get(X_CSRF_TOKEN).get(0)).isNotBlank();
@@ -285,5 +286,22 @@ public class AuthenticationTest extends TasklistIntegrationTest {
       assertThat(cookies).anyMatch((cookie) -> cookie.contains(X_CSRF_TOKEN + emptyValue));
     }
     assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
+  }
+
+  private String getCookiesAsString(HttpHeaders headers) {
+    return String.format(
+        "%s; %s", getSessionCookie(headers).orElse(""), getCSRFCookie(headers).orElse(""));
+  }
+
+  private Optional<String> getSessionCookie(HttpHeaders headers) {
+    return getCookies(headers).stream().filter(key -> key.contains(COOKIE_JSESSIONID)).findFirst();
+  }
+
+  private Optional<String> getCSRFCookie(HttpHeaders headers) {
+    return getCookies(headers).stream().filter(key -> key.contains(X_CSRF_TOKEN)).findFirst();
+  }
+
+  private List<String> getCookies(HttpHeaders headers) {
+    return Optional.ofNullable(headers.get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
   }
 }

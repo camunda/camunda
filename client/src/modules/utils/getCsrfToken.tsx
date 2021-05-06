@@ -6,7 +6,7 @@
 
 /* istanbul ignore file */
 
-const CsrfKeyName = 'X-CSRF-TOKEN';
+const CsrfKeyName = 'TASKLIST-X-CSRF-TOKEN';
 
 function getCsrfToken(cookies: string) {
   return cookies

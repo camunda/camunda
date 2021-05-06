@@ -60,7 +60,7 @@ public class Application {
     final Map<String, Object> defaultProperties = new HashMap<>();
     defaultProperties.putAll(getManagementProperties());
     defaultProperties.putAll(getGraphqlProperties());
-    defaultProperties.put(SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE);
+    defaultProperties.putAll(getWebProperties());
     springApplication.setDefaultProperties(defaultProperties);
   }
 
@@ -81,6 +81,14 @@ public class Application {
     return Map.of(
         "graphql.playground.enabled", "false",
         "graphql.servlet.exception-handlers-enabled", "true");
+  }
+
+  private static Map<String, Object> getWebProperties() {
+    return Map.of(
+        "server.servlet.session.cookie.name",
+        TasklistURIs.COOKIE_JSESSIONID,
+        SPRING_THYMELEAF_PREFIX_KEY,
+        SPRING_THYMELEAF_PREFIX_VALUE);
   }
 
   public static Map<String, Object> getManagementProperties() {
