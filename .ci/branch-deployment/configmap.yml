@@ -12,15 +12,13 @@ data:
     zeebe.tasklist:
       elasticsearch:
         clusterName: elasticsearch
-        host: localhost
-        port: 9200
+        url: http://localhost:9200
         dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
       zeebe:
         gatewayAddress: localhost:26500
       zeebeElasticsearch:
         clusterName: elasticsearch
-        host: localhost
-        port: 9200
+        url: http://localhost:9200
         prefix: zeebe-record
     logging:
       level:
@@ -33,15 +31,13 @@ data:
     camunda.operate:
       elasticsearch:
         clusterName: elasticsearch
-        host: localhost
-        port: 9200
+        url: http://localhost:9200
         dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
       zeebe:
         brokerContactPoint: localhost:26500
       zeebeElasticsearch:
         clusterName: elasticsearch
-        host: localhost
-        port: 9200
+        url: http://localhost:9200
         prefix: zeebe-record
     logging:
       level:

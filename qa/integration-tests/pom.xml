@@ -11,11 +11,6 @@
   <name>Tasklist Integration Tests</name>
   <artifactId>tasklist-it-tests</artifactId>
 
-  <properties>
-    <zeebe-test-container.version>0.31.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.12.5</elasticsearch-test-container.version>
-  </properties>
-
   <dependencies>
 
     <dependency>

@@ -5,25 +5,24 @@
  */
 package io.camunda.tasklist.property;
 
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.function.Function;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class ElasticsearchProperties {
 
-  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSXX";
+  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
   private String clusterName = "elasticsearch";
 
-  private String host = "localhost";
+  @Deprecated private String host = "localhost";
 
-  private int port = 9200;
-
-  private String url;
-  private String username;
-  private String password;
+  @Deprecated private int port = 9200;
 
   private String dateFormat = DATE_FORMAT_DEFAULT;
 
@@ -31,7 +30,16 @@ public class ElasticsearchProperties {
 
   private int batchSize = 2000;
 
+  private Integer socketTimeout;
+  private Integer connectTimeout;
+
   private boolean createSchema = true;
+
+  private String url;
+  private String username;
+  private String password;
+
+  @NestedConfigurationProperty private SslProperties ssl;
 
   public String getClusterName() {
     return clusterName;
@@ -41,20 +49,35 @@ public class ElasticsearchProperties {
     this.clusterName = clusterName;
   }
 
+  @Deprecated
   public String getHost() {
-    return host;
+    return getFromURIorDefault(URI::getHost, host);
   }
 
+  @Deprecated
   public void setHost(String host) {
     this.host = host;
   }
 
+  @Deprecated
   public int getPort() {
-    return port;
+    return getFromURIorDefault(URI::getPort, port);
   }
 
+  @Deprecated
   public void setPort(int port) {
     this.port = port;
+  }
+
+  private <T> T getFromURIorDefault(Function<URI, T> valueFromURI, T defaultValue) {
+    if (!stringIsEmpty(url)) {
+      try {
+        return valueFromURI.apply(new URI(url));
+      } catch (URISyntaxException e) {
+        return defaultValue;
+      }
+    }
+    return defaultValue;
   }
 
   public String getDateFormat() {
@@ -106,31 +129,37 @@ public class ElasticsearchProperties {
   }
 
   public String getUrl() {
+    if (stringIsEmpty(url)) {
+      return String.format("http://%s:%d", getHost(), getPort());
+    }
     return url;
   }
 
   public void setUrl(String url) {
     this.url = url;
-    setHost(getURI().getHost());
-    setPort(getURI().getPort());
   }
 
-  public URI getURI() {
-    if (url == null) {
-      try {
-        return new URI(String.format("http://%s:%d", getHost(), getPort()));
-      } catch (URISyntaxException e) {
-        throw new TasklistRuntimeException(
-            String.format(
-                "Failed to build URI from host %s and port %d url ", getHost(), getPort()),
-            e);
-      }
-    } else {
-      try {
-        return new URI(url);
-      } catch (final URISyntaxException e) {
-        throw new TasklistRuntimeException("Failed to parse url " + url, e);
-      }
-    }
+  public Integer getSocketTimeout() {
+    return socketTimeout;
+  }
+
+  public void setSocketTimeout(Integer socketTimeout) {
+    this.socketTimeout = socketTimeout;
+  }
+
+  public Integer getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(Integer connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public SslProperties getSsl() {
+    return ssl;
+  }
+
+  public void setSsl(SslProperties ssl) {
+    this.ssl = ssl;
   }
 }
