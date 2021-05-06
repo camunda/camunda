@@ -27,7 +27,7 @@ public class SocketBindingCfg {
   }
 
   public InetSocketAddress getAdvertisedAddress() {
-    return new InetSocketAddress(advertisedHost, advertisedPort);
+    return InetSocketAddress.createUnresolved(advertisedHost, advertisedPort);
   }
 
   public void applyDefaults(final NetworkCfg networkCfg) {
