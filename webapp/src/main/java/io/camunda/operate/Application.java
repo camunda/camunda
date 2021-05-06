@@ -61,9 +61,16 @@ public class Application {
   }
 
   private static void setDefaultProperties(final SpringApplication springApplication) {
-    final Map<String, Object> defaultsMap = new HashMap<>(getManagementProperties());
-    defaultsMap.put(SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE);
-    springApplication.setDefaultProperties(defaultsMap);
+    final Map<String, Object> defaultsProperties = new HashMap<>();
+    defaultsProperties.putAll(getWebProperties());
+    defaultsProperties.putAll(getManagementProperties());
+    springApplication.setDefaultProperties(defaultsProperties);
+  }
+
+  private static Map<String, Object> getWebProperties() {
+    return Map.of(
+        "server.servlet.session.cookie.name","OPERATE-SESSION",
+        SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE);
   }
 
   public static Map<String, Object> getManagementProperties() {

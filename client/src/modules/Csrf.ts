@@ -11,7 +11,7 @@ export function getToken(cookies: string) {
     .reduce<undefined | string>((accumulator, cookie) => {
       const [name, value] = cookie.split('=');
 
-      if (name === 'X-CSRF-TOKEN') {
+      if (name === 'OPERATE-X-CSRF-TOKEN') {
         return value;
       }
 

@@ -18,6 +18,7 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 
 import org.json.JSONException;
@@ -57,7 +58,10 @@ import org.springframework.test.context.junit4.SpringRunner;
       RetryElasticsearchClient.class,ElasticsearchSessionRepository.class, OperateWebSessionIndex.class
   },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {"management.endpoints.web.exposure.include = info,prometheus,loggers"}
+    properties = {
+      "management.endpoints.web.exposure.include = info,prometheus,loggers",
+      "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID
+  }
 )
 @ActiveProfiles({ AUTH_PROFILE, "test"})
 public class AuthenticationTest implements AuthenticationTestable {

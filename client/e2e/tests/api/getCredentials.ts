@@ -9,8 +9,8 @@ import {memoize} from 'lodash';
 import {ENDPOINTS} from './endpoints';
 import {config} from '../../config';
 
-const sessionToken = /^JSESSIONID=[0-9A-Z]{32}$/i;
-const csrfToken = /^X-CSRF-TOKEN=[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const sessionToken = /^OPERATE-SESSION=[0-9A-Z]{32}$/i;
+const csrfToken = /^OPERATE-X-CSRF-TOKEN=[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type TokensType = {
   csrf?: string;
@@ -24,7 +24,7 @@ const getCredentials = memoize(
       }
     | {
         Cookie: string;
-        'X-CSRF-TOKEN': string;
+        'OPERATE-X-CSRF-TOKEN': string;
       }
   > => {
     const {username, password} = config.agentUser;
@@ -71,7 +71,7 @@ const getCredentials = memoize(
     }
 
     return {
-      'X-CSRF-TOKEN':
+      'OPERATE-X-CSRF-TOKEN':
         tokens.csrf === undefined ? '' : tokens.csrf.split('=')[1],
       Cookie: `${tokens.session}; ${tokens.csrf}`,
     };

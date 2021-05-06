@@ -67,8 +67,12 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(HttpSecurity http) throws Exception {
         if (operateProperties.isCsrfPreventionEnabled()) {
             cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
+            cookieCSRFTokenRepository.setHeaderName(X_CSRF_TOKEN);
+            cookieCSRFTokenRepository.setParameterName(X_CSRF_PARAM);
+            cookieCSRFTokenRepository.setCookieHttpOnly(false);
             http.csrf()
-                .ignoringAntMatchers(LOGIN_RESOURCE)
+                .csrfTokenRepository(cookieCSRFTokenRepository)
+                .ignoringAntMatchers(LOGIN_RESOURCE, LOGOUT_RESOURCE)
                 .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class))
                 .and()
                 .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
@@ -91,7 +95,7 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
             .logoutSuccessHandler(this::logoutSuccessHandler)
             .permitAll()
             .invalidateHttpSession(true)
-            .deleteCookies(COOKIE_JSESSIONID,X_CSRF_TOKEN)
+            .deleteCookies(COOKIE_JSESSIONID, X_CSRF_TOKEN)
             .and()
             .exceptionHandling().authenticationEntryPoint(this::failureHandler);
     }
@@ -158,9 +162,6 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
         response.setHeader(X_CSRF_HEADER, token.getHeaderName());
         response.setHeader(X_CSRF_PARAM, token.getParameterName());
         response.setHeader(X_CSRF_TOKEN, token.getToken());
-        // We need to access the CSRF Token Cookie from JavaScript too:
-        cookieCSRFTokenRepository.setCookieHttpOnly(false);
-        cookieCSRFTokenRepository.saveToken(token, request, response);
       }
     }
     return response;

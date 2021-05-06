@@ -65,19 +65,15 @@ public interface AuthenticationTestable {
     return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
   }
 
-  default Optional<String> getCSRFToken(ResponseEntity<?> response) {
-    return getCSRFTokens(response).stream().filter(key -> key.contains(X_CSRF_TOKEN)).findFirst();
-  }
-
   default void assertThatCookiesAreSet(ResponseEntity<?> response,boolean csrfEnabled) {
     Optional<String> cookie = getCookie(response);
     assertThat(cookie).isPresent();
     assertThat(cookie.get()).contains(COOKIE_JSESSIONID);
     assertThat(cookie.get().split(";")[0]).matches(COOKIE_PATTERN);
     if(csrfEnabled) {
-      Optional<String> csrfToken = getCSRFToken(response);
-      assertThat(csrfToken).isPresent();
-      assertThat(csrfToken.get()).isNotEmpty();
+      List<String> csrfTokens = getCSRFTokens(response);
+      assertThat(csrfTokens).isNotEmpty();
+      assertThat(csrfTokens.get(0)).isNotEmpty();
     }
   }
 
@@ -86,8 +82,11 @@ public interface AuthenticationTestable {
     Optional<String> cookie = getCookie(response);
     cookie.ifPresent(s -> assertThat(s).contains(COOKIE_JSESSIONID + emptyValue));
     if (csrfEnabled) {
-      Optional<String> crsfToken = getCSRFToken(response);
-      crsfToken.ifPresent(s -> assertThat(s).contains(X_CSRF_TOKEN + emptyValue));
+      List<String> crsfTokens = getCSRFTokens(response);
+      if(!crsfTokens.isEmpty()) {
+        // The same cookie will be set sometimes 2 times: the second (last) one should be empty
+        assertThat(crsfTokens.get(crsfTokens.size() - 1)).contains(X_CSRF_TOKEN + emptyValue);
+      }
     }
   }
 

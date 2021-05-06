@@ -6,14 +6,11 @@
 package io.camunda.operate.webapp.security.ldap;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
-import static io.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
 import static io.camunda.operate.webapp.security.OperateURIs.*;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-import java.util.HashMap;
-import java.util.Map;
+import io.camunda.operate.webapp.security.AuthenticationTestable;
+import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
@@ -26,7 +23,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -52,6 +48,8 @@ import org.springframework.util.MultiValueMap;
         "camunda.operate.ldap.managerDn=uid=admin",
         "camunda.operate.ldap.managerPassword=secret",
         "camunda.operate.ldap.userSearchFilter=uid={0}",
+        // Custom session id
+        "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
         //WRONG ATTR NAMES
         "camunda.operate.ldap.firstnameAttrName=wrongValue",
         "camunda.operate.ldap.lastnameAttrName="
@@ -59,10 +57,7 @@ import org.springframework.util.MultiValueMap;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
 @ActiveProfiles({"ldap-auth", "test"})
-public class AuthenticationWrongParametersTest {
-
-  private static final String SET_COOKIE_HEADER = "Set-Cookie";
-  private static final String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
+public class AuthenticationWrongParametersTest implements AuthenticationTestable {
 
   @Autowired
   private TestRestTemplate testRestTemplate;
@@ -104,31 +99,9 @@ public class AuthenticationWrongParametersTest {
     return testRestTemplate.postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
-  protected UserDto getCurrentUser(ResponseEntity<?> previousResponse) {
-    final ResponseEntity<UserDto> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET,
-        prepareRequestWithCookies(previousResponse), UserDto.class);
-    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    return responseEntity.getBody();
-  }
-
-  protected HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
-    HttpHeaders headers = new HttpHeaders();
-    if (responseHeaders.containsKey(X_CSRF_HEADER)) {
-      String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
-      String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(csrfHeader, csrfToken);
-    }
-    return headers;
-  }
-
-  protected HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
-    HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
-    headers.setContentType(APPLICATION_JSON);
-    headers.add("Cookie", response.getHeaders().get(SET_COOKIE_HEADER).get(0));
-
-    Map<String, String> body = new HashMap<>();
-
-    return new HttpEntity<>(body, headers);
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
   }
 
 }

@@ -13,6 +13,7 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.security.OperateURIs;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,6 +72,7 @@ public class AuthenticationTest implements AuthenticationTestable {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
       TestPropertyValues.of(
+          "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
           String.format("camunda.operate.ldap.url=ldap://%s:%d/", ldapServer.getHost(), ldapServer.getFirstMappedPort())
       ).applyTo(configurableApplicationContext.getEnvironment());
     }

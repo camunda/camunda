@@ -11,7 +11,7 @@ const CSRF_TOKEN = '374q-2qc8jm4-mcfq97h43';
 describe('Csrf', () => {
   it('should return token (only item in cookie)', () => {
     // when
-    const token = getToken(`X-CSRF-TOKEN=${CSRF_TOKEN}`);
+    const token = getToken(`OPERATE-X-CSRF-TOKEN=${CSRF_TOKEN}`);
 
     // then
     expect(token).toBe(CSRF_TOKEN);
@@ -20,7 +20,7 @@ describe('Csrf', () => {
   it('should return token (1st of 2 items in cookie)', () => {
     // when
     const token = getToken(
-      `X-CSRF-TOKEN=${CSRF_TOKEN}; JSESSIONID=1987456796419`
+      `OPERATE-X-CSRF-TOKEN=${CSRF_TOKEN}; OPERATE-SESSION=1987456796419`
     );
 
     // then
@@ -30,7 +30,7 @@ describe('Csrf', () => {
   it('should return token (2nd of 2 items in cookie)', () => {
     // when
     const token = getToken(
-      `JSESSIONID=1987456796419; X-CSRF-TOKEN=${CSRF_TOKEN}`
+      `OPERATE-SESSION=1987456796419; OPERATE-X-CSRF-TOKEN=${CSRF_TOKEN}`
     );
 
     // then
@@ -40,7 +40,7 @@ describe('Csrf', () => {
   it('should return token (2nd of 3 items in cookie)', () => {
     // when
     const token = getToken(
-      `USERNAME=Operator; X-CSRF-TOKEN=${CSRF_TOKEN}; JSESSIONID=1987456796419`
+      `USERNAME=Operator; OPERATE-X-CSRF-TOKEN=${CSRF_TOKEN}; OPERATE-SESSION=1987456796419`
     );
 
     // then
@@ -57,7 +57,7 @@ describe('Csrf', () => {
 
   it('should return undefined (no token in cookie)', () => {
     // when
-    const token = getToken('`USERNAME=Operator; JSESSIONID=1987456796419');
+    const token = getToken('`USERNAME=Operator; OPERATE-SESSION=1987456796419');
 
     // then
     expect(token).toBe(undefined);

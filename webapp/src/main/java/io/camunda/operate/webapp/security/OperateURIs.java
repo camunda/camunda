@@ -21,15 +21,15 @@ public final class OperateURIs {
       AUTH_PROFILE = "auth",
       LOGIN_RESOURCE = "/api/login",
       LOGOUT_RESOURCE = "/api/logout",
-      COOKIE_JSESSIONID = "JSESSIONID",
+      COOKIE_JSESSIONID = "OPERATE-SESSION",
 
       SSO_AUTH_PROFILE = "sso-auth",
       CALLBACK_URI = "/sso-callback",
       NO_PERMISSION = "/noPermission",
 
-      X_CSRF_PARAM = "X-CSRF-PARAM",
-      X_CSRF_HEADER = "X-CSRF-HEADER",
-      X_CSRF_TOKEN = "X-CSRF-TOKEN"
+      X_CSRF_PARAM = "OPERATE-X-CSRF-PARAM",
+      X_CSRF_HEADER = "OPERATE-X-CSRF-HEADER",
+      X_CSRF_TOKEN = "OPERATE-X-CSRF-TOKEN"
   ;
 
    public static final String DEFAULT_AUTH = AUTH_PROFILE;

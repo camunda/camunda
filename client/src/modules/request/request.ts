@@ -14,7 +14,7 @@ async function request({url, method, body, headers}: any) {
 
   if (csrfToken) {
     headers = {
-      'X-CSRF-TOKEN': csrfToken,
+      'OPERATE-X-CSRF-TOKEN': csrfToken,
       ...headers,
     };
   }

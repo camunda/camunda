@@ -42,7 +42,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 public class StatefulRestTemplate extends RestTemplate {
 
   private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
-  private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
+  private static final String CSRF_TOKEN_HEADER_NAME = "OPERATE-X-CSRF-TOKEN";
 
   private static final String USERNAME_DEFAULT = "demo";
   private static final String PASSWORD_DEFAULT = "demo";
@@ -118,7 +118,7 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(ResponseEntity<?> response) {
-    List<String> csrfHeaders = response.getHeaders().get("X-CSRF-TOKEN");
+    List<String> csrfHeaders = response.getHeaders().get(CSRF_TOKEN_HEADER_NAME);
     if (csrfHeaders != null && !csrfHeaders.isEmpty()) {
       csrfToken = csrfHeaders.get(0);
     }

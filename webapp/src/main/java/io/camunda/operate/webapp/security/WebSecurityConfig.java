@@ -45,7 +45,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component("webSecurityConfig")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  // Used to store the CSRF Token in a cookie.
   private final CookieCsrfTokenRepository cookieCSRFTokenRepository = new CookieCsrfTokenRepository();
 
   @Autowired
@@ -58,11 +57,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public void configure(HttpSecurity http) throws Exception {
     if(operateProperties.isCsrfPreventionEnabled()){
       cookieCSRFTokenRepository.setCookieName(X_CSRF_TOKEN);
+      cookieCSRFTokenRepository.setHeaderName(X_CSRF_TOKEN);
+      cookieCSRFTokenRepository.setParameterName(X_CSRF_PARAM);
+      cookieCSRFTokenRepository.setCookieHttpOnly(false);
       http.csrf()
+          .csrfTokenRepository(cookieCSRFTokenRepository)
           .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class))
-          .ignoringAntMatchers(LOGIN_RESOURCE)
-      .and()
-      .addFilterAfter(getCSRFHeaderFilter(),CsrfFilter.class);
+          .ignoringAntMatchers(LOGIN_RESOURCE, LOGOUT_RESOURCE)
+          .and()
+          .addFilterAfter(getCSRFHeaderFilter(),CsrfFilter.class);
     }else {
       http.csrf().disable();
     }
@@ -81,10 +84,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .logoutUrl(LOGOUT_RESOURCE)
         .logoutSuccessHandler(this::logoutSuccessHandler)
         .permitAll()
+        .deleteCookies(COOKIE_JSESSIONID, X_CSRF_TOKEN)
+        .clearAuthentication(true)
         .invalidateHttpSession(true)
-        .deleteCookies(COOKIE_JSESSIONID,X_CSRF_TOKEN)
-      .and()
-      .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+        .and()
+        .exceptionHandling().authenticationEntryPoint(this::failureHandler);
   }
 
   @Override
@@ -104,9 +108,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     PrintWriter writer = response.getWriter();
     String jsonResponse = Json.createObjectBuilder()
-      .add("message", ex.getMessage())
-      .build()
-      .toString();
+        .add("message", ex.getMessage())
+        .build()
+        .toString();
 
     writer.append(jsonResponse);
 
@@ -125,13 +129,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   private HttpServletResponse addCSRFTokenWhenAvailable(HttpServletRequest request, HttpServletResponse response) {
     if(shouldAddCSRF(request)) {
       CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+
       if (token != null) {
         response.setHeader(X_CSRF_HEADER, token.getHeaderName());
         response.setHeader(X_CSRF_PARAM, token.getParameterName());
         response.setHeader(X_CSRF_TOKEN, token.getToken());
-        // We need to access the CSRF Token Cookie from JavaScript too:
-        cookieCSRFTokenRepository.setCookieHttpOnly(false);
-        cookieCSRFTokenRepository.saveToken(token, request, response);
       }
     }
     return response;
@@ -140,7 +142,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   protected boolean shouldAddCSRF(HttpServletRequest request) {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     String path = request.getRequestURI();
-    return auth!=null && auth.isAuthenticated() && (path==null || !path.contains("logout"));
+    return operateProperties.isCsrfPreventionEnabled() &&
+        auth!=null && auth.isAuthenticated()
+        && (path==null || !path.contains("logout"));
   }
 
   private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
