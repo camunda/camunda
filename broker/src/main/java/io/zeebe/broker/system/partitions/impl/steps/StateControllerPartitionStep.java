@@ -25,11 +25,13 @@ public class StateControllerPartitionStep implements PartitionStep {
         context.getRaftPartition().dataDirectory().toPath().resolve("runtime");
     final var rocksdbColumnFamilyOptions =
         context.getBrokerCfg().getData().getRocksdb().getColumnFamilyOptions();
+    final var rocksDbConfig = context.getBrokerCfg().getExperimental().getRocksdb();
 
     final var stateController =
         new StateControllerImpl(
             context.getPartitionId(),
-            DefaultZeebeDbFactory.defaultFactory(rocksdbColumnFamilyOptions),
+            DefaultZeebeDbFactory.defaultFactory(
+                rocksDbConfig.createRocksDbConfiguration(rocksdbColumnFamilyOptions)),
             context
                 .getSnapshotStoreSupplier()
                 .getConstructableSnapshotStore(context.getRaftPartition().name()),

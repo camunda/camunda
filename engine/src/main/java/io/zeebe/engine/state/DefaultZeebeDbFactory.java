@@ -39,7 +39,7 @@ public final class DefaultZeebeDbFactory {
    * @param userProvidedColumnFamilyOptions additional column family options
    * @return the created zeebe database factory
    */
-  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
+  private static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
       final Properties userProvidedColumnFamilyOptions) {
     return defaultFactory(
         ZbColumnFamilies.class,
