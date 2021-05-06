@@ -15,10 +15,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -29,7 +31,6 @@ import (
 	"time"
 
 	"github.com/camunda-cloud/zeebe/clients/go/internal/containersuite"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
 )
@@ -151,7 +152,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 		s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
 				if _, err := s.runCommand(cmd); err != nil {
-					t.Fatal(fmt.Errorf("failed while executing set up command '%s': %w", cmd, err))
+					t.Fatalf("failed while executing set up command '%s': %v", cmd, err)
 				}
 			}
 
@@ -162,7 +163,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 
 			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
 			if errors.Is(err, context.DeadlineExceeded) {
-				t.Fatal(fmt.Errorf("timed out while executing command '%s': %w", test.cmd, err))
+				t.Fatalf("timed out while executing command '%s': %v", test.cmd, err)
 			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
@@ -171,42 +172,55 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			}
 
 			if test.jsonOutput {
-				assertEqJSON(t, test, goldenOut, cmdOut)
-			} else {
-				assertEqText(t, test, goldenOut, cmdOut)
+				cmdOut, err = reformatJSON(cmdOut)
+				if err != nil {
+					t.Fatalf("failed to reformat JSON: %v", err)
+				}
+
+				goldenOut, err = reformatJSON(goldenOut)
+				if err != nil {
+					t.Fatalf("failed to reformat JSON: %v", err)
+				}
 			}
+
+			assertEq(t, test, goldenOut, cmdOut)
 		})
 	}
 }
 
-func assertEqText(t *testing.T, test testCase, golden, cmdOut []byte) {
+// reformatJSON formats the JSON files in the same way so that whitespace differences are ignored
+func reformatJSON(in []byte) ([]byte, error) {
+	buf := &bytes.Buffer{}
+
+	// must compact before calling json.Indent because event though that will remove leading whitespace, it won't remove
+	// trailing whitespace.
+	if err := json.Compact(buf, in); err != nil {
+		return nil, err
+	}
+
+	compacted := make([]byte, buf.Len())
+	copy(compacted, buf.Bytes())
+	buf.Reset()
+
+	if err := json.Indent(buf, compacted, "", "\t"); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func assertEq(t *testing.T, test testCase, golden, cmdOut []byte) {
 	wantLines := strings.Split(string(golden), "\n")
 	gotLines := strings.Split(string(cmdOut), "\n")
 
-	if diff := cmp.Diff(wantLines, gotLines, cmp.Comparer(composeComparer(cmpIgnoreNums, cmpIgnoreVersion))); diff != "" {
+	opt := composeComparers(cmpIgnoreVersion, cmpIgnoreNums)
+	if diff := cmp.Diff(wantLines, gotLines, opt); diff != "" {
 		t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
 	}
 }
 
-func assertEqJSON(t *testing.T, test testCase, golden, cmdOut []byte) {
-	want := string(golden)
-	got := string(cmdOut)
-
-	// remove versions
-	ignorePattern := regexp.MustCompile(semVer)
-	want = ignorePattern.ReplaceAllString(want, "")
-	got = ignorePattern.ReplaceAllString(got, "")
-
-	// remove numbers
-	ignorePattern = regexp.MustCompile(`\d`)
-	want = ignorePattern.ReplaceAllString(want, "1")
-	got = ignorePattern.ReplaceAllString(got, "1")
-
-	require.JSONEqf(t, want, got, "expected JSON output from '%s' to match golden file '%s'", test.cmd, test.goldenFile)
-}
-
-func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool {
-	return func(x, y string) bool {
+func composeComparers(cmpFuncs ...func(x string, y string) bool) cmp.Option {
+	return cmp.Comparer(func(x, y string) bool {
 		for _, cmpFunc := range cmpFuncs {
 			if cmpFunc(x, y) {
 				return true
@@ -214,7 +228,7 @@ func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool 
 		}
 
 		return false
-	}
+	})
 }
 
 func cmpIgnoreVersion(x, y string) bool {
@@ -226,7 +240,7 @@ func cmpIgnoreVersion(x, y string) bool {
 }
 
 func cmpIgnoreNums(x, y string) bool {
-	numbersRegex := regexp.MustCompile(`\d`)
+	numbersRegex := regexp.MustCompile(`\d+`)
 	newX := numbersRegex.ReplaceAllString(x, "")
 	newY := numbersRegex.ReplaceAllString(y, "")
 
