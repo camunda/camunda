@@ -100,31 +100,23 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void beforeExecutionPathCompleted(
-      final ExecutableCallActivity element,
-      final BpmnElementContext callActivityContext,
-      final BpmnElementContext childContext) {
-    final var currentState = callActivityContext.getIntent();
-    switch (currentState) {
-      case ELEMENT_ACTIVATED:
-        // nothing to do any more
-        break;
-      case ELEMENT_TERMINATING:
-        // the call activity is already terminating, it doesn't matter that the child completed
-        // do nothing
-        break;
-      default:
-        final var message = String.format(UNABLE_TO_COMPLETE_FROM_STATE_MESSAGE, currentState);
-        throw new BpmnProcessingException(callActivityContext, message);
-    }
-  }
-
-  @Override
   public void afterExecutionPathCompleted(
       final ExecutableCallActivity element,
       final BpmnElementContext callActivityContext,
       final BpmnElementContext childContext) {
-    stateTransitionBehavior.completeElement(callActivityContext);
+    final var currentState = callActivityContext.getIntent();
+
+    if (currentState == ProcessInstanceIntent.ELEMENT_ACTIVATED) {
+      stateTransitionBehavior.completeElement(callActivityContext);
+
+    } else if (currentState == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+      // the call activity is interrupted concurrently (e.g. by a boundary event)
+      transitionToTerminated(element, callActivityContext);
+
+    } else {
+      final var message = String.format(UNABLE_TO_COMPLETE_FROM_STATE_MESSAGE, currentState);
+      throw new BpmnProcessingException(callActivityContext, message);
+    }
   }
 
   @Override
@@ -138,21 +130,25 @@ public final class CallActivityProcessor
       throw new BpmnProcessingException(callActivityContext, message);
     }
 
+    transitionToTerminated(element, callActivityContext);
+  }
+
+  private void transitionToTerminated(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+
     eventSubscriptionBehavior
-        .findEventTrigger(callActivityContext)
+        .findEventTrigger(context)
         .ifPresentOrElse(
             eventTrigger -> {
-              final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(callActivityContext);
+              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
               eventSubscriptionBehavior.activateTriggeredEvent(
-                  callActivityContext.getElementInstanceKey(),
+                  context.getElementInstanceKey(),
                   terminated.getFlowScopeKey(),
                   eventTrigger,
                   terminated);
             },
             () -> {
-              final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(callActivityContext);
+              final var terminated = stateTransitionBehavior.transitionToTerminated(context);
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
   }
