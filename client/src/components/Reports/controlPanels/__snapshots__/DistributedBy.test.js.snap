@@ -17,7 +17,7 @@ exports[`should load and render variables for process instance count reports 1`]
     <Option
       value="none"
     >
-      Nothing
+      None
     </Option>
     <Submenu
       key="variable"
@@ -63,7 +63,7 @@ exports[`should match snapshot 1`] = `
     <Option
       value="none"
     >
-      Nothing
+      None
     </Option>
     <Option
       key="assignee"

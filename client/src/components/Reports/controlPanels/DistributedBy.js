@@ -83,7 +83,7 @@ export function DistributedBy({
             onChange(change, true);
           }}
         >
-          <Select.Option value="none">{t('common.nothing')}</Select.Option>
+          <Select.Option value="none">{t('common.none')}</Select.Option>
           {getOptionsFor(view.entity, groupBy.type, variables)}
         </Select>
       </li>
