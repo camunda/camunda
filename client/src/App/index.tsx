@@ -21,6 +21,7 @@ import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {GettingStartedExperience} from './GettingStartedExperience';
 import {CommonUiContext} from 'modules/CommonUiContext';
 import {Routes} from 'modules/routes';
+import {HashRouterMigrator} from './HashRouterMigrator';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <CommonUiContext />
           <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
             <GettingStartedExperience />
+            <HashRouterMigrator />
             <Switch>
               <Route path={Routes.login()} component={Login} />
               <Authentication>
