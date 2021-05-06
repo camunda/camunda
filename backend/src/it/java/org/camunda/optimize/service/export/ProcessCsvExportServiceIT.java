@@ -136,7 +136,6 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
-    OffsetDateTime oneDayAgo = now.minusDays(1L);
     OffsetDateTime twoDaysAgo = now.minusDays(2L);
     OffsetDateTime threeDaysAgo = now.minusDays(3L);
     OffsetDateTime oneWeekAgo = now.minusWeeks(1L);
@@ -146,7 +145,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
       .toEpochMilli();
     long completedInstanceOneDayDuration = twoDaysAgo.toInstant().toEpochMilli() - threeDaysAgo.toInstant()
       .toEpochMilli();
-    long runningInstanceOneDayDuration = now.toInstant().toEpochMilli() - oneDayAgo.toInstant().toEpochMilli();
+    long runningInstanceTwoDaysDuration = now.toInstant().toEpochMilli() - twoDaysAgo.toInstant().toEpochMilli();
     long runningInstanceTwoWeeksDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
 
     ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleOneUserTasksDefinition();
@@ -168,9 +167,9 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
       twoDaysAgo
     );
 
-    final ProcessInstanceEngineDto runningInstanceOneDay = engineIntegrationExtension.startProcessInstance(
+    final ProcessInstanceEngineDto runningInstanceTwoDays = engineIntegrationExtension.startProcessInstance(
       processDefinitionEngineDto.getId());
-    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceOneDay.getId(), oneDayAgo);
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceTwoDays.getId(), twoDaysAgo);
 
     final ProcessInstanceEngineDto runningInstanceTwoWeeks = engineIntegrationExtension.startProcessInstance(
       processDefinitionEngineDto.getId());
@@ -191,45 +190,78 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(
       "/csv/process/single/raw_data_sort_by_duration.csv");
     if (order == SortOrder.ASC) {
-      expectedString = expectedString.replace("${PI_ID_1}", runningInstanceOneDay.getId());
-      expectedString = expectedString.replace("${PD_ID_1}", runningInstanceOneDay.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_1}", Long.toString(runningInstanceOneDayDuration));
-      expectedString = expectedString.replace("${PI_ID_2}", completedInstanceOneDay.getId());
-      expectedString = expectedString.replace("${PD_ID_2}", completedInstanceOneDay.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_2}", Long.toString(completedInstanceOneDayDuration));
-      expectedString = expectedString.replace("${PI_ID_3}", completedInstanceOneWeek.getId());
-      expectedString = expectedString.replace("${PD_ID_3}", completedInstanceOneWeek.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_3}", Long.toString(completedInstanceOneWeekDuration));
-      expectedString = expectedString.replace("${PI_ID_4}", runningInstanceTwoWeeks.getId());
-      expectedString = expectedString.replace("${PD_ID_4}", runningInstanceTwoWeeks.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_4}", Long.toString(runningInstanceTwoWeeksDuration));
-      expectedString = expectedString.replace("${START_DATE_1}", oneDayAgo.toString());
-      expectedString = expectedString.replace("${START_DATE_2}", threeDaysAgo.toString());
-      expectedString = expectedString.replace("${START_DATE_3}", twoWeeksAgo.toString());
-      expectedString = expectedString.replace("${START_DATE_4}", twoWeeksAgo.toString());
-      expectedString = expectedString.replace("${END_DATE_2}", twoDaysAgo.toString());
-      expectedString = expectedString.replace("${END_DATE_3}", oneWeekAgo.toString());
-      expectedString = expectedString.replace("\"${END_DATE_4}\"", "");
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        1,
+        completedInstanceOneDay,
+        threeDaysAgo,
+        twoDaysAgo,
+        completedInstanceOneDayDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        2,
+        runningInstanceTwoDays,
+        twoDaysAgo,
+        null,
+        runningInstanceTwoDaysDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        3,
+        completedInstanceOneWeek,
+        twoWeeksAgo,
+        oneWeekAgo,
+        completedInstanceOneWeekDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        4,
+        runningInstanceTwoWeeks,
+        twoWeeksAgo,
+        null,
+        runningInstanceTwoWeeksDuration
+      );
+
     } else {
-      expectedString = expectedString.replace("${PI_ID_1}", runningInstanceTwoWeeks.getId());
-      expectedString = expectedString.replace("${PD_ID_1}", runningInstanceTwoWeeks.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_1}", Long.toString(runningInstanceTwoWeeksDuration));
-      expectedString = expectedString.replace("${PI_ID_2}", completedInstanceOneWeek.getId());
-      expectedString = expectedString.replace("${PD_ID_2}", completedInstanceOneWeek.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_2}", Long.toString(completedInstanceOneWeekDuration));
-      expectedString = expectedString.replace("${PI_ID_3}", runningInstanceOneDay.getId());
-      expectedString = expectedString.replace("${PD_ID_3}", runningInstanceOneDay.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_3}", Long.toString(runningInstanceOneDayDuration));
-      expectedString = expectedString.replace("${PI_ID_4}", completedInstanceOneDay.getId());
-      expectedString = expectedString.replace("${PD_ID_4}", completedInstanceOneDay.getDefinitionId());
-      expectedString = expectedString.replace("${DURATION_4}", Long.toString(completedInstanceOneDayDuration));
-      expectedString = expectedString.replace("${START_DATE_1}", twoWeeksAgo.toString());
-      expectedString = expectedString.replace("${START_DATE_2}", twoWeeksAgo.toString());
-      expectedString = expectedString.replace("${START_DATE_3}", oneDayAgo.toString());
-      expectedString = expectedString.replace("${START_DATE_4}", threeDaysAgo.toString());
-      expectedString = expectedString.replace("${END_DATE_2}", oneWeekAgo.toString());
-      expectedString = expectedString.replace("\"${END_DATE_3}\"", "");
-      expectedString = expectedString.replace("${END_DATE_4}", twoDaysAgo.toString());
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        1,
+        runningInstanceTwoWeeks,
+        twoWeeksAgo,
+        null,
+        runningInstanceTwoWeeksDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        2,
+        completedInstanceOneWeek,
+        twoWeeksAgo,
+        oneWeekAgo,
+        completedInstanceOneWeekDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        3,
+        runningInstanceTwoDays,
+        twoDaysAgo,
+        null,
+        runningInstanceTwoDaysDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        4,
+        completedInstanceOneDay,
+        threeDaysAgo,
+        twoDaysAgo,
+        completedInstanceOneDayDuration
+      );
     }
 
     // when
@@ -299,8 +331,23 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
         .setProcessDefinitionVersion(FAKE)
         .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
         .build();
-    reportDataDto.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().filterLevel(FilterApplicationLevel.VIEW).add().buildList());
+    reportDataDto.setFilter(ProcessFilterBuilder.filter()
+                              .runningFlowNodesOnly()
+                              .filterLevel(FilterApplicationLevel.VIEW)
+                              .add()
+                              .buildList());
     return reportDataDto;
+  }
+
+  private String replaceExpectedValuesForInstance(String expectedString, int rowNum,
+                                                  ProcessInstanceEngineDto processInstance, OffsetDateTime startDate,
+                                                  OffsetDateTime endDate, Long duration) {
+    expectedString = expectedString.replace("${PI_ID_" + rowNum + "}","\"" + String.valueOf(processInstance.getId()) + "\"");
+    expectedString = expectedString.replace("${PD_ID_" + rowNum + "}", "\"" + String.valueOf(processInstance.getDefinitionId()) + "\"");
+    expectedString = expectedString.replace("${START_DATE_" + rowNum + "}","\"" + String.valueOf(startDate) + "\"");
+    expectedString = expectedString.replace("${DURATION_" + rowNum + "}", "\"" + String.valueOf(duration) + "\"");
+    expectedString = expectedString.replace("${END_DATE_" + rowNum + "}", endDate == null ? "" : "\"" + String.valueOf(endDate) + "\"");
+    return expectedString;
   }
 
   private static Stream<Arguments> getParameters() {
