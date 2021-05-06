@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -374,8 +375,16 @@ public final class EngineRule extends ExternalResource {
   public void awaitProcessingOf(final Record<?> record) {
     final var recordPosition = record.getPosition();
 
-    Awaitility.await("await the record to be processed")
-        .until(() -> getLastProcessedPosition() >= recordPosition);
+    Awaitility.await(
+            String.format(
+                "Await the %s.%s to be processed at position %d",
+                record.getValueType(), record.getIntent(), recordPosition))
+        .untilAsserted(
+            () ->
+                assertThat(getLastProcessedPosition())
+                    .describedAs(
+                        "Last process position should be greater or equal to " + recordPosition)
+                    .isGreaterThanOrEqualTo(recordPosition));
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {
