@@ -161,19 +161,18 @@ export class DecisionControlPanel extends React.Component {
     return (
       <div className="DecisionControlPanel ReportControlPanel">
         <section className={classnames('select', 'source', {hidden: !showSource})}>
-          <h3 className="sectionTitle">
+          <Button
+            className="sectionTitle"
+            onClick={() => {
+              this.setState({showSource: !showSource});
+            }}
+          >
             <Icon type="data-source" />
             {t('common.dataSource')}
-            <Button
-              icon
-              className={classnames('sectionToggle', {open: showSource})}
-              onClick={() => {
-                this.setState({showSource: !showSource});
-              }}
-            >
+            <span className={classnames('sectionToggle', {open: showSource})}>
               <Icon type="down" />
-            </Button>
-          </h3>
+            </span>
+          </Button>
           <DefinitionSelection
             type="decision"
             definitionKey={decisionDefinitionKey}
@@ -184,19 +183,18 @@ export class DecisionControlPanel extends React.Component {
           />
         </section>
         <section className={classnames('reportSetup', {hidden: !showSetup})}>
-          <h3 className="sectionTitle">
+          <Button
+            className="sectionTitle"
+            onClick={() => {
+              this.setState({showSetup: !showSetup});
+            }}
+          >
             <Icon type="report" />
             {t('report.reportSetup')}
-            <Button
-              icon
-              className={classnames('sectionToggle', {open: showSetup})}
-              onClick={() => {
-                this.setState({showSetup: !showSetup});
-              }}
-            >
+            <span className={classnames('sectionToggle', {open: showSetup})}>
               <Icon type="down" />
-            </Button>
-          </h3>
+            </span>
+          </Button>
           <ul>
             {['view', 'groupBy'].map((field, idx, fields) => {
               const previous = fields
@@ -222,20 +220,19 @@ export class DecisionControlPanel extends React.Component {
           </ul>
         </section>
         <div className="filter header">
-          <h3 className="sectionTitle">
+          <Button
+            className="sectionTitle"
+            onClick={() => {
+              this.setState({showFilter: !showFilter});
+            }}
+          >
             <Icon type="filter" />
             {t('common.filter.label')}
-            <Button
-              icon
-              className={classnames('sectionToggle', {open: showFilter})}
-              onClick={() => {
-                this.setState({showFilter: !showFilter});
-              }}
-            >
+            <span className={classnames('sectionToggle', {open: showFilter})}>
               <Icon type="down" />
-            </Button>
+            </span>
             {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
-          </h3>
+          </Button>
         </div>
         <div
           className={classnames('scrollable', {withDivider: scrolled || !showFilter})}

@@ -211,19 +211,18 @@ export default withErrorHandling(
       return (
         <div className="ReportControlPanel">
           <section className={classnames('select', 'source', {hidden: !showSource})}>
-            <h3 className="sectionTitle">
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showSource: !showSource});
+              }}
+            >
               <Icon type="data-source" />
               {t('common.dataSource')}
-              <Button
-                icon
-                className={classnames('sectionToggle', {open: showSource})}
-                onClick={() => {
-                  this.setState({showSource: !showSource});
-                }}
-              >
+              <span className={classnames('sectionToggle', {open: showSource})}>
                 <Icon type="down" />
-              </Button>
-            </h3>
+              </span>
+            </Button>
             <DefinitionSelection
               type="process"
               definitionKey={data.processDefinitionKey}
@@ -235,19 +234,18 @@ export default withErrorHandling(
             />
           </section>
           <section className={classnames('reportSetup', {hidden: !showSetup})}>
-            <h3 className="sectionTitle">
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showSetup: !showSetup});
+              }}
+            >
               <Icon type="report" />
               {t('report.reportSetup')}
-              <Button
-                icon
-                className={classnames('sectionToggle', {open: showSetup})}
-                onClick={() => {
-                  this.setState({showSetup: !showSetup});
-                }}
-              >
+              <span className={classnames('sectionToggle', {open: showSetup})}>
                 <Icon type="down" />
-              </Button>
-            </h3>
+              </span>
+            </Button>
             <ul>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
@@ -336,20 +334,19 @@ export default withErrorHandling(
             </ul>
           </section>
           <div className="filter header">
-            <h3 className="sectionTitle">
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showFilter: !showFilter});
+              }}
+            >
               <Icon type="filter" />
               {t('common.filter.label')}
-              <Button
-                icon
-                className={classnames('sectionToggle', {open: showFilter})}
-                onClick={() => {
-                  this.setState({showFilter: !showFilter});
-                }}
-              >
+              <span className={classnames('sectionToggle', {open: showFilter})}>
                 <Icon type="down" />
-              </Button>
+              </span>
               {data.filter?.length > 0 && <span className="filterCount">{data.filter.length}</span>}
-            </h3>
+            </Button>
           </div>
           <div
             className={classnames('scrollable', {withDivider: scrolled || !showFilter})}

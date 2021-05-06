@@ -22,11 +22,11 @@
   }
 
   .filter.header {
-    padding: 12px 20px;
+    padding: 9px 20px 0 20px;
     border-top: 1px solid var(--silver-darken-87);
 
     .sectionTitle {
-      margin: 0;
+      margin-bottom: 0;
     }
   }
 
@@ -34,8 +34,13 @@
     text-transform: uppercase;
     font-weight: 500;
     font-size: 11px;
-    margin-bottom: 15px;
+    margin: -12px 0 3px -20px;
+    padding: 12px 20px;
+    width: calc(100% + 40px);
     color: var(--grey-darken-13);
+    background: transparent;
+    text-align: left;
+    border: none;
 
     .Icon {
       color: var(--black);
@@ -66,11 +71,11 @@
 
   section {
     padding: 20px;
-    padding-top: 12px;
+    padding-top: 9px;
     border-top: 1px solid var(--silver-darken-87);
 
     &.hidden {
-      padding-bottom: 12px;
+      padding-bottom: 0;
 
       ul,
       &.filter,
@@ -101,12 +106,16 @@
     margin: 0;
     padding: 0;
     flex-grow: 1;
-    margin-top: 20px;
+    margin-top: 5px;
 
     > li {
       margin-top: 15px;
       display: flex;
       align-items: center;
+
+      &:first-child {
+        margin-top: 0;
+      }
 
       &.Measure ~ .Measure {
         margin-top: 5px;
