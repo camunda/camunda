@@ -58,14 +58,22 @@ public class ElasticsearchSchemaManager {
   protected OperateProperties operateProperties;
 
   public void createSchema() {
-     createDefaults();
-     createTemplates();
-     createIndices();
+    createDefaults();
+    createTemplates();
+    createIndices();
   }
 
   private String settingsTemplateName() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     return String.format("%s_template", elsConfig.getIndexPrefix());
+  }
+
+  private Settings getIndexSettings() {
+    final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+    return Settings.builder()
+        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
+        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
+        .build();
   }
 
   private void createDefaults() {
@@ -75,9 +83,7 @@ public class ElasticsearchSchemaManager {
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
-    Settings settings = Settings.builder()
-        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
-        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas()).build();
+    Settings settings = getIndexSettings();
 
     final Template template = new Template(settings, null, null);
     final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
@@ -98,7 +104,10 @@ public class ElasticsearchSchemaManager {
   private void createIndex(final IndexDescriptor indexDescriptor) {
     final String indexFilename = String.format("/schema/create/index/operate-%s.json", indexDescriptor.getIndexName());
     final Map<String, Object> indexDescription = prepareCreateIndex(indexFilename, indexDescriptor.getAlias());
-    createIndex(new CreateIndexRequest(indexDescriptor.getFullQualifiedName()).source(indexDescription), indexDescriptor.getFullQualifiedName());
+    createIndex(new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
+            .source(indexDescription)
+            .settings(getIndexSettings()),
+        indexDescriptor.getFullQualifiedName());
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
@@ -128,8 +137,8 @@ public class ElasticsearchSchemaManager {
           templateDescriptor.getAlias(),AliasMetadata.builder(templateDescriptor.getAlias()).build());
       return new Template(ptr.settings(), new CompressedXContent(ptr.mappings()), aliases);
     } catch (IOException e) {
-     throw new OperateRuntimeException(
-         String.format("Error in reading mappings for %s ",templateDescriptor.getTemplateName()), e );
+      throw new OperateRuntimeException(
+          String.format("Error in reading mappings for %s ",templateDescriptor.getTemplateName()), e );
     }
   }
 
