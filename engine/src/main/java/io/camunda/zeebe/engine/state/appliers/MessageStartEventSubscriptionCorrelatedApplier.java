@@ -43,7 +43,7 @@ public final class MessageStartEventSubscriptionCorrelatedApplier
     }
 
     // write the event trigger for the start event
-    eventScopeInstanceState.triggerEvent(
+    eventScopeInstanceState.triggerStartEvent(
         value.getProcessDefinitionKey(),
         value.getMessageKey(),
         value.getStartEventIdBuffer(),

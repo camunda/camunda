@@ -113,12 +113,6 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void beforeExecutionPathCompleted(
-      final ExecutableFlowElementContainer element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
-
-  @Override
   public void afterExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
