@@ -192,6 +192,8 @@ public final class ZeebePartition extends Actor
 
   @Override
   protected void onActorClosing() {
+    context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
+
     transitionToInactive()
         .onComplete(
             (nothing, err) -> {

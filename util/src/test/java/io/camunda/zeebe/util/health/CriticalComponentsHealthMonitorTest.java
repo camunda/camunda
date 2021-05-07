@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -160,9 +162,8 @@ public class CriticalComponentsHealthMonitorTest {
   }
 
   private static class ControllableComponent implements HealthMonitorable {
-
+    private final Set<FailureListener> failureListeners = new HashSet<>();
     private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
-    private FailureListener failureListener;
 
     @Override
     public HealthStatus getHealthStatus() {
@@ -170,21 +171,19 @@ public class CriticalComponentsHealthMonitorTest {
     }
 
     void setHealthStatus(final HealthStatus healthStatus) {
-      if (failureListener != null) {
-        if (this.healthStatus != healthStatus) {
-          switch (healthStatus) {
-            case HEALTHY:
-              failureListener.onRecovered();
-              break;
-            case UNHEALTHY:
-              failureListener.onFailure();
-              break;
-            case DEAD:
-              failureListener.onUnrecoverableFailure();
-              break;
-            default:
-              break;
-          }
+      if (this.healthStatus != healthStatus) {
+        switch (healthStatus) {
+          case HEALTHY:
+            failureListeners.forEach(FailureListener::onRecovered);
+            break;
+          case UNHEALTHY:
+            failureListeners.forEach(FailureListener::onFailure);
+            break;
+          case DEAD:
+            failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+            break;
+          default:
+            break;
         }
       }
       this.healthStatus = healthStatus;
@@ -192,7 +191,7 @@ public class CriticalComponentsHealthMonitorTest {
 
     @Override
     public void addFailureListener(final FailureListener failureListener) {
-      this.failureListener = failureListener;
+      failureListeners.add(failureListener);
     }
   }
 }
