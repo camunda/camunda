@@ -140,7 +140,7 @@ public class OldVariableIT extends OperateZeebeIntegrationTest {
         .andExpect(status().isBadRequest())
         .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Required String parameter 'scopeId' is not present");
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Required request parameter 'scopeId' for method parameter type String is not present");
   }
 
   private void assertVariable(List<VariableDto> variables, String name, String value) {
