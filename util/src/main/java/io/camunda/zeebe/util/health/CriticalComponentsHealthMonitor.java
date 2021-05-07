@@ -45,7 +45,8 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   public void removeComponent(final String componentName) {
     actor.run(
         () -> {
-          monitoredComponents.remove(componentName);
+          final var monitoredComponent = monitoredComponents.remove(componentName);
+          monitoredComponent.component.removeFailureListener(monitoredComponent);
           componentHealth.remove(componentName);
         });
   }
@@ -166,19 +167,19 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
     private void onComponentFailure() {
       log.error("{} failed, marking it as unhealthy", componentName);
-      componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.UNHEALTHY);
+      componentHealth.put(componentName, HealthStatus.UNHEALTHY);
       calculateHealth();
     }
 
     private void onComponentRecovered() {
       log.info("{} recovered, marking it as healthy", componentName);
-      componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.HEALTHY);
+      componentHealth.put(componentName, HealthStatus.HEALTHY);
       calculateHealth();
     }
 
     private void onComponentDied() {
       log.error("{} failed, marking it as dead", componentName);
-      componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.DEAD);
+      componentHealth.put(componentName, HealthStatus.DEAD);
       calculateHealth();
     }
   }
