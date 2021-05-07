@@ -230,7 +230,11 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
         markSnapshotAsInvalid(context, snapshotChunk);
       }
     } catch (final IOException e) {
-      LOG.error("Unexpected error on writing the received snapshot chunk {}", snapshotChunk, e);
+      LOG.warn(
+          "Unexpected error on writing the received snapshot chunk {}, marking snapshot {} as invalid",
+          snapshotChunk,
+          snapshotId,
+          e);
       markSnapshotAsInvalid(context, snapshotChunk);
     }
   }

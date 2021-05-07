@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -173,7 +171,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private boolean writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws IOException {
-    Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
+    Files.write(
+        snapshotFile,
+        snapshotChunk.getContent(),
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.WRITE);
     LOGGER.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
     return SUCCESS;
   }
