@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -42,6 +43,9 @@ public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final ProcessRecord processRecord = new ProcessRecord();
+
+  private final BpmnTransformer bpmnTransformer = BpmnFactory.createTransformer();
+
   private final BpmnValidator validator;
   private final ProcessState processState;
   private final KeyGenerator keyGenerator;
@@ -116,7 +120,7 @@ public final class DeploymentTransformer {
 
       if (validationError == null) {
         // transform the model to avoid unexpected failures that are not covered by the validator
-        BpmnFactory.createTransformer().transformDefinitions(definition);
+        bpmnTransformer.transformDefinitions(definition);
 
         final String bpmnIdDuplicateError = checkForDuplicateBpmnId(definition, resourceName);
 
