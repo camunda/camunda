@@ -46,9 +46,9 @@ pipeline {
         SONARCLOUD_TOKEN = credentials('zeebe-sonarcloud-token')
     }
 
-    // triggers {
-        // cron(cronTrigger)
-    // }
+    triggers {
+        cron(cronTrigger)
+    }
 
     options {
         buildDiscarder(logRotator(daysToKeepStr: daysToKeep, numToKeepStr: numToKeep))
