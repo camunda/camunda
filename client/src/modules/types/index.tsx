@@ -8,6 +8,7 @@ type User = Readonly<{
   username: string;
   firstname: string | null;
   lastname: string | null;
+  __typename: string;
 }>;
 
 type Variable = Readonly<{

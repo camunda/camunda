@@ -99,7 +99,8 @@ function useSelectedVariables(
 
   return {
     variables: data?.variables ?? [],
-    loading: loading || data?.variables === undefined,
+    loading:
+      loading || (data?.variables === undefined && variableNames.length > 0),
     updateSelectedVariables,
   };
 }

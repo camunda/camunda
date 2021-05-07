@@ -6,7 +6,7 @@
 
 import {gql} from '@apollo/client';
 import {Form} from 'modules/types';
-import {form} from 'modules/mock-schema/mocks/form';
+import {form, invalidForm} from 'modules/mock-schema/mocks/form';
 
 type FormQueryVariables = Pick<Form, 'id' | 'processDefinitionId'>;
 
@@ -37,5 +37,20 @@ const mockGetForm = {
   },
 };
 
+const mockGetInvalidForm = {
+  request: {
+    query: GET_FORM,
+    variables: {
+      id: 'form-0',
+      processDefinitionId: 'process',
+    },
+  },
+  result: {
+    data: {
+      form: invalidForm,
+    },
+  },
+};
+
 export type {FormQueryVariables, GetForm};
-export {GET_FORM, mockGetForm};
+export {GET_FORM, mockGetForm, mockGetInvalidForm};

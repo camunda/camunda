@@ -30,4 +30,30 @@ const form: Form = {
   }),
 };
 
-export {form};
+const invalidForm: Form = {
+  __typename: 'Form',
+  id: 'camunda-forms:bpmn:form-0',
+  processDefinitionId: 'process',
+  schema: `
+    {
+      components: [
+        {
+          "key": "myVar",
+          "label": "My variable",
+          "type": "textfield",
+          "validate": {
+            "required": true
+          }
+        },
+        {
+          "key": "isCool",
+          "label": "Is cool?",
+          "type": "textfield"
+        }
+      ],
+      "type": "default"
+    }
+  `,
+};
+
+export {form, invalidForm};

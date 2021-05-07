@@ -8,7 +8,7 @@ import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useQuery} from '@apollo/client';
 import {GET_FORM, GetForm, FormQueryVariables} from 'modules/queries/get-form';
 import {Form, Variable} from 'modules/types';
-import {GetTask} from 'modules/queries/get-task';
+import {GetTask, useRemoveFormReference} from 'modules/queries/get-task';
 import {
   GetCurrentUser,
   GET_CURRENT_USER,
@@ -21,6 +21,7 @@ import {Container, FormContainer, FormCustomStyling} from './styled';
 import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
+import {useNotifications} from 'modules/notifications';
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -38,13 +39,18 @@ function extractVariablesFromFormSchema(
   if (schema === null) {
     return [];
   }
-  const parsedSchema = JSON.parse(schema);
 
-  return Array.isArray(parsedSchema.components)
-    ? parsedSchema.components
-        .filter(({type}: any) => type === 'textfield')
-        .map(({key}: any) => key)
-    : [];
+  try {
+    const parsedSchema = JSON.parse(schema);
+
+    return Array.isArray(parsedSchema.components)
+      ? parsedSchema.components
+          .filter(({type}: any) => type === 'textfield')
+          .map(({key}: any) => key)
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 type Props = {
@@ -81,6 +87,8 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   const canCompleteTask =
     userData?.currentUser.username === assignee?.username &&
     taskState === 'CREATED';
+  const {removeFormReference} = useRemoveFormReference(task);
+  const {displayNotification} = useNotifications();
 
   useEffect(() => {
     const container = containerRef.current;
@@ -92,35 +100,42 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
       !areVariablesLoading
     ) {
       const data = formatVariablesToFormData(variables);
-      const form = createForm({
-        schema: JSON.parse(schema),
-        data,
-        container,
-        properties: {
-          readOnly: !canCompleteTask,
-        },
-      });
+      try {
+        const form = createForm({
+          schema: JSON.parse(schema),
+          data,
+          container,
+          properties: {
+            readOnly: !canCompleteTask,
+          },
+        });
 
-      form.on('changed', ({errors}: any) => {
-        setIsFormValid(Object.keys(errors).length === 0);
-      });
+        form.on('changed', ({errors}: any) => {
+          setIsFormValid(Object.keys(errors).length === 0);
+        });
 
-      form.on('submit', async ({errors, data}: any) => {
-        if (Object.keys(errors).length === 0) {
-          const variables = Object.entries(data).map(
-            ([name, value]) =>
-              ({
-                name,
-                value: JSON.stringify(value),
-              } as Variable),
-          );
-          await onSubmit(variables);
-          updateSelectedVariables(variables);
-        }
-      });
+        form.on('submit', async ({errors, data}: any) => {
+          if (Object.keys(errors).length === 0) {
+            const variables = Object.entries(data).map(
+              ([name, value]) =>
+                ({
+                  name,
+                  value: JSON.stringify(value),
+                } as Variable),
+            );
+            await onSubmit(variables);
+            updateSelectedVariables(variables);
+          }
+        });
 
-      setIsFormValid(Object.keys(form.validateAll(data)).length === 0);
-      formRef.current = form;
+        setIsFormValid(Object.keys(form.validateAll(data)).length === 0);
+        formRef.current = form;
+      } catch {
+        removeFormReference();
+        displayNotification('error', {
+          headline: 'Invalid Form schema',
+        });
+      }
     }
   }, [
     canCompleteTask,
@@ -129,6 +144,8 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
     variables,
     areVariablesLoading,
     updateSelectedVariables,
+    removeFormReference,
+    displayNotification,
   ]);
 
   useLayoutEffect(() => {

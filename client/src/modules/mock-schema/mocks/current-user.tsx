@@ -10,6 +10,7 @@ const currentUser: User = {
   username: 'demo',
   firstname: 'Demo',
   lastname: 'User',
+  __typename: 'User',
 };
 
 export {currentUser};

@@ -31,11 +31,15 @@ import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import userEvent from '@testing-library/user-event';
-import {mockGetForm} from 'modules/queries/get-form';
+import {mockGetForm, mockGetInvalidForm} from 'modules/queries/get-form';
 import {
   mockGetTaskVariables,
   mockGetTaskEmptyVariables,
 } from 'modules/queries/get-task-variables';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {graphql} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -50,15 +54,29 @@ type GetWrapperProps = {
 };
 
 const getWrapper = ({mocks, history}: GetWrapperProps) => {
-  const Wrapper: React.FC = ({children}) => (
-    <Router history={history}>
-      <Route path="/:id">
-        <MockedApolloProvider mocks={mocks}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </MockedApolloProvider>
-      </Route>
-    </Router>
-  );
+  const Wrapper: React.FC = ({children}) => {
+    if (mocks.length > 0) {
+      return (
+        <Router history={history}>
+          <Route path="/:id">
+            <MockedApolloProvider mocks={mocks}>
+              <MockThemeProvider>{children}</MockThemeProvider>
+            </MockedApolloProvider>
+          </Route>
+        </Router>
+      );
+    } else {
+      return (
+        <ApolloProvider client={client}>
+          <Router history={history}>
+            <Route path="/:id">
+              <MockThemeProvider>{children}</MockThemeProvider>
+            </Route>
+          </Router>
+        </ApolloProvider>
+      );
+    }
+  };
 
   return Wrapper;
 };
@@ -454,5 +472,39 @@ describe('<Task />', () => {
     expect(
       screen.queryByTitle('Name must be unique and Value has to be JSON'),
     ).not.toBeInTheDocument();
+  });
+
+  it('should render created task with variables form', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) =>
+        res.once(ctx.data(mockGetCurrentUser.result.data)),
+      ),
+      graphql.query('GetTask', (_, res, ctx) =>
+        res.once(ctx.data(mockGetTaskClaimedWithForm().result.data)),
+      ),
+      graphql.query('GetForm', (_, res, ctx) =>
+        res.once(ctx.data(mockGetInvalidForm.result.data)),
+      ),
+      graphql.query('GetTaskVariables', (_, res, ctx) =>
+        res.once(ctx.data(mockGetTaskVariables().result.data)),
+      ),
+    );
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [],
+      }),
+    });
+
+    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
+    expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
+    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+      headline: 'Invalid Form schema',
+    });
   });
 });

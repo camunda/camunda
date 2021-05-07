@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {gql, useQuery} from '@apollo/client';
+import {gql, useApolloClient, useQuery} from '@apollo/client';
 import {Task} from 'modules/types';
 
 import {
@@ -148,6 +148,28 @@ function useTask(id: Task['id']) {
   };
 }
 
+function useRemoveFormReference(task: GetTask['task']) {
+  const client = useApolloClient();
+
+  function removeFormReference() {
+    client.writeQuery({
+      query: GET_TASK,
+      data: {
+        task: {
+          ...task,
+          formKey: null,
+          processDefinitionId: null,
+        },
+      },
+      variables: {
+        id: task.id,
+      },
+    });
+  }
+
+  return {removeFormReference};
+}
+
 export type {GetTask, TaskQueryVariables};
 export {
   GET_TASK,
@@ -158,4 +180,5 @@ export {
   mockGetTaskClaimedWithForm,
   mockGetTaskCompletedWithForm,
   useTask,
+  useRemoveFormReference,
 };

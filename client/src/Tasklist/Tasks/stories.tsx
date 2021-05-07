@@ -9,7 +9,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import {MemoryRouter, Route} from 'react-router-dom';
-
+import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {Task} from './Task';
 
 export default {
@@ -29,11 +29,7 @@ const TaskCard: React.FC = () => {
             taskId="2251799813685883"
             name="Register the passenger"
             processName="Flight registration"
-            assignee={{
-              username: 'demo',
-              firstname: 'Demo',
-              lastname: 'User',
-            }}
+            assignee={currentUser}
             creationTime="2020-05-22T13:39:31.139+0000"
           />
           <Task
