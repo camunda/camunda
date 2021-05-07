@@ -64,6 +64,14 @@ public class ElasticsearchSchemaManager {
     return String.format("%s_template", elsConfig.getIndexPrefix());
   }
 
+  private Settings getIndexSettings() {
+    final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
+    return Settings.builder()
+        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
+        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
+        .build();
+  }
+
   private void createDefaults() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
 
@@ -74,12 +82,7 @@ public class ElasticsearchSchemaManager {
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
-    final Settings settings =
-        Settings.builder()
-            .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
-            .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
-            .build();
-
+    final Settings settings = getIndexSettings();
     final Template template = new Template(settings, null, null);
     final ComponentTemplate settingsTemplate = new ComponentTemplate(template, null, null);
     final PutComponentTemplateRequest request =
@@ -104,7 +107,9 @@ public class ElasticsearchSchemaManager {
     final Map<String, Object> indexDescription =
         prepareCreateIndex(indexFilename, indexDescriptor.getAlias());
     createIndex(
-        new CreateIndexRequest(indexDescriptor.getFullQualifiedName()).source(indexDescription),
+        new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
+            .source(indexDescription)
+            .settings(getIndexSettings()),
         indexDescriptor.getFullQualifiedName());
   }
 
