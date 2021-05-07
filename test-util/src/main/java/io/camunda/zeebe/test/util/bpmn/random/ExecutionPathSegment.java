@@ -172,22 +172,21 @@ public final class ExecutionPathSegment {
   }
 
   /**
-   * Inserts given execution step at the given index, this is mostly done for execution steps which
-   * can happen in parallel to the normal flow, like non interrupting boundary events or event sub
-   * processes.
+   * Inserts given execution step at a pseudo-random position. The method ensures that it is
+   * inserted at latest before the last non automatic step, such that race conditions can be
+   * avoided.
    *
-   * <p>The existing execution step at this index and all exceutions steps come after are moved to
+   * <p>This is method is mostly used for execution steps which can happen in parallel to the normal
+   * flow, like non interrupting boundary events or event sub processes.
+   *
+   * <p>The existing execution step at this index and all exceution's steps come after are moved to
    * the right. The related ScheduledSteps which are before and come immediately after are updated.
    *
-   * @param index the index where the execution step should be inserted
+   * @param random used to pseudo-randomly chose where the step should be inserted
    * @param executionStep the step which should be inserted
    */
-  public void insertExecutionStepAt(final int index, final AbstractExecutionStep executionStep) {
-
-    if (index >= scheduledSteps.size()) {
-      appendDirectSuccessor(executionStep);
-      return;
-    }
+  public void insertExecutionStep(final Random random, final AbstractExecutionStep executionStep) {
+    final var index = findCutOffPoint(random);
 
     final var successor = scheduledSteps.remove(index);
     final ScheduledExecutionStep newStep;
