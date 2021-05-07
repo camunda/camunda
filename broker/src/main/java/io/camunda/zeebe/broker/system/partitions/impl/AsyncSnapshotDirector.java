@@ -102,19 +102,6 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     return super.closeAsync();
   }
 
-  private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
-    prepareTakingSnapshot();
-  }
-
-  private String getConditionNameForPosition() {
-    return getName() + "-wait-for-endPosition-committed";
-  }
-
-  public void forceSnapshot() {
-    actor.call(this::prepareTakingSnapshot);
-  }
-
   @Override
   protected void handleFailure(final Exception failure) {
     LOG.error(
@@ -131,14 +118,27 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     }
   }
 
-  @Override
-  public void addFailureListener(final FailureListener listener) {
-    actor.run(() -> listeners.add(listener));
+  private void scheduleSnapshotOnRate() {
+    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
+    prepareTakingSnapshot();
+  }
+
+  private String getConditionNameForPosition() {
+    return getName() + "-wait-for-endPosition-committed";
+  }
+
+  public void forceSnapshot() {
+    actor.call(this::prepareTakingSnapshot);
   }
 
   @Override
   public HealthStatus getHealthStatus() {
     return healthStatus;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener listener) {
+    actor.run(() -> listeners.add(listener));
   }
 
   private void prepareTakingSnapshot() {
