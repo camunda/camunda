@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -590,6 +591,155 @@ public final class ProcessExecutionCleanStateTest {
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
+  @Test
+  public void testProcessWithTimerStartEvent() {
+    // given
+    final var deployment =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .timerWithCycle("R/PT10S")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // deploy new process without timer start event to delete the timer
+    engineRule
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    RecordingExporter.timerRecords(TimerIntent.CANCELED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
+  @Test
+  public void testProcessWithMessageStartEventAndRedeployWithout() {
+    // given
+    final var deployment =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .message(m -> m.name("msg").zeebeCorrelationKey("=123"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // deploy new process without msg start event to delete the subscription and event scope
+    engineRule
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.DELETED)
+        .withWorkfloKey(processDefinitionKey)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
+  @Test
+  public void testProcessWithTriggerTimerStartEvent() {
+    // given
+    final var deployment =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .timerWithDate("=now() + duration(\"PT15S\")")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    engineRule.awaitProcessingOf(
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst());
+
+    engineRule.increaseTime(Duration.ofSeconds(15));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
+  @Test
+  public void testProcessWithTimerStartEventRedeployment() {
+    // given
+    final var deployment =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .timerWithCycle("R/PT10S")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    final var deploy2 =
+        engineRule
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .timerWithCycle("R/PT5S")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processDefinitionKey2 =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // when
+    // deploy new process without timer start event to delete the timer
+    engineRule
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    RecordingExporter.timerRecords(TimerIntent.CANCELED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    RecordingExporter.timerRecords(TimerIntent.CANCELED)
+        .withProcessDefinitionKey(processDefinitionKey2)
         .await();
 
     // then

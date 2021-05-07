@@ -175,7 +175,7 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartEventSubscriptionIntent.CREATED,
         new MessageStartEventSubscriptionCreatedApplier(
-            state.getMessageStartEventSubscriptionState(), state.getEventScopeInstanceState()));
+            state.getMessageStartEventSubscriptionState()));
     register(
         MessageStartEventSubscriptionIntent.CORRELATED,
         new MessageStartEventSubscriptionCorrelatedApplier(
@@ -183,7 +183,7 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartEventSubscriptionIntent.DELETED,
         new MessageStartEventSubscriptionDeletedApplier(
-            state.getMessageStartEventSubscriptionState(), state.getEventScopeInstanceState()));
+            state.getMessageStartEventSubscriptionState()));
   }
 
   private void registerIncidentEventAppliers(final MutableZeebeState state) {

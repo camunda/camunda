@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -149,6 +150,19 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
+  public void shouldTriggerStartEventForNonExistingEventScope() {
+    // given
+    final long scopeKey = 123;
+    final EventTrigger eventTrigger = createEventTrigger();
+
+    // when
+    triggerStartEvent(scopeKey, 456, eventTrigger);
+
+    // then
+    Assertions.assertThat(state.peekEventTrigger(scopeKey)).isEqualTo(eventTrigger);
+  }
+
+  @Test
   public void shouldPeekEventTrigger() {
     // given
     final long key = 123;
@@ -182,6 +196,23 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
+  public void shouldPollStartEventTrigger() {
+    // given
+    final long scopeKey = 123;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    final EventTrigger eventTrigger2 = createEventTrigger();
+
+    // when
+    triggerStartEvent(scopeKey, 1, eventTrigger1);
+    triggerStartEvent(scopeKey, 2, eventTrigger2);
+
+    // then
+    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isEqualTo(eventTrigger1);
+    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isEqualTo(eventTrigger2);
+    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isNull();
+  }
+
+  @Test
   public void shouldDeleteTrigger() {
     // given
     final long key = 123;
@@ -195,6 +226,20 @@ public final class EventScopeInstanceStateTest {
 
     // then
     Assertions.assertThat(state.pollEventTrigger(key)).isNull();
+  }
+
+  @Test
+  public void shouldDeleteStartEventTrigger() {
+    // given
+    final long scopeKey = 123;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    triggerStartEvent(scopeKey, 1, eventTrigger1);
+
+    // when
+    state.deleteTrigger(scopeKey, 1);
+
+    // then
+    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isNull();
   }
 
   @Test
@@ -229,6 +274,29 @@ public final class EventScopeInstanceStateTest {
 
     // then
     assertThat(triggered).isFalse();
+  }
+
+  @Test
+  public void shouldDeleteStartEventTriggerOnDeletionOfInstance() {
+    // given
+    final long scopeKey = 123;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    triggerStartEvent(scopeKey, 1, eventTrigger1);
+
+    // when
+    state.deleteInstance(scopeKey);
+
+    // then
+    Assertions.assertThat(state.pollEventTrigger(scopeKey)).isNull();
+  }
+
+  @Test
+  public void shouldNotFailOnDeletionOfNonExistingInstance() {
+    // given
+    final long key = 123;
+
+    // expect no exception
+    assertThatNoException().isThrownBy(() -> state.deleteInstance(key));
   }
 
   @Test
@@ -278,6 +346,12 @@ public final class EventScopeInstanceStateTest {
   private boolean triggerEvent(
       final long eventScopeKey, final long eventKey, final EventTrigger eventTrigger) {
     return state.triggerEvent(
+        eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
+  }
+
+  private void triggerStartEvent(
+      final long eventScopeKey, final long eventKey, final EventTrigger eventTrigger) {
+    state.triggerStartEvent(
         eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
   }
 

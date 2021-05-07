@@ -104,11 +104,6 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         processState.getFlowElement(
             processDefinitionKey, timer.getTargetElementIdBuffer(), ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
-      if (!eventScopeInstanceState.isAcceptingEvent(processDefinitionKey)) {
-        rejectNoActiveTimer(record);
-        return;
-      }
-
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       final long processInstanceKey = keyGenerator.nextKey();
       eventHandle.activateProcessInstanceForStartEvent(
