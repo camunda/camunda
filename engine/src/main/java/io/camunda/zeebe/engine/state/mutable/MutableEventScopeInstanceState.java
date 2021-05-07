@@ -67,12 +67,13 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
       long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables);
 
   /**
-   * Creates an eventTrigger for an start event as scope key the process definition key is used.
+   * Creates an event trigger for a process start event. Uses the process definition key as the
+   * scope key of the trigger.
    *
-   * @param processDefinitionKey the process definition key of the to be triggered start event, this
-   *     is used as scope key for the event trigger
+   * @param processDefinitionKey the key of the process definition a new instance should be created
+   *     of
    * @param eventKey the key of the event record (used for ordering)
-   * @param elementId the id of the element which should be triggered
+   * @param elementId the id of the start event which should be triggered
    * @param variables the variables of the occurred event, i.e. message variables
    */
   void triggerStartEvent(
