@@ -168,7 +168,4 @@ exporters:
         processInstance: true
         processInstanceCreation: false
         processMessageSubscription: false
-
-        ignoreVariablesAbove: 32677
-
 ```
