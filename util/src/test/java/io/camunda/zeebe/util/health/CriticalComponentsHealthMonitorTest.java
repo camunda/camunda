@@ -128,6 +128,7 @@ public class CriticalComponentsHealthMonitorTest {
 
     // when
     monitor.removeComponent("test");
+    waitUntilAllDone();
     component.setHealthStatus(HealthStatus.UNHEALTHY);
     waitUntilAllDone();
 
