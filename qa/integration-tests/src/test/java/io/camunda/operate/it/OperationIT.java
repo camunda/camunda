@@ -572,7 +572,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testTwoOperationsOnOneInstance() throws Exception {
+  public void testTwoResolveIncidentOperationsOnOneInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
     failTaskWithNoRetriesLeft("taskA", processInstanceKey, "Some error");
@@ -610,6 +610,30 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
     assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
+
+  }
+
+  @Test
+  public void testSeveralCancelOperationsOnOneInstance() throws Exception {
+    // given
+    final Long processInstanceKey = startDemoProcessInstance();
+
+    //when we call CANCEL_PROCESS_INSTANCE operation three times on one instance
+    postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));  //#1
+    postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));  //#2
+    postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));  //#3
+
+    //and execute the operation
+    executeOneBatch();
+
+    //then
+    //the state of one operation is COMPLETED and of the other - FAILED
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+
+    final ListViewProcessInstanceDto processInstance = processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
+    final List<OperationDto> operations = processInstance.getOperations();
+    assertThat(operations).hasSize(3);
+    assertThat(operations).extracting("state").containsAnyOf(OperationState.COMPLETED, OperationState.FAILED);
 
   }
 

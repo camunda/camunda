@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -69,16 +70,16 @@ public class ElasticsearchManager {
 
   public void completeOperation(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType, BulkRequest bulkRequest)
       throws PersistenceException {
-    OperationEntity operation = getOperation(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
-    if (operation != null) {
-      if (operation.getBatchOperationId() != null) {
-        operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId(), bulkRequest);
+    List<OperationEntity> operations = getOperations(zeebeCommandKey, processInstanceKey, incidentKey, operationType);
+    for (OperationEntity o: operations) {
+      if (o.getBatchOperationId() != null) {
+        operationsManager.updateFinishedInBatchOperation(o.getBatchOperationId(), bulkRequest);
       }
-      completeOperation(operation.getId(), bulkRequest);
+      completeOperation(o.getId(), bulkRequest);
     }
   }
 
-  public OperationEntity getOperation(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){
+  public List<OperationEntity> getOperations(Long zeebeCommandKey, Long processInstanceKey, Long incidentKey, OperationType operationType){
     if (processInstanceKey == null && zeebeCommandKey == null) {
       throw new OperateRuntimeException("Wrong call to search for operation. Not enough parameters.");
     }
@@ -100,18 +101,9 @@ public class ElasticsearchManager {
             .query(query)
             .size(1));
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      if (response.getHits().getTotalHits().value == 1) {
-        return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, OperationEntity.class);
-      } else if (response.getHits().getTotalHits().value > 1) {
-        throw new OperateRuntimeException(String
-            .format("Could not find unique operation for parameters zeebeCommandKey [%d], processInstanceKey [%d], incidentKey [%d], operationType [%s].",
-                zeebeCommandKey, processInstanceKey, incidentKey, operationType.name()));
-      } else {
-        return null;
-      }
+      return scroll(searchRequest, OperationEntity.class, objectMapper, esClient);
     } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining the operation: %s", e.getMessage());
+      final String message = String.format("Exception occurred, while obtaining the operations: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
