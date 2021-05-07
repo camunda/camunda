@@ -141,6 +141,11 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     actor.run(() -> listeners.add(listener));
   }
 
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> listeners.remove(failureListener));
+  }
+
   private void prepareTakingSnapshot() {
     if (takingSnapshot) {
       return;

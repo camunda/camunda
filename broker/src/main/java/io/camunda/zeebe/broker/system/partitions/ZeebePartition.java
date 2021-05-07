@@ -319,6 +319,11 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
+  }
+
+  @Override
   public void onDiskSpaceNotAvailable() {
     actor.call(
         () -> {

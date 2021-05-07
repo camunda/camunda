@@ -363,6 +363,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     actor.run(() -> failureListeners.add(failureListener));
   }
 
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
+  }
+
   public ActorFuture<Phase> getCurrentPhase() {
     return actor.call(() -> phase);
   }

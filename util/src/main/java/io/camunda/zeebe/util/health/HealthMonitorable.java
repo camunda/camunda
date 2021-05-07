@@ -25,4 +25,12 @@ public interface HealthMonitorable {
    *     status of this component occurs
    */
   void addFailureListener(FailureListener failureListener);
+
+  /**
+   * Removes a previously registered listener. Should do nothing if it was not previously
+   * registered.
+   *
+   * @param failureListener the failure listener to remove
+   */
+  void removeFailureListener(FailureListener failureListener);
 }

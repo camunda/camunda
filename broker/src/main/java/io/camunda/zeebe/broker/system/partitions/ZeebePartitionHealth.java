@@ -45,6 +45,11 @@ class ZeebePartitionHealth implements HealthMonitorable {
     failureListeners.add(failureListener);
   }
 
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    failureListeners.remove(failureListener);
+  }
+
   private void updateHealthStatus() {
     final var previousStatus = healthStatus;
     if (previousStatus == HealthStatus.DEAD) {

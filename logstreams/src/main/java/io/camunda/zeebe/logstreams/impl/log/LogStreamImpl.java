@@ -349,6 +349,11 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
+  }
+
+  @Override
   public void onFailure() {
     actor.run(
         () -> {
