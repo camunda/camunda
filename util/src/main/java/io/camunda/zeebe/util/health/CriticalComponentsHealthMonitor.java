@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 /** Healthy only if all components are healthy */
 public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private static final Duration HEALTH_MONITORING_PERIOD = Duration.ofSeconds(60);
-  private final Map<String, HealthMonitorable> monitoredComponents = new HashMap<>();
+  private final Map<String, MonitoredComponent> monitoredComponents = new HashMap<>();
   private final Map<String, HealthStatus> componentHealth = new HashMap<>();
   private volatile HealthStatus healthStatus = HealthStatus.UNHEALTHY;
   private final ActorControl actor;
@@ -28,6 +28,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     this.log = log;
   }
 
+  @Override
   public void startMonitoring() {
     actor.runAtFixedRate(HEALTH_MONITORING_PERIOD, this::updateHealth);
   }
@@ -50,9 +51,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   public void registerComponent(final String componentName, final HealthMonitorable component) {
     actor.run(
         () -> {
-          monitoredComponents.put(componentName, component);
-          component.addFailureListener(new ComponentFailureListener(componentName));
+          final var monitoredComponent = new MonitoredComponent(componentName, component);
+          monitoredComponents.put(componentName, monitoredComponent);
           componentHealth.put(componentName, component.getHealthStatus());
+
+          component.addFailureListener(monitoredComponent);
           calculateHealth();
         });
   }
@@ -127,18 +130,21 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   private HealthStatus getHealth(final String componentName) {
-    final HealthMonitorable component = monitoredComponents.get(componentName);
-    if (component != null) {
-      return component.getHealthStatus();
+    final var monitoredComponent = monitoredComponents.get(componentName);
+    if (monitoredComponent != null) {
+      return monitoredComponent.component.getHealthStatus();
     }
+
     return HealthStatus.UNHEALTHY;
   }
 
-  class ComponentFailureListener implements FailureListener {
+  private final class MonitoredComponent implements FailureListener {
     private final String componentName;
+    private final HealthMonitorable component;
 
-    ComponentFailureListener(final String componentName) {
+    private MonitoredComponent(final String componentName, final HealthMonitorable component) {
       this.componentName = componentName;
+      this.component = component;
     }
 
     @Override
