@@ -10,7 +10,9 @@ package io.camunda.zeebe.util.health;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 
 /** Healthy only if all components are healthy */
@@ -18,10 +20,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private static final Duration HEALTH_MONITORING_PERIOD = Duration.ofSeconds(60);
   private final Map<String, MonitoredComponent> monitoredComponents = new HashMap<>();
   private final Map<String, HealthStatus> componentHealth = new HashMap<>();
-  private volatile HealthStatus healthStatus = HealthStatus.UNHEALTHY;
+  private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorControl actor;
   private final Logger log;
-  private FailureListener failureListener;
+
+  private volatile HealthStatus healthStatus = HealthStatus.UNHEALTHY;
 
   public CriticalComponentsHealthMonitor(final ActorControl actor, final Logger log) {
     this.actor = actor;
@@ -67,7 +70,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListener = failureListener);
+    actor.run(() -> failureListeners.add(failureListener));
   }
 
   private void updateHealth() {
@@ -87,21 +90,15 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
     switch (healthStatus) {
       case HEALTHY:
-        if (failureListener != null) {
-          failureListener.onRecovered();
-        }
+        failureListeners.forEach(FailureListener::onRecovered);
         break;
 
       case UNHEALTHY:
-        if (failureListener != null) {
-          failureListener.onFailure();
-        }
+        failureListeners.forEach(FailureListener::onFailure);
         break;
 
       case DEAD:
-        if (failureListener != null) {
-          failureListener.onUnrecoverableFailure();
-        }
+        failureListeners.forEach(FailureListener::onUnrecoverableFailure);
         break;
 
       default:

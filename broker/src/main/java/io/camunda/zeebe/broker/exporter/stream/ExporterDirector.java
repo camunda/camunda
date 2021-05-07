@@ -34,11 +34,12 @@ import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -62,7 +63,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
-  private final List<FailureListener> listeners = new ArrayList<>();
+  private final Set<FailureListener> listeners = new HashSet<>();
   private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
   private ExportersState state;
@@ -368,13 +369,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   }
 
   @Override
-  public void addFailureListener(final FailureListener listener) {
-    actor.run(() -> listeners.add(listener));
+  public HealthStatus getHealthStatus() {
+    return healthStatus;
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return healthStatus;
+  public void addFailureListener(final FailureListener listener) {
+    actor.run(() -> listeners.add(listener));
   }
 
   private static class RecordExporter {

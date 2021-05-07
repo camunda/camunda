@@ -27,7 +27,9 @@ import io.camunda.zeebe.util.sched.channel.ActorConditions;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
@@ -47,13 +49,13 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private final LogStorage logStorage;
   private final CompletableActorFuture<Void> closeFuture;
   private final int nodeId;
+  private final Set<FailureListener> failureListeners = new HashSet<>();
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
   private long commitPosition;
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
-  private FailureListener failureListener;
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
 
   LogStreamImpl(
@@ -343,7 +345,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListener = failureListener);
+    actor.run(() -> failureListeners.add(failureListener));
   }
 
   @Override
@@ -351,9 +353,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     actor.run(
         () -> {
           healthStatus = HealthStatus.UNHEALTHY;
-          if (failureListener != null) {
-            failureListener.onFailure();
-          }
+          failureListeners.forEach(FailureListener::onFailure);
           closeAsync();
         });
   }
@@ -363,9 +363,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     actor.run(
         () -> {
           healthStatus = HealthStatus.HEALTHY;
-          if (failureListener != null) {
-            failureListener.onRecovered();
-          }
+          failureListeners.forEach(FailureListener::onRecovered);
         });
   }
 
@@ -374,9 +372,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     actor.run(
         () -> {
           healthStatus = HealthStatus.DEAD;
-          if (failureListener != null) {
-            failureListener.onUnrecoverableFailure();
-          }
+          failureListeners.forEach(FailureListener::onUnrecoverableFailure);
           closeAsync();
         });
   }
