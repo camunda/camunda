@@ -18,7 +18,7 @@ package io.atomix.utils.net;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Ignore;
+import java.net.InetAddress;
 import org.junit.Test;
 
 /** Address test. */
@@ -42,10 +42,10 @@ public class AddressTest {
   }
 
   @Test
-  @Ignore
   public void testResolveAddress() throws Exception {
     final Address address = Address.from("localhost", 5000);
-    assertEquals("127.0.0.1", address.address().getHostAddress());
+    assertEquals(
+        InetAddress.getLoopbackAddress().getHostAddress(), address.address().getHostAddress());
     assertEquals(5000, address.port());
   }
 }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,7 +89,29 @@ public class AdvertisedAddressTest {
               .join(5, TimeUnit.SECONDS);
 
       // then - gateway can talk to the broker
-      TopologyAssert.assertThat(topology).isComplete(3, 1);
+      final var proxiedPorts =
+          cluster.getBrokers().values().stream()
+              .map(ZeebeNode::getInternalHost)
+              .map(host -> toxiproxy.getProxy(host, ZeebePort.COMMAND.getPort()))
+              .map(ContainerProxy::getOriginalProxyPort)
+              .collect(Collectors.toList());
+      TopologyAssert.assertThat(topology)
+          .isComplete(3, 1)
+          .hasBrokerSatisfying(
+              b ->
+                  assertThat(b.getAddress())
+                      .as("broker 0 advertises the correct proxied address")
+                      .isEqualTo(TOXIPROXY_NETWORK_ALIAS + ":" + proxiedPorts.get(0)))
+          .hasBrokerSatisfying(
+              b ->
+                  assertThat(b.getAddress())
+                      .as("broker 1 advertises the correct proxied address")
+                      .isEqualTo(TOXIPROXY_NETWORK_ALIAS + ":" + proxiedPorts.get(1)))
+          .hasBrokerSatisfying(
+              b ->
+                  assertThat(b.getAddress())
+                      .as("broker 2 advertises the correct proxied address")
+                      .isEqualTo(TOXIPROXY_NETWORK_ALIAS + ":" + proxiedPorts.get(2)));
       assertThat(messageSend.getMessageKey()).isPositive();
     }
   }
