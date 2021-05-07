@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -135,46 +134,41 @@ public final class ExecutionPathSegment {
   }
 
   /**
-   * This method finds a cutoff point. We can cut only at a position where we have a non-automatic
-   * step
+   * This method finds execution boundaries. A execution boundary is the point where automatic and
+   * non-automatic step meet each other. We can cut only at positions where we have a non-automatic
+   * steps.
    *
-   * @return index of cutoff point
+   * @return an object which holds the first and last execution boundary
    */
-  private int findCutOffPoint(final Random random) {
+  private ExecutionBoundaries findExecutionBoundaries() {
     // find the first and last point where a cutoff is possible
-    Integer firstCutOffPoint = null;
-    Integer lastCutOffPoint = null;
+    final var cutOffPoints = new ExecutionBoundaries();
 
     for (int index = 0; index < scheduledSteps.size(); index++) {
       final var step = scheduledSteps.get(index).getStep();
 
       if (!step.isAutomatic()) {
-        if (firstCutOffPoint == null) {
-          firstCutOffPoint = index;
-        }
-
-        lastCutOffPoint = index;
+        cutOffPoints.addBoundary(index);
       }
     }
 
-    // find a random position between these two cutoff points
-    if (Objects.equals(firstCutOffPoint, lastCutOffPoint)) {
-      return firstCutOffPoint;
-    }
+    return cutOffPoints;
+  }
 
-    final int initialCutOffPoint =
-        firstCutOffPoint + random.nextInt(lastCutOffPoint - firstCutOffPoint);
+  /**
+   * This method finds a cutoff point between execution boundaries. It will return an index which
+   * marks such execution boundary. If there is only one boundary it will return the corresponding
+   * position, or zero if there is none.
+   *
+   * <p>A execution boundary is a position where a previous step is automatic and the next one is
+   * non-automatic. Here we can cut the execution off.
+   *
+   * @return index of the cutoff point
+   */
+  private int findCutOffPoint(final Random random) {
+    final var executionBoundaries = findExecutionBoundaries();
 
-    /* skip automatic steps; this makes no difference in terms of execution, but it makes the
-    execution path easier to read and debug. E.g. the execution path will not be cut at a point
-    where other steps will be executed by the engine automatically. So when you read the execution
-    path and it is cut somewhere, it is cut at a place that is consistent with the state in the engine*/
-    int finalCutOffPoint = initialCutOffPoint;
-    while (scheduledSteps.get(finalCutOffPoint).getStep().isAutomatic()) {
-      finalCutOffPoint++;
-    }
-
-    return finalCutOffPoint;
+    return executionBoundaries.chooseRandomBoundary(random);
   }
 
   /**
