@@ -73,6 +73,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     actor.run(() -> failureListeners.add(failureListener));
   }
 
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
+  }
+
   private void updateHealth() {
     componentHealth
         .keySet()

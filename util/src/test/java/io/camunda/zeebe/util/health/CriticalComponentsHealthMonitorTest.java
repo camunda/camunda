@@ -193,5 +193,10 @@ public class CriticalComponentsHealthMonitorTest {
     public void addFailureListener(final FailureListener failureListener) {
       failureListeners.add(failureListener);
     }
+
+    @Override
+    public void removeFailureListener(final FailureListener failureListener) {
+      failureListeners.remove(failureListener);
+    }
   }
 }

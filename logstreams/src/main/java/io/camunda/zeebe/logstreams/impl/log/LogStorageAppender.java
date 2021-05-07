@@ -202,6 +202,11 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
     actor.run(() -> failureListeners.add(failureListener));
   }
 
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
+  }
+
   private void onFailure(final Throwable error) {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
     actor.fail();

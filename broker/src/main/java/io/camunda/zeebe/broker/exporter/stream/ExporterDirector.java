@@ -378,6 +378,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
     actor.run(() -> listeners.add(listener));
   }
 
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> listeners.remove(failureListener));
+  }
+
   private static class RecordExporter {
 
     private final RecordValues recordValues = new RecordValues();
