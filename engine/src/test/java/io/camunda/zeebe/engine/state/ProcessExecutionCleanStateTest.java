@@ -746,6 +746,40 @@ public final class ProcessExecutionCleanStateTest {
     assertThatStateIsEmpty();
   }
 
+  @Test
+  public void testTerminatingProcessWithServiceTask() {
+    // given
+    engineRule
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test").zeebeOutputExpression("x", "y"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        engineRule.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    engineRule.job().ofInstance(processInstanceKey).withType("test").complete();
+
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    engineRule.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
   private void assertThatStateIsEmpty() {
     // sometimes the state takes few moments until is is empty
     Awaitility.await()
