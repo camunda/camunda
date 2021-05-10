@@ -1,4 +1,4 @@
-namespace ?= default
+namespace ?= medic-cw-19-8906ada43-benchmark
 
 .PHONY: all
 all: zeebe starter timer simpleStarter worker
