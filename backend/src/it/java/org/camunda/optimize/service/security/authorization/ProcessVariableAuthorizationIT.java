@@ -88,9 +88,9 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     Response variableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildProcessVariableNamesRequest(
+      .buildProcessVariableNamesRequest(Collections.singletonList(
         createVariableNameRequest("someKey", "1", Collections.emptyList())
-      )
+      ))
       .execute();
 
     Response variableValueResponse = embeddedOptimizeExtension

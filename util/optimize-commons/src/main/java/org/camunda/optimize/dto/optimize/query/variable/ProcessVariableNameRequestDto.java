@@ -12,18 +12,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class ProcessVariableNameRequestDto {
-
+  @NotNull
   private String processDefinitionKey;
   private List<String> processDefinitionVersions = new ArrayList<>();
-  private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
+  private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
 
   @JsonIgnore
   public void setProcessDefinitionVersion(String processDefinitionVersion) {

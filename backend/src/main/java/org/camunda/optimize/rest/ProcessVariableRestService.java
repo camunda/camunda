@@ -16,6 +16,7 @@ import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -31,15 +32,15 @@ import java.util.List;
 public class ProcessVariableRestService {
 
   private final ProcessVariableService processVariableService;
-  private SessionService sessionService;
+  private final SessionService sessionService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<ProcessVariableNameResponseDto> getVariableNames(@Context ContainerRequestContext requestContext,
-                                                               ProcessVariableNameRequestDto variableRequestDto) {
-
-    return processVariableService.getVariableNames(variableRequestDto);
+  public List<ProcessVariableNameResponseDto> getVariableNames(
+    @Context final ContainerRequestContext requestContext,
+    @Valid final List<ProcessVariableNameRequestDto> variableRequestDtos) {
+    return processVariableService.getVariableNames(variableRequestDtos);
   }
 
   @POST

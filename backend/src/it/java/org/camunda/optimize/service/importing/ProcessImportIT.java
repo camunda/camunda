@@ -570,8 +570,8 @@ public class ProcessImportIT extends AbstractImportIT {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient.getProcessVariableNames(
-      variableRequestDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient
+      .getProcessVariableNames(variableRequestDto);
 
     assertThat(variablesResponseDtos).hasSize(3);
   }

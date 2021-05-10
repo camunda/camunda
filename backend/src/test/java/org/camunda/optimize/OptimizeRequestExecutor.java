@@ -870,9 +870,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(ProcessVariableNameRequestDto variableRequestDto) {
+    return buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos) {
     this.path = "variables/";
     this.method = POST;
-    this.body = getBody(variableRequestDto);
+    this.body = getBody(variableRequestDtos);
     return this;
   }
 
@@ -898,9 +902,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
+    return buildDecisionInputVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  }
+
+  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
     this.path = "decision-variables/inputs/names";
     this.method = POST;
-    this.body = getBody(variableRequestDto);
+    this.body = getBody(variableRequestDtos);
     return this;
   }
 
@@ -912,9 +920,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
+    return buildDecisionOutputVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
     this.path = "decision-variables/outputs/names";
     this.method = POST;
-    this.body = getBody(variableRequestDto);
+    this.body = getBody(variableRequestDtos);
     return this;
   }
 

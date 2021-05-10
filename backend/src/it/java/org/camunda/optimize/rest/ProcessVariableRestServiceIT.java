@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequ
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +30,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildProcessVariableNamesRequest(variableRequestDto)
+      .buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto))
       .withoutAuthentication()
       .execute();
 

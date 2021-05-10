@@ -19,6 +19,7 @@ import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -58,6 +59,26 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
         Tuple.tuple("var1", VariableType.STRING),
         Tuple.tuple("var2", VariableType.STRING)
       );
+  }
+
+  @Test
+  public void getVariableNames_multipleDefinitions() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionsWithStringVarNames(of("var1", "var2"));
+    // duplicate variable "var2" should not appear twice
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("var2", "var3", "var4"));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<DecisionVariableNameResponseDto> variableResponse = getVariableNames(Arrays.asList(
+      decisionDefinitionDto1, decisionDefinitionDto2
+    ));
+
+    // then
+    assertThat(variableResponse)
+      .extracting(DecisionVariableNameResponseDto::getName)
+      .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test
@@ -292,7 +313,11 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     deployDecisionsWithVarNames(of(varName), of(DecisionTypeRef.STRING));
   }
 
-  protected abstract List<DecisionVariableNameResponseDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition);
+  protected List<DecisionVariableNameResponseDto> getVariableNames(DecisionDefinitionEngineDto decisionDefinition) {
+    return getVariableNames(Collections.singletonList(decisionDefinition));
+  }
+
+  protected abstract List<DecisionVariableNameResponseDto> getVariableNames(List<DecisionDefinitionEngineDto> decisionDefinitions);
 
   protected abstract List<DecisionVariableNameResponseDto> getVariableNames(String key, List<String> versions);
 
