@@ -10,7 +10,7 @@ package io.camunda.zeebe.test.exporter.record;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.broker.exporter.ExporterObjectMapper;
 
-class ExporterMappedObject {
+public class ExporterMappedObject {
 
   protected static final ExporterObjectMapper OBJECT_MAPPER = new ExporterObjectMapper();
 
