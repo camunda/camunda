@@ -46,8 +46,8 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     actor.run(
         () -> {
           final var monitoredComponent = monitoredComponents.remove(componentName);
-          monitoredComponent.component.removeFailureListener(monitoredComponent);
           componentHealth.remove(componentName);
+          monitoredComponent.component.removeFailureListener(monitoredComponent);
         });
   }
 
@@ -141,6 +141,11 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     return HealthStatus.UNHEALTHY;
   }
 
+  /**
+   * All onComponent* methods must check if the component was not removed in between, as there can
+   * be a race condition between enqueuing the callback, removing the component, and executing the
+   * callback.
+   */
   private final class MonitoredComponent implements FailureListener {
     private final String componentName;
     private final HealthMonitorable component;
@@ -166,18 +171,30 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     }
 
     private void onComponentFailure() {
+      if (!monitoredComponents.containsKey(componentName)) {
+        return;
+      }
+
       log.error("{} failed, marking it as unhealthy", componentName);
       componentHealth.put(componentName, HealthStatus.UNHEALTHY);
       calculateHealth();
     }
 
     private void onComponentRecovered() {
+      if (!monitoredComponents.containsKey(componentName)) {
+        return;
+      }
+
       log.info("{} recovered, marking it as healthy", componentName);
       componentHealth.put(componentName, HealthStatus.HEALTHY);
       calculateHealth();
     }
 
     private void onComponentDied() {
+      if (!monitoredComponents.containsKey(componentName)) {
+        return;
+      }
+
       log.error("{} failed, marking it as dead", componentName);
       componentHealth.put(componentName, HealthStatus.DEAD);
       calculateHealth();
