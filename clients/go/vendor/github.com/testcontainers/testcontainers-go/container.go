@@ -114,13 +114,13 @@ func (t ProviderType) GetProvider() (GenericProvider, error) {
 	return nil, errors.New("unknown provider")
 }
 
-// Validate ensures that the ContainerRequest does not have invalid paramters configured to it
+// Validate ensures that the ContainerRequest does not have invalid parameters configured to it
 // ex. make sure you are not specifying both an image as well as a context
 func (c *ContainerRequest) Validate() error {
 
 	validationMethods := []func() error{
 		c.validateContextAndImage,
-		c.validateContexOrImageIsSpecified,
+		c.validateContextOrImageIsSpecified,
 	}
 
 	var err error
@@ -170,7 +170,7 @@ func (c *ContainerRequest) validateContextAndImage() error {
 	return nil
 }
 
-func (c *ContainerRequest) validateContexOrImageIsSpecified() error {
+func (c *ContainerRequest) validateContextOrImageIsSpecified() error {
 	if c.FromDockerfile.Context == "" && c.FromDockerfile.ContextArchive == nil && c.Image == "" {
 		return errors.New("you must specify either a build context or an image")
 	}

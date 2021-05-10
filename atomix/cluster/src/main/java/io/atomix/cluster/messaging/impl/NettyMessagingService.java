@@ -409,7 +409,6 @@ public class NettyMessagingService implements ManagedMessagingService {
       return;
     }
 
-    // we need these to close them on stop
     openFutures.add(future);
     channelPool
         .getChannel(address, type)
@@ -417,13 +416,16 @@ public class NettyMessagingService implements ManagedMessagingService {
             (channel, channelError) -> {
               if (channelError == null) {
                 final ClientConnection connection = getOrCreateClientConnection(channel);
-                openFutures.remove(future);
                 callback
                     .apply(connection)
                     .whenComplete(
                         (result, sendError) -> {
                           if (sendError == null) {
-                            executor.execute(() -> future.complete(result));
+                            executor.execute(
+                                () -> {
+                                  future.complete(result);
+                                  openFutures.remove(future);
+                                });
                           } else {
                             final Throwable cause = Throwables.getRootCause(sendError);
                             if (!(cause instanceof TimeoutException)
@@ -438,11 +440,19 @@ public class NettyMessagingService implements ManagedMessagingService {
                                         connections.remove(channel);
                                       });
                             }
-                            executor.execute(() -> future.completeExceptionally(sendError));
+                            executor.execute(
+                                () -> {
+                                  future.completeExceptionally(sendError);
+                                  openFutures.remove(future);
+                                });
                           }
                         });
               } else {
-                executor.execute(() -> future.completeExceptionally(channelError));
+                executor.execute(
+                    () -> {
+                      future.completeExceptionally(channelError);
+                      openFutures.remove(future);
+                    });
               }
             });
   }

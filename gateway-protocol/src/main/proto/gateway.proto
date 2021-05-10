@@ -2,7 +2,7 @@ syntax = 'proto3';
 package gateway_protocol;
 
 option java_multiple_files = false;
-option java_package = "io.zeebe.gateway.protocol";
+option java_package = "io.camunda.zeebe.gateway.protocol";
 option go_package = "./;pb";
 
 // For a more complete documentation, refer to Zeebe documentation at:

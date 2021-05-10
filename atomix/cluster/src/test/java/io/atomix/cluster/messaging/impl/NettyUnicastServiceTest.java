@@ -24,7 +24,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
-import io.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.junit.After;
 import org.junit.Before;

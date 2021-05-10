@@ -2,13 +2,13 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Distribution</name>
-  <artifactId>zeebe-distribution</artifactId>
+  <artifactId>camunda-cloud-zeebe</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -19,33 +19,33 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-cluster</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-utils</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
     </dependency>
 
     <dependency>
@@ -144,6 +144,7 @@
 
   </dependencies>
   <build>
+    <finalName>camunda-cloud-zeebe-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -159,18 +160,18 @@
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
           <repositoryName>lib</repositoryName>
-          <assembleDirectory>${project.build.directory}/zeebe-broker</assembleDirectory>
+          <assembleDirectory>${project.build.directory}/camunda-cloud-zeebe</assembleDirectory>
           <platforms>
             <platform>windows</platform>
             <platform>unix</platform>
           </platforms>
           <programs>
             <program>
-              <mainClass>io.zeebe.broker.StandaloneBroker</mainClass>
+              <mainClass>io.camunda.zeebe.broker.StandaloneBroker</mainClass>
               <id>broker</id>
             </program>
             <program>
-              <mainClass>io.zeebe.gateway.StandaloneGateway</mainClass>
+              <mainClass>io.camunda.zeebe.gateway.StandaloneGateway</mainClass>
               <id>gateway</id>
             </program>
           </programs>
@@ -198,10 +199,10 @@
             </goals>
             <configuration>
               <target>
-                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="${zbctl.force}" />
-                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="${zbctl.force}" />
-                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="${zbctl.force}" />
-                <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" failonerror="${zbctl.force}" />
+                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl" failonerror="${zbctl.force}" />
+                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.exe" failonerror="${zbctl.force}" />
+                <copy file="${zbctl.rootDir}/clients/go/cmd/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/camunda-cloud-zeebe/bin/zbctl.darwin" failonerror="${zbctl.force}" />
+                <chmod dir="${project.build.directory}/camunda-cloud-zeebe/bin" perm="ugo+rx" includes="zbctl*" failonerror="${zbctl.force}" />
               </target>
             </configuration>
           </execution>
@@ -233,7 +234,7 @@
         <configuration>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
-            <dependency>io.zeebe:zeebe-elasticsearch-exporter</dependency>
+            <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>

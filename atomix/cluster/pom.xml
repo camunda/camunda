@@ -14,30 +14,28 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <artifactId>atomix-cluster</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <artifactId>zeebe-atomix-cluster</artifactId>
 
   <dependencies>
     <dependency>
-      <artifactId>atomix-utils</artifactId>
-      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
       <artifactId>zeebe-util</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
       <artifactId>zeebe-protocol</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-journal</artifactId>
     </dependency>
     <dependency>
@@ -110,7 +108,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -172,22 +170,22 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-journal</artifactId>
       <scope>test</scope>
-      <version>${parent.version}</version>
+      <version>${project.parent.version}</version>
       <type>test-jar</type>
     </dependency>
   </dependencies>
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Atomix Cluster</name>
+  <name>Zeebe Atomix Cluster</name>
   <packaging>jar</packaging>
 
   <parent>
-    <artifactId>atomix-parent</artifactId>
-    <groupId>io.zeebe</groupId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>zeebe-atomix-parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <version>1.1.0-SNAPSHOT</version>
   </parent>
 
 

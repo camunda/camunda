@@ -27,8 +27,8 @@ function upload {
   popd
 }
 
-upload dist/target zeebe-distribution-${RELEASE_VERSION}.tar.gz
-upload dist/target zeebe-distribution-${RELEASE_VERSION}.zip
+upload dist/target camunda-cloud-zeebe-${RELEASE_VERSION}.tar.gz
+upload dist/target camunda-cloud-zeebe-${RELEASE_VERSION}.zip
 upload clients/go/cmd/zbctl/dist zbctl
 upload clients/go/cmd/zbctl/dist zbctl.exe
 upload clients/go/cmd/zbctl/dist zbctl.darwin

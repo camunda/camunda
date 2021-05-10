@@ -9,7 +9,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.zeebe" level="trace"/>
+    <Logger name="io.camunda.zeebe" level="trace"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

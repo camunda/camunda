@@ -22,8 +22,8 @@ run the command: `mvn clean install -DskipTests` in the root folder.
 
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 ```
-dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.tar.gz
-dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.zip
+dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.tar.gz
+dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
 This is a small overview of the contents of the different modules:
@@ -139,36 +139,50 @@ To work on an issue, follow the following steps:
 
 ## Commit Message Guidelines
 
-Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format with scope.
+Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format.
 
+```
+<header>
+<BLANK LINE>
+<body>
+<BLANK LINE> (optional - mandatory with footer)
+<footer> (optional)
+```
+
+Zeebe uses a bot which will check your commit messages when a pull request is
+submitted. Please make sure to address any hints from the bot.
+
+### Commit message header
 Examples:
 
 * `docs(reference): add start event to bpmn symbol support matrix`
-* `fix(broker): reduce latency in backpressure`
+* `perf(broker): reduce latency in backpressure`
 * `feat(clients/go): allow more than 9000 jobs in a single call`
 
-The commit message should match the following pattern:
+The commit header should match the following pattern:
 ```
 %{type}(%{scope}): %{description}
 ```
 
-- `type` and `scope` should be chosen as follows
-    - `feat`: For user facing features or improvements. `scope` should be either
-      `broker`, `clients/java` or `clients/go`.
-    - `fix`: For user facing bug fixes. `scope` should be either
-      `broker`, `clients/java` or `clients/go`.
-    - `chore`: For code changes which are not user facing, `scope` should be
-      the folder name of the component which contains the main part of the
-      change, e.g. `broker` or `exporters`.
-    - `docs`:  For changes on the documentation. `scope` should be the sub folder
-      name in the `docs/src/` directory which contains the main change, e.g.
-      `introduction` or `reference`.
-- `description`: short description of the change to a max length of the whole
-  subject line of 120 characters
+The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
 
+- `type` should be one of:
+   - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
+   - `ci`: Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
+   - `deps`: A change to the external dependencies (was already used by Dependabot)
+   - `docs`:  A change to the documentation
+   - `feat`: A new feature (both internal or user-facing)
+   - `fix`: A bug fix (both internal or user-facing)
+   - `perf`: A code change that improves performance
+   - `refactor`: A code change that does not change the behavior
+   - `style`: A change to align the code with our style guide
+   - `test`: Adding missing tests or correcting existing tests
+- `scope` (optional): name of the changed component (e.g. `engine`, `journal`, `README`)
+- `description`: short description of the change in present tense
 
-Zeebe uses a bot which will check your commit messages when a pull request is
-submitted. Please make sure to address any hints from the bot.
+### Commit message body
+
+Should describe the motivation for the change.
 
 ## Contributor License Agreement
 

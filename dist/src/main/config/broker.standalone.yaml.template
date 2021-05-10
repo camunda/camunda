@@ -411,7 +411,7 @@
       #   two exporters that point to the same JAR, with the same class or a different one, and use args
       #   to parametrize its instantiation.
       # className:
-      #   entry point of the exporter, a class which *must* extend the io.zeebe.exporter.Exporter
+      #   entry point of the exporter, a class which *must* extend the io.camunda.zeebe.exporter.Exporter
       #   interface.
       #
       # A nested table as "args:" will allow you to inject arbitrary arguments into your
@@ -427,7 +427,7 @@
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_DEBUGLOG_..."
       #
       # debuglog:
-        # className: io.zeebe.broker.exporter.debug.DebugLogExporter
+        # className: io.camunda.zeebe.broker.exporter.debug.DebugLogExporter
         # args:
         #   logLevel: debug
         #   prettyPrint: false
@@ -439,7 +439,7 @@
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_DEBUGHTTP_..."
       #
       # debugHttp:
-        # className: io.zeebe.broker.exporter.debug.DebugHttpExporter
+        # className: io.camunda.zeebe.broker.exporter.debug.DebugHttpExporter
         # args:
         #   port = 8000
         #   limit = 1024
@@ -450,7 +450,7 @@
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
       #
       # elasticsearch:
-        # className: io.zeebe.exporter.ElasticsearchExporter
+        # className: io.camunda.zeebe.exporter.ElasticsearchExporter
         #
         # args:
         #   url: http://localhost:9200
@@ -472,7 +472,7 @@
         #     event: true
         #     rejection: false
         #
-        #     deployment: true
+        #     deployment: false
         #     process: true
         #     error: true
         #     incident: true
@@ -485,8 +485,6 @@
         #     processInstance: true
         #     processInstanceCreation: false
         #     processMessageSubscription: false
-        #
-        #     ignoreVariablesAbove: 32677
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.

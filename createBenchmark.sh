@@ -30,13 +30,14 @@ fi
 
 mvn clean install -DskipTests -T1C
 
-docker build --build-arg DISTBALL=dist/target/zeebe-distribution-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
+docker build --build-arg DISTBALL=dist/target/camunda-cloud-zeebe-*.tar.gz --build-arg APP_ENV=dev -t "gcr.io/zeebe-io/zeebe:$benchmark" .
 docker push "gcr.io/zeebe-io/zeebe:$benchmark"
 
 cd benchmarks/project
 
 sed_inplace "s/:SNAPSHOT/:$benchmark/" docker-compose.yml
-docker-compose build
+# Use --no-cache to force rebuild the image for the benchmark application. Without this changes to zeebe-client were not picked up. This can take longer to build.
+docker-compose build --no-cache
 docker-compose push
 git restore -- docker-compose.yml
 
