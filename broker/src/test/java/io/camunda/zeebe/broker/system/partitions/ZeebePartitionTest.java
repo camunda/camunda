@@ -78,9 +78,9 @@ public class ZeebePartitionTest {
     // given
     when(healthMonitor.getHealthStatus()).thenReturn(HealthStatus.UNHEALTHY);
     final ZeebePartition partition = new ZeebePartition(ctx, transition);
-    schedulerRule.submitActor(partition);
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onFailure();
+    schedulerRule.submitActor(partition);
 
     // when
     partition.addFailureListener(failureListener);
@@ -94,11 +94,12 @@ public class ZeebePartitionTest {
   public void shouldCallOnRecoveredOnAddFailureListenerAndHealthy() {
     // given
     final ZeebePartition partition = new ZeebePartition(ctx, transition);
-    schedulerRule.submitActor(partition);
     final FailureListener failureListener = mock(FailureListener.class);
     doNothing().when(failureListener).onRecovered();
+
     // make partition healthy
     when(healthMonitor.getHealthStatus()).thenReturn(HealthStatus.HEALTHY);
+    schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
 
     // when
@@ -113,7 +114,6 @@ public class ZeebePartitionTest {
   public void shouldStepDownAfterFailedLeaderTransition() throws InterruptedException {
     // given
     final ZeebePartition partition = new ZeebePartition(ctx, transition);
-    schedulerRule.submitActor(partition);
     final CountDownLatch latch = new CountDownLatch(1);
 
     when(transition.toLeader(anyLong()))
@@ -133,6 +133,7 @@ public class ZeebePartitionTest {
             });
 
     // when
+    schedulerRule.submitActor(partition);
     partition.onNewRole(Role.LEADER, 1);
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
@@ -148,7 +149,6 @@ public class ZeebePartitionTest {
   public void shouldGoInactiveAfterFailedFollowerTransition() throws InterruptedException {
     // given
     final ZeebePartition partition = new ZeebePartition(ctx, transition);
-    schedulerRule.submitActor(partition);
     final CountDownLatch latch = new CountDownLatch(1);
 
     when(transition.toFollower(anyLong()))
@@ -168,6 +168,7 @@ public class ZeebePartitionTest {
             });
 
     // when
+    schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
@@ -182,9 +183,7 @@ public class ZeebePartitionTest {
   public void shouldGoInactiveIfTransitionHasUnrecoverableFailure() throws InterruptedException {
     // given
     final ZeebePartition partition = new ZeebePartition(ctx, transition);
-    schedulerRule.submitActor(partition);
     final CountDownLatch latch = new CountDownLatch(1);
-
     when(transition.toLeader(anyLong()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new UnrecoverableException("expected")));
@@ -197,6 +196,7 @@ public class ZeebePartitionTest {
     when(raft.getRole()).thenReturn(Role.LEADER);
 
     // when
+    schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
     assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
@@ -205,7 +205,6 @@ public class ZeebePartitionTest {
     order.verify(transition).toLeader(0L);
     order.verify(transition).toInactive();
     order.verify(raft).goInactive();
-    order.verifyNoMoreInteractions();
   }
 
   private static class NoopTransition implements PartitionTransition {
