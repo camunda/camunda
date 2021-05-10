@@ -76,13 +76,7 @@
           "baselineUnit": "minute"
         }
       },
-      "definitions": [{
-        "key": null,
-        "versions": null,
-        "name": null,
-        "displayName": null,
-        "tenantIds": [null]
-      }],
+      "definitions": [],
       "filter": [],
       "view": null,
       "groupBy": null,

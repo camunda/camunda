@@ -13,7 +13,7 @@ import './EditButton.scss';
 export default function EditButton({report, onClick}) {
   return (
     <Button className="EditButton" onClick={() => onClick(report)}>
-      <Icon type="edit" />
+      <Icon type="edit-small" />
     </Button>
   );
 }

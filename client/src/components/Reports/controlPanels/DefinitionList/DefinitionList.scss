@@ -1,0 +1,175 @@
+@mixin button-styles {
+  width: 20px;
+  height: 20px;
+  margin: 3px;
+
+  .Icon {
+    margin: 3px;
+    vertical-align: initial;
+
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+    min-height: 14px;
+  }
+}
+
+.DefinitionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-grow: 1;
+
+  &.empty {
+    font-size: 11px;
+    color: var(--grey-lighten-56);
+    text-align: center;
+  }
+
+  li {
+    background: var(--white);
+    border: 1px solid var(--silver-darken-87);
+    border-radius: 5px;
+    padding: 10px;
+    position: relative;
+    margin-top: 5px;
+
+    &:hover,
+    &.active {
+      background: var(--silver-lighten-99);
+
+      > .actions {
+        > .Button,
+        > .Popover > .buttonWrapper .Button {
+          opacity: 1;
+        }
+      }
+    }
+
+    h4 {
+      font-size: 13px;
+      color: var(--grey-darken-33);
+      margin-bottom: 3px;
+      margin-right: 75px;
+    }
+
+    > .info {
+      font-size: 11px;
+      color: var(--grey-lighten-56);
+    }
+
+    > .actions {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+
+      > .Button,
+      > .Popover > .buttonWrapper .Button {
+        opacity: 0;
+
+        &:focus {
+          opacity: 1;
+        }
+      }
+
+      > .Button {
+        @include button-styles;
+      }
+
+      > .Popover {
+        display: inline-block;
+
+        > .buttonWrapper {
+          .Popover__button {
+            padding: 0;
+            background: none;
+            border: none;
+            border-radius: 50%;
+            @include button-styles;
+
+            &:hover {
+              background-color: var(--silver-darken-94);
+            }
+
+            &:active,
+            &.active {
+              background-color: var(--silver-darken-80);
+            }
+
+            .downIcon {
+              display: none;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  &.Popover.overlay {
+    > .dialogContainer {
+      margin-right: -57px;
+      width: 680px;
+
+      > .Popover__dialog {
+        padding: 0;
+
+        .definitionLabel {
+          margin: 20px 20px 0 40px;
+          color: var(--grey-lighten-56);
+          font-size: 12px;
+        }
+        .definitionName {
+          margin-left: 40px;
+          color: var(--grey-darken-23);
+          font-size: 15px;
+          font-weight: 500;
+          margin-bottom: 20px;
+        }
+
+        .selectionPanel {
+          display: flex;
+          margin: 0 20px 20px 40px;
+
+          .entry {
+            width: 108px;
+            margin-right: 10px;
+          }
+
+          .displayName {
+            margin-left: 4px;
+            flex: 1;
+
+            .Input {
+              width: 100%;
+            }
+          }
+        }
+
+        .actionBar {
+          height: 65px;
+          background-color: var(--silver-lighten-99);
+          border-top: 1px solid var(--silver-darken-94);
+          border-radius: 0 0 8px 8px;
+          padding: 21px 46px;
+
+          .Button {
+            margin-right: 15px;
+          }
+        }
+      }
+    }
+  }
+
+  .TenantPopover,
+  .VersionPopover {
+    .Popover__dialog-arrow-border,
+    .Popover__dialog-arrow {
+      display: none;
+    }
+
+    .dialogContainer {
+      border-radius: 0;
+      margin-top: 2px;
+    }
+  }
+}

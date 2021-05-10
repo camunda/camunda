@@ -35,7 +35,7 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
       {availableFilters.map(({type, data}, idx) => {
         const deleter = (
           <Button className="deleteButton" icon onClick={() => removeFilter(idx)}>
-            <Icon type="close-large" />
+            <Icon type="close-small" />
           </Button>
         );
         switch (type) {
@@ -64,7 +64,7 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                     setAllowCustomValues(data.data?.allowCustomValues ?? false);
                   }}
                 >
-                  <Icon type="edit" />
+                  <Icon type="edit-small" />
                 </Button>
                 {deleter}
               </DashboardVariableFilter>
@@ -81,7 +81,7 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                     setAllowCustomValues(data.allowCustomValues);
                   }}
                 >
-                  <Icon type="edit" />
+                  <Icon type="edit-small" />
                 </Button>
                 {deleter}
               </DashboardAssigneeFilter>

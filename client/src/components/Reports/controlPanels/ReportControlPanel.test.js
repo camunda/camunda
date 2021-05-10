@@ -9,8 +9,9 @@ import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
 import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, reportConfig} from 'services';
-import {DefinitionSelection, Button} from 'components';
+import {Button} from 'components';
 
+import {DefinitionList} from './DefinitionList';
 import ReportSelect from './ReportSelect';
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 
@@ -247,11 +248,14 @@ it('should load the process definition xml when a new definition is selected', a
 
   loadProcessDefinitionXml.mockClear();
 
-  await node.find(DefinitionSelection).prop('onChange')({
-    key: 'newDefinition',
-    versions: ['1'],
-    tenantIds: ['a', 'b'],
-  });
+  await node.find(DefinitionList).prop('onChange')(
+    {
+      key: 'newDefinition',
+      versions: ['1'],
+      tenantIds: ['a', 'b'],
+    },
+    0
+  );
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
 });
@@ -269,7 +273,8 @@ it('should reset variable groupBy report when changing to a definition that does
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
+
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
@@ -293,7 +298,7 @@ it('should reset variable view report when changing to a definition that does no
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].view).toEqual({$set: null});
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
@@ -316,7 +321,7 @@ it('should reset distributed by variable report when changing to a definition th
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].distributedBy).toEqual({$set: {type: 'none', value: null}});
 });
@@ -335,7 +340,7 @@ it('should not reset variable report when changing to a definition that has the 
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
   expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
 });
 
@@ -359,7 +364,7 @@ it('should reset heatmap target value on definition change if flow nodes does no
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
 });
@@ -383,7 +388,7 @@ it('should reset process part on definition change if flow nodes does not exist'
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.processPart).toBeDefined();
 });
@@ -409,7 +414,7 @@ it('should not reset heatmap target value on definition change if flow nodes exi
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).not.toBeDefined();
 });
@@ -433,7 +438,7 @@ it('should not reset process part on definition change if flow nodes exist', asy
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.processPart).not.toBeDefined();
 });
@@ -465,10 +470,10 @@ it('should show not show a measure selection where it does not make sense', () =
 it('should allow collapsing sections', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
-  node.find('.source').find(Button).simulate('click');
+  node.find('.source .sectionTitle').simulate('click');
   expect(node.find('.source')).toHaveClassName('hidden');
 
-  node.find('.source').find(Button).simulate('click');
+  node.find('.source .sectionTitle').simulate('click');
   expect(node.find('.source')).not.toHaveClassName('hidden');
 });
 
@@ -491,7 +496,7 @@ it('should reset columnOrder only when changing definition', async () => {
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({key: 'differentDefinition'});
+  await node.find(DefinitionList).prop('onChange')({key: 'differentDefinition'}, 0);
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
     columnOrder: {$set: []},
@@ -517,7 +522,7 @@ it('should not reset columnOrder when changing version', async () => {
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({key: 'same'});
+  await node.find(DefinitionList).prop('onChange')({key: 'same'}, 0);
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).not.toBeDefined();
 });
@@ -539,7 +544,7 @@ it('should add new variables to includedColumns when switching definition/versio
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.tableColumns.includedColumns).toEqual({
     $set: ['variable:existingVariable', 'variable:newVariable'],

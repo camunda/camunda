@@ -3,6 +3,10 @@
 .Popover {
   position: relative;
 
+  &.overlay {
+    position: absolute;
+  }
+
   .dialogContainer {
     position: absolute;
     width: auto;

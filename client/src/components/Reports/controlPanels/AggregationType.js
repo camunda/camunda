@@ -96,7 +96,7 @@ export default function AggregationType({report, onChange}) {
         title={
           <>
             <span className="content">{popoverTitle}</span>
-            <Icon className="editIcon" type="edit" />
+            <Icon className="editIcon" type="edit-small" />
           </>
         }
       >

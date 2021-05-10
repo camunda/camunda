@@ -249,6 +249,9 @@
     "downloadCSV": "Download CSV",
     "measure": "Measure",
     "addMeasure": "Add measure",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Add optional display name",
+    "noSources": "No Data Sources",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -361,8 +364,12 @@
       "evaluation": "Total Evaluation</br> Count: <b>{count}</b>"
     },
     "definition": {
+      "add": "Add {type}",
+      "search": "Search for {type}",
       "process": "Process Definition",
-      "decision": "Decision Definition"
+      "process-plural": "Process Definitions",
+      "decision": "Decision Definition",
+      "decision-plural": "Decision Definitions"
     },
     "noDefinitionMessage": {
       "process": "Select a <b>Process Definition</b>.",
@@ -747,6 +754,14 @@
     "selected": "Selected",
     "documentation": "documentation",
     "open": "Open",
+    "process": {
+      "label": "Process",
+      "label-plural": "Processes"
+    },
+    "decision": {
+      "label": "Decision",
+      "label-plural": "Decisions"
+    },
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"
@@ -793,7 +808,8 @@
       "viewRawData": "View Raw data",
       "viewModel": {
         "decision": "View Decision Table",
-        "process": "View Process Model"
+        "process": "View Process Model",
+        "model": "View Model"
       },
       "namePlaceholder": {
         "Report": "Report name",

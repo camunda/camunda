@@ -15,7 +15,7 @@ import {loadVariables} from 'services';
 export function DistributedBy({
   report: {
     data: {
-      definitions: [{key, versions, tenantIds}],
+      definitions,
       distributedBy,
       view,
       groupBy,
@@ -26,6 +26,7 @@ export function DistributedBy({
   onChange,
   mightFail,
 }) {
+  const {key, versions, tenantIds} = definitions?.[0] ?? {};
   const [variables, setVariables] = useState([]);
 
   useEffect(() => {

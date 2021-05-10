@@ -12,7 +12,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       </span>
       <Icon
         className="editIcon"
-        type="edit"
+        type="edit-small"
       />
     </React.Fragment>
   }
@@ -69,7 +69,7 @@ exports[`should render an user task duration selection for user task duration re
       </span>
       <Icon
         className="editIcon"
-        type="edit"
+        type="edit-small"
       />
     </React.Fragment>
   }

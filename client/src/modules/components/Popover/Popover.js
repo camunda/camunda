@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 
 import {Button, Icon, Tooltip} from 'components';
@@ -17,6 +18,7 @@ export default class Popover extends React.Component {
     super(props);
     this.initilizeFooterRef();
 
+    this.el = document.createElement('div');
     this.id = getRandomId();
     this.insideClick = false;
 
@@ -27,13 +29,25 @@ export default class Popover extends React.Component {
   }
 
   componentDidMount() {
+    document.body.appendChild(this.el);
     this.mounted = true;
     document.body.addEventListener('click', this.close, {capture: true});
   }
 
   componentWillUnmount() {
+    document.body.removeChild(this.el);
     document.body.removeEventListener('click', this.close, {capture: true});
     this.mounted = false;
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.open !== this.state.open) {
+      if (this.state.open) {
+        this.props.onOpen?.();
+      } else {
+        this.props.onClose?.();
+      }
+    }
   }
 
   toggleOpen = (evt) => {
@@ -119,10 +133,34 @@ export default class Popover extends React.Component {
   };
 
   createOverlay = () => {
-    return (
-      <div className="overlay" onClick={this.catchClick}>
-        <span className="Popover__dialog-arrow-border"> </span>
-        <span className="Popover__dialog-arrow" />
+    const {renderInPortal} = this.props;
+
+    let overlayStyles = {};
+    let arrowStyles = {};
+    if (renderInPortal) {
+      const box = this.buttonRef.getBoundingClientRect();
+      overlayStyles = {
+        left: box.left,
+        top: box.top + box.height,
+      };
+
+      arrowStyles = {
+        left: box.width / 2,
+      };
+    }
+
+    const markup = (
+      <div
+        className={classnames('overlay', this.props.renderInPortal, {
+          Popover: this.props.renderInPortal,
+        })}
+        onClick={this.catchClick}
+        style={overlayStyles}
+      >
+        <span className="Popover__dialog-arrow-border" style={arrowStyles}>
+          {' '}
+        </span>
+        <span className="Popover__dialog-arrow" style={arrowStyles} />
         <div className="dialogContainer" style={this.state.dialogStyles}>
           <div
             ref={this.storePopoverDialogRef}
@@ -135,6 +173,12 @@ export default class Popover extends React.Component {
         </div>
       </div>
     );
+
+    if (renderInPortal) {
+      return ReactDOM.createPortal(markup, this.el);
+    }
+
+    return markup;
   };
 
   storeButtonRef = (node) => {

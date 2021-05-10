@@ -25,7 +25,7 @@ export default function VersionPopover({
   if (selected.length === 1 && selected[0] === 'all') {
     title = t('common.all');
   } else if (selected.length === 1 && selected[0] === 'latest') {
-    title = t('common.definitionSelection.latest') + ' : ' + versions[0].version;
+    title = t('common.definitionSelection.latest') + ' : ' + versions[0]?.version;
   } else if (selected.length) {
     title = selected.join(', ');
   }

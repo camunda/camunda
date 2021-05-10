@@ -6,8 +6,9 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import update from 'immutability-helper';
 
-import {DefinitionSelection, Icon, Button} from 'components';
+import {Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
@@ -19,7 +20,9 @@ import AggregationType from './AggregationType';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
+import {DefinitionList} from './DefinitionList';
 import Measure from './Measure';
+import AddDefinition from './AddDefinition';
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
@@ -34,7 +37,6 @@ export default withErrorHandling(
       this.state = {
         variables: null,
         flowNodeNames: null,
-        scrolled: false,
         showSource: true,
         showSetup: true,
         showFilter: false,
@@ -43,8 +45,11 @@ export default withErrorHandling(
 
     componentDidMount() {
       const data = this.props.report.data;
-      this.loadVariables(data?.definitions?.[0]);
-      this.loadFlowNodeNames(data?.definitions?.[0]);
+
+      if (data?.definitions?.length) {
+        this.loadVariables(data.definitions[0]);
+        this.loadFlowNodeNames(data.definitions[0]);
+      }
     }
 
     loadFlowNodeNames = ({key, versions, tenantIds}) => {
@@ -129,45 +134,83 @@ export default withErrorHandling(
       }
     };
 
-    changeDefinition = async ({key, versions, tenantIds, name}) => {
+    addDefinition = async (newDefinitions) => {
+      let change = {definitions: {$push: newDefinitions}};
+
+      this.props.setLoading(true);
+      const data = this.props.report.data;
+
+      if (data.definitions.length === 0) {
+        // if we add the first definition, we need to also process the definition update to update the xml
+        const newFirstDefinition = update(data, change).definitions[0];
+
+        change = {...change, ...(await this.processDefinitionUpdate(newFirstDefinition))};
+      }
+
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    removeDefinition = async (idx) => {
+      let change = {
+        definitions: {$splice: [[idx, 1]]},
+      };
+
+      this.props.setLoading(true);
+      const data = this.props.report.data;
+
+      if (data.definitions.length > 1) {
+        const newFirstDefinition = update(data, change).definitions[0];
+
+        change = {...change, ...(await this.processDefinitionUpdate(newFirstDefinition))};
+      }
+
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    changeDefinition = async (changedDefinition, idx) => {
+      this.props.setLoading(true);
+
+      const change = {
+        definitions: {
+          [idx]: {$set: changedDefinition},
+        },
+        ...(idx === 0 && (await this.processDefinitionUpdate(changedDefinition))),
+      };
+
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    processDefinitionUpdate = async (newDefinition) => {
       const {
         configuration: {
           tableColumns: {columnOrder, includedColumns, excludedColumns},
           processPart,
           heatmapTargetValue: {values},
         },
-        definitions: [{key: definitionKey}],
+        definitions,
       } = this.props.report.data;
+
+      const definitionKey = definitions[0]?.key;
       const targetFlowNodes = Object.keys(values);
+      const change = {};
 
-      const definitionData = {
-        key,
-        versions,
-        tenantIds,
-        name: name,
-        displayName: name,
-      };
-
-      this.props.setLoading(true);
       const [xml] = await Promise.all([
-        this.loadXml(definitionData),
-        this.loadVariables(definitionData),
-        this.loadFlowNodeNames(definitionData),
+        this.loadXml(newDefinition),
+        this.loadVariables(newDefinition),
+        this.loadFlowNodeNames(newDefinition),
       ]);
 
-      const change = {
-        definitions: {
-          $set: [definitionData],
-        },
-        configuration: {xml: {$set: xml}},
-      };
+      change.configuration = {xml: {$set: xml}};
 
       const variableConfig = this.getVariableConfig();
       if (variableConfig && !this.variableExists(variableConfig.name)) {
         variableConfig.reset(change);
       }
 
-      if (columnOrder.length && key !== definitionKey) {
+      if (columnOrder.length && newDefinition.key !== definitionKey) {
         change.configuration.tableColumns = {columnOrder: {$set: []}};
       }
 
@@ -196,8 +239,7 @@ export default withErrorHandling(
         change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
       }
 
-      await this.props.updateReport(change, true);
-      this.props.setLoading(false);
+      return change;
     };
 
     updateReport = (type, newValue) => {
@@ -206,7 +248,7 @@ export default withErrorHandling(
 
     render() {
       const {data, result} = this.props.report;
-      const {showSource, showSetup, showFilter, scrolled, flowNodeNames, variables} = this.state;
+      const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
 
       const {key, versions, tenantIds} = data.definitions?.[0] ?? {};
 
@@ -215,149 +257,164 @@ export default withErrorHandling(
 
       return (
         <div className="ReportControlPanel">
-          <section className={classnames('select', 'source', {hidden: !showSource})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showSource: !showSource});
-              }}
-            >
-              <Icon type="data-source" />
-              {t('common.dataSource')}
-              <span className={classnames('sectionToggle', {open: showSource})}>
-                <Icon type="down" />
-              </span>
-            </Button>
-            <DefinitionSelection
-              type="process"
-              definitionKey={key}
-              versions={versions}
-              tenants={tenantIds}
-              xml={data.configuration.xml}
-              onChange={this.changeDefinition}
-              renderDiagram
-            />
-          </section>
-          <section className={classnames('reportSetup', {hidden: !showSetup})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showSetup: !showSetup});
-              }}
-            >
-              <Icon type="report" />
-              {t('report.reportSetup')}
-              <span className={classnames('sectionToggle', {open: showSetup})}>
-                <Icon type="down" />
-              </span>
-            </Button>
-            <ul>
-              <li className="select">
-                <span className="label">{t(`report.view.label`)}</span>
-                <ReportSelect
-                  type="process"
-                  field="view"
-                  value={data.view}
-                  report={this.props.report}
-                  variables={{variable: variables}}
-                  disabled={!key}
-                  onChange={(newValue) => this.updateReport('view', newValue)}
-                />
-                {data.view?.entity === 'variable' && (
-                  <AggregationType report={data} onChange={this.props.updateReport} />
-                )}
-              </li>
-              {shouldDisplayMeasure && (
-                <Measure
-                  report={data}
-                  updateMeasure={(newMeasures) =>
-                    this.updateReport('view', {...data.view, properties: newMeasures})
+          <div className="controlSections">
+            <section className={classnames('select', 'source', {hidden: !showSource})}>
+              <div
+                tabIndex="0"
+                className="sectionTitle"
+                onClick={() => {
+                  this.setState({showSource: !showSource});
+                }}
+                onKeyDown={(evt) => {
+                  if (
+                    (evt.key === ' ' || evt.key === 'Enter') &&
+                    evt.target === evt.currentTarget
+                  ) {
+                    this.setState({showSource: !showSource});
                   }
-                  updateAggregation={this.props.updateReport}
-                />
-              )}
-              {shouldAllowAddingMeasure && (
-                <li className="addMeasure">
-                  <Button
-                    onClick={() =>
-                      this.updateReport('view', {
-                        ...data.view,
-                        properties: ['frequency', 'duration'],
-                      })
-                    }
-                  >
-                    + {t('report.addMeasure')}
-                  </Button>
-                </li>
-              )}
-              <li className="select">
-                <span className="label">{t(`report.groupBy.label`)}</span>
-                <ReportSelect
+                }}
+              >
+                <Icon type="data-source" />
+                {t('common.dataSource')}
+                <AddDefinition
                   type="process"
-                  field="groupBy"
-                  value={data.groupBy}
-                  report={this.props.report}
-                  variables={{variable: variables}}
-                  disabled={!key || !data.view}
-                  onChange={(newValue) => this.updateReport('groupBy', newValue)}
-                  previous={[data.view]}
+                  definitions={data.definitions}
+                  onAdd={(newDefinitions) => {
+                    this.addDefinition(newDefinitions);
+                  }}
                 />
-              </li>
-              <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
-              {isDurationHeatmap(data) && (
+                <span className={classnames('sectionToggle', {open: showSource})}>
+                  <Icon type="down" />
+                </span>
+              </div>
+              <DefinitionList
+                type="process"
+                definitions={data.definitions}
+                onChange={(change, idx) => {
+                  if (change) {
+                    return this.changeDefinition(change, idx);
+                  } else {
+                    return this.removeDefinition(idx);
+                  }
+                }}
+              />
+            </section>
+            <section className={classnames('reportSetup', {hidden: !showSetup})}>
+              <Button
+                className="sectionTitle"
+                onClick={() => {
+                  this.setState({showSetup: !showSetup});
+                }}
+              >
+                <Icon type="report" />
+                {t('report.reportSetup')}
+                <span className={classnames('sectionToggle', {open: showSetup})}>
+                  <Icon type="down" />
+                </span>
+              </Button>
+              <ul>
                 <li className="select">
-                  <span className="label">{t('report.heatTarget.label')}</span>
-                  <TargetValueComparison
+                  <span className="label">{t(`report.view.label`)}</span>
+                  <ReportSelect
+                    type="process"
+                    field="view"
+                    value={data.view}
                     report={this.props.report}
-                    onChange={this.props.updateReport}
+                    variables={{variable: variables}}
+                    disabled={!key}
+                    onChange={(newValue) => this.updateReport('view', newValue)}
                   />
+                  {data.view?.entity === 'variable' && (
+                    <AggregationType report={data} onChange={this.props.updateReport} />
+                  )}
                 </li>
-              )}
-              {isProcessInstanceDuration(data) && (
-                <li>
-                  <ProcessPart
-                    flowNodeNames={flowNodeNames}
-                    xml={data.configuration.xml}
-                    processPart={data.configuration.processPart}
-                    update={(newPart) => {
-                      const change = {configuration: {processPart: {$set: newPart}}};
-                      if (data.configuration.aggregationTypes.includes('median')) {
-                        const newAggregations = data.configuration.aggregationTypes.filter(
-                          (type) => type !== 'median'
-                        );
-                        if (newAggregations.length === 0) {
-                          newAggregations.push('avg');
-                        }
-
-                        change.configuration.aggregationTypes = {$set: newAggregations};
+                {shouldDisplayMeasure && (
+                  <Measure
+                    report={data}
+                    updateMeasure={(newMeasures) =>
+                      this.updateReport('view', {...data.view, properties: newMeasures})
+                    }
+                    updateAggregation={this.props.updateReport}
+                  />
+                )}
+                {shouldAllowAddingMeasure && (
+                  <li className="addMeasure">
+                    <Button
+                      onClick={() =>
+                        this.updateReport('view', {
+                          ...data.view,
+                          properties: ['frequency', 'duration'],
+                        })
                       }
-                      this.props.updateReport(change, true);
-                    }}
+                    >
+                      + {t('report.addMeasure')}
+                    </Button>
+                  </li>
+                )}
+                <li className="select">
+                  <span className="label">{t(`report.groupBy.label`)}</span>
+                  <ReportSelect
+                    type="process"
+                    field="groupBy"
+                    value={data.groupBy}
+                    report={this.props.report}
+                    variables={{variable: variables}}
+                    disabled={!key || !data.view}
+                    onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                    previous={[data.view]}
                   />
                 </li>
-              )}
-            </ul>
-          </section>
-          <div className="filter header">
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showFilter: !showFilter});
-              }}
-            >
-              <Icon type="filter" />
-              {t('common.filter.label')}
-              <span className={classnames('sectionToggle', {open: showFilter})}>
-                <Icon type="down" />
-              </span>
-              {data.filter?.length > 0 && <span className="filterCount">{data.filter.length}</span>}
-            </Button>
-          </div>
-          <div
-            className={classnames('scrollable', {withDivider: scrolled || !showFilter})}
-            onScroll={(evt) => this.setState({scrolled: evt.target.scrollTop > 0})}
-          >
+                <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
+                {isDurationHeatmap(data) && (
+                  <li className="select">
+                    <span className="label">{t('report.heatTarget.label')}</span>
+                    <TargetValueComparison
+                      report={this.props.report}
+                      onChange={this.props.updateReport}
+                    />
+                  </li>
+                )}
+                {isProcessInstanceDuration(data) && (
+                  <li>
+                    <ProcessPart
+                      flowNodeNames={flowNodeNames}
+                      xml={data.configuration.xml}
+                      processPart={data.configuration.processPart}
+                      update={(newPart) => {
+                        const change = {configuration: {processPart: {$set: newPart}}};
+                        if (data.configuration.aggregationTypes.includes('median')) {
+                          const newAggregations = data.configuration.aggregationTypes.filter(
+                            (type) => type !== 'median'
+                          );
+                          if (newAggregations.length === 0) {
+                            newAggregations.push('avg');
+                          }
+
+                          change.configuration.aggregationTypes = {$set: newAggregations};
+                        }
+                        this.props.updateReport(change, true);
+                      }}
+                    />
+                  </li>
+                )}
+              </ul>
+            </section>
             <section className={classnames('filter', {hidden: !showFilter})}>
+              <Button
+                className="sectionTitle"
+                onClick={() => {
+                  this.setState({showFilter: !showFilter});
+                }}
+              >
+                <Icon type="filter" />
+                {t('common.filter.label')}
+                <span className={classnames('sectionToggle', {open: showFilter})}>
+                  <Icon type="down" />
+                </span>
+                {data.filter?.length > 0 && (
+                  <span className="filterCount">{data.filter.length}</span>
+                )}
+              </Button>
               <Filter
                 flowNodeNames={flowNodeNames}
                 data={data.filter}

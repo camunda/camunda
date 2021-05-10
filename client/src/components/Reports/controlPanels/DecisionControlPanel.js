@@ -29,7 +29,6 @@ export class DecisionControlPanel extends React.Component {
       inputVariable: null,
       outputVariable: null,
     },
-    scrolled: false,
     showSource: true,
     showSetup: true,
     showFilter: false,
@@ -151,91 +150,88 @@ export class DecisionControlPanel extends React.Component {
       filter,
       configuration: {xml},
     } = data;
-    const {showSource, showSetup, showFilter, scrolled} = this.state;
+    const {showSource, showSetup, showFilter} = this.state;
 
     const {key, versions, tenantIds} = definitions?.[0] ?? {};
 
     return (
       <div className="DecisionControlPanel ReportControlPanel">
-        <section className={classnames('select', 'source', {hidden: !showSource})}>
-          <Button
-            className="sectionTitle"
-            onClick={() => {
-              this.setState({showSource: !showSource});
-            }}
-          >
-            <Icon type="data-source" />
-            {t('common.dataSource')}
-            <span className={classnames('sectionToggle', {open: showSource})}>
-              <Icon type="down" />
-            </span>
-          </Button>
-          <DefinitionSelection
-            type="decision"
-            definitionKey={key}
-            versions={versions}
-            tenants={tenantIds}
-            xml={xml}
-            onChange={this.changeDefinition}
-          />
-        </section>
-        <section className={classnames('reportSetup', {hidden: !showSetup})}>
-          <Button
-            className="sectionTitle"
-            onClick={() => {
-              this.setState({showSetup: !showSetup});
-            }}
-          >
-            <Icon type="report" />
-            {t('report.reportSetup')}
-            <span className={classnames('sectionToggle', {open: showSetup})}>
-              <Icon type="down" />
-            </span>
-          </Button>
-          <ul>
-            {['view', 'groupBy'].map((field, idx, fields) => {
-              const previous = fields
-                .filter((prev, prevIdx) => prevIdx < idx)
-                .map((prev) => data[prev]);
+        <div className="controlSections" style={{overflow: 'initial'}}>
+          {/* manual style override will be removed once decision reports use multi-definition setup */}
+          <section className={classnames('select', 'source', {hidden: !showSource})}>
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showSource: !showSource});
+              }}
+            >
+              <Icon type="data-source" />
+              {t('common.dataSource')}
+              <span className={classnames('sectionToggle', {open: showSource})}>
+                <Icon type="down" />
+              </span>
+            </Button>
+            <DefinitionSelection
+              renderInPortal="DefinitionSelection"
+              type="decision"
+              definitionKey={key}
+              versions={versions}
+              tenants={tenantIds}
+              xml={xml}
+              onChange={this.changeDefinition}
+            />
+          </section>
+          <section className={classnames('reportSetup', {hidden: !showSetup})}>
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showSetup: !showSetup});
+              }}
+            >
+              <Icon type="report" />
+              {t('report.reportSetup')}
+              <span className={classnames('sectionToggle', {open: showSetup})}>
+                <Icon type="down" />
+              </span>
+            </Button>
+            <ul>
+              {['view', 'groupBy'].map((field, idx, fields) => {
+                const previous = fields
+                  .filter((prev, prevIdx) => prevIdx < idx)
+                  .map((prev) => data[prev]);
 
-              return (
-                <li className="select" key={field}>
-                  <span className="label">{t(`report.${field}.label`)}</span>
-                  <ReportSelect
-                    type="decision"
-                    field={field}
-                    report={this.props.report}
-                    value={data[field]}
-                    variables={this.state.variables}
-                    previous={previous}
-                    disabled={!key || previous.some((entry) => !entry)}
-                    onChange={(newValue) => this.updateReport(field, newValue)}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-        <div className="filter header">
-          <Button
-            className="sectionTitle"
-            onClick={() => {
-              this.setState({showFilter: !showFilter});
-            }}
-          >
-            <Icon type="filter" />
-            {t('common.filter.label')}
-            <span className={classnames('sectionToggle', {open: showFilter})}>
-              <Icon type="down" />
-            </span>
-            {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
-          </Button>
-        </div>
-        <div
-          className={classnames('scrollable', {withDivider: scrolled || !showFilter})}
-          onScroll={(evt) => this.setState({scrolled: evt.target.scrollTop > 0})}
-        >
+                return (
+                  <li className="select" key={field}>
+                    <span className="label">{t(`report.${field}.label`)}</span>
+                    <ReportSelect
+                      type="decision"
+                      field={field}
+                      report={this.props.report}
+                      value={data[field]}
+                      variables={this.state.variables}
+                      previous={previous}
+                      disabled={!key || previous.some((entry) => !entry)}
+                      onChange={(newValue) => this.updateReport(field, newValue)}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
           <section className={classnames('filter', {hidden: !showFilter})}>
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showFilter: !showFilter});
+              }}
+            >
+              <Icon type="filter" />
+              {t('common.filter.label')}
+              <span className={classnames('sectionToggle', {open: showFilter})}>
+                <Icon type="down" />
+              </span>
+              {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
+            </Button>
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}

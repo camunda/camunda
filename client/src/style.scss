@@ -71,9 +71,7 @@ a:visited {
   color: var(--blue-darken-55);
 }
 
-a.focus-visible,
-button.focus-visible,
-select.focus-visible,
+*.focus-visible,
 input:focus {
   outline: none;
   border-radius: 3px;

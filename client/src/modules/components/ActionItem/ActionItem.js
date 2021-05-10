@@ -19,11 +19,11 @@ export default function ActionItem({onClick, type, warning, onEdit, ...props}) {
         <div className="buttons">
           {onEdit && (
             <Button onClick={onEdit} icon>
-              <Icon size="15" type="edit" />
+              <Icon size="15" type="edit-small" />
             </Button>
           )}
           <Button onClick={onClick} icon>
-            <Icon size="15" type="close-large" />
+            <Icon size="15" type="close-small" />
           </Button>
         </div>
       </div>

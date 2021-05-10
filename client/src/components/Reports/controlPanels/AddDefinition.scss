@@ -1,0 +1,17 @@
+.AddDefinition {
+  position: absolute;
+  right: 48px;
+  top: 10px;
+}
+
+.AddDefinition__Modal {
+  .title {
+    position: absolute;
+    font-size: 0.875em;
+    top: 30px;
+  }
+
+  .Checklist .header .selectAll {
+    display: none;
+  }
+}

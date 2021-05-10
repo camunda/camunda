@@ -33,12 +33,12 @@ export default themed(
       };
 
       render() {
-        const {loading, style, xml, children, emptyText} = this.props;
+        const {loading, style, xml, children, emptyText, disableNavigation} = this.props;
         const {loaded} = this.state;
 
         return (
           <div
-            className={classnames('BPMNDiagram', {loading: loading})}
+            className={classnames('BPMNDiagram', {loading: loading, disableNavigation})}
             style={style}
             ref={this.storeContainer}
           >

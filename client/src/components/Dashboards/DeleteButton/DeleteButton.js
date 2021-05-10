@@ -16,7 +16,7 @@ export default function DeleteButton(props) {
       className="DeleteButton"
       onClick={(event) => props.deleteReport({event, report: props.report})}
     >
-      <Icon type="close-large" />
+      <Icon type="close-small" />
     </Button>
   );
 }

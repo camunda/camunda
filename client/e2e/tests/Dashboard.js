@@ -43,7 +43,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
 test('create a report and add it to the Dashboard', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -92,7 +92,7 @@ test('cancel changes', async (t) => {
 
 test('sharing', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -148,7 +148,7 @@ test('sharing header parameters', async (t) => {
 
 test('sharing with filters', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -179,7 +179,7 @@ test('sharing with filters', async (t) => {
 
 test('remove a report from a dashboard', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -223,7 +223,7 @@ test('deleting', async (t) => {
 
 test('filters', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);

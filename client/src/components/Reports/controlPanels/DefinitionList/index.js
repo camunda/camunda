@@ -4,6 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as DefinitionSelection} from './DefinitionSelection';
-export {default as VersionPopover} from './VersionPopover';
-export {default as TenantPopover} from './TenantPopover';
+export {default as DefinitionList} from './DefinitionList';

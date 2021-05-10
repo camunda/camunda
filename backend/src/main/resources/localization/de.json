@@ -249,6 +249,9 @@
     "downloadCSV": "CSV herunterladen",
     "measure": "Maß",
     "addMeasure": "Maß hinzufügen",
+    "displayName": "Anzeigename",
+    "displayNamePlaceholder": "Optionalen Anzeigenamen hinzufügen",
+    "noSources": "Keine Datenquelle",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
@@ -361,8 +364,12 @@
       "evaluation": "Gesamtanzahl</br> Evaluierungen: <b>{count}</b>"
     },
     "definition": {
+      "add": "{type} hinzufügen",
+      "search": "Nach {type} suchen",
       "process": "Prozessdefinition",
-      "decision": "Entscheidungsdefinition"
+      "process-plural": "Prozessdefinitionen",
+      "decision": "Entscheidungsdefinition",
+      "decision-plural": "Entscheidungsdefinitionen"
     },
     "noDefinitionMessage": {
       "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
@@ -747,6 +754,14 @@
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
     "open": "Öffnen",
+    "process": {
+      "label": "Prozess",
+      "label-plural": "Prozesse"
+    },
+    "decision": {
+      "label": "Entscheidung",
+      "label-plural": "Entscheidungen"
+    },
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
@@ -793,7 +808,8 @@
       "viewRawData": "Rohdaten",
       "viewModel": {
         "decision": "Entscheidungstabelle",
-        "process": "Prozessmodell"
+        "process": "Prozessmodell",
+        "model": "Modell"
       },
       "namePlaceholder": {
         "Report": "Berichtsname",

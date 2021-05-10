@@ -21,6 +21,12 @@
     opacity: 0.5;
   }
 
+  &.disableNavigation {
+    .ZoomControls {
+      display: none;
+    }
+  }
+
   .diagramLoading,
   .emptyText {
     position: absolute;

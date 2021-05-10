@@ -51,13 +51,13 @@ function getSelectedView(view, groupBy, type) {
 }
 
 function getKey(data) {
-  return data.definitions[0].key;
+  return data.definitions[0]?.key;
 }
 function getName(data) {
-  return data.definitions[0].name;
+  return data.definitions[0]?.name;
 }
 function getVersions(data) {
-  return data.definitions[0].versions;
+  return data.definitions[0]?.versions;
 }
 
 export function SingleReportDetails({report, showReportName, mightFail, location}) {

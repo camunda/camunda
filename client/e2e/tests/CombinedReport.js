@@ -22,7 +22,7 @@ async function createReport(
   completed
 ) {
   await u.createNewReport(t);
-  await u.selectDefinition(t, definition, 'All');
+  await u.selectReportDefinition(t, definition, 'All');
 
   await u.selectView(t, 'Flow Node', 'Count');
   await u.selectGroupby(t, 'Flow Nodes');
