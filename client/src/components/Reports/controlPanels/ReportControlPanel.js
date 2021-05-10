@@ -63,7 +63,7 @@ export default withErrorHandling(
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         return new Promise((resolve, reject) => {
           this.props.mightFail(
-            loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+            loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
             (variables) => this.setState({variables}, resolve),
             (error) => reject(showError(error))
           );

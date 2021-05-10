@@ -36,7 +36,7 @@ export class BranchControlPanel extends React.Component {
     const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
     if (processDefinitionKey && processDefinitionVersions) {
       this.props.mightFail(
-        loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+        loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
         (variables) => this.setState({variables}),
         showError
       );

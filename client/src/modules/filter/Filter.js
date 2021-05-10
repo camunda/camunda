@@ -72,7 +72,7 @@ export default class Filter extends React.Component {
       const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
       return {
         getVariables: async () =>
-          await loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+          await loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
         getValues: async (name, type, numResults, valueFilter) =>
           await loadValues(
             this.props.processDefinitionKey,

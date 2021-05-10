@@ -40,18 +40,22 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
         showError
       );
 
-      const payload = {
-        processDefinitionKey: data.processDefinitionKey,
-        processDefinitionVersions: data.processDefinitionVersions,
-        tenantIds: data.tenantIds,
-      };
+      const payload = [
+        {
+          processDefinitionKey: data.processDefinitionKey,
+          processDefinitionVersions: data.processDefinitionVersions,
+          tenantIds: data.tenantIds,
+        },
+      ];
       mightFail(loadVariables(payload), setVariables, showError);
     } else if (reportType === 'decision') {
-      const payload = {
-        decisionDefinitionKey: data.decisionDefinitionKey,
-        decisionDefinitionVersions: data.decisionDefinitionVersions,
-        tenantIds: data.tenantIds,
-      };
+      const payload = [
+        {
+          decisionDefinitionKey: data.decisionDefinitionKey,
+          decisionDefinitionVersions: data.decisionDefinitionVersions,
+          tenantIds: data.tenantIds,
+        },
+      ];
       mightFail(
         Promise.all([loadInputVariables(payload), loadOutputVariables(payload)]),
         ([inputVariable, outputVariable]) => setVariables({inputVariable, outputVariable}),

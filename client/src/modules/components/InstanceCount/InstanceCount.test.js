@@ -132,11 +132,13 @@ it('should load variable names for process reports', async () => {
 
   await flushPromises();
 
-  const payload = {
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['1'],
-    tenantIds: ['tenantId'],
-  };
+  const payload = [
+    {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersions: ['1'],
+      tenantIds: ['tenantId'],
+    },
+  ];
 
   expect(loadVariables).toHaveBeenCalledWith(payload);
   expect(node.find('FilterList').prop('variables')).toEqual([{name: 'variable1', type: 'String'}]);
@@ -163,11 +165,13 @@ it('should load variable names for decision reports', async () => {
 
   await flushPromises();
 
-  const payload = {
-    decisionDefinitionKey: 'aKey',
-    decisionDefinitionVersions: ['1'],
-    tenantIds: ['tenantId'],
-  };
+  const payload = [
+    {
+      decisionDefinitionKey: 'aKey',
+      decisionDefinitionVersions: ['1'],
+      tenantIds: ['tenantId'],
+    },
+  ];
 
   expect(loadInputVariables).toHaveBeenCalledWith(payload);
   expect(loadOutputVariables).toHaveBeenCalledWith(payload);

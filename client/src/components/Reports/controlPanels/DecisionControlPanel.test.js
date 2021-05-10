@@ -64,6 +64,11 @@ const props = {
   mightFail: async (data, cb) => cb(await data),
 };
 
+beforeEach(() => {
+  loadInputVariables.mockClear();
+  loadOutputVariables.mockClear();
+});
+
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel {...props} updateReport={spy} />);
@@ -99,11 +104,13 @@ it('should include variables in the groupby options', () => {
 it('should retrieve variable names', async () => {
   shallow(<DecisionControlPanel {...props} />);
 
-  const payload = {
-    decisionDefinitionKey: 'aKey',
-    decisionDefinitionVersions: ['aVersion'],
-    tenantIds: [null],
-  };
+  const payload = [
+    {
+      decisionDefinitionKey: 'aKey',
+      decisionDefinitionVersions: ['aVersion'],
+      tenantIds: [null],
+    },
+  ];
 
   await Promise.resolve();
 

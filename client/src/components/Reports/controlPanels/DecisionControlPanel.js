@@ -41,7 +41,7 @@ export class DecisionControlPanel extends React.Component {
 
   loadVariables = ({decisionDefinitionKey, decisionDefinitionVersions, tenantIds}) => {
     if (decisionDefinitionKey && decisionDefinitionVersions && tenantIds) {
-      const payload = {decisionDefinitionKey, decisionDefinitionVersions, tenantIds};
+      const payload = [{decisionDefinitionKey, decisionDefinitionVersions, tenantIds}];
       return new Promise((resolve, reject) => {
         this.props.mightFail(
           Promise.all([loadInputVariables(payload), loadOutputVariables(payload)]),

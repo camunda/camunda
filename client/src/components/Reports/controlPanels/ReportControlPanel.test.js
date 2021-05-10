@@ -70,6 +70,10 @@ const props = {
   setLoading: () => {},
 };
 
+beforeEach(() => {
+  loadVariables.mockClear();
+});
+
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
@@ -97,11 +101,13 @@ it('should not disable the groupBy and visualization Selects if view is selected
 it('should load the variables of the process', () => {
   shallow(<ReportControlPanel {...props} />);
 
-  expect(loadVariables).toHaveBeenCalledWith({
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['aVersion'],
-    tenantIds: [],
-  });
+  expect(loadVariables).toHaveBeenCalledWith([
+    {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersions: ['aVersion'],
+      tenantIds: [],
+    },
+  ]);
 });
 
 it('should include variables in the groupby options', () => {

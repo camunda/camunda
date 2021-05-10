@@ -33,7 +33,7 @@ export function DistributedBy({
   useEffect(() => {
     if (isInstanceDateReport(view, groupBy)) {
       mightFail(
-        loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+        loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
         setVariables,
         showError
       );
