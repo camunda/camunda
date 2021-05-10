@@ -60,6 +60,8 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
@@ -78,7 +80,7 @@ import org.slf4j.Logger;
  * across roles (i.e. follower, candidate, leader) is stored in the cluster state. This includes
  * Raft-specific state like the current leader and term, the log, and the cluster configuration.
  */
-public class RaftContext implements AutoCloseable {
+public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   protected final String name;
   protected final ThreadContext threadContext;
@@ -115,6 +117,7 @@ public class RaftContext implements AutoCloseable {
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
+  private volatile HealthStatus health = HealthStatus.HEALTHY;
 
   public RaftContext(
       final String name,
@@ -215,8 +218,10 @@ public class RaftContext implements AutoCloseable {
   private void notifyFailureListeners(final Throwable error) {
     try {
       if (error instanceof UnrecoverableException) {
+        health = HealthStatus.DEAD;
         failureListeners.forEach(FailureListener::onUnrecoverableFailure);
       } else {
+        health = HealthStatus.UNHEALTHY;
         failureListeners.forEach(FailureListener::onFailure);
       }
     } catch (final Exception e) {
@@ -239,18 +244,17 @@ public class RaftContext implements AutoCloseable {
       final Supplier<CompletableFuture<R>> function) {
     final CompletableFuture<R> future = new CompletableFuture<>();
     threadContext.execute(
-        () -> {
-          function
-              .get()
-              .whenComplete(
-                  (response, error) -> {
-                    if (error == null) {
-                      future.complete(response);
-                    } else {
-                      future.completeExceptionally(error);
-                    }
-                  });
-        });
+        () ->
+            function
+                .get()
+                .whenComplete(
+                    (response, error) -> {
+                      if (error == null) {
+                        future.complete(response);
+                      } else {
+                        future.completeExceptionally(error);
+                      }
+                    }));
     return future;
   }
 
@@ -507,16 +511,17 @@ public class RaftContext implements AutoCloseable {
       throw new IllegalStateException("failed to close Raft state", e);
     }
 
-    if (!this.role.role().active() && role.active()) {
-      failureListeners.forEach(FailureListener::onRecovered);
-    }
-
     // Force state transitions to occur synchronously in order to prevent race conditions.
     try {
       this.role = createRole(role);
       this.role.start().get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new IllegalStateException("failed to initialize Raft state", e);
+    }
+
+    if (!this.role.role().active() && role.active()) {
+      health = HealthStatus.HEALTHY;
+      failureListeners.forEach(FailureListener::onRecovered);
     }
 
     if (this.role.role() == role) {
@@ -534,6 +539,11 @@ public class RaftContext implements AutoCloseable {
         notifyRoleChangeListeners();
       }
     }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return health;
   }
 
   private void notifyRoleChangeListeners() {

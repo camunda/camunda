@@ -42,6 +42,8 @@ import io.atomix.utils.serializer.Serializer;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -55,7 +57,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 
 /** {@link Partition} server. */
-public class RaftPartitionServer implements Managed<RaftPartitionServer> {
+public class RaftPartitionServer implements Managed<RaftPartitionServer>, HealthMonitorable {
 
   private final Logger log;
 
@@ -145,14 +147,11 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private void initServer() {
     server = buildServer();
 
-    if (!deferredRoleChangeListeners.isEmpty()) {
-      deferredRoleChangeListeners.forEach(server::addRoleChangeListener);
-      deferredRoleChangeListeners.clear();
-    }
-    if (!deferredFailureListeners.isEmpty()) {
-      deferredFailureListeners.forEach(server::addFailureListener);
-      deferredFailureListeners.clear();
-    }
+    deferredRoleChangeListeners.forEach(server::addRoleChangeListener);
+    deferredRoleChangeListeners.clear();
+
+    deferredFailureListeners.forEach(server::addFailureListener);
+    deferredFailureListeners.clear();
   }
 
   private RaftServer buildServer() {
@@ -205,12 +204,23 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     }
   }
 
-  public void addFailureListener(final FailureListener failureListener) {
+  @Override
+  public HealthStatus getHealthStatus() {
+    return server.getContext().getHealthStatus();
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener listener) {
     if (server == null) {
-      deferredFailureListeners.add(failureListener);
+      deferredFailureListeners.add(listener);
     } else {
-      server.addFailureListener(failureListener);
+      server.addFailureListener(listener);
     }
+  }
+
+  public void removeFailureListener(final FailureListener listener) {
+    deferredFailureListeners.remove(listener);
+    server.removeFailureListener(listener);
   }
 
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
