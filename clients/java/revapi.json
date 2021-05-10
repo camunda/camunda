@@ -1,0 +1,16 @@
+[
+  {
+    "extension": "revapi.filter",
+    "configuration": {
+      "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
+      "elements": {
+        "exclude": [
+          {
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.impl(\\..*)?/"
+          }
+        ]
+      }
+    }
+  }
+]
