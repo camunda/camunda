@@ -18,7 +18,6 @@ package io.atomix.raft.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer;
-import io.atomix.storage.StorageLevel;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -49,9 +48,7 @@ import java.util.function.Consumer;
  * <h2>Cluster management</h2>
  *
  * Users can use the {@code Cluster} to manage the Raft cluster membership. Typically, servers join
- * the cluster by calling {@link RaftServer#bootstrap(MemberId...)} or {@link #join(MemberId...)},
- * but in the event that a server fails permanently and thus cannot remove itself, other nodes can
- * remove arbitrary servers.
+ * the cluster by calling {@link RaftServer#bootstrap(MemberId...)}.
  *
  * <p>
  *
@@ -65,8 +62,7 @@ import java.util.function.Consumer;
  * When a member is removed from the cluster, the configuration change removing the member will be
  * replicated to all the servers in the cluster and persisted to disk. Once a member has been
  * removed, for that member to rejoin the cluster it must fully restart and request to rejoin the
- * cluster. For servers configured with a persistent {@link StorageLevel}, cluster configurations
- * are stored on disk.
+ * cluster. Cluster configurations are stored on disk.
  *
  * <p>Additionally, members can be {@link RaftMember#promote() promoted} and {@link
  * RaftMember#demote() demoted} by any other member of the cluster. When a member state is changed,
@@ -74,7 +70,7 @@ import java.util.function.Consumer;
  * replicated through the Raft consensus algorithm. <em>During</em> the configuration change,
  * servers' cluster configurations will be updated. Once the configuration change is complete, it
  * will be persisted to disk on all servers and is guaranteed not to be lost even in the event of a
- * full cluster shutdown (assuming the server uses a persistent {@link StorageLevel}).
+ * full cluster shutdown.
  */
 public interface RaftCluster {
 
@@ -135,9 +131,7 @@ public interface RaftCluster {
    * <p>When the cluster is bootstrapped, the local server will be transitioned into the active
    * state and begin participating in the Raft consensus algorithm. When the cluster is first
    * bootstrapped, no leader will exist. The bootstrapped members will elect a leader amongst
-   * themselves. Once a cluster has been bootstrapped, additional members may be {@link
-   * #join(MemberId...) joined} to the cluster. In the event that the bootstrapped members cannot
-   * reach a quorum to elect a leader, bootstrap will continue until successful.
+   * themselves.
    *
    * <p>It is critical that all servers in a bootstrap configuration be started with the same exact
    * set of members. Bootstrapping multiple servers with different configurations may result in
@@ -169,9 +163,7 @@ public interface RaftCluster {
    * <p>When the cluster is bootstrapped, the local server will be transitioned into the active
    * state and begin participating in the Raft consensus algorithm. When the cluster is first
    * bootstrapped, no leader will exist. The bootstrapped members will elect a leader amongst
-   * themselves. Once a cluster has been bootstrapped, additional members may be {@link
-   * #join(MemberId...) joined} to the cluster. In the event that the bootstrapped members cannot
-   * reach a quorum to elect a leader, bootstrap will continue until successful.
+   * themselves.
    *
    * <p>It is critical that all servers in a bootstrap configuration be started with the same exact
    * set of members. Bootstrapping multiple servers with different configurations may result in
@@ -185,202 +177,6 @@ public interface RaftCluster {
    * @return A completable future to be completed once the cluster has been bootstrapped.
    */
   CompletableFuture<Void> bootstrap(Collection<MemberId> cluster);
-
-  /**
-   * Joins the cluster as a listener.
-   *
-   * <p>Joining the cluster results in the local server being added to an existing cluster that has
-   * already been bootstrapped. The provided configuration will be used to connect to the existing
-   * cluster and submit a join request. Once the server has been added to the existing cluster's
-   * configuration, the join operation is complete.
-   *
-   * <p>Any {@link RaftMember.Type type} of server may join a cluster. In order to join a cluster,
-   * the provided list of bootstrapped members must be non-empty and must include at least one
-   * active member of the cluster. If no member in the configuration is reachable, the server will
-   * continue to attempt to join the cluster until successful. If the provided cluster configuration
-   * is empty, the returned {@link CompletableFuture} will be completed exceptionally.
-   *
-   * <p>When the server joins the cluster, the local server will be transitioned into its initial
-   * state as defined by the configured {@link RaftMember.Type}. Once the server has joined, it will
-   * immediately begin participating in Raft and asynchronous replication according to its
-   * configuration.
-   *
-   * <p>It's important to note that the provided cluster configuration will only be used the first
-   * time the server attempts to join the cluster. Thereafter, in the event that the server crashes
-   * and is restarted by {@code join}ing the cluster again, the last known configuration will be
-   * used assuming the server is configured with persistent storage. Only when the server leaves the
-   * cluster will its configuration and log be reset.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to join
-   * the cluster until successful. If the server fails to reach the leader, the join will be retried
-   * until successful.
-   *
-   * @param cluster A list of cluster member addresses to join.
-   * @return A completable future to be completed once the local server has joined the cluster.
-   */
-  default CompletableFuture<Void> listen(final MemberId... cluster) {
-    return join(Arrays.asList(cluster));
-  }
-
-  /**
-   * Joins the cluster.
-   *
-   * <p>Joining the cluster results in the local server being added to an existing cluster that has
-   * already been bootstrapped. The provided configuration will be used to connect to the existing
-   * cluster and submit a join request. Once the server has been added to the existing cluster's
-   * configuration, the join operation is complete.
-   *
-   * <p>Any {@link RaftMember.Type type} of server may join a cluster. In order to join a cluster,
-   * the provided list of bootstrapped members must be non-empty and must include at least one
-   * active member of the cluster. If no member in the configuration is reachable, the server will
-   * continue to attempt to join the cluster until successful. If the provided cluster configuration
-   * is empty, the returned {@link CompletableFuture} will be completed exceptionally.
-   *
-   * <p>When the server joins the cluster, the local server will be transitioned into its initial
-   * state as defined by the configured {@link RaftMember.Type}. Once the server has joined, it will
-   * immediately begin participating in Raft and asynchronous replication according to its
-   * configuration.
-   *
-   * <p>It's important to note that the provided cluster configuration will only be used the first
-   * time the server attempts to join the cluster. Thereafter, in the event that the server crashes
-   * and is restarted by {@code join}ing the cluster again, the last known configuration will be
-   * used assuming the server is configured with persistent storage. Only when the server leaves the
-   * cluster will its configuration and log be reset.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to join
-   * the cluster until successful. If the server fails to reach the leader, the join will be retried
-   * until successful.
-   *
-   * @param cluster A collection of cluster member addresses to join.
-   * @return A completable future to be completed once the local server has joined the cluster.
-   */
-  CompletableFuture<Void> join(Collection<MemberId> cluster);
-
-  /**
-   * Joins the cluster as a listener.
-   *
-   * <p>Joining the cluster results in the local server being added to an existing cluster that has
-   * already been bootstrapped. The provided configuration will be used to connect to the existing
-   * cluster and submit a join request. Once the server has been added to the existing cluster's
-   * configuration, the join operation is complete.
-   *
-   * <p>Any {@link RaftMember.Type type} of server may join a cluster. In order to join a cluster,
-   * the provided list of bootstrapped members must be non-empty and must include at least one
-   * active member of the cluster. If no member in the configuration is reachable, the server will
-   * continue to attempt to join the cluster until successful. If the provided cluster configuration
-   * is empty, the returned {@link CompletableFuture} will be completed exceptionally.
-   *
-   * <p>When the server joins the cluster, the local server will be transitioned into its initial
-   * state as defined by the configured {@link RaftMember.Type}. Once the server has joined, it will
-   * immediately begin participating in Raft and asynchronous replication according to its
-   * configuration.
-   *
-   * <p>It's important to note that the provided cluster configuration will only be used the first
-   * time the server attempts to join the cluster. Thereafter, in the event that the server crashes
-   * and is restarted by {@code join}ing the cluster again, the last known configuration will be
-   * used assuming the server is configured with persistent storage. Only when the server leaves the
-   * cluster will its configuration and log be reset.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to join
-   * the cluster until successful. If the server fails to reach the leader, the join will be retried
-   * until successful.
-   *
-   * @param cluster A collection of cluster member addresses to join.
-   * @return A completable future to be completed once the local server has joined the cluster.
-   */
-  CompletableFuture<Void> listen(Collection<MemberId> cluster);
-
-  /**
-   * Joins the cluster.
-   *
-   * <p>Joining the cluster results in the local server being added to an existing cluster that has
-   * already been bootstrapped. The provided configuration will be used to connect to the existing
-   * cluster and submit a join request. Once the server has been added to the existing cluster's
-   * configuration, the join operation is complete.
-   *
-   * <p>Any {@link RaftMember.Type type} of server may join a cluster. In order to join a cluster,
-   * the provided list of bootstrapped members must be non-empty and must include at least one
-   * active member of the cluster. If no member in the configuration is reachable, the server will
-   * continue to attempt to join the cluster until successful. If the provided cluster configuration
-   * is empty, the returned {@link CompletableFuture} will be completed exceptionally.
-   *
-   * <p>When the server joins the cluster, the local server will be transitioned into its initial
-   * state as defined by the configured {@link RaftMember.Type}. Once the server has joined, it will
-   * immediately begin participating in Raft and asynchronous replication according to its
-   * configuration.
-   *
-   * <p>It's important to note that the provided cluster configuration will only be used the first
-   * time the server attempts to join the cluster. Thereafter, in the event that the server crashes
-   * and is restarted by {@code join}ing the cluster again, the last known configuration will be
-   * used assuming the server is configured with persistent storage. Only when the server leaves the
-   * cluster will its configuration and log be reset.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to join
-   * the cluster until successful. If the server fails to reach the leader, the join will be retried
-   * until successful.
-   *
-   * @param cluster A list of cluster member addresses to join.
-   * @return A completable future to be completed once the local server has joined the cluster.
-   */
-  default CompletableFuture<Void> join(final MemberId... cluster) {
-    return join(Arrays.asList(cluster));
-  }
-
-  /**
-   * Leaves the cluster.
-   *
-   * <p>Invocations of this method will cause the local {@link RaftServer} to leave the cluster.
-   * <em>This method is for advanced usage only.</em> Typically, users should use {@link
-   * RaftServer#leave()} to leave the cluster and close a server in order to ensure all associated
-   * resources are properly closed.
-   *
-   * <p>When a server leaves the cluster, the server submits a {@link
-   * io.atomix.raft.protocol.LeaveRequest} to the cluster leader. The leader will replicate and
-   * commit the configuration change in order to remove the leaving server from the cluster and
-   * notify each member of the leaving server.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to
-   * leave the cluster until successful. The server will continuously attempt to leave the cluster
-   * until successful.
-   *
-   * @return A completable future to be completed once the local server has left the cluster.
-   */
-  CompletableFuture<Void> leave();
-
-  /**
-   * Registers a callback to be called when a member leaves the cluster.
-   *
-   * <p>The registered {@code callback} will be called whenever an existing {@link RaftMember}
-   * leaves the cluster. Membership changes are sequentially consistent, meaning each server in the
-   * cluster will see members leave in the same order, but different servers may see members leave
-   * at different points in time. Users should not in any case assume that because one server has
-   * seen a member leave the cluster all servers have.
-   *
-   * @param listener The listener to be called when a member leaves the cluster.
-   */
-  void addListener(RaftClusterEventListener listener);
-
-  /**
-   * Removes a listener from the cluster.
-   *
-   * @param listener The listener to remove from the cluster.
-   */
-  void removeListener(RaftClusterEventListener listener);
 
   /**
    * Returns the current cluster leader.
@@ -400,7 +196,7 @@ public interface RaftCluster {
    *
    * @return The local cluster member.
    */
-  RaftMember getMember();
+  RaftMember getLocalMember();
 
   /**
    * Returns a collection of all cluster members.
@@ -419,8 +215,7 @@ public interface RaftCluster {
    *
    * <p>The term is representative of the epoch determined by the underlying Raft consensus
    * algorithm. The term is a monotonically increasing number used by Raft to represent a point in
-   * logical time. If the cluster is persistent (i.e. all servers use a persistent {@link
-   * StorageLevel}), the term is guaranteed to be unique and monotonically increasing even across
+   * logical time. The term is guaranteed to be unique and monotonically increasing even across
    * cluster restarts. Additionally, for any given term, Raft guarantees that only a single {@link
    * #getLeader() leader} can be elected.
    *

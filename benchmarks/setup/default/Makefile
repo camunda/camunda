@@ -1,37 +1,39 @@
+namespace ?= default
+
 .PHONY: all
 all: zeebe starter timer simpleStarter worker
 
 .PHONY: zeebe
 zeebe:
-	-helm install default zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds
-	-kubectl apply -f curator-cronjob.yaml
-	-kubectl apply -f curator-configmap.yaml
+	-helm install --namespace $(namespace) $(namespace) zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds
+	-kubectl apply -n $(namespace) -f curator-cronjob.yaml
+	-kubectl apply -n $(namespace) -f curator-configmap.yaml
 
 # Generates templates from the zeebe helm charts, useful to make some more specific changes which are not doable by the values file.
 # To apply the templates use k apply -f zeebe-cluster/templates/
 .PHONY: zeebe-template
 zeebe-template:
-	-helm template default zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds --output-dir .
+	-helm template $(namespace) zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds --output-dir .
 
 .PHONY: update
 update:
-	-helm upgrade default zeebe/zeebe-cluster -f zeebe-values.yaml
+	-helm upgrade --namespace $(namespace) $(namespace) zeebe/zeebe-cluster -f zeebe-values.yaml
 
 .PHONY: starter
 starter:
-	kubectl apply -f starter.yaml
+	kubectl apply -n $(namespace) -f starter.yaml
 
 .PHONY: timer
 timer:
-	kubectl apply -f timer.yaml
+	kubectl apply -n $(namespace) -f timer.yaml
 
 .PHONY: simpleStarter
 simpleStarter:
-	kubectl apply -f simpleStarter.yaml
+	kubectl apply -n $(namespace) -f simpleStarter.yaml
 
 .PHONY: worker
 worker:
-	kubectl apply -f worker.yaml
+	kubectl apply -n $(namespace) -f worker.yaml
 
 
 .PHONY: clean
@@ -39,24 +41,24 @@ clean: clean-starter clean-timer clean-simpleStarter clean-worker clean-zeebe
 
 .PHONY: clean-zeebe
 clean-zeebe:
-	-helm uninstall default
-	-kubectl delete -f curator-cronjob.yaml
-	-kubectl delete -f curator-configmap.yaml
-	-kubectl delete pvc -l app.kubernetes.io/instance=default
-	-kubectl delete pvc -l app=elasticsearch-master
+	-helm --namespace $(namespace) uninstall $(namespace)
+	-kubectl delete -n $(namespace) -f curator-cronjob.yaml
+	-kubectl delete -n $(namespace) -f curator-configmap.yaml
+	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
+	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 
 .PHONY: clean-starter
 clean-starter:
-	-kubectl delete -f starter.yaml
+	-kubectl delete -n $(namespace) -f starter.yaml
 
 .PHONY: clean-timer
 clean-timer:
-	-kubectl delete -f timer.yaml
+	-kubectl delete -n $(namespace) -f timer.yaml
 
 .PHONY: clean-simpleStarter
 clean-simpleStarter:
-	-kubectl delete -f simpleStarter.yaml
+	-kubectl delete -n $(namespace) -f simpleStarter.yaml
 
 .PHONY: clean-worker
 clean-worker:
-	-kubectl delete -f worker.yaml
+	-kubectl delete -n $(namespace) -f worker.yaml

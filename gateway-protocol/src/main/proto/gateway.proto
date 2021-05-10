@@ -2,11 +2,11 @@ syntax = 'proto3';
 package gateway_protocol;
 
 option java_multiple_files = false;
-option java_package = "io.zeebe.gateway.protocol";
-option go_package = "pb";
+option java_package = "io.camunda.zeebe.gateway.protocol";
+option go_package = "./;pb";
 
 // For a more complete documentation, refer to Zeebe documentation at:
-// https://docs.zeebe.io/grpc/reference.html
+// https://docs.camunda.io/docs/reference/grpc
 
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
@@ -38,18 +38,18 @@ message ActivatedJob {
   int64 key = 1;
   // the type of the job (should match what was requested)
   string type = 2;
-  // the job's workflow instance key
-  int64 workflowInstanceKey = 3;
-  // the bpmn process ID of the job workflow definition
+  // the job's process instance key
+  int64 processInstanceKey = 3;
+  // the bpmn process ID of the job process definition
   string bpmnProcessId = 4;
-  // the version of the job workflow definition
-  int32 workflowDefinitionVersion = 5;
-  // the key of the job workflow definition
-  int64 workflowKey = 6;
+  // the version of the job process definition
+  int32 processDefinitionVersion = 5;
+  // the key of the job process definition
+  int64 processDefinitionKey = 6;
   // the associated task element ID
   string elementId = 7;
   // the unique key identifying the associated task, unique within the scope of the
-  // workflow instance
+  // process instance
   int64 elementInstanceKey = 8;
   // a set of custom headers defined during modelling; returned as a serialized
   // JSON document
@@ -65,13 +65,13 @@ message ActivatedJob {
   string variables = 13;
 }
 
-message CancelWorkflowInstanceRequest {
-  // the workflow instance key (as, for example, obtained from
-  // CreateWorkflowInstanceResponse)
-  int64 workflowInstanceKey = 1;
+message CancelProcessInstanceRequest {
+  // the process instance key (as, for example, obtained from
+  // CreateProcessInstanceResponse)
+  int64 processInstanceKey = 1;
 }
 
-message CancelWorkflowInstanceResponse {
+message CancelProcessInstanceResponse {
 }
 
 message CompleteJobRequest {
@@ -84,102 +84,91 @@ message CompleteJobRequest {
 message CompleteJobResponse {
 }
 
-message CreateWorkflowInstanceRequest {
-  // the unique key identifying the workflow definition (e.g. returned from a workflow
-  // in the DeployWorkflowResponse message)
-  int64 workflowKey = 1;
-  // the BPMN process ID of the workflow definition
+message CreateProcessInstanceRequest {
+  // the unique key identifying the process definition (e.g. returned from a process
+  // in the DeployProcessResponse message)
+  int64 processDefinitionKey = 1;
+  // the BPMN process ID of the process definition
   string bpmnProcessId = 2;
   // the version of the process; set to -1 to use the latest version
   int32 version = 3;
   // JSON document that will instantiate the variables for the root variable scope of the
-  // workflow instance; it must be a JSON object, as variables will be mapped in a
+  // process instance; it must be a JSON object, as variables will be mapped in a
   // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
   // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
   // valid argument, as the root of the JSON document is an array and not an object.
   string variables = 4;
 }
 
-message CreateWorkflowInstanceResponse {
-  // the key of the workflow definition which was used to create the workflow instance
-  int64 workflowKey = 1;
-  // the BPMN process ID of the workflow definition which was used to create the workflow
+message CreateProcessInstanceResponse {
+  // the key of the process definition which was used to create the process instance
+  int64 processDefinitionKey = 1;
+  // the BPMN process ID of the process definition which was used to create the process
   // instance
   string bpmnProcessId = 2;
-  // the version of the workflow definition which was used to create the workflow instance
+  // the version of the process definition which was used to create the process instance
   int32 version = 3;
-  // the unique identifier of the created workflow instance; to be used wherever a request
-  // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
-  int64 workflowInstanceKey = 4;
+  // the unique identifier of the created process instance; to be used wherever a request
+  // needs a process instance key (e.g. CancelProcessInstanceRequest)
+  int64 processInstanceKey = 4;
 }
 
-message CreateWorkflowInstanceWithResultRequest {
-  CreateWorkflowInstanceRequest request = 1;
-  // timeout (in ms). the request will be closed if the workflow is not completed
+message CreateProcessInstanceWithResultRequest {
+  CreateProcessInstanceRequest request = 1;
+  // timeout (in ms). the request will be closed if the process is not completed
   // before the requestTimeout.
   // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
   int64 requestTimeout = 2;
-  // list of names of variables to be included in `CreateWorkflowInstanceWithResultResponse.variables`
+  // list of names of variables to be included in `CreateProcessInstanceWithResultResponse.variables`
   // if empty, all visible variables in the root scope will be returned.
   repeated string fetchVariables = 3;
 }
 
-message CreateWorkflowInstanceWithResultResponse {
-  // the key of the workflow definition which was used to create the workflow instance
-  int64 workflowKey = 1;
-  // the BPMN process ID of the workflow definition which was used to create the workflow
+message CreateProcessInstanceWithResultResponse {
+  // the key of the process definition which was used to create the process instance
+  int64 processDefinitionKey = 1;
+  // the BPMN process ID of the process definition which was used to create the process
   // instance
   string bpmnProcessId = 2;
-  // the version of the workflow definition which was used to create the workflow instance
+  // the version of the process definition which was used to create the process instance
   int32 version = 3;
-  // the unique identifier of the created workflow instance; to be used wherever a request
-  // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
-  int64 workflowInstanceKey = 4;
+  // the unique identifier of the created process instance; to be used wherever a request
+  // needs a process instance key (e.g. CancelProcessInstanceRequest)
+  int64 processInstanceKey = 4;
   // JSON document
   // consists of visible variables in the root scope
   string variables = 5;
 
 }
 
-message DeployWorkflowRequest {
-  // List of workflow resources to deploy
-  repeated WorkflowRequestObject workflows = 1;
+message DeployProcessRequest {
+  // List of process resources to deploy
+  repeated ProcessRequestObject processes = 1;
 }
 
-message WorkflowRequestObject {
-  enum ResourceType {
-    // FILE type means the gateway will try to detect the resource type
-    // using the file extension of the name field
-    FILE = 0;
-    BPMN = 1; // extension 'bpmn'
-    YAML = 2; // extension 'yaml'
-  }
-
+message ProcessRequestObject {
   // the resource basename, e.g. myProcess.bpmn
   string name = 1;
-  // the resource type; if set to BPMN or YAML then the file extension
-  // is ignored
-  ResourceType type = 2;
   // the process definition as a UTF8-encoded string
-  bytes definition = 3;
+  bytes definition = 2;
 }
 
-message DeployWorkflowResponse {
+message DeployProcessResponse {
   // the unique key identifying the deployment
   int64 key = 1;
-  // a list of deployed workflows
-  repeated WorkflowMetadata workflows = 2;
+  // a list of deployed processes
+  repeated ProcessMetadata processes = 2;
 }
 
-message WorkflowMetadata {
+message ProcessMetadata {
   // the bpmn process ID, as parsed during deployment; together with the version forms a
-  // unique identifier for a specific workflow definition
+  // unique identifier for a specific process definition
   string bpmnProcessId = 1;
   // the assigned process version
   int32 version = 2;
-  // the assigned key, which acts as a unique identifier for this workflow
-  int64 workflowKey = 3;
-  // the resource name (see: WorkflowRequestObject.name) from which this workflow was
+  // the assigned key, which acts as a unique identifier for this process
+  int64 processDefinitionKey = 3;
+  // the resource name (see: ProcessRequestObject.name) from which this process was
   // parsed
   string resourceName = 4;
 }
@@ -272,6 +261,7 @@ message Partition {
   enum PartitionBrokerRole {
     LEADER = 0;
     FOLLOWER = 1;
+    INACTIVE = 2;
   }
 
   // Describes the current health of the partition
@@ -299,7 +289,7 @@ message UpdateJobRetriesResponse {
 }
 
 message SetVariablesRequest {
-  // the unique identifier of a particular element; can be the workflow instance key (as
+  // the unique identifier of a particular element; can be the process instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
   // elementInstanceKey on the job message)
   int64 elementInstanceKey = 1;
@@ -337,13 +327,13 @@ service Gateway {
   }
 
   /*
-    Cancels a running workflow instance
+    Cancels a running process instance
 
     Errors:
       NOT_FOUND:
-        - no workflow instance exists with the given key
+        - no process instance exists with the given key
    */
-  rpc CancelWorkflowInstance (CancelWorkflowInstanceRequest) returns (CancelWorkflowInstanceResponse) {
+  rpc CancelProcessInstance (CancelProcessInstanceRequest) returns (CancelProcessInstanceResponse) {
   }
 
   /*
@@ -362,48 +352,47 @@ service Gateway {
   }
 
   /*
-    Creates and starts an instance of the specified workflow. The workflow definition to use to
+    Creates and starts an instance of the specified process. The process definition to use to
     create the instance can be specified either using its unique key (as returned by
-    DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
-    latest deployed version. Note that only workflows with none start events can be started through
+    DeployProcess), or using the BPMN process ID and a version. Pass -1 as the version to use the
+    latest deployed version. Note that only processes with none start events can be started through
     this command.
 
     Errors:
       NOT_FOUND:
-        - no workflow with the given key exists (if workflowKey was given)
-        - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-        - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+        - no process with the given key exists (if processDefinitionKey was given)
+        - no process with the given process ID exists (if bpmnProcessId was given but version was -1)
+        - no process with the given process ID and version exists (if both bpmnProcessId and version were given)
 
       FAILED_PRECONDITION:
-        - the workflow definition does not contain a none start event; only workflows with none
+        - the process definition does not contain a none start event; only processes with none
           start event can be started manually.
 
       INVALID_ARGUMENT:
         - the given variables argument is not a valid JSON document; it is expected to be a valid
           JSON document where the root node is an object.
    */
-  rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
+  rpc CreateProcessInstance (CreateProcessInstanceRequest) returns (CreateProcessInstanceResponse) {
   }
 
   /*
-    Behaves similarly to `rpc CreateWorkflowInstance`, except that a successful response is received when the workflow completes successfully.
+    Behaves similarly to `rpc CreateProcessInstance`, except that a successful response is received when the process completes successfully.
   */
-  rpc CreateWorkflowInstanceWithResult (CreateWorkflowInstanceWithResultRequest) returns (CreateWorkflowInstanceWithResultResponse) {
+  rpc CreateProcessInstanceWithResult (CreateProcessInstanceWithResultRequest) returns (CreateProcessInstanceWithResultResponse) {
   }
 
   /*
-    Deploys one or more workflows to Zeebe. Note that this is an atomic call,
-    i.e. either all workflows are deployed, or none of them are.
+    Deploys one or more processes to Zeebe. Note that this is an atomic call,
+    i.e. either all processes are deployed, or none of them are.
 
     Errors:
       INVALID_ARGUMENT:
         - no resources given.
         - if at least one resource is invalid. A resource is considered invalid if:
-          - it is not a BPMN or YAML file (currently detected through the file extension)
           - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
-          - the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+          - the process is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
    */
-  rpc DeployWorkflow (DeployWorkflowRequest) returns (DeployWorkflowResponse) {
+  rpc DeployProcess (DeployProcessRequest) returns (DeployProcessResponse) {
   }
 
   /*
@@ -424,7 +413,7 @@ service Gateway {
   }
 
   /*
-    Reports a business error (i.e. non-technical) that occurs while processing a job. The error is handled in the workflow by an error catch event. If there is no error catch event with the specified errorCode then an incident will be raised instead.
+    Reports a business error (i.e. non-technical) that occurs while processing a job. The error is handled in the process by an error catch event. If there is no error catch event with the specified errorCode then an incident will be raised instead.
 
     Errors:
       NOT_FOUND:
@@ -460,7 +449,7 @@ service Gateway {
   }
 
   /*
-    Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
+    Updates all the variables of a particular scope (e.g. process instance, flow element instance)
     from the given JSON document.
 
     Errors:

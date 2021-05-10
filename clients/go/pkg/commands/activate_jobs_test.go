@@ -16,11 +16,11 @@ package commands
 
 import (
 	"context"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io"
 	"reflect"
 	"testing"
@@ -49,19 +49,19 @@ func TestActivateJobsCommand(t *testing.T) {
 	response1 := &pb.ActivateJobsResponse{
 		Jobs: []*pb.ActivatedJob{
 			{
-				Key:                       123,
-				Type:                      "foo",
-				Retries:                   3,
-				Deadline:                  123123,
-				Worker:                    DefaultJobWorkerName,
-				ElementInstanceKey:        123,
-				WorkflowKey:               124,
-				BpmnProcessId:             "fooProcess",
-				WorkflowInstanceKey:       1233,
-				ElementId:                 "foobar",
-				WorkflowDefinitionVersion: 12345,
-				CustomHeaders:             "{\"foo\": \"bar\"}",
-				Variables:                 "{\"foo\": \"bar\"}",
+				Key:                      123,
+				Type:                     "foo",
+				Retries:                  3,
+				Deadline:                 123123,
+				Worker:                   DefaultJobWorkerName,
+				ElementInstanceKey:       123,
+				ProcessDefinitionKey:     124,
+				BpmnProcessId:            "fooProcess",
+				ProcessInstanceKey:       1233,
+				ElementId:                "foobar",
+				ProcessDefinitionVersion: 12345,
+				CustomHeaders:            "{\"foo\": \"bar\"}",
+				Variables:                "{\"foo\": \"bar\"}",
 			},
 		},
 	}
@@ -71,19 +71,19 @@ func TestActivateJobsCommand(t *testing.T) {
 	response3 := &pb.ActivateJobsResponse{
 		Jobs: []*pb.ActivatedJob{
 			{
-				Key:                       123,
-				Type:                      "foo",
-				Retries:                   3,
-				Deadline:                  123123,
-				Worker:                    DefaultJobWorkerName,
-				ElementInstanceKey:        123,
-				WorkflowKey:               124,
-				BpmnProcessId:             "fooProcess",
-				WorkflowInstanceKey:       1233,
-				ElementId:                 "foobar",
-				WorkflowDefinitionVersion: 12345,
-				CustomHeaders:             "{\"foo\": \"bar\"}",
-				Variables:                 "{\"foo\": \"bar\"}",
+				Key:                      123,
+				Type:                     "foo",
+				Retries:                  3,
+				Deadline:                 123123,
+				Worker:                   DefaultJobWorkerName,
+				ElementInstanceKey:       123,
+				ProcessDefinitionKey:     124,
+				BpmnProcessId:            "fooProcess",
+				ProcessInstanceKey:       1233,
+				ElementId:                "foobar",
+				ProcessDefinitionVersion: 12345,
+				CustomHeaders:            "{\"foo\": \"bar\"}",
+				Variables:                "{\"foo\": \"bar\"}",
 			},
 			{
 				Key:           123,

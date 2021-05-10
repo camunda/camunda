@@ -17,12 +17,12 @@ package worker
 
 import (
 	"context"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io"
 	"math"
 	"sync"

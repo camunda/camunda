@@ -16,15 +16,28 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"log"
 )
 
 var (
 	updateRetriesKey  int64
 	updateRetriesFlag int32
 )
+
+type UpdateJobRetriesResponseWrapper struct {
+	response *pb.UpdateJobRetriesResponse
+}
+
+func (u UpdateJobRetriesResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Updated the retries of job with key '", updateRetriesKey, "' to '", updateRetriesFlag, "'"), nil
+}
+
+func (u UpdateJobRetriesResponseWrapper) json() (string, error) {
+	return toJSON(u.response)
+}
 
 var updateRetriesCmd = &cobra.Command{
 	Use:     "retries <key>",
@@ -35,16 +48,18 @@ var updateRetriesCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		_, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)
-		if err == nil {
-			log.Println("Updated the retries of job with key", updateRetriesKey, "to", updateRetriesFlag)
+		resp, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)
+		if err != nil {
+			return err
 		}
+		err = printOutput(UpdateJobRetriesResponseWrapper{resp})
 
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(updateRetriesCmd)
 	updateCmd.AddCommand(updateRetriesCmd)
 	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", commands.DefaultJobRetries, "Specify retries of job")
 	if err := updateRetriesCmd.MarkFlagRequired("retries"); err != nil {

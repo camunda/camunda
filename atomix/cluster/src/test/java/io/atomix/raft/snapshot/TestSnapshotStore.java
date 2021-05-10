@@ -15,11 +15,13 @@
  */
 package io.atomix.raft.snapshot;
 
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivedSnapshot;
-import java.io.IOException;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,30 +44,26 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
-    final var newSnapshot = new InMemorySnapshot(this, snapshotId);
-    receivedSnapshots.add(newSnapshot);
-    return newSnapshot;
-  }
-
-  @Override
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.ofNullable(currentPersistedSnapshot.get());
   }
 
   @Override
-  public void purgePendingSnapshots() throws IOException {
+  public ActorFuture<Void> purgePendingSnapshots() {
     receivedSnapshots.clear();
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
-  public void addSnapshotListener(final PersistedSnapshotListener listener) {
+  public ActorFuture<Boolean> addSnapshotListener(final PersistedSnapshotListener listener) {
     listeners.add(listener);
+    return null;
   }
 
   @Override
-  public void removeSnapshotListener(final PersistedSnapshotListener listener) {
+  public ActorFuture<Boolean> removeSnapshotListener(final PersistedSnapshotListener listener) {
     listeners.remove(listener);
+    return null;
   }
 
   @Override
@@ -77,9 +75,22 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public void delete() {
+  public ActorFuture<Void> delete() {
     currentPersistedSnapshot.set(null);
     receivedSnapshots.clear();
+    return null;
+  }
+
+  @Override
+  public Path getPath() {
+    return null;
+  }
+
+  @Override
+  public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
+    final var newSnapshot = new InMemorySnapshot(this, snapshotId);
+    receivedSnapshots.add(newSnapshot);
+    return newSnapshot;
   }
 
   @Override

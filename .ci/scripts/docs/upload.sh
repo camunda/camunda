@@ -6,5 +6,5 @@ else
     FOLDER=stage.docs.zeebe.io
 fi
 
-rsync -azv --delete-after "docs/book/html/" jenkins_docs_zeebe_io@vm29.camunda.com:"/var/www/camunda/${FOLDER}/" -e "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+rsync -azv --delete-after "docs/" jenkins_docs_zeebe_io@vm29.camunda.com:"/var/www/camunda/${FOLDER}/" -e "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
 

@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Protocol</name>
   <artifactId>zeebe-protocol</artifactId>
-  <version>0.27.0-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.27.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -119,7 +119,15 @@
           <ignored>
             <ignored>
               <!-- ignore new methods in the Record interface -->
-              <className>io/zeebe/protocol/record/Record</className>
+              <className>io/camunda/zeebe/protocol/record/Record</className>
+              <method>*</method>
+              <differenceType>7012</differenceType>
+            </ignored>
+            <ignored>
+              <!-- ignore new methods in the interface -->
+              <className>
+                io/zeebe/protocol/record/value/**/**
+              </className>
               <method>*</method>
               <differenceType>7012</differenceType>
             </ignored>

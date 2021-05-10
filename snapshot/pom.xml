@@ -4,37 +4,37 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Snapshots</name>
   <artifactId>zeebe-snapshots</artifactId>
-  <version>0.27.0-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.27.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-utils</artifactId>
-    </dependency>
+
     <dependency>
       <artifactId>simpleclient</artifactId>
       <groupId>io.prometheus</groupId>
     </dependency>
+
     <dependency>
       <artifactId>zeebe-protocol</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
     </dependency>
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -45,14 +45,16 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

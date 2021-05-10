@@ -17,49 +17,49 @@ package entities
 import (
 	"encoding/json"
 
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 )
 
-// Job represents a single work item of a workflow.
+// Job represents a single work item of a process.
 //
-// See https://docs.zeebe.io/basics/job-workers.html#what-is-a-job for details
+// See https://docs.camunda.io/docs/product-manuals/concepts/job-workers/#job-queueing for details
 // on jobs.
 type Job struct {
 	*pb.ActivatedJob
 }
 
-// GetVariablesAsMap returns a map of a workflow instance's variables.
+// GetVariablesAsMap returns a map of a process instance's variables.
 //
-// See https://docs.zeebe.io/reference/variables.html for details on workflow
+// See https://docs.camunda.io/docs/product-manuals/concepts/variables for details on process
 // variables.
 func (j *Job) GetVariablesAsMap() (map[string]interface{}, error) {
 	var m map[string]interface{}
 	return m, j.GetVariablesAs(&m)
 }
 
-// GetVariablesAs unmarshals the JSON representation of a workflow instance's
+// GetVariablesAs unmarshals the JSON representation of a process instance's
 // variables into type t.
 //
-// See https://docs.zeebe.io/reference/variables.html for details on workflow
+// See https://docs.camunda.io/docs/product-manuals/concepts/variables for details on process
 // variables.
 func (j *Job) GetVariablesAs(t interface{}) error {
 	return json.Unmarshal([]byte(j.Variables), t)
 }
 
-// GetCustomHeadersAsMap returns a map of a workflow's custom headers.
+// GetCustomHeadersAsMap returns a map of a process's custom headers.
 //
-// Unlike variables, custom headers are specific to a workflow, as opposed to a
-// workflow instance.
+// Unlike variables, custom headers are specific to a process, as opposed to a
+// process instance.
 func (j *Job) GetCustomHeadersAsMap() (map[string]string, error) {
 	var m map[string]string
 	return m, j.GetCustomHeadersAs(&m)
 }
 
-// GetCustomHeadersAs unmarshals the JSON representation of a workflow's
+// GetCustomHeadersAs unmarshals the JSON representation of a process's
 // custom headers into type t.
 //
-// Unlike variables, custom headers are specific to a workflow, as opposed to a
-// workflow instance.
+// Unlike variables, custom headers are specific to a process, as opposed to a
+// process instance.
 func (j *Job) GetCustomHeadersAs(t interface{}) error {
 	return json.Unmarshal([]byte(j.CustomHeaders), t)
 }

@@ -1,0 +1,121 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.engine.util;
+
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+
+public final class RecordToWrite {
+
+  private static final long DEFAULT_KEY = 1;
+
+  private final RecordMetadata recordMetadata;
+  private UnifiedRecordValue unifiedRecordValue;
+
+  private long key = DEFAULT_KEY;
+  private int sourceIndex = -1;
+
+  private RecordToWrite(final RecordMetadata recordMetadata) {
+    this.recordMetadata = recordMetadata;
+  }
+
+  public static RecordToWrite command() {
+    final RecordMetadata recordMetadata = new RecordMetadata();
+    return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));
+  }
+
+  public static RecordToWrite event() {
+    final RecordMetadata recordMetadata = new RecordMetadata();
+    return new RecordToWrite(recordMetadata.recordType(RecordType.EVENT));
+  }
+
+  public RecordToWrite job(final JobIntent intent) {
+    return job(intent, new JobRecord().setType("type").setRetries(3).setWorker("worker"));
+  }
+
+  public RecordToWrite jobBatch(final JobBatchIntent intent) {
+    recordMetadata.valueType(ValueType.JOB_BATCH).intent(intent);
+
+    final JobBatchRecord jobBatchRecord =
+        new JobBatchRecord()
+            .setWorker("worker")
+            .setTimeout(10_000L)
+            .setType("type")
+            .setMaxJobsToActivate(1);
+
+    unifiedRecordValue = jobBatchRecord;
+    return this;
+  }
+
+  public RecordToWrite job(final JobIntent intent, final JobRecordValue value) {
+    recordMetadata.valueType(ValueType.JOB).intent(intent);
+    unifiedRecordValue = (JobRecord) value;
+    return this;
+  }
+
+  public RecordToWrite message(final MessageIntent intent, final MessageRecordValue message) {
+    recordMetadata.valueType(ValueType.MESSAGE).intent(intent);
+    unifiedRecordValue = (MessageRecord) message;
+    return this;
+  }
+
+  public RecordToWrite timer(final TimerIntent intent, final TimerRecordValue value) {
+    recordMetadata.valueType(ValueType.TIMER).intent(intent);
+    unifiedRecordValue = (TimerRecord) value;
+    return this;
+  }
+
+  public RecordToWrite processInstance(
+      final ProcessInstanceIntent intent, final ProcessInstanceRecordValue value) {
+    recordMetadata.valueType(ValueType.PROCESS_INSTANCE).intent(intent);
+    unifiedRecordValue = (ProcessInstanceRecord) value;
+    return this;
+  }
+
+  public RecordToWrite causedBy(final int index) {
+    sourceIndex = index;
+    return this;
+  }
+
+  public RecordToWrite key(final long key) {
+    this.key = key;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public RecordMetadata getRecordMetadata() {
+    return recordMetadata;
+  }
+
+  public UnifiedRecordValue getUnifiedRecordValue() {
+    return unifiedRecordValue;
+  }
+
+  public int getSourceIndex() {
+    return sourceIndex;
+  }
+}

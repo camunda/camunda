@@ -16,9 +16,22 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
-	"log"
 )
+
+type CompleteJobResponseWrapper struct {
+	resp *pb.CompleteJobResponse
+}
+
+func (c CompleteJobResponseWrapper) json() (string, error) {
+	return toJSON(c.resp)
+}
+
+func (c CompleteJobResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Completed job with key '", completeJobKey, "' and variables '", completeJobVariablesFlag, "'"), nil
+}
 
 var (
 	completeJobKey           int64
@@ -39,15 +52,18 @@ var completeJobCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		_, err = request.Send(ctx)
-		if err == nil {
-			log.Println("Completed job with key", completeJobKey, "and variables", completeJobVariablesFlag)
+		var resp *pb.CompleteJobResponse
+		resp, err = request.Send(ctx)
+		if err != nil {
+			return err
 		}
+		err = printOutput(CompleteJobResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(completeJobCmd)
 	completeCmd.AddCommand(completeJobCmd)
 	completeJobCmd.Flags().StringVar(&completeJobVariablesFlag, "variables", "{}", "Specify variables as JSON object string")
 }

@@ -6,9 +6,9 @@
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.27.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -18,7 +18,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
@@ -49,7 +49,7 @@
         </executions>
         <configuration>
           <packages>
-            <param>io.zeebe.protocol.record</param>
+            <param>io.camunda.zeebe.protocol.record</param>
           </packages>
           <generatedSourcesScope>compile</generatedSourcesScope>
           <targetDir>${project.build.directory}/generated-sources/assertj-assertions</targetDir>
@@ -75,7 +75,7 @@
         </executions>
         <configuration>
           <file>
-            ${project.build.directory}/generated-sources/assertj-assertions/io/zeebe/protocol/record/AbstractRecordAssert.java
+            ${project.build.directory}/generated-sources/assertj-assertions/io/camunda/zeebe/protocol/record/AbstractRecordAssert.java
           </file>
           <replacements>
             <replacement>

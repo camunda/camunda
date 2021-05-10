@@ -1,0 +1,104 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.zeebe.protocol.record.intent;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+
+@RunWith(Parameterized.class)
+public class IntentEncodingDecodingTest {
+
+  @Parameter public ParameterSet parameterSet;
+
+  @Test
+  public void shouldEncodeAndDecodeTimerIntent() {
+    final short value = parameterSet.intent.value();
+
+    final Intent decoded = parameterSet.decoder.apply(value);
+
+    assertThat(decoded).isSameAs(parameterSet.intent);
+  }
+
+  @Parameters(name = "{0}")
+  public static Collection<ParameterSet> parameters() {
+    final List<ParameterSet> result = new ArrayList<>();
+    result.addAll(
+        buildParameterSets(DeploymentDistributionIntent.class, DeploymentDistributionIntent::from));
+    result.addAll(buildParameterSets(DeploymentIntent.class, DeploymentIntent::from));
+    result.addAll(buildParameterSets(ErrorIntent.class, ErrorIntent::from));
+    result.addAll(buildParameterSets(IncidentIntent.class, IncidentIntent::from));
+    result.addAll(buildParameterSets(JobBatchIntent.class, JobBatchIntent::from));
+    result.addAll(buildParameterSets(JobIntent.class, JobIntent::from));
+    result.addAll(buildParameterSets(MessageIntent.class, MessageIntent::from));
+    result.addAll(
+        buildParameterSets(
+            MessageStartEventSubscriptionIntent.class, MessageStartEventSubscriptionIntent::from));
+    result.addAll(
+        buildParameterSets(MessageSubscriptionIntent.class, MessageSubscriptionIntent::from));
+    result.addAll(buildParameterSets(ProcessEventIntent.class, ProcessEventIntent::from));
+    result.addAll(
+        buildParameterSets(
+            ProcessInstanceCreationIntent.class, ProcessInstanceCreationIntent::from));
+    result.addAll(buildParameterSets(ProcessInstanceIntent.class, ProcessInstanceIntent::from));
+    result.addAll(
+        buildParameterSets(ProcessInstanceResultIntent.class, ProcessInstanceResultIntent::from));
+    result.addAll(buildParameterSets(ProcessIntent.class, ProcessIntent::from));
+    result.addAll(
+        buildParameterSets(
+            ProcessMessageSubscriptionIntent.class, ProcessMessageSubscriptionIntent::from));
+    result.addAll(buildParameterSets(TimerIntent.class, TimerIntent::from));
+    result.addAll(buildParameterSets(VariableDocumentIntent.class, VariableDocumentIntent::from));
+    result.addAll(buildParameterSets(VariableIntent.class, VariableIntent::from));
+
+    return result;
+  }
+
+  private static List<ParameterSet> buildParameterSets(
+      final Class<? extends Enum<? extends Intent>> intentClass,
+      final Function<Short, Intent> decoder) {
+    final List<ParameterSet> result = new ArrayList<>();
+
+    for (final Enum<? extends Intent> intent : intentClass.getEnumConstants()) {
+      result.add(new ParameterSet((Intent) intent, decoder));
+    }
+
+    return result;
+  }
+
+  private static final class ParameterSet {
+    final Intent intent;
+    final Function<Short, Intent> decoder;
+
+    private ParameterSet(final Intent intent, final Function<Short, Intent> decoder) {
+      this.intent = intent;
+      this.decoder = decoder;
+    }
+
+    @Override
+    public String toString() {
+      return "intent=" + intent.getClass().getSimpleName() + "." + intent.name();
+    }
+  }
+}

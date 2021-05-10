@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Enable version updates for Java
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix(deps): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+  # Enable version updates for the go client
+  - package-ecosystem: "gomod"
+    directory: "clients/go"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix(deps): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "github.com/docker/*"
+    

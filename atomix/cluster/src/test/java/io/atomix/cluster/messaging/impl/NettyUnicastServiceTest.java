@@ -24,7 +24,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
-import io.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -71,10 +71,11 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
     address1 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
     address2 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
 
-    service1 = new NettyUnicastService(address1, new MessagingConfig());
+    final String clusterId = "testClusterId";
+    service1 = new NettyUnicastService(clusterId, address1, new MessagingConfig());
     service1.start().join();
 
-    service2 = new NettyUnicastService(address2, new MessagingConfig());
+    service2 = new NettyUnicastService(clusterId, address2, new MessagingConfig());
     service2.start().join();
   }
 

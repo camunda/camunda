@@ -25,8 +25,7 @@ import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.FallbackNamespace;
-import io.atomix.utils.serializer.NamespaceImpl;
+import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.netty.bootstrap.Bootstrap;
@@ -57,12 +56,12 @@ public class NettyUnicastService implements ManagedUnicastService {
   private static final Logger LOGGER = LoggerFactory.getLogger(NettyUnicastService.class);
   private static final Serializer SERIALIZER =
       Serializer.using(
-          new FallbackNamespace(
-              new NamespaceImpl.Builder()
-                  .register(Namespaces.BASIC)
-                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-                  .register(Message.class)
-                  .register(new AddressSerializer(), Address.class)));
+          new Namespace.Builder()
+              .register(Namespaces.BASIC)
+              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+              .register(Message.class)
+              .register(new AddressSerializer(), Address.class)
+              .build());
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -73,10 +72,13 @@ public class NettyUnicastService implements ManagedUnicastService {
   private final AtomicBoolean started = new AtomicBoolean();
   private EventLoopGroup group;
   private DatagramChannel channel;
+  private final int preamble;
 
-  public NettyUnicastService(final Address address, final MessagingConfig config) {
+  public NettyUnicastService(
+      final String clusterId, final Address address, final MessagingConfig config) {
     this.address = address;
     this.config = config;
+    preamble = clusterId.hashCode();
   }
 
   @Override
@@ -95,7 +97,8 @@ public class NettyUnicastService implements ManagedUnicastService {
 
     final Message message = new Message(this.address, subject, payload);
     final byte[] bytes = SERIALIZER.encode(message);
-    final ByteBuf buf = channel.alloc().buffer(4 + bytes.length);
+    final ByteBuf buf = channel.alloc().buffer(Integer.BYTES + Integer.BYTES + bytes.length);
+    buf.writeInt(preamble);
     buf.writeInt(bytes.length).writeBytes(bytes);
     channel.writeAndFlush(
         new DatagramPacket(buf, new InetSocketAddress(resolvedAddress, address.port())));
@@ -130,17 +133,7 @@ public class NettyUnicastService implements ManagedUnicastService {
                   protected void channelRead0(
                       final ChannelHandlerContext context, final DatagramPacket packet)
                       throws Exception {
-                    final byte[] payload = new byte[packet.content().readInt()];
-                    packet.content().readBytes(payload);
-                    final Message message = SERIALIZER.decode(payload);
-                    final Map<BiConsumer<Address, byte[]>, Executor> listeners =
-                        NettyUnicastService.this.listeners.get(message.subject());
-                    if (listeners != null) {
-                      listeners.forEach(
-                          (consumer, executor) ->
-                              executor.execute(
-                                  () -> consumer.accept(message.source(), message.payload())));
-                    }
+                    handleReceivedPacket(packet);
                   }
                 })
             .option(ChannelOption.RCVBUF_ALLOCATOR, new DefaultMaxBytesRecvByteBufAllocator())
@@ -148,6 +141,26 @@ public class NettyUnicastService implements ManagedUnicastService {
             .option(ChannelOption.SO_REUSEADDR, true);
 
     return bind(serverBootstrap);
+  }
+
+  private void handleReceivedPacket(final DatagramPacket packet) {
+    final int preambleReceived = packet.content().readInt();
+    if (preambleReceived != preamble) {
+      log.warn(
+          "Received unicast message from {} which is outside of the cluster. Ignoring the message.",
+          packet.sender());
+      return;
+    }
+    final byte[] payload = new byte[packet.content().readInt()];
+    packet.content().readBytes(payload);
+    final Message message = SERIALIZER.decode(payload);
+    final Map<BiConsumer<Address, byte[]>, Executor> subjectListeners =
+        listeners.get(message.subject());
+    if (subjectListeners != null) {
+      subjectListeners.forEach(
+          (consumer, executor) ->
+              executor.execute(() -> consumer.accept(message.source(), message.payload())));
+    }
   }
 
   /**

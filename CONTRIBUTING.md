@@ -14,10 +14,16 @@
 Zeebe is a multi-module maven project. To build all components,
 run the command: `mvn clean install -DskipTests` in the root folder.
 
+> NOTE: All Java modules in Zeebe are built and tested with JDK 11, __except__ the Java client, which is built and tested with JDK 8.
+
+> NOTE: The Go client and zbctl are built and tested with Go 1.15
+
+> NOTE: The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
+
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 ```
-dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.tar.gz
-dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.zip
+dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.tar.gz
+dist/target/camunda-cloud-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
 This is a small overview of the contents of the different modules:
@@ -35,6 +41,11 @@ This is a small overview of the contents of the different modules:
 - `engine`  is the implementation of the event stream processor
 - `broker` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
+- `atomix` contains transport, membership, and consensus algorithms
+- `benchmark` contains utilities the team uses to run load tests
+- `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
+- `journal` contains the append-only log used by the consensus algorithm
+- `snapshots` module abstracting how state snapshots (i.e. `zb-db`) are handled
 
 ## Report issues or contact developers
 
@@ -60,7 +71,7 @@ describes:
 ## Create a Pull Request
 
 Zeebe follows a
-[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) workflow.
+[gitflow](https://nvie.com/posts/a-successful-git-branching-model/) process.
 The `develop` branch contains the current in-development state of the project. The `master` branch contains the latest stable release.
 
 To work on an issue, follow the following steps:
@@ -170,7 +181,7 @@ need to sign the CLA once.
 ## Licenses
 
 Zeebe source files are made available under the [Zeebe Community License
-Version 1.0](/licenses/ZEEBE-COMMUNITY-LICENSE-1.0.txt) except for the parts listed
+Version 1.1](/licenses/ZEEBE-COMMUNITY-LICENSE-1.1.txt) except for the parts listed
 below, which are made available under the [Apache License, Version
 2.0](/licenses/APACHE-2.0.txt).  See individual source files for details.
 

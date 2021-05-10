@@ -16,36 +16,27 @@
  */
 package io.atomix.raft.partition;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import io.atomix.storage.StorageLevel;
 import io.atomix.utils.memory.MemorySize;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 
 /** Raft storage configuration. */
 public class RaftStorageConfig {
 
   private static final String DATA_PREFIX = ".data";
-  private static final StorageLevel DEFAULT_STORAGE_LEVEL = StorageLevel.DISK;
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-  private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
   private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
-  private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024 * 1; // 1GB
-  private static final ReceivableSnapshotStoreFactory DEFAULT_SNAPSHOT_STORE_FACTORY =
-      new FileBasedSnapshotStoreFactory();
+  private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
+  private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
   private String directory;
-  private StorageLevel level = DEFAULT_STORAGE_LEVEL;
-  private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
+  private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
   @Optional("SnapshotStoreFactory")
-  private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory =
-      DEFAULT_SNAPSHOT_STORE_FACTORY;
+  private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
 
   /**
    * Returns the partition data directory.
@@ -57,46 +48,6 @@ public class RaftStorageConfig {
     return directory != null
         ? directory
         : System.getProperty("atomix.data", DATA_PREFIX) + "/" + groupName;
-  }
-
-  /**
-   * Returns the partition storage level.
-   *
-   * @return the partition storage level
-   */
-  public StorageLevel getLevel() {
-    return level;
-  }
-
-  /**
-   * Sets the partition storage level.
-   *
-   * @param storageLevel the partition storage level
-   * @return the Raft partition group configuration
-   */
-  public RaftStorageConfig setLevel(final StorageLevel storageLevel) {
-    level = checkNotNull(storageLevel);
-    return this;
-  }
-
-  /**
-   * Returns the maximum entry size.
-   *
-   * @return the maximum entry size
-   */
-  public MemorySize getMaxEntrySize() {
-    return MemorySize.from(maxEntrySize);
-  }
-
-  /**
-   * Sets the maximum entry size.
-   *
-   * @param maxEntrySize the maximum entry size
-   * @return the Raft storage configuration
-   */
-  public RaftStorageConfig setMaxEntrySize(final MemorySize maxEntrySize) {
-    this.maxEntrySize = (int) maxEntrySize.bytes();
-    return this;
   }
 
   /**
@@ -190,6 +141,15 @@ public class RaftStorageConfig {
    */
   public RaftStorageConfig setFreeDiskSpace(final long freeDiskSpace) {
     this.freeDiskSpace = freeDiskSpace;
+    return this;
+  }
+
+  public int getJournalIndexDensity() {
+    return journalIndexDensity;
+  }
+
+  public RaftStorageConfig setJournalIndexDensity(final int journalIndexDensity) {
+    this.journalIndexDensity = journalIndexDensity;
     return this;
   }
 }

@@ -1,5 +1,5 @@
-#!/bin/java --source 11
-package io.zeebe.broker.it.util;
+#!/usr/bin/env -S java --source 11
+package io.camunda.zeebe.broker.it.util;
 
 import static java.lang.System.exit;
 

@@ -41,13 +41,10 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.config.ConfigMapper;
 import io.atomix.utils.net.Address;
-import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,59 +126,13 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     eventService = buildClusterEventService(getMembershipService(), getMessagingService());
   }
 
-  private static String[] withDefaultResources(final String config) {
-    return Stream.concat(Stream.of(config), Stream.of(DEFAULT_RESOURCES)).toArray(String[]::new);
-  }
-
-  /**
-   * Returns a new Atomix configuration from the given resources.
-   *
-   * @param resources the resources from which to return a new Atomix configuration
-   * @param classLoader the class loader
-   * @return a new Atomix configuration from the given resource
-   */
-  private static ClusterConfig config(final String[] resources, final ClassLoader classLoader) {
-    return new ConfigMapper(classLoader).loadResources(ClusterConfig.class, resources);
-  }
-
   /**
    * Returns a new Atomix builder.
    *
    * @return a new Atomix builder
    */
   public static AtomixClusterBuilder builder() {
-    return builder(Thread.currentThread().getContextClassLoader());
-  }
-
-  /**
-   * Returns a new Atomix builder.
-   *
-   * @param classLoader the class loader
-   * @return a new Atomix builder
-   */
-  public static AtomixClusterBuilder builder(final ClassLoader classLoader) {
-    return builder(config(DEFAULT_RESOURCES, classLoader));
-  }
-
-  /**
-   * Returns a new Atomix builder.
-   *
-   * @param config the Atomix configuration
-   * @return a new Atomix builder
-   */
-  public static AtomixClusterBuilder builder(final String config) {
-    return builder(config, Thread.currentThread().getContextClassLoader());
-  }
-
-  /**
-   * Returns a new Atomix builder.
-   *
-   * @param config the Atomix configuration
-   * @param classLoader the class loader
-   * @return a new Atomix builder
-   */
-  public static AtomixClusterBuilder builder(final String config, final ClassLoader classLoader) {
-    return new AtomixClusterBuilder(config(withDefaultResources(config), classLoader));
+    return builder(new ClusterConfig());
   }
 
   /**
@@ -336,12 +287,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     return toStringHelper(this).toString();
   }
 
-  /** Loads a configuration from the given file. */
-  private static ClusterConfig loadConfig(final File config, final ClassLoader classLoader) {
-    return new ConfigMapper(classLoader)
-        .loadResources(ClusterConfig.class, config.getAbsolutePath());
-  }
-
   /** Builds a default messaging service. */
   protected static ManagedMessagingService buildMessagingService(final ClusterConfig config) {
     return new NettyMessagingService(
@@ -351,7 +296,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   /** Builds a default unicast service. */
   protected static ManagedUnicastService buildUnicastService(final ClusterConfig config) {
     return new NettyUnicastService(
-        config.getNodeConfig().getAddress(), config.getMessagingConfig());
+        config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
   }
 
   /** Builds a member location provider. */

@@ -16,9 +16,8 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.storage.journal.Indexed;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,7 @@ public class RaftFailOverTest {
     final var maxIndex =
         memberLog.values().stream()
             .flatMap(Collection::stream)
-            .map(Indexed::index)
+            .map(IndexedRaftLogEntry::index)
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
@@ -85,7 +84,7 @@ public class RaftFailOverTest {
     final var maxIndex =
         memberLog.values().stream()
             .flatMap(Collection::stream)
-            .map(Indexed::index)
+            .map(IndexedRaftLogEntry::index)
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
@@ -110,7 +109,7 @@ public class RaftFailOverTest {
     final var maxIndex =
         memberLog.values().stream()
             .flatMap(Collection::stream)
-            .map(Indexed::index)
+            .map(IndexedRaftLogEntry::index)
             .max(Long::compareTo)
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
@@ -211,24 +210,9 @@ public class RaftFailOverTest {
     for (final String member : memberLogs.keySet()) {
       if (!follower.equals(member)) {
         final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
+        assertThat(memberEntries).endsWith(entries.toArray(new IndexedRaftLogEntry[0]));
       }
     }
-  }
-
-  @Test
-  public void shouldNotJoinAfterDataLoss() throws Exception {
-    // given
-    final var follower = raftRule.shutdownFollower();
-
-    // when
-    raftRule.triggerDataLossOnNode(follower);
-
-    // then
-    // follower is not allowed to join the cluster, he needs to bootstrap
-    assertThatThrownBy(() -> raftRule.joinCluster(follower))
-        .hasCauseInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("not a member of the cluster");
   }
 
   @Test
@@ -250,6 +234,29 @@ public class RaftFailOverTest {
     assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(100);
     assertThat(snapshot.getTerm()).isEqualTo(leaderSnapshot.getTerm());
     assertThat(snapshot.getId()).isEqualTo(leaderSnapshot.getId());
+  }
+
+  @Test
+  public void shouldReplicateEntriesAfterDataLoss() throws Exception {
+    // given
+    raftRule.appendEntries(128);
+    final var follower = raftRule.shutdownFollower();
+
+    // when
+    raftRule.triggerDataLossOnNode(follower);
+    raftRule.bootstrapNode(follower);
+
+    // then
+    final var memberLogs = raftRule.getMemberLogs();
+    final var entries = memberLogs.get(follower);
+
+    for (final String member : memberLogs.keySet()) {
+      if (!follower.equals(member)) {
+        final var memberEntries = memberLogs.get(member);
+        assertThat(memberEntries.size()).isEqualTo(entries.size());
+        assertThat(memberEntries).isEqualTo(entries);
+      }
+    }
   }
 
   @Test
@@ -300,7 +307,7 @@ public class RaftFailOverTest {
     for (final String member : memberLogs.keySet()) {
       if (!follower.equals(member)) {
         final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
+        assertThat(memberEntries).endsWith(entries.toArray(new IndexedRaftLogEntry[0]));
       }
     }
   }
@@ -404,7 +411,7 @@ public class RaftFailOverTest {
     assertThat(entries.get(0).index()).isEqualTo(66);
   }
 
-  private void assertMemberLogs(final Map<String, List<Indexed<?>>> memberLog) {
+  private void assertMemberLogs(final Map<String, List<IndexedRaftLogEntry>> memberLog) {
     final var members = memberLog.keySet();
     final var iterator = members.iterator();
 
@@ -416,7 +423,7 @@ public class RaftFailOverTest {
         final var otherEntries = memberLog.get(iterator.next());
         assertThat(firstMemberEntries)
             .withFailMessage(memberLog.toString())
-            .containsExactly(otherEntries.toArray(new Indexed[0]));
+            .containsExactly(otherEntries.toArray(new IndexedRaftLogEntry[0]));
       }
     }
   }

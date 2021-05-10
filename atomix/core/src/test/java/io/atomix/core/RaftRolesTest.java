@@ -26,7 +26,6 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
-import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,7 +56,7 @@ public final class RaftRolesTest {
         startSingleNodeSinglePartitionWithPartitionConsumer(
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
-              raftPartition.addRoleChangeListener(role -> roleChanged.complete(null));
+              raftPartition.addRoleChangeListener((role, term) -> roleChanged.complete(null));
             });
 
     // then
@@ -75,7 +74,7 @@ public final class RaftRolesTest {
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  role -> {
+                  (role, term) -> {
                     roleChanged.complete(null);
 
                     // when
@@ -99,7 +98,7 @@ public final class RaftRolesTest {
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
               raftPartition.addRoleChangeListener(
-                  role -> {
+                  (role, term) -> {
                     roles.add(role);
                     if (!roleChanged.isDone() && role == Role.LEADER) {
                       roleChanged.complete(null);
@@ -272,7 +271,7 @@ public final class RaftRolesTest {
                   .withMembers(memberIds)
                   .withDataDirectory(
                       new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
-                  .withSnapshotStoreFactory(new FileBasedSnapshotStoreFactory())
+                  .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
                   .build();
 
           final Atomix atomix = builder.withPartitionGroups(partitionGroup).build();

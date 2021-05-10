@@ -55,52 +55,10 @@ public class MemberBuilder extends NodeBuilder {
   /**
    * Sets the member address.
    *
-   * @param address a host:port tuple
-   * @return the member builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withHost(String)} and/or {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public MemberBuilder withAddress(final String address) {
-    return withAddress(Address.from(address));
-  }
-
-  /**
-   * Sets the member host/port.
-   *
-   * @param host the host name
-   * @param port the port number
-   * @return the member builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withHost(String)} and {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public MemberBuilder withAddress(final String host, final int port) {
-    return withAddress(Address.from(host, port));
-  }
-
-  /**
-   * Sets the member address using local host.
-   *
-   * @param port the port number
-   * @return the member builder
-   * @throws io.atomix.utils.net.MalformedAddressException if a valid {@link Address} cannot be
-   *     constructed from the arguments
-   * @deprecated since 3.1. Use {@link #withPort(int)} instead
-   */
-  @Deprecated
-  public MemberBuilder withAddress(final int port) {
-    return withAddress(Address.from(port));
-  }
-
-  /**
-   * Sets the member address.
-   *
    * @param address the member address
    * @return the member builder
    */
+  @Override
   public MemberBuilder withAddress(final Address address) {
     config.setAddress(address);
     return this;
@@ -134,38 +92,12 @@ public class MemberBuilder extends NodeBuilder {
   }
 
   /**
-   * Sets the zone to which the member belongs.
-   *
-   * @param zone the zone to which the member belongs
-   * @return the member builder
-   * @deprecated since 3.1. Use {@link #withZoneId(String)} instead
-   */
-  @Deprecated
-  public MemberBuilder withZone(final String zone) {
-    config.setZoneId(zone);
-    return this;
-  }
-
-  /**
    * Sets the rack to which the member belongs.
    *
    * @param rack the rack to which the member belongs
    * @return the member builder
    */
   public MemberBuilder withRackId(final String rack) {
-    config.setRackId(rack);
-    return this;
-  }
-
-  /**
-   * Sets the rack to which the member belongs.
-   *
-   * @param rack the rack to which the member belongs
-   * @return the member builder
-   * @deprecated since 3.1. Use {@link #withRackId(String)} instead
-   */
-  @Deprecated
-  public MemberBuilder withRack(final String rack) {
     config.setRackId(rack);
     return this;
   }
@@ -190,19 +122,6 @@ public class MemberBuilder extends NodeBuilder {
    */
   public MemberBuilder withProperties(final Properties properties) {
     config.setProperties(properties);
-    return this;
-  }
-
-  /**
-   * Sets a member property.
-   *
-   * @param key the property key to set
-   * @param value the property value to set
-   * @return the member builder
-   * @throws NullPointerException if the property is null
-   */
-  public MemberBuilder withProperty(final String key, final String value) {
-    config.setProperty(key, value);
     return this;
   }
 }

@@ -18,7 +18,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/internal/embedded"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/embedded"
 	"log"
 	"os"
 	"strconv"
@@ -30,9 +30,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
 )
 
 const DefaultRequestTimeout = 15 * time.Second
@@ -75,7 +75,7 @@ func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (c *ClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
+func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
 	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 

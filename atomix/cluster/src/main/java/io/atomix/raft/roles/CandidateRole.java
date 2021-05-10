@@ -26,9 +26,8 @@ import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.Quorum;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
 import java.util.HashSet;
@@ -51,7 +50,7 @@ public final class CandidateRole extends ActiveRole {
     if (raft.getCluster().getActiveMemberStates().isEmpty()) {
       log.info("Single member cluster. Transitioning directly to leader.");
       raft.setTerm(raft.getTerm() + 1);
-      raft.setLastVotedFor(raft.getCluster().getMember().memberId());
+      raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
       raft.transition(RaftServer.Role.LEADER);
       return CompletableFuture.completedFuture(this);
     }
@@ -102,7 +101,7 @@ public final class CandidateRole extends ActiveRole {
     // When the election timer is reset, increment the current term and
     // restart the election.
     raft.setTerm(raft.getTerm() + 1);
-    raft.setLastVotedFor(raft.getCluster().getMember().memberId());
+    raft.setLastVotedFor(raft.getCluster().getLocalMember().memberId());
 
     final AtomicBoolean complete = new AtomicBoolean();
     final Set<DefaultRaftMember> votingMembers =
@@ -154,11 +153,11 @@ public final class CandidateRole extends ActiveRole {
 
     // First, load the last log entry to get its term. We load the entry
     // by its index since the index is required by the protocol.
-    final Indexed<RaftLogEntry> lastEntry = raft.getLogWriter().getLastEntry();
+    final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
 
     final long lastTerm;
     if (lastEntry != null) {
-      lastTerm = lastEntry.entry().term();
+      lastTerm = lastEntry.term();
     } else {
       lastTerm = 0;
     }
@@ -172,7 +171,7 @@ public final class CandidateRole extends ActiveRole {
       final VoteRequest request =
           VoteRequest.builder()
               .withTerm(raft.getTerm())
-              .withCandidate(raft.getCluster().getMember().memberId())
+              .withCandidate(raft.getCluster().getLocalMember().memberId())
               .withLastLogIndex(lastEntry != null ? lastEntry.index() : 0)
               .withLastLogTerm(lastTerm)
               .build();
@@ -274,7 +273,7 @@ public final class CandidateRole extends ActiveRole {
     }
 
     // If the vote request is not for this candidate then reject the vote.
-    if (request.candidate() == raft.getCluster().getMember().memberId()) {
+    if (request.candidate() == raft.getCluster().getLocalMember().memberId()) {
       return CompletableFuture.completedFuture(
           logResponse(
               VoteResponse.builder()

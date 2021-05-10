@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.zeebe.protocol.record"
+  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.protocol.record"
   id="0" version="${protocol.version}" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
@@ -16,26 +16,29 @@
       <validValue name="MALFORMED_REQUEST">4</validValue>
       <validValue name="INVALID_MESSAGE_TEMPLATE">5</validValue>
       <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
-      <validValue name="WORKFLOW_NOT_FOUND">7</validValue>
+      <validValue name="PROCESS_NOT_FOUND">7</validValue>
       <validValue name="RESOURCE_EXHAUSTED">8</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
       <validValue name="JOB">0</validValue>
       <validValue name="DEPLOYMENT">4</validValue>
-      <validValue name="WORKFLOW_INSTANCE">5</validValue>
+      <validValue name="PROCESS_INSTANCE">5</validValue>
       <validValue name="INCIDENT">6</validValue>
       <validValue name="MESSAGE">10</validValue>
       <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
-      <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>
+      <validValue name="PROCESS_MESSAGE_SUBSCRIPTION">12</validValue>
       <validValue name="JOB_BATCH">14</validValue>
       <validValue name="TIMER">15</validValue>
       <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
       <validValue name="VARIABLE">17</validValue>
       <validValue name="VARIABLE_DOCUMENT">18</validValue>
-      <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
+      <validValue name="PROCESS_INSTANCE_CREATION">19</validValue>
       <validValue name="ERROR">20</validValue>
-      <validValue name="WORKFLOW_INSTANCE_RESULT">21</validValue>
+      <validValue name="PROCESS_INSTANCE_RESULT">21</validValue>
+      <validValue name="PROCESS">22</validValue>
+      <validValue name="DEPLOYMENT_DISTRIBUTION">23</validValue>
+      <validValue name="PROCESS_EVENT">24</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
@@ -110,7 +113,7 @@
     <field name="intent" id="6" type="uint8"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="7" type="RejectionType"/>
-    <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional" />
+    <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
   </sbe:message>

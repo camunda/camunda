@@ -26,8 +26,7 @@ import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.Indexed;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -112,23 +111,23 @@ public abstract class ActiveRole extends PassiveRole {
 
   /** Returns a boolean value indicating whether the given candidate's log is up-to-date. */
   boolean isLogUpToDate(final long lastIndex, final long lastTerm, final RaftRequest request) {
-    // Read the last entry from the log.
-    final Indexed<RaftLogEntry> lastEntry = raft.getLogWriter().getLastEntry();
-
     // If the log is empty then vote for the candidate.
-    if (lastEntry == null) {
+    if (raft.getLog().isEmpty()) {
       log.debug("Accepted {}: candidate's log is up-to-date", request);
       return true;
     }
 
+    // Read the last entry from the log.
+    final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
+
     // If the candidate's last log term is lower than the local log's last entry term, reject the
     // request.
-    if (lastTerm < lastEntry.entry().term()) {
+    if (lastTerm < lastEntry.term()) {
       log.debug(
           "Rejected {}: candidate's last log entry ({}) is at a lower term than the local log ({})",
           request,
           lastTerm,
-          lastEntry.entry().term());
+          lastEntry.term());
       return false;
     }
 
@@ -139,7 +138,7 @@ public abstract class ActiveRole extends PassiveRole {
     // greater than the local log's last term then it's considered up to date, and if both have the
     // same term
     // then the candidate's last index must be greater than the local log's last index.
-    if (lastTerm == lastEntry.entry().term() && lastIndex < lastEntry.index()) {
+    if (lastTerm == lastEntry.term() && lastIndex < lastEntry.index()) {
       log.debug(
           "Rejected {}: candidate's last log entry ({}) is at a lower index than the local log ({})",
           request,

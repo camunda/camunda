@@ -15,7 +15,7 @@
  */
 package io.atomix.raft.snapshot;
 
-import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.camunda.zeebe.snapshots.SnapshotChunk;
 
 class TestSnapshotChunkImpl implements SnapshotChunk {
 

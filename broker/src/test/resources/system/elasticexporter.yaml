@@ -7,16 +7,16 @@ zeebe:
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
       #
       elasticsearch:
-        className: io.zeebe.exporter.ElasticsearchExporter
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter
         #
         args:
           url: http://localhost:9200
-        #
-        #   bulk:
-        #     delay: 5
-        #     size: 1000
-        #     memoryLimit: 10485760
-        #
+          #
+          #   bulk:
+          #     delay: 5
+          #     size: 1000
+          #     memoryLimit: 10485760
+          #
           authentication:
             username: elastic
             password: changeme
@@ -29,7 +29,8 @@ zeebe:
         #     event: true
         #     rejection: false
         #
-        #     deployment: true
+        #     deployment: false
+        #     process: true
         #     error: true
         #     incident: true
         #     job: true
@@ -38,8 +39,6 @@ zeebe:
         #     messageSubscription: false
         #     variable: true
         #     variableDocument: true
-        #     workflowInstance: true
-        #     workflowInstanceCreation: false
-        #     workflowInstanceSubscription: false
-        #
-        #     ignoreVariablesAbove: 32677
+        #     processInstance: true
+        #     processInstanceCreation: false
+        #     processMessageSubscription: false

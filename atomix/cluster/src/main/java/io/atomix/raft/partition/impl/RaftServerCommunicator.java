@@ -26,10 +26,6 @@ import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
-import io.atomix.raft.protocol.JoinRequest;
-import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.LeaveRequest;
-import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftMessage;
@@ -63,17 +59,6 @@ public class RaftServerCommunicator implements RaftServerProtocol {
     this.clusterCommunicator =
         Preconditions.checkNotNull(clusterCommunicator, "clusterCommunicator cannot be null");
     metrics = new RaftRequestMetrics(partitionName);
-  }
-
-  @Override
-  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
-    return sendAndReceive(context.joinSubject, request, memberId);
-  }
-
-  @Override
-  public CompletableFuture<LeaveResponse> leave(
-      final MemberId memberId, final LeaveRequest request) {
-    return sendAndReceive(context.leaveSubject, request, memberId);
   }
 
   @Override
@@ -114,36 +99,6 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
     return sendAndReceive(context.appendSubject, request, memberId);
-  }
-
-  @Override
-  public void registerJoinHandler(
-      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    clusterCommunicator.subscribe(
-        context.joinSubject,
-        serializer::decode,
-        handler.<JoinRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
-  }
-
-  @Override
-  public void unregisterJoinHandler() {
-    clusterCommunicator.unsubscribe(context.joinSubject);
-  }
-
-  @Override
-  public void registerLeaveHandler(
-      final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
-    clusterCommunicator.subscribe(
-        context.leaveSubject,
-        serializer::decode,
-        handler.<LeaveRequest>compose(this::recordReceivedMetrics),
-        serializer::encode);
-  }
-
-  @Override
-  public void unregisterLeaveHandler() {
-    clusterCommunicator.unsubscribe(context.leaveSubject);
   }
 
   @Override

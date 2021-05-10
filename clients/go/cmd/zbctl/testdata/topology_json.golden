@@ -1,12 +1,9 @@
-{
-  "brokers":  [
-    {
-      "nodeId":  0,
+{  "brokers":  [    {      "nodeId":  0,
       "host":  "172.17.0.3",
       "port":  26501,
       "partitions":  [
         {
-          "partitionId":  1,
+          "partitionId":  12,
           "role":  "LEADER",
           "health":  "HEALTHY"
         }

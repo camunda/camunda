@@ -17,23 +17,23 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 )
 
 const LatestVersion = -1
 
 type DispatchCreateInstanceCommand interface {
-	Send(context.Context) (*pb.CreateWorkflowInstanceResponse, error)
+	Send(context.Context) (*pb.CreateProcessInstanceResponse, error)
 }
 
 type DispatchCreateInstanceWithResultCommand interface {
-	Send(context.Context) (*pb.CreateWorkflowInstanceWithResultResponse, error)
+	Send(context.Context) (*pb.CreateProcessInstanceWithResultResponse, error)
 }
 
 type CreateInstanceCommandStep1 interface {
 	BPMNProcessId(string) CreateInstanceCommandStep2
-	WorkflowKey(int64) CreateInstanceCommandStep3
+	ProcessDefinitionKey(int64) CreateInstanceCommandStep3
 }
 
 type CreateInstanceCommandStep2 interface {
@@ -66,12 +66,12 @@ type CreateInstanceWithResultCommandStep1 interface {
 
 type CreateInstanceCommand struct {
 	Command
-	request pb.CreateWorkflowInstanceRequest
+	request pb.CreateProcessInstanceRequest
 }
 
 type CreateInstanceWithResultCommand struct {
 	Command
-	request pb.CreateWorkflowInstanceWithResultRequest
+	request pb.CreateProcessInstanceWithResultRequest
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (CreateInstanceCommandStep3, error) {
@@ -122,8 +122,8 @@ func (cmd *CreateInstanceCommand) LatestVersion() CreateInstanceCommandStep3 {
 	return cmd
 }
 
-func (cmd *CreateInstanceCommand) WorkflowKey(key int64) CreateInstanceCommandStep3 {
-	cmd.request.WorkflowKey = key
+func (cmd *CreateInstanceCommand) ProcessDefinitionKey(key int64) CreateInstanceCommandStep3 {
+	cmd.request.ProcessDefinitionKey = key
 	return cmd
 }
 
@@ -135,7 +135,7 @@ func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommand
 
 func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandStep1 {
 	return &CreateInstanceWithResultCommand{
-		request: pb.CreateWorkflowInstanceWithResultRequest{
+		request: pb.CreateProcessInstanceWithResultRequest{
 			Request: &cmd.request,
 		},
 		Command: Command{
@@ -151,8 +151,8 @@ func (cmd *CreateInstanceWithResultCommand) FetchVariables(variableNames ...stri
 	return cmd
 }
 
-func (cmd *CreateInstanceCommand) Send(ctx context.Context) (*pb.CreateWorkflowInstanceResponse, error) {
-	response, err := cmd.gateway.CreateWorkflowInstance(ctx, &cmd.request)
+func (cmd *CreateInstanceCommand) Send(ctx context.Context) (*pb.CreateProcessInstanceResponse, error) {
+	response, err := cmd.gateway.CreateProcessInstance(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
@@ -160,10 +160,10 @@ func (cmd *CreateInstanceCommand) Send(ctx context.Context) (*pb.CreateWorkflowI
 	return response, err
 }
 
-func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.CreateWorkflowInstanceWithResultResponse, error) {
+func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.CreateProcessInstanceWithResultResponse, error) {
 	cmd.request.RequestTimeout = getLongPollingMillis(ctx)
 
-	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, &cmd.request)
+	response, err := cmd.gateway.CreateProcessInstanceWithResult(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}

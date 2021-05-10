@@ -31,8 +31,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
-import io.atomix.storage.StorageLevel;
-import io.atomix.storage.journal.index.JournalIndex;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -75,16 +73,13 @@ import java.util.function.Supplier;
  * <h2>Storage</h2>
  *
  * By default, the log is stored on disk, but users can override the default {@link RaftStorage}
- * configuration via {@link RaftServer.Builder#withStorage(RaftStorage)}. Most notably, to configure
- * the storage module to store entries in memory instead of disk, configure the {@link
- * StorageLevel}.
+ * configuration via {@link RaftServer.Builder#withStorage(RaftStorage)}.
  *
  * <pre>{@code
  * RaftServer server = RaftServer.builder(address)
  *   .withStateMachine(MyStateMachine::new)
  *   .withStorage(Storage.builder()
  *     .withDirectory(new File("logs"))
- *     .withStorageLevel(StorageLevel.DISK)
  *     .build())
  *   .build();
  * }</pre>
@@ -95,10 +90,7 @@ import java.util.function.Supplier;
  *
  * <h2>Bootstrapping the cluster</h2>
  *
- * Once a server has been built, it must either be {@link #bootstrap() bootstrapped} to form a new
- * cluster or {@link #join(MemberId...) joined} to an existing cluster. The simplest way to
- * bootstrap a new cluster is to bootstrap a single server to which additional servers can be
- * joined.
+ * Once a server has been built, it must be {@link #bootstrap() bootstrapped} to form a new cluster.
  *
  * <pre>{@code
  * CompletableFuture<RaftServer> future = server.bootstrap();
@@ -122,33 +114,6 @@ import java.util.function.Supplier;
  * CompletableFuture<RaftServer> future = server.bootstrap(cluster);
  * future.thenRun(() -> {
  *   System.out.println("Cluster bootstrapped");
- * });
- *
- * }</pre>
- *
- * <h2>Adding a server to an existing cluster</h2>
- *
- * Once a single- or multi-node cluster has been {@link #bootstrap() bootstrapped}, often times
- * users need to add additional servers to the cluster. For example, some users prefer to bootstrap
- * a single-node cluster and add additional nodes to that server. Servers can join existing
- * bootstrapped clusters using the {@link #join(MemberId...)} method. When joining an existing
- * cluster, the server simply needs to specify at least one reachable server in the existing
- * cluster.
- *
- * <pre>{@code
- * RaftServer server = RaftServer.builder(new Address("123.456.789.3", 5000))
- *   .withTransport(NettyTransport.builder().withThreads(4).build())
- *   .build();
- *
- * List<Address> cluster = Arrays.asList(
- *   new Address("123.456.789.0", 5000),
- *   new Address("123.456.789.1", 5000),
- *   new Address("123.456.789.2", 5000)
- * );
- *
- * CompletableFuture<RaftServer> future = server.join(cluster);
- * future.thenRun(() -> {
- *   System.out.println("Server joined successfully!");
  * });
  *
  * }</pre>
@@ -190,7 +155,7 @@ public interface RaftServer {
    *
    * <p>The server name is provided to the server via the {@link Builder#withName(String) builder
    * configuration}. The name is used internally to manage the server's on-disk state. {@link
-   * RaftLog Log}, {@link snapshot}, and {@link io.atomix.raft.storage.system.MetaStore
+   * RaftLog Log}, {@code snapshot}, and {@link io.atomix.raft.storage.system.MetaStore
    * configuration} files stored on disk use the server name as the prefix.
    *
    * @return The server name.
@@ -203,13 +168,7 @@ public interface RaftServer {
    * <p>The {@link RaftCluster} is representative of the server's current view of the cluster
    * configuration. The first time the server is {@link #bootstrap() started}, the cluster
    * configuration will be initialized using the {@link MemberId} list provided to the server {@link
-   * #builder(MemberId) builder}. For {@link StorageLevel#DISK persistent} servers, subsequent
-   * starts will result in the last known cluster configuration being loaded from disk.
-   *
-   * <p>The returned {@link RaftCluster} can be used to modify the state of the cluster to which
-   * this server belongs. Note, however, that users need not explicitly {@link
-   * RaftCluster#join(MemberId...) join} or {@link RaftCluster#leave() leave} the cluster since
-   * starting and stopping the server results in joining and leaving the cluster respectively.
+   * #builder(MemberId) builder}
    *
    * @return The server's cluster configuration.
    */
@@ -248,9 +207,7 @@ public interface RaftServer {
    * <p>When the cluster is bootstrapped, the local server will be transitioned into the active
    * state and begin participating in the Raft consensus algorithm. When the cluster is first
    * bootstrapped, no leader will exist. The bootstrapped members will elect a leader amongst
-   * themselves. Once a cluster has been bootstrapped, additional members may be {@link
-   * #join(MemberId...) joined} to the cluster. In the event that the bootstrapped members cannot
-   * reach a quorum to elect a leader, bootstrap will continue until successful.
+   * themselves.
    *
    * <p>It is critical that all servers in a bootstrap configuration be started with the same exact
    * set of members. Bootstrapping multiple servers with different configurations may result in
@@ -281,9 +238,7 @@ public interface RaftServer {
    * <p>When the cluster is bootstrapped, the local server will be transitioned into the active
    * state and begin participating in the Raft consensus algorithm. When the cluster is first
    * bootstrapped, no leader will exist. The bootstrapped members will elect a leader amongst
-   * themselves. Once a cluster has been bootstrapped, additional members may be {@link
-   * #join(MemberId...) joined} to the cluster. In the event that the bootstrapped members cannot
-   * reach a quorum to elect a leader, bootstrap will continue until successful.
+   * themselves.
    *
    * <p>It is critical that all servers in a bootstrap configuration be started with the same exact
    * set of members. Bootstrapping multiple servers with different configurations may result in
@@ -313,9 +268,7 @@ public interface RaftServer {
    * <p>When the cluster is bootstrapped, the local server will be transitioned into the active
    * state and begin participating in the Raft consensus algorithm. When the cluster is first
    * bootstrapped, no leader will exist. The bootstrapped members will elect a leader amongst
-   * themselves. Once a cluster has been bootstrapped, additional members may be {@link
-   * #join(MemberId...) joined} to the cluster. In the event that the bootstrapped members cannot
-   * reach a quorum to elect a leader, bootstrap will continue until successful.
+   * themselves.
    *
    * <p>It is critical that all servers in a bootstrap configuration be started with the same exact
    * set of members. Bootstrapping multiple servers with different configurations may result in
@@ -331,102 +284,6 @@ public interface RaftServer {
   default CompletableFuture<RaftServer> bootstrap(final MemberId... members) {
     return bootstrap(Arrays.asList(members));
   }
-
-  /**
-   * Joins the cluster.
-   *
-   * <p>Joining the cluster results in the local server being added to an existing cluster that has
-   * already been bootstrapped. The provided configuration will be used to connect to the existing
-   * cluster and submit a join request. Once the server has been added to the existing cluster's
-   * configuration, the join operation is complete.
-   *
-   * <p>Any {@link RaftMember.Type type} of server may join a cluster. In order to join a cluster,
-   * the provided list of bootstrapped members must be non-empty and must include at least one
-   * active member of the cluster. If no member in the configuration is reachable, the server will
-   * continue to attempt to join the cluster until successful. If the provided cluster configuration
-   * is empty, the returned {@link CompletableFuture} will be completed exceptionally.
-   *
-   * <p>When the server joins the cluster, the local server will be transitioned into its initial
-   * state as defined by the configured {@link RaftMember.Type}. Once the server has joined, it will
-   * immediately begin participating in Raft and asynchronous replication according to its
-   * configuration.
-   *
-   * <p>It's important to note that the provided cluster configuration will only be used the first
-   * time the server attempts to join the cluster. Thereafter, in the event that the server crashes
-   * and is restarted by {@code join}ing the cluster again, the last known configuration will be
-   * used assuming the server is configured with persistent storage. Only when the server leaves the
-   * cluster will its configuration and log be reset.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to join
-   * the cluster until successful. If the server fails to reach the leader, the join will be retried
-   * until successful.
-   *
-   * @param members A collection of cluster members to join.
-   * @return A completable future to be completed once the local server has joined the cluster.
-   */
-  default CompletableFuture<RaftServer> join(final MemberId... members) {
-    return join(Arrays.asList(members));
-  }
-
-  /**
-   * Joins the cluster.
-   *
-   * <p>Joining the cluster results in the local server being added to an existing cluster that has
-   * already been bootstrapped. The provided configuration will be used to connect to the existing
-   * cluster and submit a join request. Once the server has been added to the existing cluster's
-   * configuration, the join operation is complete.
-   *
-   * <p>Any {@link RaftMember.Type type} of server may join a cluster. In order to join a cluster,
-   * the provided list of bootstrapped members must be non-empty and must include at least one
-   * active member of the cluster. If no member in the configuration is reachable, the server will
-   * continue to attempt to join the cluster until successful. If the provided cluster configuration
-   * is empty, the returned {@link CompletableFuture} will be completed exceptionally.
-   *
-   * <p>When the server joins the cluster, the local server will be transitioned into its initial
-   * state as defined by the configured {@link RaftMember.Type}. Once the server has joined, it will
-   * immediately begin participating in Raft and asynchronous replication according to its
-   * configuration.
-   *
-   * <p>It's important to note that the provided cluster configuration will only be used the first
-   * time the server attempts to join the cluster. Thereafter, in the event that the server crashes
-   * and is restarted by {@code join}ing the cluster again, the last known configuration will be
-   * used assuming the server is configured with persistent storage. Only when the server leaves the
-   * cluster will its configuration and log be reset.
-   *
-   * <p>In order to preserve safety during configuration changes, Raft leaders do not allow
-   * concurrent configuration changes. In the event that an existing configuration change (a server
-   * joining or leaving the cluster or a member being {@link RaftMember#promote() promoted} or
-   * {@link RaftMember#demote() demoted}) is under way, the local server will retry attempts to join
-   * the cluster until successful. If the server fails to reach the leader, the join will be retried
-   * until successful.
-   *
-   * @param members A collection of cluster members to join.
-   * @return A completable future to be completed once the local server has joined the cluster.
-   */
-  CompletableFuture<RaftServer> join(Collection<MemberId> members);
-
-  /**
-   * Joins the cluster as a passive listener.
-   *
-   * @param cluster A collection of cluster members to join.
-   * @return A completable future to be completed once the local server has joined the cluster as a
-   *     listener.
-   */
-  default CompletableFuture<RaftServer> listen(final MemberId... cluster) {
-    return listen(Arrays.asList(checkNotNull(cluster)));
-  }
-
-  /**
-   * Joins the cluster as a passive listener.
-   *
-   * @param cluster A collection of cluster members to join.
-   * @return A completable future to be completed once the local server has joined the cluster as a
-   *     listener.
-   */
-  CompletableFuture<RaftServer> listen(Collection<MemberId> cluster);
 
   /**
    * Promotes the server to leader if possible.
@@ -455,13 +312,6 @@ public interface RaftServer {
    * @return A completable future to be completed once the server is inactive.
    */
   CompletableFuture<Void> goInactive();
-
-  /**
-   * Leaves the Raft cluster.
-   *
-   * @return A completable future to be completed once the server has left the cluster.
-   */
-  CompletableFuture<Void> leave();
 
   /**
    * Returns the current Raft context.
@@ -568,7 +418,6 @@ public interface RaftServer {
     protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
     protected Supplier<Random> randomFactory;
-    protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected int maxAppendsPerFollower = 2;
     protected int maxAppendBatchSize = 32 * 1024;
@@ -641,7 +490,6 @@ public interface RaftServer {
      * Sets the factory that creates a {@link Random}. Raft uses it to randomize election timeouts.
      * This factory is useful in testing, when we want to control the execution.
      *
-     * @param randomFactory
      * @return The Raft server builder.
      */
     public Builder withRandomFactory(final Supplier<Random> randomFactory) {
@@ -713,11 +561,6 @@ public interface RaftServer {
       return this;
     }
 
-    public Builder withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
-      this.journalIndexFactory = journalIndexFactory;
-      return this;
-    }
-
     public Builder withEntryValidator(final EntryValidator entryValidator) {
       this.entryValidator = entryValidator;
       return this;
@@ -738,7 +581,7 @@ public interface RaftServer {
     /**
      * Represents the state of an inactive server.
      *
-     * <p>All servers start in this state and return to this state when {@link #leave() stopped}.
+     * <p>All servers start in this state.
      */
     INACTIVE(false),
 

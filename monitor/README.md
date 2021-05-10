@@ -5,7 +5,7 @@
 Zeebe exports several metrics to facilitate monitoring a cluster.
 Currently, metrics are exported using Prometheus. You can find 
 documentation about the different metrics 
-[here](https://docs.zeebe.io/operations/metrics.html).
+[here](https://docs.camunda.io/docs/product-manuals/zeebe/deployment-guide/operations/metrics).
 
 ### Testing
 
@@ -41,7 +41,7 @@ See the Grafana documentation on
 
 The dashboard at the moment has most visualizations scoped to the 
 following variables: `namespace` (the k8s namespace), `pod` (the k8s pod), 
-and [partition](https://docs.zeebe.io/basics/partitions.html).
+and [partition](https://docs.camunda.io/docs/product-manuals/zeebe/technical-concepts/partitions).
 
 #### Contributing
 

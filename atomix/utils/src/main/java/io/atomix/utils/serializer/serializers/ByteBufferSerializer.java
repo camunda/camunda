@@ -36,7 +36,8 @@ public class ByteBufferSerializer extends Serializer<ByteBuffer> {
   }
 
   @Override
-  public ByteBuffer read(final Kryo kryo, final Input input, final Class<ByteBuffer> type) {
+  public ByteBuffer read(
+      final Kryo kryo, final Input input, final Class<? extends ByteBuffer> type) {
     final boolean isDirect = input.readBoolean();
     final boolean isLittleEndian = input.readBoolean();
     final int capacity = input.readInt();

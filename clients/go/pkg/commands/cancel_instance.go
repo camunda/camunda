@@ -16,24 +16,24 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 )
 
 type CancelInstanceStep1 interface {
-	WorkflowInstanceKey(int64) DispatchCancelWorkflowInstanceCommand
+	ProcessInstanceKey(int64) DispatchCancelProcessInstanceCommand
 }
 
-type DispatchCancelWorkflowInstanceCommand interface {
-	Send(context.Context) (*pb.CancelWorkflowInstanceResponse, error)
+type DispatchCancelProcessInstanceCommand interface {
+	Send(context.Context) (*pb.CancelProcessInstanceResponse, error)
 }
 
-type CancelWorkflowInstanceCommand struct {
+type CancelProcessInstanceCommand struct {
 	Command
-	request pb.CancelWorkflowInstanceRequest
+	request pb.CancelProcessInstanceRequest
 }
 
-func (cmd *CancelWorkflowInstanceCommand) Send(ctx context.Context) (*pb.CancelWorkflowInstanceResponse, error) {
-	response, err := cmd.gateway.CancelWorkflowInstance(ctx, &cmd.request)
+func (cmd *CancelProcessInstanceCommand) Send(ctx context.Context) (*pb.CancelProcessInstanceResponse, error) {
+	response, err := cmd.gateway.CancelProcessInstance(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
@@ -41,13 +41,13 @@ func (cmd *CancelWorkflowInstanceCommand) Send(ctx context.Context) (*pb.CancelW
 	return response, err
 }
 
-func (cmd *CancelWorkflowInstanceCommand) WorkflowInstanceKey(key int64) DispatchCancelWorkflowInstanceCommand {
-	cmd.request = pb.CancelWorkflowInstanceRequest{WorkflowInstanceKey: key}
+func (cmd *CancelProcessInstanceCommand) ProcessInstanceKey(key int64) DispatchCancelProcessInstanceCommand {
+	cmd.request = pb.CancelProcessInstanceRequest{ProcessInstanceKey: key}
 	return cmd
 }
 
 func NewCancelInstanceCommand(gateway pb.GatewayClient, pred retryPredicate) CancelInstanceStep1 {
-	return &CancelWorkflowInstanceCommand{
+	return &CancelProcessInstanceCommand{
 		Command: Command{
 			gateway:     gateway,
 			shouldRetry: pred,

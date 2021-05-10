@@ -34,9 +34,8 @@ import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.Quorum;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
 import java.util.Set;
@@ -151,11 +150,11 @@ public final class FollowerRole extends ActiveRole {
 
     // First, load the last log entry to get its term. We load the entry
     // by its index since the index is required by the protocol.
-    final Indexed<RaftLogEntry> lastEntry = raft.getLogWriter().getLastEntry();
+    final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
 
     final long lastTerm;
     if (lastEntry != null) {
-      lastTerm = lastEntry.entry().term();
+      lastTerm = lastEntry.term();
     } else {
       lastTerm = 0;
     }
@@ -169,7 +168,7 @@ public final class FollowerRole extends ActiveRole {
       final PollRequest request =
           PollRequest.builder()
               .withTerm(raft.getTerm())
-              .withCandidate(raft.getCluster().getMember().memberId())
+              .withCandidate(raft.getCluster().getLocalMember().memberId())
               .withLastLogIndex(lastEntry != null ? lastEntry.index() : 0)
               .withLastLogTerm(lastTerm)
               .build();

@@ -21,25 +21,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
-import io.atomix.storage.StorageException;
-import io.atomix.storage.StorageLevel;
-import io.atomix.storage.buffer.FileBuffer;
-import io.atomix.storage.journal.JournalSegmentDescriptor;
-import io.atomix.storage.journal.JournalSegmentFile;
-import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.storage.statistics.StorageStatistics;
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Serializer;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Optional;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
+import org.agrona.IoUtil;
 
 /**
  * Immutable log configuration and {@link RaftLog} factory.
@@ -61,47 +51,30 @@ import java.util.function.Supplier;
 public final class RaftStorage {
 
   private final String prefix;
-  private final StorageLevel storageLevel;
   private final File directory;
-  private final Namespace namespace;
   private final int maxSegmentSize;
-  private final int maxEntrySize;
-  private final int maxEntriesPerSegment;
   private final long freeDiskSpace;
   private final boolean flushExplicitly;
-  private final boolean retainStaleSnapshots;
-  private final StorageStatistics statistics;
   private final ReceivableSnapshotStore persistedSnapshotStore;
-  private final Supplier<JournalIndex> journalIndexFactory;
+  private final int journalIndexDensity;
 
   private RaftStorage(
       final String prefix,
-      final StorageLevel storageLevel,
       final File directory,
-      final Namespace namespace,
       final int maxSegmentSize,
-      final int maxEntrySize,
-      final int maxEntriesPerSegment,
       final long freeDiskSpace,
       final boolean flushExplicitly,
-      final boolean retainStaleSnapshots,
-      final StorageStatistics storageStatistics,
       final ReceivableSnapshotStore persistedSnapshotStore,
-      final Supplier<JournalIndex> journalIndexFactory) {
+      final int journalIndexDensity) {
     this.prefix = prefix;
-    this.storageLevel = storageLevel;
     this.directory = directory;
-    this.namespace = namespace;
     this.maxSegmentSize = maxSegmentSize;
-    this.maxEntrySize = maxEntrySize;
-    this.maxEntriesPerSegment = maxEntriesPerSegment;
     this.freeDiskSpace = freeDiskSpace;
     this.flushExplicitly = flushExplicitly;
-    this.retainStaleSnapshots = retainStaleSnapshots;
-    statistics = storageStatistics;
     this.persistedSnapshotStore = persistedSnapshotStore;
-    this.journalIndexFactory = journalIndexFactory;
-    directory.mkdirs();
+    this.journalIndexDensity = journalIndexDensity;
+
+    IoUtil.ensureDirectoryExists(directory, prefix + " raft partition storage");
   }
 
   /**
@@ -123,27 +96,6 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns the storage serializer.
-   *
-   * @return The storage serializer.
-   */
-  public Namespace namespace() {
-    return namespace;
-  }
-
-  /**
-   * Returns the storage level.
-   *
-   * <p>The storage level dictates how entries within individual log {@link RaftLog}s should be
-   * stored.
-   *
-   * @return The storage level.
-   */
-  public StorageLevel storageLevel() {
-    return storageLevel;
-  }
-
-  /**
    * Returns the maximum log segment size.
    *
    * <p>The maximum segment size dictates the maximum size any segment in a {@link RaftLog} may
@@ -156,35 +108,12 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns the maximum number of entries per segment.
-   *
-   * <p>The maximum entries per segment dictates the maximum number of {@link RaftLogEntry entries}
-   * that are allowed to be stored in any segment in a {@link RaftLog}.
-   *
-   * @return The maximum number of entries per segment.
-   * @deprecated since 3.0.2
-   */
-  @Deprecated
-  public int maxLogEntriesPerSegment() {
-    return maxEntriesPerSegment;
-  }
-
-  /**
    * Returns the amount of disk space that must be available before log compaction is forced.
    *
    * @return the amount of disk space that must be available before log compaction is forced
    */
   public long freeDiskSpace() {
     return freeDiskSpace;
-  }
-
-  /**
-   * Returns the Raft storage statistics.
-   *
-   * @return the Raft storage statistics
-   */
-  public StorageStatistics statistics() {
-    return statistics;
   }
 
   /**
@@ -197,15 +126,11 @@ public final class RaftStorage {
     final File file = new File(directory, String.format(".%s.lock", prefix));
     try {
       if (file.createNewFile()) {
-        try (final FileBuffer buffer = FileBuffer.allocate(file)) {
-          buffer.writeString(id).flush();
-        }
+        Files.writeString(file.toPath(), id, StandardOpenOption.WRITE);
         return true;
       } else {
-        try (final FileBuffer buffer = FileBuffer.allocate(file)) {
-          final String lock = buffer.readString();
-          return lock != null && lock.equals(id);
-        }
+        final String lock = Files.readString(file.toPath());
+        return lock != null && lock.equals(id);
       }
     } catch (final IOException e) {
       throw new StorageException("Failed to acquire storage lock");
@@ -234,14 +159,16 @@ public final class RaftStorage {
   /**
    * Opens a new {@link MetaStore}, recovering metadata from disk if it exists.
    *
-   * <p>The meta store will be loaded using based on the configured {@link StorageLevel}. If the
-   * storage level is persistent then the meta store will be loaded from disk, otherwise a new meta
-   * store will be created.
+   * <p>The meta store will be loaded from disk, or if missing, a new meta store will be created.
    *
    * @return The metastore.
    */
   public MetaStore openMetaStore() {
-    return new MetaStore(this, Serializer.using(namespace));
+    try {
+      return new MetaStore(this);
+    } catch (final IOException e) {
+      throw new StorageException("Failed to open metastore", e);
+    }
   }
 
   /**
@@ -286,29 +213,20 @@ public final class RaftStorage {
    * @return The opened log.
    */
   public RaftLog openLog() {
+    final long lastWrittenIndex;
+    try (final MetaStore metaStore = openMetaStore()) {
+      lastWrittenIndex = metaStore.loadLastWrittenIndex();
+    }
+
     return RaftLog.builder()
         .withName(prefix)
         .withDirectory(directory)
-        .withStorageLevel(storageLevel)
-        .withNamespace(namespace)
         .withMaxSegmentSize(maxSegmentSize)
-        .withMaxEntrySize(maxEntrySize)
         .withFreeDiskSpace(freeDiskSpace)
-        .withMaxEntriesPerSegment(maxEntriesPerSegment)
         .withFlushExplicitly(flushExplicitly)
-        .withJournalIndexFactory(journalIndexFactory)
+        .withJournalIndexDensity(journalIndexDensity)
+        .withLastWrittenIndex(lastWrittenIndex)
         .build();
-  }
-
-  /**
-   * Deletes a {@link RaftLog} from disk.
-   *
-   * <p>The log will be deleted by simply reading {@code log} file names from disk and deleting log
-   * files directly. Deleting log files does not involve rebuilding indexes or reading any logs into
-   * memory.
-   */
-  public void deleteLog() {
-    deleteFiles(f -> JournalSegmentFile.isSegmentFile(prefix, f));
   }
 
   @Override
@@ -339,19 +257,6 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns a boolean value indicating whether to retain stale snapshots on disk.
-   *
-   * <p>If this option is enabled, snapshots will be retained on disk even after they no longer
-   * contribute to the state of the system (there's a more recent snapshot). Users may want to
-   * disable this option for backup purposes.
-   *
-   * @return Indicates whether to retain stale snapshots on disk.
-   */
-  public boolean isRetainStaleSnapshots() {
-    return retainStaleSnapshots;
-  }
-
-  /**
    * Builds a {@link RaftStorage} configuration.
    *
    * <p>The storage builder provides simplifies building more complex {@link RaftStorage}
@@ -373,27 +278,17 @@ public final class RaftStorage {
     private static final String DEFAULT_DIRECTORY =
         System.getProperty("atomix.data", System.getProperty("user.dir"));
     private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-    private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024; // 1MB
-    private static final int DEFAULT_MAX_ENTRIES_PER_SEGMENT = 1024 * 1024;
-    private static final boolean DEFAULT_DYNAMIC_COMPACTION = true;
-    private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024; // 1GB
-    private static final double DEFAULT_FREE_MEMORY_BUFFER = .2;
+    private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
     private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
-    private static final boolean DEFAULT_RETAIN_STALE_SNAPSHOTS = false;
+    private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
     private String prefix = DEFAULT_PREFIX;
-    private StorageLevel storageLevel = StorageLevel.DISK;
     private File directory = new File(DEFAULT_DIRECTORY);
-    private Namespace namespace;
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
-    private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
-    private int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
     private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
-    private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
-    private StorageStatistics storageStatistics;
     private ReceivableSnapshotStore persistedSnapshotStore;
-    private Supplier<JournalIndex> journalIndexFactory;
+    private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
 
     private Builder() {}
 
@@ -405,20 +300,6 @@ public final class RaftStorage {
      */
     public Builder withPrefix(final String prefix) {
       this.prefix = checkNotNull(prefix, "prefix cannot be null");
-      return this;
-    }
-
-    /**
-     * Sets the log storage level, returning the builder for method chaining.
-     *
-     * <p>The storage level indicates how individual {@link RaftLogEntry entries} should be
-     * persisted in the log.
-     *
-     * @param storageLevel The log storage level.
-     * @return The storage builder.
-     */
-    public Builder withStorageLevel(final StorageLevel storageLevel) {
-      this.storageLevel = checkNotNull(storageLevel, "storageLevel");
       return this;
     }
 
@@ -454,18 +335,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Sets the storage namespace.
-     *
-     * @param namespace The storage namespace.
-     * @return The storage builder.
-     * @throws NullPointerException If the {@code namespace} is {@code null}
-     */
-    public Builder withNamespace(final Namespace namespace) {
-      this.namespace = checkNotNull(namespace, "namespace cannot be null");
-      return this;
-    }
-
-    /**
      * Sets the maximum segment size in bytes, returning the builder for method chaining.
      *
      * <p>The maximum segment size dictates when logs should roll over to new segments. As entries
@@ -480,50 +349,7 @@ public final class RaftStorage {
      * @throws IllegalArgumentException If the {@code maxSegmentSize} is not positive
      */
     public Builder withMaxSegmentSize(final int maxSegmentSize) {
-      checkArgument(
-          maxSegmentSize > JournalSegmentDescriptor.BYTES,
-          "maxSegmentSize must be greater than " + JournalSegmentDescriptor.BYTES);
       this.maxSegmentSize = maxSegmentSize;
-      return this;
-    }
-
-    /**
-     * Sets the maximum entry size in bytes, returning the builder for method chaining.
-     *
-     * @param maxEntrySize the maximum entry size in bytes
-     * @return the storage builder
-     * @throws IllegalArgumentException if the {@code maxEntrySize} is not positive
-     */
-    public Builder withMaxEntrySize(final int maxEntrySize) {
-      checkArgument(maxEntrySize > 0, "maxEntrySize must be positive");
-      this.maxEntrySize = maxEntrySize;
-      return this;
-    }
-
-    /**
-     * Sets the maximum number of allows entries per segment, returning the builder for method
-     * chaining.
-     *
-     * <p>The maximum entry count dictates when logs should roll over to new segments. As entries
-     * are written to a segment of the log, if the entry count in that segment meets the configured
-     * maximum entry count, the log will create a new segment and append new entries to that
-     * segment.
-     *
-     * <p>By default, the maximum entries per segment is {@code 1024 * 1024}.
-     *
-     * @param maxEntriesPerSegment The maximum number of entries allowed per segment.
-     * @return The storage builder.
-     * @throws IllegalArgumentException If the {@code maxEntriesPerSegment} not greater than the
-     *     default max entries per segment
-     * @deprecated since 3.0.2
-     */
-    @Deprecated
-    public Builder withMaxEntriesPerSegment(final int maxEntriesPerSegment) {
-      checkArgument(maxEntriesPerSegment > 0, "max entries per segment must be positive");
-      checkArgument(
-          maxEntriesPerSegment <= DEFAULT_MAX_ENTRIES_PER_SEGMENT,
-          "max entries per segment cannot be greater than " + DEFAULT_MAX_ENTRIES_PER_SEGMENT);
-      this.maxEntriesPerSegment = maxEntriesPerSegment;
       return this;
     }
 
@@ -553,50 +379,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Enables retaining stale snapshots on disk, returning the builder for method chaining.
-     *
-     * <p>As the system state progresses, periodic snapshots of the state machine's state are taken.
-     * Once a new snapshot of the state machine is taken, all preceding snapshots no longer
-     * contribute to the state of the system and can therefore be removed from disk. By default,
-     * snapshots will not be retained once a new snapshot is stored on disk. Enabling snapshot
-     * retention will ensure that all snapshots will be saved, e.g. for backup purposes.
-     *
-     * @return The storage builder.
-     */
-    public Builder withRetainStaleSnapshots() {
-      return withRetainStaleSnapshots(true);
-    }
-
-    /**
-     * Sets whether to retain stale snapshots on disk, returning the builder for method chaining.
-     *
-     * <p>As the system state progresses, periodic snapshots of the state machine's state are taken.
-     * Once a new snapshot of the state machine is taken, all preceding snapshots no longer
-     * contribute to the state of the system and can therefore be removed from disk. By default,
-     * snapshots will not be retained once a new snapshot is stored on disk. Enabling snapshot
-     * retention will ensure that all snapshots will be saved, e.g. for backup purposes.
-     *
-     * @param retainStaleSnapshots Whether to retain stale snapshots on disk.
-     * @return The storage builder.
-     */
-    public Builder withRetainStaleSnapshots(final boolean retainStaleSnapshots) {
-      this.retainStaleSnapshots = retainStaleSnapshots;
-      return this;
-    }
-
-    /**
-     * Sets the storage statistics, which are evaluated for deciding to force compaction or not.
-     * Depending on the free memory and/or free disk space ratio the compaction is forced.
-     *
-     * @param storageStatistics the statistics which are evaluated
-     * @return The storage builder.
-     */
-    public Builder withStorageStatistics(final StorageStatistics storageStatistics) {
-      this.storageStatistics = storageStatistics;
-      return this;
-    }
-
-    /**
      * Sets the snapshot store to use for remote snapshot installation.
      *
      * @param persistedSnapshotStore the snapshot store for this Raft
@@ -604,6 +386,11 @@ public final class RaftStorage {
      */
     public Builder withSnapshotStore(final ReceivableSnapshotStore persistedSnapshotStore) {
       this.persistedSnapshotStore = persistedSnapshotStore;
+      return this;
+    }
+
+    public Builder withJournalIndexDensity(final int journalIndexDensity) {
+      this.journalIndexDensity = journalIndexDensity;
       return this;
     }
 
@@ -616,23 +403,12 @@ public final class RaftStorage {
     public RaftStorage build() {
       return new RaftStorage(
           prefix,
-          storageLevel,
           directory,
-          namespace,
           maxSegmentSize,
-          maxEntrySize,
-          maxEntriesPerSegment,
           freeDiskSpace,
           flushExplicitly,
-          retainStaleSnapshots,
-          Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),
           persistedSnapshotStore,
-          journalIndexFactory);
-    }
-
-    public Builder withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
-      this.journalIndexFactory = journalIndexFactory;
-      return this;
+          journalIndexDensity);
     }
   }
 }

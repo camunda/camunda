@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <artifactId>atomix</artifactId>
+  <artifactId>zeebe-atomix</artifactId>
 
   <build>
     <plugins>
@@ -37,15 +37,15 @@
 
   <dependencies>
     <dependency>
-      <artifactId>atomix-cluster</artifactId>
-      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
-      <artifactId>atomix-utils</artifactId>
-      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-atomix-utils</artifactId>
+      <groupId>io.camunda</groupId>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
       <scope>test</scope>
     </dependency>
@@ -60,6 +60,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-common</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <artifactId>hamcrest</artifactId>
       <groupId>org.hamcrest</groupId>
       <scope>test</scope>
@@ -70,13 +75,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <artifactId>zeebe-test-util</artifactId>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -86,13 +91,13 @@
     </dependency>
   </dependencies>
   <modelVersion>4.0.0</modelVersion>
-  <name>Atomix</name>
+  <name>Zeebe Atomix</name>
 
   <packaging>jar</packaging>
 
   <parent>
-    <artifactId>atomix-parent</artifactId>
-    <groupId>io.zeebe</groupId>
-    <version>0.27.0-SNAPSHOT</version>
+    <artifactId>zeebe-atomix-parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <version>1.1.0-SNAPSHOT</version>
   </parent>
 </project>

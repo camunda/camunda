@@ -2,9 +2,9 @@
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe BOM</name>
-  <groupId>io.zeebe</groupId>
+  <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>0.27.0-SNAPSHOT</version>
+  <version>1.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -12,7 +12,7 @@
   <parent>
     <groupId>org.camunda</groupId>
     <artifactId>camunda-release-parent</artifactId>
-    <version>3.7</version>
+    <version>3.8.1</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath />
   </parent>
@@ -24,8 +24,9 @@
     </nexus.snapshot.repository>
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
+    <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
-    <version.netty>4.1.55.Final</version.netty>
+    <version.netty>4.1.63.Final</version.netty>
 
     <version.java>11</version.java>
     <plugin.version.javadoc>3.2.0</plugin.version.javadoc>
@@ -34,174 +35,180 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-bpmn-model</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-dispatcher</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-logstreams</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-workflow-engine</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-core</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-value</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-transport</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-test-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-util</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-db</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-test</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-build-tools</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway-protocol-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-gateway</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-api</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-protocol-asserts</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-expression-language</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.zeebe</groupId>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-snapshots</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-journal</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <!-- ATOMIX -->
       <dependency>
-        <artifactId>atomix-cluster</artifactId>
-        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-atomix-cluster</artifactId>
+        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <artifactId>atomix-storage</artifactId>
-        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-atomix-storage</artifactId>
+        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <artifactId>atomix-utils</artifactId>
-        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-atomix-utils</artifactId>
+        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <artifactId>atomix</artifactId>
-        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-atomix</artifactId>
+        <groupId>io.camunda</groupId>
         <version>${project.version}</version>
       </dependency>
 

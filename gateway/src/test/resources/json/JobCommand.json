@@ -13,11 +13,11 @@
   },
   "headers": {
     "activityId": "task",
-    "workflowKey": 1,
-    "workflowInstanceKey": 4294967408,
+    "processDefinitionKey": 1,
+    "processInstanceKey": 4294967408,
     "bpmnProcessId": "process",
     "activityInstanceKey": 4294968288,
-    "workflowDefinitionVersion": 1
+    "processDefinitionVersion": 1
   },
   "customHeaders": {
     "custom1": "foo"

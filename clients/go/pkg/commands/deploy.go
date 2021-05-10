@@ -16,14 +16,14 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"io/ioutil"
 	"log"
 )
 
 type DeployCommand struct {
 	Command
-	request pb.DeployWorkflowRequest
+	request pb.DeployProcessRequest
 }
 
 func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
@@ -31,16 +31,16 @@ func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return cmd.AddResource(b, path, pb.WorkflowRequestObject_FILE)
+	return cmd.AddResource(b, path)
 }
 
-func (cmd *DeployCommand) AddResource(definition []byte, name string, resourceType pb.WorkflowRequestObject_ResourceType) *DeployCommand {
-	cmd.request.Workflows = append(cmd.request.Workflows, &pb.WorkflowRequestObject{Definition: definition, Name: name, Type: resourceType})
+func (cmd *DeployCommand) AddResource(definition []byte, name string) *DeployCommand {
+	cmd.request.Processes = append(cmd.request.Processes, &pb.ProcessRequestObject{Definition: definition, Name: name})
 	return cmd
 }
 
-func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployWorkflowResponse, error) {
-	response, err := cmd.gateway.DeployWorkflow(ctx, &cmd.request)
+func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, error) {
+	response, err := cmd.gateway.DeployProcess(ctx, &cmd.request)
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}

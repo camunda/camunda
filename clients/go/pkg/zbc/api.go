@@ -16,13 +16,13 @@
 package zbc
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/worker"
 )
 
 type Client interface {
 	NewTopologyCommand() *commands.TopologyCommand
-	NewDeployWorkflowCommand() *commands.DeployCommand
+	NewDeployProcessCommand() *commands.DeployCommand
 
 	NewCreateInstanceCommand() commands.CreateInstanceCommandStep1
 	NewCancelInstanceCommand() commands.CancelInstanceStep1

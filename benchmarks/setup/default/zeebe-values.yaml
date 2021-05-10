@@ -29,6 +29,8 @@ gateway:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
     - name: ZEEBE_GATEWAY_MONITORING_ENABLED
       value: "true"
     - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
@@ -67,19 +69,16 @@ env:
       fieldRef:
         fieldPath: metadata.namespace
   # Avoid tons of noise when exporting larger payloads
-  - name: JAVA_OPTS
-    value: >-
-      -Dzeebe.broker.exporters.elasticsearch.args.index.ignoreVariablesAbove=32767
   - name: ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED
     value: "true"
   - name: ATOMIX_LOG_LEVEL
     value: INFO
+  - name: ZEEBE_LOG_LEVEL
+    value: DEBUG
   - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
     value: "0.8"
   - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
     value: "0.9"
-  - name: ZEEBE_BROKER_DATA_USEMMAP
-    value: "true"
 
 # RESOURCES
 resources:
@@ -99,7 +98,7 @@ pvcStorageClassName: ssd
 # ELASTIC
 elasticsearch:
   enabled: true
-  imageTag: 6.8.5
+  imageTag: 7.12.0
 
   replicas: 3
   minimumMasterNodes: 2
@@ -109,7 +108,7 @@ elasticsearch:
     storageClassName: "ssd"
     resources:
       requests:
-        storage: 600Gi
+        storage: 50Gi
 
   esJavaOpts: "-Xmx4g -Xms4g"
 

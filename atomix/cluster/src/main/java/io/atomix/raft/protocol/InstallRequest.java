@@ -45,8 +45,6 @@ public class InstallRequest extends AbstractRaftRequest {
   private final long index;
   // the term associated to the snapshot
   private final long term;
-  // the timestamp when the snapshot was taken
-  private final long timestamp;
   // the version of the snapshot
   private final int version;
   // the ID of the current chunk (implementation specific)
@@ -65,7 +63,6 @@ public class InstallRequest extends AbstractRaftRequest {
       final MemberId leader,
       final long index,
       final long term,
-      final long timestamp,
       final int version,
       final ByteBuffer chunkId,
       final ByteBuffer nextChunkId,
@@ -75,7 +72,6 @@ public class InstallRequest extends AbstractRaftRequest {
     this.currentTerm = currentTerm;
     this.leader = leader;
     this.index = index;
-    this.timestamp = timestamp;
     this.version = version;
     this.chunkId = chunkId;
     this.nextChunkId = nextChunkId;
@@ -131,15 +127,6 @@ public class InstallRequest extends AbstractRaftRequest {
   }
 
   /**
-   * Returns the snapshot timestamp.
-   *
-   * @return The snapshot timestamp.
-   */
-  public long timestamp() {
-    return timestamp;
-  }
-
-  /**
    * Returns the id of the snapshot chunk.
    *
    * @return The id of the snapshot chunk.
@@ -183,17 +170,7 @@ public class InstallRequest extends AbstractRaftRequest {
   @Override
   public int hashCode() {
     return Objects.hash(
-        currentTerm,
-        leader,
-        index,
-        term,
-        timestamp,
-        version,
-        chunkId,
-        nextChunkId,
-        data,
-        initial,
-        complete);
+        currentTerm, leader, index, term, version, chunkId, nextChunkId, data, initial, complete);
   }
 
   @Override
@@ -208,7 +185,6 @@ public class InstallRequest extends AbstractRaftRequest {
     return currentTerm == that.currentTerm
         && index == that.index
         && term == that.term
-        && timestamp == that.timestamp
         && version == that.version
         && initial == that.initial
         && complete == that.complete
@@ -225,7 +201,6 @@ public class InstallRequest extends AbstractRaftRequest {
         .add("leader", leader)
         .add("index", index)
         .add("term", term)
-        .add("timestamp", timestamp)
         .add("version", version)
         .add("chunkId", StringUtils.printShortBuffer(chunkId))
         .add("nextChunkId", StringUtils.printShortBuffer(nextChunkId))
@@ -241,7 +216,6 @@ public class InstallRequest extends AbstractRaftRequest {
     private long currentTerm;
     private MemberId leader;
     private long index;
-    private long timestamp;
     private int version;
     private ByteBuffer chunkId;
     private ByteBuffer nextChunkId;
@@ -290,18 +264,6 @@ public class InstallRequest extends AbstractRaftRequest {
     public Builder withIndex(final long index) {
       checkArgument(index >= 0, "index must be positive");
       this.index = index;
-      return this;
-    }
-
-    /**
-     * Sets the request timestamp.
-     *
-     * @param timestamp The request timestamp.
-     * @return The request builder.
-     */
-    public Builder withTimestamp(final long timestamp) {
-      checkArgument(timestamp >= 0, "timestamp must be positive");
-      this.timestamp = timestamp;
       return this;
     }
 
@@ -379,17 +341,7 @@ public class InstallRequest extends AbstractRaftRequest {
     public InstallRequest build() {
       validate();
       return new InstallRequest(
-          currentTerm,
-          leader,
-          index,
-          term,
-          timestamp,
-          version,
-          chunkId,
-          nextChunkId,
-          data,
-          initial,
-          complete);
+          currentTerm, leader, index, term, version, chunkId, nextChunkId, data, initial, complete);
     }
 
     @Override

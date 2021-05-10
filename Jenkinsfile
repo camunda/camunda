@@ -2,22 +2,34 @@
 
 @Library(["camunda-ci", "zeebe-jenkins-shared-library"]) _
 
+// the build name will be used as a kubernetes label, and kubernetes has strict syntax rules - see
+// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
 def masterBranchName = 'master'
 def isMasterBranch = env.BRANCH_NAME == masterBranchName
 def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
+def latestStableBranchName = 'stable/1.0'
+def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
 def numToKeep = isDevelopBranch ? '-1' : '10'
 
+// single step timeouts - remember to be generous to avoid occasional slow downs, e.g. waiting to be
+// scheduled by Kubernetes, slow downloads of remote docker images, etc.
 def shortTimeoutMinutes = 10
 def longTimeoutMinutes = 45
 
-//the develop branch should be run hourly to detect flaky tests and instability, other branches only on commit
-def cronTrigger = isDevelopBranch ? '@hourly' : ''
+// the IT agent needs to share some files for post analysis, and since they share the same name as
+// those in the main agent, we unstash them in a separate directory
+itAgentUnstashDirectory = '.tmp/it'
+itFlakyTestStashName = 'it-flakyTests'
+
+// the develop branch should be run at midnight to do a nightly build including QA test run
+// the latest stable branch is run an hour later at 01:00 AM.
+def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
 
 pipeline {
     agent {
@@ -46,7 +58,7 @@ pipeline {
     parameters {
         booleanParam(name: 'SKIP_VERIFY', defaultValue: false, description: "Skip 'Verify' Stage")
         booleanParam(name: 'RUN_QA', defaultValue: false, description: "Run QA Stage")
-        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe 0.x.0', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
+        string(name: 'GENERATION_TEMPLATE', defaultValue: 'Zeebe SNAPSHOT', description: "Generation template for QA tests (the QA test will be run with this Zeebe version and Operate/Elasticsearch version from the generation template)")
     }
 
     stages {
@@ -60,6 +72,14 @@ pipeline {
                     container('golang') {
                         sh '.ci/scripts/distribution/prepare-go.sh'
                     }
+
+                    runMavenContainerCommand(".ci/scripts/distribution/ensure-naming-for-process.sh")
+
+                    // prepare unstash directory for IT files - required since the file names will
+                    // be the same as in the other stages. it's necessary to set the permissions to
+                    // 0777 has shell scripts are executed as root, whereas Jenkins directives such
+                    // as unstash are executed as jenkins
+                    runMavenContainerCommand("mkdir -m 0777 -p ${itAgentUnstashDirectory}")
                 }
             }
         }
@@ -70,15 +90,18 @@ pipeline {
             }
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    // since zbctl is included in camunda-cloud-zeebe.tar.gz, which is produced by
+                    // maven, we have to build the go artifacts first
                     container('golang') {
                         sh '.ci/scripts/distribution/build-go.sh'
                     }
                     runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
-                    container('maven') {
-                        sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
-                    }
-                    stash name: "zeebe-build", includes: "m2-repository/io/zeebe/*/${VERSION}/*"
-                    stash name: "zeebe-distro", includes: "zeebe-distribution.tar.gz"
+
+                    // to simplify building the Docker image, we copy the distribution to a fixed
+                    // filename that doesn't include the version
+                    runMavenContainerCommand('cp dist/target/camunda-cloud-zeebe-*.tar.gz camunda-cloud-zeebe.tar.gz')
+                    stash name: "zeebe-build", includes: "m2-repository/io/camunda/*/${VERSION}/*"
+                    stash name: "zeebe-distro", includes: "camunda-cloud-zeebe.tar.gz"
                 }
             }
         }
@@ -94,6 +117,11 @@ pipeline {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     container('docker') {
                         sh '.ci/scripts/docker/build.sh'
+
+                        // the hazelcast exporter is used by the BPMN TCK, and must therefore be
+                        // built beforehand - if this ever becomes too slow, we can move this to a
+                        // BPMN TCK agent and make this is a sequential stage prior to running the
+                        // TCK
                         sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                     }
                 }
@@ -104,6 +132,7 @@ pipeline {
             when { not { expression { params.SKIP_VERIFY } } }
             parallel {
                 stage('Analyse') {
+                    when { expression { return false } } // disable SonarCloud until new artifact id is linked to project
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
@@ -112,6 +141,7 @@ pipeline {
                 }
 
                 stage('BPMN TCK') {
+                    when { expression { return false } } // disable TCK until migrated to new API
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
@@ -152,6 +182,7 @@ pipeline {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
+                            runMavenContainerCommand('.ci/scripts/distribution/random-test-java.sh')
                         }
                     }
 
@@ -181,6 +212,13 @@ pipeline {
                 }
 
                 stage('IT') {
+                    // NOTE: all nested stages in the IT stage will be run on the following agent,
+                    // identified by its label. Keep in mind that any artefacts produced in this
+                    // agent will be unavailable in other agents, so you will need to copy them
+                    // NOTE: agents (except the main one) are terminated once their stage is
+                    // finished, so if you want to run several steps/stages in that agent they have
+                    // to be sequential (since you cannot nest parallels/matrixes). if you need
+                    // parallelism, consider spawning a sub-job
                     agent {
                         kubernetes {
                             cloud 'zeebe-ci'
@@ -195,6 +233,9 @@ pipeline {
                             steps {
                                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                                     prepareMavenContainer()
+
+                                    unstash name: "zeebe-build"
+                                    runMavenContainerCommand('.ci/scripts/distribution/it-prepare.sh')
                                 }
                             }
                         }
@@ -226,7 +267,6 @@ pipeline {
 
                             steps {
                                 timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                                    unstash name: "zeebe-build"
                                     runMavenContainerCommand('.ci/scripts/distribution/it-java.sh')
                                 }
                             }
@@ -234,6 +274,12 @@ pipeline {
                             post {
                                 always {
                                     junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                                    stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
+                                }
+
+                                failure {
+                                    zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/surefire-reports/**"
+                                    zip zipFile: 'test-errors-it.zip', archive: true, glob: "**/hs_err_*.log"
                                 }
                             }
                         }
@@ -243,25 +289,22 @@ pipeline {
 
             post {
                 always {
-                    jacoco(
-                        execPattern: '**/*.exec',
-                        classPattern: '**/target/classes',
-                        sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
-                        exclusionPattern: '**/io/zeebe/gateway/protocol/**,'
-                            + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
-                            + '**/io/zeebe/protocol/record/**/*Assert.class,**/io/zeebe/protocol/record/Assertions.class,', // classes from generated resources
-                        runAlways: true
-                    )
-                    zip zipFile: 'test-coverage-reports.zip', archive: true, glob: "**/target/site/jacoco/**"
+                    checkCodeCoverage()
                 }
 
                 failure {
                     zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
-                    archive "**/hs_err_*.log"
+                    zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
+                    dir(itAgentUnstashDirectory) {
+                        unstash name: itFlakyTestStashName
+                    }
 
                     script {
-                        if (fileExists('./FlakyTests.txt')) {
-                            currentBuild.description = "Flaky Tests: <br>" + readFile('./FlakyTests.txt').split('\n').join('<br>')
+                        def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
+                        def flakes = combineFlakeResults(flakeFiles)
+
+                        if (flakes) {
+                            currentBuild.description = "Flaky Tests: <br>" + flakes.join('<br>')
                         }
                     }
                 }
@@ -270,7 +313,16 @@ pipeline {
 
         stage('QA') {
             when {
-                expression { params.RUN_QA }
+                anyOf {
+                    expression { params.RUN_QA }
+                    allOf {
+                        anyOf {
+                            branch developBranchName
+                            branch latestStableBranchName
+                        }
+                        triggeredBy 'TimerTrigger'
+                    }
+                }
             }
             environment {
                 IMAGE = "gcr.io/zeebe-io/zeebe"
@@ -278,7 +330,7 @@ pipeline {
                 TAG = "${env.VERSION}-${env.GIT_COMMIT}"
                 DOCKER_GCR = credentials("zeebe-gcr-serviceaccount-json")
                 ZEEBE_AUTHORIZATION_SERVER_URL = 'https://login.cloud.ultrawombat.com/oauth/token'
-                ZEEBE_CLIENT_ID = 'W5a4JUc3I1NIetNnodo3YTvdsRIFb12w'
+                ZEEBE_CLIENT_ID = '6WIMz9KT7076gBWmfV7QJK0zGNotmF04'
                 QA_RUN_VARIABLES = "{\"zeebeImage\": \"${env.IMAGE}:${env.TAG}\", \"generationTemplate\": \"${params.GENERATION_TEMPLATE}\", " +
                                     "\"channel\": \"Internal Dev\", \"branch\": \"${env.BRANCH_NAME}\", \"build\": \"${currentBuild.absoluteUrl}\", " +
                                     "\"businessKey\": \"${currentBuild.absoluteUrl}\", \"processId\": \"qa-protocol\"}"
@@ -293,7 +345,7 @@ pipeline {
                     withVault(
                         [vaultSecrets:
                              [
-                                 [path        : 'secret/common/ci-zeebe/testbench-secrets-int',
+                                 [path        : 'secret/common/ci-zeebe/testbench-secrets-1.x-prod',
                                   secretValues:
                                       [
                                           [envVar: 'ZEEBE_CLIENT_SECRET', vaultKey: 'clientSecret'],
@@ -450,21 +502,20 @@ def isBorsStagingBranch() {
     env.BRANCH_NAME == 'staging'
 }
 
-def runsQA() {
-    return params.RUN_QA
-}
-
 def templatePodspec(String podspecPath, flags = [:]) {
     def defaultFlags = [
-        useStableNodePool: isBorsStagingBranch() || runsQA()
+        /* Criteria for using stable node pools:
+         * - staging branch: to have smooth staging builds and avoid unnecessary retries
+         * - params.RUN_QA: during QA stage the node must wait for the result. This can take several hours. Therefore a stable node is needed
+         * - env.isDevelopBranch: the core requirement is to have a stable node for nightly builds, which also rn QA (see above)
+         */
+        useStableNodePool: isBorsStagingBranch() || params.RUN_QA || env.isDevelopBranch
     ]
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags
 
     def nodePoolName = "agents-n1-standard-32-netssd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
 
-    // Needs no workspace, see:
-    // https://www.jenkins.io/doc/pipeline/steps/workflow-multibranch/#readtrusted-read-trusted-file-from-scm
     String templateString = readTrusted(podspecPath)
 
     // Note: Templating is currently done via simple string substitution as this
@@ -474,4 +525,29 @@ def templatePodspec(String podspecPath, flags = [:]) {
     templateString = templateString.replaceAll('PODSPEC_TEMPLATE_NODE_POOL', nodePoolName)
 
     templateString
+}
+
+def combineFlakeResults(flakeFiles = []) {
+    def flakes = []
+
+    for (flakeFile in flakeFiles) {
+        if (fileExists(flakeFile)) {
+            flakes += readFile(flakeFile).split('\n')
+        }
+    }
+
+    return flakes
+}
+
+def checkCodeCoverage() {
+    jacoco(
+        execPattern: '**/*.exec',
+        classPattern: '**/target/classes',
+        sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
+        exclusionPattern: '**/io/camunda/zeebe/gateway/protocol/**,'
+            + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
+            + '**/io/camunda/zeebe/protocol/record/**/*Assert.class,**/io/camunda/zeebe/protocol/record/Assertions.class,', // classes from generated resources
+        runAlways: true
+    )
+    zip zipFile: "test-coverage-reports.zip", archive: true, glob: '**/target/site/jacoco/**'
 }

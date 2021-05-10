@@ -16,7 +16,6 @@
 package io.atomix.raft;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.ClusterMembershipService;
@@ -25,7 +24,6 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
@@ -33,21 +31,19 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
-import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.storage.StorageLevel;
-import io.atomix.storage.journal.Indexed;
-import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.PersistedSnapshotListener;
-import io.zeebe.snapshots.raft.PersistedSnapshotStore;
-import io.zeebe.util.FileUtil;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -70,6 +66,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -223,7 +220,7 @@ public final class RaftRule extends ExternalResource {
   public void joinCluster(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
     createServer(member.memberId())
-        .join(getMemberIds())
+        .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }
@@ -232,6 +229,15 @@ public final class RaftRule extends ExternalResource {
     final RaftMember member = getRaftMember(nodeId);
     createServer(member.memberId())
         .bootstrap(getMemberIds())
+        .thenAccept(this::addCommitListener)
+        .get(30, TimeUnit.SECONDS);
+  }
+
+  public void bootstrapNodeWithMemberIds(final String nodeId, final List<MemberId> memberIds)
+      throws Exception {
+    final RaftMember member = getRaftMember(nodeId);
+    createServer(member.memberId())
+        .bootstrap(memberIds)
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
   }
@@ -248,7 +254,7 @@ public final class RaftRule extends ExternalResource {
     joinCluster(leader);
   }
 
-  private List<MemberId> getMemberIds() {
+  public List<MemberId> getMemberIds() {
     return members.stream().map(RaftMember::memberId).collect(Collectors.toList());
   }
 
@@ -285,7 +291,7 @@ public final class RaftRule extends ExternalResource {
       if (raftServer.isRunning()) {
         final var raftContext = raftServer.getContext();
         final var snapshotStore =
-            getSnapshotStore(raftServer.cluster().getMember().memberId().id());
+            getSnapshotStore(raftServer.cluster().getLocalMember().memberId().id());
 
         compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
         InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
@@ -361,17 +367,16 @@ public final class RaftRule extends ExternalResource {
             });
   }
 
-  public Map<String, List<Indexed<?>>> getMemberLogs() {
+  public Map<String, List<IndexedRaftLogEntry>> getMemberLogs() {
 
-    final Map<String, List<Indexed<?>>> memberLogs = new HashMap<>();
+    final Map<String, List<IndexedRaftLogEntry>> memberLogs = new HashMap<>();
 
     for (final var server : servers.values()) {
       if (server.isRunning()) {
 
         final var log = server.getContext().getLog();
-        final List<Indexed<?>> entryList = new ArrayList<>();
-        try (final var raftLogReader = log.openReader(1, Mode.ALL)) {
-
+        final List<IndexedRaftLogEntry> entryList = new ArrayList<>();
+        try (final var raftLogReader = log.openReader(Mode.ALL)) {
           while (raftLogReader.hasNext()) {
             final var indexedEntry = raftLogReader.next();
             entryList.add(indexedEntry);
@@ -386,17 +391,10 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void awaitSameLogSizeOnAllNodes(final long lastIndex) {
-    waitUntil(
-        () -> {
-          final var lastIndexes =
-              memberLog.values().stream().distinct().collect(Collectors.toList());
-          return lastIndexes.size() == 1 && lastIndexes.get(0) == lastIndex;
-        },
-        () -> memberLog.toString());
-  }
-
-  private void waitUntil(final BooleanSupplier condition, final Supplier<String> errorMessage) {
-    waitUntil(condition, 100, errorMessage);
+    Awaitility.await("awaitSameLogSizeOnAllNodes")
+        .until(
+            () -> memberLog.values().stream().distinct().collect(Collectors.toList()),
+            lastIndexes -> lastIndexes.size() == 1 && lastIndexes.get(0) == lastIndex);
   }
 
   private void waitUntil(final BooleanSupplier condition, final int retries) {
@@ -477,16 +475,13 @@ public final class RaftRule extends ExternalResource {
     final var memberDirectory = getMemberDirectory(directory, memberId.toString());
     final RaftStorage.Builder defaults =
         RaftStorage.builder()
-            .withStorageLevel(StorageLevel.DISK)
             .withDirectory(memberDirectory)
-            .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(
                 snapshotStores.compute(
                     memberId.id(),
-                    (k, v) -> new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()))))
-            .withNamespace(RaftNamespaces.RAFT_STORAGE);
+                    (k, v) -> new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()))));
     return configurator.apply(defaults).build();
   }
 
@@ -607,21 +602,18 @@ public final class RaftRule extends ExternalResource {
     private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
 
     @Override
-    public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-    @Override
     public void onWriteError(final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+      commitFuture.completeExceptionally(error);
     }
 
     @Override
-    public void onCommit(final Indexed<ZeebeEntry> indexed) {
+    public void onCommit(final IndexedRaftLogEntry indexed) {
       commitFuture.complete(indexed.index());
     }
 
     @Override
-    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+      commitFuture.completeExceptionally(error);
     }
 
     public long awaitCommit() throws Exception {

@@ -19,10 +19,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 func TestResolveIncidentCommand(t *testing.T) {

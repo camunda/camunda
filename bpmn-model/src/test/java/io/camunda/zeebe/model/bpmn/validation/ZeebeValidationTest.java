@@ -1,0 +1,134 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.zeebe.model.bpmn.validation;
+
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static java.util.Collections.singletonList;
+
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
+import java.util.Arrays;
+import org.junit.runners.Parameterized.Parameters;
+
+public class ZeebeValidationTest extends AbstractZeebeValidationTest {
+
+  @Parameters(name = "{index}: {1}")
+  public static Object[][] parameters() {
+    return new Object[][] {
+      {
+        Bpmn.createExecutableProcess("process").done(),
+        singletonList(expect("process", "Must have at least one start event"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent("end")
+            .signalEventDefinition("foo")
+            .id("eventDefinition")
+            .done(),
+        Arrays.asList(
+            expect("end", "End events must be one of: none or error"),
+            expect("eventDefinition", "Event definition of this type is not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent()
+            .serviceTask("task", tb -> tb.zeebeJobType("task"))
+            .done(),
+        singletonList(
+            expect(
+                EndEvent.class,
+                "End events must not have outgoing sequence flows to other elements."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent()
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(IntermediateCatchEvent.class, "Must have exactly one event definition"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", AbstractCatchEventBuilder::compensateEventDefinition)
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(
+                CompensateEventDefinition.class, "Event definition of this type is not supported"),
+            expect(IntermediateCatchEvent.class, "Event definition must be one of: message, timer"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType("type"))
+            .boundaryEvent("msg1")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("id"))
+            .endEvent()
+            .moveToActivity("task")
+            .boundaryEvent("msg2")
+            .message(m -> m.name("message").zeebeCorrelationKeyExpression("orderId"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                "task",
+                "Multiple message event definitions with the same name 'message' are not allowed."))
+      },
+      {
+        eventSubprocWithNoneStart(),
+        singletonList(
+            expect(
+                "subprocess",
+                "Start events in event subprocesses must be one of: message, timer, error"))
+      },
+      {
+        eventSubprocWithSignalStart(),
+        Arrays.asList(
+            expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
+            expect(
+                "subprocess",
+                "Start events in event subprocesses must be one of: message, timer, error"))
+      }
+    };
+  }
+
+  private static BpmnModelInstance eventSubprocWithNoneStart() {
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
+    processBuilder.startEvent().endEvent();
+    return processBuilder.eventSubProcess("subprocess").startEvent("start_event").endEvent().done();
+  }
+
+  private static BpmnModelInstance eventSubprocWithSignalStart() {
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
+    processBuilder.startEvent().endEvent();
+    return processBuilder
+        .eventSubProcess("subprocess")
+        .startEvent("start_event")
+        .signal("signal")
+        .endEvent()
+        .done();
+  }
+}

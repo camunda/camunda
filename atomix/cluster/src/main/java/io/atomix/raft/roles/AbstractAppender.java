@@ -32,14 +32,13 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
-import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.Indexed;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
-import io.zeebe.snapshots.raft.PersistedSnapshot;
-import io.zeebe.snapshots.raft.SnapshotChunk;
-import io.zeebe.snapshots.raft.SnapshotChunkReader;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotChunk;
+import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -74,14 +73,12 @@ abstract class AbstractAppender implements AutoCloseable {
    * @return The append request.
    */
   protected AppendRequest buildAppendRequest(final RaftMemberContext member, final long lastIndex) {
-    final RaftLogReader reader = member.getLogReader();
-
     // If the log is empty then send an empty commit.
     // If the next index hasn't yet been set then we send an empty commit first.
     // If the next index is greater than the last index then send an empty commit.
     // If the member failed to respond to recent communication send an empty commit. This
     // helps avoid doing expensive work until we can ascertain the member is back up.
-    if (!reader.hasNext()) {
+    if (!member.hasNextEntry()) {
       return buildAppendEmptyRequest(member);
     } else if (member.getFailureCount() > 0) {
       return buildAppendEmptyRequest(member);
@@ -96,11 +93,9 @@ abstract class AbstractAppender implements AutoCloseable {
    * <p>Empty append requests are used as heartbeats to followers.
    */
   protected AppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
-    final RaftLogReader reader = member.getLogReader();
-
     // Read the previous entry from the reader.
     // The reader can be null for RESERVE members.
-    final Indexed<RaftLogEntry> prevEntry = reader != null ? reader.getCurrentEntry() : null;
+    final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
     final DefaultRaftMember leader = raft.getLeader();
     return builderWithPreviousEntry(prevEntry)
@@ -111,17 +106,16 @@ abstract class AbstractAppender implements AutoCloseable {
         .build();
   }
 
-  private AppendRequest.Builder builderWithPreviousEntry(final Indexed<RaftLogEntry> prevEntry) {
+  private AppendRequest.Builder builderWithPreviousEntry(final IndexedRaftLogEntry prevEntry) {
     long prevIndex = 0;
     long prevTerm = 0;
 
     if (prevEntry != null) {
       prevIndex = prevEntry.index();
-      prevTerm = prevEntry.entry().term();
+      prevTerm = prevEntry.term();
     } else {
-      final var optCurrentSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
-      if (optCurrentSnapshot.isPresent()) {
-        final var currentSnapshot = optCurrentSnapshot.get();
+      final var currentSnapshot = raft.getCurrentSnapshot();
+      if (currentSnapshot != null) {
         prevIndex = currentSnapshot.getIndex();
         prevTerm = currentSnapshot.getTerm();
       }
@@ -130,12 +124,9 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   /** Builds a populated AppendEntries request. */
-  @SuppressWarnings("unchecked")
   protected AppendRequest buildAppendEntriesRequest(
       final RaftMemberContext member, final long lastIndex) {
-    final RaftLogReader reader = member.getLogReader();
-
-    final Indexed<RaftLogEntry> prevEntry = reader.getCurrentEntry();
+    final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
     final DefaultRaftMember leader = raft.getLeader();
     final AppendRequest.Builder builder =
@@ -145,7 +136,7 @@ abstract class AbstractAppender implements AutoCloseable {
             .withCommitIndex(raft.getCommitIndex());
 
     // Build a list of entries to send to the member.
-    final List<RaftLogEntry> entries = new ArrayList<>();
+    final List<PersistedRaftRecord> entries = new ArrayList<>();
 
     // Build a list of entries up to the MAX_BATCH_SIZE. Note that entries in the log may
     // be null if they've been compacted and the member to which we're sending entries is just
@@ -156,11 +147,12 @@ abstract class AbstractAppender implements AutoCloseable {
     int size = 0;
 
     // Iterate through the log until the last index or the end of the log is reached.
-    while (reader.hasNext()) {
+    while (member.hasNextEntry()) {
       // Otherwise, read the next entry and add it to the batch.
-      final Indexed<RaftLogEntry> entry = reader.next();
-      entries.add(entry.entry());
-      size += entry.size();
+      final IndexedRaftLogEntry entry = member.nextEntry();
+      final var replicatableRecord = entry.getPersistedRaftRecord();
+      entries.add(replicatableRecord);
+      size += replicatableRecord.approximateSize();
       if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
       }
@@ -325,10 +317,8 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   private void resetNextIndex(final RaftMemberContext member, final long nextIndex) {
-    if (member.getLogReader().getNextIndex() != nextIndex) {
-      member.getLogReader().reset(nextIndex);
-      log.trace("Reset next index for {} to {}", member, nextIndex);
-    }
+    member.reset(nextIndex);
+    log.trace("Reset next index for {} to {}", member, nextIndex);
   }
 
   /** Resets the snapshot index of the member when a response fails. */
@@ -489,7 +479,6 @@ abstract class AbstractAppender implements AutoCloseable {
               .withLeader(leader.memberId())
               .withIndex(persistedSnapshot.getIndex())
               .withTerm(persistedSnapshot.getTerm())
-              .withTimestamp(persistedSnapshot.getTimestamp().unixTimestamp())
               .withVersion(persistedSnapshot.version())
               .withData(new SnapshotChunkImpl(chunk).toByteBuffer())
               .withChunkId(ByteBuffer.wrap(chunk.getChunkName().getBytes()))

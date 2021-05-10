@@ -16,6 +16,7 @@
  */
 package io.atomix.utils.net;
 
+import com.google.common.net.HostAndPort;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -41,7 +42,7 @@ public final class Address {
       type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
       socketAddress = new InetSocketAddress(address, port);
     } else {
-      socketAddress = new InetSocketAddress(host, port);
+      socketAddress = InetSocketAddress.createUnresolved(host, port);
     }
   }
 
@@ -61,30 +62,13 @@ public final class Address {
    * @return the address
    */
   public static Address from(final String address) {
-    final int lastColon = address.lastIndexOf(':');
-    final int openBracket = address.indexOf('[');
-    final int closeBracket = address.indexOf(']');
-
-    final String host;
-    if (openBracket != -1 && closeBracket != -1) {
-      host = address.substring(openBracket + 1, closeBracket);
-    } else if (lastColon != -1) {
-      host = address.substring(0, lastColon);
-    } else {
-      host = address;
+    try {
+      final HostAndPort parsedAddress =
+          HostAndPort.fromString(address).withDefaultPort(DEFAULT_PORT);
+      return new Address(parsedAddress.getHost(), parsedAddress.getPort());
+    } catch (final IllegalStateException e) {
+      return from(DEFAULT_PORT);
     }
-
-    final int port;
-    if (lastColon != -1) {
-      try {
-        port = Integer.parseInt(address.substring(lastColon + 1));
-      } catch (final NumberFormatException e) {
-        throw new MalformedAddressException(address, e);
-      }
-    } else {
-      port = DEFAULT_PORT;
-    }
-    return new Address(host, port);
   }
 
   /**
@@ -156,41 +140,18 @@ public final class Address {
    * @return the IP address
    */
   public InetAddress address(final boolean resolve) {
-    if (resolve) {
-      socketAddress = resolveAddress();
+    if (resolve || socketAddress.isUnresolved()) {
+      // the constructor will by default attempt to resolve the host, and will fallback to the an
+      // unresolved address if it couldn't
+      socketAddress = new InetSocketAddress(host, port);
       return socketAddress.getAddress();
     }
 
-    // Try to resolve address, if not successful return null
-    if (socketAddress.isUnresolved()) {
-      synchronized (this) {
-        if (socketAddress.isUnresolved()) {
-          socketAddress = resolveAddress();
-        }
-      }
-    }
     return socketAddress.getAddress();
   }
 
   public InetSocketAddress socketAddress() {
     return socketAddress;
-  }
-
-  /**
-   * Resolves the IP address from the hostname.
-   *
-   * @return an InetSocketAddress with the resolved IP address and port or {@code null} if the IP
-   *     could not be resolved
-   */
-  private InetSocketAddress resolveAddress() {
-    try {
-      return new InetSocketAddress(InetAddress.getByName(host), port);
-    } catch (final UnknownHostException e) {
-      if (socketAddress.isUnresolved()) {
-        return socketAddress;
-      }
-      return new InetSocketAddress(host, port);
-    }
   }
 
   /**

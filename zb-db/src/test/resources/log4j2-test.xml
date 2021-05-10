@@ -10,8 +10,8 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.zeebe" level="debug"/>
-    <!-- <Logger name="io.zeebe.db" level="trace"/> -->
+    <Logger name="io.camunda.zeebe" level="debug"/>
+    <!-- <Logger name="io.camunda.zeebe.db" level="trace"/> -->
 
     <Root level="info">
       <AppenderRef ref="Console"/>

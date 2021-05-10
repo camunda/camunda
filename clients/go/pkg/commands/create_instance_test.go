@@ -17,10 +17,10 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/mock_pb"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"testing"
 )
 
@@ -32,27 +32,27 @@ func (cmd DataType) String() string {
 	return fmt.Sprintf("{\"foo\":\"%s\"}", cmd.Foo)
 }
 
-func TestCreateWorkflowInstanceCommand(t *testing.T) {
+func TestCreateProcessInstanceCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.WorkflowKey(123).Send(context.Background())
+	response, err := command.ProcessDefinitionKey(123).Send(context.Background())
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -63,24 +63,24 @@ func TestCreateWorkflowInstanceCommand(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
+func TestCreateProcessInstanceCommandByBpmnProcessId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	request := &pb.CreateWorkflowInstanceRequest{
+	request := &pb.CreateProcessInstanceRequest{
 		BpmnProcessId: "foo",
 		Version:       LatestVersion,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -95,24 +95,24 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
+func TestCreateProcessInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	request := &pb.CreateWorkflowInstanceRequest{
+	request := &pb.CreateProcessInstanceRequest{
 		BpmnProcessId: "foo",
 		Version:       56,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -127,7 +127,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
+func TestCreateProcessInstanceCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -135,22 +135,22 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
 
 	variables := "{\"foo\":\"bar\"}"
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
-		Variables:   variables,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		Variables:            variables,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromString(variables)
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromString(variables)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -166,7 +166,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
+func TestCreateProcessInstanceCommandWithVariablesFromStringer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -174,22 +174,22 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
 
 	variables := "{\"foo\":\"bar\"}"
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
-		Variables:   variables,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		Variables:            variables,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromStringer(DataType{Foo: "bar"})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -205,7 +205,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
+func TestCreateProcessInstanceCommandWithVariablesFromObject(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -213,22 +213,22 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
 
 	variables := "{\"foo\":\"bar\"}"
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
-		Variables:   variables,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		Variables:            variables,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: "bar"})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -244,7 +244,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testing.T) {
+func TestCreateProcessInstanceCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -252,22 +252,22 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testin
 
 	variables := "{}"
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
-		Variables:   variables,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		Variables:            variables,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: ""})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -283,7 +283,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testin
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
+func TestCreateProcessInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -291,22 +291,22 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *
 
 	variables := "{\"foo\":\"\"}"
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
-		Variables:   variables,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		Variables:            variables,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -322,7 +322,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *
 	}
 }
 
-func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
+func TestCreateProcessInstanceCommandWithVariablesFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -332,22 +332,22 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 	variablesMap := make(map[string]interface{})
 	variablesMap["foo"] = "bar"
 
-	request := &pb.CreateWorkflowInstanceRequest{
-		WorkflowKey: 123,
-		Variables:   variables,
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		Variables:            variables,
 	}
-	stub := &pb.CreateWorkflowInstanceResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromMap(variablesMap)
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromMap(variablesMap)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -363,33 +363,33 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommand(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           "{}",
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	response, err := command.WorkflowKey(123).WithResult().Send(ctx)
+	response, err := command.ProcessDefinitionKey(123).WithResult().Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -400,28 +400,28 @@ func TestCreateWorkflowInstanceWithResultCommand(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessId(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandByBpmnProcessId(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
 			BpmnProcessId: "foo",
 			Version:       LatestVersion,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           "{}",
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -439,28 +439,28 @@ func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessId(t *testing.T) {
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessIdAndVersion(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandByBpmnProcessIdAndVersion(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
 			BpmnProcessId: "foo",
 			Version:       56,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           "{}",
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -478,33 +478,33 @@ func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessIdAndVersion(t *tes
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromString(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 	variables := "{\"foo\":\"bar\"}"
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
-			Variables:   variables,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           variables,
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromString(variables)
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromString(variables)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -523,33 +523,33 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromString(t *testi
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromStringer(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandWithVariablesFromStringer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 	variables := "{\"foo\":\"bar\"}"
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
-			Variables:   variables,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           variables,
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromStringer(DataType{Foo: "bar"})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -568,33 +568,33 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromStringer(t *tes
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObject(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandWithVariablesFromObject(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 	variables := "{\"foo\":\"bar\"}"
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
-			Variables:   variables,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           variables,
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: "bar"})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -613,33 +613,33 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObject(t *testi
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectOmitempty(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 	variables := "{}"
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
-			Variables:   variables,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           variables,
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: ""})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -658,33 +658,33 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectOmitempty
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 	variables := "{\"foo\":\"\"}"
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
-			Variables:   variables,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           variables,
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -703,7 +703,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectIgnoreOmi
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromMap(t *testing.T) {
+func TestCreateProcessInstanceWithResultCommandWithVariablesFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -713,26 +713,26 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromMap(t *testing.
 	variablesMap := make(map[string]interface{})
 	variablesMap["foo"] = "bar"
 
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
-			Variables:   variables,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
+			Variables:            variables,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           variables,
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
-	variablesCommand, err := command.WorkflowKey(123).VariablesFromMap(variablesMap)
+	variablesCommand, err := command.ProcessDefinitionKey(123).VariablesFromMap(variablesMap)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
@@ -751,34 +751,34 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromMap(t *testing.
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultAndFetchVariablesCommand(t *testing.T) {
+func TestCreateProcessInstanceWithResultAndFetchVariablesCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
 		},
 		RequestTimeout: longPollMillis,
 		FetchVariables: []string{"a", "b", "c"},
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           "{}",
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	response, err := command.WorkflowKey(123).WithResult().FetchVariables("a", "b", "c").Send(ctx)
+	response, err := command.ProcessDefinitionKey(123).WithResult().FetchVariables("a", "b", "c").Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -789,33 +789,33 @@ func TestCreateWorkflowInstanceWithResultAndFetchVariablesCommand(t *testing.T) 
 	}
 }
 
-func TestCreateWorkflowInstanceWithResultAndFetchEmptyVariablesListCommand(t *testing.T) {
+func TestCreateProcessInstanceWithResultAndFetchEmptyVariablesListCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
-	request := &pb.CreateWorkflowInstanceWithResultRequest{
-		Request: &pb.CreateWorkflowInstanceRequest{
-			WorkflowKey: 123,
+	request := &pb.CreateProcessInstanceWithResultRequest{
+		Request: &pb.CreateProcessInstanceRequest{
+			ProcessDefinitionKey: 123,
 		},
 		RequestTimeout: longPollMillis,
 	}
-	stub := &pb.CreateWorkflowInstanceWithResultResponse{
-		WorkflowKey:         123,
-		BpmnProcessId:       "foo",
-		Version:             4545,
-		WorkflowInstanceKey: 5632,
-		Variables:           "{}",
+	stub := &pb.CreateProcessInstanceWithResultResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+		ProcessInstanceKey:   5632,
+		Variables:            "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateProcessInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	response, err := command.WorkflowKey(123).WithResult().FetchVariables().Send(ctx)
+	response, err := command.ProcessDefinitionKey(123).WithResult().FetchVariables().Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

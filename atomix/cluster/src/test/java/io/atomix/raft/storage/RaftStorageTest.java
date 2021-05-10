@@ -43,11 +43,8 @@ public class RaftStorageTest {
     assertEquals("atomix", storage.prefix());
     assertEquals(new File(System.getProperty("user.dir")), storage.directory());
     assertEquals(1024 * 1024 * 32, storage.maxLogSegmentSize());
-    assertEquals(1024 * 1024, storage.maxLogEntriesPerSegment());
     assertEquals(1024L * 1024 * 1024, storage.freeDiskSpace());
     assertTrue(storage.isFlushExplicitly());
-    assertFalse(storage.isRetainStaleSnapshots());
-    assertTrue(storage.statistics().getFreeMemory() > 0);
   }
 
   @Test
@@ -57,18 +54,14 @@ public class RaftStorageTest {
             .withPrefix("foo")
             .withDirectory(new File(PATH.toFile(), "foo"))
             .withMaxSegmentSize(1024 * 1024)
-            .withMaxEntriesPerSegment(1024)
             .withFreeDiskSpace(100)
             .withFlushExplicitly(false)
-            .withRetainStaleSnapshots()
             .build();
     assertEquals("foo", storage.prefix());
     assertEquals(new File(PATH.toFile(), "foo"), storage.directory());
     assertEquals(1024 * 1024, storage.maxLogSegmentSize());
-    assertEquals(1024, storage.maxLogEntriesPerSegment());
     assertEquals(100, storage.freeDiskSpace());
     assertFalse(storage.isFlushExplicitly());
-    assertTrue(storage.isRetainStaleSnapshots());
   }
 
   @Test
@@ -106,7 +99,7 @@ public class RaftStorageTest {
     if (Files.exists(PATH)) {
       Files.walkFileTree(
           PATH,
-          new SimpleFileVisitor<Path>() {
+          new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
                 throws IOException {

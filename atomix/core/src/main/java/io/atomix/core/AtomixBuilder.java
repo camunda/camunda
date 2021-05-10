@@ -24,7 +24,6 @@ import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.utils.net.Address;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
@@ -168,61 +167,8 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   }
 
   @Override
-  @Deprecated
-  public AtomixBuilder withAddress(final String address) {
-    super.withAddress(address);
-    return this;
-  }
-
-  @Override
-  @Deprecated
-  public AtomixBuilder withAddress(final String host, final int port) {
-    super.withAddress(host, port);
-    return this;
-  }
-
-  @Override
-  @Deprecated
-  public AtomixBuilder withAddress(final int port) {
-    super.withAddress(port);
-    return this;
-  }
-
-  @Override
   public AtomixBuilder withAddress(final Address address) {
     super.withAddress(address);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withZoneId(final String zoneId) {
-    super.withZoneId(zoneId);
-    return this;
-  }
-
-  @Override
-  @Deprecated
-  public AtomixBuilder withZone(final String zone) {
-    super.withZone(zone);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withRackId(final String rackId) {
-    super.withRackId(rackId);
-    return this;
-  }
-
-  @Override
-  @Deprecated
-  public AtomixBuilder withRack(final String rack) {
-    super.withRack(rack);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withHostId(final String hostId) {
-    super.withHostId(hostId);
     return this;
   }
 
@@ -233,20 +179,8 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   }
 
   @Override
-  public AtomixBuilder withProperty(final String key, final String value) {
-    super.withProperty(key, value);
-    return this;
-  }
-
-  @Override
   public AtomixBuilder withMessagingInterface(final String iface) {
     super.withMessagingInterface(iface);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMessagingInterfaces(final String... ifaces) {
-    super.withMessagingInterfaces(ifaces);
     return this;
   }
 
@@ -259,30 +193,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   @Override
   public AtomixBuilder withMessagingPort(final int bindPort) {
     super.withMessagingPort(bindPort);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withConnectionPoolSize(final int connectionPoolSize) {
-    super.withConnectionPoolSize(connectionPoolSize);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder setBroadcastInterval(final Duration interval) {
-    super.setBroadcastInterval(interval);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder setReachabilityThreshold(final int threshold) {
-    super.setReachabilityThreshold(threshold);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withReachabilityTimeout(final Duration timeout) {
-    super.withReachabilityTimeout(timeout);
     return this;
   }
 

@@ -15,33 +15,48 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
-	"log"
 )
+
+type CancelInstanceResponseWrapper struct {
+	resp *pb.CancelProcessInstanceResponse
+}
+
+func (c CancelInstanceResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Canceled process instance with key '", cancelInstanceKey, "'"), nil
+}
+
+func (c CancelInstanceResponseWrapper) json() (string, error) {
+	return toJSON(c.resp)
+}
 
 var cancelInstanceKey int64
 
 var cancelInstanceCmd = &cobra.Command{
 	Use:     "instance <key>",
-	Short:   "Cancel workflow instance by key",
+	Short:   "Cancel process instance by key",
 	Args:    keyArg(&cancelInstanceKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		zbCmd := client.
 			NewCancelInstanceCommand().
-			WorkflowInstanceKey(cancelInstanceKey)
+			ProcessInstanceKey(cancelInstanceKey)
 
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		_, err := zbCmd.Send(ctx)
-		if err == nil {
-			log.Println("Canceled workflow instance with key", cancelInstanceKey)
+		resp, err := zbCmd.Send(ctx)
+		if err != nil {
+			return err
 		}
+		err = printOutput(CancelInstanceResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(cancelInstanceCmd)
 	cancelCmd.AddCommand(cancelInstanceCmd)
 }

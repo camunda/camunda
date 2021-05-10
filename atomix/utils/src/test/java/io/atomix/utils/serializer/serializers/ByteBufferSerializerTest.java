@@ -39,16 +39,19 @@ public class ByteBufferSerializerTest {
 
   private Output output;
   private Input input;
+  private ByteBuffer buffer;
 
   @BeforeClass
   public static void register() {
     KRYO.register(ByteBuffer.class, new ByteBufferSerializer());
+    KRYO.register(ByteBuffer.allocate(1).getClass(), new ByteBufferSerializer());
+    KRYO.register(ByteBuffer.allocateDirect(1).getClass(), new ByteBufferSerializer());
     KRYO.addDefaultSerializer(ByteBuffer.class, new ByteBufferSerializer());
   }
 
   @Before
   public void setUp() {
-    final ByteBuffer buffer = ByteBuffer.allocate(CAPACITY);
+    buffer = ByteBuffer.allocate(CAPACITY);
 
     output = new ByteBufferOutput(buffer);
     input = new ByteBufferInput(buffer);
@@ -70,6 +73,7 @@ public class ByteBufferSerializerTest {
     // when
     original.position(capacity);
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
@@ -87,6 +91,7 @@ public class ByteBufferSerializerTest {
 
     // when
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
@@ -105,6 +110,7 @@ public class ByteBufferSerializerTest {
 
     // when
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
@@ -124,6 +130,7 @@ public class ByteBufferSerializerTest {
 
     // when
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
@@ -141,6 +148,7 @@ public class ByteBufferSerializerTest {
 
     // when
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
@@ -165,6 +173,7 @@ public class ByteBufferSerializerTest {
     // when
     original.position(secondPosition).limit(secondPosition + Integer.BYTES);
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then
@@ -183,6 +192,7 @@ public class ByteBufferSerializerTest {
     // when
     original.position(capacity);
     KRYO.writeObject(output, original);
+    buffer.flip();
     final ByteBuffer deserialized = KRYO.readObject(input, ByteBuffer.class);
 
     // then

@@ -16,14 +16,14 @@ package containersuite
 import (
 	"context"
 	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/utils"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io/ioutil"
@@ -175,6 +175,10 @@ func (s *ContainerSuite) SetupSuite() {
 			Image:        s.ContainerImage,
 			ExposedPorts: []string{"26500"},
 			WaitingFor:   zeebeWaitStrategy{waitTime: s.WaitTime},
+			Env: map[string]string{
+				"ZEEBE_BROKER_NETWORK_HOST":           "0.0.0.0",
+				"ZEEBE_BROKER_NETWORK_ADVERTISEDHOST": "0.0.0.0",
+			},
 		},
 		Started: true,
 	}

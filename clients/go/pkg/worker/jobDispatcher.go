@@ -15,7 +15,7 @@
 package worker
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/entities"
 	"sync"
 )
 

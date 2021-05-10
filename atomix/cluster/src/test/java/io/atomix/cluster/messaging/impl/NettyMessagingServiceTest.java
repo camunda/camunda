@@ -29,11 +29,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
-import io.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -69,6 +71,7 @@ public class NettyMessagingServiceTest {
   Address addressv21;
   Address addressv22;
   Address invalidAddress;
+  private MessagingService messagingService;
 
   @Before
   public void setUp() throws Exception {
@@ -423,5 +426,23 @@ public class NettyMessagingServiceTest {
     nettyv22.registerHandler(subject, (address, bytes) -> CompletableFuture.completedFuture(bytes));
     response = nettyv12.sendAndReceive(addressv22, subject, payload).get(10, TimeUnit.SECONDS);
     assertArrayEquals(payload, response);
+  }
+
+  @Test
+  public void shouldNotBindToAdvertisedAddress() {
+    // given
+    final var bindingAddress = Address.from(SocketUtil.getNextAddress().getPort());
+    final MessagingConfig config = new MessagingConfig();
+    config.setInterfaces(List.of(bindingAddress.host()));
+    config.setPort(bindingAddress.port());
+
+    // when
+    final Address nonBindableAddress = new Address("invalid.host", 1);
+    final var startFuture = new NettyMessagingService("test", nonBindableAddress, config).start();
+
+    // then - should not fail by using advertisedAddress for binding
+    messagingService = startFuture.join();
+    assertThat(messagingService.bindingAddresses()).contains(bindingAddress);
+    assertThat(messagingService.address()).isEqualTo(nonBindableAddress);
   }
 }

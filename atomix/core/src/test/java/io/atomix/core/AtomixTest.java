@@ -57,7 +57,9 @@ public class AtomixTest {
                               new RaftStorageConfig()
                                   .setDirectory(
                                       new File(atomixRule.getDataDir(), "start-stop-consensus")
-                                          .getPath()));
+                                          .getPath())
+                                  .setPersistedSnapshotStoreFactory(
+                                      new NoopSnapshotStoreFactory()));
 
                   final var raftPartitionGroup = new RaftPartitionGroup(groupConfig);
                   return builder.withPartitionGroups(raftPartitionGroup).build();

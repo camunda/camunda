@@ -15,9 +15,7 @@
  */
 package io.atomix.raft.roles;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -30,17 +28,20 @@ import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
+import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.PersistedRaftRecord;
+import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogWriter;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ValidationResult;
-import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.raft.zeebe.util.TestAppender;
-import io.atomix.storage.StorageException;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.SingleThreadContext;
-import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
+import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -56,9 +57,8 @@ import org.mockito.Mockito;
 public class LeaderRoleTest {
 
   private LeaderRole leaderRole;
-  private RaftLogWriter writer;
   private RaftContext context;
-  private RaftLogReader reader;
+  private RaftLog log;
 
   @Before
   public void setup() {
@@ -72,26 +72,27 @@ public class LeaderRoleTest {
     final SingleThreadContext threadContext = new SingleThreadContext("leader");
     when(context.getThreadContext()).thenReturn(threadContext);
 
-    writer = mock(RaftLogWriter.class);
-    when(writer.getNextIndex()).thenReturn(1L);
-    when(writer.append(any(ZeebeEntry.class)))
+    log = mock(RaftLog.class);
+    when(log.getLastIndex()).thenReturn(1L);
+    when(log.append(any(RaftLogEntry.class)))
         .then(
             i -> {
-              final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45);
+              final RaftLogEntry raftEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftEntry.getApplicationEntry());
             });
-    when(context.getLogWriter()).thenReturn(writer);
+    when(context.getLog()).thenReturn(log);
 
     final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.success());
+    when(context.getStorage()).thenReturn(RaftStorage.builder().withMaxSegmentSize(1024).build());
 
     leaderRole = new LeaderRole(context);
     // since we mock RaftContext we should simulate leader close on transition
     doAnswer(i -> leaderRole.stop().join()).when(context).transition(Role.FOLLOWER);
     when(context.getMembershipService()).thenReturn(mock(ClusterMembershipService.class));
 
-    reader = mock(RaftLogReader.class);
+    final RaftLogReader reader = mock(RaftLogReader.class);
     when(context.getLogReader()).thenReturn(reader);
   }
 
@@ -102,315 +103,189 @@ public class LeaderRoleTest {
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
           @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {
+          public void onWrite(final IndexedRaftLogEntry indexed) {
             latch.countDown();
           }
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
-    assertEquals(0, latch.getCount());
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    assertThat(latch.getCount()).isZero();
   }
 
   @Test
   public void shouldRetryAppendEntryOnIOException() throws InterruptedException {
     // given
-
-    when(writer.append(any(ZeebeEntry.class)))
-        .thenThrow(new StorageException(new IOException()))
-        .thenThrow(new StorageException(new IOException()))
+    when(log.append(any(RaftLogEntry.class)))
+        .thenThrow(new JournalException(new IOException()))
+        .thenThrow(new JournalException(new IOException()))
         .then(
             i -> {
-              final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45);
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
           @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {
+          public void onWrite(final IndexedRaftLogEntry indexed) {
             latch.countDown();
           }
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
-    verify(writer, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
   }
 
   @Test
   public void shouldStopRetryAppendEntryAfterMaxRetries() throws InterruptedException {
     // given
-    when(writer.append(any(ZeebeEntry.class))).thenThrow(new StorageException(new IOException()));
+    when(log.append(any(RaftLogEntry.class))).thenThrow(new JournalException(new IOException()));
 
-    final AtomicReference<Throwable> catchedError = new AtomicReference<>();
+    final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
-            catchedError.set(error);
+            caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
-    verify(writer, timeout(1000).atLeast(5)).append(any(RaftLogEntry.class));
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(log, timeout(1000).atLeast(5)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
-    assertTrue(catchedError.get() instanceof IOException);
+    assertThat(caughtError.get()).isInstanceOf(IOException.class);
   }
 
   @Test
   public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
     // given
-    when(writer.append(any(ZeebeEntry.class)))
-        .thenThrow(new StorageException.OutOfDiskSpace("Boom file out"));
+    when(log.append(any(RaftLogEntry.class)))
+        .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"));
 
-    final AtomicReference<Throwable> catchedError = new AtomicReference<>();
+    final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
-            catchedError.set(error);
+            caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
     leaderRole.appendEntry(0, 1, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
-    verify(writer, timeout(1000)).append(any(RaftLogEntry.class));
+    verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
-    assertTrue(catchedError.get() instanceof StorageException.OutOfDiskSpace);
-  }
-
-  @Test
-  public void shouldStopAppendEntryOnToLargeEntry() throws InterruptedException {
-    // given
-    when(writer.append(any(ZeebeEntry.class)))
-        .thenThrow(new StorageException.TooLarge("Too large entry"));
-
-    final AtomicReference<Throwable> catchedError = new AtomicReference<>();
-    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
-    final CountDownLatch latch = new CountDownLatch(1);
-    final AppendListener listener =
-        new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onWriteError(final Throwable error) {
-            catchedError.set(error);
-            latch.countDown();
-          }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
-        };
-
-    // when
-    leaderRole.appendEntry(0, 1, data, listener);
-
-    // then
-    latch.await(10, TimeUnit.SECONDS);
-    verify(writer, timeout(1000)).append(any(RaftLogEntry.class));
-
-    assertTrue(catchedError.get() instanceof StorageException.TooLarge);
+    assertThat(caughtError.get()).isInstanceOf(JournalException.OutOfDiskSpace.class);
   }
 
   @Test
   public void shouldTransitionToFollowerWhenAppendEntryException() throws InterruptedException {
     // given
-    when(writer.append(any(ZeebeEntry.class))).thenThrow(new RuntimeException("expected"));
+    when(log.append(any(RaftLogEntry.class))).thenThrow(new RuntimeException("expected"));
 
-    final AtomicReference<Throwable> catchedError = new AtomicReference<>();
+    final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
     final AppendListener listener =
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
-            catchedError.set(error);
+            caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
     leaderRole.appendEntry(2, 3, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
-    verify(writer, timeout(1000)).append(any(RaftLogEntry.class));
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(log, timeout(1000)).append(any(RaftLogEntry.class));
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
 
-    assertTrue(catchedError.get() instanceof RuntimeException);
+    assertThat(caughtError.get()).isInstanceOf(RuntimeException.class);
   }
 
   @Test
   public void shouldNotAppendFollowingEntryOnException() throws InterruptedException {
     // given
-    when(writer.append(any(ZeebeEntry.class))).thenThrow(new RuntimeException("expected"));
+    when(log.append(any(RaftLogEntry.class))).thenThrow(new RuntimeException("expected"));
 
-    final AtomicReference<Throwable> catchedError = new AtomicReference<>();
+    final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
 
     // when
-    leaderRole.appendEntry(
-        0,
-        1,
-        data,
-        new AppendListener() {
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
-        });
+    leaderRole.appendEntry(0, 1, data, new AppendListener() {});
     leaderRole.appendEntry(
         2,
         3,
         data,
         new AppendListener() {
-
-          @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
           @Override
           public void onWriteError(final Throwable error) {
-            catchedError.set(error);
+            caughtError.set(error);
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         });
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
-    verify(writer, timeout(1000)).append(any(RaftLogEntry.class));
+    verify(log, timeout(1000)).append(any(RaftLogEntry.class));
 
-    assertTrue(catchedError.get() instanceof NoLeader);
-    assertEquals(
-        "LeaderRole is closed and cannot be used as appender", catchedError.get().getMessage());
+    assertThat(caughtError.get())
+        .isInstanceOf(NoLeader.class)
+        .hasMessage("LeaderRole is closed and cannot be used as appender");
   }
 
   @Test
   public void shouldRetryAppendEntriesInOrder() throws InterruptedException {
     // given
-
-    when(writer.append(any(ZeebeEntry.class)))
-        .thenThrow(new StorageException(new IOException()))
-        .thenThrow(new StorageException(new IOException()))
+    when(log.append(any(RaftLogEntry.class)))
+        .thenThrow(new JournalException(new IOException()))
+        .thenThrow(new JournalException(new IOException()))
         .then(
             i -> {
-              final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45);
+              final RaftLogEntry raftEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
-    final List<ZeebeEntry> entries = new CopyOnWriteArrayList<>();
+    final List<ApplicationEntry> entries = new CopyOnWriteArrayList<>();
     final CountDownLatch latch = new CountDownLatch(2);
     final AppendListener listener =
         new AppendListener() {
-
           @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {
-            entries.add(indexed.entry());
+          public void onWrite(final IndexedRaftLogEntry indexed) {
+            entries.add(indexed.getApplicationEntry());
             latch.countDown();
           }
-
-          @Override
-          public void onWriteError(final Throwable error) {}
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -418,22 +293,22 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(1, 2, data, listener);
 
     // then
-    latch.await(10, TimeUnit.SECONDS);
-    verify(writer, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
 
-    assertEquals(2, entries.size());
-    assertEquals(1, entries.get(0).highestPosition());
-    assertEquals(2, entries.get(1).highestPosition());
+    assertThat(entries).hasSize(2);
+    assertThat(entries.get(0).highestPosition()).isEqualTo(1);
+    assertThat(entries.get(1).highestPosition()).isEqualTo(2);
   }
 
   @Test
   public void shouldDetectInconsistencyWithLastEntry() throws InterruptedException {
     // given
-    when(writer.append(any(ZeebeEntry.class)))
+    when(log.append(any(RaftLogEntry.class)))
         .then(
             i -> {
-              final ZeebeEntry zeebeEntry = i.getArgument(0);
-              return new Indexed<>(1, zeebeEntry, 45);
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -445,9 +320,6 @@ public class LeaderRoleTest {
                 assertThat(lastEntry.highestPosition()).isEqualTo(7);
                 assertThat(entry.lowestPosition()).isEqualTo(9);
                 assertThat(entry.highestPosition()).isEqualTo(9);
-                entry.data().rewind();
-                data.rewind();
-                assertThat(entry.data()).isEqualTo(data);
                 latch.countDown();
                 return ValidationResult.failure("expected");
               }
@@ -458,18 +330,9 @@ public class LeaderRoleTest {
     final AppendListener listener =
         new AppendListener() {
           @Override
-          public void onWrite(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
           public void onWriteError(final Throwable error) {
             latch.countDown();
           }
-
-          @Override
-          public void onCommit(final Indexed<ZeebeEntry> indexed) {}
-
-          @Override
-          public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {}
         };
 
     // when
@@ -477,7 +340,50 @@ public class LeaderRoleTest {
     leaderRole.appendEntry(9, 9, data, listener);
 
     // then
-    assertTrue(latch.await(5, TimeUnit.SECONDS));
+    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
+  }
+
+  private static class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
+
+    private final long index;
+    private final long term;
+    private final RaftEntry entry;
+
+    public TestIndexedRaftLogEntry(final long index, final long term, final RaftEntry entry) {
+      this.index = index;
+      this.term = term;
+      this.entry = entry;
+    }
+
+    @Override
+    public long index() {
+      return index;
+    }
+
+    @Override
+    public long term() {
+      return term;
+    }
+
+    @Override
+    public RaftEntry entry() {
+      return entry;
+    }
+
+    @Override
+    public boolean isApplicationEntry() {
+      return true;
+    }
+
+    @Override
+    public ApplicationEntry getApplicationEntry() {
+      return (ApplicationEntry) entry;
+    }
+
+    @Override
+    public PersistedRaftRecord getPersistedRaftRecord() {
+      return null;
+    }
   }
 }

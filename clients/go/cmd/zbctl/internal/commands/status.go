@@ -16,11 +16,64 @@ package commands
 import (
 	"context"
 	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"google.golang.org/protobuf/encoding/protojson"
+	"net"
 	"sort"
+	"strings"
 )
+
+type StatusResponseWrapper struct {
+	response *pb.TopologyResponse
+}
+
+func (s StatusResponseWrapper) json() (string, error) {
+	return toJSON(s.response)
+}
+
+func (s StatusResponseWrapper) human() (string, error) {
+	resp := s.response
+	gatewayVersion := "unavailable"
+	if resp.GatewayVersion != "" {
+		gatewayVersion = resp.GatewayVersion
+	}
+
+	var stringBuilder strings.Builder
+
+	stringBuilder.WriteString(fmt.Sprintf("Cluster size: %d\n", resp.ClusterSize))
+	stringBuilder.WriteString(fmt.Sprintf("Partitions count: %d\n", resp.PartitionsCount))
+	stringBuilder.WriteString(fmt.Sprintf("Replication factor: %d\n", resp.ReplicationFactor))
+	stringBuilder.WriteString(fmt.Sprintf("Gateway version: %s\n", gatewayVersion))
+	stringBuilder.WriteString("Brokers:\n")
+
+	sort.Sort(ByNodeID(resp.Brokers))
+
+	for b, broker := range resp.Brokers {
+		stringBuilder.WriteString(fmt.Sprintf("  Broker %d - %s:%d\n",
+			broker.NodeId,
+			formatHost(broker.Host),
+			broker.Port))
+		version := "unavailable"
+		if broker.Version != "" {
+			version = broker.Version
+		}
+
+		stringBuilder.WriteString(fmt.Sprintf("    Version: %s\n", version))
+
+		sort.Sort(ByPartitionID(broker.Partitions))
+		for p, partition := range broker.Partitions {
+			stringBuilder.WriteString(fmt.Sprintf("    Partition %d : %s, %s",
+				partition.PartitionId,
+				roleToString(partition.Role),
+				healthToString(partition.Health)))
+
+			if p < len(broker.Partitions)-1 || b < len(broker.Partitions)-1 {
+				stringBuilder.WriteRune('\n')
+			}
+		}
+	}
+	return stringBuilder.String(), nil
+}
 
 type ByNodeID []*pb.BrokerInfo
 
@@ -34,42 +87,12 @@ func (a ByPartitionID) Len() int           { return len(a) }
 func (a ByPartitionID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByPartitionID) Less(i, j int) bool { return a[i].PartitionId < a[j].PartitionId }
 
-type Printer interface {
-	print(resp *pb.TopologyResponse) error
-}
-type JSONPrinter struct {
-}
-type HumanPrinter struct {
-}
-
-func (jsonPrinter *JSONPrinter) print(resp *pb.TopologyResponse) error {
-	return printTopologyJSON(resp)
-}
-
-func (humanPrinter *HumanPrinter) print(resp *pb.TopologyResponse) error {
-	printStatus(resp)
-	return nil
-}
-
-var (
-	outputFlag string
-	outputMap  = map[string]Printer{}
-)
-
-const humanOutput = "human"
-const jsonOutput = "json"
-
 var statusCmd = &cobra.Command{
 	Use:     "status",
 	Short:   "Checks the current status of the cluster",
 	Args:    cobra.NoArgs,
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var err error
-		printer := outputMap[outputFlag]
-		if printer == nil {
-			return fmt.Errorf("cannot find proper printer for %s output", outputFlag)
-		}
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
@@ -78,7 +101,7 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		err = printer.print(resp)
+		err = printOutput(StatusResponseWrapper{resp})
 		if err != nil {
 			return err
 		}
@@ -86,54 +109,9 @@ var statusCmd = &cobra.Command{
 	},
 }
 
-func printStatus(resp *pb.TopologyResponse) {
-	gatewayVersion := "unavailable"
-	if resp.GatewayVersion != "" {
-		gatewayVersion = resp.GatewayVersion
-	}
-
-	fmt.Println("Cluster size:", resp.ClusterSize)
-	fmt.Println("Partitions count:", resp.PartitionsCount)
-	fmt.Println("Replication factor:", resp.ReplicationFactor)
-	fmt.Println("Gateway version:", gatewayVersion)
-	fmt.Println("Brokers:")
-
-	sort.Sort(ByNodeID(resp.Brokers))
-
-	for _, broker := range resp.Brokers {
-		fmt.Printf("  Broker %d - %s:%d\n", broker.NodeId, broker.Host, broker.Port)
-
-		version := "unavailable"
-		if broker.Version != "" {
-			version = broker.Version
-		}
-
-		fmt.Printf("    Version: %s\n", version)
-
-		sort.Sort(ByPartitionID(broker.Partitions))
-		for _, partition := range broker.Partitions {
-			fmt.Printf(
-				"    Partition %d : %s, %s\n",
-				partition.PartitionId,
-				roleToString(partition.Role),
-				healthToString(partition.Health),
-			)
-		}
-	}
-}
-
 func init() {
+	addOutputFlag(statusCmd)
 	rootCmd.AddCommand(statusCmd)
-
-	outputMap[jsonOutput] = &JSONPrinter{}
-	outputMap[humanOutput] = &HumanPrinter{}
-	statusCmd.Flags().StringVarP(
-		&outputFlag,
-		"output",
-		"o",
-		humanOutput,
-		"Specify output format. Default is human readable. Possible Values: human, json",
-	)
 }
 
 const unknownState = "Unknown"
@@ -144,6 +122,8 @@ func roleToString(role pb.Partition_PartitionBrokerRole) string {
 		return "Leader"
 	case pb.Partition_FOLLOWER:
 		return "Follower"
+	case pb.Partition_INACTIVE:
+		return "Inactive"
 	default:
 		return unknownState
 	}
@@ -160,11 +140,14 @@ func healthToString(health pb.Partition_PartitionBrokerHealth) string {
 	}
 }
 
-func printTopologyJSON(resp *pb.TopologyResponse) error {
-	m := protojson.MarshalOptions{EmitUnpopulated: true, Indent: "  "}
-	valueJSON, err := m.Marshal(resp)
-	if err == nil {
-		fmt.Println(string(valueJSON))
+func formatHost(host string) string {
+	ips, err := net.LookupIP(host)
+	if err != nil || len(ips) > 0 {
+		return host
 	}
-	return err
+	ip := net.ParseIP(host)
+	if ip.To4() != nil {
+		return ip.String()
+	}
+	return fmt.Sprintf("[%s]", ip.String())
 }

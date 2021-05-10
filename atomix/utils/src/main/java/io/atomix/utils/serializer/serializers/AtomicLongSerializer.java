@@ -30,7 +30,8 @@ public class AtomicLongSerializer extends Serializer<AtomicLong> {
   }
 
   @Override
-  public AtomicLong read(final Kryo kryo, final Input input, final Class<AtomicLong> type) {
+  public AtomicLong read(
+      final Kryo kryo, final Input input, final Class<? extends AtomicLong> type) {
     return new AtomicLong(input.readLong());
   }
 }

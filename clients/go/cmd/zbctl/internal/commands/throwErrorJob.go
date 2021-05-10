@@ -16,8 +16,9 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 var (
@@ -25,6 +26,18 @@ var (
 	errorCode    string
 	errorMessage string
 )
+
+type ThrowErrorResponseWrapper struct {
+	resp *pb.ThrowErrorResponse
+}
+
+func (t ThrowErrorResponseWrapper) human() (string, error) {
+	return fmt.Sprintf("Threw error with code '%s' on job with key %d", errorCode, jobKey), nil
+}
+
+func (t ThrowErrorResponseWrapper) json() (string, error) {
+	return toJSON(t.resp)
+}
 
 var throwErrorJobCmd = &cobra.Command{
 	Use:     "job <jobKey>",
@@ -35,16 +48,18 @@ var throwErrorJobCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		_, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).Send(ctx)
-		if err == nil {
-			log.Printf("Threw error with code '%s' on job with key %d\n", errorCode, jobKey)
+		resp, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).Send(ctx)
+		if err != nil {
+			return err
 		}
 
+		err = printOutput(ThrowErrorResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(throwErrorJobCmd)
 	throwErrorCmd.AddCommand(throwErrorJobCmd)
 	throwErrorJobCmd.Flags().StringVar(&errorCode, "errorCode", "", "Specify an error code to which the error should be matched")
 	if err := throwErrorJobCmd.MarkFlagRequired("errorCode"); err != nil {

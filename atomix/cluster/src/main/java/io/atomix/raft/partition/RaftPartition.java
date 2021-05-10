@@ -27,15 +27,12 @@ import io.atomix.raft.RaftFailureListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
-import io.atomix.storage.journal.index.JournalIndex;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class RaftPartition implements Partition {
 
   private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
+  private static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
   private final PartitionId partitionId;
   private final RaftPartitionGroupConfig config;
   private final File dataDirectory;
@@ -51,7 +49,6 @@ public class RaftPartition implements Partition {
   private final Set<RaftFailureListener> raftFailureListeners = new CopyOnWriteArraySet<>();
   private PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
-  private Supplier<JournalIndex> journalIndexFactory;
 
   public RaftPartition(
       final PartitionId partitionId,
@@ -70,11 +67,6 @@ public class RaftPartition implements Partition {
     }
   }
 
-  @Deprecated
-  public void addRoleChangeListener(final Consumer<Role> listener) {
-    addRoleChangeListener((newRole, newTerm) -> listener.accept(newRole));
-  }
-
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
     deferredRoleChangeListeners.remove(listener);
     server.removeRoleChangeListener(listener);
@@ -86,15 +78,6 @@ public class RaftPartition implements Partition {
 
   public void removeFailureListener(final RaftFailureListener failureListener) {
     raftFailureListeners.remove(failureListener);
-  }
-
-  public void setJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
-    if (server != null) {
-      throw new IllegalStateException(
-          "Settings the JournalIndexFactory makes only sense when the RaftPartition is not already opened!");
-    }
-
-    this.journalIndexFactory = journalIndexFactory;
   }
 
   /**
@@ -149,8 +132,7 @@ public class RaftPartition implements Partition {
         config,
         managementService.getMembershipService().getLocalMember().id(),
         managementService.getMembershipService(),
-        managementService.getMessagingService(),
-        journalIndexFactory);
+        managementService.getMessagingService());
   }
 
   /**
@@ -159,8 +141,7 @@ public class RaftPartition implements Partition {
    * @return the partition name
    */
   public String name() {
-
-    return String.format("%s-partition-%d", partitionId.group(), partitionId.id());
+    return String.format(PARTITION_NAME_FORMAT, partitionId.group(), partitionId.id());
   }
 
   /** Closes the partition. */

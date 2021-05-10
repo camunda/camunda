@@ -55,7 +55,8 @@ final class LeaderAppender extends AbstractAppender {
   LeaderAppender(final LeaderRole leader) {
     super(leader.raft);
     leaderTime = System.currentTimeMillis();
-    leaderIndex = raft.getLogWriter().getNextIndex();
+    leaderIndex =
+        raft.getLog().isEmpty() ? raft.getLog().getFirstIndex() : raft.getLog().getLastIndex() + 1;
     heartbeatTime = leaderTime;
     electionTimeout = raft.getElectionTimeout().toMillis();
     heartbeatInterval = raft.getHeartbeatInterval().toMillis();
@@ -287,7 +288,7 @@ final class LeaderAppender extends AbstractAppender {
   @Override
   protected boolean hasMoreEntries(final RaftMemberContext member) {
     // If the member's nextIndex is an entry in the local log then more entries can be sent.
-    return member.getLogReader().hasNext();
+    return member.hasNextEntry();
   }
 
   /** Handles a {@link io.atomix.raft.protocol.RaftResponse.Status#ERROR} response. */
@@ -343,16 +344,15 @@ final class LeaderAppender extends AbstractAppender {
   }
 
   private void tryToReplicateSnapshot(final RaftMemberContext member) {
-    final var optSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+    final var persistedSnapshot = raft.getCurrentSnapshot();
 
-    if (optSnapshot.isPresent()
-        && member.getSnapshotIndex() < optSnapshot.get().getIndex()
-        && optSnapshot.get().getIndex() >= member.getLogReader().getCurrentIndex()) {
+    if (persistedSnapshot != null
+        && member.getSnapshotIndex() < persistedSnapshot.getIndex()
+        && persistedSnapshot.getIndex() >= member.getCurrentIndex()) {
       if (!member.canInstall()) {
         return;
       }
 
-      final var persistedSnapshot = optSnapshot.get();
       log.debug(
           "Replicating snapshot {} to {}",
           persistedSnapshot.getIndex(),
@@ -473,7 +473,7 @@ final class LeaderAppender extends AbstractAppender {
     // request/response)
     // ensure all commit futures are completed and cleared.
     if (members.isEmpty()) {
-      final long commitIndex = raft.getLogWriter().getLastIndex();
+      final long commitIndex = raft.getLog().getLastIndex();
       final long previousCommitIndex = raft.setCommitIndex(commitIndex);
       if (commitIndex > previousCommitIndex) {
         log.trace("Committed entries up to {}", commitIndex);

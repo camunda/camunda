@@ -18,7 +18,7 @@ package io.atomix.raft.protocol;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.Futures;
-import io.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.net.ConnectException;
 import java.util.LinkedList;
 import java.util.Map;
@@ -35,8 +35,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
-  private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
-  private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
   private Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> reconfigureHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
@@ -101,35 +99,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       final CompletableFuture responseFuture) {
     final var message = new Tuple<>(requestHandler, responseFuture);
     messageQueue.computeIfAbsent(memberId, m -> new LinkedList<>()).add(message);
-  }
-
-  @Override
-  public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
-    final var responseFuture = new CompletableFuture<JoinResponse>();
-    send(
-        memberId,
-        () ->
-            getServer(memberId)
-                .thenCompose(listener -> listener.join(request))
-                .thenAccept(
-                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
-    return responseFuture;
-  }
-
-  @Override
-  public CompletableFuture<LeaveResponse> leave(
-      final MemberId memberId, final LeaveRequest request) {
-    final var responseFuture = new CompletableFuture<LeaveResponse>();
-    send(
-        memberId,
-        () ->
-            getServer(memberId)
-                .thenCompose(listener -> listener.leave(request))
-                .thenAccept(
-                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
-    return responseFuture;
   }
 
   @Override
@@ -233,28 +202,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
         responseFuture);
     return responseFuture;
-  }
-
-  @Override
-  public void registerJoinHandler(
-      final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    joinHandler = handler;
-  }
-
-  @Override
-  public void unregisterJoinHandler() {
-    joinHandler = null;
-  }
-
-  @Override
-  public void registerLeaveHandler(
-      final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
-    leaveHandler = handler;
-  }
-
-  @Override
-  public void unregisterLeaveHandler() {
-    leaveHandler = null;
   }
 
   @Override
@@ -394,22 +341,6 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<ConfigureResponse> configure(final ConfigureRequest request) {
     if (configureHandler != null) {
       return configureHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<LeaveResponse> leave(final LeaveRequest request) {
-    if (leaveHandler != null) {
-      return leaveHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<JoinResponse> join(final JoinRequest request) {
-    if (joinHandler != null) {
-      return joinHandler.apply(request);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
     }

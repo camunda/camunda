@@ -15,9 +15,9 @@ package test
 
 import (
 	"context"
+	"github.com/camunda-cloud/zeebe/clients/go/internal/containersuite"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/containersuite"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"testing"
 	"time"
 )
@@ -78,12 +78,12 @@ func (s *integrationTestSuite) TestTopology() {
 	}
 }
 
-func (s *integrationTestSuite) TestDeployWorkflow() {
+func (s *integrationTestSuite) TestDeployProcess() {
 	// when
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -91,11 +91,11 @@ func (s *integrationTestSuite) TestDeployWorkflow() {
 	// then
 	s.Greater(deployment.GetKey(), int64(0))
 
-	workflow := deployment.GetWorkflows()[0]
-	s.NotNil(workflow)
-	s.EqualValues("deploy_process", workflow.GetBpmnProcessId())
-	s.EqualValues(int32(1), workflow.GetVersion())
-	s.Greater(workflow.GetWorkflowKey(), int64(0))
+	process := deployment.GetProcesses()[0]
+	s.NotNil(process)
+	s.EqualValues("deploy_process", process.GetBpmnProcessId())
+	s.EqualValues(int32(1), process.GetVersion())
+	s.Greater(process.GetProcessDefinitionKey(), int64(0))
 }
 
 func (s *integrationTestSuite) TestCreateInstance() {
@@ -103,7 +103,7 @@ func (s *integrationTestSuite) TestCreateInstance() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -112,17 +112,17 @@ func (s *integrationTestSuite) TestCreateInstance() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	workflow := deployment.GetWorkflows()[0]
-	workflowInstance, err := s.client.NewCreateInstanceCommand().BPMNProcessId("deploy_process").Version(workflow.GetVersion()).Send(ctx)
+	process := deployment.GetProcesses()[0]
+	processInstance, err := s.client.NewCreateInstanceCommand().BPMNProcessId("deploy_process").Version(process.GetVersion()).Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
 
 	// then
-	s.EqualValues(workflow.GetVersion(), workflowInstance.GetVersion())
-	s.EqualValues(workflow.GetWorkflowKey(), workflowInstance.GetWorkflowKey())
-	s.EqualValues(workflow.GetBpmnProcessId(), workflowInstance.GetBpmnProcessId())
-	s.Greater(workflowInstance.GetWorkflowInstanceKey(), int64(0))
+	s.EqualValues(process.GetVersion(), processInstance.GetVersion())
+	s.EqualValues(process.GetProcessDefinitionKey(), processInstance.GetProcessDefinitionKey())
+	s.EqualValues(process.GetBpmnProcessId(), processInstance.GetBpmnProcessId())
+	s.Greater(processInstance.GetProcessInstanceKey(), int64(0))
 }
 
 func (s *integrationTestSuite) TestActivateJobs() {
@@ -130,7 +130,7 @@ func (s *integrationTestSuite) TestActivateJobs() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -138,8 +138,8 @@ func (s *integrationTestSuite) TestActivateJobs() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	workflow := deployment.GetWorkflows()[0]
-	_, err = s.client.NewCreateInstanceCommand().WorkflowKey(workflow.GetWorkflowKey()).Send(ctx)
+	process := deployment.GetProcesses()[0]
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -155,8 +155,8 @@ func (s *integrationTestSuite) TestActivateJobs() {
 
 	// then
 	for _, job := range jobs {
-		s.EqualValues(workflow.GetWorkflowKey(), job.GetWorkflowKey())
-		s.EqualValues(workflow.GetBpmnProcessId(), job.GetBpmnProcessId())
+		s.EqualValues(process.GetProcessDefinitionKey(), job.GetProcessDefinitionKey())
+		s.EqualValues(process.GetBpmnProcessId(), job.GetBpmnProcessId())
 		s.EqualValues("service_task", job.GetElementId())
 		s.Greater(job.GetRetries(), int32(0))
 
@@ -179,7 +179,7 @@ func (s *integrationTestSuite) TestFailJob() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	deployment, err := s.client.NewDeployProcessCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -187,8 +187,8 @@ func (s *integrationTestSuite) TestFailJob() {
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	workflow := deployment.GetWorkflows()[0]
-	_, err = s.client.NewCreateInstanceCommand().WorkflowKey(workflow.GetWorkflowKey()).Send(ctx)
+	process := deployment.GetProcesses()[0]
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}

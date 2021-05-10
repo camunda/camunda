@@ -20,10 +20,11 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.storage.journal.JournalReader.Mode;
-import io.zeebe.snapshots.raft.SnapshotChunkReader;
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
+import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,7 @@ public final class RaftMemberContext {
   private long failureTime;
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
+  private IndexedRaftLogEntry currentEntry;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -79,16 +81,24 @@ public final class RaftMemberContext {
 
     switch (member.getType()) {
       case PASSIVE:
-        reader = log.openReader(log.writer().getLastIndex() + 1, Mode.COMMITS);
+        openReaderAtEndOfLog(log, Mode.COMMITS);
         break;
       case PROMOTABLE:
       case ACTIVE:
-        reader = log.openReader(log.writer().getLastIndex() + 1, Mode.ALL);
+        openReaderAtEndOfLog(log, Mode.ALL);
         break;
       default:
         LoggerFactory.getLogger(RaftMemberContext.class)
             .error("ResetState: No case for Member type {}", member.getType());
         break;
+    }
+  }
+
+  private void openReaderAtEndOfLog(final RaftLog log, final Mode all) {
+    reader = log.openReader(all);
+    reader.seekToLast();
+    if (reader.hasNext()) {
+      currentEntry = reader.next();
     }
   }
 
@@ -212,7 +222,6 @@ public final class RaftMemberContext {
 
   @Override
   public String toString() {
-    final RaftLogReader reader = this.reader;
     return toStringHelper(this)
         .add("member", member.memberId())
         .add("term", term)
@@ -221,7 +230,6 @@ public final class RaftMemberContext {
         .add("nextSnapshotIndex", nextSnapshotIndex)
         .add("nextSnapshotChunk", nextSnapshotChunk)
         .add("matchIndex", matchIndex)
-        .add("nextIndex", reader != null ? reader.getNextIndex() : matchIndex + 1)
         .add("heartbeatTime", heartbeatTime)
         .add("appending", inFlightAppendCount)
         .add("appendSucceeded", appendSucceeded)
@@ -302,15 +310,6 @@ public final class RaftMemberContext {
    */
   public void setHeartbeatTime(final long heartbeatTime) {
     this.heartbeatTime = Math.max(this.heartbeatTime, heartbeatTime);
-  }
-
-  /**
-   * Returns the member log reader.
-   *
-   * @return The member log reader.
-   */
-  public RaftLogReader getLogReader() {
-    return reader;
   }
 
   /**
@@ -419,5 +418,31 @@ public final class RaftMemberContext {
 
   public void setSnapshotChunkReader(final SnapshotChunkReader snapshotChunkReader) {
     this.snapshotChunkReader = snapshotChunkReader;
+  }
+
+  public boolean hasNextEntry() {
+    return reader.hasNext();
+  }
+
+  public IndexedRaftLogEntry nextEntry() {
+    currentEntry = reader.next();
+    return currentEntry;
+  }
+
+  public IndexedRaftLogEntry getCurrentEntry() {
+    return currentEntry;
+  }
+
+  public long getCurrentIndex() {
+    return currentEntry != null ? currentEntry.index() : 0;
+  }
+
+  public void reset(final long index) {
+    final var nextIndex = reader.seek(index - 1);
+    if (nextIndex == index - 1) {
+      currentEntry = reader.next();
+    } else {
+      currentEntry = null;
+    }
   }
 }

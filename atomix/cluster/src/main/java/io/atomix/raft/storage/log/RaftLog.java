@@ -16,30 +16,35 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.atomix.raft.storage.log.RaftLogReader.Mode;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
+import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.StorageLevel;
-import io.atomix.storage.journal.DelegatingJournal;
-import io.atomix.storage.journal.JournalReader;
-import io.atomix.storage.journal.SegmentedJournal;
-import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.serializer.Namespace;
-import java.io.File;
-import java.util.function.Supplier;
+import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
+import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalRecord;
+import java.io.Closeable;
+import org.agrona.CloseHelper;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /** Raft log. */
-public class RaftLog extends DelegatingJournal<RaftLogEntry> {
-
-  private final SegmentedJournal<RaftLogEntry> journal;
-  private final RaftLogWriter writer;
+public final class RaftLog implements Closeable {
+  private final Journal journal;
+  private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   private final boolean flushExplicitly;
+
+  private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
-  protected RaftLog(final SegmentedJournal<RaftLogEntry> journal, final boolean flushExplicitly) {
-    super(journal);
+  private final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer(4 * 1024);
+
+  RaftLog(final Journal journal, final boolean flushExplicitly) {
     this.journal = journal;
     this.flushExplicitly = flushExplicitly;
-
-    writer = new RaftLogWriter(journal.writer());
   }
 
   /**
@@ -47,44 +52,32 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
    *
    * @return A new Raft log builder.
    */
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  @Override
-  public RaftLogWriter writer() {
-    return writer;
-  }
-
-  @Override
-  public RaftLogReader openReader(final long index) {
-    return openReader(index, JournalReader.Mode.ALL);
-  }
-
-  @Override
-  public RaftLogReader openReader(final long index, final JournalReader.Mode mode) {
-    return new RaftLogReader(journal.openReader(index, mode));
+  public static RaftLogBuilder builder() {
+    return new RaftLogBuilder();
   }
 
   /**
-   * Returns a boolean indicating whether a segment can be removed from the journal prior to the
-   * given index.
+   * Opens the reader with {@link Mode} ALL.
    *
-   * @param index the index from which to remove segments
-   * @return indicates whether a segment can be removed from the journal
+   * @return the reader
    */
-  public boolean isCompactable(final long index) {
-    return journal.isCompactable(index);
+  public RaftLogReader openReader() {
+    return openReader(Mode.ALL);
   }
 
   /**
-   * Returns the index of the last segment in the log.
+   * Opens the reader with given {@link Mode}.
    *
-   * @param index the compaction index
-   * @return the starting index of the last segment in the log
+   * @param mode the mode of the reader
+   * @return the reader
    */
-  public long getCompactableIndex(final long index) {
-    return journal.getCompactableIndex(index);
+  public RaftLogReader openReader(final Mode mode) {
+    final RaftLogReader reader = new RaftLogReader(this, journal.openReader(), mode);
+    return reader;
+  }
+
+  public boolean isOpen() {
+    return journal.isOpen();
   }
 
   /**
@@ -94,8 +87,8 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
    *
    * @param index The index up to which to compact the journal.
    */
-  public void compact(final long index) {
-    journal.compact(index);
+  public void deleteUntil(final long index) {
+    journal.deleteUntil(index);
   }
 
   /**
@@ -103,7 +96,7 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
    *
    * @return The Raft log commit index.
    */
-  long getCommitIndex() {
+  public long getCommitIndex() {
     return commitIndex;
   }
 
@@ -112,7 +105,7 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
    *
    * @param index The index up to which to commit entries.
    */
-  void setCommitIndex(final long index) {
+  public void setCommitIndex(final long index) {
     commitIndex = index;
   }
 
@@ -120,168 +113,111 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
     return flushExplicitly;
   }
 
-  /** Raft log builder. */
-  public static class Builder implements io.atomix.utils.Builder<RaftLog> {
+  public long getFirstIndex() {
+    return journal.getFirstIndex();
+  }
 
-    private final SegmentedJournal.Builder<RaftLogEntry> journalBuilder =
-        SegmentedJournal.builder();
-    private boolean flushExplicitly = true;
+  public long getLastIndex() {
+    return journal.getLastIndex();
+  }
 
-    protected Builder() {}
-
-    /**
-     * Sets the storage name.
-     *
-     * @param name The storage name.
-     * @return The storage builder.
-     */
-    public Builder withName(final String name) {
-      journalBuilder.withName(name);
-      return this;
+  public IndexedRaftLogEntry getLastEntry() {
+    if (lastAppendedEntry == null) {
+      readLastEntry();
     }
 
-    /**
-     * Sets the log storage level, returning the builder for method chaining.
-     *
-     * <p>The storage level indicates how individual entries should be persisted in the journal.
-     *
-     * @param storageLevel The log storage level.
-     * @return The storage builder.
-     */
-    public Builder withStorageLevel(final StorageLevel storageLevel) {
-      journalBuilder.withStorageLevel(storageLevel);
-      return this;
+    return lastAppendedEntry;
+  }
+
+  private void readLastEntry() {
+    try (final var reader = openReader()) {
+      reader.seekToLast();
+      if (reader.hasNext()) {
+        lastAppendedEntry = reader.next();
+      }
+    }
+  }
+
+  public boolean isEmpty() {
+    return journal.isEmpty();
+  }
+
+  public IndexedRaftLogEntry append(final RaftLogEntry entry) {
+    final JournalRecord journalRecord;
+
+    if (entry.isApplicationEntry()) {
+      final ApplicationEntry asqnEntry = entry.getApplicationEntry();
+      final int serializedLength =
+          serializer.writeApplicationEntry(entry.term(), asqnEntry, writeBuffer, 0);
+      journalRecord =
+          journal.append(
+              asqnEntry.lowestPosition(), new UnsafeBuffer(writeBuffer, 0, serializedLength));
+    } else if (entry.isInitialEntry()) {
+      final InitialEntry initialEntry = entry.getInitialEntry();
+      final int serializedLength =
+          serializer.writeInitialEntry(entry.term(), initialEntry, writeBuffer, 0);
+      journalRecord = journal.append(new UnsafeBuffer(writeBuffer, 0, serializedLength));
+    } else if (entry.isConfigurationEntry()) {
+      final ConfigurationEntry configurationEntry = entry.getConfigurationEntry();
+      final int serializedLength =
+          serializer.writeConfigurationEntry(entry.term(), configurationEntry, writeBuffer, 0);
+      journalRecord = journal.append(new UnsafeBuffer(writeBuffer, 0, serializedLength));
+    } else {
+      throw new IllegalArgumentException("Unexpected entry type " + entry);
     }
 
-    /**
-     * Sets the log directory, returning the builder for method chaining.
-     *
-     * <p>The log will write segment files into the provided directory.
-     *
-     * @param directory The log directory.
-     * @return The storage builder.
-     * @throws NullPointerException If the {@code directory} is {@code null}
-     */
-    public Builder withDirectory(final String directory) {
-      journalBuilder.withDirectory(directory);
-      return this;
-    }
+    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
+    return lastAppendedEntry;
+  }
 
-    /**
-     * Sets the log directory, returning the builder for method chaining.
-     *
-     * <p>The log will write segment files into the provided directory.
-     *
-     * @param directory The log directory.
-     * @return The storage builder.
-     * @throws NullPointerException If the {@code directory} is {@code null}
-     */
-    public Builder withDirectory(final File directory) {
-      journalBuilder.withDirectory(directory);
-      return this;
-    }
+  public IndexedRaftLogEntry append(final PersistedRaftRecord entry) {
+    journal.append(entry);
 
-    /**
-     * Sets the log serialization namespace, returning the builder for method chaining.
-     *
-     * @param namespace The journal namespace.
-     * @return The journal builder.
-     */
-    public Builder withNamespace(final Namespace namespace) {
-      journalBuilder.withNamespace(namespace);
-      return this;
-    }
+    final RaftLogEntry raftEntry = serializer.readRaftLogEntry(entry.data());
+    lastAppendedEntry = new IndexedRaftLogEntryImpl(entry.term(), raftEntry.entry(), entry);
+    return lastAppendedEntry;
+  }
 
-    /**
-     * Sets the maximum segment size in bytes, returning the builder for method chaining.
-     *
-     * <p>The maximum segment size dictates when logs should roll over to new segments. As entries
-     * are written to a segment of the log, once the size of the segment surpasses the configured
-     * maximum segment size, the log will create a new segment and append new entries to that
-     * segment.
-     *
-     * <p>By default, the maximum segment size is {@code 1024 * 1024 * 32}.
-     *
-     * @param maxSegmentSize The maximum segment size in bytes.
-     * @return The storage builder.
-     * @throws IllegalArgumentException If the {@code maxSegmentSize} is not positive
-     */
-    public Builder withMaxSegmentSize(final int maxSegmentSize) {
-      journalBuilder.withMaxSegmentSize(maxSegmentSize);
-      return this;
-    }
+  public void reset(final long index) {
+    journal.reset(index);
+    lastAppendedEntry = null;
+  }
 
-    /**
-     * Sets the maximum entry size in bytes, returning the builder for method chaining.
-     *
-     * @param maxEntrySize the maximum entry size in bytes
-     * @return the storage builder
-     * @throws IllegalArgumentException if the {@code maxEntrySize} is not positive
-     */
-    public Builder withMaxEntrySize(final int maxEntrySize) {
-      journalBuilder.withMaxEntrySize(maxEntrySize);
-      return this;
+  public void deleteAfter(final long index) {
+    if (index < commitIndex) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to delete index after %d, but it is lower than the commit index %d. Deleting committed entries can lead to inconsistencies and is prohibited.",
+              index, commitIndex));
     }
+    journal.deleteAfter(index);
+    lastAppendedEntry = null;
+  }
 
-    /**
-     * Sets the minimum free disk space to leave when allocating a new segment
-     *
-     * @param freeDiskSpace free disk space in bytes
-     * @return the storage builder
-     * @throws IllegalArgumentException if the {@code freeDiskSpace} is not positive
-     */
-    public Builder withFreeDiskSpace(final long freeDiskSpace) {
-      journalBuilder.withFreeDiskSpace(freeDiskSpace);
-      return this;
+  public void flush() {
+    if (flushExplicitly) {
+      journal.flush();
     }
+  }
 
-    /**
-     * Sets the maximum number of allows entries per segment, returning the builder for method
-     * chaining.
-     *
-     * <p>The maximum entry count dictates when logs should roll over to new segments. As entries
-     * are written to a segment of the log, if the entry count in that segment meets the configured
-     * maximum entry count, the log will create a new segment and append new entries to that
-     * segment.
-     *
-     * <p>By default, the maximum entries per segment is {@code 1024 * 1024}.
-     *
-     * @param maxEntriesPerSegment The maximum number of entries allowed per segment.
-     * @return The storage builder.
-     * @throws IllegalArgumentException If the {@code maxEntriesPerSegment} not greater than the
-     *     default max entries per segment
-     * @deprecated since 3.0.2
-     */
-    @Deprecated
-    public Builder withMaxEntriesPerSegment(final int maxEntriesPerSegment) {
-      journalBuilder.withMaxEntriesPerSegment(maxEntriesPerSegment);
-      return this;
-    }
+  @Override
+  public void close() {
+    CloseHelper.close(journal);
+  }
 
-    /**
-     * Sets whether or not to flush buffered I/O explicitly at various points, returning the builder
-     * for chaining.
-     *
-     * <p>Enabling this ensures that entries are flushed on followers before acknowledging a write,
-     * and are flushed on the leader before marking an entry as committed. This guarantees the
-     * correctness of various Raft properties.
-     *
-     * @param flushExplicitly whether to flush explicitly or not
-     * @return this builder for chaining
-     */
-    public Builder withFlushExplicitly(final boolean flushExplicitly) {
-      this.flushExplicitly = flushExplicitly;
-      return this;
-    }
-
-    public Builder withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
-      journalBuilder.withJournalIndexFactory(journalIndexFactory);
-      return this;
-    }
-
-    @Override
-    public RaftLog build() {
-      return new RaftLog(journalBuilder.build(), flushExplicitly);
-    }
+  @Override
+  public String toString() {
+    return "RaftLog{"
+        + "journal="
+        + journal
+        + ", serializer="
+        + serializer
+        + ", flushExplicitly="
+        + flushExplicitly
+        + ", lastAppendedEntry="
+        + lastAppendedEntry
+        + ", commitIndex="
+        + commitIndex
+        + '}';
   }
 }

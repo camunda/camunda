@@ -34,7 +34,6 @@ RUN wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/dow
 FROM ${APP_ENV} as app
 
 ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_LOG_LEVEL=info \
     ZEEBE_BROKER_GATEWAY_NETWORK_HOST=0.0.0.0 \
     ZEEBE_STANDALONE_GATEWAY=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"

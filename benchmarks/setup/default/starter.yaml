@@ -16,13 +16,13 @@ spec:
     spec:
       containers:
       - name: starter
-        image: gcr.io/zeebe-io/starter:zeebe
+        image: gcr.io/zeebe-io/starter:SNAPSHOT
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
             value: >-
               -Dapp.brokerUrl=default-zeebe-gateway:26500
-              -Dapp.starter.rate=300
+              -Dapp.starter.rate=200
               -Dapp.starter.durationLimit=0
               -Dzeebe.client.requestTimeout=62000
               -XX:+HeapDumpOnOutOfMemoryError

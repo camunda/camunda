@@ -124,17 +124,7 @@
 
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
-      # logSegmentSize: 512MB
-
-      # Configure whether data log segment file channels should be memory mapped.
-      # WARNING: This setting has been deprecated. In future versions, log segment file channels will always be memory mapped.
-      #
-      # Zeebe reads the data log segment files using file channels.
-      # Memory mapping these should generally allow for faster processing,
-      # resulting in reduced cycle times (i.e. total duration of a single process instance).
-      #
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_USEMMAP.
-      # useMmap: true
+      # logSegmentSize: 128MB
 
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
@@ -164,18 +154,6 @@
       # Sets the interval at which the disk usage is monitored
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEMONITORINGINTERVAL
       # diskUsageMonitoringInterval = 1s
-
-      # rocksdb:
-        # Specify custom column family options overwriting Zeebe's own defaults.
-        # WARNING: This setting requires in-depth knowledge of Zeebe's embedded database: RocksDB.
-        # The expected property key names and values are derived from RocksDB's C implementation,
-        # and are not limited to the provided examples below. Please look in RocksDB's SCM repo
-        # for the files: `cf_options.h` and `options_helper.cc`. This setting can also be overridden
-        # using the environment variable ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_{PROPERTY_KEY_NAME}
-        # For example, `write_buffer_size` can be set using `ZEEBE_BROKER_DATA_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE`.
-        # columnFamilyOptions:
-          # compaction_pri: "kOldestSmallestSeqFirst"
-          # write_buffer_size: 67108864
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
@@ -392,7 +370,7 @@
       #   two exporters that point to the same JAR, with the same class or a different one, and use args
       #   to parametrize its instantiation.
       # className:
-      #   entry point of the exporter, a class which *must* extend the io.zeebe.exporter.Exporter
+      #   entry point of the exporter, a class which *must* extend the io.camunda.zeebe.exporter.Exporter
       #   interface.
       #
       # A nested table as "args:" will allow you to inject arbitrary arguments into your
@@ -408,7 +386,7 @@
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_DEBUGLOG_..."
       #
       # debuglog:
-        # className: io.zeebe.broker.exporter.debug.DebugLogExporter
+        # className: io.camunda.zeebe.broker.exporter.debug.DebugLogExporter
         # args:
         #   logLevel: debug
         #   prettyPrint: false
@@ -420,7 +398,7 @@
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_DEBUGHTTP_..."
       #
       # debugHttp:
-        # className: io.zeebe.broker.exporter.debug.DebugHttpExporter
+        # className: io.camunda.zeebe.broker.exporter.debug.DebugHttpExporter
         # args:
         #   port = 8000
         #   limit = 1024
@@ -431,7 +409,7 @@
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
       #
       # elasticsearch:
-        # className: io.zeebe.exporter.ElasticsearchExporter
+        # className: io.camunda.zeebe.exporter.ElasticsearchExporter
         #
         # args:
         #   url: http://localhost:9200
@@ -453,7 +431,8 @@
         #     event: true
         #     rejection: false
         #
-        #     deployment: true
+        #     deployment: false
+        #     process: true
         #     error: true
         #     incident: true
         #     job: true
@@ -462,8 +441,73 @@
         #     messageSubscription: false
         #     variable: true
         #     variableDocument: true
-        #     workflowInstance: true
-        #     workflowInstanceCreation: false
-        #     workflowInstanceSubscription: false
-        #
-        #     ignoreVariablesAbove: 32677
+        #     processInstance: true
+        #     processInstanceCreation: false
+        #     processMessageSubscription: false
+
+
+    # experimental
+      # Be aware that all configuration's which are part of the experimental section
+      # are subject to change and can be dropped at any time.
+      # It might be that also some of them are actually dangerous so be aware when you change one of these!
+
+      # Sets the maximum of appends which are send per follower.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER
+      # maxAppendsPerFollower = 2
+
+      # Sets the maximum batch size, which is send per append request to a follower.
+      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE
+      # maxAppendBatchSize = 32KB;
+
+      # Allows to configure RocksDB properties, which is used for state management.
+      # rocksdb:
+        # Specify custom column family options overwriting Zeebe's own defaults.
+        # WARNING: This setting requires in-depth knowledge of Zeebe's embedded database: RocksDB.
+        # The expected property key names and values are derived from RocksDB's C implementation,
+        # and are not limited to the provided examples below. Please look in RocksDB's SCM repo
+        # for the files: `cf_options.h` and `options_helper.cc`. This setting can also be overridden
+        # using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_COLUMNFAMILYOPTIONS_{PROPERTY_KEY_NAME}
+        # For example, `write_buffer_size` can be set using `ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_COLUMNFAMILYOPTIONS_WRITE_BUFFER_SIZE`.
+        # columnFamilyOptions:
+          # compaction_pri: "kOldestSmallestSeqFirst"
+          # write_buffer_size: 67108864
+
+        # Enables RocksDB statistics, which will be written to the RocksDB log file.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLESTATISTICS
+        # enableStatistics: false
+
+        # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
+        # an RocksDB instance is used per partition.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        # memoryLimit: 512MB
+
+        # Configures how many files are kept open by RocksDB, per default it is unlimited (-1).
+        # This is a performance optimization: if you set a value greater than zero, it will keep track and cap the number of open
+        # files in the TableCache. On accessing the files it needs to look them up in the cache.
+        # You should configure this property if the maximum open files are limited on your system, or if you have thousands of files in your RocksDB state as there is a memory overhead to keeping all of them open, and setting maxOpenFiles will bound that.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAXOPENFILES
+        # maxOpenFiles: -1
+
+        # Configures the maximum number of simultaneous write buffers/memtables RocksDB will have in memory. Normally about 2/3s of the memoryLimit
+        # is used by the write buffers, and this is shared equally by each write buffers. This means the higher maxWriteBufferNumber is, the less
+        # memory is available for each. This means you will flush less data at once, but may flush more often.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MAXWRITEBUFFERNUMBER
+        # maxWriteBufferNumber: 6
+
+        # Configures how many write buffers should be full before they are merged and flushed to disk. Having a higher number here means you may
+        # flush less often, but will flush more data at once. Have a lower one means flushing more often, but flushing less data at once.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MINWRITEBUFFERNUMBERTOMERGE
+        # minWriteBufferNumberToMerge: 3
+
+        # Configures a rate limit for write I/O of RocksDB. Setting any value less than or equal to 0 will disable this, which is the default setting.
+        # Setting a rate limit on the write I/O can help achieve more stable performance by avoiding write spikes consuming all available IOPS, leading to
+        # more predictable read rates.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_IORATEBYTESPERSECOND
+        # ioRateBytesPerSecond: 0
+
+        # Configures if the RocksDB write-ahead-log is used or not. By default, every write in RocksDB goes to the active write buffer and the WAL; this
+        # helps recover a RocksDB instance should it crash before the write buffer is flushed. Zeebe however only recovers from specific point-in-time snapshot,
+        # and never from a previously active RocksDB instance, which makes it a good candidate to disable the WAL. It's currently disabled by default as
+        # performance is a bit less predictable when disabling the WAL.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_DISABLEWAL
+        # disableWal: false

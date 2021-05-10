@@ -1,7 +1,7 @@
 #!/bin/bash -xeu
 
 export GITHUB_TOKEN=${GITHUB_TOKEN_PSW}
-export GITHUB_ORG=zeebe-io
+export GITHUB_ORG=camunda-cloud
 export GITHUB_REPO=zeebe
 
 curl -sL https://github.com/meterup/github-release/releases/download/v0.7.5/linux-amd64-github-release.bz2 | bzip2 -fd - > github-release
@@ -27,8 +27,8 @@ function upload {
   popd
 }
 
-upload dist/target zeebe-distribution-${RELEASE_VERSION}.tar.gz
-upload dist/target zeebe-distribution-${RELEASE_VERSION}.zip
+upload dist/target camunda-cloud-zeebe-${RELEASE_VERSION}.tar.gz
+upload dist/target camunda-cloud-zeebe-${RELEASE_VERSION}.zip
 upload clients/go/cmd/zbctl/dist zbctl
 upload clients/go/cmd/zbctl/dist zbctl.exe
 upload clients/go/cmd/zbctl/dist zbctl.darwin

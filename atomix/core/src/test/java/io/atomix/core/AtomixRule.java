@@ -18,7 +18,8 @@ package io.atomix.core;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
-import io.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -101,7 +102,7 @@ public final class AtomixRule extends ExternalResource {
         memberId,
         newId -> {
           final var nextInetAddress = SocketUtil.getNextAddress();
-          final var addressString = io.zeebe.util.SocketUtil.toHostAndPortString(nextInetAddress);
+          final var addressString = NetUtil.toSocketAddressString(nextInetAddress);
           return Address.from(addressString);
         });
   }

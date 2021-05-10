@@ -15,7 +15,7 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -29,7 +29,7 @@ var (
 
 var createInstanceCmd = &cobra.Command{
 	Use:     "instance <processId>",
-	Short:   "Creates new workflow instance defined by the process ID",
+	Short:   "Creates new process instance defined by the process ID",
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -79,11 +79,11 @@ func init() {
 
 	createInstanceCmd.
 		Flags().
-		Int32Var(&createInstanceVersionFlag, "version", commands.LatestVersion, "Specify version of workflow which should be executed.")
+		Int32Var(&createInstanceVersionFlag, "version", commands.LatestVersion, "Specify version of process which should be executed.")
 
 	createInstanceCmd.
 		Flags().
-		StringSliceVar(&createInstanceWithResultFlag, "withResult", nil, "Specify to await result of workflow, optional a list of variable names can be provided to limit the returned variables")
+		StringSliceVar(&createInstanceWithResultFlag, "withResult", nil, "Specify to await result of process, optional a list of variable names can be provided to limit the returned variables")
 
 	// hack to use --withResult without values
 	createInstanceCmd.Flag("withResult").NoOptDefVal = " "

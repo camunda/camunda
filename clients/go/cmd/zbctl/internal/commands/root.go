@@ -15,9 +15,10 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"os"
 	"strconv"
 	"strings"
@@ -48,8 +49,8 @@ var rootCmd = &cobra.Command{
 	Short: "zeebe command line interface",
 	Long: `zbctl is command line interface designed to create and read resources inside zeebe broker.
 It is designed for regular maintenance jobs such as:
-	* deploying workflows,
-	* creating jobs and workflow instances
+	* deploying processes,
+	* creating jobs and process instances
 	* activating, completing or failing jobs
 	* update variables and retries
 	* view cluster status`,
@@ -201,10 +202,19 @@ func keyArg(key *int64) cobra.PositionalArgs {
 	}
 }
 
-func printJSON(value interface{}) error {
-	valueJSON, err := json.MarshalIndent(value, "", "  ")
+func printJSON(value proto.Message) error {
+	json, err := toJSON(value)
 	if err == nil {
-		fmt.Println(string(valueJSON))
+		fmt.Println(json)
 	}
 	return err
+}
+
+func toJSON(value proto.Message) (string, error) {
+	m := protojson.MarshalOptions{EmitUnpopulated: true, Indent: "  "}
+	valueJSON, err := m.Marshal(value)
+	if err == nil {
+		return string(valueJSON), nil
+	}
+	return "", err
 }

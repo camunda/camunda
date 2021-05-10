@@ -16,9 +16,29 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/pb"
 	"github.com/spf13/cobra"
-	"log"
 )
+
+type SetVariablesResponseWrapper struct {
+	resp *pb.SetVariablesResponse
+}
+
+func (s SetVariablesResponseWrapper) human() (string, error) {
+	return fmt.Sprint(
+		"Set the variables of element instance with key '",
+		setVariablesKey,
+		"' to '",
+		setVariablesVariablesFlag,
+		"' with command '",
+		s.resp.GetKey(), "'",
+	), nil
+}
+
+func (s SetVariablesResponseWrapper) json() (string, error) {
+	return toJSON(s.resp)
+}
 
 var (
 	setVariablesKey           int64
@@ -42,15 +62,16 @@ var setVariablesCmd = &cobra.Command{
 		defer cancel()
 
 		response, err := request.Send(ctx)
-		if err == nil {
-			log.Println("Set the variables of element instance with key", setVariablesKey, "to", setVariablesVariablesFlag, "with command", response.GetKey())
+		if err != nil {
+			return err
 		}
-
+		err = printOutput(SetVariablesResponseWrapper{response})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(setVariablesCmd)
 	setCmd.AddCommand(setVariablesCmd)
 
 	setVariablesCmd.Flags().StringVar(&setVariablesVariablesFlag, "variables", "{}", "Specify the variables as JSON object string")
