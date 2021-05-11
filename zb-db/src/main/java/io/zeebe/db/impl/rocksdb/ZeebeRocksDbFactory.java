@@ -93,7 +93,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
               dbDirectory.getAbsolutePath(),
               columnFamilyDescriptors,
               closeables,
-              columnFamilyTypeClass);
+              columnFamilyTypeClass,
+              rocksDbConfiguration);
 
     } catch (final RocksDBException e) {
       throw new RuntimeException("Unexpected error occurred trying to open the database", e);
