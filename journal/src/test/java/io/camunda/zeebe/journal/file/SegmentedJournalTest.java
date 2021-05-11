@@ -16,11 +16,14 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -359,6 +362,18 @@ class SegmentedJournalTest {
         .isEqualTo(indexBeforeClose.lookup(firstIndexedPosition).position());
     assertThat(indexAfterRestart.lookup(secondIndexedPosition).position())
         .isEqualTo(indexBeforeClose.lookup(secondIndexedPosition).position());
+  }
+
+  @Test
+  void shouldDetectPartiallyWrittenDescriptor() throws Exception {
+    // given
+    final File data = directory.resolve("data").toFile();
+    assertThat(data.mkdirs()).isTrue();
+    final File emptyLog = new File(data, "journal-1.log");
+    assertThat(emptyLog.createNewFile()).isTrue();
+
+    // when/then
+    assertThatThrownBy(() -> openJournal(10)).isInstanceOf(CorruptedLogException.class);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {

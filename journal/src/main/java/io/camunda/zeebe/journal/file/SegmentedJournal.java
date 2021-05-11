@@ -24,6 +24,7 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -502,15 +503,7 @@ public class SegmentedJournal implements Journal {
       // If the file looks like a segment file, attempt to load the segment.
       if (JournalSegmentFile.isSegmentFile(name, file)) {
         final JournalSegmentFile segmentFile = new JournalSegmentFile(file);
-        final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
-        try (final FileChannel channel = openChannel(file)) {
-          channel.read(buffer);
-          buffer.flip();
-        } catch (final IOException e) {
-          throw new JournalException(e);
-        }
-
-        final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);
+        final JournalSegmentDescriptor descriptor = readDescriptor(file);
 
         // Load the segment.
         final JournalSegment segment = loadSegment(descriptor.id());
@@ -544,6 +537,33 @@ public class SegmentedJournal implements Journal {
     }
 
     return segments.values();
+  }
+
+  private JournalSegmentDescriptor readDescriptor(final File file) {
+    final int descriptorLength = JournalSegmentDescriptor.getEncodingLength();
+    if (file.length() < descriptorLength) {
+      throw new CorruptedLogException(
+          String.format(
+              "Log segment is smaller than a segment descriptor (%d < %d).",
+              file.length(), descriptorLength));
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(descriptorLength);
+    try (final FileChannel channel = openChannel(file)) {
+      final int readBytes = channel.read(buffer);
+
+      if (readBytes != -1 && readBytes < descriptorLength) {
+        throw new JournalException(
+            String.format(
+                "Expected to read segment descriptor (%d bytes) but only read %d bytes.",
+                descriptorLength, readBytes));
+      }
+      buffer.flip();
+    } catch (final IOException e) {
+      throw new JournalException(e);
+    }
+
+    return new JournalSegmentDescriptor(buffer);
   }
 
   public void closeReader(final SegmentedJournalReader segmentedJournalReader) {
