@@ -14,6 +14,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Pro
 
   public static final String ID = "id";
   public static final String TYPE = "type";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String INCIDENT_KEY = "incidentKey";
   public static final String SCOPE_KEY = "scopeKey";
   public static final String VARIABLE_NAME = "variableName";

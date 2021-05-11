@@ -7,6 +7,7 @@ package io.camunda.operate.webapp.rest.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
@@ -14,6 +15,8 @@ import io.camunda.operate.entities.OperationType;
 public class OperationDto {
 
   private String id;
+
+  private String batchOperationId;
 
   private OperationType type;
 
@@ -27,6 +30,15 @@ public class OperationDto {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public String getBatchOperationId() {
+    return batchOperationId;
+  }
+
+  public OperationDto setBatchOperationId(final String batchOperationId) {
+    this.batchOperationId = batchOperationId;
+    return this;
   }
 
   public OperationType getType() {
@@ -62,6 +74,7 @@ public class OperationDto {
     operation.setType(operationEntity.getType());
     operation.setState(operationEntity.getState());
     operation.setErrorMessage(operationEntity.getErrorMessage());
+    operation.setBatchOperationId(operationEntity.getBatchOperationId());
     return operation;
   }
 
@@ -78,29 +91,23 @@ public class OperationDto {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-
-    OperationDto that = (OperationDto) o;
-
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
-    if (type != that.type)
-      return false;
-    if (state != that.state)
-      return false;
-    return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
+    }
+    final OperationDto that = (OperationDto) o;
+    return Objects.equals(id, that.id) &&
+        Objects.equals(batchOperationId, that.batchOperationId) &&
+        type == that.type &&
+        state == that.state &&
+        Objects.equals(errorMessage, that.errorMessage);
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (type != null ? type.hashCode() : 0);
-    result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
-    return result;
+    return Objects.hash(id, batchOperationId, type, state, errorMessage);
   }
 }

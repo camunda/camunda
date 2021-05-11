@@ -5,7 +5,9 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
+import static io.camunda.operate.schema.templates.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.schema.templates.VariableTemplate.NAME;
+import static io.camunda.operate.schema.templates.VariableTemplate.SCOPE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -164,9 +166,8 @@ public class VariableReader extends AbstractReader {
             return entity;
           });
 
-      //TODO will be fixed separately
       final Map<String, List<OperationEntity>> operations =
-          operationReader.getOperationsPerVariableName(Long.valueOf(processInstanceId), scopeKey);
+          operationReader.getUpdateOperationsPerVariableName(Long.valueOf(processInstanceId), scopeKey);
       final List<VariableDto> variables = VariableDto.createFrom(variableEntities, operations);
 
       if (variables.size() > 0) {
@@ -188,7 +189,6 @@ public class VariableReader extends AbstractReader {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
@@ -221,6 +221,40 @@ public class VariableReader extends AbstractReader {
     }
   }
 
+  public VariableDto getVariableByName(
+      final String processInstanceId, final String scopeId, final String variableName) {
+
+    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
+    final TermQueryBuilder scopeIdQ = termQuery(SCOPE_KEY, scopeId);
+    final TermQueryBuilder varNameQ = termQuery(NAME, variableName);
+
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        constantScoreQuery(joinWithAnd(processInstanceIdQ, scopeIdQ, varNameQ))));
+
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value > 0) {
+        final VariableEntity variableEntity = ElasticsearchUtil
+            .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(),
+                objectMapper, VariableEntity.class);
+        return VariableDto.createFrom(variableEntity, null);
+      } else {
+        return null;
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining variable for processInstanceId: %s, "
+                  + "scopeId: %s, name: %s, error: %s",
+              processInstanceId, scopeId, variableName, e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
   @Deprecated
   public List<VariableDto> getVariablesOld(Long processInstanceKey, Long scopeKey) {
     final TermQueryBuilder processInstanceKeyQuery = termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
@@ -234,11 +268,10 @@ public class VariableReader extends AbstractReader {
             .sort(VariableTemplate.NAME, SortOrder.ASC));
     try {
       final List<VariableEntity> variableEntities = scroll(searchRequest, VariableEntity.class);
-      final Map<String, List<OperationEntity>> operations = operationReader.getOperationsPerVariableName(processInstanceKey, scopeKey);
+      final Map<String, List<OperationEntity>> operations = operationReader.getUpdateOperationsPerVariableName(processInstanceKey, scopeKey);
       return VariableDto.createFrom(variableEntities, operations);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
-      logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }

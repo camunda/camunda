@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import java.util.Set;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.camunda.zeebe.client.ZeebeClient;
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.entities.OperationType.RESOLVE_INCIDENT;
 
 /**
  * Resolve the incident.
@@ -53,10 +55,9 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   }
 
   @Override
-  public OperationType getType() {
-    return OperationType.RESOLVE_INCIDENT;
+  public Set<OperationType> getTypes() {
+    return Set.of(RESOLVE_INCIDENT);
   }
-
   public void setZeebeClient(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
   }

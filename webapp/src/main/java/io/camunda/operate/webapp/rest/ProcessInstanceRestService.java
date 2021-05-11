@@ -5,6 +5,8 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 import io.micrometer.core.annotation.Timed;
@@ -18,13 +20,13 @@ import java.util.Map;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.es.reader.OperationReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import io.camunda.operate.webapp.es.reader.VariableReader;
@@ -44,6 +46,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -87,6 +90,9 @@ public class ProcessInstanceRestService {
   @Autowired
   private SequenceFlowReader sequenceFlowReader;
 
+  @Autowired
+  private OperationReader operationReader;
+
   @ApiOperation("Query process instances by different parameters")
   @PostMapping
   @Timed(value = Metrics.TIMER_NAME_QUERY, extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_PROCESSINSTANCES}, description = "How long does it take to retrieve the processinstances by query.")
@@ -105,7 +111,7 @@ public class ProcessInstanceRestService {
   @PostMapping("/{id}/operation")
   public BatchOperationEntity operation(@PathVariable String id,
       @RequestBody CreateOperationRequestDto operationRequest) {
-    validateOperationRequest(operationRequest);
+    validateOperationRequest(operationRequest, id);
     return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
   }
 
@@ -116,19 +122,41 @@ public class ProcessInstanceRestService {
     if (batchOperationRequest.getOperationType() == null) {
       throw new InvalidRequestException("Operation type must be defined.");
     }
-    if (batchOperationRequest.getOperationType().equals(OperationType.UPDATE_VARIABLE)) {
-      throw new InvalidRequestException("For variable update use \"Create operation for one process instance\" endpoint.");
+    if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(batchOperationRequest.getOperationType())) {
+      throw new InvalidRequestException(
+          "For variable update use \"Create operation for one process instance\" endpoint.");
     }
   }
 
-  private void validateOperationRequest(CreateOperationRequestDto operationRequest) {
+  private void validateOperationRequest(CreateOperationRequestDto operationRequest,
+      String processInstanceId) {
     if (operationRequest.getOperationType() == null) {
       throw new InvalidRequestException("Operation type must be defined.");
     }
-    if (operationRequest.getOperationType().equals(OperationType.UPDATE_VARIABLE)
-      && (operationRequest.getVariableScopeId() == null || operationRequest.getVariableName() == null || operationRequest.getVariableName().isEmpty()
-        || operationRequest.getVariableValue() == null)) {
-        throw new InvalidRequestException("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationRequest.getOperationType())
+        && (operationRequest.getVariableScopeId() == null
+            || operationRequest.getVariableName() == null
+            || operationRequest.getVariableName().isEmpty()
+            || operationRequest.getVariableValue() == null)) {
+      throw new InvalidRequestException(
+          "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    }
+    if (operationRequest.getOperationType().equals(ADD_VARIABLE)
+        && (variableReader.getVariableByName(
+                processInstanceId,
+                operationRequest.getVariableScopeId(),
+                operationRequest.getVariableName())
+            != null
+        || !operationReader
+            .getOperations(
+                ADD_VARIABLE,
+                processInstanceId,
+                operationRequest.getVariableScopeId(),
+                operationRequest.getVariableName())
+            .isEmpty())) {
+      throw new InvalidRequestException(
+          String.format(
+              "Variable with the name \"%s\" already exists.", operationRequest.getVariableName()));
     }
   }
 

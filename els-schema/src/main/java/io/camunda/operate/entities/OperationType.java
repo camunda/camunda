@@ -9,6 +9,7 @@ public enum OperationType {
 
   RESOLVE_INCIDENT,
   CANCEL_PROCESS_INSTANCE,
+  ADD_VARIABLE,
   UPDATE_VARIABLE
 
 }

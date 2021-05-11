@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 
@@ -14,6 +15,6 @@ public interface OperationHandler {
 
   void handleWithException(OperationEntity operation) throws Exception;
 
-  OperationType getType();
+  Set<OperationType> getTypes();
 
 }

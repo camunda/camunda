@@ -11,6 +11,7 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -25,6 +26,7 @@ import org.apache.http.HttpStatus;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -72,6 +74,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   protected ProcessCache processCache;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   /// Predicate checks
   @Autowired
@@ -240,12 +245,34 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     postOperationWithOKResponse(processInstanceKey, op);
   }
 
+  protected String postAddVariableOperation(Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
+    op.setVariableName(newVarName);
+    op.setVariableValue(newVarValue);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final MvcResult mvcResult = postOperationWithOKResponse(processInstanceKey, op);
+    final BatchOperationDto batchOperationDto = objectMapper
+        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
+    return batchOperationDto.getId();
+  }
+
   protected void postUpdateVariableOperation(Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
     postOperationWithOKResponse(processInstanceKey, op);
+  }
+
+  protected String postAddVariableOperation(Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
+    op.setVariableName(newVarName);
+    op.setVariableValue(newVarValue);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
+    final MvcResult mvcResult = postOperationWithOKResponse(processInstanceKey, op);
+    final BatchOperationDto batchOperationDto = objectMapper
+        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
+    return batchOperationDto.getId();
   }
 
   protected void executeOneBatch() {

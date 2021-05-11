@@ -14,6 +14,7 @@ import io.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
+import io.camunda.operate.webapp.es.reader.OperationReader;
 import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
@@ -55,6 +56,9 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
   private BatchOperationWriter batchOperationWriter;
+
+  @MockBean
+  private OperationReader operationReader;
 
   @Test
   public void testQueryWithWrongSortBy() throws Exception {

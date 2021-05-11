@@ -6,14 +6,18 @@
 package io.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.net.HttpURLConnection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -27,22 +31,23 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.OperationReader;
-import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
@@ -82,6 +87,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ListViewReader listViewReader;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   private Long initialBatchOperationMaxSize;
 
@@ -372,39 +380,48 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
 
-    //TC1 we call UPDATE_VARIABLE operation on instance
+    //TC1 when we call UPDATE_VARIABLE operation on instance
     final String newVar1Name = "newVar1";
     final String newVar1Value = "\"newValue1\"";
-    postUpdateVariableOperation(processInstanceKey, newVar1Name, newVar1Value);
+    final String batchOperationId1 = postAddVariableOperation(processInstanceKey, newVar1Name, newVar1Value);
     final String newVar2Name = "newVar2";
     final String newVar2Value = "\"newValue2\"";
-    postUpdateVariableOperation(processInstanceKey, newVar2Name, newVar2Value);
+    final String batchOperationId2 = postAddVariableOperation(processInstanceKey, newVar2Name, newVar2Value);
     elasticsearchTestRule.refreshOperateESIndices();
 
-    //then new variables are returned
+    //then
+    //new variables are not yet returned (OPE-1284)
     List<VariableDto> variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(3);
-    assertVariable(variables, newVar1Name, newVar1Value, true);
-    assertVariable(variables, newVar2Name, newVar2Value, true);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, "a", "\"b\"", false);
+    //operations are in SCHEDULED state
+    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SCHEDULED);
+    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SCHEDULED);
 
     //TC2 execute the operations
     executeOneBatch();
 
-    //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
-    //then new variables are returned
+    //then - before we process messages from Zeebe
+    //variables are still not returned
     variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(3);
-    assertVariable(variables, newVar1Name, newVar1Value, true);
-    assertVariable(variables, newVar2Name, newVar2Value, true);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, "a", "\"b\"", false);
+    //operations are in SENT state
+    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SENT);
+    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SENT);
 
     //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
+    //then
+    //all three variables are returned
     variables = getVariables(processInstanceKey, processInstanceKey);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
     assertVariable(variables, newVar2Name, newVar2Value, false);
+    //operations are in COMPLETED state
+    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.COMPLETED);
   }
 
   @Test
@@ -416,37 +433,61 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //TC1 we call UPDATE_VARIABLE operation on instance
     final String newVar1Name = "newVar1";
     final String newVar1Value = "\"newValue1\"";
-    postUpdateVariableOperation(processInstanceKey, taskAId, newVar1Name, newVar1Value);
+    final String batchOperationId1 = postAddVariableOperation(processInstanceKey, taskAId, newVar1Name, newVar1Value);
     final String newVar2Name = "newVar2";
     final String newVar2Value = "\"newValue2\"";
-    postUpdateVariableOperation(processInstanceKey, taskAId, newVar2Name, newVar2Value);
+    final String batchOperationId2 = postAddVariableOperation(processInstanceKey, taskAId, newVar2Name, newVar2Value);
     elasticsearchTestRule.refreshOperateESIndices();
 
-    //then new variables are returned
+    //then
+    //new variables are not yet returned (OPE-1284)
     List<VariableDto> variables = getVariables(processInstanceKey, taskAId);
-    assertThat(variables).hasSize(3);
-    assertVariable(variables, newVar1Name, newVar1Value, true);
-    assertVariable(variables, newVar2Name, newVar2Value, true);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, "foo", "\"b\"", false);
+    //operations are in SCHEDULED state
+    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SCHEDULED);
+    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SCHEDULED);
 
     //TC2 execute the operations
     executeOneBatch();
 
-    //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
-    //then new variables are returned
+    //then - before we process messages from Zeebe
+    //new variables are not yet returned (OPE-1284)
     variables = getVariables(processInstanceKey, taskAId);
-    assertThat(variables).hasSize(3);
-    assertVariable(variables, newVar1Name, newVar1Value, true);
-    assertVariable(variables, newVar2Name, newVar2Value, true);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, "foo", "\"b\"", false);
+    //operations are in SENT state
+    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SENT);
+    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SENT);
 
     //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
     //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     //elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, processInstanceKey, newVar2Name);
     elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
 
+    //then
+    //all three variables are returned
     variables = getVariables(processInstanceKey, taskAId);
     assertThat(variables).hasSize(3);
     assertVariable(variables, newVar1Name, newVar1Value, false);
     assertVariable(variables, newVar2Name, newVar2Value, false);
+    //operations are in COMPLETED state
+    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.COMPLETED);
+  }
+
+  private OperationDto getOperation(final String batchOperationId) throws Exception {
+    MockHttpServletRequestBuilder getOperationRequest =
+        get(String.format(OPERATION_URL +  "?batchOperationId=%s", batchOperationId));
+
+    final MvcResult mvcResult =
+        mockMvc.perform(getOperationRequest)
+            .andExpect(status().isOk())
+            .andReturn();
+    final OperationDto[] operations = objectMapper
+        .readValue(mvcResult.getResponse().getContentAsString(), OperationDto[].class);
+    assertThat(operations.length).isEqualTo(1);
+    return operations[0];
   }
 
   private void assertVariable(List<VariableDto> variables, String name, String value, Boolean hasActiveOperation) {
@@ -789,6 +830,48 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
     assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel COMPLETED process instance. Instance must be in ACTIVE or INCIDENT state.");
     assertThat(operation.getId()).isNotNull();
+  }
+
+  @Test
+  public void testFailAddVariableOperationAsVariableAlreadyExists() throws Exception {
+    // given
+    final Long processInstanceKey = startDemoProcessInstance();
+
+    //when we call ADD_VARIABLE operation for the variable that already exists
+    final String newVarName = "a";
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
+    op.setVariableName(newVarName);
+    op.setVariableValue("\"newValue\"");
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final MvcResult mvcResult = postOperation(processInstanceKey, op,
+        HttpURLConnection.HTTP_BAD_REQUEST);
+
+    // then
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+  }
+
+  @Test
+  public void testFailAddVariableOperationAsOperationAlreadyExists() throws Exception {
+    // given
+    final Long processInstanceKey = startDemoProcessInstance();
+
+    //when we call ADD_VARIABLE operation for the first time
+    final String newVarName = "newVar";
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
+    op.setVariableName(newVarName);
+    op.setVariableValue("\"newValue\"");
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    // then it succeeds
+    postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
+
+    // when we call the same operation for the second time, it fails
+    final MvcResult mvcResult =
+        postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
+
+    // then
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
   }
 
   @Test

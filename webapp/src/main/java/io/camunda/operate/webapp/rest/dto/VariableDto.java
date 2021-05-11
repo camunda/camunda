@@ -119,16 +119,6 @@ public class VariableDto {
         }
       }
     }
-    //find new variables
-    final Set<String> operationVarNames = operations.keySet();
-    if(variableEntities!=null) {
-      variableEntities.forEach(ve -> {
-        operationVarNames.remove(ve.getName());
-      });
-    }
-    operationVarNames.forEach(varName -> {
-      CollectionUtil.addNotNull(result, createFrom(operations.get(varName)));
-    });
     return result;
   }
 

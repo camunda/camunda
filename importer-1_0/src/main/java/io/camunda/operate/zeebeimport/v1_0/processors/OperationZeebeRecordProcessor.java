@@ -40,6 +40,6 @@ public class OperationZeebeRecordProcessor {
     if (!VARIABLE_DOCUMENT_STATES.contains(record.getIntent().name())) {
       return;
     }
-    elasticsearchManager.completeOperation(record.getKey(), null, null, OperationType.UPDATE_VARIABLE, bulkRequest);
+    elasticsearchManager.completeOperation(record.getKey(), null, null, null, bulkRequest);
   }
 }

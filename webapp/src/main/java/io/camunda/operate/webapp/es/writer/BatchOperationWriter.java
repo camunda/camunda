@@ -5,15 +5,20 @@
  */
 package io.camunda.operate.webapp.es.writer;
 
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
@@ -27,6 +32,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.OperationReader;
@@ -51,8 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class BatchOperationWriter {
@@ -225,10 +229,15 @@ public class BatchOperationWriter {
             operationsCount++;
           }
         }
-      } else if (operationType.equals(OperationType.UPDATE_VARIABLE)) {
+      } else if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationType)) {
         bulkRequest.add(
-            getIndexUpdateVariableOperationRequest(processInstanceKey, ConversionUtils.toLongOrNull(operationRequest.getVariableScopeId()), operationRequest.getVariableName(),
-                operationRequest.getVariableValue(), batchOperation.getId()));
+            getIndexVariableOperationRequest(
+                processInstanceKey,
+                ConversionUtils.toLongOrNull(operationRequest.getVariableScopeId()),
+                operationType,
+                operationRequest.getVariableName(),
+                operationRequest.getVariableValue(),
+                batchOperation.getId()));
         operationsCount++;
       } else {
         bulkRequest.add(getIndexOperationRequest(processInstanceKey, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), batchOperation.getId(), operationType));
@@ -320,21 +329,28 @@ public class BatchOperationWriter {
     return operationsCount;
   }
 
-  private IndexRequest getIndexUpdateVariableOperationRequest(Long processInstanceKey, Long scopeKey, String name, String value, String batchOperationId) throws PersistenceException {
-    OperationEntity operationEntity = createOperationEntity(processInstanceKey, OperationType.UPDATE_VARIABLE, batchOperationId);
+  private IndexRequest getIndexVariableOperationRequest(
+      Long processInstanceKey,
+      Long scopeKey,
+      OperationType operationType,
+      String name,
+      String value,
+      String batchOperationId)
+      throws PersistenceException {
+    OperationEntity operationEntity = createOperationEntity(processInstanceKey, operationType, batchOperationId);
 
     operationEntity.setScopeKey(scopeKey);
     operationEntity.setVariableName(name);
     operationEntity.setVariableValue(value);
 
-    return createIndexRequest(operationEntity, OperationType.UPDATE_VARIABLE, processInstanceKey);
+    return createIndexRequest(operationEntity, processInstanceKey);
   }
 
   private IndexRequest getIndexOperationRequest(Long processInstanceKey, Long incidentKey, String batchOperationId, OperationType operationType) throws PersistenceException {
     OperationEntity operationEntity = createOperationEntity(processInstanceKey, operationType, batchOperationId);
     operationEntity.setIncidentKey(incidentKey);
 
-    return createIndexRequest(operationEntity, operationType, processInstanceKey);
+    return createIndexRequest(operationEntity, processInstanceKey);
   }
 
   private UpdateRequest getUpdateProcessInstanceRequest(Long processInstanceKey, String batchOperationId) {
@@ -357,14 +373,14 @@ public class BatchOperationWriter {
     return operationEntity;
   }
 
-  private IndexRequest createIndexRequest(OperationEntity operationEntity, OperationType operationType, Long processInstanceKey) throws PersistenceException {
+  private IndexRequest createIndexRequest(OperationEntity operationEntity, Long processInstanceKey) throws PersistenceException {
     try {
       return new IndexRequest(operationTemplate.getFullQualifiedName()).id(operationEntity.getId())
           .source(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(
-          String.format("Error preparing the query to insert operation [%s] for process instance id [%s]", operationType, processInstanceKey), e);
+          String.format("Error preparing the query to insert operation [%s] for process instance id [%s]", operationEntity.getType(), processInstanceKey), e);
     }
   }
 

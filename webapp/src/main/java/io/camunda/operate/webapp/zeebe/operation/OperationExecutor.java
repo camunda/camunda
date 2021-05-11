@@ -110,7 +110,7 @@ public class OperationExecutor extends Thread {
     //populate handlers map
     Map<OperationType, OperationHandler> handlerMap = new HashMap<>();
     for (OperationHandler handler: handlers) {
-      handlerMap.put(handler.getType(), handler);
+      handler.getTypes().forEach(t -> handlerMap.put(t, handler));
     }
     return handlerMap;
   }

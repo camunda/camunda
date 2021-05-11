@@ -5,6 +5,10 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+
+import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +42,8 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   }
 
   @Override
-  public OperationType getType() {
-    return OperationType.UPDATE_VARIABLE;
+  public Set<OperationType> getTypes() {
+    return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
   public void setZeebeClient(final ZeebeClient zeebeClient) {

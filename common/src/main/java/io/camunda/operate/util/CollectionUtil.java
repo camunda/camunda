@@ -68,7 +68,7 @@ public abstract class CollectionUtil {
     }
     return result;
   }
-  
+
   public static <S,T> List<T> map(Collection<S> sourceList,Function<S,T> mapper){
     return map(sourceList.stream(),mapper);
   }

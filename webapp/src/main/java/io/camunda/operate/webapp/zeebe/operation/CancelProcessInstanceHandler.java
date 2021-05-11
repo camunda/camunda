@@ -5,6 +5,9 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import static io.camunda.operate.entities.OperationType.CANCEL_PROCESS_INSTANCE;
+
+import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
@@ -45,10 +48,9 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler imple
     markAsSent(operation);
   }
 
-
   @Override
-  public OperationType getType() {
-    return OperationType.CANCEL_PROCESS_INSTANCE;
+  public Set<OperationType> getTypes() {
+    return Set.of(CANCEL_PROCESS_INSTANCE);
   }
 
   public void setZeebeClient(final ZeebeClient zeebeClient) {

@@ -96,7 +96,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   private boolean isLocked(OperationEntity operation) {
     return operation.getState().equals(OperationState.LOCKED)
         && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
-        && operation.getType().equals(getType());
+        && getTypes().contains(operation.getType());
   }
 
   protected void markAsSent(OperationEntity operation) throws PersistenceException {
