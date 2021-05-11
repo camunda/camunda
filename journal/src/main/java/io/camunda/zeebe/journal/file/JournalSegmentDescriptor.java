@@ -18,6 +18,7 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
@@ -52,11 +53,11 @@ public final class JournalSegmentDescriptor {
   private final int encodedLength;
 
   private final SegmentDescriptorDecoder segmentDescriptorDecoder = new SegmentDescriptorDecoder();
-  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final MutableDirectBuffer directBuffer = new UnsafeBuffer();
 
   private final SegmentDescriptorEncoder segmentDescriptorEncoder = new SegmentDescriptorEncoder();
-  private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
 
   public JournalSegmentDescriptor(final ByteBuffer buffer) {
     directBuffer.wrap(buffer);
@@ -64,20 +65,24 @@ public final class JournalSegmentDescriptor {
     /* The first byte of the buffer contains the version at which the descriptor is written.
      Currently we have only one version, so we can ignore it. We can use this version in future
     when needed. Note that we can add fields to SBE schema of the descriptor without changing this version. */
-    messageHeaderDecoder.wrap(directBuffer, VERSION_LENGTH);
+    headerDecoder.wrap(directBuffer, VERSION_LENGTH);
+
+    if (headerDecoder.schemaId() != segmentDescriptorDecoder.sbeSchemaId()
+        || headerDecoder.templateId() != segmentDescriptorDecoder.sbeTemplateId()) {
+      throw new CorruptedLogException("Cannot read segment descriptor. Header does not match.");
+    }
+
     segmentDescriptorDecoder.wrap(
         directBuffer,
-        VERSION_LENGTH + messageHeaderDecoder.encodedLength(),
-        messageHeaderDecoder.blockLength(),
-        messageHeaderDecoder.version());
+        VERSION_LENGTH + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
 
     id = segmentDescriptorDecoder.id();
     index = segmentDescriptorDecoder.index();
     maxSegmentSize = segmentDescriptorDecoder.maxSegmentSize();
     encodedLength =
-        VERSION_LENGTH
-            + messageHeaderDecoder.encodedLength()
-            + segmentDescriptorDecoder.encodedLength();
+        VERSION_LENGTH + headerDecoder.encodedLength() + segmentDescriptorDecoder.encodedLength();
   }
 
   private JournalSegmentDescriptor(final long id, final long index, final int maxSegmentSize) {
@@ -158,7 +163,7 @@ public final class JournalSegmentDescriptor {
     directBuffer.wrap(buffer);
     directBuffer.putByte(0, VERSION);
 
-    messageHeaderEncoder
+    headerEncoder
         .wrap(directBuffer, VERSION_LENGTH)
         .blockLength(segmentDescriptorEncoder.sbeBlockLength())
         .templateId(segmentDescriptorEncoder.sbeTemplateId())
@@ -166,7 +171,7 @@ public final class JournalSegmentDescriptor {
         .version(segmentDescriptorEncoder.sbeSchemaVersion());
 
     segmentDescriptorEncoder
-        .wrap(directBuffer, VERSION_LENGTH + messageHeaderEncoder.encodedLength())
+        .wrap(directBuffer, VERSION_LENGTH + headerEncoder.encodedLength())
         .id(id)
         .index(index)
         .maxSegmentSize(maxSegmentSize);
