@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
-public class JournalSegmentDescriptorTest {
+class JournalSegmentDescriptorTest {
 
   @Test
-  public void shouldWriteAndReadDescriptor() {
+  void shouldWriteAndReadDescriptor() {
     // given
     JournalSegmentDescriptor descriptor =
         JournalSegmentDescriptor.builder()
