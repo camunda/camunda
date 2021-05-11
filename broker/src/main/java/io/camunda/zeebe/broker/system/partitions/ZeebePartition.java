@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -40,7 +39,6 @@ public final class ZeebePartition extends Actor
   private final String actorName;
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
-  private final RaftPartitionHealth raftPartitionHealth;
   private final ZeebePartitionHealth zeebePartitionHealth;
   private long term;
 
@@ -58,8 +56,6 @@ public final class ZeebePartition extends Actor
 
     actorName = buildActorName(context.getNodeId(), "ZeebePartition", context.getPartitionId());
     context.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
-    raftPartitionHealth =
-        new RaftPartitionHealth(context.getRaftPartition(), actor, this::onRaftFailed);
     zeebePartitionHealth = new ZeebePartitionHealth(context.getPartitionId());
     healthMetrics = new HealthMetrics(context.getPartitionId());
     healthMetrics.setUnhealthy();
@@ -168,23 +164,6 @@ public final class ZeebePartition extends Actor
     return inactiveTransitionFuture;
   }
 
-  private CompletableFuture<Void> onRaftFailed() {
-    final CompletableFuture<Void> inactiveTransitionFuture = new CompletableFuture<>();
-    actor.run(
-        () -> {
-          final ActorFuture<Void> transitionComplete = transitionToInactive();
-          transitionComplete.onComplete(
-              (v, t) -> {
-                if (t != null) {
-                  inactiveTransitionFuture.completeExceptionally(t);
-                  return;
-                }
-                inactiveTransitionFuture.complete(null);
-              });
-        });
-    return inactiveTransitionFuture;
-  }
-
   @Override
   public String getName() {
     return actorName;
@@ -202,7 +181,7 @@ public final class ZeebePartition extends Actor
     context.getComponentHealthMonitor().startMonitoring();
     context
         .getComponentHealthMonitor()
-        .registerComponent(raftPartitionHealth.getName(), raftPartitionHealth);
+        .registerComponent(context.getRaftPartition().name(), context.getRaftPartition());
     // Add a component that keep track of health of ZeebePartition. This way
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
@@ -218,8 +197,9 @@ public final class ZeebePartition extends Actor
             (nothing, err) -> {
               context.getRaftPartition().removeRoleChangeListener(this);
 
-              context.getComponentHealthMonitor().removeComponent(raftPartitionHealth.getName());
-              raftPartitionHealth.close();
+              context
+                  .getComponentHealthMonitor()
+                  .removeComponent(context.getRaftPartition().name());
               closeFuture.complete(null);
             });
   }
