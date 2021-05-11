@@ -243,4 +243,32 @@ public final class ExecutionPathSegment {
   public String toString() {
     return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
   }
+
+  /**
+   * An execution boundary is the point where automatic and non-automatic {@link
+   * ScheduledExecutionStep}'s meet each other. This class contains information about the existing
+   * execution boundaries in a {@link ExecutionPath}.
+   */
+  private static final class ExecutionBoundaries {
+
+    private final List<Integer> boundaries = new ArrayList<>();
+
+    /**
+     * Adds an execution boundary index to the collection.
+     *
+     * @param boundaryIndex the index of the execution boundary in the corresponding execution path
+     */
+    void addBoundary(final int boundaryIndex) {
+      boundaries.add(boundaryIndex);
+    }
+
+    /**
+     * Returns a pseudo-randomly chosen execution boundary.
+     *
+     * @return the execution boundary
+     */
+    public int chooseRandomBoundary(final Random random) {
+      return boundaries.isEmpty() ? 0 : boundaries.get(random.nextInt(boundaries.size()));
+    }
+  }
 }
