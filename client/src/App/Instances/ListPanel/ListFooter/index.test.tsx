@@ -18,8 +18,7 @@ jest.mock('./CreateOperationDropdown', () => ({label}: any) => (
 ));
 
 const defaultProps = {
-  onFirstElementChange: jest.fn(),
-  hasContent: true,
+  isCollapsed: false,
 };
 
 const mockInstances = [

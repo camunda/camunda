@@ -45,6 +45,4 @@ function Skeleton(props: any) {
   );
 }
 
-Skeleton.Checkbox = Styled.SkeletonCheckboxBlock;
-
-export default Skeleton;
+export {Skeleton};

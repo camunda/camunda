@@ -10,6 +10,7 @@ import * as Styled from './styled';
 
 type Props = {
   isChecked?: boolean;
+  disabled?: boolean;
   onChange: (...args: any[]) => any;
   isIndeterminate?: boolean;
   label?: string;
