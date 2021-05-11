@@ -159,8 +159,7 @@ public final class ProcessBuilder {
       followingPath.cutAtRandomPosition(random);
       followingPath.appendDirectSuccessor(executionStep);
     } else {
-      final var index = random.nextInt(size);
-      followingPath.insertExecutionStepAt(index, executionStep);
+      followingPath.insertExecutionStep(random, executionStep);
     }
   }
 }
