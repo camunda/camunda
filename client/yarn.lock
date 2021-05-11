@@ -3883,14 +3883,14 @@ bowser@^2.8.1:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.11.0.tgz#5ca3c35757a7aa5771500c70a73a9f91ef420a8f"
   integrity sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==
 
-bpmn-js@^8.3.1:
-  version "8.3.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.3.1.tgz#1221d7c356d9518b61c0b141fd94724b21bf3f83"
-  integrity sha512-k7dHJ8TW6Zx5iOV/c07k+kDtxzHvDT6J2bGKp+sM46DSKrHyP0PeEH+Ta/vkYdWwirxVWYb2e68glc+ToauHIw==
+bpmn-js@^8.5.0:
+  version "8.5.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.5.0.tgz#fcfa1dddb67c95c2c5ff8c380759f32fe98fc2e1"
+  integrity sha512-5A6vn6pHO4/qSjOuTmst+kAmbH6zTlWJ3GXwp4oC79sO+eK+GDVhm0ZMBZOJhbsaWLl/oibXmL9mMwX7B+n0fg==
   dependencies:
     bpmn-moddle "^7.0.5"
     css.escape "^1.5.1"
-    diagram-js "^7.2.3"
+    diagram-js "^7.3.0"
     diagram-js-direct-editing "^1.6.2"
     ids "^1.0.0"
     inherits "^2.0.4"
@@ -5647,10 +5647,10 @@ diagram-js-direct-editing@^1.6.2:
     min-dash "^3.5.2"
     min-dom "^3.1.3"
 
-diagram-js@^7.2.3:
-  version "7.2.3"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-7.2.3.tgz#6be81bc4e3e42a99eab8b233de886ea2a14af526"
-  integrity sha512-ExQAEFYRle92n08NcBEzdyCvmyifdX2ShkbWVkWfzG2k+c7zXF+EcK/5sXmzzS2j2dLsNlZvcH0+xdk+ltzKnw==
+diagram-js@^7.3.0:
+  version "7.3.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-7.3.0.tgz#cea20d479df87d0311ad56337f3c99d084ebcd37"
+  integrity sha512-giDlLWNCOtYTmcdU5UfVmvOhsGy/HFxsWwNhb3rrPpDw8ammONK0KkC4H9M808hszWSWOKcZnUJOkows+WcifA==
   dependencies:
     css.escape "^1.5.1"
     didi "^5.2.1"
