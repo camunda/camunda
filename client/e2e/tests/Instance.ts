@@ -30,6 +30,8 @@ test('Instance with an incident - header and instance header', async (t) => {
   await t.navigateTo(`/instances/${instanceId}`);
 
   await t
+    .expect(screen.queryByTestId('instance-header').exists)
+    .ok()
     .expect(
       within(screen.queryByRole('banner')).queryByTestId('state-icon-INCIDENT')
         .exists
@@ -76,7 +78,13 @@ test('Instance with an incident - history panel', async (t) => {
   await t.navigateTo(
     `/instances/${processWithMultipleTokens.processInstanceKey}`
   );
-  await t.expect(screen.queryByText('Instance History').exists).ok();
+  await t
+    .expect(screen.queryByText('Instance History').exists)
+    .ok()
+    .expect(screen.queryByTestId('instance-history').exists)
+    .ok()
+    .expect(screen.queryByTestId('diagram').exists)
+    .ok();
 
   await t
     .click(within(screen.queryByTestId('diagram')).queryByText(/Task A/))
@@ -99,6 +107,8 @@ test('Instance with an incident - history panel', async (t) => {
         .getAllByText(/Task A/)
         .nth(0)
     )
+    .expect(screen.queryByTestId('popover').exists)
+    .ok()
     .expect(
       within(screen.queryByTestId('popover')).queryByText(/Task A/).exists
     )
@@ -131,11 +141,16 @@ test('Instance with an incident - diagram', async (t) => {
 
   await t.navigateTo(`/instances/${instanceId}`);
 
-  await t.expect(screen.queryByTestId('popover').exists).notOk();
+  await t
+    .expect(screen.queryByTestId('diagram').exists)
+    .ok()
+    .expect(screen.queryByTestId('popover').exists)
+    .notOk();
 
-  await t.click(
-    within(screen.queryByTestId('diagram')).queryByText(/upper task/i)
-  );
+  await t
+    .click(within(screen.queryByTestId('diagram')).queryByText(/upper task/i))
+    .expect(screen.queryByTestId('popover').exists)
+    .ok();
 
   const withinPopopver = within(screen.queryByTestId('popover'));
   await t

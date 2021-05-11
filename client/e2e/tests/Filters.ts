@@ -92,6 +92,8 @@ test('Navigating in header should affect filters and url correctly', async (t) =
 });
 
 test('Instance IDs filter', async (t) => {
+  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+
   const instanceId = await within(screen.queryByTestId('instances-list'))
     .queryAllByRole('link', {name: /View instance/i})
     .nth(0).innerText;
@@ -167,6 +169,8 @@ test('Instance IDs filter', async (t) => {
 });
 
 test('Error Message filter', async (t) => {
+  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+
   const instanceCount = await within(
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;
@@ -335,6 +339,8 @@ test.skip('End Date filter', async (t) => {
 });
 
 test('Variable filter', async (t) => {
+  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+
   const instanceCount = await within(
     screen.queryByTestId('instances-list')
   ).getAllByRole('row').count;

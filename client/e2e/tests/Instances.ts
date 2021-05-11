@@ -70,6 +70,8 @@ test('Instances Page Initial Load', async (t) => {
     `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`
   );
 
+  await t.expect(screen.queryByTestId('instances-list').exists).ok();
+
   const withinInstancesList = within(screen.queryByTestId('instances-list'));
   await t.expect(withinInstancesList.getAllByRole('row').count).eql(2);
 
@@ -112,11 +114,15 @@ test('Select flow node in diagram', async (t) => {
   });
 
   // Select "Order Process"
-  await t.click(processCombobox).click(
-    within(processCombobox).queryByRole('option', {
-      name: 'Order process',
-    })
-  );
+  await t
+    .click(processCombobox)
+    .click(
+      within(processCombobox).queryByRole('option', {
+        name: 'Order process',
+      })
+    )
+    .expect(screen.queryByTestId('diagram').exists)
+    .ok();
 
   // Select "Ship Articles" flow node
   const shipArticlesTaskId = 'shipArticles';
