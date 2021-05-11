@@ -62,7 +62,7 @@ public class SpringGatewayBridgeTest {
     // given
     final BrokerClusterState mockClusterState = Mockito.mock(BrokerClusterState.class);
 
-    final Supplier<BrokerClusterState> testSupplier = () -> mockClusterState;
+    final Supplier<Optional<BrokerClusterState>> testSupplier = () -> Optional.of(mockClusterState);
     sutBrigde.registerClusterStateSupplier(testSupplier);
 
     // when
