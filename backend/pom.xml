@@ -178,7 +178,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.15.0</version>
+      <version>3.16.0</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
