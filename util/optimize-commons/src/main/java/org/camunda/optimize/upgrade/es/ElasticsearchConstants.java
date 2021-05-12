@@ -38,10 +38,15 @@ public class ElasticsearchConstants {
   public static final String MAPPING_ENABLED_SETTING = "enabled";
 
   public static final String MAPPING_PROPERTY_TYPE = "type";
+  public static final String FORMAT_PROPERTY_TYPE = "format";
 
   public static final String TYPE_KEYWORD = "keyword";
   public static final String TYPE_LONG = "long";
   public static final String TYPE_DATE = "date";
+  public static final String TYPE_BOOLEAN = "boolean";
+  public static final String TYPE_OBJECT = "object";
+  public static final String TYPE_TEXT = "text";
+  public static final String TYPE_NESTED = "nested";
 
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_MULTI_ALIAS = "decision-instance";

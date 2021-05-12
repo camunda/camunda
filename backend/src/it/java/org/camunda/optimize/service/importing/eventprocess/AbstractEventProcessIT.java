@@ -133,6 +133,20 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final OffsetDateTime FOURTH_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:01:00.000+01:00");
   protected static final OffsetDateTime FIFTH_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:02:00.000+01:00");
 
+  protected static final String[] NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE = new String[]{
+    FlowNodeInstanceDto.Fields.canceled,
+    FlowNodeInstanceDto.Fields.processDefinitionKey,
+    FlowNodeInstanceDto.Fields.engine,
+    FlowNodeInstanceDto.Fields.userTaskInstanceId,
+    FlowNodeInstanceDto.Fields.dueDate,
+    FlowNodeInstanceDto.Fields.deleteReason,
+    FlowNodeInstanceDto.Fields.assignee,
+    FlowNodeInstanceDto.Fields.candidateGroups,
+    FlowNodeInstanceDto.Fields.assigneeOperations,
+    FlowNodeInstanceDto.Fields.candidateGroupOperations,
+    FlowNodeInstanceDto.Fields.idleDurationInMs,
+    FlowNodeInstanceDto.Fields.workDurationInMs};
+
   @BeforeEach
   public void enableEventBasedProcessFeature() {
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
@@ -432,10 +446,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
                                        final String expectedInstanceId,
                                        final List<String> expectedEventIds) {
     assertThat(processInstanceDto.getProcessInstanceId()).isEqualTo(expectedInstanceId);
-    assertThat(processInstanceDto.getEvents())
+    assertThat(processInstanceDto.getFlowNodeInstances())
       .satisfies(events -> assertThat(events)
         .extracting(
-          FlowNodeInstanceDto::getActivityId
+          FlowNodeInstanceDto::getFlowNodeId
         )
         .containsExactlyInAnyOrderElementsOf(expectedEventIds)
       );

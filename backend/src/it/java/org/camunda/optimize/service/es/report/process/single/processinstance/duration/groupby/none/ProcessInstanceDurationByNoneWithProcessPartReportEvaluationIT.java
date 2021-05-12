@@ -61,11 +61,11 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       endDate
     );
@@ -107,11 +107,11 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     final long activityDurationInSeconds = Integer.valueOf(Integer.MAX_VALUE).longValue();
     OffsetDateTime endDate = startDate.plusSeconds(activityDurationInSeconds);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       endDate
     );
@@ -141,11 +141,11 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       endDate
     );
@@ -191,12 +191,12 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
-    engineDatabaseExtension.updateActivityInstanceStartDates(startDatesToUpdate);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(startDatesToUpdate);
     Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
     endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
-    engineDatabaseExtension.updateActivityInstanceEndDates(endDatesToUpdate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(endDatesToUpdate);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -221,8 +221,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // given
     OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
-    engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
-    engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
+    engineDatabaseExtension.changeFirstFlowNodeInstanceStartDate(START_LOOP, startDate);
+    engineDatabaseExtension.changeFirstFlowNodeInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -273,7 +273,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     Script setActivityStartDatesToNull = new Script(
       ScriptType.INLINE,
       DEFAULT_SCRIPT_LANG,
-      "for (event in ctx._source.events) { event.startDate = null }",
+      "for (flowNodeInstance in ctx._source.flowNodeInstances) { flowNodeInstance.startDate = null }",
       Collections.emptyMap()
     );
     UpdateByQueryRequest request = new UpdateByQueryRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
@@ -294,8 +294,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     // given
     OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_EVENT, startDate);
-    engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_EVENT, startDate.minusSeconds(2));
+    engineDatabaseExtension.changeFirstFlowNodeInstanceStartDate(START_EVENT, startDate);
+    engineDatabaseExtension.changeFirstFlowNodeInstanceEndDate(END_EVENT, startDate.minusSeconds(2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -318,7 +318,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   public void unknownStartReturnsZero() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().plusHours(1)
     );
@@ -345,7 +345,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   public void unknownEndReturnsZero() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().minusHours(1)
     );
@@ -396,14 +396,14 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     String processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
     String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
 
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), startDate.plusSeconds(1));
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), startDate.plusSeconds(9));
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), startDate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
@@ -453,8 +453,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     variables.put("var", true);
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), startDate.plusSeconds(1));
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
     importAllEngineEntitiesFromScratch();

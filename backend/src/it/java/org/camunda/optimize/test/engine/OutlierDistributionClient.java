@@ -66,9 +66,9 @@ public class OutlierDistributionClient {
               VARIABLE_VALUE_OUTLIER : VARIABLE_VALUE_NORMAL
           )
         );
-        engineDatabaseExtension.changeActivityDuration(processInstance.getId(), activityIds[0], firstActivityDuration);
+        engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), activityIds[0], firstActivityDuration);
         for (int activityIndex = 1; activityIndex < activityIds.length; activityIndex++) {
-          engineDatabaseExtension.changeActivityDuration(
+          engineDatabaseExtension.changeFlowNodeTotalDuration(
             processInstance.getId(), activityIds[activityIndex], remainingActivitiesDuration
           );
         }
@@ -92,7 +92,7 @@ public class OutlierDistributionClient {
         // VAR2 has the same value as all non outliers
         ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, outlierVariable2Value)
       );
-      engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
+      engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
       outlierInstanceIds.add(processInstance.getId());
     }
 

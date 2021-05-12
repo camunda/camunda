@@ -16,7 +16,7 @@ public class CombinedFlowNodeFrequencyByDurationReportIT extends AbstractCombine
   protected void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMillis);
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMillis);
   }
 
   @Override

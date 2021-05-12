@@ -61,12 +61,12 @@ public class CompletedProcessInstanceMediatorPermutationsImportIT extends Abstra
             assertThat(variable.getType()).isNotNull();
             assertThat(variable.getVersion()).isEqualTo(1L);
           });
-        assertThat(persistedProcessInstanceDto.getEvents())
+        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
           .hasSize(3)
           .allSatisfy(activity -> {
             assertThat(activity.getStartDate()).isNotNull();
             assertThat(activity.getEndDate()).isNotNull();
-            assertThat(activity.getDurationInMs()).isGreaterThanOrEqualTo(0L);
+            assertThat(activity.getTotalDurationInMs()).isGreaterThanOrEqualTo(0L);
           });
         assertThat(persistedProcessInstanceDto.getUserTasks())
           .hasSize(1)

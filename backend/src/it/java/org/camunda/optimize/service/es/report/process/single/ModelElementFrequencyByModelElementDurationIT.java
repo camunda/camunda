@@ -233,7 +233,7 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), completedActivityInstanceDuration);
     final ProcessInstanceEngineDto runningProcessInstance =
       engineIntegrationExtension.startProcessInstance(definition.getId());
-    engineDatabaseExtension.changeAllActivityDurations(
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(
       runningProcessInstance.getId(), completedActivityInstanceDuration
     );
     changeRunningInstanceReferenceDate(runningProcessInstance, startTime);

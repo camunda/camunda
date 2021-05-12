@@ -25,7 +25,6 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -105,11 +104,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
-    engineDatabaseExtension.updateActivityInstanceStartDates(ImmutableMap.of(
+    engineDatabaseExtension.changeAllFlowNodeStartDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
-    engineDatabaseExtension.updateActivityInstanceEndDates(ImmutableMap.of(
+    engineDatabaseExtension.changeAllFlowNodeEndDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
@@ -141,11 +140,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
-    engineDatabaseExtension.updateActivityInstanceStartDates(ImmutableMap.of(
+    engineDatabaseExtension.changeAllFlowNodeStartDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));
-    engineDatabaseExtension.updateActivityInstanceEndDates(ImmutableMap.of(
+    engineDatabaseExtension.changeAllFlowNodeEndDates(ImmutableMap.of(
       processInstanceEngineDto.getId(),
       eventTimestamp
     ));

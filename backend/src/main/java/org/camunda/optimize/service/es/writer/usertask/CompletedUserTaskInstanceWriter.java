@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.es.writer.usertask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.springframework.stereotype.Component;
@@ -17,24 +19,28 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_DELETE_REASON;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_DUE_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_INSTANCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @Component
 @Slf4j
 public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
   private static final ImmutableSet<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_INSTANCE_ID, USER_TASK_TOTAL_DURATION,
-    USER_TASK_START_DATE, USER_TASK_END_DATE, USER_TASK_DUE_DATE, USER_TASK_DELETE_REASON
+    FLOW_NODE_ID, USER_TASK_INSTANCE_ID, FLOW_NODE_INSTANCE_ID, FLOW_NODE_TOTAL_DURATION,
+    FLOW_NODE_START_DATE, FLOW_NODE_END_DATE, USER_TASK_DUE_DATE, USER_TASK_DELETE_REASON
   );
   private static final String UPDATE_USER_TASK_FIELDS_SCRIPT = FIELDS_TO_UPDATE
     .stream()
-    .map(fieldKey -> String.format("existingTask.%s = newUserTask.%s;%n", fieldKey, fieldKey))
+    .map(fieldKey -> String.format("existingTask.%s = newFlowNode.%s;%n", fieldKey, fieldKey))
     .collect(Collectors.joining());
 
   public CompletedUserTaskInstanceWriter(final OptimizeElasticsearchClient esClient,
@@ -43,28 +49,40 @@ public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter {
     super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
-  public List<ImportRequestDto> generateUserTaskImports(final List<UserTaskInstanceDto> userTaskInstances) {
+  public List<ImportRequestDto> generateUserTaskImports(final List<FlowNodeInstanceDto> userTaskInstances) {
     return super.generateUserTaskImports("completed user task instances", esClient, userTaskInstances);
   }
 
   protected String createInlineUpdateScript() {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("flowNodesField", FLOW_NODE_INSTANCES)
+        .put("userTaskIdField", USER_TASK_INSTANCE_ID)
+        .put("flowNodeTypeField", FLOW_NODE_TYPE)
+        .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
+        .build()
+    );
+
     // @formatter:off
-    return
-      "if (ctx._source.userTasks == null) { ctx._source.userTasks = []; } \n" +
-      "def existingUserTasksById = ctx._source.userTasks.stream()" +
-        ".collect(Collectors.toMap(task -> task.id, task -> task, (t1, t2) -> t1));\n" +
-      "for (def newUserTask : params.userTasks) {\n" +
-        "def existingTask  = existingUserTasksById.get(newUserTask.id);\n" +
+    return substitutor.replace(
+      "if (ctx._source.${flowNodesField} == null) { ctx._source.${flowNodesField} = []; } \n" +
+          "def userTaskInstancesById = ctx._source.${flowNodesField}.stream()" +
+            ".filter(flowNode -> \"${userTaskFlowNodeType}\".equalsIgnoreCase(flowNode.${flowNodeTypeField}))" +
+            ".collect(Collectors.toMap(flowNode -> flowNode.${userTaskIdField}, flowNode -> flowNode, (fn1, fn2) -> fn1));\n" +
+      "for (def newFlowNode : params.${flowNodesField}) {\n" +
+        // Ignore flowNodes that aren't userTasks
+        "if(!\"${userTaskFlowNodeType}\".equalsIgnoreCase(newFlowNode.${flowNodeTypeField})){ continue; }\n"+
+
+        "def existingTask = userTaskInstancesById.get(newFlowNode.${userTaskIdField});\n" +
         "if (existingTask != null) {\n" +
           UPDATE_USER_TASK_FIELDS_SCRIPT +
         "} else {\n" +
-          "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
-          "existingUserTasksById.put(newUserTask.id, newUserTask);\n" +
+          "userTaskInstancesById.put(newFlowNode.${userTaskIdField}, newFlowNode);\n" +
         "}\n" +
       "}\n" +
-      "ctx._source.userTasks = existingUserTasksById.values();\n" +
-      createUpdateUserTaskMetricsScript()
-      ;
+      "ctx._source.${flowNodesField}.removeIf(flowNode -> \"${userTaskFlowNodeType}\".equalsIgnoreCase(flowNode.${flowNodeTypeField}));\n" +
+      "ctx._source.${flowNodesField}.addAll(userTaskInstancesById.values());\n") +
+      createUpdateUserTaskMetricsScript();
     // @formatter:on
   }
 

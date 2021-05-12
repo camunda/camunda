@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.schema.index;
 
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
@@ -20,13 +19,22 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FIELDS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROPERTY_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_LONG;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 6;
+  public static final int VERSION = 7;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -37,51 +45,32 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
   public static final String BUSINESS_KEY = ProcessInstanceDto.Fields.businessKey;
   public static final String STATE = ProcessInstanceDto.Fields.state;
+  public static final String ENGINE = ProcessInstanceDto.Fields.engine;
+  public static final String TENANT_ID = ProcessInstanceDto.Fields.tenantId;
 
-  public static final String EVENTS = ProcessInstanceDto.Fields.events;
-  public static final String EVENT_ID = FlowNodeInstanceDto.Fields.id;
-  public static final String ACTIVITY_ID = FlowNodeInstanceDto.Fields.activityId;
-  public static final String ACTIVITY_TYPE = FlowNodeInstanceDto.Fields.activityType;
+  // FlowNode Instance Fields
+  public static final String FLOW_NODE_INSTANCES = ProcessInstanceDto.Fields.flowNodeInstances;
+  public static final String FLOW_NODE_INSTANCE_ID = FlowNodeInstanceDto.Fields.flowNodeInstanceId;
+  public static final String FLOW_NODE_ID = FlowNodeInstanceDto.Fields.flowNodeId;
+  public static final String FLOW_NODE_TYPE = FlowNodeInstanceDto.Fields.flowNodeType;
   // this one is needed for the process part feature. There we can't go up in the nested structured
   // and need to duplicate this data.
   public static final String PROCESS_INSTANCE_ID_FOR_ACTIVITY = FlowNodeInstanceDto.Fields.processInstanceId;
-  public static final String ACTIVITY_DURATION = FlowNodeInstanceDto.Fields.durationInMs;
-  public static final String ACTIVITY_START_DATE = FlowNodeInstanceDto.Fields.startDate;
-  public static final String ACTIVITY_END_DATE = FlowNodeInstanceDto.Fields.endDate;
-  public static final String ACTIVITY_CANCELED = FlowNodeInstanceDto.Fields.canceled;
+  public static final String FLOW_NODE_START_DATE = FlowNodeInstanceDto.Fields.startDate;
+  public static final String FLOW_NODE_END_DATE = FlowNodeInstanceDto.Fields.endDate;
+  public static final String FLOW_NODE_CANCELED = FlowNodeInstanceDto.Fields.canceled;
+  public static final String FLOW_NODE_TOTAL_DURATION = FlowNodeInstanceDto.Fields.totalDurationInMs;
 
-  public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
-  public static final String VARIABLE_ID = SimpleProcessVariableDto.Fields.id;
-  public static final String VARIABLE_NAME = SimpleProcessVariableDto.Fields.name;
-  public static final String VARIABLE_TYPE = SimpleProcessVariableDto.Fields.type;
-  public static final String VARIABLE_VALUE = SimpleProcessVariableDto.Fields.value;
-  public static final String VARIABLE_VERSION = SimpleProcessVariableDto.Fields.version;
-
-  public static final String USER_TASKS = ProcessInstanceDto.Fields.userTasks;
-  public static final String USER_TASK_ID = UserTaskInstanceDto.Fields.id;
-
-  public static final String USER_TASK_ACTIVITY_ID = UserTaskInstanceDto.Fields.activityId;
-  public static final String USER_TASK_ACTIVITY_INSTANCE_ID = UserTaskInstanceDto.Fields.activityInstanceId;
-
-  public static final String USER_TASK_TOTAL_DURATION = UserTaskInstanceDto.Fields.totalDurationInMs;
-  public static final String USER_TASK_IDLE_DURATION = UserTaskInstanceDto.Fields.idleDurationInMs;
-  public static final String USER_TASK_WORK_DURATION = UserTaskInstanceDto.Fields.workDurationInMs;
-
-  public static final String USER_TASK_START_DATE = UserTaskInstanceDto.Fields.startDate;
-  public static final String USER_TASK_END_DATE = UserTaskInstanceDto.Fields.endDate;
-  public static final String USER_TASK_DUE_DATE = UserTaskInstanceDto.Fields.dueDate;
-
-  public static final String USER_TASK_ASSIGNEE = UserTaskInstanceDto.Fields.assignee;
-  public static final String USER_TASK_CANDIDATE_GROUPS = UserTaskInstanceDto.Fields.candidateGroups;
-  public static final String USER_TASK_ASSIGNEE_OPERATIONS = UserTaskInstanceDto.Fields.assigneeOperations;
+  public static final String USER_TASK_INSTANCE_ID = FlowNodeInstanceDto.Fields.userTaskInstanceId;
+  public static final String USER_TASK_DUE_DATE = FlowNodeInstanceDto.Fields.dueDate;
+  public static final String USER_TASK_DELETE_REASON = FlowNodeInstanceDto.Fields.deleteReason;
+  public static final String USER_TASK_IDLE_DURATION = FlowNodeInstanceDto.Fields.idleDurationInMs;
+  public static final String USER_TASK_WORK_DURATION = FlowNodeInstanceDto.Fields.workDurationInMs;
+  public static final String USER_TASK_ASSIGNEE = FlowNodeInstanceDto.Fields.assignee;
+  public static final String USER_TASK_CANDIDATE_GROUPS = FlowNodeInstanceDto.Fields.candidateGroups;
+  public static final String USER_TASK_ASSIGNEE_OPERATIONS = FlowNodeInstanceDto.Fields.assigneeOperations;
   public static final String USER_TASK_CANDIDATE_GROUP_OPERATIONS =
-    UserTaskInstanceDto.Fields.candidateGroupOperations;
-
-  public static final String USER_TASK_DELETE_REASON = UserTaskInstanceDto.Fields.deleteReason;
-  public static final String USER_TASK_CANCELED = UserTaskInstanceDto.Fields.canceled;
-
-  public static final String ENGINE = ProcessInstanceDto.Fields.engine;
-  public static final String TENANT_ID = ProcessInstanceDto.Fields.tenantId;
+    FlowNodeInstanceDto.Fields.candidateGroupOperations;
 
   public static final String ASSIGNEE_OPERATION_ID = AssigneeOperationDto.Fields.id;
   public static final String ASSIGNEE_OPERATION_USER_ID = AssigneeOperationDto.Fields.userId;
@@ -93,6 +82,15 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String CANDIDATE_GROUP_OPERATION_TYPE = CandidateGroupOperationDto.Fields.operationType;
   public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp;
 
+  // Variable Fields
+  public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
+  public static final String VARIABLE_ID = SimpleProcessVariableDto.Fields.id;
+  public static final String VARIABLE_NAME = SimpleProcessVariableDto.Fields.name;
+  public static final String VARIABLE_TYPE = SimpleProcessVariableDto.Fields.type;
+  public static final String VARIABLE_VALUE = SimpleProcessVariableDto.Fields.value;
+  public static final String VARIABLE_VERSION = SimpleProcessVariableDto.Fields.version;
+
+  // Incident Fields
   public static final String INCIDENTS = ProcessInstanceDto.Fields.incidents;
   public static final String INCIDENT_ID = IncidentDto.Fields.id;
   public static final String INCIDENT_CREATE_TIME = IncidentDto.Fields.createTime;
@@ -140,65 +138,62 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     // @formatter:off
     XContentBuilder newBuilder =  builder
-            .startObject(PROCESS_DEFINITION_KEY)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_DEFINITION_VERSION)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_DEFINITION_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_INSTANCE_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(BUSINESS_KEY)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(START_DATE)
-              .field("type", "date")
-              .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(END_DATE)
-              .field("type", "date")
-              .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(DURATION)
-              .field("type", "long")
-            .endObject()
-            .startObject(ENGINE)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(TENANT_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(STATE)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(EVENTS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedEventField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(USER_TASKS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedUserTaskField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(VARIABLES)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedVariableField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(INCIDENTS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedIncidentField(newBuilder)
-              .endObject()
-            .endObject();
+      .startObject(PROCESS_DEFINITION_KEY)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(PROCESS_DEFINITION_VERSION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(PROCESS_DEFINITION_ID)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(PROCESS_INSTANCE_ID)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(BUSINESS_KEY)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(START_DATE)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(END_DATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(DURATION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
+      .endObject()
+      .startObject(ENGINE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(TENANT_ID)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(STATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(FLOW_NODE_INSTANCES)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+
+    addNestedFlowNodeInstancesField(newBuilder)
+      .endObject()
+      .endObject()
+      .startObject(VARIABLES)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+
+    addNestedVariableField(newBuilder)
+      .endObject()
+      .endObject()
+      .startObject(INCIDENTS)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+
+    addNestedIncidentField(newBuilder)
+      .endObject()
+      .endObject();
     return newBuilder;
     // @formatter:on
   }
@@ -207,164 +202,136 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
     return PROCESS_INSTANCE_INDEX_PREFIX;
   }
 
-  private XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedFlowNodeInstancesField(XContentBuilder builder) throws IOException {
     // @formatter:off
-    return builder
-      .startObject(EVENT_ID)
-        .field("type", "keyword")
+    builder
+      .startObject(FLOW_NODE_INSTANCE_ID)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(ACTIVITY_ID)
-        .field("type", "keyword")
+      .startObject(FLOW_NODE_ID)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(PROCESS_INSTANCE_ID_FOR_ACTIVITY)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(ACTIVITY_TYPE)
-        .field("type", "keyword")
+      .startObject(FLOW_NODE_TYPE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(ACTIVITY_DURATION)
-        .field("type", "long")
+      .startObject(FLOW_NODE_TOTAL_DURATION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
       .endObject()
-      .startObject(ACTIVITY_START_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .startObject(FLOW_NODE_START_DATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject()
-      .startObject(ACTIVITY_END_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .startObject(FLOW_NODE_END_DATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject()
-      .startObject(ACTIVITY_CANCELED)
-        .field("type", "boolean")
+      .startObject(FLOW_NODE_CANCELED)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
       .endObject()
-      ;
+      .startObject(USER_TASK_INSTANCE_ID)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(USER_TASK_IDLE_DURATION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
+      .endObject()
+      .startObject(USER_TASK_WORK_DURATION)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
+      .endObject()
+      .startObject(USER_TASK_DUE_DATE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(USER_TASK_DELETE_REASON)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(USER_TASK_ASSIGNEE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(USER_TASK_CANDIDATE_GROUPS)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(USER_TASK_ASSIGNEE_OPERATIONS)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+       .startObject("properties");
+
+    addAssigneeOperationProperties(builder)
+      .endObject()
+      .endObject()
+      .startObject(USER_TASK_CANDIDATE_GROUP_OPERATIONS)
+       .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+      .startObject("properties");
+
+    addCandidateGroupOperationProperties(builder)
+      .endObject()
+      .endObject();
     // @formatter:on
+    return builder;
   }
 
   private XContentBuilder addNestedVariableField(XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
       .startObject(VARIABLE_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_NAME)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_TYPE)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-        .startObject(FIELDS);
-          addValueMultifields(builder)
-        .endObject()
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .startObject(FIELDS);
+    addValueMultifields(builder)
+      .endObject()
       .endObject()
       .startObject(VARIABLE_VERSION)
-        .field("type", "long")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
       .endObject();
     return builder;
     // @formatter:on
   }
 
-  private XContentBuilder addNestedUserTaskField(XContentBuilder builder) throws IOException {
-    // @formatter:off
-    builder
-      .startObject(USER_TASK_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_TASK_ACTIVITY_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_TASK_ACTIVITY_INSTANCE_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_TASK_TOTAL_DURATION)
-        .field("type", "long")
-      .endObject()
-      .startObject(USER_TASK_IDLE_DURATION)
-        .field("type", "long")
-      .endObject()
-      .startObject(USER_TASK_WORK_DURATION)
-        .field("type", "long")
-      .endObject()
-      .startObject(USER_TASK_START_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(USER_TASK_END_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(USER_TASK_DUE_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(USER_TASK_DELETE_REASON)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_TASK_CANCELED)
-        .field("type", "boolean")
-      .endObject()
-      .startObject(USER_TASK_ASSIGNEE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_TASK_CANDIDATE_GROUPS)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(USER_TASK_ASSIGNEE_OPERATIONS)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedAssigneeOperations(builder)
-        .endObject()
-      .endObject()
-      .startObject(USER_TASK_CANDIDATE_GROUP_OPERATIONS)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedCandidateGroupOperations(builder)
-        .endObject()
-      .endObject()
-      ;
-    // @formatter:on
-    return builder;
-  }
-
-  private XContentBuilder addNestedAssigneeOperations(final XContentBuilder builder) throws IOException {
+  private XContentBuilder addAssigneeOperationProperties(final XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
       .startObject(ASSIGNEE_OPERATION_ID)
-        .field("type", "keyword")
+       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(ASSIGNEE_OPERATION_USER_ID)
-        .field("type", "keyword")
+       .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(ASSIGNEE_OPERATION_TYPE)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(ASSIGNEE_OPERATION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      ;
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
+      .endObject();
     return builder;
     // @formatter:on
   }
 
-  private XContentBuilder addNestedCandidateGroupOperations(final XContentBuilder builder) throws IOException {
+  private XContentBuilder addCandidateGroupOperationProperties(final XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
       .startObject(CANDIDATE_GROUP_OPERATION_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(CANDIDATE_GROUP_OPERATION_GROUP_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(CANDIDATE_GROUP_OPERATION_TYPE)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(CANDIDATE_GROUP_OPERATION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      ;
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
+      .endObject();
     return builder;
     // @formatter:on
   }
@@ -373,36 +340,35 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
     // @formatter:off
     return builder
       .startObject(INCIDENT_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(INCIDENT_CREATE_TIME)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(INCIDENT_END_TIME)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(INCIDENT_DURATION_IN_MS)
-        .field("type", "long")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
       .endObject()
       .startObject(INCIDENT_INCIDENT_TYPE)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(INCIDENT_ACTIVITY_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(INCIDENT_FAILED_ACTIVITY_ID)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(INCIDENT_MESSAGE)
-        .field("type", "text")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
         .field("index", true)
       .endObject()
       .startObject(INCIDENT_STATUS)
-        .field("type", "keyword")
-      .endObject()
-      ;
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject();
     // @formatter:on
   }
 

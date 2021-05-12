@@ -25,13 +25,13 @@ public class FlowNodeFrequencyByFlowNodeEndDateReportEvaluationIT
   }
 
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.updateActivityInstanceEndDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(updates);
   }
 
   @SneakyThrows
   protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance, final String modelElementId,
                                         final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
   }
 
 }

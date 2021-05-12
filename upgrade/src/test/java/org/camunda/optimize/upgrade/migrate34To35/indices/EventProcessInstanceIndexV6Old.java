@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.plan.indices;
+package org.camunda.optimize.upgrade.migrate34To35.indices;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpdateDto;
@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public class EventProcessInstanceIndexV5Old extends ProcessInstanceIndexV5Old {
+public class EventProcessInstanceIndexV6Old extends ProcessInstanceIndexV6Old {
 
   private static final String PENDING_FLOW_NODE_UPDATES = EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates;
   private static final String CORRELATED_EVENTS_BY_EVENT_ID = EventProcessInstanceDto.Fields.correlatedEventsById;
@@ -26,8 +26,8 @@ public class EventProcessInstanceIndexV5Old extends ProcessInstanceIndexV5Old {
   private static final String ACTIVITY_UPDATE_MAPPED_AS = FlowNodeInstanceUpdateDto.Fields.mappedAs;
   private static final String ACTIVITY_UPDATE_DATE = FlowNodeInstanceUpdateDto.Fields.date;
 
-  public EventProcessInstanceIndexV5Old(final String eventProcessId) {
-    super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId.toLowerCase());
+  public EventProcessInstanceIndexV6Old(final String eventProcessId) {
+    super(eventProcessId);
   }
 
   @Override
@@ -46,6 +46,11 @@ public class EventProcessInstanceIndexV5Old extends ProcessInstanceIndexV5Old {
       .endObject();
     return newBuilder;
     // @formatter:on
+  }
+
+  @Override
+  protected String getIndexPrefix(){
+    return EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
   }
 
   private XContentBuilder addPendingEventUpdateObjectFields(final XContentBuilder builder) throws IOException {

@@ -55,8 +55,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
@@ -111,7 +110,7 @@ public class ProcessViewRawData extends ProcessViewPart {
 
     final SearchSourceBuilder search = searchRequest.source()
       .fetchSource(true)
-      .fetchSource(null, new String[]{EVENTS, USER_TASKS});
+      .fetchSource(null, new String[]{FLOW_NODE_INSTANCES});
     if (context.isExport()) {
       search.size(
         context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT ?

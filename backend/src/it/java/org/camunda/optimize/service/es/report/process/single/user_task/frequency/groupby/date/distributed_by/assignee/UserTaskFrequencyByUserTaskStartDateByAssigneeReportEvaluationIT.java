@@ -163,13 +163,13 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
 
   @Override
   protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(updates);
   }
 
   @Override
   protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
                                     final String userTaskKey,
                                     final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

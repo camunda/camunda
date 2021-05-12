@@ -142,13 +142,13 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             )
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.startDate, FIRST_EVENT_DATETIME)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
-            .extracting(ProcessInstanceDto::getEvents)
+            .extracting(ProcessInstanceDto::getFlowNodeInstances)
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
               .extracting(
-                FlowNodeInstanceDto::getId,
-                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getFlowNodeInstanceId,
+                FlowNodeInstanceDto::getFlowNodeId,
                 FlowNodeInstanceDto::getStartDate,
                 FlowNodeInstanceDto::getEndDate
               )
@@ -183,11 +183,11 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
       .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
-            .extracting(ProcessInstanceDto::getEvents)
+            .extracting(ProcessInstanceDto::getFlowNodeInstances)
             .satisfies(events -> assertThat(events)
               .extracting(
-                FlowNodeInstanceDto::getId,
-                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getFlowNodeInstanceId,
+                FlowNodeInstanceDto::getFlowNodeId,
                 FlowNodeInstanceDto::getStartDate
               )
               .containsExactlyInAnyOrder(
@@ -263,13 +263,13 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             )
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.startDate, FIRST_EVENT_DATETIME)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
-            .extracting(ProcessInstanceDto::getEvents)
+            .extracting(ProcessInstanceDto::getFlowNodeInstances)
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
               .extracting(
-                FlowNodeInstanceDto::getId,
-                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getFlowNodeInstanceId,
+                FlowNodeInstanceDto::getFlowNodeId,
                 FlowNodeInstanceDto::getStartDate,
                 FlowNodeInstanceDto::getEndDate
               )
@@ -333,13 +333,13 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             )
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.startDate, FIRST_EVENT_DATETIME)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
-            .extracting(ProcessInstanceDto::getEvents)
+            .extracting(ProcessInstanceDto::getFlowNodeInstances)
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
               .extracting(
-                FlowNodeInstanceDto::getId,
-                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getFlowNodeInstanceId,
+                FlowNodeInstanceDto::getFlowNodeId,
                 FlowNodeInstanceDto::getStartDate,
                 FlowNodeInstanceDto::getEndDate
               )

@@ -13,32 +13,40 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @RequiredArgsConstructor
 public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
   private static final String USER_TASKS_AGGREGATION = "userTasks";
+  private static final String FLOW_NODE_AGGREGATION = "flowNodes";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
   protected NestedAggregationBuilder createFilteredUserTaskAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                                        final AggregationBuilder subAggregation) {
-    final NestedAggregationBuilder nestedUserTaskAggregation = nested(USER_TASKS_AGGREGATION, USER_TASKS)
-      .subAggregation(
-        filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
-          .subAggregation(subAggregation)
-      );
-    // sibling aggregation for distributedByPart for retrieval of all keys that
-    // should be present in distributedBy result
-    distributedByPart.createAggregations(context).forEach(nestedUserTaskAggregation::subAggregation);
-    return nestedUserTaskAggregation;
+    final FilterAggregationBuilder filteredUserTaskAggregation =
+      filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
+        .subAggregation(
+          filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
+            .subAggregation(subAggregation)
+        );
+
+    // sibling aggregation next to filtered userTask agg for distributedByPart for retrieval of all keys that
+    // should be present in distributedBy result via enrichContextWithAllExpectedDistributedByKeys
+    distributedByPart.createAggregations(context).forEach(filteredUserTaskAggregation::subAggregation);
+
+    return nested(FLOW_NODE_AGGREGATION, FLOW_NODE_INSTANCES)
+      .subAggregation(filteredUserTaskAggregation);
   }
 
   protected Optional<Filter> getFilteredUserTaskAggregation(final SearchResponse response) {
@@ -47,9 +55,10 @@ public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
       .map(aggs -> aggs.get(FILTERED_USER_TASKS_AGGREGATION));
   }
 
-  protected Optional<Nested> getUserTasksAggregation(final SearchResponse response) {
+  protected Optional<ParsedFilter> getUserTasksAggregation(final SearchResponse response) {
     return Optional.ofNullable(response.getAggregations())
-      .map(aggs -> aggs.get(USER_TASKS_AGGREGATION));
+      .map(aggs -> aggs.get(FLOW_NODE_AGGREGATION))
+      .map(flowNodeAgg -> ((Nested) flowNodeAgg).getAggregations().get(USER_TASKS_AGGREGATION));
   }
 
 }

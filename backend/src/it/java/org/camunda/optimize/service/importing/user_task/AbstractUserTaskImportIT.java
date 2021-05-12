@@ -107,7 +107,7 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
                                        final OffsetDateTime endTime) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
-        engineDatabaseExtension.changeUserTaskEndDate(
+        engineDatabaseExtension.changeFlowNodeEndDate(
           processInstanceDto.getId(),
           historicUserTaskInstanceDto.getTaskDefinitionKey(),
           endTime
@@ -119,7 +119,7 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
                                          final OffsetDateTime startTime) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
-        engineDatabaseExtension.changeUserTaskStartDate(
+        engineDatabaseExtension.changeFlowNodeStartDate(
           processInstanceDto.getId(),
           historicUserTaskInstanceDto.getTaskDefinitionKey(),
           startTime

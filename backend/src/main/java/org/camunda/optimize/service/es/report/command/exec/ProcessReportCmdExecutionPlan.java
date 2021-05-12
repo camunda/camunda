@@ -55,6 +55,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
       getAllFilters(context.getReportData()),
       context.getTimezone()
     );
+
     return boolQueryBuilder;
   }
 

@@ -10,7 +10,6 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
-import org.camunda.optimize.service.es.writer.usertask.CanceledUserTaskWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningActivityInstanceFetcher;
@@ -31,12 +30,10 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private final CanceledUserTaskWriter canceledUserTaskWriter;
 
   public ActivityInstanceEngineImportMediatorFactory(final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                      final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                      final RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                                     final CanceledUserTaskWriter canceledUserTaskWriter,
                                                      final BeanFactory beanFactory,
                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService) {
@@ -44,7 +41,6 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
-    this.canceledUserTaskWriter = canceledUserTaskWriter;
   }
 
   @Override
@@ -64,7 +60,6 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
       importIndexHandlerRegistry.getCompletedActivityInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext),
       new CompletedActivityInstanceImportService(
-        canceledUserTaskWriter,
         completedActivityInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,

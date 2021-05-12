@@ -32,7 +32,7 @@ public class IdentityLinkLogEntryDto implements OptimizeDto {
   private IdentityLinkLogType type;
   private String userId;
   private String groupId;
-  private String taskId;
+  private String taskId; // == userTaskId
   private String operationType;
   private String assignerId;
   private OffsetDateTime timestamp;

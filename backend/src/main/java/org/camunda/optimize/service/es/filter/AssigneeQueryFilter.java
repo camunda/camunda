@@ -15,8 +15,10 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createAssigneeFilterQuery;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createIdentityLinkFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 @Component
@@ -28,9 +30,18 @@ public class AssigneeQueryFilter implements QueryFilter<IdentityLinkFilterDataDt
     if (!CollectionUtils.isEmpty(assigneeFilters)) {
       final List<QueryBuilder> filters = query.filter();
       for (IdentityLinkFilterDataDto assigneeFilter : assigneeFilters) {
+        // TODO revert this change once a proper flownodetype filter for userTasks has been added in
+        //  ProcessReportDataDto.getAdditionalFiltersForReportType with OPT-5203
         filters.add(
-          nestedQuery(USER_TASKS, createAssigneeFilterQuery(assigneeFilter), ScoreMode.None)
+          nestedQuery(
+            FLOW_NODE_INSTANCES,
+            createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE, createUserTaskFlowNodeTypeFilter()),
+            ScoreMode.None
+          )
         );
+//        filters.add(
+//          nestedQuery(FLOW_NODE_INSTANCES, createAssigneeFilterQuery(assigneeFilter), ScoreMode.None)
+//        );
       }
     }
   }

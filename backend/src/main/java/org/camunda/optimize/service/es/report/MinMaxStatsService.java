@@ -23,7 +23,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.Stats;
-import org.elasticsearch.search.aggregations.metrics.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -120,22 +119,53 @@ public class MinMaxStatsService {
     final String pathForNestedStatsAgg,
     final Script script) {
     return context.getCombinedRangeMinMaxStats()
-      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, pathForNestedStatsAgg, script));
+      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, pathForNestedStatsAgg, script, null));
+  }
+
+  public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
+    final ExecutionContext<? extends SingleReportDataDto> context,
+    final QueryBuilder query,
+    final String indexName,
+    final String pathForNestedStatsAgg,
+    final Script script,
+    final BoolQueryBuilder filterQueryToWrapStatsWith) {
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(() -> getScriptedMinMaxStats(
+        query,
+        indexName,
+        pathForNestedStatsAgg,
+        script,
+        filterQueryToWrapStatsWith
+      ));
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
                                               final String indexName,
                                               final String pathForNestedStatsAgg,
                                               final Script script) {
-    final StatsAggregationBuilder statsAggregation =
-      AggregationBuilders.stats(STATS_AGGREGATION_FIRST_FIELD).script(script);
+    return getScriptedMinMaxStats(query, indexName, pathForNestedStatsAgg, script, null);
+  }
+
+  public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
+                                              final String indexName,
+                                              final String pathForNestedStatsAgg,
+                                              final Script script,
+                                              final BoolQueryBuilder filterQueryToWrapStatsWith) {
+    AggregationBuilder statsAggregation = AggregationBuilders.stats(STATS_AGGREGATION_FIRST_FIELD).script(script);
+
+    if (filterQueryToWrapStatsWith != null) {
+      statsAggregation = wrapWithFilterLimitedParentAggregation(
+        FILTER_AGGREGATION_FIRST_FIELD, filterQueryToWrapStatsWith, statsAggregation);
+    }
+
+    final AggregationBuilder finalStatsAggregation = statsAggregation;
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
       .aggregation(
         Optional.ofNullable(pathForNestedStatsAgg)
           .map(nestedPath -> nested(NESTED_AGGREGATION_FIRST_FIELD, nestedPath))
-          .map(nestedAgg -> (AggregationBuilder) nestedAgg.subAggregation(statsAggregation))
+          .map(nestedAgg -> (AggregationBuilder) nestedAgg.subAggregation(finalStatsAggregation))
           .orElse(statsAggregation)
       )
       .size(0);
@@ -154,10 +184,12 @@ public class MinMaxStatsService {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexName);
     }
 
-    final Stats minMaxStats = Optional.ofNullable(pathForNestedStatsAgg)
-      .map(paths -> ((Nested) response.getAggregations().get(NESTED_AGGREGATION_FIRST_FIELD)).getAggregations())
-      .orElse(response.getAggregations())
-      .get(STATS_AGGREGATION_FIRST_FIELD);
+    final Stats minMaxStats = retrieveNestedWrappedStatsAggregation(
+      NESTED_AGGREGATION_FIRST_FIELD,
+      FILTER_AGGREGATION_FIRST_FIELD,
+      STATS_AGGREGATION_FIRST_FIELD,
+      response
+    );
     return new MinMaxStatDto(minMaxStats.getMin(), minMaxStats.getMax());
   }
 

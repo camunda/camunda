@@ -586,8 +586,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto runningInstance =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeFlowNodeStartDate(
       runningInstance.getId(),
       USER_TASK_1,
       now.minus(200L, ChronoUnit.MILLIS)
@@ -626,9 +626,9 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessInstanceEngineDto completedInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(completedInstance.getId(), START_EVENT, 1000.);
-    engineDatabaseExtension.changeActivityDuration(completedInstance.getId(), USER_TASK_1, 2000.);
-    engineDatabaseExtension.changeActivityDuration(completedInstance.getId(), END_EVENT, 3000.);
+    changeActivityDuration(completedInstance, START_EVENT, 1000.);
+    changeActivityDuration(completedInstance, USER_TASK_1, 2000.);
+    changeActivityDuration(completedInstance, END_EVENT, 3000.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -765,7 +765,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       subProcess);
     String processDefinitionId = engineIntegrationExtension.deployProcessAndGetId(miProcess);
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    engineDatabaseExtension.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
+    engineDatabaseExtension.changeFlowNodeTotalDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -1036,7 +1036,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto,
                                       final String serviceTaskId,
                                       final Double durationInMs) {
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), serviceTaskId, durationInMs.longValue());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstanceDto.getId(),
+      serviceTaskId,
+      durationInMs.longValue()
+    );
   }
 
   private ReportResultResponseDto<List<MapResultEntryDto>> getReportEvaluationResult(final String definitionKey,

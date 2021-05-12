@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade34to35PlanFactory;
-import org.camunda.optimize.upgrade.plan.indices.ProcessDefinitionIndexV4Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessDefinitionIndexV4Old;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 

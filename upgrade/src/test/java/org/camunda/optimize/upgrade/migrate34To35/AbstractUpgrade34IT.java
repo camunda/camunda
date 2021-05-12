@@ -8,8 +8,10 @@ package org.camunda.optimize.upgrade.migrate34To35;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
-import org.camunda.optimize.upgrade.plan.indices.EventProcessDefinitionIndexV3Old;
-import org.camunda.optimize.upgrade.plan.indices.ProcessDefinitionIndexV4Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.EventProcessDefinitionIndexV3Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.EventProcessInstanceIndexV6Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessDefinitionIndexV4Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessInstanceIndexV6Old;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,9 +21,16 @@ import java.util.Arrays;
 
 public class AbstractUpgrade34IT extends AbstractUpgradeIT {
   protected static final String FROM_VERSION = "3.4.0";
+  protected static final String EVENT_PROCESS_INSTANCE_INDEX_ID = "eventprocessinstanceindexid";
+  protected static final String PROCESS_INSTANCE_INDEX_ID = "processinstanceindexid";
 
   protected static final ProcessDefinitionIndexV4Old PROCESS_DEFINITION_INDEX = new ProcessDefinitionIndexV4Old();
-  protected static final EventProcessDefinitionIndexV3Old EVENT_PROCESS_DEFINITION_INDEX = new EventProcessDefinitionIndexV3Old();
+  protected static final EventProcessDefinitionIndexV3Old EVENT_PROCESS_DEFINITION_INDEX =
+    new EventProcessDefinitionIndexV3Old();
+  protected static final EventProcessInstanceIndexV6Old EVENT_PROCESS_INSTANCE_INDEX =
+    new EventProcessInstanceIndexV6Old(EVENT_PROCESS_INSTANCE_INDEX_ID);
+  protected static final ProcessInstanceIndexV6Old PROCESS_INSTANCE_INDEX =
+    new ProcessInstanceIndexV6Old(PROCESS_INSTANCE_INDEX_ID);
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -29,7 +38,9 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
     initSchema(
       Arrays.asList(
         PROCESS_DEFINITION_INDEX,
-        EVENT_PROCESS_DEFINITION_INDEX
+        EVENT_PROCESS_DEFINITION_INDEX,
+        PROCESS_INSTANCE_INDEX,
+        EVENT_PROCESS_INSTANCE_INDEX
       )
     );
     setMetadataVersion(FROM_VERSION);
@@ -41,7 +52,7 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
       return prefixAwareClient.exists(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String message = String.format(
-        "Could not check if [%s] index exists.",index.getIndexName()
+        "Could not check if [%s] index exists.", index.getIndexName()
       );
       throw new OptimizeRuntimeException(message, e);
     }

@@ -42,8 +42,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -51,6 +52,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
 
   private static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
+  private static final String FLOW_NODES_AGGREGATION = "flowNodeInstances";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask names
@@ -68,15 +70,17 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
       .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .order(BucketOrder.key(true))
-      .field(USER_TASKS + "." + getIdentityField())
+      .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
       .missing(GROUP_BY_IDENTITY_MISSING_KEY);
     distributedByPart.createAggregations(context).forEach(identityTermsAggregation::subAggregation);
-    final NestedAggregationBuilder groupByIdentityAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
+    final NestedAggregationBuilder groupByIdentityAggregation = nested(FLOW_NODES_AGGREGATION, FLOW_NODE_INSTANCES)
       .subAggregation(
-        filter(
-          FILTERED_USER_TASKS_AGGREGATION,
-          createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
-        ).subAggregation(identityTermsAggregation));
+        filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
+          .subAggregation(
+            filter(
+              FILTERED_USER_TASKS_AGGREGATION,
+              createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+            ).subAggregation(identityTermsAggregation)));
 
     return Collections.singletonList(groupByIdentityAggregation);
   }
@@ -85,7 +89,8 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     final Aggregations aggregations = response.getAggregations();
-    final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
+    final Nested flowNodes = aggregations.get(FLOW_NODES_AGGREGATION);
+    final Filter userTasks = flowNodes.getAggregations().get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final List<GroupByResult> groupedData = getByIdentityAggregationResults(response, filteredUserTasks, context);
 

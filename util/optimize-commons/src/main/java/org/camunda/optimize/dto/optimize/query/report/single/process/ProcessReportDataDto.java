@@ -155,6 +155,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     if (isGroupByEndDateReport()) {
       return ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
     }
+    // TODO OPT-5203 add "real" flowNodeType filter for userTask reports with follow up task
     return Collections.emptyList();
   }
 

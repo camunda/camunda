@@ -431,14 +431,14 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     final ProcessInstanceEngineDto firstInstance =
       deployAndStartSimpleUserTaskProcess(Collections.singletonMap("doubleVar", 1.0));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), START_EVENT, 2000);
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_1, 1000);
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), END_EVENT, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), START_EVENT, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), USER_TASK_1, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), END_EVENT, 3000);
     // We change the duration of only the user task of the second instance so it misses the filter
     final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
       firstInstance.getDefinitionId(), Collections.singletonMap("doubleVar", 2.0));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(secondInstance.getId(), USER_TASK_1, 10000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(secondInstance.getId(), USER_TASK_1, 10000);
     importAllEngineEntitiesFromScratch();
 
     // when

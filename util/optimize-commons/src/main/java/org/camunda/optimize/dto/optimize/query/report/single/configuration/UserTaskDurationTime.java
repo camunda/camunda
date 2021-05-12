@@ -12,8 +12,8 @@ import lombok.Getter;
 import static org.camunda.optimize.dto.optimize.ReportConstants.IDLE_USER_TASK_DURATION_TIME;
 import static org.camunda.optimize.dto.optimize.ReportConstants.TOTAL_USER_TASK_DURATION_TIME;
 import static org.camunda.optimize.dto.optimize.ReportConstants.WORK_USER_TASK_DURATION_TIME;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 
 @AllArgsConstructor
@@ -21,7 +21,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 public enum UserTaskDurationTime {
   IDLE(IDLE_USER_TASK_DURATION_TIME, USER_TASK_IDLE_DURATION),
   WORK(WORK_USER_TASK_DURATION_TIME, USER_TASK_WORK_DURATION),
-  TOTAL(TOTAL_USER_TASK_DURATION_TIME, USER_TASK_TOTAL_DURATION),
+  TOTAL(TOTAL_USER_TASK_DURATION_TIME, FLOW_NODE_TOTAL_DURATION),
   ;
 
   private final String id;

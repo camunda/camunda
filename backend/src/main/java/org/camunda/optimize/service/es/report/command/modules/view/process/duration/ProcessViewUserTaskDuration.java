@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getUserTaskDurationScript;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -109,6 +109,6 @@ public class ProcessViewUserTaskDuration extends ProcessViewMultiAggregation {
   }
 
   private String getDurationFieldName(final UserTaskDurationTime userTaskDurationTime) {
-    return USER_TASKS + "." + userTaskDurationTime.getDurationFieldName();
+    return FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName();
   }
 }

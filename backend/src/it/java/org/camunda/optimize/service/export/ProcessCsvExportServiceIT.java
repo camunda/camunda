@@ -313,8 +313,8 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START_EVENT, 0L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END_EVENT, 0L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceEngineDto.getId(), START_EVENT, 0L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceEngineDto.getId(), END_EVENT, 0L);
     return processInstanceEngineDto;
   }
 

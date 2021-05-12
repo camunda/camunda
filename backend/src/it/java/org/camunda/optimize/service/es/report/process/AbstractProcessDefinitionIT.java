@@ -262,7 +262,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected void changeActivityDuration(final ProcessInstanceEngineDto processInstance,
                                         final Double durationInMs) {
-    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMs.longValue());
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMs.longValue());
   }
 
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
@@ -345,12 +345,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final String userTaskKey,
                                              final Number durationInMs) {
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
   }
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final Number durationInMs) {
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
@@ -394,7 +394,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                          final OffsetDateTime now,
                                          final String userTaskId,
                                          final Number offsetDurationInMs) {
-    engineDatabaseExtension.changeUserTaskStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       processInstanceDto.getId(), userTaskId, now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
     );
   }
@@ -409,7 +409,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                          final OffsetDateTime now,
                                          final String userTaskKey,
                                          final Number offsetDurationInMs) {
-
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto -> {

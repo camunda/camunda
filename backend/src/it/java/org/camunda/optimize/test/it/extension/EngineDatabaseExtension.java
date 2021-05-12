@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.test.it.extension;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
@@ -43,6 +45,13 @@ public class EngineDatabaseExtension implements Extension {
   private static final String DB_URL_H2_TEMPLATE = "jdbc:h2:tcp://localhost:9092/mem:%s";
   private static final String USER_H2 = "sa";
   private static final String PASS_H2 = "";
+
+  private static final String ACTIVITY_INSTANCE_TABLE = "ACT_HI_ACTINST";
+  private static final String USER_TASK_INSTANCE_TABLE = "ACT_HI_TASKINST";
+  private static final String ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD = "ACT_ID_";
+  private static final String USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD = "TASK_DEF_KEY_";
+  private static final Set<String> FLOW_NODE_INSTANCE_TABLES =
+    ImmutableSet.of(ACTIVITY_INSTANCE_TABLE, USER_TASK_INSTANCE_TABLE);
 
   private static final String UPDATE_INSTANCE_END_TIME_SQL =
     "UPDATE ACT_HI_PROCINST SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
@@ -104,292 +113,175 @@ public class EngineDatabaseExtension implements Extension {
   }
 
   @SneakyThrows
-  public void changeActivityDuration(String processInstanceId,
-                                     String activityId,
-                                     Number durationInMs) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET DURATION_ = ? WHERE " +
-      "PROC_INST_ID_ = ? AND " +
-      "ACT_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, durationInMs.longValue());
-    statement.setString(2, processInstanceId);
-    statement.setString(3, activityId);
-    statement.executeUpdate();
+  public void changeAllFlowNodeTotalDurations(final String processInstanceId,
+                                              final Number durationInMs) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnFlowNodeInstanceTotalDurations(table, processInstanceId, durationInMs)
+    );
     connection.commit();
   }
 
   @SneakyThrows
-  public void changeAllActivityDurations(String processInstanceId,
-                                         Number durationInMs) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET DURATION_ = ? WHERE " +
-      "PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, durationInMs.longValue());
-    statement.setString(2, processInstanceId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  public void changeActivityDurationForProcessDefinition(String processDefinitionId,
-                                                         Number durationInMs) throws SQLException {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET DURATION_ = ? WHERE " +
-      "PROC_DEF_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, durationInMs.longValue());
-    statement.setString(2, processDefinitionId);
-    statement.executeUpdate();
+  public void changeFlowNodeTotalDuration(final String processInstanceId,
+                                          final String flowNodeId,
+                                          final Number durationInMs) {
+    executeUpdateOnAllFlowNodeInstanceTotalDurations(
+      ACTIVITY_INSTANCE_TABLE,
+      ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD,
+      processInstanceId,
+      flowNodeId,
+      durationInMs
+    );
+    executeUpdateOnAllFlowNodeInstanceTotalDurations(
+      USER_TASK_INSTANCE_TABLE,
+      USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD,
+      processInstanceId,
+      flowNodeId,
+      durationInMs
+    );
     connection.commit();
   }
 
   @SneakyThrows
-  public void changeActivityInstanceStartDate(String processInstanceId,
-                                              OffsetDateTime startDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET START_TIME_ = ? WHERE " +
-      "PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
-    statement.setString(2, processInstanceId);
-    statement.executeUpdate();
+  public void changeFlowNodeTotalDurationForProcessDefinition(final String processDefinitionId,
+                                                              final Number durationInMs) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceTotalDurationsForProcessDefinition(
+        table,
+        processDefinitionId,
+        durationInMs
+      )
+    );
     connection.commit();
   }
 
   @SneakyThrows
-  public void changeActivityInstanceStartDate(String processInstanceId,
-                                              String activityId,
-                                              OffsetDateTime startDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET START_TIME_ = ? WHERE " +
-      "PROC_INST_ID_ = ?" +
-      "AND ACT_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
-    statement.setString(2, processInstanceId);
-    statement.setString(3, activityId);
-    statement.executeUpdate();
+  public void changeFirstFlowNodeInstanceStartDate(final String flowNodeId,
+                                                   final OffsetDateTime startDate) {
+    executeUpdateOnFirstFlowNodeInstanceStartDate(
+      ACTIVITY_INSTANCE_TABLE,
+      ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD,
+      flowNodeId,
+      startDate
+    );
+    executeUpdateOnFirstFlowNodeInstanceStartDate(
+      USER_TASK_INSTANCE_TABLE,
+      USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD,
+      flowNodeId,
+      startDate
+    );
     connection.commit();
   }
 
   @SneakyThrows
-  public void changeActivityInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
-    }
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeFirstActivityInstanceStartDate(String activityInstanceId,
-                                                   OffsetDateTime startDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET START_TIME_ = ? WHERE " +
-      "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY START_TIME_ LIMIT 1) ";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
-    statement.setString(2, activityInstanceId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeActivityInstanceStartDateForProcessDefinition(final String processDefinitionId,
-                                                                  final OffsetDateTime startDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET START_TIME_ = ? WHERE " +
-      "PROC_DEF_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
-    statement.setString(2, processDefinitionId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void updateActivityInstanceStartDates(Map<String, OffsetDateTime> processInstanceToDates) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceToDates.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
-    }
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeActivityInstanceEndDate(String processInstanceId,
-                                            OffsetDateTime endDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET END_TIME_ = ? WHERE " +
-      "PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, processInstanceId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeActivityInstanceEndDate(String processInstanceId,
-                                            String activityId,
-                                            OffsetDateTime endDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET END_TIME_ = ? WHERE " +
-      "PROC_INST_ID_ = ?" +
-      "AND ACT_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, processInstanceId);
-    statement.setString(3, activityId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeActivityInstanceEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
-    }
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeFirstActivityInstanceEndDate(String activityId,
-                                                 OffsetDateTime endDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET END_TIME_ = ? WHERE " +
-      "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY END_TIME_ LIMIT 1) ";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, activityId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeActivityInstanceEndDateForProcessDefinition(final String processDefinitionId,
-                                                                final OffsetDateTime endDate) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET END_TIME_ = ? WHERE " +
-      "PROC_DEF_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, processDefinitionId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void updateActivityInstanceEndDates(Map<String, OffsetDateTime> processInstanceToDates) {
-    String sql = "UPDATE ACT_HI_ACTINST " +
-      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToActivityEndDate : processInstanceToDates.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToActivityEndDate.getValue()));
-      statement.setString(2, idToActivityEndDate.getKey());
-      statement.executeUpdate();
-    }
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeUserTaskDuration(final String processInstanceId,
-                                     final Number durationInMs) {
-    String sql = "UPDATE ACT_HI_TASKINST " +
-      "SET DURATION_ = ? WHERE " +
-      "PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, durationInMs.longValue());
-    statement.setString(2, processInstanceId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeUserTaskDuration(final String processInstanceId,
-                                     final String userTaskId,
-                                     final Number durationInMs) {
-    String sql = "UPDATE ACT_HI_TASKINST " +
-      "SET DURATION_ = ? WHERE " +
-      "PROC_INST_ID_ = ?" +
-      "AND TASK_DEF_KEY_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, durationInMs.longValue());
-    statement.setString(2, processInstanceId);
-    statement.setString(3, userTaskId);
-    statement.executeUpdate();
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeUserTaskStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) {
-    String sql = "UPDATE ACT_HI_TASKINST " +
-      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToStartDate.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
-    }
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeUserTaskEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) {
-    String sql = "UPDATE ACT_HI_TASKINST " +
-      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
-      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
-      statement.setString(2, idToStartDate.getKey());
-      statement.executeUpdate();
-    }
-    connection.commit();
-  }
-
-  @SneakyThrows
-  public void changeUserTaskStartDate(final String processInstanceId,
-                                      final String userTaskId,
+  public void changeFlowNodeStartDate(final String processInstanceId,
+                                      final String flowNodeId,
                                       final OffsetDateTime startDate) {
-    String sql = "UPDATE ACT_HI_TASKINST " +
-      "SET START_TIME_ = ? WHERE " +
-      "PROC_INST_ID_ = ?" +
-      "AND TASK_DEF_KEY_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
-    statement.setString(2, processInstanceId);
-    statement.setString(3, userTaskId);
-    statement.executeUpdate();
+    executeUpdateOnAllFlowNodeInstanceStartDates(
+      ACTIVITY_INSTANCE_TABLE,
+      ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD,
+      processInstanceId,
+      flowNodeId,
+      startDate
+    );
+    executeUpdateOnAllFlowNodeInstanceStartDates(
+      USER_TASK_INSTANCE_TABLE,
+      USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD,
+      processInstanceId,
+      flowNodeId,
+      startDate
+    );
     connection.commit();
   }
 
   @SneakyThrows
-  public void changeUserTaskEndDate(final String processInstanceId,
-                                    final String userTaskId,
+  public void changeAllFlowNodeStartDates(final Map<String, OffsetDateTime> processInstanceIdToStartDate) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceStartDates(table, processInstanceIdToStartDate)
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeAllFlowNodeStartDates(final String processInstanceId,
+                                          final OffsetDateTime startDate) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceStartDates(table, processInstanceId, startDate)
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeFlowNodeStartDatesForProcessDefinition(final String processDefinitionId,
+                                                           final OffsetDateTime startDate) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceStartDatesForProcessDefinition(table, processDefinitionId, startDate)
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeFirstFlowNodeInstanceEndDate(final String flowNodeId,
+                                                 final OffsetDateTime endDate) {
+    executeUpdateOnFirstFlowNodeInstanceEndDate(
+      ACTIVITY_INSTANCE_TABLE,
+      ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD,
+      flowNodeId,
+      endDate
+    );
+    executeUpdateOnFirstFlowNodeInstanceEndDate(
+      USER_TASK_INSTANCE_TABLE,
+      USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD,
+      flowNodeId,
+      endDate
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeAllFlowNodeEndDates(final String processInstanceId,
+                                        final OffsetDateTime endDate) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceEndDates(table, processInstanceId, endDate)
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeFlowNodeEndDatesForProcessDefinition(final String processDefinitionId,
+                                                         final OffsetDateTime endDate) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceEndDatesForProcessDefinition(table, processDefinitionId, endDate)
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeAllFlowNodeEndDates(final Map<String, OffsetDateTime> processInstanceIdToEndDate) {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> executeUpdateOnAllFlowNodeInstanceEndDates(table, processInstanceIdToEndDate)
+    );
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeFlowNodeEndDate(final String processInstanceId,
+                                    final String flowNodeId,
                                     final OffsetDateTime endDate) {
-    String sql = "UPDATE ACT_HI_TASKINST " +
-      "SET END_TIME_ = ? WHERE " +
-      "PROC_INST_ID_ = ?" +
-      "AND TASK_DEF_KEY_ = ?";
-    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, processInstanceId);
-    statement.setString(3, userTaskId);
-    statement.executeUpdate();
+    executeUpdateOnAllFlowNodeInstanceEndDates(
+      ACTIVITY_INSTANCE_TABLE,
+      ACTIVITY_INSTANCE_FLOW_NODE_ID_FIELD,
+      processInstanceId,
+      flowNodeId,
+      endDate
+    );
+    executeUpdateOnAllFlowNodeInstanceEndDates(
+      USER_TASK_INSTANCE_TABLE,
+      USER_TASK_INSTANCE_FLOW_NODE_ID_FIELD,
+      processInstanceId,
+      flowNodeId,
+      endDate
+    );
     connection.commit();
   }
 
@@ -422,11 +314,11 @@ public class EngineDatabaseExtension implements Extension {
     changeUserTaskAssigneeOperationWithAssigneeIdTimestamp(taskId, timestamp, assigneeId, UNCLAIM_OPERATION_TYPE);
   }
 
+  @SneakyThrows
   public void changeUserTaskAssigneeOperationWithAssigneeIdTimestamp(final String taskId,
                                                                      final OffsetDateTime timestamp,
                                                                      final String assigneeId,
-                                                                     final IdentityLinkLogOperationType operationType)
-    throws SQLException {
+                                                                     final IdentityLinkLogOperationType operationType) {
     String sql = "UPDATE ACT_HI_IDENTITYLINK " +
       "SET TIMESTAMP_ = ? WHERE " +
       "TYPE_ = ?" +
@@ -443,7 +335,8 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
-  public void changeProcessInstanceState(String processInstanceId, String newState) throws SQLException {
+  @SneakyThrows
+  public void changeProcessInstanceState(String processInstanceId, String newState) {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET STATE_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
@@ -453,9 +346,8 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
-
-  public void changeVariableName(String processInstanceId, String oldVariableName, String newVariableName) throws
-                                                                                                           SQLException {
+  @SneakyThrows
+  public void changeVariableName(String processInstanceId, String oldVariableName, String newVariableName) {
     String sql = "UPDATE ACT_HI_DETAIL " +
       "SET NAME_ = ? WHERE PROC_INST_ID_ = ? AND NAME_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
@@ -717,6 +609,203 @@ public class EngineDatabaseExtension implements Extension {
     ResultSet statement = connection.createStatement().executeQuery(sql);
     statement.next();
     return statement.getInt("total");
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnFlowNodeInstanceTotalDurations(final String flowNodeTableName,
+                                                             final String processInstanceId,
+                                                             final Number durationInMs) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET DURATION_ = ? WHERE " +
+                                 "PROC_INST_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setLong(1, durationInMs.longValue());
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceTotalDurationsForProcessDefinition(final String flowNodeTableName,
+                                                                                    final String processDefinitionId,
+                                                                                    final Number durationInMs) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET DURATION_ = ? WHERE " +
+                                 "PROC_DEF_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setLong(1, durationInMs.longValue());
+    statement.setString(2, processDefinitionId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceStartDates(final String flowNodeTableName,
+                                                            final Map<String, OffsetDateTime> processInstanceIdToStartDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET START_TIME_ = ? " +
+                                 "WHERE PROC_INST_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToStartDate.entrySet()) {
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceStartDatesForProcessDefinition(final String flowNodeTableName,
+                                                                                final String processDefinitionId,
+                                                                                final OffsetDateTime startDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET START_TIME_ = ? WHERE " +
+                                 "PROC_DEF_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, processDefinitionId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceStartDates(final String flowNodeTableName,
+                                                            final String processInstanceId,
+                                                            final OffsetDateTime startDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET START_TIME_ = ? WHERE " +
+                                 "PROC_INST_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceEndDates(final String flowNodeTableName,
+                                                          final String processInstanceId,
+                                                          final OffsetDateTime endDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET END_TIME_ = ? WHERE " +
+                                 "PROC_INST_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceEndDatesForProcessDefinition(final String flowNodeTableName,
+                                                                              final String processDefinitionId,
+                                                                              final OffsetDateTime endDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET END_TIME_ = ? WHERE " +
+                                 "PROC_DEF_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
+    statement.setString(2, processDefinitionId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceTotalDurations(final String flowNodeTableName,
+                                                                final String flowNodeIdFieldName,
+                                                                final String processInstanceId,
+                                                                final String flowNodeId,
+                                                                final Number durationInMs) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET DURATION_ = ? WHERE " +
+                                 "PROC_INST_ID_ = ?" +
+                                 "AND %s = ?", flowNodeTableName, flowNodeIdFieldName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setLong(1, durationInMs.longValue());
+    statement.setString(2, processInstanceId);
+    statement.setString(3, flowNodeId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceEndDates(final String flowNodeTableName,
+                                                          final Map<String, OffsetDateTime> processInstanceIdToEndDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET END_TIME_ = ? " +
+                                 "WHERE PROC_INST_ID_ = ?", flowNodeTableName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+  }
+
+  @SneakyThrows
+  public void executeUpdateOnFirstFlowNodeInstanceStartDate(final String flowNodeTableName,
+                                                            final String flowNodeIdFieldName,
+                                                            final String flowNodeId,
+                                                            final OffsetDateTime startDate) {
+    String sql = String.format(
+      "UPDATE %s " +
+        "SET START_TIME_ = ? WHERE " +
+        "ID_ = (SELECT ID_ FROM %s " +
+        "WHERE %s = ? " +
+        "ORDER BY START_TIME_ LIMIT 1) ",
+      flowNodeTableName,
+      flowNodeTableName,
+      flowNodeIdFieldName
+    );
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, flowNodeId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceStartDates(final String flowNodeTableName,
+                                                            final String flowNodeIdFieldName,
+                                                            final String processInstanceId,
+                                                            final String flowNodeId,
+                                                            final OffsetDateTime startDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET START_TIME_ = ? WHERE " +
+                                 "PROC_INST_ID_ = ?" +
+                                 "AND %s = ?", flowNodeTableName, flowNodeIdFieldName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, flowNodeId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnFirstFlowNodeInstanceEndDate(final String flowNodeTableName,
+                                                           final String flowNodeIdFieldName,
+                                                           final String flowNodeId,
+                                                           final OffsetDateTime endDate) {
+    String sql = String.format(
+      "UPDATE %s " +
+        "SET END_TIME_ = ? WHERE " +
+        "ID_ = (SELECT ID_ FROM %s WHERE %s = ? ORDER BY END_TIME_ LIMIT 1) ",
+      flowNodeTableName,
+      flowNodeTableName,
+      flowNodeIdFieldName
+    );
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
+    statement.setString(2, flowNodeId);
+    statement.executeUpdate();
+  }
+
+  @SneakyThrows
+  private void executeUpdateOnAllFlowNodeInstanceEndDates(final String flowNodeTableName,
+                                                          final String flowNodeIdFieldName,
+                                                          final String processInstanceId,
+                                                          final String flowNodeId,
+                                                          final OffsetDateTime endDate) {
+    String sql = String.format("UPDATE %s " +
+                                 "SET END_TIME_ = ? " +
+                                 "WHERE PROC_INST_ID_ = ?" +
+                                 "AND %s = ?", flowNodeTableName, flowNodeIdFieldName);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, flowNodeId);
+    statement.executeUpdate();
   }
 
   private boolean usePostgresOptimizations() {

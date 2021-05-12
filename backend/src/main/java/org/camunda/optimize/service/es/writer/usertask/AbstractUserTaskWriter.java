@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
@@ -28,20 +28,22 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
 import static org.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE_OPERATIONS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANCELED;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceDataWriter<UserTaskInstanceDto> {
+public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceDataWriter<FlowNodeInstanceDto> {
   protected final ObjectMapper objectMapper;
 
   protected AbstractUserTaskWriter(final OptimizeElasticsearchClient esClient,
@@ -56,14 +58,16 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
   protected static String createUpdateUserTaskMetricsScript() {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-        .put("userTasksField", USER_TASKS)
+        .put("flowNodesField", FLOW_NODE_INSTANCES)
+        .put("flowNodeTypeField", FLOW_NODE_TYPE)
+        .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
         .put("assigneeOperationsField", USER_TASK_ASSIGNEE_OPERATIONS)
-        .put("startDateField", USER_TASK_START_DATE)
-        .put("endDateField", USER_TASK_END_DATE)
+        .put("startDateField", FLOW_NODE_START_DATE)
+        .put("endDateField", FLOW_NODE_END_DATE)
         .put("idleDurationInMsField", USER_TASK_IDLE_DURATION)
         .put("workDurationInMsField", USER_TASK_WORK_DURATION)
-        .put("totalDurationInMsField", USER_TASK_TOTAL_DURATION)
-        .put("canceledField", USER_TASK_CANCELED)
+        .put("totalDurationInMsField", FLOW_NODE_TOTAL_DURATION)
+        .put("canceledField", FLOW_NODE_CANCELED)
         .put("operationTypeClaim", CLAIM_OPERATION_TYPE.getId())
         .put("operationTypeUnclaim", UNCLAIM_OPERATION_TYPE.getId())
         .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
@@ -72,10 +76,15 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
 
     // @formatter:off
     return substitutor.replace(
-      "if (ctx._source.${userTasksField} != null) {\n" +
+      "if (ctx._source.${flowNodesField} != null) {\n" +
         "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
 
-        "for (def currentTask : ctx._source.${userTasksField}) {\n" +
+        "for (def currentTask : ctx._source.${flowNodesField}) {\n" +
+          // Ignore any flowNodes that aren't userTasks
+          "if(!currentTask.${flowNodeTypeField}.equalsIgnoreCase(\"${userTaskFlowNodeType}\")){\n" +
+            "continue;\n" +
+          "}\n" +
+        
           "def totalWorkTimeInMs = 0;\n" +
           "def totalIdleTimeInMs = 0;\n" +
           "def workTimeHasChanged = false;\n" +
@@ -135,7 +144,7 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
           "}\n" +
 
         // Edge case: no assignee operations exist but task was finished (task was completed or canceled without claim)
-        "else if(currentTask.${assigneeOperationsField}.isEmpty() && currentTask.${totalDurationInMsField} != null) {\n" +
+        "else if(currentTask.${totalDurationInMsField} != null) {\n" +
           "def wasCanceled = Boolean.TRUE.equals(currentTask.${canceledField});\n" +
           "if(wasCanceled) {\n" +
             // Task was cancelled --> assumed to have been idle the entire time
@@ -163,35 +172,34 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
     // @formatter:on
   }
 
-  protected UpdateRequest createUserTaskUpdateImportRequest(final Map.Entry<String, List<UserTaskInstanceDto>> activityInstanceEntry) {
-    final List<UserTaskInstanceDto> userTasks = activityInstanceEntry.getValue();
-    final String activityInstanceId = activityInstanceEntry.getKey();
-    final String processDefinitionKey = userTasks.get(0).getProcessDefinitionKey();
+  protected UpdateRequest createUserTaskUpdateImportRequest(final Map.Entry<String, List<FlowNodeInstanceDto>> userTaskInstanceEntry) {
+    final List<FlowNodeInstanceDto> userTasks = userTaskInstanceEntry.getValue();
+    final String processInstanceId = userTaskInstanceEntry.getKey();
 
     final Script updateScript = createUpdateScript(userTasks);
 
-    final UserTaskInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
+    final FlowNodeInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
       .orElseThrow(() -> new OptimizeRuntimeException("No user tasks to import provided"));
     final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
-      .processInstanceId(firstUserTaskInstance.getProcessInstanceId())
+      .processInstanceId(processInstanceId)
       .engine(firstUserTaskInstance.getEngine())
-      .userTasks(userTasks)
+      .flowNodeInstances(userTasks)
       .build();
     String newEntryIfAbsent;
     try {
       newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
     } catch (JsonProcessingException e) {
       String reason = String.format(
-        "Error while processing JSON for user tasks with ID [%s].",
-        activityInstanceId
+        "Error while processing JSON for user tasks of process instance with ID [%s].",
+        processInstanceId
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
     return new UpdateRequest()
-      .index(getProcessInstanceIndexAliasName(processDefinitionKey))
-      .id(activityInstanceId)
+      .index(getProcessInstanceIndexAliasName(firstUserTaskInstance.getProcessDefinitionKey()))
+      .id(processInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -199,13 +207,13 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
 
   protected List<ImportRequestDto> generateUserTaskImports(final String importItemName,
                                                            final OptimizeElasticsearchClient esClient,
-                                                           final List<UserTaskInstanceDto> userTaskInstances) {
+                                                           final List<FlowNodeInstanceDto> userTaskInstances) {
     log.debug("Writing [{}] {} to ES.", userTaskInstances.size(), importItemName);
 
-    createInstanceIndicesIfMissing(userTaskInstances, UserTaskInstanceDto::getProcessDefinitionKey);
+    createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getProcessDefinitionKey);
 
-    Map<String, List<UserTaskInstanceDto>> userTaskToProcessInstance = new HashMap<>();
-    for (UserTaskInstanceDto userTask : userTaskInstances) {
+    Map<String, List<FlowNodeInstanceDto>> userTaskToProcessInstance = new HashMap<>();
+    for (FlowNodeInstanceDto userTask : userTaskInstances) {
       userTaskToProcessInstance.putIfAbsent(userTask.getProcessInstanceId(), new ArrayList<>());
       userTaskToProcessInstance.get(userTask.getProcessInstanceId()).add(userTask);
     }
@@ -219,8 +227,8 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
       .collect(Collectors.toList());
   }
 
-  private Script createUpdateScript(List<UserTaskInstanceDto> userTasks) {
-    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, userTasks);
+  private Script createUpdateScript(List<FlowNodeInstanceDto> userTasks) {
+    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(FLOW_NODE_INSTANCES, userTasks);
     return createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), scriptParameters, objectMapper);
   }
 

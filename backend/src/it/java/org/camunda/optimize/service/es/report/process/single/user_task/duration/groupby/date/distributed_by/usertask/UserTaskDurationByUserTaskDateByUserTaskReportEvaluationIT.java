@@ -663,12 +663,12 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto firstInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, firstInstance.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
-    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto secondInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, secondInstance.getId());
 
@@ -685,7 +685,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .filter().assignee().ids(filterValues).operator(filterOperator)
       .filterLevel(FilterApplicationLevel.INSTANCE).add().buildList();
     reportData.setFilter(assigneeFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(expectedInstanceCount);
@@ -792,10 +793,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     changeDuration(processInstanceDto, USER_TASK_2, 1000.);
     // We also have to change both durations as the instance level filtering applies to the activities and the
     // view level filtering applies to the user tasks
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), USER_TASK_1, 2000.);
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), USER_TASK_1, 2000.);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), USER_TASK_2, 1000.);
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), USER_TASK_2, 1000.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_1, 2000.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_2, 1000.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -1139,7 +1138,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
                                          final OffsetDateTime now,
                                          final String userTaskId,
                                          final long offsetDuration) {
-    engineDatabaseExtension.changeUserTaskStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       processInstanceDto.getId(),
       userTaskId,
       now.minus(offsetDuration, ChronoUnit.MILLIS)
@@ -1185,16 +1184,16 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
 
   @Override
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
-    engineDatabaseExtension.changeUserTaskEndDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(updates);
   }
 
   @Override
   protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
                                         final String userTaskKey,
                                         final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
-    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 
 }

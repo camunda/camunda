@@ -113,17 +113,17 @@ pipeline {
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
                 NUMBER_OF_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_count' | jq '.count') || true
-                NUMBER_OF_ACTIVITY_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"events": {"nested": {"path": "events"},"aggs": {"event_count": {"value_count": {"field": "events.id"}}}}}}' | jq '.aggregations.events.doc_count') || true
-                NUMBER_OF_USER_TASKS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"userTasks": {"nested": {"path": "userTasks"},"aggs": {"user_task_Count": {"value_count": {"field": "userTasks.id"}}}}}}' | jq '.aggregations.userTasks.doc_count') || true
+                NUMBER_OF_ACTIVITY_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"flowNodes": {"nested": {"path": "flowNodeInstances"}}}}' | jq '.aggregations.flowNodes.doc_count') || true
+                NUMBER_OF_USER_TASKS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size":0,"aggs":{"flowNodes":{"nested":{"path":"flowNodeInstances"},"aggs":{"user_task_flow_nodes":{"filter":{"bool":{"must":[{"term":{"flowNodeInstances.flowNodeType":{"value":"userTask","boost":1.0}}}],"adjust_pure_negative":true,"boost":1.0}}}}}}}' | jq '.aggregations.flowNodes.user_task_flow_nodes.doc_count') || true
                 NUMBER_OF_VARIABLES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0, "aggs": {"variables": {"nested": { "path": "variables" },  "aggs": { "variable_count": { "value_count": { "field": "variables.id" } } } } } }' | jq '.aggregations.variables.doc_count') || true
                 NUMBER_OF_DECISION_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-decision-instance/_count' | jq '.count') || true
 
                 # note: each call here is followed by `|| true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
                 EXPECTED_NUMBER_OF_PROCESS_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_procinst;") || true
+                EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_actinst;") || true
                 EXPECTED_NUMBER_OF_USER_TASKS=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) as total from act_hi_taskinst;") || true
                 EXPECTED_NUMBER_OF_VARIABLES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_varinst where var_type_ in (\'string\', \'double\', \'integer\', \'long\', \'short\', \'date\', \'boolean\' ) and CASE_INST_ID_  is  null;") || true
-                EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_actinst;") || true
                 EXPECTED_NUMBER_OF_DECISION_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_decinst;") || true
 
                 echo "NUMBER_OF_PROCESS_INSTANCES"

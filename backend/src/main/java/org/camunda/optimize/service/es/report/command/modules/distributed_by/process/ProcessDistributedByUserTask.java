@@ -17,8 +17,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -31,7 +31,7 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByModelEleme
 
   @Override
   protected String getModelElementIdPath() {
-    return USER_TASKS + "." + USER_TASK_ACTIVITY_ID;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID;
   }
 
   @Override

@@ -14,9 +14,9 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -39,7 +39,7 @@ public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNo
       .forEach(flowNodeId -> boolQueryBuilder
         .should(
           nestedQuery(
-            EVENTS,
+            FLOW_NODE_INSTANCES,
             boolQuery()
               .must(termQuery(nestedActivityIdFieldLabel(), flowNodeId))
               .mustNot(existsQuery(nestedEndDateFieldLabel())),
@@ -49,11 +49,11 @@ public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNo
   }
 
   private String nestedActivityIdFieldLabel() {
-    return EVENTS + "." + ACTIVITY_ID;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID;
   }
 
   private String nestedEndDateFieldLabel() {
-    return EVENTS + "." + END_DATE;
+    return FLOW_NODE_INSTANCES + "." + END_DATE;
   }
 
 }

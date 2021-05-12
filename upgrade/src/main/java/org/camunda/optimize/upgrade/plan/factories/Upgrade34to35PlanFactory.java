@@ -13,7 +13,9 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -21,6 +23,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -34,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
@@ -47,6 +51,8 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.4.0")
       .toVersion("3.5.0")
       .addUpgradeSteps(migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(dependencies))
+      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
+      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
       .build();
   }
 
@@ -54,8 +60,9 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     UpgradeExecutionDependencies dependencies) {
     final Map<String, Object> processDefinitionIdsToFlowNodeDataProcessDefinition = getAllExistingDataForFlowNodes(
       ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME, dependencies);
-    final Map<String, Object> processDefinitionIdsToFlowNodeDataEventProcessDefinition = getAllExistingDataForFlowNodes(
-      ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME, dependencies);
+    final Map<String, Object> processDefinitionIdsToFlowNodeDataEventProcessDefinition =
+      getAllExistingDataForFlowNodes(
+        ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME, dependencies);
 
     //@formatter:off
     String script =
@@ -77,6 +84,81 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
         Collections.emptySet()
       )
     );
+  }
+
+  private static List<UpgradeStep> mergeUserTaskAndFlowNodeData(final UpgradeExecutionDependencies dependencies,
+                                                                final boolean eventBased) {
+    List<String> indexIdentifiers = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
+      dependencies.getEsClient(),
+      eventBased
+    );
+
+    return indexIdentifiers.stream()
+      .map(indexIdentifier ->
+             new UpdateIndexStep(
+               eventBased ? new EventProcessInstanceIndex(indexIdentifier) : new ProcessInstanceIndex(indexIdentifier),
+               getMergeUserTaskFlowNodeMappingScript()
+             ))
+      .collect(toList());
+  }
+
+  private static String getMergeUserTaskFlowNodeMappingScript() {
+    // @formatter:off
+      return "" +
+        "def flowNodeInstances = ctx._source.events;" +
+        "def userTaskInstances = ctx._source.userTasks;" +
+
+        "for(flowNode in flowNodeInstances){" +
+          "flowNode.flowNodeInstanceId = flowNode.id;" +
+          "flowNode.flowNodeId = flowNode.activityId;" +
+          "flowNode.flowNodeType = flowNode.activityType;" +
+          "flowNode.totalDurationInMs = flowNode.durationInMs;" +
+          "flowNode.remove(\"id\");" +
+          "flowNode.remove(\"activityId\");" +
+          "flowNode.remove(\"activityType\");" +
+          "flowNode.remove(\"durationInMs\");" +
+
+          "if(flowNode.flowNodeType.equalsIgnoreCase(\"userTask\")){ " +
+            "userTaskInstances.stream()" +
+              ".filter(userTask -> userTask.activityInstanceId.equals(flowNode.flowNodeInstanceId))" +
+              ".findFirst()" +
+              ".ifPresent(" +
+                "userTask -> {" +
+                  "flowNode.flowNodeInstanceId = userTask.activityInstanceId;" +
+                  "flowNode.userTaskInstanceId = userTask.id;" +
+                  "flowNode.dueDate = userTask.dueDate;" +
+                  "flowNode.deleteReason = userTask.deleteReason;" +
+                  "flowNode.assignee = userTask.assignee;" +
+                  "flowNode.candidateGroups = userTask.candidateGroups;" +
+                  "flowNode.assigneeOperations = userTask.assigneeOperations;" +
+                  "flowNode.candidateGroupOperations = userTask.candidateGroupOperations;" +
+                  "flowNode.totalDurationInMs = userTask.totalDurationInMs;" +
+                  "flowNode.idleDurationInMs = userTask.idleDurationInMs;" +
+                  "flowNode.workDurationInMs = userTask.workDurationInMs;" +
+                "}" +
+              ");" +
+          "userTaskInstances.removeIf(userTask -> userTask.activityInstanceId.equals(flowNode.flowNodeInstanceId));" +
+          "}" +
+        "}" +
+
+        // Also add userTasks whose flowNodeInstance may not have been imported yet
+        "for(userTask in userTaskInstances) {" +
+          "userTask.flowNodeInstanceId = userTask.activityInstanceId;" +
+          "userTask.userTaskInstanceId = userTask.id;" +
+          "userTask.flowNodeId = userTask.activityId;" +
+          "userTask.processInstanceId = ctx._source.processInstanceId;" +
+          "userTask.flowNodeType = \"userTask\";" +
+          "userTask.remove(\"id\");" +
+          "userTask.remove(\"activityId\");" +
+          "userTask.remove(\"activityInstanceId\");" +
+          "userTask.remove(\"activityType\");" +
+          "flowNodeInstances.add(userTask);" +
+        "}" +
+
+        "ctx._source.flowNodeInstances = flowNodeInstances;" +
+        "ctx._source.remove(\"events\");" +
+        "ctx._source.remove(\"userTasks\");";
+      // @formatter:on
   }
 
   private static Map<String, Object> getAllExistingDataForFlowNodes(final String indexName,

@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -32,7 +32,7 @@ public class ProcessDistributedByFlowNode extends ProcessDistributedByModelEleme
 
   @Override
   protected String getModelElementIdPath() {
-    return EVENTS + "." + ACTIVITY_ID;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID;
   }
 
   @Override

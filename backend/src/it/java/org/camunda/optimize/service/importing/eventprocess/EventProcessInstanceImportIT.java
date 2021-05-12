@@ -178,7 +178,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -189,24 +189,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
 
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedStartEventId)
+                .flowNodeInstanceId(ingestedStartEventId)
                 .startDate(startDateTime)
                 .endDate(startDateTime)
-                .durationInMs(0L)
-                .activityType("startEvent")
-                .activityId(BPMN_START_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("startEvent")
+                .flowNodeId(BPMN_START_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build(),
               FlowNodeInstanceDto.builder()
-                .id(ingestedEndEventId)
+                .flowNodeInstanceId(ingestedEndEventId)
                 .startDate(endDateTime)
                 .endDate(endDateTime)
-                .durationInMs(0L)
-                .activityType("endEvent")
-                .activityId(BPMN_END_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("endEvent")
+                .flowNodeId(BPMN_END_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -266,8 +266,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     assertThat(getEventProcessInstancesFromElasticsearch())
       .singleElement()
       .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getEvents())
-          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+        assertThat(processInstanceDto.getFlowNodeInstances())
+          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
           .containsExactlyInAnyOrder(
             Tuple.tuple(BPMN_START_EVENT_ID, false),
             Tuple.tuple(USER_TASK_ID_ONE, true)
@@ -298,8 +298,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     assertThat(getEventProcessInstancesFromElasticsearch())
       .singleElement()
       .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getEvents())
-          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+        assertThat(processInstanceDto.getFlowNodeInstances())
+          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
           .containsExactlyInAnyOrder(
             Tuple.tuple(BPMN_START_EVENT_ID, false),
             Tuple.tuple(USER_TASK_ID_ONE, false)
@@ -315,8 +315,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     assertThat(getEventProcessInstancesFromElasticsearch())
       .singleElement()
       .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getEvents())
-          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+        assertThat(processInstanceDto.getFlowNodeInstances())
+          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
           .containsExactlyInAnyOrder(
             Tuple.tuple(BPMN_START_EVENT_ID, false),
             Tuple.tuple(USER_TASK_ID_ONE, true)
@@ -357,7 +357,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -367,24 +367,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               endDateTime,
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedStartEventId)
+                .flowNodeInstanceId(ingestedStartEventId)
                 .startDate(startDateTime)
                 .endDate(startDateTime)
-                .durationInMs(0L)
-                .activityType("startEvent")
-                .activityId(BPMN_START_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("startEvent")
+                .flowNodeId(BPMN_START_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build(),
               FlowNodeInstanceDto.builder()
-                .id(ingestedEndEventId)
+                .flowNodeInstanceId(ingestedEndEventId)
                 .startDate(endDateTime)
                 .endDate(endDateTime)
-                .durationInMs(0L)
-                .activityType("endEvent")
-                .activityId(BPMN_END_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("endEvent")
+                .flowNodeId(BPMN_END_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -426,7 +426,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -437,24 +437,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
 
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedStartEventId)
+                .flowNodeInstanceId(ingestedStartEventId)
                 .startDate(startDateTime)
                 .endDate(startDateTime)
-                .durationInMs(0L)
-                .activityType("startEvent")
-                .activityId(BPMN_START_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("startEvent")
+                .flowNodeId(BPMN_START_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build(),
               FlowNodeInstanceDto.builder()
-                .id(ingestedEndEventId)
+                .flowNodeInstanceId(ingestedEndEventId)
                 .startDate(endDateTime)
                 .endDate(endDateTime)
-                .durationInMs(0L)
-                .activityType("endEvent")
-                .activityId(BPMN_END_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("endEvent")
+                .flowNodeId(BPMN_END_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -498,7 +498,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -509,24 +509,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
 
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedStartEventId)
+                .flowNodeInstanceId(ingestedStartEventId)
                 .startDate(startDateTime)
                 .endDate(startDateTime)
-                .durationInMs(0L)
-                .activityType("startEvent")
-                .activityId(BPMN_START_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("startEvent")
+                .flowNodeId(BPMN_START_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build(),
               FlowNodeInstanceDto.builder()
-                .id(ingestedEndEventId)
+                .flowNodeInstanceId(ingestedEndEventId)
                 .startDate(updatedEndDateTime)
                 .endDate(updatedEndDateTime)
-                .durationInMs(0L)
-                .activityType("endEvent")
-                .activityId(BPMN_END_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("endEvent")
+                .flowNodeId(BPMN_END_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -562,7 +562,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -573,15 +573,15 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               PROCESS_INSTANCE_STATE_ACTIVE
             ));
 
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedStartEventId)
+                .flowNodeInstanceId(ingestedStartEventId)
                 .startDate(startDateTime)
                 .endDate(startDateTime)
-                .durationInMs(0L)
-                .activityType("startEvent")
-                .activityId(BPMN_START_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("startEvent")
+                .flowNodeId(BPMN_START_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -623,7 +623,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -634,24 +634,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
 
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedStartEventId)
+                .flowNodeInstanceId(ingestedStartEventId)
                 .startDate(startDateTime)
                 .endDate(startDateTime)
-                .durationInMs(0L)
-                .activityType("startEvent")
-                .activityId(BPMN_START_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("startEvent")
+                .flowNodeId(BPMN_START_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build(),
               FlowNodeInstanceDto.builder()
-                .id(ingestedEndEventId)
+                .flowNodeInstanceId(ingestedEndEventId)
                 .startDate(endDateTime)
                 .endDate(endDateTime)
-                .durationInMs(0L)
-                .activityType("endEvent")
-                .activityId(BPMN_END_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("endEvent")
+                .flowNodeId(BPMN_END_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -686,7 +686,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .usingRecursiveComparison()
             .ignoringFields(
-              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.flowNodeInstances,
               EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
               EventProcessInstanceDto.Fields.correlatedEventsById
             )
@@ -696,15 +696,15 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
               endDateTime,
               PROCESS_INSTANCE_STATE_COMPLETED
             ));
-          assertThat(processInstanceDto.getEvents())
+          assertThat(processInstanceDto.getFlowNodeInstances())
             .containsOnly(
               FlowNodeInstanceDto.builder()
-                .id(ingestedEndEventId)
+                .flowNodeInstanceId(ingestedEndEventId)
                 .startDate(endDateTime)
                 .endDate(endDateTime)
-                .durationInMs(0L)
-                .activityType("endEvent")
-                .activityId(BPMN_END_EVENT_ID)
+                .totalDurationInMs(0L)
+                .flowNodeType("endEvent")
+                .flowNodeId(BPMN_END_EVENT_ID)
                 .processInstanceId(processInstanceDto.getProcessInstanceId())
                 .build()
             );
@@ -712,9 +712,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   private EventProcessInstanceDto createExpectedEventProcessInstanceForTraceId(final String eventProcessId,
-                                                                                        final OffsetDateTime startDateTime,
-                                                                                        final OffsetDateTime endDateTime,
-                                                                                        final String state ) {
+                                                                               final OffsetDateTime startDateTime,
+                                                                               final OffsetDateTime endDateTime,
+                                                                               final String state) {
     Long duration = null;
     if (startDateTime != null && endDateTime != null) {
       duration = startDateTime.until(endDateTime, ChronoUnit.MILLIS);

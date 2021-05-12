@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class HistoricUserTaskInstanceDto implements EngineDto {
-  private String id;
+  private String id;  // == FlowNodeInstanceDto.userTaskId
   private String processDefinitionKey;
   private String processDefinitionId;
   private String processInstanceId;
@@ -22,7 +22,7 @@ public class HistoricUserTaskInstanceDto implements EngineDto {
   private String caseDefinitionId;
   private String caseInstanceId;
   private String caseExecutionId;
-  private String activityInstanceId;
+  private String activityInstanceId; // == FlowNodeInstanceDto.flowNodeInstanceId
   private String name;
   private String description;
   private String deleteReason;
@@ -31,7 +31,7 @@ public class HistoricUserTaskInstanceDto implements EngineDto {
   private OffsetDateTime startTime;
   private OffsetDateTime endTime;
   private Long duration;
-  private String taskDefinitionKey;
+  private String taskDefinitionKey; // == FlowNodeInstanceDto.flowNodeId
   private int priority;
   private OffsetDateTime due;
   private String parentTaskId;

@@ -55,11 +55,11 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
         assertThat(persistedProcessInstanceDto.getEndDate()).isNull();
         assertThat(persistedProcessInstanceDto.getState()).isEqualTo(ACTIVE_STATE);
 
-        assertThat(persistedProcessInstanceDto.getEvents())
+        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
           // only the running activity is imported
           .hasSize(1)
           .allSatisfy(activity -> assertThat(activity.getStartDate()).isNotNull())
-          .extracting(FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getDurationInMs)
+          .extracting(FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getTotalDurationInMs)
           .singleElement()
           .isEqualTo(tuple(null, null));
         assertThat(persistedProcessInstanceDto.getUserTasks())

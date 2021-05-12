@@ -58,7 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
@@ -257,8 +257,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
     final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getEvents())
-      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
         tuple(START_EVENT, false),
         tuple(USER_TASK_1, true)
@@ -274,8 +274,8 @@ public class ProcessImportIT extends AbstractImportIT {
     // then
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getEvents())
-      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
         tuple(START_EVENT, false),
         tuple(USER_TASK_1, false)
@@ -289,8 +289,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
     allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getEvents())
-      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
         tuple(START_EVENT, false),
         tuple(USER_TASK_1, true)
@@ -306,8 +306,8 @@ public class ProcessImportIT extends AbstractImportIT {
     // then
     List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getEvents())
-      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
         tuple(START_EVENT, false),
         tuple(USER_TASK_1, false)
@@ -321,8 +321,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
     allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
-    assertThat(allProcessInstances.get(0).getEvents())
-      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
         tuple(START_EVENT, false),
         tuple(USER_TASK_1, true)
@@ -485,7 +485,7 @@ public class ProcessImportIT extends AbstractImportIT {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
+      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(FLOW_NODE_INSTANCES);
       assertThat(events).hasSize(3);
     }
   }
@@ -515,7 +515,7 @@ public class ProcessImportIT extends AbstractImportIT {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
+      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(FLOW_NODE_INSTANCES);
       assertThat(events).hasSize(2);
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date).isNull();
@@ -589,7 +589,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
-    List<?> events = (List<?>) hit.getSourceAsMap().get(EVENTS);
+    List<?> events = (List<?>) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
     assertThat(events).hasSize(2);
   }
 
@@ -608,7 +608,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
-    List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
+    List<Map> events = (List) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
     boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
     assertThat(allEventsHaveEndDate).isTrue();
   }
@@ -636,7 +636,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     SearchHit hit = idsResp.getHits().getAt(0);
-    List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
+    List<Map> events = (List) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
     boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
     assertThat(allEventsHaveEndDate).isTrue();
   }
@@ -1045,10 +1045,10 @@ public class ProcessImportIT extends AbstractImportIT {
       .size(0)
       .fetchSource(false)
       .aggregation(
-        nested(EVENTS, EVENTS)
+        nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
           .subAggregation(
-            count(EVENTS + "_count")
-              .field(EVENTS + "." + ProcessInstanceIndex.EVENT_ID)
+            count(FLOW_NODE_INSTANCES + "_count")
+              .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
           )
       );
 
@@ -1060,10 +1060,10 @@ public class ProcessImportIT extends AbstractImportIT {
       .search(searchRequest, RequestOptions.DEFAULT);
 
     Nested nested = response.getAggregations()
-      .get(EVENTS);
+      .get(FLOW_NODE_INSTANCES);
     ValueCount countAggregator =
       nested.getAggregations()
-        .get(EVENTS + "_count");
+        .get(FLOW_NODE_INSTANCES + "_count");
     return countAggregator.getValue();
   }
 

@@ -32,8 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @RequiredArgsConstructor
@@ -51,7 +51,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder flowNodeTermsAggregation = terms(NESTED_EVENTS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
-      .field(EVENTS + "." + ACTIVITY_ID);
+      .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
     distributedByPart.createAggregations(context).forEach(flowNodeTermsAggregation::subAggregation);
     return Collections.singletonList(createFilteredFlowNodeAggregation(context, flowNodeTermsAggregation));
   }

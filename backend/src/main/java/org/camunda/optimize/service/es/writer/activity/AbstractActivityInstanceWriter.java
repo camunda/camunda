@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -80,7 +80,7 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
 
     try {
-      params.put(EVENTS, flowNodeInstanceDtos);
+      params.put(FLOW_NODE_INSTANCES, flowNodeInstanceDtos);
       final Script updateScript = createDefaultScriptWithSpecificDtoParams(
         createInlineUpdateScript(),
         params,
@@ -91,7 +91,7 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
         .processInstanceId(processInstanceId)
         .engine(activityInstances.get(0).getEngineAlias())
         .processDefinitionKey(activityInstances.get(0).getProcessDefinitionKey())
-        .events(flowNodeInstanceDtos)
+        .flowNodeInstances(flowNodeInstanceDtos)
         .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
       return new UpdateRequest()
@@ -102,7 +102,7 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
     } catch (IOException e) {
       String reason = String.format(
-        "Error while processing JSON for activity instances with ID [%s].",
+        "Error while processing JSON for activity instances for process instance ID [%s].",
         processInstanceId
       );
       throw new OptimizeRuntimeException(reason, e);
@@ -114,13 +114,14 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
   private List<FlowNodeInstanceDto> convertToFlowNodeInstanceDtos(List<FlowNodeEventDto> activityInstances) {
     return activityInstances.stream()
       .map(activity -> FlowNodeInstanceDto.builder()
-        .durationInMs(activity.getDurationInMs())
-        .activityId(activity.getActivityId())
-        .id(activity.getId())
-        .activityType(activity.getActivityType())
+        .flowNodeInstanceId(activity.getId())
+        .flowNodeId(activity.getActivityId())
+        .userTaskInstanceId(activity.getTaskId())
+        .processInstanceId(activity.getProcessInstanceId())
+        .flowNodeType(activity.getActivityType())
+        .totalDurationInMs(activity.getDurationInMs())
         .startDate(activity.getStartDate())
         .endDate(activity.getEndDate())
-        .processInstanceId(activity.getProcessInstanceId())
         .canceled(activity.getCanceled())
         .build()
       ).collect(Collectors.toList());

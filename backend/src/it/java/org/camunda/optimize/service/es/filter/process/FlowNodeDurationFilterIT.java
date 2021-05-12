@@ -254,10 +254,8 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       processDefinitionEngineDto.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_1, 20000);
-    engineDatabaseExtension.changeUserTaskDuration(firstInstance.getId(), USER_TASK_1, 20000);
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_2, 15000);
-    engineDatabaseExtension.changeUserTaskDuration(firstInstance.getId(), USER_TASK_2, 15000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), USER_TASK_1, 20000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), USER_TASK_2, 15000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -305,10 +303,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       processDefinitionEngineDto.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_1, 20000);
-    engineDatabaseExtension.changeUserTaskDuration(firstInstance.getId(), USER_TASK_1, 20000);
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_2, 15000);
-    engineDatabaseExtension.changeUserTaskDuration(firstInstance.getId(), USER_TASK_2, 15000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), USER_TASK_2, 15000);
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
 
     importAllEngineEntitiesFromScratch();
@@ -441,7 +436,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       .startProcessInstance(processDefinitionEngineDto.getId()).getId();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    engineDatabaseExtension.changeActivityDuration(
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
       processInstanceId,
       USER_TASK_1,
       ChronoUnit.valueOf(unit.name()).getDuration().toMillis() * actualUserTaskDuration
@@ -487,7 +482,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
       .startProcessInstance(processDefinitionEngineDto.getId()).getId();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    engineDatabaseExtension.changeActivityDuration(
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
       processInstanceId,
       USER_TASK_1,
       ChronoUnit.valueOf(unit.name()).getDuration().toMillis() * actualUserTaskDuration
@@ -611,17 +606,11 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
   }
 
   private void changeFlowNodeDuration(final String instanceId, final String flowNodeId, Number durationInMs) {
-    // We change both durations as the instance level filtering applies to the activity whereas the view level
-    // filtering applies to the user task itself in the case of user task reports
-    engineDatabaseExtension.changeActivityDuration(instanceId, flowNodeId, durationInMs);
-    engineDatabaseExtension.changeUserTaskDuration(instanceId, flowNodeId, durationInMs);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(instanceId, flowNodeId, durationInMs);
   }
 
   private void changeFlowNodeStartDate(final String instanceId, final String flowNodeId, OffsetDateTime startDate) {
-    // We change both start dates as the instance level filtering applies to the activity whereas the view level
-    // filtering applies to the user task itself in the case of user task reports
-    engineDatabaseExtension.changeActivityInstanceStartDate(instanceId, flowNodeId, startDate);
-    engineDatabaseExtension.changeUserTaskStartDate(instanceId, flowNodeId, startDate);
+    engineDatabaseExtension.changeFlowNodeStartDate(instanceId, flowNodeId, startDate);
   }
 
 }

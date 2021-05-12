@@ -204,14 +204,14 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getSavedInstanceWithId(traceTwoInst.getProcessInstanceId()).getEvents())
-      .containsExactlyInAnyOrderElementsOf(traceTwoInst.getEvents());
+    assertThat(getSavedInstanceWithId(traceTwoInst.getProcessInstanceId()).getFlowNodeInstances())
+      .containsExactlyInAnyOrderElementsOf(traceTwoInst.getFlowNodeInstances());
     final List<String> expectedEventIdsRemaining = eventTraceOne.stream()
       .map(CloudEventRequestDto::getId)
       .filter(event -> !eventIdsToDelete.contains(event))
       .collect(Collectors.toList());
-    assertThat(getSavedInstanceWithId(traceOneInst.getProcessInstanceId()).getEvents())
-      .extracting(FlowNodeInstanceDto::getId)
+    assertThat(getSavedInstanceWithId(traceOneInst.getProcessInstanceId()).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeInstanceId)
       .containsExactlyInAnyOrderElementsOf(expectedEventIdsRemaining);
     assertThatEventsHaveBeenDeleted(allSavedEventsBeforeDelete, eventIdsToDelete);
   }
@@ -240,9 +240,9 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .filter(event -> !eventIdsToDelete.contains(event))
       .collect(Collectors.toList());
     assertThat(getAllStoredEventInstances())
-      .extracting(EventProcessInstanceDto::getEvents)
+      .extracting(EventProcessInstanceDto::getFlowNodeInstances)
       .allSatisfy(events -> assertThat(events)
-        .extracting(FlowNodeInstanceDto::getId)
+        .extracting(FlowNodeInstanceDto::getFlowNodeInstanceId)
         .containsExactlyInAnyOrderElementsOf(expectedEventIdsRemaining));
     assertThatEventsHaveBeenDeleted(allSavedEventsBeforeDelete, eventIdsToDelete);
   }
@@ -290,14 +290,14 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getSavedInstanceWithId(traceTwoInst.getProcessInstanceId()).getEvents())
-      .containsExactlyInAnyOrderElementsOf(traceTwoInst.getEvents());
+    assertThat(getSavedInstanceWithId(traceTwoInst.getProcessInstanceId()).getFlowNodeInstances())
+      .containsExactlyInAnyOrderElementsOf(traceTwoInst.getFlowNodeInstances());
     final List<String> expectedEventIdsRemaining = eventTraceOne.stream()
       .map(CloudEventRequestDto::getId)
       .filter(event -> !eventIdsToDelete.contains(event))
       .collect(Collectors.toList());
-    assertThat(getSavedInstanceWithId(traceOneInst.getProcessInstanceId()).getEvents())
-      .extracting(FlowNodeInstanceDto::getId)
+    assertThat(getSavedInstanceWithId(traceOneInst.getProcessInstanceId()).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeInstanceId)
       .containsExactlyInAnyOrderElementsOf(expectedEventIdsRemaining);
     assertThatEventsHaveBeenDeleted(allSavedEventsBeforeDelete, eventIdsToDelete);
   }
@@ -328,9 +328,9 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
       .filter(event -> !eventIdsToDelete.contains(event))
       .collect(Collectors.toList());
     assertThat(getAllStoredEventInstances())
-      .extracting(EventProcessInstanceDto::getEvents)
+      .extracting(EventProcessInstanceDto::getFlowNodeInstances)
       .allSatisfy(events -> assertThat(events)
-        .extracting(FlowNodeInstanceDto::getId)
+        .extracting(FlowNodeInstanceDto::getFlowNodeInstanceId)
         .containsExactlyInAnyOrderElementsOf(expectedEventIdsRemaining));
     assertThatEventsHaveBeenDeleted(allSavedEventsBeforeDelete, eventIdsToDelete);
   }
@@ -419,8 +419,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
 
     // then the instance and unsaved events are unchanged
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(getSavedInstanceWithId(instance.getProcessInstanceId()).getEvents())
-      .containsExactlyInAnyOrderElementsOf(instance.getEvents());
+    assertThat(getSavedInstanceWithId(instance.getProcessInstanceId()).getFlowNodeInstances())
+      .containsExactlyInAnyOrderElementsOf(instance.getFlowNodeInstances());
 
     // when a second delete request is made
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -457,8 +457,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
 
     // then the instance and unsaved events are unchanged
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    assertThat(getSavedInstanceWithId(instance.getProcessInstanceId()).getEvents())
-      .containsExactlyInAnyOrderElementsOf(instance.getEvents());
+    assertThat(getSavedInstanceWithId(instance.getProcessInstanceId()).getFlowNodeInstances())
+      .containsExactlyInAnyOrderElementsOf(instance.getFlowNodeInstances());
 
     // when a second delete request is made
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -559,7 +559,7 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
                                                          final List<String> eventIds) {
     assertThat(eventInstance)
       .satisfies(storedInstance -> {
-        assertThat(storedInstance.getEvents()).extracting(FlowNodeInstanceDto::getId).containsAll(eventIds);
+        assertThat(storedInstance.getFlowNodeInstances()).extracting(FlowNodeInstanceDto::getFlowNodeInstanceId).containsAll(eventIds);
       });
   }
 
@@ -568,8 +568,8 @@ public class EventDeleteRestServiceIT extends AbstractEventRestServiceIT {
     assertThat(eventInstances)
       .singleElement()
       .satisfies(storedInstance -> {
-        assertThat(storedInstance.getEvents())
-          .extracting(FlowNodeInstanceDto::getId)
+        assertThat(storedInstance.getFlowNodeInstances())
+          .extracting(FlowNodeInstanceDto::getFlowNodeInstanceId)
           .doesNotContainAnyElementsOf(eventIds);
       });
   }

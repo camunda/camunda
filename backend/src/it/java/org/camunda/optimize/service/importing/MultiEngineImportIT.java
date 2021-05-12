@@ -207,7 +207,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
                                                   final String... expectedDefinitionKeys) {
     assertThat(processInstances)
       .allSatisfy(processInstance -> {
-        assertThat(processInstance.getEvents()).hasSize(2);
+        assertThat(processInstance.getFlowNodeInstances()).hasSize(2);
         assertThat(processInstance.getVariables()).hasSize(1);
       })
       .extracting(ProcessInstanceDto::getProcessDefinitionKey)

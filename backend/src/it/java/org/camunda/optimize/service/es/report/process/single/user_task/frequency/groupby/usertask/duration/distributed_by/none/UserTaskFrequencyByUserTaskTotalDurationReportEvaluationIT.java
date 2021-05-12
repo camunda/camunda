@@ -23,14 +23,14 @@ public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
     final Number durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeUserTaskDuration(processInstance.getId(), durationInMillis);
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMillis);
     return processInstance;
   }
 
   @Override
   protected void changeRunningInstanceReferenceDate(final ProcessInstanceEngineDto runningProcessInstance,
                                                     final OffsetDateTime startTime) {
-    engineDatabaseExtension.changeUserTaskStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
+    engineDatabaseExtension.changeFlowNodeStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
   }
 
   @Override

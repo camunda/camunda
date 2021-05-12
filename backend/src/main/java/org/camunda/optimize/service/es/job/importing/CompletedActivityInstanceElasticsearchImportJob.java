@@ -11,7 +11,6 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
-import org.camunda.optimize.service.es.writer.usertask.CanceledUserTaskWriter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,16 +19,13 @@ public class CompletedActivityInstanceElasticsearchImportJob extends Elasticsear
 
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventImportService;
-  private final CanceledUserTaskWriter canceledUserTaskWriter;
 
   public CompletedActivityInstanceElasticsearchImportJob(CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                          CamundaEventImportService camundaEventImportService,
-                                                         CanceledUserTaskWriter canceledUserTaskWriter,
                                                          Runnable callback) {
     super(callback);
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
-    this.canceledUserTaskWriter = canceledUserTaskWriter;
   }
 
   @Override
@@ -37,7 +33,6 @@ public class CompletedActivityInstanceElasticsearchImportJob extends Elasticsear
     final List<ImportRequestDto> importRequests = new ArrayList<>();
     importRequests.addAll(completedActivityInstanceWriter.generateActivityInstanceImports(newOptimizeEntities));
     importRequests.addAll(camundaEventImportService.generateCompletedCamundaActivityEventsImports(newOptimizeEntities));
-    importRequests.addAll(canceledUserTaskWriter.generateUserTaskImports(newOptimizeEntities));
     ElasticsearchWriterUtil.executeImportRequestsAsBulk("Completed activity instances", importRequests);
   }
 

@@ -665,10 +665,10 @@ public class FlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   public void viewLevelFlowNodeDurationFilterOnlyIncludesFlowNodesMatchingFilter() {
     // given
     ProcessInstanceEngineDto firstInstance = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), TEST_ACTIVITY, 5000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), TEST_ACTIVITY, 5000);
     ProcessInstanceEngineDto secondInstance =
       engineIntegrationExtension.startProcessInstance(firstInstance.getDefinitionId());
-    engineDatabaseExtension.changeActivityDuration(secondInstance.getId(), TEST_ACTIVITY, 10000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(secondInstance.getId(), TEST_ACTIVITY, 10000);
 
     importAllEngineEntitiesFromScratch();
 

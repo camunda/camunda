@@ -224,8 +224,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     final ProcessInstanceEngineDto instance =
       engineIntegrationExtension.deployAndStartProcessWithVariables(
         BpmnModels.getLoopingProcess(), ImmutableMap.of("anotherRound", true));
-    engineDatabaseExtension.changeFirstActivityInstanceStartDate(SERVICE_TASK_ID_1, firstActivityStart);
-    engineDatabaseExtension.changeFirstActivityInstanceEndDate(SERVICE_TASK_ID_1, firstActivityStart.plusHours(1));
+    engineDatabaseExtension.changeFirstFlowNodeInstanceStartDate(SERVICE_TASK_ID_1, firstActivityStart);
+    engineDatabaseExtension.changeFirstFlowNodeInstanceEndDate(SERVICE_TASK_ID_1, firstActivityStart.plusHours(1));
     importAllEngineEntitiesFromScratch();
 
     // when

@@ -1619,7 +1619,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(engineDto.getId(), USER_TASK_1, now.minusDays(2L));
+    engineDatabaseExtension.changeFlowNodeStartDate(engineDto.getId(), USER_TASK_1, now.minusDays(2L));
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 
@@ -1673,7 +1673,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(engineDto.getId(), START_EVENT, now.minusDays(2L));
+    engineDatabaseExtension.changeFlowNodeStartDate(engineDto.getId(), START_EVENT, now.minusDays(2L));
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 

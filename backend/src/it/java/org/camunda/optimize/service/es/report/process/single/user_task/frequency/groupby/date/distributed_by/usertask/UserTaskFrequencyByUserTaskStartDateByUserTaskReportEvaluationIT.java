@@ -74,13 +74,13 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
     engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
-    engineDatabaseExtension.changeUserTaskStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       firstInstance.getId(), USER_TASK_2, now.minus(100, ChronoUnit.MILLIS));
 
     final ProcessInstanceEngineDto secondInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
-    engineDatabaseExtension.changeUserTaskStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       secondInstance.getId(), USER_TASK_1, now.minus(100, ChronoUnit.MILLIS));
 
     importAllEngineEntitiesFromScratch();
@@ -142,13 +142,13 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT
 
   @Override
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(updates);
   }
 
   @Override
   protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
                                         final String userTaskKey,
                                         final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

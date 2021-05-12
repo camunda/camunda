@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.plan.indices;
+package org.camunda.optimize.upgrade.migrate34To35.indices;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex;
@@ -12,13 +12,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_ENGINE;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 
 public class ProcessDefinitionIndexV4Old extends AbstractDefinitionIndex {

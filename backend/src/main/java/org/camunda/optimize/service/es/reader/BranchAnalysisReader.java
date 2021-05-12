@@ -43,6 +43,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
@@ -74,28 +76,28 @@ public class BranchAnalysisReader {
       request.getTenantIds()
     ).ifPresent(bpmnModelInstance -> {
       final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
-      final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
+      final Set<String> flowNodeIdsWithMultipleIncomingSequenceFlows =
         extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
       final FlowNode gateway = bpmnModelInstance.getModelElementById(request.getGateway());
       final FlowNode end = bpmnModelInstance.getModelElementById(request.getEnd());
       final boolean canReachEndFromGateway = isPathPossible(gateway, end, Sets.newHashSet());
 
-      for (FlowNode activity : gatewayOutcomes) {
-        final Set<String> activitiesToExcludeFromBranchAnalysis = extractActivitiesToExclude(
-          gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd()
+      for (FlowNode flowNode : gatewayOutcomes) {
+        final Set<String> flowNodesToExcludeFromBranchAnalysis = extractActivitiesToExclude(
+          gatewayOutcomes, flowNodeIdsWithMultipleIncomingSequenceFlows, flowNode.getId(), request.getEnd()
         );
         BranchAnalysisOutcomeDto branchAnalysis = new BranchAnalysisOutcomeDto();
         if (canReachEndFromGateway) {
           branchAnalysis = branchAnalysis(
-            activity, request, activitiesToExcludeFromBranchAnalysis, timezone
+            flowNode, request, flowNodesToExcludeFromBranchAnalysis, timezone
           );
         } else {
-          branchAnalysis.setActivityId(activity.getId());
+          branchAnalysis.setActivityId(flowNode.getId());
           branchAnalysis.setActivitiesReached(0L); // End event cannot be reached from gateway
-          branchAnalysis.setActivityCount((calculateActivityCount(
-            activity.getId(),
+          branchAnalysis.setActivityCount((calculateFlowNodeCount(
+            flowNode.getId(),
             request,
-            activitiesToExcludeFromBranchAnalysis,
+            flowNodesToExcludeFromBranchAnalysis,
             timezone
           )));
         }
@@ -103,7 +105,7 @@ public class BranchAnalysisReader {
       }
 
       result.setEndEvent(request.getEnd());
-      result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet(), timezone));
+      result.setTotal(calculateFlowNodeCount(request.getEnd(), request, Collections.emptySet(), timezone));
     });
 
     return result;
@@ -127,19 +129,19 @@ public class BranchAnalysisReader {
   }
 
   private Set<String> extractActivitiesToExclude(final List<FlowNode> gatewayOutcomes,
-                                                 final Set<String> activityIdsWithMultipleIncomingSequenceFlows,
-                                                 final String currentActivityId,
-                                                 final String endEventActivityId) {
-    Set<String> activitiesToExcludeFromBranchAnalysis = new HashSet<>();
+                                                 final Set<String> flowNodeIdsWithMultipleIncomingSequenceFlows,
+                                                 final String currentFlowNodeId,
+                                                 final String endEventFlowNodeId) {
+    Set<String> flowNodesToExcludeFromBranchAnalysis = new HashSet<>();
     for (FlowNode gatewayOutgoingNode : gatewayOutcomes) {
-      String activityId = gatewayOutgoingNode.getId();
-      if (!activityIdsWithMultipleIncomingSequenceFlows.contains(activityId)) {
-        activitiesToExcludeFromBranchAnalysis.add(gatewayOutgoingNode.getId());
+      String flowNodeId = gatewayOutgoingNode.getId();
+      if (!flowNodeIdsWithMultipleIncomingSequenceFlows.contains(flowNodeId)) {
+        flowNodesToExcludeFromBranchAnalysis.add(gatewayOutgoingNode.getId());
       }
     }
-    activitiesToExcludeFromBranchAnalysis.remove(currentActivityId);
-    activitiesToExcludeFromBranchAnalysis.remove(endEventActivityId);
-    return activitiesToExcludeFromBranchAnalysis;
+    flowNodesToExcludeFromBranchAnalysis.remove(currentFlowNodeId);
+    flowNodesToExcludeFromBranchAnalysis.remove(endEventFlowNodeId);
+    return flowNodesToExcludeFromBranchAnalysis;
   }
 
   private BranchAnalysisOutcomeDto branchAnalysis(final FlowNode flowNode,
@@ -149,8 +151,8 @@ public class BranchAnalysisReader {
 
     BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
     result.setActivityId(flowNode.getId());
-    result.setActivityCount(calculateActivityCount(flowNode.getId(), request, activitiesToExclude, timezone));
-    result.setActivitiesReached(calculateReachedEndEventActivityCount(
+    result.setActivityCount(calculateFlowNodeCount(flowNode.getId(), request, activitiesToExclude, timezone));
+    result.setActivitiesReached(calculateReachedEndEventFlowNodeCount(
       flowNode.getId(),
       request,
       activitiesToExclude,
@@ -160,24 +162,24 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private long calculateReachedEndEventActivityCount(final String activityId,
+  private long calculateReachedEndEventFlowNodeCount(final String flowNodeId,
                                                      final BranchAnalysisRequestDto request,
                                                      final Set<String> activitiesToExclude,
                                                      final ZoneId timezone) {
     final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
-      .must(createMustMatchActivityIdQuery(request.getGateway()))
-      .must(createMustMatchActivityIdQuery(activityId))
-      .must(createMustMatchActivityIdQuery(request.getEnd()));
+      .must(createMustMatchFlowNodeIdQuery(request.getGateway()))
+      .must(createMustMatchFlowNodeIdQuery(flowNodeId))
+      .must(createMustMatchFlowNodeIdQuery(request.getEnd()));
     return executeQuery(request, query, timezone);
   }
 
-  private long calculateActivityCount(final String activityId,
+  private long calculateFlowNodeCount(final String flowNodeId,
                                       final BranchAnalysisRequestDto request,
                                       final Set<String> activitiesToExclude,
                                       final ZoneId timezone) {
     final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
-      .must(createMustMatchActivityIdQuery(request.getGateway()))
-      .must(createMustMatchActivityIdQuery(activityId));
+      .must(createMustMatchFlowNodeIdQuery(request.getGateway()))
+      .must(createMustMatchFlowNodeIdQuery(flowNodeId));
     return executeQuery(request, query, timezone);
   }
 
@@ -190,21 +192,21 @@ public class BranchAnalysisReader {
       new ProcessInstanceIndex(request.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
-    excludeActivities(activitiesToExclude, query);
+    excludeFlowNodes(activitiesToExclude, query);
     return query;
   }
 
-  private void excludeActivities(final Set<String> activitiesToExclude,
-                                 final BoolQueryBuilder query) {
-    for (String excludeActivityId : activitiesToExclude) {
-      query.mustNot(createMustMatchActivityIdQuery(excludeActivityId));
+  private void excludeFlowNodes(final Set<String> flowNodeIdsToExclude,
+                                final BoolQueryBuilder query) {
+    for (String excludeFlowNodeId : flowNodeIdsToExclude) {
+      query.mustNot(createMustMatchFlowNodeIdQuery(excludeFlowNodeId));
     }
   }
 
-  private NestedQueryBuilder createMustMatchActivityIdQuery(final String activityId) {
+  private NestedQueryBuilder createMustMatchFlowNodeIdQuery(final String flowNodeId) {
     return nestedQuery(
-      ProcessInstanceIndex.EVENTS,
-      termQuery("events.activityId", activityId),
+      FLOW_NODE_INSTANCES,
+      termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, flowNodeId),
       ScoreMode.None
     );
   }
@@ -240,9 +242,9 @@ public class BranchAnalysisReader {
   }
 
   private List<FlowNode> fetchGatewayOutcomes(final BpmnModelInstance bpmnModelInstance,
-                                              final String gatewayActivityId) {
+                                              final String gatewayFlowNodeId) {
     List<FlowNode> result = new ArrayList<>();
-    FlowNode flowNode = bpmnModelInstance.getModelElementById(gatewayActivityId);
+    FlowNode flowNode = bpmnModelInstance.getModelElementById(gatewayFlowNodeId);
     for (SequenceFlow sequence : flowNode.getOutgoing()) {
       result.add(sequence.getTarget());
     }
@@ -278,16 +280,16 @@ public class BranchAnalysisReader {
 
   private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(final BpmnModelInstance bpmnModelInstance) {
     Collection<SequenceFlow> sequenceFlowCollection = bpmnModelInstance.getModelElementsByType(SequenceFlow.class);
-    Set<String> activitiesWithOneIncomingSequenceFlow = new HashSet<>();
-    Set<String> activityIdsWithMultipleIncomingSequenceFlows = new HashSet<>();
+    Set<String> flowNodesWithOneIncomingSequenceFlow = new HashSet<>();
+    Set<String> flowNodeIdsWithMultipleIncomingSequenceFlows = new HashSet<>();
     for (SequenceFlow sequenceFlow : sequenceFlowCollection) {
-      String targetActivityId = sequenceFlow.getTarget().getId();
-      if (activitiesWithOneIncomingSequenceFlow.contains(targetActivityId)) {
-        activityIdsWithMultipleIncomingSequenceFlows.add(targetActivityId);
+      String targetFlowNodeId = sequenceFlow.getTarget().getId();
+      if (flowNodesWithOneIncomingSequenceFlow.contains(targetFlowNodeId)) {
+        flowNodeIdsWithMultipleIncomingSequenceFlows.add(targetFlowNodeId);
       } else {
-        activitiesWithOneIncomingSequenceFlow.add(targetActivityId);
+        flowNodesWithOneIncomingSequenceFlow.add(targetFlowNodeId);
       }
     }
-    return activityIdsWithMultipleIncomingSequenceFlows;
+    return flowNodeIdsWithMultipleIncomingSequenceFlows;
   }
 }

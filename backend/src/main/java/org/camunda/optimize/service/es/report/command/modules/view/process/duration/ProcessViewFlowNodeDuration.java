@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -25,12 +25,12 @@ public class ProcessViewFlowNodeDuration extends ProcessViewDuration {
 
   @Override
   protected String getReferenceDateFieldName(final ProcessReportDataDto reportData) {
-    return EVENTS + "." + ACTIVITY_START_DATE;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE;
   }
 
   @Override
   protected String getDurationFieldName(final ProcessReportDataDto definitionData) {
-    return EVENTS + "." + ACTIVITY_DURATION;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION;
   }
 
   @Override

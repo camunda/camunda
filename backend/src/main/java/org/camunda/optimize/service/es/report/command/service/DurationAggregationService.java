@@ -42,18 +42,18 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.camunda.optimize.es.aggregations.NumberHistogramAggregationUtil.generateHistogramFromScript;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 
 @Component
@@ -90,7 +90,7 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), getIndexName(context), EVENTS, durationCalculationScript
+      context, searchSourceBuilder.query(), getIndexName(context), FLOW_NODE_INSTANCES, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context, distributedByPart, durationCalculationScript, minMaxStats, this::createEventLimitingFilterQuery
@@ -105,7 +105,12 @@ public class DurationAggregationService {
     final UserTaskDurationTime userTaskDurationTime) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), getIndexName(context), USER_TASKS, durationCalculationScript
+      context,
+      searchSourceBuilder.query(),
+      getIndexName(context),
+      FLOW_NODE_INSTANCES,
+      durationCalculationScript,
+      createUserTaskFlowNodeTypeFilter()
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context,
@@ -147,8 +152,7 @@ public class DurationAggregationService {
   private Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
     final ExecutionContext<ProcessReportDataDto> context,
     final DistributedByPart<ProcessReportDataDto> distributedByPart,
-    final Script
-      durationCalculationScript,
+    final Script durationCalculationScript,
     final MinMaxStatDto minMaxStats,
     final BiFunction<FilterOperator, Double, QueryBuilder> limitingFilterCreator) {
 
@@ -167,7 +171,7 @@ public class DurationAggregationService {
 
     final double intervalInMillis = getIntervalInMillis(minValueInMillis, maxValueInMillis, customBucketDto);
 
-    final BoolQueryBuilder limitingFilter = QueryBuilders.boolQuery()
+    final BoolQueryBuilder limitingFilter = boolQuery()
       .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis));
 
     final HistogramAggregationBuilder histogramAggregation = generateHistogramFromScript(
@@ -214,8 +218,8 @@ public class DurationAggregationService {
     return createLimitingFilterQuery(
       filterOperator,
       (long) filterValueInMillis,
-      USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
-      USER_TASKS + "." + USER_TASK_START_DATE,
+      FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName(),
+      FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
       // user task duration calculations can be null (e.g. work time if the userTask hasn't been claimed)
       true
     );
@@ -226,8 +230,8 @@ public class DurationAggregationService {
     return createLimitingFilterQuery(
       filterOperator,
       (long) filterValueInMillis,
-      EVENTS + "." + ACTIVITY_DURATION,
-      EVENTS + "." + ACTIVITY_START_DATE,
+      FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION,
+      FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
       false
     );
   }

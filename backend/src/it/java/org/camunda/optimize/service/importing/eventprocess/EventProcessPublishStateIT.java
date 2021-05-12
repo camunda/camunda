@@ -766,9 +766,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       getEventProcessInstancesFromElasticsearchForProcessPublishStateId(finalPublishState.getId());
     assertThat(eventInstances)
       .singleElement()
-      .extracting(ProcessInstanceDto::getEvents)
+      .extracting(ProcessInstanceDto::getFlowNodeInstances)
       .satisfies(events -> assertThat(
-        events.stream().map(FlowNodeInstanceDto::getActivityId).collect(Collectors.toList()))
+        events.stream().map(FlowNodeInstanceDto::getFlowNodeId).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID));
   }
 
@@ -888,9 +888,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       getEventProcessInstancesFromElasticsearchForProcessPublishStateId(publishedMapping.getId());
     assertThat(eventInstances)
       .singleElement()
-      .extracting(ProcessInstanceDto::getEvents)
+      .extracting(ProcessInstanceDto::getFlowNodeInstances)
       .satisfies(events -> assertThat(
-        events.stream().map(FlowNodeInstanceDto::getActivityId).collect(Collectors.toList()))
+        events.stream().map(FlowNodeInstanceDto::getFlowNodeId).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID));
   }
 
@@ -901,12 +901,12 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   private void updateActivityStartEndTimestampInEngine(final String activityId,
                                                        final OffsetDateTime firstEventTimestamp,
                                                        final ProcessInstanceEngineDto processInstanceEngineDto) {
-    engineDatabaseExtension.changeActivityInstanceStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       processInstanceEngineDto.getId(),
       activityId,
       firstEventTimestamp
     );
-    engineDatabaseExtension.changeActivityInstanceEndDate(
+    engineDatabaseExtension.changeFlowNodeEndDate(
       processInstanceEngineDto.getId(),
       activityId,
       firstEventTimestamp

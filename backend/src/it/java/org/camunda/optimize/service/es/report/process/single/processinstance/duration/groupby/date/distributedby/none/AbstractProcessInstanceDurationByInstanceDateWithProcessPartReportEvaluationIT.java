@@ -70,11 +70,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     OffsetDateTime endDate = activityStartDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstReferenceDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       activityStartDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       endDate
     );
@@ -119,11 +119,11 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     OffsetDateTime endDate = activityStartDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       activityStartDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       endDate
     );
@@ -263,8 +263,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     OffsetDateTime activityStartDate = OffsetDateTime.now().minusHours(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_LOOP, activityStartDate);
-    engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_LOOP, activityStartDate.plusSeconds(2));
+    engineDatabaseExtension.changeFirstFlowNodeInstanceStartDate(START_LOOP, activityStartDate);
+    engineDatabaseExtension.changeFirstFlowNodeInstanceEndDate(END_LOOP, activityStartDate.plusSeconds(2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -294,7 +294,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeEndDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().plusHours(1)
     );
@@ -324,7 +324,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeFlowNodeStartDatesForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().minusHours(1)
     );
@@ -378,16 +378,16 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
 
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartdate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartdate.plusSeconds(1));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartdate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartdate.plusSeconds(1));
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartdate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartdate.plusSeconds(9));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartdate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartdate.plusSeconds(9));
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartdate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartdate.plusSeconds(2));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartdate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartdate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
 
@@ -454,8 +454,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     OffsetDateTime activityStartDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(1));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartDate.plusSeconds(1));
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
     importAllEngineEntitiesFromScratch();
@@ -499,20 +499,20 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
 
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(1));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartDate.plusSeconds(1));
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(2));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartDate.plusSeconds(2));
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), activityStartDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), activityStartDate.plusSeconds(9));
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto.getId(), activityStartDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto.getId(), activityStartDate.plusSeconds(9));
     adjustProcessInstanceDates(processInstanceDto.getId(), procInstRefDate, 0L);
     ProcessInstanceEngineDto processInstanceDto3 =
       engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto3.getId(), activityStartDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto3.getId(), activityStartDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(
       processInstanceDto3.getId(),
       activityStartDate.plusSeconds(1)
     );
@@ -694,8 +694,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     ProcessInstanceEngineDto processInstanceDto3 =
       engineIntegrationExtension.startProcessInstance(procDefDto.getId());
     adjustProcessInstanceDates(processInstanceDto3.getId(), procInstRefDate, -2L);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto3.getId(), activityStartDate);
-    engineDatabaseExtension.changeActivityInstanceEndDate(
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto3.getId(), activityStartDate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(
       processInstanceDto3.getId(),
       activityStartDate.plusSeconds(2)
     );
@@ -787,8 +787,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       OffsetDateTime newDate = now.minus(i, unit);
       idToNewStartDate.put(id, newDate);
       idToNewEndDate.put(id, newDate);
-      engineDatabaseExtension.changeActivityInstanceStartDate(id, now);
-      engineDatabaseExtension.changeActivityInstanceEndDate(id, now.plusSeconds(1));
+      engineDatabaseExtension.changeAllFlowNodeStartDates(id, now);
+      engineDatabaseExtension.changeAllFlowNodeEndDates(id, now.plusSeconds(1));
     }
     engineDatabaseExtension.changeProcessInstanceStartDates(idToNewStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDates(idToNewEndDate);
@@ -858,8 +858,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
     endDatesToUpdate.put(processInstanceDto2.getId(), activityStartDate.plusSeconds(activityDurationsInSec.get(1)));
     endDatesToUpdate.put(processInstanceDto3.getId(), activityStartDate.plusSeconds(activityDurationsInSec.get(2)));
 
-    engineDatabaseExtension.updateActivityInstanceStartDates(activityStartDatesToUpdate);
-    engineDatabaseExtension.updateActivityInstanceEndDates(endDatesToUpdate);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(activityStartDatesToUpdate);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(endDatesToUpdate);
   }
 
   private void assertDurationMapReportResults(AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse,

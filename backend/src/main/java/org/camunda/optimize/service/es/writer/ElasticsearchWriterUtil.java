@@ -289,7 +289,7 @@ public class ElasticsearchWriterUtil {
     try {
       BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
-        throw new OptimizeRuntimeException(String.format(
+         throw new OptimizeRuntimeException(String.format(
           "There were failures while performing bulk on %s.%n%s Message: %s",
           itemName,
           getHintForErrorMsg(bulkResponse.buildFailureMessage()),

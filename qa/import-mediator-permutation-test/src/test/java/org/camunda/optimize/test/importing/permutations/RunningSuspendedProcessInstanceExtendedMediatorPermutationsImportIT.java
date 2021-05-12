@@ -66,10 +66,10 @@ public class RunningSuspendedProcessInstanceExtendedMediatorPermutationsImportIT
         assertThat(persistedProcessInstanceDto.getStartDate()).isNotNull();
         assertThat(persistedProcessInstanceDto.getEndDate()).isNull();
         assertThat(persistedProcessInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
-        assertThat(persistedProcessInstanceDto.getEvents())
+        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
           .hasSize(numberOfEventsToImport)
           .allSatisfy(activity -> assertThat(activity.getStartDate()).isNotNull())
-          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getDurationInMs)
+          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getTotalDurationInMs)
           .contains(tuple(USER_TASK_1, null, null));
         assertThat(persistedProcessInstanceDto.getUserTasks())
           .hasSize(1)

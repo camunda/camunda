@@ -98,7 +98,7 @@ import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
@@ -419,10 +419,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .fetchSource(false)
       .size(0)
       .aggregation(
-        nested(EVENTS, EVENTS)
+        nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES)
           .subAggregation(
-            count(EVENTS + "_count")
-              .field(EVENTS + "." + ProcessInstanceIndex.EVENT_ID)
+            count(FLOW_NODE_INSTANCES + "_count")
+              .field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID)
           )
       );
 
@@ -438,10 +438,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
 
     Nested nested = searchResponse.getAggregations()
-      .get(EVENTS);
+      .get(FLOW_NODE_INSTANCES);
     ValueCount countAggregator =
       nested.getAggregations()
-        .get(EVENTS + "_count");
+        .get(FLOW_NODE_INSTANCES + "_count");
     return Long.valueOf(countAggregator.getValue()).intValue();
   }
 

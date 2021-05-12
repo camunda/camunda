@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +20,9 @@ import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -37,15 +41,20 @@ public class ProcessInstanceDto implements OptimizeDto {
   private Long duration; // duration in ms
   private String state;
   @Builder.Default
-  private List<FlowNodeInstanceDto> events = new ArrayList<>();
-  @Builder.Default
-  private List<UserTaskInstanceDto> userTasks = new ArrayList<>();
+  private List<FlowNodeInstanceDto> flowNodeInstances = new ArrayList<>();
   @Builder.Default
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
   @Builder.Default
   private List<IncidentDto> incidents = new ArrayList<>();
   private String engine;
   private String tenantId;
+
+  @JsonIgnore
+  public List<FlowNodeInstanceDto> getUserTasks() {
+    return flowNodeInstances.stream()
+      .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getFlowNodeType()))
+      .collect(toList());
+  }
 }
 
 

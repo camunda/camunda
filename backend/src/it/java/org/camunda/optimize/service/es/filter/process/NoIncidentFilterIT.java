@@ -102,7 +102,7 @@ public class NoIncidentFilterIT extends AbstractFilterIT {
       .containsExactlyInAnyOrder(longDurationNoIncidentInstance.getId(), secondNoIncidentInstance.getId());
 
     // when I add a flow node duration filter
-    engineDatabaseExtension.changeActivityDuration(longDurationNoIncidentInstance.getId(), START_EVENT, 20000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(longDurationNoIncidentInstance.getId(), START_EVENT, 20000);
     importAllEngineEntitiesFromScratch();
     reportData.setFilter(
       ProcessFilterBuilder.filter()

@@ -356,9 +356,9 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FIFTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME)
           )
         );
-        final Set<String> gatewayEventIds = processInstanceDto.getEvents().stream()
-          .filter(event -> event.getActivityType().equals(EXCLUSIVE_GATEWAY_TYPE))
-          .map(FlowNodeInstanceDto::getId)
+        final Set<String> gatewayEventIds = processInstanceDto.getFlowNodeInstances().stream()
+          .filter(event -> event.getFlowNodeType().equals(EXCLUSIVE_GATEWAY_TYPE))
+          .map(FlowNodeInstanceDto::getFlowNodeInstanceId)
           .collect(Collectors.toSet());
         assertThat(gatewayEventIds)
           .hasSize(4)
@@ -760,23 +760,23 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
   private void assertFlowNodeEventsForProcessInstance(ProcessInstanceDto processInstanceDto,
                                                       List<Tuple> flowNodeEvents) {
     assertThat(processInstanceDto)
-      .extracting(ProcessInstanceDto::getEvents)
+      .extracting(ProcessInstanceDto::getFlowNodeInstances)
       .satisfies(events -> assertThat(events)
         .allSatisfy(simpleEventDto -> {
           if (simpleEventDto.getEndDate() == null) {
-            assertThat(simpleEventDto.getDurationInMs()).isNull();
+            assertThat(simpleEventDto.getTotalDurationInMs()).isNull();
           } else {
-            assertThat(simpleEventDto).hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled);
+            assertThat(simpleEventDto).hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE);
           }
-          String activityType = simpleEventDto.getActivityType();
+          String activityType = simpleEventDto.getFlowNodeType();
           if (activityType.equals(EXCLUSIVE_GATEWAY_TYPE) || activityType.equals(PARALLEL_GATEWAY_TYPE)
             || activityType.equals(EVENT_BASED_GATEWAY_TYPE)) {
-            assertThat(simpleEventDto.getId()).startsWith(simpleEventDto.getActivityId());
+            assertThat(simpleEventDto.getFlowNodeInstanceId()).startsWith(simpleEventDto.getFlowNodeId());
           }
         })
         .extracting(
-          FlowNodeInstanceDto::getActivityType,
-          FlowNodeInstanceDto::getActivityId,
+          FlowNodeInstanceDto::getFlowNodeType,
+          FlowNodeInstanceDto::getFlowNodeId,
           FlowNodeInstanceDto::getStartDate,
           FlowNodeInstanceDto::getEndDate
         )

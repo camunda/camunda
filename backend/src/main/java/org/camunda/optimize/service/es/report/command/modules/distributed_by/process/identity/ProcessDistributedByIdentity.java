@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @RequiredArgsConstructor
 public abstract class ProcessDistributedByIdentity extends ProcessDistributedByPart {
@@ -58,7 +58,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
       .terms(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .order(BucketOrder.key(true))
-      .field(USER_TASKS + "." + getIdentityField())
+      .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
       .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     viewPart.createAggregations(context).forEach(identityTermsAggregation::subAggregation);
     return Collections.singletonList(

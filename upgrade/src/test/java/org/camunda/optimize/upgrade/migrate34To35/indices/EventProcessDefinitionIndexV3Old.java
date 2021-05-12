@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.plan.indices;
+package org.camunda.optimize.upgrade.migrate34To35.indices;
 
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 

@@ -37,8 +37,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENT_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
@@ -138,8 +138,8 @@ public class EventProcessInstanceWriter {
     final String updateItem = String.format("%d event process instance events by ID", eventIdsToDelete.size());
 
     final NestedQueryBuilder query = nestedQuery(
-      EVENTS,
-      termsQuery(EVENTS + "." + EVENT_ID, eventIdsToDelete.toArray()),
+      FLOW_NODE_INSTANCES,
+      termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete.toArray()),
       ScoreMode.None
     );
 
@@ -158,8 +158,8 @@ public class EventProcessInstanceWriter {
       Script.DEFAULT_SCRIPT_LANG,
       MessageFormat.format(
         "ctx._source.{0}.removeIf(event -> params.eventIdsToDelete.contains(event.{1}));\n",
-        EVENTS,
-        EVENT_ID
+        FLOW_NODE_INSTANCES,
+        FLOW_NODE_INSTANCE_ID
       ),
       params
     );
@@ -215,7 +215,7 @@ public class EventProcessInstanceWriter {
       addClosingGatewayInstancesFunction() +
       "void calculateAndAssignEventDuration(def event, def formatter) {\n" +
         "if (event.startDate != null && event.endDate != null) {\n" +
-        "  event.durationInMs = formatter.parse(event.endDate).getTime() - formatter.parse(event.startDate).getTime();\n" +
+        "  event.totalDurationInMs = formatter.parse(event.endDate).getTime() - formatter.parse(event.startDate).getTime();\n" +
         "}\n" +
       "}\n" +
 
@@ -232,13 +232,13 @@ public class EventProcessInstanceWriter {
       "processInstance.variables.addAll(processInstanceUpdate.variables);\n" +
 
       "removeExistingGateways(processInstance, params.gatewayLookup);\n" +
-      "Map existingEventsByIdMap = processInstance.events.stream()\n" +
-        ".collect(Collectors.toMap(event -> event.id, Function.identity()));\n" +
-      "def eventUpserts = processInstanceUpdate.events;\n" +
+      "Map existingEventsByIdMap = processInstance.flowNodeInstances.stream()\n" +
+        ".collect(Collectors.toMap(event -> event.flowNodeInstanceId, Function.identity()));\n" + // Note that we can rely on FlowNodeInstanceId as identifier as there are no userTasks in event based processes.
+      "def eventUpserts = processInstanceUpdate.flowNodeInstances;\n" +
       "for (def eventUpsert : eventUpserts) {\n" +
-        "def event = existingEventsByIdMap.get(eventUpsert.id);\n" +
+        "def event = existingEventsByIdMap.get(eventUpsert.flowNodeInstanceId);\n" + 
         "if (event == null) {\n" +
-        "  existingEventsByIdMap.put(eventUpsert.id, eventUpsert);\n" +
+        "  existingEventsByIdMap.put(eventUpsert.flowNodeInstanceId, eventUpsert);\n" +  
         "  event = eventUpsert;\n" +
         "} else {\n" +
         "  event.startDate = eventUpsert.startDate ?: event.startDate;\n" +
@@ -251,11 +251,11 @@ public class EventProcessInstanceWriter {
         "calculateAndAssignEventDuration(event, dateFormatter);\n" +
       "}\n" +
 
-      "Map existingFlowNodeInstancesByActivityId = existingEventsByIdMap.values().stream()\n" +
-        ".collect(Collectors.groupingBy(event -> event.activityId));\n" +
-      "existingFlowNodeInstancesByActivityId\n" +
+      "Map existingFlowNodeInstancesByFlowNodeId = existingEventsByIdMap.values().stream()\n" +
+        ".collect(Collectors.groupingBy(event -> event.flowNodeId));\n" +
+      "existingFlowNodeInstancesByFlowNodeId\n" +
         ".values()\n" +
-        ".forEach(byActivityIdList -> byActivityIdList.sort(eventDateComparator));\n" +
+        ".forEach(byFlowNodeIdList -> byFlowNodeIdList.sort(eventDateComparator));\n" +
       "def correlatedEventsById = processInstance.correlatedEventsById;\n" +
       "processInstanceUpdate.correlatedEventsById.forEach((eventId, correlationStateUpdate) -> {\n" +
         "correlatedEventsById.putIfAbsent(eventId, correlationStateUpdate);\n" +
@@ -271,16 +271,16 @@ public class EventProcessInstanceWriter {
         "def correlatedEventState = correlatedEventsById.get(flowNodeInstanceUpdate.sourceEventId);\n" +
         "def correlatedAsInstanceIds = correlatedEventState.correlatedAsToFlowNodeInstanceIds\n" +
           ".computeIfAbsent(flowNodeInstanceUpdate.mappedAs, key -> new ArrayList());\n" +
-        "def updateableFlowNodeInstance = Optional.ofNullable(existingFlowNodeInstancesByActivityId.get(flowNodeInstanceUpdate.flowNodeId))\n" +
+        "def updateableFlowNodeInstance = Optional.ofNullable(existingFlowNodeInstancesByFlowNodeId.get(flowNodeInstanceUpdate.flowNodeId))\n" +
           ".flatMap(flowNodeInstances -> flowNodeInstances.stream()\n" +
             ".filter(flowNodeInstance -> {\n" +
-            "  return correlatedAsInstanceIds.contains(flowNodeInstance.id) || flowNodeInstance.startDate == null || flowNodeInstance.endDate == null\n" +
+            "  return correlatedAsInstanceIds.contains(flowNodeInstance.flowNodeInstanceId) || flowNodeInstance.startDate == null || flowNodeInstance.endDate == null\n" +
             "})\n" +
             ".findFirst()\n" +
           ");\n" +
         "if(updateableFlowNodeInstance.isPresent()) {\n" +
         "  def flowNodeInstanceToUpdate = updateableFlowNodeInstance.get();\n" +
-        "  def wasAlreadyCorrelated = correlatedAsInstanceIds.contains(flowNodeInstanceToUpdate.id);\n" +
+        "  def wasAlreadyCorrelated = correlatedAsInstanceIds.contains(flowNodeInstanceToUpdate.flowNodeInstanceId);\n" +
         // These 'if' statements are required to stop updates of the 'wrong' event in a looping sequence,
         // which would result in the start date being after the end date or vice versa
         "  def eventDate = dateFormatter.parse(flowNodeInstanceUpdate.date);\n" +
@@ -294,16 +294,16 @@ public class EventProcessInstanceWriter {
         "    appliedUpdates.add(flowNodeInstanceUpdate);\n" +
         "  }\n" +
         "  if (appliedUpdates.contains(flowNodeInstanceUpdate)) {\n" +
-        "    if (!correlatedAsInstanceIds.contains(flowNodeInstanceToUpdate.id)) {\n" +
-        "      correlatedAsInstanceIds.add(flowNodeInstanceToUpdate.id);\n" +
+        "    if (!correlatedAsInstanceIds.contains(flowNodeInstanceToUpdate.flowNodeInstanceId)) {\n" +
+        "      correlatedAsInstanceIds.add(flowNodeInstanceToUpdate.flowNodeInstanceId);\n" +
         "    }\n" +
         "    calculateAndAssignEventDuration(flowNodeInstanceToUpdate, dateFormatter);\n" +
         "  }\n" +
         "}\n" +
       "}\n" +
 
-      "processInstance.events = new ArrayList(\n" +
-        "existingFlowNodeInstancesByActivityId.values().stream().flatMap(List::stream).collect(Collectors.toList())\n" +
+      "processInstance.flowNodeInstances = new ArrayList(\n" +
+        "existingFlowNodeInstancesByFlowNodeId.values().stream().flatMap(List::stream).collect(Collectors.toList())\n" +
       ");\n" +
       "processInstance.pendingFlowNodeInstanceUpdates = pendingFlowNodeInstanceUpdates.stream()\n" +
         ".filter(flowNodeInstanceUpdate -> !appliedUpdates.contains(flowNodeInstanceUpdate))\n" +
@@ -319,15 +319,15 @@ public class EventProcessInstanceWriter {
     // @formatter:off
     return
       "void updateProcessInstance(def instance, def formatter) {\n" +
-        "def startDate = instance.events.stream()\n" +
-        "  .filter(event -> event.activityType.equals(\"startEvent\"))\n" +
+        "def startDate = instance.flowNodeInstances.stream()\n" +
+        "  .filter(event -> event.flowNodeType.equals(\"startEvent\"))\n" +
         "  .map(event -> event.startDate)\n" +
         "  .filter(value -> value != null)\n" +
         "  .sorted()\n" +
         "  .findFirst()\n" +
         "  .ifPresent(value -> instance.startDate = value);\n" +
-        "def endDate = instance.events.stream()\n" +
-        "  .filter(event -> event.activityType.equals(\"endEvent\"))\n" +
+        "def endDate = instance.flowNodeInstances.stream()\n" +
+        "  .filter(event -> event.flowNodeType.equals(\"endEvent\"))\n" +
         "  .map(event -> event.endDate)\n" +
         "  .filter(value -> value != null)\n" +
         "  .sorted(Comparator.reverseOrder())\n" +
@@ -352,7 +352,7 @@ public class EventProcessInstanceWriter {
     return
       "void removeExistingGateways(def instance, def gatewayLookup) {\n" +
         "gatewayLookup.forEach(gatewayEvent -> \n" +
-          "instance.events.removeIf(event -> gatewayEvent.id.equals(event.activityId))\n" +
+          "instance.flowNodeInstances.removeIf(event -> gatewayEvent.id.equals(event.flowNodeId))\n" +
         ")" +
       "}\n";
     // @formatter:on
@@ -364,7 +364,7 @@ public class EventProcessInstanceWriter {
       "void addGatewaysForProcessInstance(def instance, def gatewayLookup, def startEndDateComparator, def processInstanceId, def dateFormatter) {\n" +
         "List gatewayEventsToAdd = new ArrayList();\n" +
         "List gatewayIdsInModel = gatewayLookup.stream().map(gateway -> gateway.id).collect(Collectors.toList());\n" +
-        "List existingEvents = new ArrayList(instance.events);\n" +
+        "List existingEvents = new ArrayList(instance.flowNodeInstances);\n" +
         "if (!existingEvents.isEmpty() && !gatewayLookup.isEmpty()) { \n" +
           "Collections.sort(existingEvents, startEndDateComparator);\n" +
           "for (def possibleGateway : gatewayLookup) {\n" +
@@ -381,7 +381,7 @@ public class EventProcessInstanceWriter {
           "}\n" +
           "existingEvents.addAll(gatewayEventsToAdd);\n" +
           "Collections.sort(existingEvents, startEndDateComparator);\n" +
-          "instance.events = existingEvents;\n" +
+          "instance.flowNodeInstances = existingEvents;\n" +
         "}\n" +
       "}\n";
   }
@@ -398,7 +398,7 @@ public class EventProcessInstanceWriter {
           //  node events, using the start date and end date of the target flow node event
           "if (gatewayIdsInModel.contains(previousNodeId)) {\n" +
             "for (def event : existingEvents) {\n" +
-              "if (possibleGateway.nextNodeIds.contains(event.activityId) && event.startDate != null) {\n" +
+              "if (possibleGateway.nextNodeIds.contains(event.flowNodeId) && event.startDate != null) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
                                     "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
@@ -409,10 +409,10 @@ public class EventProcessInstanceWriter {
           //  events, using the end date of the source flow node event and the start date of the target flow node event
           "} else {\n" +
             "List targetEvents = existingEvents.stream()" +
-               ".filter(event -> possibleGateway.nextNodeIds.contains(event.activityId) && event.startDate != null)\n" +
+               ".filter(event -> possibleGateway.nextNodeIds.contains(event.flowNodeId) && event.startDate != null)\n" +
                ".collect(Collectors.toList());\n" +
             "List sourceEvents = existingEvents.stream()" +
-               ".filter(event -> possibleGateway.previousNodeIds.get(0).equals(event.activityId) && event.endDate != null)\n" +
+               ".filter(event -> possibleGateway.previousNodeIds.get(0).equals(event.flowNodeId) && event.endDate != null)\n" +
                ".collect(Collectors.toList());\n" +
             "boolean gatewayCanBeAdded = !sourceEvents.isEmpty() && !targetEvents.isEmpty();\n" +
             "while (gatewayCanBeAdded) {\n" +
@@ -431,7 +431,7 @@ public class EventProcessInstanceWriter {
         // A gateway with a single source flow node that isn't a gateway can be added for every occurrence of that flow node event
         "} else if (!gatewayIdsInModel.contains(possibleGateway.previousNodeIds.get(0))) {" +
           "for (def event : existingEvents) {\n" +
-            "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
+            "if (possibleGateway.previousNodeIds.contains(event.flowNodeId) && event.endDate != null) {\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
                                   "event.endDate, event.endDate, processInstanceId, eventAddedCount);\n" +
@@ -442,7 +442,7 @@ public class EventProcessInstanceWriter {
         "} else {\n" +
           // For any gateway type, this is when any one of its target flow node events have occurred
           "for (def event : existingEvents) {\n" +
-            "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
+            "if (possibleGateway.nextNodeIds.contains(event.flowNodeId)) {\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
                                   "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
@@ -465,7 +465,7 @@ public class EventProcessInstanceWriter {
           //  occurrence of the target flow node event
           "if (!gatewayIdsInModel.contains(possibleGateway.nextNodeIds.get(0))) {\n" +
             "for (def event : existingEvents) {\n" +
-              "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
+              "if (possibleGateway.nextNodeIds.contains(event.flowNodeId)) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
                                     "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
@@ -476,7 +476,7 @@ public class EventProcessInstanceWriter {
           //  of one of the source flow node events
           "} else {" +
             "for (def event : existingEvents) {\n" +
-              "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
+              "if (possibleGateway.previousNodeIds.contains(event.flowNodeId) && event.endDate != null) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
                                     "event.endDate, event.endDate, processInstanceId, eventAddedCount);\n" +
@@ -487,18 +487,18 @@ public class EventProcessInstanceWriter {
 
         // For parallel gateways
         "} else if (possibleGateway.type.equals(\"parallelGateway\")) {\n" +
-          "Map relatedEventsByActivityId = existingEvents.stream()\n" +
-                                 ".filter(event -> possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null)\n" +
-                                 ".collect(Collectors.groupingBy(event -> event.activityId));\n" +
+          "Map relatedEventsByFlowNodeId = existingEvents.stream()\n" +
+                                 ".filter(event -> possibleGateway.previousNodeIds.contains(event.flowNodeId) && event.endDate != null)\n" +
+                                 ".collect(Collectors.groupingBy(event -> event.flowNodeId));\n" +
           "List mappablePreviousNodeIds = possibleGateway.previousNodeIds.stream()" +
             ".filter(nodeId -> !gatewayIdsInModel.contains(nodeId))\n" +
             ".collect(Collectors.toList());\n" +
           // We add a parallel gateway for every occurrence of all mappable source flow node events
-          "boolean gatewayCanBeAdded = relatedEventsByActivityId.keySet().containsAll(mappablePreviousNodeIds);\n" +
+          "boolean gatewayCanBeAdded = relatedEventsByFlowNodeId.keySet().containsAll(mappablePreviousNodeIds);\n" +
           "while (gatewayCanBeAdded) {\n" +
             "List eventsForGateway = new ArrayList();\n" +
             "for (def previousNodeId : mappablePreviousNodeIds) {\n" +
-              "eventsForGateway.add(relatedEventsByActivityId.get(previousNodeId).remove(0));\n" +
+              "eventsForGateway.add(relatedEventsByFlowNodeId.get(previousNodeId).remove(0));\n" +
             "}\n" +
             "def endDateComparator = Comparator.comparing(event -> event.endDate, Comparator.nullsLast(Comparator.naturalOrder()));\n" +
             "Collections.sort(eventsForGateway, endDateComparator);\n" +
@@ -509,7 +509,7 @@ public class EventProcessInstanceWriter {
                                   "firstEventForGateway.endDate, lastEventForGateway.endDate, processInstanceId, eventAddedCount);\n" +
             "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
             "gatewayEventsToAdd.add(newGateway);\n" +
-            "gatewayCanBeAdded = !relatedEventsByActivityId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
+            "gatewayCanBeAdded = !relatedEventsByFlowNodeId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
           "}\n" +
         "}\n" +
       "}\n";
@@ -519,12 +519,12 @@ public class EventProcessInstanceWriter {
   private String createNewGatewayFunction() {
     // @formatter:off
     return
-      "def createNewGateway(def activityId, def activityType, def startDate, def endDate, def processInstanceId, def eventAddedCount) {\n" +
+      "def createNewGateway(def flowNodeId, def flowNodeType, def startDate, def endDate, def processInstanceId, def eventAddedCount) {\n" +
         "def newGateway = [\n" +
-          "'id': activityId + '_' + eventAddedCount,\n" +
-          "'activityId': activityId,\n" +
-          "'activityType': activityType,\n" +
-          "'durationInMs': 0,\n" +
+          "'flowNodeInstanceId': flowNodeId + '_' + eventAddedCount,\n" +
+          "'flowNodeId': flowNodeId,\n" +
+          "'flowNodeType': flowNodeType,\n" +
+          "'totalDurationInMs': 0,\n" +
           "'startDate': startDate,\n" +
           "'endDate': endDate,\n" +
           "'processInstanceId': processInstanceId\n" +

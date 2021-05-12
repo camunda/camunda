@@ -11,7 +11,7 @@ import org.awaitility.Awaitility;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
@@ -130,10 +130,10 @@ public class ImportIT extends AbstractImportIT {
       .allSatisfy(processInstanceDto -> {
         assertThat(processInstanceDto.getUserTasks()).hasSize(2);
         assertThat(processInstanceDto.getUserTasks())
-          .extracting(UserTaskInstanceDto::getActivityId)
+          .extracting(FlowNodeInstanceDto::getFlowNodeId)
           .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
         assertThat(processInstanceDto.getUserTasks())
-          .flatExtracting(UserTaskInstanceDto::getCandidateGroupOperations)
+          .flatExtracting(FlowNodeInstanceDto::getCandidateGroupOperations)
           .allMatch(groupOperation -> groupOperation.getGroupId().equals(testCandidateGroup));
         assertThat(processInstanceDto.getVariables()).hasSize(variables.size());
         assertThat(processInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
