@@ -72,7 +72,7 @@
     <version.prometheus>0.10.0</version.prometheus>
     <version.protobuf>3.16.0</version.protobuf>
     <version.protobuf-common>2.1.0</version.protobuf-common>
-    <version.micrometer>1.6.6</version.micrometer>
+    <version.micrometer>1.6.7</version.micrometer>
     <version.rocksdbjni>6.20.3</version.rocksdbjni>
     <version.sbe>1.22.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
@@ -85,7 +85,7 @@
     <version.asm>9.1</version.asm>
     <version.testcontainers>1.15.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>2.0.0</version.zeebe-test-container>
+    <version.zeebe-test-container>3.0.0</version.zeebe-test-container>
     <version.feel-scala>1.13.2</version.feel-scala>
     <version.rest-assured>4.3.3</version.rest-assured>
     <version.spring>5.3.6</version.spring>
