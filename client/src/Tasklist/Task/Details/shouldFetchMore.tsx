@@ -5,7 +5,8 @@
  */
 
 function shouldFetchMore(errorCode: string) {
-  const ERROR_CODE_PATTERN = /task is already assigned|task is not assigned|task is not active/gi;
+  const ERROR_CODE_PATTERN =
+    /task is already assigned|task is not assigned|task is not active/gi;
 
   return ERROR_CODE_PATTERN.test(errorCode);
 }

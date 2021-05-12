@@ -23,18 +23,17 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockedResponse} from '@apollo/client/testing';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 
-const getWrapper = (
-  history = createMemoryHistory(),
-  mock: MockedResponse[] = [],
-): React.FC => ({children}) => {
-  return (
-    <MockedApolloProvider mocks={mock}>
-      <Router history={history}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </Router>
-    </MockedApolloProvider>
-  );
-};
+const getWrapper =
+  (history = createMemoryHistory(), mock: MockedResponse[] = []): React.FC =>
+  ({children}) => {
+    return (
+      <MockedApolloProvider mocks={mock}>
+        <Router history={history}>
+          <MockThemeProvider>{children}</MockThemeProvider>
+        </Router>
+      </MockedApolloProvider>
+    );
+  };
 
 const FILTERS = OPTIONS.map(({value}) => value);
 

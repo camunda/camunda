@@ -29,25 +29,27 @@ jest.mock('modules/constants/tasks', () => ({
   MAX_TASKS_DISPLAYED: 5,
 }));
 
-const getWrapper = (mock: MockedResponse[] = []): React.FC => ({children}) => {
-  if (mock.length > 0) {
-    return (
-      <MockedApolloProvider mocks={mock}>
-        <MemoryRouter initialEntries={['/']}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </MemoryRouter>
-      </MockedApolloProvider>
-    );
-  } else {
-    return (
-      <ApolloProvider client={client}>
-        <MemoryRouter initialEntries={['/']}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </MemoryRouter>
-      </ApolloProvider>
-    );
-  }
-};
+const getWrapper =
+  (mock: MockedResponse[] = []): React.FC =>
+  ({children}) => {
+    if (mock.length > 0) {
+      return (
+        <MockedApolloProvider mocks={mock}>
+          <MemoryRouter initialEntries={['/']}>
+            <MockThemeProvider>{children}</MockThemeProvider>
+          </MemoryRouter>
+        </MockedApolloProvider>
+      );
+    } else {
+      return (
+        <ApolloProvider client={client}>
+          <MemoryRouter initialEntries={['/']}>
+            <MockThemeProvider>{children}</MockThemeProvider>
+          </MemoryRouter>
+        </ApolloProvider>
+      );
+    }
+  };
 
 describe('<Tasklist />', () => {
   it('should load tasks', async () => {

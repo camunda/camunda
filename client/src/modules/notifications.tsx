@@ -40,10 +40,10 @@ const NotificationContext = React.createContext<
 >({});
 
 const NotificationProvider: React.FC<ProviderProps> = ({children}) => {
-  const notificationRef = useRef() as React.MutableRefObject<HTMLCmNotificationContainerElement>;
-  const [isGseNotificationVisible, setIsGseNotificationVisible] = useState(
-    false,
-  );
+  const notificationRef =
+    useRef() as React.MutableRefObject<HTMLCmNotificationContainerElement>;
+  const [isGseNotificationVisible, setIsGseNotificationVisible] =
+    useState(false);
 
   const displayNotification: DisplayNotificationFn = async (
     appearance,
