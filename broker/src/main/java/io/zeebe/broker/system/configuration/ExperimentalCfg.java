@@ -26,6 +26,7 @@ public class ExperimentalCfg {
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
   private boolean detectReprocessingInconsistency = DEFAULT_DETECT_REPROCESSING_INCONSISTENCY;
+  private RocksdbCfg rocksdb = new RocksdbCfg();
 
   public int getMaxAppendsPerFollower() {
     return maxAppendsPerFollower;
@@ -63,6 +64,14 @@ public class ExperimentalCfg {
     this.detectReprocessingInconsistency = detectReprocessingInconsistency;
   }
 
+  public RocksdbCfg getRocksdb() {
+    return rocksdb;
+  }
+
+  public void setRocksdb(final RocksdbCfg rocksdb) {
+    this.rocksdb = rocksdb;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -74,6 +83,8 @@ public class ExperimentalCfg {
         + disableExplicitRaftFlush
         + ", detectReprocessingInconsistency="
         + detectReprocessingInconsistency
+        + ", rocksdb="
+        + rocksdb
         + '}';
   }
 }

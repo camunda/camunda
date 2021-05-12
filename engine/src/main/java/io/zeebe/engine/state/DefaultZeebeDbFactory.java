@@ -9,6 +9,7 @@ package io.zeebe.engine.state;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import java.util.Properties;
@@ -38,9 +39,11 @@ public final class DefaultZeebeDbFactory {
    * @param userProvidedColumnFamilyOptions additional column family options
    * @return the created zeebe database factory
    */
-  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
+  private static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
       final Properties userProvidedColumnFamilyOptions) {
-    return defaultFactory(ZbColumnFamilies.class, userProvidedColumnFamilyOptions);
+    return defaultFactory(
+        ZbColumnFamilies.class,
+        new RocksDbConfiguration().setColumnFamilyOptions(userProvidedColumnFamilyOptions));
   }
 
   /**
@@ -53,7 +56,20 @@ public final class DefaultZeebeDbFactory {
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeDbFactory<ColumnFamilyNames> defaultFactory(
           final Class<ColumnFamilyNames> columnFamilyNamesClass) {
-    return defaultFactory(columnFamilyNamesClass, new Properties());
+    return defaultFactory(
+        columnFamilyNamesClass,
+        new RocksDbConfiguration().setColumnFamilyOptions(new Properties()));
+  }
+
+  /**
+   * Returns the default zeebe database factory which is used in the broker.
+   *
+   * @return the created zeebe database factory
+   */
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
+      final RocksDbConfiguration rocksDbConfiguration) {
+    // one place to replace the zeebe database implementation
+    return defaultFactory(ZbColumnFamilies.class, rocksDbConfiguration);
   }
 
   /**
@@ -61,14 +77,14 @@ public final class DefaultZeebeDbFactory {
    *
    * @param <ColumnFamilyNames> the type of the enum
    * @param columnFamilyNamesClass the enum class, which contains the column family names
-   * @param userProvidedColumnFamilyOptions additional column family options
+   * @param rocksDbConfiguration additional rocksdb configuration
    * @return the created zeebe database factory
    */
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeDbFactory<ColumnFamilyNames> defaultFactory(
           final Class<ColumnFamilyNames> columnFamilyNamesClass,
-          final Properties userProvidedColumnFamilyOptions) {
+          final RocksDbConfiguration rocksDbConfiguration) {
     // one place to replace the zeebe database implementation
-    return ZeebeRocksDbFactory.newFactory(columnFamilyNamesClass, userProvidedColumnFamilyOptions);
+    return ZeebeRocksDbFactory.newFactory(columnFamilyNamesClass, rocksDbConfiguration);
   }
 }

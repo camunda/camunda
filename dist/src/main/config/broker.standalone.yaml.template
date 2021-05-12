@@ -507,7 +507,7 @@
         #     workflowInstanceSubscription: false
         #
         #     ignoreVariablesAbove: 32677
-    # experimental
+    # experimental:
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
       # It might be that also some of them are actually dangerous so be aware when you change one of these!
@@ -524,3 +524,28 @@
       # failed and the partition becomes unhealthy, no further progress will made on that specific partition.
       # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_DETECT_REPROCESSING_INCONSISTENCY
       # detectReprocessingInconsistency = false;
+
+      # Exposed additional rocksdb configuration parameters. Note that rocksdb column family is configured via `broker.data.rocksdb.columnfamilyoptions`
+      # rocksdb:
+        # Defines how many files are kept open by RocksDB, per default it is unlimited (-1). We override
+        # the default because when there are snapshots with too many files, keeping all files opened has
+        # a performance as well as memory impact.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_MAXOPENFILES
+        # maxOpenFiles = 2048
+
+
+        # Enables metrics collection in rocksdb. The metrics will be dumped to rocksdb log periodically.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_ENABLESTATISTICS
+        # enableStatistics = false
+
+        # Allows limiting the rate of I/O writes by RocksDB. This affects all writes performed by
+        # RocksDB, including flushing, compaction, WAL, etc. It can be useful to configure to prevent
+        # write spikes from affecting reads, thereby achieving a more predictable performance.
+        # Setting to 0 or less will disable any rate limiting.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_IORATEBYTESPERSECOND
+        # ioRateBytesPerSecond = 0
+
+        # If true, writes to RocksDB will not first go to the write ahead log, and the write to RocksDB may got lost after a crash.
+        # This is ok because Zeebe has its own way to recover after crash. This flag may have a performance impact.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_DISABLEWAL
+        # disableWal = false;
