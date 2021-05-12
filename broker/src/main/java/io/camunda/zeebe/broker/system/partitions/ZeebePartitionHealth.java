@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Reflects the health of ZeebePartition. The health is updated by ZeebePartition when role
@@ -17,9 +19,9 @@ import io.camunda.zeebe.util.health.HealthStatus;
  */
 class ZeebePartitionHealth implements HealthMonitorable {
 
-  private HealthStatus healthStatus = HealthStatus.UNHEALTHY;
   private final String name;
-  private FailureListener failureListener;
+  private final Set<FailureListener> failureListeners = new HashSet<>();
+  private HealthStatus healthStatus = HealthStatus.UNHEALTHY;
   /*
   Multiple factors determine ZeebePartition's health :
   * - servicesInstalled: indicates if role transition was successful and all services are installed
@@ -40,7 +42,12 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    this.failureListener = failureListener;
+    failureListeners.add(failureListener);
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    failureListeners.remove(failureListener);
   }
 
   private void updateHealthStatus() {
@@ -56,13 +63,16 @@ class ZeebePartitionHealth implements HealthMonitorable {
       healthStatus = HealthStatus.UNHEALTHY;
     }
 
-    if (previousStatus != healthStatus && failureListener != null) {
+    if (previousStatus != healthStatus) {
       switch (healthStatus) {
         case HEALTHY:
-          failureListener.onRecovered();
+          failureListeners.forEach(FailureListener::onRecovered);
           break;
         case UNHEALTHY:
-          failureListener.onFailure();
+          failureListeners.forEach(FailureListener::onFailure);
+          break;
+        case DEAD:
+          failureListeners.forEach(FailureListener::onUnrecoverableFailure);
           break;
         default:
           break;

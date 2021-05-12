@@ -21,8 +21,8 @@ import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor implements HealthMonitorable {
@@ -45,7 +45,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
   private final String processorName;
   private final StreamProcessor streamProcessor;
   private final String actorName;
-  private final List<FailureListener> listeners = new ArrayList<>();
+  private final Set<FailureListener> listeners = new HashSet<>();
 
   private ActorCondition commitCondition;
   private Long lastWrittenEventPosition;
@@ -102,19 +102,6 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     return super.closeAsync();
   }
 
-  private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
-    prepareTakingSnapshot();
-  }
-
-  private String getConditionNameForPosition() {
-    return getName() + "-wait-for-endPosition-committed";
-  }
-
-  public void forceSnapshot() {
-    actor.call(this::prepareTakingSnapshot);
-  }
-
   @Override
   protected void handleFailure(final Exception failure) {
     LOG.error(
@@ -131,14 +118,32 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     }
   }
 
+  private void scheduleSnapshotOnRate() {
+    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
+    prepareTakingSnapshot();
+  }
+
+  private String getConditionNameForPosition() {
+    return getName() + "-wait-for-endPosition-committed";
+  }
+
+  public void forceSnapshot() {
+    actor.call(this::prepareTakingSnapshot);
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return healthStatus;
+  }
+
   @Override
   public void addFailureListener(final FailureListener listener) {
     actor.run(() -> listeners.add(listener));
   }
 
   @Override
-  public HealthStatus getHealthStatus() {
-    return healthStatus;
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> listeners.remove(failureListener));
   }
 
   private void prepareTakingSnapshot() {

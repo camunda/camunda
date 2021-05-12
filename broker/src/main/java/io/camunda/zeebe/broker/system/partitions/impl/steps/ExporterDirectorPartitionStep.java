@@ -51,7 +51,9 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> close(final PartitionContext context) {
-    final ActorFuture<Void> future = context.getExporterDirector().closeAsync();
+    final var director = context.getExporterDirector();
+    context.getComponentHealthMonitor().removeComponent(director.getName());
+    final ActorFuture<Void> future = director.closeAsync();
     context.setExporterDirector(null);
     return future;
   }

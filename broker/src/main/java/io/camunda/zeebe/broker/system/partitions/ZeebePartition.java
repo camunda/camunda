@@ -205,6 +205,12 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  protected void onActorCloseRequested() {
+    LOG.debug("Closing ZeebePartition {}", context.getPartitionId());
+    context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     if (closeFuture != null) {
       return closeFuture;
@@ -212,15 +218,11 @@ public final class ZeebePartition extends Actor
 
     closeFuture = new CompletableActorFuture<>();
 
-    actor.call(
+    actor.run(
         () ->
             // allows to await current transition to avoid concurrent modifications and
             // transitioning
-            currentTransitionFuture.onComplete(
-                (nothing, err) -> {
-                  LOG.debug("Closing Zeebe Partition {}.", context.getPartitionId());
-                  super.closeAsync();
-                }));
+            currentTransitionFuture.onComplete((nothing, err) -> super.closeAsync()));
 
     return closeFuture;
   }
@@ -314,6 +316,11 @@ public final class ZeebePartition extends Actor
             failureListener.onFailure();
           }
         });
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   @Override
