@@ -30,6 +30,7 @@ import java.nio.file.StandardOpenOption;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 final class JournalSegmentFile {
+
   private static final char PART_SEPARATOR = '-';
   private static final char EXTENSION_SEPARATOR = '.';
   private static final String EXTENSION = "log";
@@ -62,23 +63,32 @@ final class JournalSegmentFile {
     checkNotNull(journalName, "journalName cannot be null");
     checkNotNull(fileName, "fileName cannot be null");
 
-    final int partSeparator = fileName.lastIndexOf(PART_SEPARATOR);
-    final int extensionSeparator = fileName.lastIndexOf(EXTENSION_SEPARATOR);
+    if (getSegmentIdFromPath(fileName) == -1) {
+      return false;
+    }
+
+    return fileName.startsWith(journalName);
+  }
+
+  /** Returns the segment's id or -1 if the log segment name was not correctly formatted. */
+  static int getSegmentIdFromPath(final String name) {
+    checkNotNull(name, "name cannot be null");
+
+    final int partSeparator = name.lastIndexOf(PART_SEPARATOR);
+    final int extensionSeparator = name.lastIndexOf(EXTENSION_SEPARATOR);
 
     if (extensionSeparator == -1
         || partSeparator == -1
         || extensionSeparator < partSeparator
-        || !fileName.endsWith(EXTENSION)) {
-      return false;
+        || !name.endsWith(EXTENSION)) {
+      return -1;
     }
 
-    for (int i = partSeparator + 1; i < extensionSeparator; i++) {
-      if (!Character.isDigit(fileName.charAt(i))) {
-        return false;
-      }
+    try {
+      return Integer.parseInt(name.substring(partSeparator + 1, extensionSeparator));
+    } catch (final NumberFormatException e) {
+      return -1;
     }
-
-    return fileName.startsWith(journalName);
   }
 
   /** Creates a segment file for the given directory, log name, segment ID, and segment version. */

@@ -606,7 +606,7 @@ class JournalTest {
     assertThat(reader.next()).isEqualTo(lastRecord);
   }
 
-  private PersistedJournalRecord copyRecord(final JournalRecord record) {
+  static PersistedJournalRecord copyRecord(final JournalRecord record) {
     final DirectBuffer data = record.data();
     final byte[] buffer = new byte[data.capacity()];
     data.getBytes(0, buffer);
