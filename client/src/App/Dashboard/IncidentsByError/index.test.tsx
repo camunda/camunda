@@ -31,13 +31,14 @@ function getParam(search: string, param: string) {
   return new URLSearchParams(search).get(param);
 }
 
-const createWrapper = (historyMock = createMemoryHistory()) => ({
-  children,
-}: any) => (
-  <ThemeProvider>
-    <Router history={historyMock}>{children}</Router>
-  </ThemeProvider>
-);
+const createWrapper =
+  (historyMock = createMemoryHistory()) =>
+  ({children}: any) =>
+    (
+      <ThemeProvider>
+        <Router history={historyMock}>{children}</Router>
+      </ThemeProvider>
+    );
 
 describe('IncidentsByError', () => {
   it('should display skeleton when loading', async () => {

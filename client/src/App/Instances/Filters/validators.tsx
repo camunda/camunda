@@ -23,14 +23,8 @@ const ERRORS = {
 } as const;
 
 function submissionValidator(filters: FiltersType): Errors | null {
-  const {
-    ids,
-    startDate,
-    endDate,
-    operationId,
-    variableName,
-    variableValue,
-  } = filters;
+  const {ids, startDate, endDate, operationId, variableName, variableValue} =
+    filters;
   const errors: Errors = Object.fromEntries(
     Object.entries({
       ids: validateIds(ids),
@@ -76,7 +70,8 @@ function isDateComplete(date: string) {
 }
 
 function validateOperation(value: FiltersType['operationId'] = '') {
-  const UUID_PATTERN = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/;
+  const UUID_PATTERN =
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/;
 
   return value === '' || UUID_PATTERN.test(value)
     ? undefined
@@ -133,11 +128,12 @@ function removeValidDateCharacters(value: string) {
   return value.replace(/[0-9]|\s|:|-/g, '');
 }
 
-const handleStartDateFieldValidation: FieldValidator<
-  FiltersType['startDate']
-> = (value = '') => {
-  return removeValidDateCharacters(value) === '' ? undefined : ERRORS.startDate;
-};
+const handleStartDateFieldValidation: FieldValidator<FiltersType['startDate']> =
+  (value = '') => {
+    return removeValidDateCharacters(value) === ''
+      ? undefined
+      : ERRORS.startDate;
+  };
 
 const handleEndDateFieldValidation: FieldValidator<FiltersType['endDate']> = (
   value = ''

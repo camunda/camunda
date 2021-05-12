@@ -11,11 +11,8 @@ import {instancesStore} from 'modules/stores/instances';
 import {useNotifications} from 'modules/notifications';
 
 export default function useOperationApply() {
-  const {
-    selectedInstanceIds,
-    excludedInstanceIds,
-    reset,
-  } = instanceSelectionStore;
+  const {selectedInstanceIds, excludedInstanceIds, reset} =
+    instanceSelectionStore;
 
   const notifications = useNotifications();
 

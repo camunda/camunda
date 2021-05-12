@@ -15,11 +15,8 @@ import ProgressBar from './ProgressBar';
 import {useHistory} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 
-const {
-  UPDATE_VARIABLE,
-  RESOLVE_INCIDENT,
-  CANCEL_PROCESS_INSTANCE,
-} = OPERATION_TYPE;
+const {UPDATE_VARIABLE, RESOLVE_INCIDENT, CANCEL_PROCESS_INSTANCE} =
+  OPERATION_TYPE;
 
 const TYPE_LABELS = {
   [UPDATE_VARIABLE]: 'Edit',

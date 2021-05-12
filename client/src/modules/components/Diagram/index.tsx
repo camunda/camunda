@@ -88,10 +88,8 @@ class Diagram extends React.PureComponent<Props, State> {
       prevSelectableFlowNodes
     );
 
-    const {
-      expandState,
-      processedSequenceFlows: currentSequenceFlows,
-    } = this.props;
+    const {expandState, processedSequenceFlows: currentSequenceFlows} =
+      this.props;
 
     if (
       expandState !== prevExpandState &&

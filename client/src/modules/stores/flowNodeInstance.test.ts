@@ -15,9 +15,8 @@ import {
 import {flowNodeInstanceStore} from './flowNodeInstance';
 
 const PROCESS_INSTANCE_ID = 'processInstance';
-const mockFlowNodeInstances = createMultiInstanceFlowNodeInstances(
-  PROCESS_INSTANCE_ID
-);
+const mockFlowNodeInstances =
+  createMultiInstanceFlowNodeInstances(PROCESS_INSTANCE_ID);
 
 describe('stores/flowNodeInstance', () => {
   beforeEach(() => {

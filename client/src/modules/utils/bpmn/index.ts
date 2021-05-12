@@ -15,10 +15,8 @@ const moddle = new BpmnModdle();
  * @return: a Promise that when resolves returns the list of the process nodes
  */
 async function parseDiagramXML(xml: any) {
-  const {
-    rootElement: definitions,
-    elementsById: bpmnElements,
-  } = await moddle.fromXML(xml, 'bpmn:Definitions');
+  const {rootElement: definitions, elementsById: bpmnElements} =
+    await moddle.fromXML(xml, 'bpmn:Definitions');
 
   return {
     definitions,

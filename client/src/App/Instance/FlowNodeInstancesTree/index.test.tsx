@@ -27,9 +27,8 @@ import {
 const processId = '1';
 const processInstanceId = CURRENT_INSTANCE.id;
 
-const flowNodeInstances = createMultiInstanceFlowNodeInstances(
-  processInstanceId
-);
+const flowNodeInstances =
+  createMultiInstanceFlowNodeInstances(processInstanceId);
 
 const mockFlowNodeInstance: FlowNodeInstance = {
   id: processInstanceId,

@@ -165,11 +165,8 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set id filter, exclude one id)', async () => {
-    const {
-      mockOperationCreated,
-      expectedQuery,
-      ...context
-    } = mockData.setFilterExcludeOne;
+    const {mockOperationCreated, expectedQuery, ...context} =
+      mockData.setFilterExcludeOne;
     instancesStore.init();
     instancesStore.fetchInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
@@ -208,11 +205,8 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set process filter, select one)', async () => {
-    const {
-      mockOperationCreated,
-      expectedQuery,
-      ...context
-    } = mockData.setProcessFilterSelectOne;
+    const {mockOperationCreated, expectedQuery, ...context} =
+      mockData.setProcessFilterSelectOne;
     instancesStore.init();
     instancesStore.fetchInstancesFromFilters();
     mockedGetSearchString.mockImplementation(

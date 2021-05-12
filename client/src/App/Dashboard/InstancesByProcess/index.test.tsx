@@ -20,13 +20,14 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
-const createWrapper = (historyMock = createMemoryHistory()) => ({
-  children,
-}: any) => (
-  <ThemeProvider>
-    <Router history={historyMock}>{children}</Router>
-  </ThemeProvider>
-);
+const createWrapper =
+  (historyMock = createMemoryHistory()) =>
+  ({children}: any) =>
+    (
+      <ThemeProvider>
+        <Router history={historyMock}>{children}</Router>
+      </ThemeProvider>
+    );
 
 describe('InstancesByProcess', () => {
   it('should display skeleton when loading', async () => {

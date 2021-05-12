@@ -171,8 +171,10 @@ function parseIds(value: string) {
 function parseFilterDate(value: string) {
   const DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
   const DATE_HOUR_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}$/;
-  const DATE_HOUR_MINUTES_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}$/;
-  const DATE_TIME_PATTERN_WITH = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
+  const DATE_HOUR_MINUTES_PATTERN =
+    /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}$/;
+  const DATE_TIME_PATTERN_WITH =
+    /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
   const trimmedValue = value.trim();
 
   if (DATE_PATTERN.test(trimmedValue)) {
@@ -335,9 +337,10 @@ function updateFiltersSearchString(
   return newParams.toString();
 }
 
-function getSorting(
-  page: 'instances' | 'instance' = 'instances'
-): {sortBy: string; sortOrder: 'asc' | 'desc'} {
+function getSorting(page: 'instances' | 'instance' = 'instances'): {
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+} {
   const params = new URLSearchParams(getSearchString());
   const sort = params.get('sort');
   const PARAM_PATTERN = /^\w{1,}\+(asc|desc)/;

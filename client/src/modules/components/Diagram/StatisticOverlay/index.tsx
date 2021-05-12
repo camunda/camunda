@@ -54,13 +54,8 @@ type Props = {
 };
 
 function StatisticOverlay(props: Props) {
-  const {
-    statistic,
-    state,
-    onOverlayAdd,
-    onOverlayClear,
-    isViewerLoaded,
-  } = props;
+  const {statistic, state, onOverlayAdd, onOverlayClear, isViewerLoaded} =
+    props;
   const isLightTheme = currentTheme.state.selectedTheme === THEME_NAME.LIGHT;
 
   if (!statistic[state]) {

@@ -72,9 +72,8 @@ describe('OperationsPanel', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
 
-    const [firstOperation, secondOperation] = screen.getAllByTestId(
-      'operations-entry'
-    );
+    const [firstOperation, secondOperation] =
+      screen.getAllByTestId('operations-entry');
 
     expect(
       within(firstOperation).getByText(mockOperationRunning.id)

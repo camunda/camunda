@@ -200,9 +200,9 @@ class Instances extends NetworkReconnectionHandler {
       payload: {
         query: getRequestFilters(),
         sorting: getSorting(),
-        searchAfter: this.state.processInstances[
-          this.state.processInstances.length - 1
-        ]?.sortValues,
+        searchAfter:
+          this.state.processInstances[this.state.processInstances.length - 1]
+            ?.sortValues,
         pageSize: MAX_INSTANCES_PER_REQUEST,
       },
     });

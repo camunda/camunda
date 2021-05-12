@@ -17,13 +17,8 @@ type Props = {
 
 export default class Menu extends React.Component<Props> {
   render() {
-    const {
-      onKeyDown,
-      placement,
-      children,
-      transitionTiming,
-      className,
-    } = this.props;
+    const {onKeyDown, placement, children, transitionTiming, className} =
+      this.props;
 
     return (
       <Styled.Ul

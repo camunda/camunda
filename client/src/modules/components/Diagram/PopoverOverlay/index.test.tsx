@@ -157,10 +157,8 @@ describe('PopoverOverlay', () => {
       screen.getByRole('button', {name: 'Show more metadata'})
     ).toBeInTheDocument();
 
-    const {
-      flowNodeInstanceId,
-      startDate,
-    } = completedFlowNodeMetaData.instanceMetadata;
+    const {flowNodeInstanceId, startDate} =
+      completedFlowNodeMetaData.instanceMetadata;
 
     expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
     expect(screen.getByText(startDate)).toBeInTheDocument();

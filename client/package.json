@@ -75,7 +75,7 @@
     "lint-staged": "^11.0.0",
     "msw": "^0.28.2",
     "node-fetch": "^2.6.1",
-    "prettier": "^2.2.1",
+    "prettier": "^2.3.0",
     "react-scripts": "4.0.3",
     "react-test-renderer": "^17.0.2",
     "testcafe": "^1.14.0",

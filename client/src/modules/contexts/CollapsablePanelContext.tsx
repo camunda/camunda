@@ -46,10 +46,8 @@ class CollapsablePanelProvider extends React.Component<{}, State> {
   expandOperations = () => this.expand('isOperationsCollapsed');
 
   getCurrentPanelState = function () {
-    const {
-      isFiltersCollapsed = false,
-      isOperationsCollapsed = true,
-    } = getStateLocally('panelStates');
+    const {isFiltersCollapsed = false, isOperationsCollapsed = true} =
+      getStateLocally('panelStates');
 
     return {
       isFiltersCollapsed,
