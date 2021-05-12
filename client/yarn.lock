@@ -16271,10 +16271,10 @@ yocto-queue@^0.1.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-0.1.0.tgz#0294eb3dee05028d31ee1a5fa2c556a6aaf10a1b"
   integrity sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==
 
-zeebe-node@1.0.0-alpha.7:
-  version "1.0.0-alpha.7"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-1.0.0-alpha.7.tgz#f9f9122519394a451f455f70a688c6c685d81593"
-  integrity sha512-GwEXaOtfykOG5G4a5QB4u3pbUoFAx6My2ytauQZ6xW/aF5HIQQB4n/Fo2+FdK7K7YsPpGYfPJykLeqpC36iEyg==
+zeebe-node@1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-1.3.0.tgz#4eb22cd99360a28bac04252c3b5f046ef7db3922"
+  integrity sha512-ZNsHnWEQn7t29xoNvXP3UxZVYEAqlMy3f1wCLpgSqVG9Eidojug/vUlVKR+r3OyhKpnrY6q0X430AObak3lUXA==
   dependencies:
     "@grpc/grpc-js" "^1.2.5"
     "@grpc/proto-loader" "^0.5.6"
