@@ -13,6 +13,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as Styled from './styled';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {StatusMessage} from 'modules/components/StatusMessage';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -29,16 +30,25 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   return (
     <Styled.Panel>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
-        <Styled.FlowNodeInstanceLog data-testid="instance-history">
-          <Styled.NodeContainer>
-            <ul>
-              <FlowNodeInstancesTree
-                flowNodeInstance={instanceExecutionHistory!}
-                treeDepth={1}
-              />
-            </ul>
-          </Styled.NodeContainer>
-        </Styled.FlowNodeInstanceLog>
+        <InfiniteScroller
+          onVerticalScrollEndReach={() => {
+            if (instanceExecutionHistory?.id === undefined) {
+              return;
+            }
+            flowNodeInstanceStore.fetchNext(instanceExecutionHistory.id);
+          }}
+        >
+          <Styled.FlowNodeInstanceLog data-testid="instance-history">
+            <Styled.NodeContainer>
+              <ul>
+                <FlowNodeInstancesTree
+                  flowNodeInstance={instanceExecutionHistory!}
+                  treeDepth={1}
+                />
+              </ul>
+            </Styled.NodeContainer>
+          </Styled.FlowNodeInstanceLog>
+        </InfiniteScroller>
       ) : (
         <Styled.FlowNodeInstanceSkeleton data-testid="flownodeInstance-skeleton">
           {(flowNodeInstanceStatus === 'error' ||

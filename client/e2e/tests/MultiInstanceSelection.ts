@@ -32,7 +32,7 @@ test('Should select multi instance flow nodes', async (t) => {
   const withinInstanceHistory = within(
     screen.queryByTestId('instance-history')
   );
-  const selectedInstanceHistoryRows = withinInstanceHistory.getAllByRole(
+  const selectedInstanceHistoryRows = withinInstanceHistory.queryAllByRole(
     'row',
     {
       selected: true,
@@ -40,9 +40,12 @@ test('Should select multi instance flow nodes', async (t) => {
   );
   const withinIncidentsTable = within(screen.queryByTestId('incidents-table'));
 
-  const selectedIncidentsTableRows = withinIncidentsTable.getAllByRole('row', {
-    selected: true,
-  });
+  const selectedIncidentsTableRows = withinIncidentsTable.queryAllByRole(
+    'row',
+    {
+      selected: true,
+    }
+  );
 
   const withinPopover = within(screen.queryByTestId('popover'));
 
@@ -55,20 +58,20 @@ test('Should select multi instance flow nodes', async (t) => {
   await t
     .click(
       withinInstanceHistory
-        .getAllByRole('button', {
+        .queryAllByRole('button', {
           name: 'Unfold Task B (Multi Instance)',
         })
         .nth(0)
     )
     .click(
       withinInstanceHistory
-        .getAllByRole('button', {
+        .queryAllByRole('button', {
           name: 'Unfold Task B (Multi Instance)',
         })
         .nth(0)
     )
     .expect(
-      withinInstanceHistory.getAllByRole('row', {
+      withinInstanceHistory.queryAllByRole('row', {
         name: 'Task B',
       }).count
     )
@@ -95,7 +98,7 @@ test('Should select multi instance flow nodes', async (t) => {
     .notOk();
 
   await t
-    .click(withinInstanceHistory.getAllByRole('row', {name: 'Task B'}).nth(0))
+    .click(withinInstanceHistory.queryAllByRole('row', {name: 'Task B'}).nth(0))
     .expect(selectedIncidentsTableRows.count)
     .eql(1)
     .expect(selectedIncidentsTableRows.nth(0).textContent)
@@ -130,7 +133,7 @@ test('Should select multi instance flow nodes', async (t) => {
     .eql(25);
 
   await t
-    .click(withinIncidentsTable.getAllByRole('row', {name: /Task B/}).nth(0))
+    .click(withinIncidentsTable.queryAllByRole('row', {name: /Task B/}).nth(0))
     .expect(selectedIncidentsTableRows.count)
     .eql(1);
 

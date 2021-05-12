@@ -24,12 +24,6 @@ jest.mock('modules/utils/bpmn');
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
-mockServer.use(
-  rest.get('/api/process-instances/:instanceId', (_, res, ctx) =>
-    res.once(ctx.json({id: '1', state: 'ACTIVE', processName: 'processName'}))
-  )
-);
-
 describe('FlowNodeInstanceLog', () => {
   beforeAll(async () => {
     mockServer.use(
@@ -64,8 +58,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    await singleInstanceDiagramStore.fetchProcessXml('1');
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    flowNodeInstanceStore.init();
+    singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
 
@@ -86,7 +80,7 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
+    flowNodeInstanceStore.init();
     singleInstanceDiagramStore.fetchProcessXml('1');
 
     expect(
@@ -110,8 +104,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
+    flowNodeInstanceStore.init();
     singleInstanceDiagramStore.fetchProcessXml('1');
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
     expect(
       await screen.findByText('Instance History could not be fetched')
     ).toBeInTheDocument();
@@ -129,8 +123,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
+    flowNodeInstanceStore.init();
     singleInstanceDiagramStore.fetchProcessXml('1');
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
 
     expect(
       await screen.findByText('Instance History could not be fetched')
@@ -149,8 +143,8 @@ describe('FlowNodeInstanceLog', () => {
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
+    flowNodeInstanceStore.init();
     singleInstanceDiagramStore.fetchProcessXml('1');
-    flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
 
     expect((await screen.findAllByText('processName')).length).toBeGreaterThan(
       0

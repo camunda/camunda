@@ -12,18 +12,14 @@ import {setup} from './InstancesTable.setup';
 import {ClientFunction} from 'testcafe';
 
 const scrollDown = ClientFunction((totalInstancesDisplayed) => {
-  const instancesList = document.getElementById('scrollable-list');
+  const instancesList = document.querySelector(
+    '[data-testid="process-instances-list"]'
+  );
 
   const rowHeight =
     instancesList?.getElementsByTagName('tr')[0]?.clientHeight ?? 0;
 
   instancesList?.scrollTo(0, rowHeight * totalInstancesDisplayed);
-});
-
-const scrollUp = ClientFunction(() => {
-  const instancesList = document.getElementById('scrollable-list');
-
-  instancesList?.scrollTo(0, 0);
 });
 
 fixture('InstancesTable')
@@ -156,8 +152,6 @@ test('Sorting', async (t) => {
 
 //  TODO: If we have loading indicators for prev/next fetches in the future, we can remove the manual awaits after scrolls
 test('Scrolling', async (t) => {
-  let totalInstancesDisplayed = 50;
-
   const {initialData} = t.fixtureCtx;
   const {instancesForInfiniteScroll} = initialData.instances;
 
@@ -183,69 +177,50 @@ test('Scrolling', async (t) => {
     screen.queryByTestId('instances-list')
   ).getAllByRole('row');
 
-  let totalRowCount = await instanceRows.count;
-  let firstVisibleRow = await instanceRows.nth(0).innerText;
-  let lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
-
   await t
-    .expect(totalRowCount)
+    .expect(instanceRows.count)
     .eql(50)
-    .expect(firstVisibleRow)
+    .expect(instanceRows.nth(0).innerText)
     .contains(descendingInstanceIds[0])
-    .expect(lastVisibleRow)
+    .expect(instanceRows.nth(49).innerText)
     .contains(descendingInstanceIds[49]);
 
   // scroll until max stored instances is reached (200)
-  await scrollDown(totalInstancesDisplayed);
-  totalInstancesDisplayed += 50;
-  await t.expect(instanceRows.count).eql(totalInstancesDisplayed);
+  await t.scrollIntoView(instanceRows.nth(49));
+  await t.expect(instanceRows.count).eql(100);
 
-  await scrollDown(totalInstancesDisplayed);
-  totalInstancesDisplayed += 50;
-  await t.expect(instanceRows.count).eql(totalInstancesDisplayed);
+  await t.scrollIntoView(instanceRows.nth(99));
+  await t.expect(instanceRows.count).eql(150);
 
-  await scrollDown(totalInstancesDisplayed);
-  totalInstancesDisplayed += 50;
-  await t.expect(instanceRows.count).eql(totalInstancesDisplayed);
-
-  totalRowCount = await instanceRows.count;
-  firstVisibleRow = await instanceRows.nth(0).innerText;
-  lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
+  await t.scrollIntoView(instanceRows.nth(149));
+  await t.expect(instanceRows.count).eql(200);
 
   await t
-    .expect(totalRowCount)
+    .expect(instanceRows.count)
     .eql(200)
-    .expect(firstVisibleRow)
+    .expect(instanceRows.nth(0).innerText)
     .contains(descendingInstanceIds[0])
-    .expect(lastVisibleRow)
+    .expect(instanceRows.nth(199).innerText)
     .contains(descendingInstanceIds[199]);
 
-  await scrollDown(totalInstancesDisplayed);
-  totalInstancesDisplayed += 50;
-  await t.wait(2000);
+  await scrollDown(200);
+  // await t.scrollIntoView(instanceRows.nth(199)); TODO: OPE-1299 - scrollIntoView does not work correctly after max amount of instances ist reached
 
-  totalRowCount = await instanceRows.count;
-  firstVisibleRow = await instanceRows.nth(0).innerText;
-  lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
   await t
-    .expect(totalRowCount)
+    .expect(instanceRows.count)
     .eql(200)
-    .expect(firstVisibleRow)
+    .expect(instanceRows.nth(0).innerText)
     .contains(descendingInstanceIds[50])
-    .expect(lastVisibleRow)
+    .expect(instanceRows.nth(199).innerText)
     .contains(descendingInstanceIds[249]);
 
-  await scrollUp();
-  await t.wait(2000);
+  await t.scrollIntoView(instanceRows.nth(0)); // TODO: OPE-1299 - this does not work properly too, it keeps scrolling top but since its already beginning of the list after first scroll, following assertions are passed
 
-  totalRowCount = await instanceRows.count;
-  firstVisibleRow = await instanceRows.nth(0).innerText;
-  lastVisibleRow = await instanceRows.nth(totalRowCount - 1).innerText;
   await t
-    .expect(totalRowCount)
+    .expect(instanceRows.count)
     .eql(200)
-    .expect(firstVisibleRow)
+    .expect(instanceRows.nth(0).innerText)
     .contains(descendingInstanceIds[0])
-    .expect(lastVisibleRow)
+    .expect(instanceRows.nth(199).innerText)
     .contains(descendingInstanceIds[199]);
 });

@@ -16,6 +16,7 @@ import usePrevious from 'modules/hooks/usePrevious';
 import {autorun} from 'mobx';
 import {Header} from './Header';
 import {Instances} from './Instances';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 const ROW_HEIGHT = 38;
 
@@ -63,61 +64,54 @@ const List: React.FC<ListProps> = observer((props) => {
   }, []);
 
   return (
-    <Styled.List
-      id="scrollable-list"
-      ref={listRef}
-      onScroll={async (event) => {
-        const target = event.target as HTMLDivElement;
-        const shouldFetchPreviousInstances =
-          target.scrollTop === 0 &&
-          instancesStore.shouldFetchPreviousInstances();
-        const shouldFetchNextInstances =
-          target.scrollHeight - target.clientHeight - target.scrollTop <= 0 &&
-          instancesStore.shouldFetchNextInstances();
-
-        if (shouldFetchNextInstances) {
-          await instancesStore.fetchNextInstances();
+    <InfiniteScroller
+      onVerticalScrollStartReach={async (scrollDown) => {
+        if (instancesStore.shouldFetchPreviousInstances() === false) {
+          return;
         }
-        if (shouldFetchPreviousInstances) {
-          const shouldScrollDown =
-            instancesStore.state.processInstances.length ===
-            MAX_INSTANCES_STORED;
-          await instancesStore.fetchPreviousInstances();
-          if (
-            shouldScrollDown &&
-            instancesStore.state.latestFetch?.processInstancesCount !== 0
-          ) {
-            if (instancesStore.state.latestFetch !== null) {
-              target.scrollTo(
-                0,
-                target.scrollTop +
-                  instancesStore.state.latestFetch.processInstancesCount *
-                    ROW_HEIGHT
-              );
-            }
-          }
+
+        await instancesStore.fetchPreviousInstances();
+
+        if (
+          instancesStore.state.processInstances.length ===
+            MAX_INSTANCES_STORED &&
+          instancesStore.state.latestFetch?.processInstancesCount !== 0 &&
+          instancesStore.state.latestFetch !== null
+        ) {
+          scrollDown(
+            instancesStore.state.latestFetch.processInstancesCount * ROW_HEIGHT
+          );
         }
       }}
-    >
-      <Styled.TableContainer ref={containerRef}>
-        {(status === 'fetching' || status === 'refetching') && (
-          <Styled.Spinner data-testid="instances-loader" />
-        )}
+      onVerticalScrollEndReach={() => {
+        if (instancesStore.shouldFetchNextInstances() === false) {
+          return;
+        }
 
-        <Table>
-          <Header />
-          {['initial', 'first-fetch'].includes(status) && (
-            <Skeleton {...props} rowsToDisplay={entriesPerPage} />
+        instancesStore.fetchNextInstances();
+      }}
+    >
+      <Styled.List data-testid="process-instances-list" ref={listRef}>
+        <Styled.TableContainer ref={containerRef}>
+          {(status === 'fetching' || status === 'refetching') && (
+            <Styled.Spinner data-testid="instances-loader" />
           )}
-          {status === 'error' && <Message type="error" />}
-          {status === 'refetching' ? null : areProcessInstancesEmpty ? (
-            <Message type="empty" />
-          ) : (
-            <Instances />
-          )}
-        </Table>
-      </Styled.TableContainer>
-    </Styled.List>
+
+          <Table>
+            <Header />
+            {['initial', 'first-fetch'].includes(status) && (
+              <Skeleton {...props} rowsToDisplay={entriesPerPage} />
+            )}
+            {status === 'error' && <Message type="error" />}
+            {status === 'refetching' ? null : areProcessInstancesEmpty ? (
+              <Message type="empty" />
+            ) : (
+              <Instances />
+            )}
+          </Table>
+        </Styled.TableContainer>
+      </Styled.List>
+    </InfiniteScroller>
   );
 });
 

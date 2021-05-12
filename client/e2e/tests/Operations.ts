@@ -31,7 +31,7 @@ test('infinite scrolling', async (t) => {
 
   await t.expect(screen.getAllByTestId('operations-entry').count).eql(20);
 
-  await t.hover(screen.getAllByTestId('operations-entry').nth(19));
+  await t.scrollIntoView(screen.getAllByTestId('operations-entry').nth(19));
 
   await t.expect(screen.getAllByTestId('operations-entry').count).eql(40);
 });

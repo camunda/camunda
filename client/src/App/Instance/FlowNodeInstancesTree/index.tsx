@@ -63,7 +63,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       >
         <NodeDetails
           showConnectionDot={treeDepth >= 3}
-          data-testid={`treeDepth:${treeDepth}`}
+          data-testid={`node-details-${flowNodeInstance.id}`}
         >
           <NodeStateIcon
             state={flowNodeInstance.state}

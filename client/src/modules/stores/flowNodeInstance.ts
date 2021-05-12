@@ -18,6 +18,8 @@ import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
+const PAGE_SIZE = 50;
+
 type FlowNodeInstanceType = {
   id: string;
   type: string;
@@ -37,7 +39,13 @@ type FlowNodeInstances = {
 };
 
 type State = {
-  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetched'
+    | 'error'
+    | 'fetching-next';
   flowNodeInstances: FlowNodeInstances;
 };
 
@@ -51,6 +59,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   instanceExecutionHistoryDisposer: null | IReactionDisposer = null;
+  instanceFinishedDisposer: null | IReactionDisposer = null;
 
   constructor() {
     super();
@@ -61,6 +70,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       handlePollSuccess: action,
       removeSubTree: action,
       startFetch: action,
+      startFetchNext: action,
       reset: override,
       isInstanceExecutionHistoryAvailable: computed,
       instanceExecutionHistory: computed,
@@ -78,12 +88,17 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         }
       }
     );
+
+    this.instanceFinishedDisposer = when(
+      () => currentInstanceStore.isRunning === false,
+      () => this.stopPolling()
+    );
   }
 
   pollInstances = async () => {
     const processInstanceId = currentInstanceStore.state.instance?.id;
-
-    if (processInstanceId === undefined) {
+    const {isRunning} = currentInstanceStore;
+    if (processInstanceId === undefined || !isRunning) {
       return;
     }
 
@@ -92,8 +107,24 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         return flowNodeInstance.running || treePath === processInstanceId;
       })
       .map(([treePath, flowNodeInstance]) => {
+        if (treePath === processInstanceId) {
+          return {
+            treePath,
+            processInstanceId,
+            pageSize:
+              // round up to a multiple of a page size
+              Math.ceil(flowNodeInstance.children.length / PAGE_SIZE) *
+              PAGE_SIZE,
+            searchAfterOrEqual: flowNodeInstance.children[0].sortValues,
+          };
+        }
+
         return {treePath, processInstanceId};
       });
+
+    if (queries.length === 0) {
+      return;
+    }
 
     try {
       const response = await fetchFlowNodeInstances(queries);
@@ -110,14 +141,58 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     }
   };
 
+  fetchNext = async (treePath: string) => {
+    const processInstanceId = currentInstanceStore.state.instance?.id;
+    if (processInstanceId === undefined) {
+      return;
+    }
+
+    if (['fetching-next', 'fetching'].includes(this.state.status)) {
+      return;
+    }
+
+    const children = this.state.flowNodeInstances[treePath].children;
+    this.stopPolling();
+    this.startFetchNext();
+    try {
+      const response = await fetchFlowNodeInstances([
+        {
+          processInstanceId,
+          treePath,
+          pageSize: PAGE_SIZE,
+          searchAfter: children[children.length - 1].sortValues,
+        },
+      ]);
+
+      if (response.ok) {
+        const flowNodeInstances: FlowNodeInstances = await response.json();
+
+        flowNodeInstances[treePath].children = [
+          ...this.state.flowNodeInstances[treePath].children,
+          ...flowNodeInstances[treePath].children,
+        ];
+
+        this.handleFetchSuccess(flowNodeInstances);
+        this.startPolling();
+      } else {
+        this.handleFetchFailure();
+      }
+    } catch (error) {
+      this.handleFetchFailure(error);
+    }
+  };
+
   fetchSubTree = async ({
     treePath,
     pageSize,
+    searchAfter,
   }: {
     treePath: string;
     pageSize?: number;
+    searchAfter?: FlowNodeInstanceType['sortValues'];
   }) => {
     const processInstanceId = currentInstanceStore.state.instance?.id;
+
     if (processInstanceId === undefined) {
       return;
     }
@@ -128,6 +203,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
           processInstanceId: processInstanceId,
           treePath,
           pageSize,
+          searchAfter,
         },
       ]);
 
@@ -159,6 +235,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       this.startFetch();
       this.fetchSubTree({
         treePath: processInstanceId,
+        pageSize: PAGE_SIZE,
       });
     }
   );
@@ -169,6 +246,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     } else {
       this.state.status = 'fetching';
     }
+  };
+
+  startFetchNext = () => {
+    this.state.status = 'fetching-next';
   };
 
   handleFetchFailure = (error?: Error) => {
@@ -190,6 +271,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   };
 
   handlePollSuccess = (flowNodeInstances: FlowNodeInstances) => {
+    if (this.intervalId === null) {
+      return;
+    }
+
     Object.entries(flowNodeInstances).forEach(
       ([treePath, flowNodeInstance]) => {
         // don't create new trees (this prevents showing a tree when the user collapsed it earlier)
@@ -201,9 +286,9 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   };
 
   startPolling = () => {
-    this.intervalId = setInterval(() => {
-      this.pollInstances();
-    }, 5000);
+    if (currentInstanceStore.isRunning && this.intervalId === null) {
+      this.intervalId = setInterval(this.pollInstances, 5000);
+    }
   };
 
   stopPolling = () => {
@@ -221,6 +306,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
     this.instanceExecutionHistoryDisposer?.();
+    this.instanceFinishedDisposer?.();
   }
 
   get isInstanceExecutionHistoryAvailable() {

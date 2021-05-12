@@ -374,7 +374,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   protected void startProcessInstances(int version) {
     super.startProcessInstances(version);
     if (version == 1) {
-      createBigProcess(20, 50);
+      createBigProcess(40, 50);
     }
     final int instancesCount = random.nextInt(30) + 30;
     for (int i = 0; i < instancesCount; i++) {

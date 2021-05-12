@@ -44,9 +44,6 @@ const mockFlowNodeInstance: FlowNodeInstance = {
 describe('<FlowNodeInstancesTree />', () => {
   beforeEach(async () => {
     mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1))
-      ),
       rest.get(`/api/process-instances/:processInstanceId`, (_, res, ctx) =>
         res.once(ctx.json(CURRENT_INSTANCE))
       ),
@@ -72,6 +69,12 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should load the instance history', async () => {
+    mockServer.use(
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level1))
+      )
+    );
+
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
@@ -95,11 +98,10 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should be able to unfold and fold subprocesses', async () => {
-    await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-    });
-
     mockServer.use(
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level1))
+      ),
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(ctx.json(flowNodeInstances.level2))
       ),
@@ -107,6 +109,10 @@ describe('<FlowNodeInstancesTree />', () => {
         res.once(ctx.json(flowNodeInstances.level3))
       )
     );
+
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
 
     render(
       <FlowNodeInstancesTree
@@ -180,6 +186,12 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should poll for instances on root level', async () => {
+    mockServer.use(
+      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
+        res.once(ctx.json(flowNodeInstances.level1))
+      )
+    );
+
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
