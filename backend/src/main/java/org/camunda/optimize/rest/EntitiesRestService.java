@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.mapper.EntityRestMapper;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntitiesService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -26,7 +25,6 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @AllArgsConstructor
-@Secured
 @Path(EntitiesRestService.ENTITIES_PATH)
 @Component
 public class EntitiesRestService {

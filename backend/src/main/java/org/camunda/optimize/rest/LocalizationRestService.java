@@ -18,11 +18,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 @AllArgsConstructor
-@Path("/localization")
+@Path(LocalizationRestService.LOCALIZATION_PATH)
 @Component
 @Slf4j
 public class LocalizationRestService {
 
+  public static final String LOCALIZATION_PATH = "/localization";
   private final LocalizationService localizationService;
 
   @GET

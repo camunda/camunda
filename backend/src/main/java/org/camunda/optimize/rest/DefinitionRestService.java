@@ -18,11 +18,10 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionWithTenantsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
-import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.security.SessionService;
@@ -54,7 +53,6 @@ import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.is
 
 @AllArgsConstructor
 @Slf4j
-@Secured
 @Path("/definition")
 @Component
 public class DefinitionRestService {

@@ -24,7 +24,6 @@ import org.camunda.optimize.rest.mapper.AlertRestMapper;
 import org.camunda.optimize.rest.mapper.CollectionRestMapper;
 import org.camunda.optimize.rest.mapper.EntityRestMapper;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionEntityService;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
@@ -51,7 +50,6 @@ import java.util.List;
 import java.util.Optional;
 
 @AllArgsConstructor
-@Secured
 @Path("/collection")
 @Component
 public class CollectionRestService {

@@ -34,9 +34,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+
 @AllArgsConstructor
 @Slf4j
-@Path(IngestionRestService.INGESTION_PATH)
+@Path(INGESTION_PATH)
 @Component
 public class IngestionRestService {
   public static final String INGESTION_PATH = "/ingestion";

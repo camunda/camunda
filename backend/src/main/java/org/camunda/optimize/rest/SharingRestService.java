@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
@@ -43,9 +42,14 @@ import java.time.ZoneId;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
-@Path("/share")
+@Path(SharingRestService.SHARE_PATH)
 @Component
 public class SharingRestService {
+
+  public static final String SHARE_PATH = "/share";
+  public static final String REPORT_SUB_PATH = "/report";
+  public static final String DASHBOARD_SUB_PATH = "/dashboard";
+  public static final String EVALUATE_SUB_PATH = "/evaluate";
 
   private final SharingService sharingService;
   private final ConfigurationService configurationService;
@@ -54,10 +58,9 @@ public class SharingRestService {
   private final DashboardRestMapper dashboardRestMapper;
 
   @POST
-  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @Path("/report")
+  @Path(REPORT_SUB_PATH)
   public IdResponseDto createNewReportShare(@Context ContainerRequestContext requestContext,
                                             ReportShareRestDto createSharingDto) {
     if (configurationService.getSharingEnabled()) {
@@ -69,10 +72,9 @@ public class SharingRestService {
   }
 
   @POST
-  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @Path("/dashboard")
+  @Path(DASHBOARD_SUB_PATH)
   public IdResponseDto createNewDashboardShare(@Context ContainerRequestContext requestContext,
                                                DashboardShareRestDto createSharingDto) {
     if (configurationService.getSharingEnabled()) {
@@ -84,39 +86,35 @@ public class SharingRestService {
   }
 
   @DELETE
-  @Secured
-  @Path("/report/{shareId}")
+  @Path(REPORT_SUB_PATH + "/{shareId}")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteReportShare(@PathParam("shareId") String reportShareId) {
     sharingService.deleteReportShare(reportShareId);
   }
 
   @DELETE
-  @Secured
-  @Path("/dashboard/{shareId}")
+  @Path(DASHBOARD_SUB_PATH + "/{shareId}")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboardShare(@PathParam("shareId") String dashboardShareId) {
     sharingService.deleteDashboardShare(dashboardShareId);
   }
 
   @GET
-  @Secured
-  @Path("/report/{reportId}")
+  @Path(REPORT_SUB_PATH + "/{reportId}")
   @Produces(MediaType.APPLICATION_JSON)
   public ReportShareRestDto findShareForReport(@PathParam("reportId") String reportId) {
     return sharingService.findShareForReport(reportId).orElse(null);
   }
 
   @GET
-  @Secured
-  @Path("/dashboard/{dashboardId}")
+  @Path(DASHBOARD_SUB_PATH + "/{dashboardId}")
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardShareRestDto findShareForDashboard(@PathParam("dashboardId") String dashboardId) {
     return sharingService.findShareForDashboard(dashboardId).orElse(null);
   }
 
   @POST
-  @Path("/report/{shareId}/evaluate")
+  @Path(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(@Context ContainerRequestContext requestContext,
                                                               @PathParam("shareId") String reportShareId,
@@ -132,7 +130,7 @@ public class SharingRestService {
   }
 
   @POST
-  @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
+  @Path(DASHBOARD_SUB_PATH + "/{shareId}" + REPORT_SUB_PATH + "/{reportId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(@Context ContainerRequestContext requestContext,
@@ -153,7 +151,7 @@ public class SharingRestService {
   }
 
   @GET
-  @Path("/dashboard/{shareId}/evaluate")
+  @Path(DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardDefinitionRestDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
     DashboardDefinitionRestDto dashboardDefinitionDto = sharingService.evaluateDashboard(dashboardShareId).orElse(null);
@@ -169,7 +167,7 @@ public class SharingRestService {
    * - 500: if there were problems checking the authorizations.
    */
   @GET
-  @Path("/dashboard/{dashboardId}/isAuthorizedToShare")
+  @Path(DASHBOARD_SUB_PATH + "/{dashboardId}/isAuthorizedToShare")
   @Produces(MediaType.APPLICATION_JSON)
   public Response isAuthorizedToShareDashboard(@Context ContainerRequestContext requestContext,
                                                @PathParam("dashboardId") String dashboardId) {
@@ -181,7 +179,6 @@ public class SharingRestService {
 
   @POST
   @Path("/status")
-  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ShareSearchResultResponseDto checkShareStatus(ShareSearchRequestDto searchRequest) {

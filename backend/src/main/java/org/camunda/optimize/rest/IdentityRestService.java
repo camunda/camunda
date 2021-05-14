@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.SessionService;
@@ -29,7 +28,6 @@ import javax.ws.rs.core.MediaType;
 import java.util.Optional;
 
 @AllArgsConstructor
-@Secured
 @Path(IdentityRestService.IDENTITY_RESOURCE_PATH)
 @Component
 @Slf4j

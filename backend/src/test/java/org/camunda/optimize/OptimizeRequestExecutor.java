@@ -874,7 +874,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos) {
-    this.path = "variables/";
+    this.path = "variables";
     this.method = POST;
     this.body = getBody(variableRequestDtos);
     return this;

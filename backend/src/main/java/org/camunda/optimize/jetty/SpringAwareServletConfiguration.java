@@ -20,6 +20,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.context.ContextLoaderListener;
+import org.springframework.web.filter.DelegatingFilterProxy;
 
 import javax.servlet.DispatcherType;
 import java.net.URL;
@@ -100,10 +101,15 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.setErrorHandler(new NotFoundErrorHandler());
 
     addLicenseFilter(context);
-    addSingleSignOnFilter(context);
     addNoCachingFilter(context);
     addEventIngestionQoSFilter(context);
     addIngestionRequestLimitFilter(context);
+
+    context.addFilter(
+      new FilterHolder(new DelegatingFilterProxy("springSecurityFilterChain")),
+      "/*",
+      EnumSet.allOf(DispatcherType.class)
+    );
 
     return context;
   }
@@ -148,12 +154,6 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
       REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH,
       EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC)
     );
-  }
-
-  private void addSingleSignOnFilter(ServletContextHandler context) {
-    FilterHolder singleSignOnFilterHolder = new FilterHolder();
-    singleSignOnFilterHolder.setFilter(new SingleSignOnFilter(this));
-    context.addFilter(singleSignOnFilterHolder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
   }
 
   private void addLicenseFilter(ServletContextHandler context) {

@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -33,7 +32,6 @@ import java.util.Optional;
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
 @AllArgsConstructor
-@Secured
 @Path("/dashboard")
 @Component
 public class DashboardRestService {

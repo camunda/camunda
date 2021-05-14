@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.export.CsvExportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -44,7 +43,6 @@ import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInst
 
 @AllArgsConstructor
 @Path("/export")
-@Secured
 @Component
 public class ExportRestService {
 

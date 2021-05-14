@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.report.ReportEvaluationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -50,7 +49,6 @@ import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullS
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
-@Secured
 @Path("/report")
 @Component
 public class ReportRestService {

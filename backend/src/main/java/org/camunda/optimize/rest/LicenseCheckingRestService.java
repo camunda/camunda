@@ -18,10 +18,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @AllArgsConstructor
-@Path("/license")
+@Path(LicenseCheckingRestService.LICENSE_PATH)
 @Component
 public class LicenseCheckingRestService {
 
+  public static final String LICENSE_PATH = "/license";
   private final LicenseManager licenseManager;
 
   @POST

@@ -13,15 +13,18 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 
+import static org.camunda.optimize.rest.HealthRestService.READYZ_PATH;
+
 @AllArgsConstructor
 @Component
-@Path("/")
+@Path(READYZ_PATH)
 public class HealthRestService {
 
-  StatusCheckingService statusCheckingService;
+  public static final String READYZ_PATH = "/readyz";
+
+  private final StatusCheckingService statusCheckingService;
 
   @GET
-  @Path("readyz")
   public Response getImportStatus() {
     if (statusCheckingService.isConnectedToEsAndAtLeastOneEngine()) {
       return Response.ok().build();

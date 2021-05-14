@@ -27,15 +27,18 @@ import java.util.Optional;
 import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 
 @AllArgsConstructor
-@Path("/flow-node")
+@Path(FlowNodeRestService.FLOW_NODE_PATH)
 @Component
 @Slf4j
 public class FlowNodeRestService {
 
+  public static final String FLOW_NODE_PATH = "/flow-node";
+  public static final String FLOW_NODE_NAMES_SUB_PATH = "/flowNodeNames";
+
   private final DefinitionService definitionService;
 
   @POST
-  @Path("/flowNodeNames")
+  @Path(FLOW_NODE_NAMES_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @CacheRequest

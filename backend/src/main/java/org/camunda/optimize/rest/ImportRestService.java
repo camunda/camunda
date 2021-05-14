@@ -12,7 +12,6 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.security.SessionService;
@@ -40,7 +39,6 @@ import static java.util.stream.Collectors.joining;
 
 @AllArgsConstructor
 @Path("/import")
-@Secured
 @Component
 public class ImportRestService {
 

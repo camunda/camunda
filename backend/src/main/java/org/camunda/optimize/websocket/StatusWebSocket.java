@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
+
 @RequiredArgsConstructor
-@ServerEndpoint(value = "/ws/status", configurator = SpringConfigurator.class)
+@ServerEndpoint(value = STATUS_WEBSOCKET_PATH, configurator = SpringConfigurator.class)
 @Slf4j
 public class StatusWebSocket {
 

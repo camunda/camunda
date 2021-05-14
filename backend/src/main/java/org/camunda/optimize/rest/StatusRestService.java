@@ -16,10 +16,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @AllArgsConstructor
-@Path("/status")
+@Path(StatusRestService.STATUS_PATH)
 @Component
 public class StatusRestService {
 
+  public static final String STATUS_PATH = "/status";
   private final StatusCheckingService statusCheckingService;
 
   /**

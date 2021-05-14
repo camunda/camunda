@@ -13,17 +13,14 @@ import lombok.NoArgsConstructor;
 public class OptimizeResourceConstants {
 
   public static final String REST_API_PATH = "/api";
-
   public static final String INDEX_PAGE = "/";
   public static final String INDEX_HTML_PAGE = "/index.html";
-  public static final String LOGIN_PAGE = "/login";
-  public static final String ERROR_PAGE = "/error.html";
+
+  public static final String STATUS_WEBSOCKET_PATH = "/ws/status";
 
   public static final ImmutableList<String> NO_CACHE_RESOURCES =
     ImmutableList.<String>builder()
       .add(INDEX_PAGE)
       .add(INDEX_HTML_PAGE)
-      .add(LOGIN_PAGE)
-      .add(ERROR_PAGE)
       .build();
 }

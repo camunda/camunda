@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.OnboardingService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,6 @@ import javax.ws.rs.core.MediaType;
 
 @AllArgsConstructor
 @Path("/onboarding")
-@Secured
 @Component
 public class OnboardingRestService {
   private final SessionService sessionService;

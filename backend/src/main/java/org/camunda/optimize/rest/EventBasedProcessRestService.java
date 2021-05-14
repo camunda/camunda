@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.EventProcessService;
@@ -58,7 +57,6 @@ import static java.util.stream.Collectors.toList;
 @AllArgsConstructor
 @Path("/eventBasedProcess")
 @Component
-@Secured
 public class EventBasedProcessRestService {
 
   private final EventProcessService eventProcessService;

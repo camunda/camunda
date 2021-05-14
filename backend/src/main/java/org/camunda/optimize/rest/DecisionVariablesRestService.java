@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.DecisionVariableService;
 import org.springframework.stereotype.Component;
@@ -25,15 +24,19 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @AllArgsConstructor
-@Path("/decision-variables")
+@Path(DecisionVariablesRestService.DECISION_VARIABLES_PATH)
 @Component
 public class DecisionVariablesRestService {
+
+  public static final String DECISION_VARIABLES_PATH = "/decision-variables";
+  public static final String DECISION_INPUTS_NAMES_PATH = "/inputs/names";
+  public static final String DECISION_OUTPUTS_NAMES_PATH = "/outputs/names";
 
   private final DecisionVariableService decisionVariableService;
   private final SessionService sessionService;
 
   @POST
-  @Path("/inputs/names")
+  @Path(DECISION_INPUTS_NAMES_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
@@ -42,7 +45,7 @@ public class DecisionVariablesRestService {
   }
 
   @POST
-  @Path("/outputs/names")
+  @Path(DECISION_OUTPUTS_NAMES_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(
@@ -51,7 +54,6 @@ public class DecisionVariablesRestService {
   }
 
   @POST
-  @Secured
   @Path("/inputs/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -62,7 +64,6 @@ public class DecisionVariablesRestService {
   }
 
   @POST
-  @Secured
   @Path("/outputs/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
