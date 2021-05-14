@@ -408,10 +408,36 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
+    // given
+    var journal = openJournal(1);
+    final var firstRecord = JournalTest.copyRecord(journal.append(data));
+    journal.append(data);
+
+    journal.close();
+    final File dataFile = directory.resolve("data").toFile();
+    final File logFile =
+        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
+    LogCorrupter.corruptDescriptor(logFile);
+
+    // when/then
+    journal = openJournal(1);
+    final var reader = journal.openReader();
+    final var lastRecord = journal.append(data);
+
+    // then
+    assertThat(journal.getFirstIndex()).isEqualTo(firstRecord.index());
+    assertThat(journal.getLastIndex()).isEqualTo(lastRecord.index());
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(lastRecord);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
     final var journal = openJournal(1);
-    final var record = JournalTest.copyRecord(journal.append(data));
+    final long index = journal.append(data).index();
 
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
@@ -426,7 +452,7 @@ class SegmentedJournalTest {
                     .withDirectory(directory.resolve("data").toFile())
                     .withMaxSegmentSize(entrySize + JournalSegmentDescriptor.getEncodingLength())
                     .withJournalIndexDensity(journalIndexDensity)
-                    .withLastWrittenIndex(record.index())
+                    .withLastWrittenIndex(index)
                     .build())
         .isInstanceOf(CorruptedLogException.class);
   }
