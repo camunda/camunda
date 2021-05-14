@@ -192,7 +192,7 @@ public class DurationScriptUtil {
 
       // We require work time and userTask is currently idle, this can happen in two scenarios:
       "else if (isCurrentlyIdle) {\n" +
-        "if(hasWorkDuration) {\n" +
+        "if (hasWorkDuration) {\n" +
           // 1) claims have occurred and hence work duration already been calculated during import
           "result = doc[params.workDurationFieldName].value;\n" +
         "} else {\n" +
