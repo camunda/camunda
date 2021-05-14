@@ -74,7 +74,6 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
                                    final List<String> expectedTenants) {
     // given
     final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(deployedTenants);
-
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -85,6 +84,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
+    importAllEngineEntitiesFromScratch();
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
       reportClient.evaluateDecisionRawReport(reportData)
         .getResult();
