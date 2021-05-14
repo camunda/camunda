@@ -491,11 +491,11 @@
       # It might be that also some of them are actually dangerous so be aware when you change one of these!
 
       # Sets the maximum of appends which are send per follower.
-      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDSPERFOLLOWER
       # maxAppendsPerFollower = 2
 
       # Sets the maximum batch size, which is send per append request to a follower.
-      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
       # maxAppendBatchSize = 32KB;
 
       # Allows to configure RocksDB properties, which is used for state management.
