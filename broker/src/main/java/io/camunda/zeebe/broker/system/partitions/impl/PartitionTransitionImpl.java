@@ -61,7 +61,8 @@ public class PartitionTransitionImpl implements PartitionTransition {
    * order. Previous we had the issue that all transitions have subscribe to the current transition,
    * which lead to undefined behavior.
    *
-   * @param currentRole
+   * @param currentTerm the raft term in which transition occurs
+   * @param currentRole the role to which transition occurs
    * @param partitionStepList the steps which should be installed on the transition
    */
   private ActorFuture<Void> enqueueTransition(
@@ -88,15 +89,13 @@ public class PartitionTransitionImpl implements PartitionTransition {
               if (err instanceof UnrecoverableException) {
                 future.completeExceptionally(err);
               } else {
-                installPartition(currentTerm, future, new ArrayList<>(steps));
+                installPartition(future, new ArrayList<>(steps));
               }
             });
   }
 
   private void installPartition(
-      final long currentTerm,
-      final CompletableActorFuture<Void> future,
-      final List<PartitionStep> steps) {
+      final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
     if (steps.isEmpty()) {
       LOG.debug(
           "Partition {} transition complete, installed {} resources!",
@@ -108,7 +107,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
 
     final PartitionStep step = steps.remove(0);
     try {
-      step.open(currentTerm, context)
+      step.open(context)
           .onComplete(
               (value, err) -> {
                 if (err != null) {
@@ -117,7 +116,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
                   future.completeExceptionally(err);
                 } else {
                   openedSteps.add(step);
-                  installPartition(currentTerm, future, steps);
+                  installPartition(future, steps);
                 }
               });
     } catch (final Exception e) {
