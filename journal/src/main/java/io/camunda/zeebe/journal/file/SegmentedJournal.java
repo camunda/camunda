@@ -24,19 +24,22 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.StampedLock;
 import org.agrona.DirectBuffer;
@@ -493,57 +496,121 @@ public class SegmentedJournal implements Journal {
   protected Collection<JournalSegment> loadSegments() {
     // Ensure log directories are created.
     directory.mkdirs();
+    final List<JournalSegment> segments = new ArrayList<>();
 
-    final TreeMap<Long, JournalSegment> segments = new TreeMap<>();
+    final List<File> files = getSortedLogSegments();
+    for (int i = 0; i < files.size(); i++) {
+      final File file = files.get(i);
 
-    // Iterate through all files in the log directory.
-    for (final File file : directory.listFiles(File::isFile)) {
-
-      // If the file looks like a segment file, attempt to load the segment.
-      if (JournalSegmentFile.isSegmentFile(name, file)) {
-        final JournalSegmentFile segmentFile = new JournalSegmentFile(file);
-        final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
-        try (final FileChannel channel = openChannel(file)) {
-          channel.read(buffer);
-          buffer.flip();
-        } catch (final IOException e) {
-          throw new JournalException(e);
-        }
-
-        final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);
-
-        // Load the segment.
+      try {
+        log.debug("Found segment file: {}", file.getName());
+        final JournalSegmentDescriptor descriptor = readDescriptor(file);
         final JournalSegment segment = loadSegment(descriptor.id());
 
-        // Add the segment to the segments list.
-        log.debug(
-            "Found segment: {} ({})", segment.descriptor().id(), segmentFile.file().getName());
-        segments.put(segment.index(), segment);
+        if (i > 0) {
+          checkForIndexGaps(segments.get(i - 1), segment);
+        }
+
+        segments.add(segment);
+      } catch (final CorruptedLogException e) {
+        if (handleSegmentCorruption(files, segments, i)) {
+          return segments;
+        }
+
+        throw e;
       }
     }
 
-    // Verify that all the segments in the log align with one another.
-    JournalSegment previousSegment = null;
-    boolean corrupted = false;
-    final Iterator<Entry<Long, JournalSegment>> iterator = segments.entrySet().iterator();
-    while (iterator.hasNext()) {
-      final JournalSegment segment = iterator.next().getValue();
-      if (previousSegment != null && previousSegment.lastIndex() != segment.index() - 1) {
-        log.warn(
-            "Journal is inconsistent. {} is not aligned with prior segment {}",
-            segment.file().file(),
-            previousSegment.file().file());
-        corrupted = true;
-      }
-      if (corrupted) {
-        segment.close();
-        segment.delete();
-        iterator.remove();
-      }
-      previousSegment = segment;
+    return segments;
+  }
+
+  private void checkForIndexGaps(final JournalSegment prevSegment, final JournalSegment segment) {
+    if (prevSegment.lastIndex() != segment.index() - 1) {
+      throw new CorruptedLogException(
+          String.format(
+              "Log segment %s is not aligned with previous segment %s (last index: %d).",
+              segment, prevSegment, prevSegment.lastIndex()));
+    }
+  }
+
+  /** Returns true if segments after corrupted segment were deleted; false, otherwise */
+  private boolean handleSegmentCorruption(
+      final List<File> files, final List<JournalSegment> segments, final int failedIndex) {
+    long lastSegmentIndex = 0;
+
+    if (!segments.isEmpty()) {
+      final JournalSegment previousSegment = segments.get(segments.size() - 1);
+      lastSegmentIndex = previousSegment.lastIndex();
     }
 
-    return segments.values();
+    if (lastWrittenIndex > lastSegmentIndex) {
+      return false;
+    }
+
+    log.debug(
+        "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
+        lastWrittenIndex,
+        files.get(failedIndex).getName(),
+        files.get(files.size() - 1).getName());
+
+    for (int i = failedIndex; i < files.size(); i++) {
+      final File file = files.get(i);
+      try {
+        Files.delete(file.toPath());
+      } catch (IOException e) {
+        throw new JournalException(
+            String.format(
+                "Failed to delete log segment '%s' when handling corruption.", file.getName()),
+            e);
+      }
+    }
+
+    return true;
+  }
+
+  /** Returns an array of valid log segments sorted by their id which may be empty but not null. */
+  private List<File> getSortedLogSegments() {
+    final File[] files =
+        directory.listFiles(file -> file.isFile() && JournalSegmentFile.isSegmentFile(name, file));
+
+    if (files == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Could not list files in directory '%s'. Either the path doesn't point to a directory or an I/O error occurred.",
+              directory));
+    }
+
+    Arrays.sort(
+        files, Comparator.comparingInt(f -> JournalSegmentFile.getSegmentIdFromPath(f.getName())));
+
+    return Arrays.asList(files);
+  }
+
+  private JournalSegmentDescriptor readDescriptor(final File file) {
+    final int descriptorLength = JournalSegmentDescriptor.getEncodingLength();
+    if (file.length() < descriptorLength) {
+      throw new CorruptedLogException(
+          String.format(
+              "Log segment is smaller than a segment descriptor (%d < %d).",
+              file.length(), descriptorLength));
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(descriptorLength);
+    try (final FileChannel channel = openChannel(file)) {
+      final int readBytes = channel.read(buffer);
+
+      if (readBytes != -1 && readBytes < descriptorLength) {
+        throw new JournalException(
+            String.format(
+                "Expected to read segment descriptor (%d bytes) but only read %d bytes.",
+                descriptorLength, readBytes));
+      }
+      buffer.flip();
+    } catch (final IOException e) {
+      throw new JournalException(e);
+    }
+
+    return new JournalSegmentDescriptor(buffer);
   }
 
   public void closeReader(final SegmentedJournalReader segmentedJournalReader) {
