@@ -31,6 +31,7 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -189,10 +190,10 @@ public interface RaftServer {
   void removeRoleChangeListener(RaftRoleChangeListener listener);
 
   /** Adds a failure listener */
-  void addFailureListener(Runnable failureListener);
+  void addFailureListener(FailureListener listener);
 
   /** Removes a failure listener */
-  void removeFailureListener(Runnable failureListener);
+  void removeFailureListener(FailureListener listener);
 
   /**
    * Bootstraps a single-node cluster.
