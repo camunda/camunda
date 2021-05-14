@@ -503,17 +503,14 @@ public class SegmentedJournal implements Journal {
       final File file = files.get(i);
 
       try {
+        log.debug("Found segment file: {}", file.getName());
         final JournalSegmentDescriptor descriptor = readDescriptor(file);
         final JournalSegment segment = loadSegment(descriptor.id());
 
-        if (i > 0 && segments.get(i - 1).lastIndex() + 1 != segment.index()) {
-          throw new CorruptedLogException(
-              String.format(
-                  "Log segment %s is not aligned with previous segment %s.",
-                  segments.get(i - 1), segment));
+        if (i > 0) {
+          checkForIndexGaps(segments.get(i - 1), segment);
         }
 
-        log.debug("Found segment: {} ({})", descriptor.id(), file.getName());
         segments.add(segment);
       } catch (final CorruptedLogException e) {
         if (handleSegmentCorruption(files, segments, i)) {
@@ -525,6 +522,15 @@ public class SegmentedJournal implements Journal {
     }
 
     return segments;
+  }
+
+  private void checkForIndexGaps(final JournalSegment prevSegment, final JournalSegment segment) {
+    if (prevSegment.lastIndex() != segment.index() - 1) {
+      throw new CorruptedLogException(
+          String.format(
+              "Log segment %s is not aligned with previous segment %s (last index: %d).",
+              segment, prevSegment, prevSegment.lastIndex()));
+    }
   }
 
   /** Returns true if segments after corrupted segment were deleted; false, otherwise */
@@ -542,15 +548,20 @@ public class SegmentedJournal implements Journal {
     }
 
     log.debug(
-        "Found corrupted segment after last ack'ed index {}. Deleting it and subsequent segments",
-        lastWrittenIndex);
+        "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
+        lastWrittenIndex,
+        files.get(failedIndex).getName(),
+        files.get(files.size() - 1).getName());
 
     for (int i = failedIndex; i < files.size(); i++) {
       final File file = files.get(i);
       try {
         Files.delete(file.toPath());
       } catch (IOException e) {
-        log.warn("Failed to delete log segment {}", file.getName(), e);
+        throw new JournalException(
+            String.format(
+                "Failed to delete log segment '%s' when handling corruption.", file.getName()),
+            e);
       }
     }
 

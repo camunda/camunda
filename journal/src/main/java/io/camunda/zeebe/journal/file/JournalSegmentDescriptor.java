@@ -69,7 +69,13 @@ public final class JournalSegmentDescriptor {
 
     if (headerDecoder.schemaId() != segmentDescriptorDecoder.sbeSchemaId()
         || headerDecoder.templateId() != segmentDescriptorDecoder.sbeTemplateId()) {
-      throw new CorruptedLogException("Cannot read segment descriptor. Header does not match.");
+      throw new CorruptedLogException(
+          String.format(
+              "Cannot read segment descriptor. Read schema and template ids ('%d' and '%d') don't match expected '%d' and %d'.",
+              headerDecoder.schemaId(),
+              headerDecoder.templateId(),
+              segmentDescriptorDecoder.sbeSchemaId(),
+              segmentDescriptorDecoder.sbeTemplateId()));
     }
 
     segmentDescriptorDecoder.wrap(
