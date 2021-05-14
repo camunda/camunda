@@ -96,7 +96,7 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 
 func (s *clientTestSuite) TestGatewayAddressEnvVar() {
 	// given
-	lis, grpcServer := createServer()
+	lis, grpcServer := createServerWithDefaultAddress()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -151,7 +151,7 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 
 func (s *clientTestSuite) TestClientWithoutTls() {
 	// given
-	lis, grpcServer := createServer()
+	lis, grpcServer := createServerWithDefaultAddress()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -232,7 +232,7 @@ func (s *clientTestSuite) TestClientWithPathToNonExistingFile() {
 
 func (s *clientTestSuite) TestClientWithDefaultCredentialsProvider() {
 	// given
-	lis, grpcServer := createServer()
+	lis, grpcServer := createServerWithDefaultAddress()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -401,13 +401,37 @@ func (s *clientTestSuite) TestClientWithEmptyDialOptions() {
 	}
 }
 
-func createSecureServer() (net.Listener, *grpc.Server) {
-	creds, _ := credentials.NewServerTLSFromFile("testdata/chain.cert.pem", "testdata/private.key.pem")
-	return createServer(grpc.Creds(creds))
+func (s *clientTestSuite) TestOverrideHostAndPortEnvVar() {
+	// given
+	address := "127.1"
+	port := "9090"
+
+	env.set(GatewayHostEnvVar, address)
+	env.set(GatewayPortEnvVar, port)
+	config := &ClientConfig{
+		GatewayAddress:         "wrong_address",
+		UsePlaintextConnection: true,
+	}
+
+	// when
+	_, err := NewClient(config)
+
+	// then
+	s.NoError(err)
+	s.EqualValues(fmt.Sprintf("%s:%s", address, port), config.GatewayAddress)
 }
 
-func createServer(opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
-	lis, _ := net.Listen("tcp", "0.0.0.0:0")
+func createSecureServer() (net.Listener, *grpc.Server) {
+	creds, _ := credentials.NewServerTLSFromFile("testdata/chain.cert.pem", "testdata/private.key.pem")
+	return createServerWithDefaultAddress(grpc.Creds(creds))
+}
+
+func createServerWithDefaultAddress(opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
+	return createServer("0.0.0.0", "0", opts...)
+}
+
+func createServer(address string, port string, opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
+	lis, _ := net.Listen("tcp", fmt.Sprintf("%s:%s", address, port))
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
 	return lis, grpcServer
