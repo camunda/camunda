@@ -108,7 +108,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
         "def flowNodeInstances = ctx._source.events;" +
         "def userTaskInstances = ctx._source.userTasks;" +
 
-        "for(flowNode in flowNodeInstances){" +
+        "for (flowNode in flowNodeInstances) {" +
           "flowNode.flowNodeInstanceId = flowNode.id;" +
           "flowNode.flowNodeId = flowNode.activityId;" +
           "flowNode.flowNodeType = flowNode.activityType;" +
@@ -118,7 +118,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
           "flowNode.remove(\"activityType\");" +
           "flowNode.remove(\"durationInMs\");" +
 
-          "if(flowNode.flowNodeType.equalsIgnoreCase(\"userTask\")){ " +
+          "if (flowNode.flowNodeType.equalsIgnoreCase(\"userTask\")) { " +
             "userTaskInstances.stream()" +
               ".filter(userTask -> userTask.activityInstanceId.equals(flowNode.flowNodeInstanceId))" +
               ".findFirst()" +
@@ -137,7 +137,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
                   "flowNode.workDurationInMs = userTask.workDurationInMs;" +
                 "}" +
               ");" +
-          "userTaskInstances.removeIf(userTask -> userTask.activityInstanceId.equals(flowNode.flowNodeInstanceId));" +
+            "userTaskInstances.removeIf(userTask -> userTask.activityInstanceId.equals(flowNode.flowNodeInstanceId));" +
           "}" +
         "}" +
 
