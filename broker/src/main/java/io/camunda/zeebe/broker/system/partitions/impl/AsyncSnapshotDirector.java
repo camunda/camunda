@@ -12,15 +12,20 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 
-public final class AsyncSnapshotDirector extends Actor {
+public final class AsyncSnapshotDirector extends Actor implements HealthMonitorable {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -40,6 +45,7 @@ public final class AsyncSnapshotDirector extends Actor {
   private final String processorName;
   private final StreamProcessor streamProcessor;
   private final String actorName;
+  private final List<FailureListener> listeners = new ArrayList<>();
 
   private ActorCondition commitCondition;
   private Long lastWrittenEventPosition;
@@ -47,6 +53,7 @@ public final class AsyncSnapshotDirector extends Actor {
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
   private boolean persistingSnapshot;
+  private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
 
   public AsyncSnapshotDirector(
       final int nodeId,
@@ -106,6 +113,32 @@ public final class AsyncSnapshotDirector extends Actor {
 
   public void forceSnapshot() {
     actor.call(this::prepareTakingSnapshot);
+  }
+
+  @Override
+  protected void handleFailure(final Exception failure) {
+    LOG.error(
+        "No snapshot was taken due to failure in '{}'. Will try to take snapshot after snapshot period {}. {}",
+        actorName,
+        snapshotRate,
+        failure);
+
+    resetStateOnFailure();
+    healthStatus = HealthStatus.UNHEALTHY;
+
+    for (final var listener : listeners) {
+      listener.onFailure();
+    }
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener listener) {
+    actor.run(() -> listeners.add(listener));
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return healthStatus;
   }
 
   private void prepareTakingSnapshot() {
@@ -170,6 +203,7 @@ public final class AsyncSnapshotDirector extends Actor {
                       }
                       LOG.debug("Created pending snapshot for {}", processorName);
                       pendingSnapshot = optionalPendingSnapshot.get();
+                      onRecovered();
 
                       final ActorFuture<Long> lastWrittenPosition =
                           streamProcessor.getLastWrittenPositionAsync();
@@ -183,14 +217,18 @@ public final class AsyncSnapshotDirector extends Actor {
                               persistingSnapshot = false;
                               persistSnapshotIfLastWrittenPositionCommitted();
                             } else {
-                              lastWrittenEventPosition = null;
-                              takingSnapshot = false;
-                              pendingSnapshot.abort();
-                              pendingSnapshot = null;
+                              resetStateOnFailure();
                               LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
                             }
                           });
                     }));
+  }
+
+  private void onRecovered() {
+    if (healthStatus != HealthStatus.HEALTHY) {
+      healthStatus = HealthStatus.HEALTHY;
+      listeners.forEach(FailureListener::onRecovered);
+    }
   }
 
   private void persistSnapshotIfLastWrittenPositionCommitted() {
@@ -224,5 +262,14 @@ public final class AsyncSnapshotDirector extends Actor {
                     });
               }
             });
+  }
+
+  private void resetStateOnFailure() {
+    lastWrittenEventPosition = null;
+    takingSnapshot = false;
+    if (pendingSnapshot != null) {
+      pendingSnapshot.abort();
+      pendingSnapshot = null;
+    }
   }
 }

@@ -18,7 +18,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
   @Override
   public ActorFuture<Void> open(final PartitionContext context) {
     final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
-    final AsyncSnapshotDirector snapshotDirector =
+    final AsyncSnapshotDirector director =
         new AsyncSnapshotDirector(
             context.getNodeId(),
             context.getStreamProcessor(),
@@ -26,8 +26,9 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
             context.getLogStream(),
             snapshotPeriod);
 
-    context.setSnapshotDirector(snapshotDirector);
-    return context.getScheduler().submitActor(snapshotDirector);
+    context.setSnapshotDirector(director);
+    context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+    return context.getScheduler().submitActor(director);
   }
 
   @Override
