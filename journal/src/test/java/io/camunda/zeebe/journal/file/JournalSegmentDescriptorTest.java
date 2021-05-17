@@ -17,14 +17,16 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.nio.ByteBuffer;
 import org.junit.jupiter.api.Test;
 
-public class JournalSegmentDescriptorTest {
+class JournalSegmentDescriptorTest {
 
   @Test
-  public void shouldWriteAndReadDescriptor() {
+  void shouldWriteAndReadDescriptor() {
     // given
     JournalSegmentDescriptor descriptor =
         JournalSegmentDescriptor.builder()
@@ -44,5 +46,15 @@ public class JournalSegmentDescriptorTest {
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.length()).isEqualTo(JournalSegmentDescriptor.getEncodingLength());
+  }
+
+  @Test
+  void shouldValidateDescriptorHeader() {
+    // given
+    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+
+    // when/then
+    assertThatThrownBy(() -> new JournalSegmentDescriptor(buffer))
+        .isInstanceOf(CorruptedLogException.class);
   }
 }

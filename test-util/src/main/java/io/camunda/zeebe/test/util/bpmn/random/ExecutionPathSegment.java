@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -135,65 +134,59 @@ public final class ExecutionPathSegment {
   }
 
   /**
-   * This method finds a cutoff point. We can cut only at a position where we have a non-automatic
-   * step
+   * This method finds execution boundaries. A execution boundary is the point where automatic and
+   * non-automatic step meet each other. We can cut only at positions where we have a non-automatic
+   * steps.
    *
-   * @return index of cutoff point
+   * @return an object which holds the first and last execution boundary
    */
-  private int findCutOffPoint(final Random random) {
+  private ExecutionBoundaries findExecutionBoundaries() {
     // find the first and last point where a cutoff is possible
-    Integer firstCutOffPoint = null;
-    Integer lastCutOffPoint = null;
+    final var cutOffPoints = new ExecutionBoundaries();
 
     for (int index = 0; index < scheduledSteps.size(); index++) {
       final var step = scheduledSteps.get(index).getStep();
 
       if (!step.isAutomatic()) {
-        if (firstCutOffPoint == null) {
-          firstCutOffPoint = index;
-        }
-
-        lastCutOffPoint = index;
+        cutOffPoints.addBoundary(index);
       }
     }
 
-    // find a random position between these two cutoff points
-    if (Objects.equals(firstCutOffPoint, lastCutOffPoint)) {
-      return firstCutOffPoint;
-    }
-
-    final int initialCutOffPoint =
-        firstCutOffPoint + random.nextInt(lastCutOffPoint - firstCutOffPoint);
-
-    /* skip automatic steps; this makes no difference in terms of execution, but it makes the
-    execution path easier to read and debug. E.g. the execution path will not be cut at a point
-    where other steps will be executed by the engine automatically. So when you read the execution
-    path and it is cut somewhere, it is cut at a place that is consistent with the state in the engine*/
-    int finalCutOffPoint = initialCutOffPoint;
-    while (scheduledSteps.get(finalCutOffPoint).getStep().isAutomatic()) {
-      finalCutOffPoint++;
-    }
-
-    return finalCutOffPoint;
+    return cutOffPoints;
   }
 
   /**
-   * Inserts given execution step at the given index, this is mostly done for execution steps which
-   * can happen in parallel to the normal flow, like non interrupting boundary events or event sub
-   * processes.
+   * This method finds a cutoff point between execution boundaries. It will return an index which
+   * marks such execution boundary. If there is only one boundary it will return the corresponding
+   * position, or zero if there is none.
    *
-   * <p>The existing execution step at this index and all exceutions steps come after are moved to
+   * <p>A execution boundary is a position where a previous step is automatic and the next one is
+   * non-automatic. Here we can cut the execution off.
+   *
+   * @return index of the cutoff point
+   */
+  private int findCutOffPoint(final Random random) {
+    final var executionBoundaries = findExecutionBoundaries();
+
+    return executionBoundaries.chooseRandomBoundary(random);
+  }
+
+  /**
+   * Inserts given execution step at a pseudo-random position. The method ensures that it is
+   * inserted at latest before the last non automatic step, such that race conditions can be
+   * avoided.
+   *
+   * <p>This is method is mostly used for execution steps which can happen in parallel to the normal
+   * flow, like non interrupting boundary events or event sub processes.
+   *
+   * <p>The existing execution step at this index and all exceution's steps come after are moved to
    * the right. The related ScheduledSteps which are before and come immediately after are updated.
    *
-   * @param index the index where the execution step should be inserted
+   * @param random used to pseudo-randomly chose where the step should be inserted
    * @param executionStep the step which should be inserted
    */
-  public void insertExecutionStepAt(final int index, final AbstractExecutionStep executionStep) {
-
-    if (index >= scheduledSteps.size()) {
-      appendDirectSuccessor(executionStep);
-      return;
-    }
+  public void insertExecutionStep(final Random random, final AbstractExecutionStep executionStep) {
+    final var index = findCutOffPoint(random);
 
     final var successor = scheduledSteps.remove(index);
     final ScheduledExecutionStep newStep;
@@ -249,5 +242,33 @@ public final class ExecutionPathSegment {
   @Override
   public String toString() {
     return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+  }
+
+  /**
+   * An execution boundary is the point where automatic and non-automatic {@link
+   * ScheduledExecutionStep}'s meet each other. This class contains information about the existing
+   * execution boundaries in a {@link ExecutionPath}.
+   */
+  private static final class ExecutionBoundaries {
+
+    private final List<Integer> boundaries = new ArrayList<>();
+
+    /**
+     * Adds an execution boundary index to the collection.
+     *
+     * @param boundaryIndex the index of the execution boundary in the corresponding execution path
+     */
+    void addBoundary(final int boundaryIndex) {
+      boundaries.add(boundaryIndex);
+    }
+
+    /**
+     * Returns a pseudo-randomly chosen execution boundary.
+     *
+     * @return the execution boundary
+     */
+    public int chooseRandomBoundary(final Random random) {
+      return boundaries.isEmpty() ? 0 : boundaries.get(random.nextInt(boundaries.size()));
+    }
   }
 }

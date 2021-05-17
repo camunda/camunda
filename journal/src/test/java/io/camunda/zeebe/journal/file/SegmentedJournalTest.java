@@ -16,14 +16,18 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import io.camunda.zeebe.journal.file.record.RecordData;
 import io.camunda.zeebe.journal.file.record.SBESerializer;
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -359,6 +363,98 @@ class SegmentedJournalTest {
         .isEqualTo(indexBeforeClose.lookup(firstIndexedPosition).position());
     assertThat(indexAfterRestart.lookup(secondIndexedPosition).position())
         .isEqualTo(indexBeforeClose.lookup(secondIndexedPosition).position());
+  }
+
+  @Test
+  void shouldHandlePartiallyWrittenDescriptor() throws Exception {
+    // given
+    final File dataFile = directory.resolve("data").toFile();
+    assertThat(dataFile.mkdirs()).isTrue();
+    final File emptyLog = new File(dataFile, "journal-1.log");
+    assertThat(emptyLog.createNewFile()).isTrue();
+
+    // when
+    final var journal = openJournal(10);
+    final var reader = journal.openReader();
+    final var record = journal.append(data);
+
+    // then
+    assertThat(journal.getFirstIndex()).isEqualTo(record.index());
+    assertThat(journal.getLastIndex()).isEqualTo(record.index());
+    assertThat(reader.next()).isEqualTo(record);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldHandleCorruptionAtDescriptorWithoutAckedEntries() throws Exception {
+    // given
+    var journal = openJournal(1);
+    journal.close();
+    final File dataFile = directory.resolve("data").toFile();
+    final File logFile =
+        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
+    LogCorrupter.corruptDescriptor(logFile);
+
+    // when/then
+    journal = openJournal(1);
+    final var reader = journal.openReader();
+    final var record = journal.append(data);
+
+    // then
+    assertThat(journal.getFirstIndex()).isEqualTo(record.index());
+    assertThat(journal.getLastIndex()).isEqualTo(record.index());
+    assertThat(reader.next()).isEqualTo(record);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
+    // given
+    var journal = openJournal(1);
+    final var firstRecord = JournalTest.copyRecord(journal.append(data));
+    journal.append(data);
+
+    journal.close();
+    final File dataFile = directory.resolve("data").toFile();
+    final File logFile =
+        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
+    LogCorrupter.corruptDescriptor(logFile);
+
+    // when/then
+    journal = openJournal(1);
+    final var reader = journal.openReader();
+    final var lastRecord = journal.append(data);
+
+    // then
+    assertThat(journal.getFirstIndex()).isEqualTo(firstRecord.index());
+    assertThat(journal.getLastIndex()).isEqualTo(lastRecord.index());
+    assertThat(reader.next()).isEqualTo(firstRecord);
+    assertThat(reader.next()).isEqualTo(lastRecord);
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
+    // given
+    final var journal = openJournal(1);
+    final long index = journal.append(data).index();
+
+    journal.close();
+    final File dataFile = directory.resolve("data").toFile();
+    final File logFile =
+        Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
+    LogCorrupter.corruptDescriptor(logFile);
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                SegmentedJournal.builder()
+                    .withDirectory(directory.resolve("data").toFile())
+                    .withMaxSegmentSize(entrySize + JournalSegmentDescriptor.getEncodingLength())
+                    .withJournalIndexDensity(journalIndexDensity)
+                    .withLastWrittenIndex(index)
+                    .build())
+        .isInstanceOf(CorruptedLogException.class);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {

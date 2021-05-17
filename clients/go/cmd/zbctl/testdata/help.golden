@@ -35,6 +35,8 @@ Flags:
       --clientId string       Specify a client identifier to request an access token. If omitted, will read from the environment variable 'ZEEBE_CLIENT_ID'
       --clientSecret string   Specify a client secret to request an access token. If omitted, will read from the environment variable 'ZEEBE_CLIENT_SECRET'
   -h, --help                  help for zbctl
+      --host string           Specify the host part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_HOST' (default '127.0.0.1')
       --insecure              Specify if zbctl should use an unsecured connection. If omitted, will read from the environment variable 'ZEEBE_INSECURE_CONNECTION'
+      --port string           Specify the port part of the gateway address. If omitted, will read from the environment variable 'ZEEBE_PORT' (default '26500')
 
 Use "zbctl [command] --help" for more information about a command.

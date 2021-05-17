@@ -58,6 +58,10 @@ import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Random;
@@ -76,7 +80,7 @@ import org.slf4j.Logger;
  * across roles (i.e. follower, candidate, leader) is stored in the cluster state. This includes
  * Raft-specific state like the current leader and term, the log, and the cluster configuration.
  */
-public class RaftContext implements AutoCloseable {
+public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   protected final String name;
   protected final ThreadContext threadContext;
@@ -89,7 +93,7 @@ public class RaftContext implements AutoCloseable {
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
-  private final Set<Runnable> failureListeners = new CopyOnWriteArraySet<>();
+  private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
@@ -113,6 +117,7 @@ public class RaftContext implements AutoCloseable {
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
+  private volatile HealthStatus health = HealthStatus.HEALTHY;
 
   public RaftContext(
       final String name,
@@ -202,21 +207,25 @@ public class RaftContext implements AutoCloseable {
     try {
       // to prevent further operations submitted to the threadcontext to execute
       transition(Role.INACTIVE);
-    } catch (final Throwable e) {
-      log.error(
-          "An error occurred when transitioning to {}, closing the raft context",
-          Role.INACTIVE,
-          error);
+    } catch (final Exception e) {
+      log.error("An error occurred when transitioning to inactive, closing the raft context", e);
       close();
     }
-    notifyFailureListeners();
+
+    notifyFailureListeners(error);
   }
 
-  private void notifyFailureListeners() {
+  private void notifyFailureListeners(final Throwable error) {
     try {
-      failureListeners.forEach(Runnable::run);
-    } catch (final Exception exception) {
-      log.error("Could not notify failure listeners", exception);
+      if (error instanceof UnrecoverableException) {
+        health = HealthStatus.DEAD;
+        failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+      } else {
+        health = HealthStatus.UNHEALTHY;
+        failureListeners.forEach(FailureListener::onFailure);
+      }
+    } catch (final Exception e) {
+      log.error("Could not notify failure listeners", e);
     }
   }
 
@@ -235,18 +244,17 @@ public class RaftContext implements AutoCloseable {
       final Supplier<CompletableFuture<R>> function) {
     final CompletableFuture<R> future = new CompletableFuture<>();
     threadContext.execute(
-        () -> {
-          function
-              .get()
-              .whenComplete(
-                  (response, error) -> {
-                    if (error == null) {
-                      future.complete(response);
-                    } else {
-                      future.completeExceptionally(error);
-                    }
-                  });
-        });
+        () ->
+            function
+                .get()
+                .whenComplete(
+                    (response, error) -> {
+                      if (error == null) {
+                        future.complete(response);
+                      } else {
+                        future.completeExceptionally(error);
+                      }
+                    }));
     return future;
   }
 
@@ -281,13 +289,13 @@ public class RaftContext implements AutoCloseable {
   }
 
   /** Adds a failure listener which will be invoked when an uncaught exception occurs */
-  public void addFailureListener(final Runnable failureListener) {
-    failureListeners.add(failureListener);
+  public void addFailureListener(final FailureListener listener) {
+    failureListeners.add(listener);
   }
 
   /** Remove a failure listener */
-  public void removeFailureListener(final Runnable failureListener) {
-    failureListeners.remove(failureListener);
+  public void removeFailureListener(final FailureListener listener) {
+    failureListeners.remove(listener);
   }
 
   /**
@@ -338,15 +346,6 @@ public class RaftContext implements AutoCloseable {
    */
   public void addCommitListener(final RaftCommitListener commitListener) {
     commitListeners.add(commitListener);
-  }
-
-  /**
-   * Removes a previously registered commit listener, or does nothing.
-   *
-   * @param commitListener the listener to remove
-   */
-  public void removeCommitListener(final RaftCommitListener commitListener) {
-    commitListeners.remove(commitListener);
   }
 
   /**
@@ -520,6 +519,11 @@ public class RaftContext implements AutoCloseable {
       throw new IllegalStateException("failed to initialize Raft state", e);
     }
 
+    if (!this.role.role().active() && role.active()) {
+      health = HealthStatus.HEALTHY;
+      failureListeners.forEach(FailureListener::onRecovered);
+    }
+
     if (this.role.role() == role) {
       if (this.role.role() == Role.LEADER) {
         // It is safe to assume that transition to leader is only complete after the initial entries
@@ -535,6 +539,11 @@ public class RaftContext implements AutoCloseable {
         notifyRoleChangeListeners();
       }
     }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return health;
   }
 
   private void notifyRoleChangeListeners() {
