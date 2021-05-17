@@ -36,7 +36,8 @@
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci",
     "storybook": "start-storybook -p 9009 -s public",
     "build-storybook": "build-storybook -s public",
-    "chromatic": "npx chromatic --skip 'dependabot/**' --auto-accept-changes master --exit-once-uploaded"
+    "chromatic": "npx chromatic --skip 'dependabot/**' --auto-accept-changes master --exit-once-uploaded",
+    "postinstall": "cd .. && husky install"
   },
   "jest-junit": {
     "suiteName": "client",
