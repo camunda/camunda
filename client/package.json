@@ -77,7 +77,7 @@
     "eslint-plugin-camunda-licensed": "^0.4.2",
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-testcafe": "^0.2.1",
-    "glob": "^7.1.6",
+    "glob": "^7.1.7",
     "http-proxy-middleware": "^1.2.0",
     "husky": "^6.0.0",
     "jest-enzyme": "^7.1.2",
