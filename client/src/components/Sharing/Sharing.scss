@@ -53,4 +53,43 @@
       opacity: 1;
     }
   }
+
+  &.compact {
+    padding: 10px;
+
+    > .header {
+      margin-bottom: 15px;
+
+      .EntityName {
+        padding-right: 10px;
+
+        > .name-container .name {
+          font-size: 14px;
+          font-weight: bold;
+          line-height: 30px;
+        }
+
+        .Popover {
+          margin-top: 4px;
+        }
+      }
+
+      .title-button {
+        border: none;
+        box-shadow: none;
+        font-size: 14px;
+        padding: 5px;
+        height: 30px;
+        min-width: 55px;
+
+        &:not(:hover):not(.active):not(:active) {
+          background: transparent;
+        }
+      }
+    }
+
+    > .content {
+      margin-bottom: 0;
+    }
+  }
 }

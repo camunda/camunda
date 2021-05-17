@@ -1,0 +1,71 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show a compact version and lock scroll when a shared report is embedded 1`] = `
+<div
+  className="Sharing compact"
+>
+  <div
+    className="header"
+  >
+    <div
+      className="title-container"
+    >
+      <EntityName
+        details={
+          <ReportDetails
+            report={
+              Object {
+                "id": "aReportId",
+                "name": "My report name",
+              }
+            }
+          />
+        }
+      >
+        My report name
+      </EntityName>
+      <a
+        className="Button main title-button"
+        href="http://example.com/subUrl/#/report/aReportId/"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <Icon
+          renderedIn="span"
+          type="share"
+        />
+        <span>
+          Open
+        </span>
+      </a>
+    </div>
+    <InstanceCountErrorHandler
+      report={
+        Object {
+          "id": "aReportId",
+          "name": "My report name",
+        }
+      }
+    />
+  </div>
+  <div
+    className="content"
+  >
+    <Memo(ReportRenderer)
+      context="shared"
+      error={null}
+      loadReport={[Function]}
+      report={
+        Object {
+          "id": "aReportId",
+          "name": "My report name",
+        }
+      }
+    />
+    <IconLinkErrorHandler
+      href="http://example.com/subUrl/#/report/aReportId/"
+    />
+    <DiagramScrollLock />
+  </div>
+</div>
+`;

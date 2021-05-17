@@ -197,16 +197,15 @@ it('should render an href directing to view mode ignoring /external sub url', ()
   );
 });
 
-it('should add a DiagramScrollLock when a shared report is embedded', () => {
+it('should show a compact version and lock scroll when a shared report is embedded', () => {
   props.match.params.type = 'report';
   props.location.search = '?mode=embed';
 
   const node = shallow(<Sharing {...props} />);
-
   node.setState({
     loading: false,
-    evaluationResult: {name: 'My report name'},
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
   });
 
-  expect(node.find('DiagramScrollLock')).toExist();
+  expect(node).toMatchSnapshot();
 });

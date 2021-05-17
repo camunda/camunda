@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
+import classNames from 'classnames';
 
 import {
   ReportRenderer,
@@ -22,6 +23,7 @@ import {
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
+import IconLink from './IconLink';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
 import './Sharing.scss';
@@ -118,9 +120,11 @@ export class Sharing extends React.Component {
       return <ErrorPage noLink />;
     }
 
+    const embeddedReport = type === 'report' && params.get('mode') === 'embed';
+
     const SharingView = this.getSharingView();
     return (
-      <div className="Sharing">
+      <div className={classNames('Sharing', {compact: embeddedReport})}>
         <div className="header">
           <div className="title-container">
             <EntityName
@@ -141,14 +145,19 @@ export class Sharing extends React.Component {
               className="Button main title-button"
             >
               <Icon type="share" renderedIn="span" />
-              <span>{t('common.sharing.openInOptimize')}</span>
+              <span>{embeddedReport ? t('common.open') : t('common.sharing.openInOptimize')}</span>
             </a>
           </div>
           {type === 'report' && <InstanceCount report={evaluationResult} />}
         </div>
         <div className="content">
           {SharingView}
-          {type === 'report' && params.get('mode') === 'embed' && <DiagramScrollLock />}
+          {embeddedReport && (
+            <>
+              <IconLink href={this.getEntityUrl()} />
+              <DiagramScrollLock />
+            </>
+          )}
         </div>
       </div>
     );

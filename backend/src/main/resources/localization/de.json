@@ -746,6 +746,7 @@
     "dataSource": "Datenquelle",
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
+    "open": "Öffnen",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
