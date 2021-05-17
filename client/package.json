@@ -91,7 +91,7 @@
     "prettier": "2.3.0",
     "react-scripts": "4.0.3",
     "shelljs": "^0.8.4",
-    "testcafe": "^1.14.0",
+    "testcafe": "^1.14.2",
     "testcafe-browser-provider-browserstack": "^1.13.1",
     "tree-kill": "^1.2.2",
     "ws": "^7.4.5",
