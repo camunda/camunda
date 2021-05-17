@@ -115,7 +115,6 @@ public final class ZeebePartition extends Actor
             actor.runOnCompletion(
                 listenerFutures,
                 t -> {
-                  // Compare with the current term in case a new role transition happened
                   if (t != null) {
                     onInstallFailure(t);
                   }
