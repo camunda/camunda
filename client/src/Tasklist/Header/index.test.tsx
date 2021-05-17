@@ -5,7 +5,7 @@
  */
 
 import * as React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 
 import {Header} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -14,6 +14,8 @@ import {createMemoryHistory} from 'history';
 import {login} from 'modules/stores/login';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => (
@@ -26,9 +28,11 @@ function createWrapper(history = createMemoryHistory()) {
   return Wrapper;
 }
 
-jest.mock('modules/stores/login');
-
 describe('<Header />', () => {
+  afterEach(() => {
+    login.reset();
+  });
+
   it('should render header', async () => {
     render(<Header />, {
       wrapper: createWrapper(),
@@ -72,13 +76,22 @@ describe('<Header />', () => {
   });
 
   it('should handle logout', async () => {
+    mockServer.use(
+      rest.post('/api/login', (_, res) => res.once()),
+      rest.post('/api/logout', (_, res) => res.once()),
+    );
+    await login.handleLogin('demo', 'demo');
+
     render(<Header />, {
       wrapper: createWrapper(),
     });
 
+    expect(login.status).toBe('logged-in');
+
     fireEvent.click(await screen.findByText('Demo User'));
     fireEvent.click(screen.getByText('Logout'));
 
-    expect(login.handleLogout).toHaveBeenCalled();
+    await waitFor(() => expect(login.status).toBe('logged-out'));
+    expect(screen.queryByText('logout')).not.toBeInTheDocument();
   });
 });
