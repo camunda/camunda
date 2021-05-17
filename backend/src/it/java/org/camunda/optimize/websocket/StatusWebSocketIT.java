@@ -81,7 +81,7 @@ public class StatusWebSocketIT extends AbstractIT {
   @Test
   public void importNotInProgressStatusOnlyUpdatedOnValueChange() throws Exception {
     // given
-    embeddedOptimizeExtension.stopEngineImportScheduling();
+    embeddedOptimizeExtension.stopImportScheduling();
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 
     // when status socket connects
@@ -99,7 +99,7 @@ public class StatusWebSocketIT extends AbstractIT {
   @Test
   public void importInProgressStatusOnlyUpdatedOnValueChange() throws Exception {
     // given
-    embeddedOptimizeExtension.stopEngineImportScheduling();
+    embeddedOptimizeExtension.stopImportScheduling();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 

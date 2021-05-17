@@ -3,12 +3,29 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.engine.handler;
+package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.CompletedIncidentImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.CompletedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.CompletedUserTaskInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.DecisionInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerProvider;
+import org.camunda.optimize.service.importing.engine.handler.IdentityLinkLogImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.OpenIncidentImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.RunningActivityInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.RunningUserTaskInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.UserOperationLogImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
+import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -18,19 +35,25 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @Component
-public class EngineImportIndexHandlerRegistry {
+public class ImportIndexHandlerRegistry {
 
   private Map<String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
+  private Map<Integer, ZeebeImportIndexHandlerProvider> zeebeImportIndexHandlerProviderMap = new HashMap<>();
 
   public void register(final String engineAlias,
                        final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider) {
     engineImportIndexHandlerProviderMap.put(engineAlias, engineImportIndexHandlerProvider);
   }
 
+  public void register(final int partitionId,
+                       final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider) {
+    zeebeImportIndexHandlerProviderMap.put(partitionId, zeebeImportIndexHandlerProvider);
+  }
+
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
     List<AllEntitiesBasedImportIndexHandler> result = new ArrayList<>();
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
+      engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getAllEntitiesBasedHandlers();
     }
@@ -169,8 +192,8 @@ public class EngineImportIndexHandlerRegistry {
     return result;
   }
 
-  public List<ImportIndexHandler> getAllHandlers() {
-    List<ImportIndexHandler> result = new ArrayList<>();
+  public List<EngineImportIndexHandler<?, ?>> getAllHandlers() {
+    List<EngineImportIndexHandler<?, ?>> result = new ArrayList<>();
     for (EngineImportIndexHandlerProvider provider : engineImportIndexHandlerProviderMap.values()) {
       result.addAll(provider.getAllHandlers());
     }
@@ -227,7 +250,18 @@ public class EngineImportIndexHandlerRegistry {
     return result;
   }
 
+  public ZeebeProcessDefinitionImportIndexHandler getZeebeProcessDefinitionImportIndexHandler(Integer partitionId) {
+    final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider =
+      zeebeImportIndexHandlerProviderMap.get(partitionId);
+    ZeebeProcessDefinitionImportIndexHandler result = null;
+    if (zeebeImportIndexHandlerProvider != null) {
+      result = zeebeImportIndexHandlerProvider.getImportIndexHandler(ZeebeProcessDefinitionImportIndexHandler.class);
+    }
+    return result;
+  }
+
   public void reloadConfiguration() {
     this.engineImportIndexHandlerProviderMap = new HashMap<>();
+    this.zeebeImportIndexHandlerProviderMap = new HashMap<>();
   }
 }

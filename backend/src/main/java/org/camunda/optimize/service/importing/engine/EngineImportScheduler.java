@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DataImportSourceDto;
+import org.camunda.optimize.dto.optimize.ConfiguredEngineDto;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
@@ -19,12 +19,12 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class EngineImportScheduler extends AbstractImportScheduler {
+public class EngineImportScheduler extends AbstractImportScheduler<ConfiguredEngineDto> {
   // Iterating through this synchronized list is only thread-safe when synchronizing on the list itself, as per docs
   private final List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
 
   public EngineImportScheduler(final List<ImportMediator> importMediators,
-                               final DataImportSourceDto dataImportSourceDto) {
+                               final ConfiguredEngineDto dataImportSourceDto) {
     super(importMediators, dataImportSourceDto);
   }
 

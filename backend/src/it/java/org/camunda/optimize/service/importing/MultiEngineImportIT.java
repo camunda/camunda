@@ -62,7 +62,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
         .extracting(ProcessDefinitionOptimizeDto::getKey)
         .containsExactlyInAnyOrder(PROCESS_KEY_1);
     } finally {
-      embeddedOptimizeExtension.stopEngineImportScheduling();
+      embeddedOptimizeExtension.stopImportScheduling();
     }
   }
 
@@ -98,7 +98,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       // then
       assertProcessInstanceImportResults(processInstances, PROCESS_KEY_1);
     } finally {
-      embeddedOptimizeExtension.stopEngineImportScheduling();
+      embeddedOptimizeExtension.stopImportScheduling();
     }
   }
 

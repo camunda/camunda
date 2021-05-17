@@ -46,8 +46,10 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -615,8 +617,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   private void adjustClusterSettings() {
     Settings settings = Settings.builder()
-      // disable automatic index creations to fail early in integration tests
-      .put("action.auto_create_index", false)
+      // we allow auto index creation because the Zeebe exporter creates indices for records
+      .put("action.auto_create_index", true)
       // all of our tests are running against a one node cluster. Since we're creating a lot of indexes,
       // we are easily hitting the default value of 1000. Thus, we need to increase this value for the test setup.
       .put("cluster.max_shards_per_node", 10_000)
@@ -788,12 +790,19 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
-  public void deleteCamundaEventIndicesAndEventCountsAndTraces() {
+  private void deleteCamundaEventIndicesAndEventCountsAndTraces() {
     getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"),
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"),
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_TRACE_STATE_INDEX_PREFIX + "*")
     );
+  }
+
+  @SneakyThrows
+  public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
+    getOptimizeElasticClient().getHighLevelClient()
+      .indices()
+      .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), RequestOptions.DEFAULT);
   }
 
   private void deleteAllEventProcessInstanceIndices() {

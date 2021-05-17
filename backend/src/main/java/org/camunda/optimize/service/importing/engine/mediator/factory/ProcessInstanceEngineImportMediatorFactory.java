@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningProcessInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedProcessInstanceImportService;
@@ -34,7 +34,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
   private final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
 
   public ProcessInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                    final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
                                                     final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                     final CompletedProcessInstanceWriter completedProcessInstanceWriter,

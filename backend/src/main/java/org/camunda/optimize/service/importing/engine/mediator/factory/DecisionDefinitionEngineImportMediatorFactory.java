@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionImportService;
@@ -34,7 +34,7 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   public DecisionDefinitionEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                       final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                        final ConfigurationService configurationService,
                                                        final DecisionDefinitionWriter decisionDefinitionWriter,
                                                        final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,

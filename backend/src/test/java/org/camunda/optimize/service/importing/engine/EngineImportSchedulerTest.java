@@ -5,8 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine;
 
-import org.camunda.optimize.dto.optimize.DataImportSourceDto;
-import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.ConfiguredEngineDto;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +31,7 @@ public class EngineImportSchedulerTest {
   public void before() {
     underTest = new EngineImportScheduler(
       Collections.singletonList(mockedImportMediator),
-      new DataImportSourceDto(DataImportSourceType.ENGINE, "camundabpm")
+      new ConfiguredEngineDto("camundabpm")
     );
   }
 

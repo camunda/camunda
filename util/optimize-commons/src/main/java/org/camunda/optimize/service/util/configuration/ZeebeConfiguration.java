@@ -18,5 +18,6 @@ public class ZeebeConfiguration {
   private boolean enabled;
   private String name;
   private int partitionCount;
+  private int maxImportPageSize;
 
 }

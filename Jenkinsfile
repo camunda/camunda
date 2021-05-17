@@ -5,7 +5,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-8-slim";
+MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-11-slim";
 
 static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
@@ -621,7 +621,7 @@ void e2eTestSteps() {
   }
   container('maven') {
     sh 'sudo apt-get update'
-    sh 'sudo apt-get install -y --no-install-recommends maven openjdk-8-jdk-headless'
+    sh 'sudo apt-get install -y --no-install-recommends maven openjdk-11-jdk'
     runMaven('test -pl client -Pclient.e2etests-chromeheadless -Dskip.yarn.build')
   }
 }

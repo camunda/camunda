@@ -142,6 +142,8 @@ zeebe:
   name: 'zeebe-record'
   # The number of partitions configured for the Zeebe record source
   partitionCount: 1
+  # The max page size for importing Zeebe data
+  maxImportPageSize: 10000
 
 import:
   data:

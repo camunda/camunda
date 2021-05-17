@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
@@ -33,7 +33,7 @@ public class DecisionInstanceEngineImportMediatorFactory extends AbstractEngineI
   private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
   public DecisionInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final DecisionInstanceWriter decisionInstanceWriter,
                                                      final DecisionDefinitionResolverService decisionDefinitionResolverService,

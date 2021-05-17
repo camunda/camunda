@@ -25,11 +25,9 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <project.previousVersion>3.4.0</project.previousVersion>
 
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
     <camunda.engine.version>7.15.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.15.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.0.0-alpha7</zeebe.version>
+    <zeebe.version>1.0.0</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
@@ -39,7 +37,7 @@
     <jsonpath.version>2.5.0</jsonpath.version>
     <elasticsearch.version>7.10.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>7.5.1</elasticsearch.test.version>
+    <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.5.1</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
@@ -366,6 +364,7 @@
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
+            <argLine>--illegal-access=permit</argLine>
           </configuration>
           <dependencies>
             <dependency>
@@ -382,6 +381,7 @@
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
+            <argLine>--illegal-access=permit</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -519,6 +519,14 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <configuration>
+          <release>11</release>
+        </configuration>
       </plugin>
     </plugins>
 

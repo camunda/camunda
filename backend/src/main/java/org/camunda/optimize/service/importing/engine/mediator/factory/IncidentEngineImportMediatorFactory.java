@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedIncidentFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.OpenIncidentFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.incident.CompletedIncidentImportService;
@@ -34,7 +34,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
   public IncidentEngineImportMediatorFactory(final CompletedIncidentWriter completedIncidentWriter,
                                              final OpenIncidentWriter openIncidentWriter,
                                              final BeanFactory beanFactory,
-                                             final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                             final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                              final ConfigurationService configurationService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.completedIncidentWriter = completedIncidentWriter;

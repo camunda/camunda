@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.event.handler;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
@@ -23,8 +23,8 @@ public class EventImportIndexHandlerRegistry {
 
   private final Map<String, CamundaEventTraceImportIndexHandler> camundaEventTraceHandlers = new HashMap<>();
 
-  public List<ImportIndexHandler<?, ?>> getAllHandlers() {
-    final List<ImportIndexHandler<?, ?>> result = new ArrayList<>();
+  public List<EngineImportIndexHandler<?, ?>> getAllHandlers() {
+    final List<EngineImportIndexHandler<?, ?>> result = new ArrayList<>();
     result.add(getExternalEventTraceImportIndexHandler());
     result.addAll(camundaEventTraceHandlers.values());
     return result;

@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
-public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>, DTO> implements ImportMediator {
+public abstract class BackoffImportMediator<T extends EngineImportIndexHandler<?, ?>, DTO> implements ImportMediator {
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
   protected Logger logger = LoggerFactory.getLogger(getClass());
   protected ConfigurationService configurationService;

@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ProcessInstanceResolverService;
 import org.camunda.optimize.service.importing.engine.service.UserOperationLogImportService;
@@ -30,7 +30,7 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineI
   private final ProcessInstanceResolverService processInstanceResolverService;
 
   public UserOperationLogEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                      final ProcessDefinitionResolverService processDefinitionResolverService,

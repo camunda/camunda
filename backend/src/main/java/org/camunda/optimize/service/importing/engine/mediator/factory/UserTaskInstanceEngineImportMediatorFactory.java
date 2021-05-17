@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWr
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningUserTaskInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedUserTaskInstanceImportService;
@@ -31,7 +31,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
   private final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
 
   public UserTaskInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                                      final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter) {

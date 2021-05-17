@@ -12,7 +12,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.IdentityLinkLogInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.IdentityLinkLogImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -29,7 +29,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   public IdentityLinkLogEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                    final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
                                                     final IdentityLinkLogWriter identityLinkLogWriter,
                                                     final AssigneeCandidateGroupService assigneeCandidateGroupService) {

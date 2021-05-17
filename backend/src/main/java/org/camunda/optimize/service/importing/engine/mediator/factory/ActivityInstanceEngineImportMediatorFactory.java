@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWr
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningActivityInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedActivityInstanceImportService;
@@ -35,7 +35,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
                                                      final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                      final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                                      final BeanFactory beanFactory,
-                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;

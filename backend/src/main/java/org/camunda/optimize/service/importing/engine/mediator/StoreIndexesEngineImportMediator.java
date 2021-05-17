@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.engine.mediator;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportMediator;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -32,12 +32,12 @@ import java.util.stream.Stream;
 public class StoreIndexesEngineImportMediator implements ImportMediator {
   protected EngineContext engineContext;
   private ConfigurationService configurationService;
-  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private StoreIndexesEngineImportService importService;
   private OffsetDateTime dateUntilJobCreationIsBlocked;
 
 
-  public StoreIndexesEngineImportMediator(final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+  public StoreIndexesEngineImportMediator(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                           final StoreIndexesEngineImportService importService,
                                           final EngineContext engineContext,
                                           final ConfigurationService configurationService) {
@@ -59,7 +59,7 @@ public class StoreIndexesEngineImportMediator implements ImportMediator {
           createStreamForHandlers(importIndexHandlerRegistry.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())),
           createStreamForHandlers(importIndexHandlerRegistry.getTimestampEngineBasedHandlers(engineContext.getEngineAlias()))
         )
-        .map(ImportIndexHandler::getIndexStateDto)
+        .map(EngineImportIndexHandler::getIndexStateDto)
         .filter(indexStateDto -> indexStateDto instanceof ImportIndexDto)
         .map(indexStateDto -> (ImportIndexDto) indexStateDto)
         .collect(Collectors.toList());
@@ -108,7 +108,7 @@ public class StoreIndexesEngineImportMediator implements ImportMediator {
     return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
 
-  private <T extends ImportIndexHandler> Stream<T> createStreamForHandlers(List<T> handlers) {
+  private <T extends EngineImportIndexHandler> Stream<T> createStreamForHandlers(List<T> handlers) {
     return Optional.ofNullable(handlers)
       .map(Collection::stream)
       .orElseGet(Stream::empty);

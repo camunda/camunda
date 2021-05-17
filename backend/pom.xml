@@ -51,6 +51,12 @@
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
       <version>${camunda.maven.artifacts.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.camunda.feel</groupId>
+          <artifactId>feel-engine</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
@@ -60,14 +66,32 @@
 
     <!-- Zeebe dependencies -->
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <version>${zeebe.version}</version>
     </dependency>
     <dependency>
-      <groupId>io.zeebe</groupId>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test</artifactId>
+      <version>${zeebe.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+      <version>${zeebe.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-elasticsearch-exporter</artifactId>
+      <version>${zeebe.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- Javax XML -->

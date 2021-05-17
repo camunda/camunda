@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.TenantWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.TenantFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.TenantImportMediator;
 import org.camunda.optimize.service.importing.engine.service.TenantImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -26,7 +26,7 @@ public class TenantImportMediatorFactory extends AbstractEngineImportMediatorFac
   private final TenantWriter tenantWriter;
 
   public TenantImportMediatorFactory(final BeanFactory beanFactory,
-                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                      final ConfigurationService configurationService,
                                      final TenantWriter tenantWriter) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);

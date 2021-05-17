@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-physsd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 

@@ -7,7 +7,6 @@ package org.camunda.optimize.service.schema;
 
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -225,17 +224,6 @@ public class SchemaManagerIT extends AbstractIT {
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
     assertMappingSettings(mappings, getSettingsResponse);
-  }
-
-  @Test
-  public void newIndexIsNotAddedDynamically() {
-    // given schema is created
-    initializeSchema();
-
-    // then an exception is thrown when I add a document to an unknown type
-    assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      "myAwesomeNewIndex", "12312412", ProcessInstanceDto.builder().build())
-    ).isInstanceOf(ElasticsearchStatusException.class);
   }
 
   @Test

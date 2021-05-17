@@ -243,7 +243,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   @Override
-  public void stopEngineImportSchedulers() {
+  public void stopImportSchedulers() {
     getImportSchedulerManager().stopSchedulers();
   }
 

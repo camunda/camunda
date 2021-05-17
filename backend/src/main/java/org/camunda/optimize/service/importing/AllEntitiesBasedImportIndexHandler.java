@@ -21,7 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class AllEntitiesBasedImportIndexHandler
-  implements ImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
+  implements EngineImportIndexHandler<AllEntitiesBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   @Autowired
   protected ImportIndexReader importIndexReader;

@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionImportService;
@@ -35,7 +35,7 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
   public ProcessDefinitionEngineImportMediatorFactory(final ProcessDefinitionWriter processDefinitionWriter,
                                                       final BeanFactory beanFactory,
                                                       final ConfigurationService configurationService,
-                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                       final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
                                                       final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);

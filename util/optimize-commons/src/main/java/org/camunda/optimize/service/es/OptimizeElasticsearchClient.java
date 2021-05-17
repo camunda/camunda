@@ -293,6 +293,11 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     );
   }
 
+  public final SearchResponse searchWithoutPrefixing(final SearchRequest searchRequest, final RequestOptions options)
+    throws IOException {
+    return highLevelClient.search(searchRequest, options);
+  }
+
   private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {
     return Failsafe.with(createSnapshotRetryPolicy(operation, this.snapshotInProgressRetryDelaySeconds));
   }

@@ -139,7 +139,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("8-slim"))
+          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("11-slim"))
         }
       }
       steps {

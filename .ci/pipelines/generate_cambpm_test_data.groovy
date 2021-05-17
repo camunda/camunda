@@ -8,7 +8,7 @@ def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 
 def static NODE_POOL_SIMPLE_AGENT() { return "agents-n1-standard-32-netssd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 

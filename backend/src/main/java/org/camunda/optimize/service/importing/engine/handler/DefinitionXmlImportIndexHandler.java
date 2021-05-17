@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
-import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,7 +24,7 @@ import java.util.Set;
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class DefinitionXmlImportIndexHandler
-  implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
+  implements EngineImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   @Autowired
   protected OptimizeElasticsearchClient esClient;

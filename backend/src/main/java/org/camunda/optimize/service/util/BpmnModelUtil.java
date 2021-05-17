@@ -59,6 +59,7 @@ public class BpmnModelUtil {
       return processes.stream()
         .filter(process -> process.getId().equals(definitionKey))
         .map(Process::getName)
+        .filter(Objects::nonNull)
         .findFirst();
     } catch (Exception exc) {
       log.warn("Failed parsing the BPMN xml.", exc);

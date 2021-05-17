@@ -3,21 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize;
+package org.camunda.optimize.service.importing.page;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
-@AllArgsConstructor
-public class DataImportSourceDto {
+public class PositionBasedImportPage implements ImportPage {
 
-  private DataImportSourceType type;
-  private String alias;
-
-  @Override
-  public String toString() {
-    return type + ":" + alias;
-  }
+  private Long position = 0L;
 
 }
