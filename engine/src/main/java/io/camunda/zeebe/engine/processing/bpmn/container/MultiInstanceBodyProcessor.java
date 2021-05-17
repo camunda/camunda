@@ -114,13 +114,14 @@ public final class MultiInstanceBodyProcessor
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
 
-    final var bodyInstance = stateBehavior.getElementInstance(flowScopeContext);
-    final var loopCounter = bodyInstance.getMultiInstanceLoopCounter();
+    // loop counter is already set on the inner instance on activating
+    final int loopCounter =
+        stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
 
     return readInputCollectionVariable(multiInstanceBody, childContext)
         .flatMap(
             collection -> {
-              // the loop counter starts by 1
+              // the loop counter starts at 1
               final var index = loopCounter - 1;
               if (index < collection.size()) {
                 final var item = collection.get(index);
