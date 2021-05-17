@@ -258,8 +258,10 @@ public final class ZeebePartition extends Actor
   private void onInstallFailure(final Throwable error) {
     if (error instanceof UnrecoverableException) {
       LOG.error(
-          "Failed to install partition {} with unrecoverable failure: ",
+          "Failed to install partition {} (role {}, term {}) with unrecoverable failure: ",
           context.getPartitionId(),
+          context.getCurrentRole(),
+          context.getCurrentTerm(),
           error);
       handleUnrecoverableFailure();
     } else {
@@ -274,13 +276,22 @@ public final class ZeebePartition extends Actor
         .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
 
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
-    // failure. Services will be installed for the new role.
+    // failure. The transition for the higher term will be already enqueued and services will be
+    // installed for the new role.
     if (context.getCurrentRole() == Role.LEADER
         && context.getCurrentTerm() == context.getRaftPartition().term()) {
-      LOG.info("Unexpected failure occurred, stepping down");
+      LOG.info(
+          "Unexpected failure occurred in partition {} (role {}, term {}), stepping down",
+          context.getPartitionId(),
+          context.getCurrentRole(),
+          context.getCurrentTerm());
       context.getRaftPartition().stepDown();
     } else if (context.getCurrentRole() == Role.FOLLOWER) {
-      LOG.info("Unexpected failure occurred, transitioning to inactive");
+      LOG.info(
+          "Unexpected failure occurred in partition {} (role {}, term {}), transitioning to inactive",
+          context.getPartitionId(),
+          context.getCurrentRole(),
+          context.getCurrentTerm());
       context.getRaftPartition().goInactive();
     }
   }
