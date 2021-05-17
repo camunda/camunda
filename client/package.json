@@ -34,7 +34,8 @@
     "test:e2e": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:e2e:ci": "PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:browserstack": "ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 node e2e/scripts/browserstack.js",
-    "test:ci-browserstack": "PORT=8080 node e2e/scripts/browserstack.js"
+    "test:ci-browserstack": "PORT=8080 node e2e/scripts/browserstack.js",
+    "postinstall": "cd .. && husky install"
   },
   "jest-junit": {
     "suiteName": "client",
@@ -98,11 +99,6 @@
     "not ie <= 11",
     "not op_mini all"
   ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "scarfSettings": {
     "enabled": false
   },
