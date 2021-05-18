@@ -143,24 +143,6 @@ pipeline {
     stage('Java Integration Tests') {
       failFast false
       parallel {
-        stage("OpenJDK 8 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-JDK8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("8-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage("OpenJDK 11 Integration") {
           agent {
             kubernetes {
@@ -186,24 +168,6 @@ pipeline {
               label "optimize-ci-build_es-JDK13_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("13"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("Adopt Open JDK 8 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-ADOPT8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent("adoptopenjdk/maven-openjdk8:latest", "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
