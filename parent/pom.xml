@@ -47,7 +47,7 @@
     <version.docker-java-api>3.2.8</version.docker-java-api>
     <version.elasticsearch>7.12.1</version.elasticsearch>
     <version.error-prone>2.6.0</version.error-prone>
-    <version.grpc>1.37.0</version.grpc>
+    <version.grpc>1.37.1</version.grpc>
     <version.gson>2.8.6</version.gson>
     <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -70,7 +70,7 @@
     <version.netty-tcnative>2.0.39.Final</version.netty-tcnative>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.10.0</version.prometheus>
-    <version.protobuf>3.16.0</version.protobuf>
+    <version.protobuf>3.17.0</version.protobuf>
     <version.protobuf-common>2.1.0</version.protobuf-common>
     <version.micrometer>1.6.7</version.micrometer>
     <version.rocksdbjni>6.20.3</version.rocksdbjni>
@@ -88,7 +88,7 @@
     <version.zeebe-test-container>3.0.0</version.zeebe-test-container>
     <version.feel-scala>1.13.2</version.feel-scala>
     <version.rest-assured>4.3.3</version.rest-assured>
-    <version.spring>5.3.6</version.spring>
+    <version.spring>5.3.7</version.spring>
     <version.spring-boot>2.4.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
