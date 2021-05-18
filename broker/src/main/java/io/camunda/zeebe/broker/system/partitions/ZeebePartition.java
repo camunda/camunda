@@ -40,7 +40,6 @@ public final class ZeebePartition extends Actor
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
-  private long term;
 
   private final PartitionContext context;
   private final PartitionTransition transition;
@@ -74,7 +73,6 @@ public final class ZeebePartition extends Actor
 
   private void onRoleChange(final Role newRole, final long newTerm) {
     ActorFuture<Void> nextTransitionFuture = null;
-    term = newTerm;
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
@@ -98,7 +96,7 @@ public final class ZeebePartition extends Actor
     if (nextTransitionFuture != null) {
       currentTransitionFuture = nextTransitionFuture;
     }
-    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, term);
+    LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
     raftRole = newRole;
   }
 
@@ -117,15 +115,14 @@ public final class ZeebePartition extends Actor
             actor.runOnCompletion(
                 listenerFutures,
                 t -> {
-                  // Compare with the current term in case a new role transition happened
-                  if (t != null && term == newTerm) {
-                    onInstallFailure(newTerm, t);
+                  if (t != null) {
+                    onInstallFailure(t);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure(newTerm, error);
+            onInstallFailure(error);
           }
         });
     return leaderTransitionFuture;
@@ -144,14 +141,14 @@ public final class ZeebePartition extends Actor
                 listenerFutures,
                 t -> {
                   // Compare with the current term in case a new role transition happened
-                  if (t != null && term == newTerm) {
-                    onInstallFailure(newTerm, t);
+                  if (t != null) {
+                    onInstallFailure(t);
                   }
                 });
             onRecoveredInternal();
           } else {
             LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure(newTerm, error);
+            onInstallFailure(error);
           }
         });
     return followerTransitionFuture;
@@ -230,7 +227,7 @@ public final class ZeebePartition extends Actor
     LOG.warn("Uncaught exception in {}.", actorName, failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
-    onInstallFailure(term, failure);
+    onInstallFailure(failure);
   }
 
   @Override
@@ -256,29 +253,43 @@ public final class ZeebePartition extends Actor
     actor.run(this::handleUnrecoverableFailure);
   }
 
-  private void onInstallFailure(final long term, final Throwable error) {
+  private void onInstallFailure(final Throwable error) {
     if (error instanceof UnrecoverableException) {
       LOG.error(
-          "Failed to install partition {} with unrecoverable failure: ",
+          "Failed to install partition {} (role {}, term {}) with unrecoverable failure: ",
           context.getPartitionId(),
+          context.getCurrentRole(),
+          context.getCurrentTerm(),
           error);
       handleUnrecoverableFailure();
     } else {
-      handleRecoverableFailure(term);
+      handleRecoverableFailure();
     }
   }
 
-  private void handleRecoverableFailure(final long term) {
+  private void handleRecoverableFailure() {
     zeebePartitionHealth.setServicesInstalled(false);
     context
         .getPartitionListeners()
-        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), term));
+        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
 
-    if (context.getRaftPartition().getRole() == Role.LEADER) {
-      LOG.info("Unexpected failure occurred, stepping down");
+    // If RaftPartition has already transition to a new role in a new term, we can ignore this
+    // failure. The transition for the higher term will be already enqueued and services will be
+    // installed for the new role.
+    if (context.getCurrentRole() == Role.LEADER
+        && context.getCurrentTerm() == context.getRaftPartition().term()) {
+      LOG.info(
+          "Unexpected failure occurred in partition {} (role {}, term {}), stepping down",
+          context.getPartitionId(),
+          context.getCurrentRole(),
+          context.getCurrentTerm());
       context.getRaftPartition().stepDown();
-    } else {
-      LOG.info("Unexpected failure occurred, transitioning to inactive");
+    } else if (context.getCurrentRole() == Role.FOLLOWER) {
+      LOG.info(
+          "Unexpected failure occurred in partition {} (role {}, term {}), transitioning to inactive",
+          context.getPartitionId(),
+          context.getCurrentRole(),
+          context.getCurrentTerm());
       context.getRaftPartition().goInactive();
     }
   }
@@ -291,7 +302,7 @@ public final class ZeebePartition extends Actor
     failureListeners.forEach(FailureListener::onUnrecoverableFailure);
     context
         .getPartitionListeners()
-        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), term));
+        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
   }
 
   private void onRecoveredInternal() {
