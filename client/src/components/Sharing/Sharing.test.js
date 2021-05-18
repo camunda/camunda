@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {ReportRenderer, InstanceCount} from 'components';
 
 import {Sharing} from './Sharing';
+import IconLink from './IconLink';
 import {evaluateEntity} from './service';
 
 jest.mock('./service', () => {
@@ -202,10 +203,14 @@ it('should show a compact version and lock scroll when a shared report is embedd
   props.location.search = '?mode=embed';
 
   const node = shallow(<Sharing {...props} />);
+
   node.setState({
     loading: false,
-    evaluationResult: {name: 'My report name', id: 'aReportId'},
+    evaluationResult: {name: 'My report name'},
   });
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('DiagramScrollLock')).toExist();
+  expect(node.find(IconLink)).toExist();
+  expect(node.find('.Sharing')).toHaveClassName('compact');
+  expect(node.find('.title-button')).toHaveClassName('small');
 });

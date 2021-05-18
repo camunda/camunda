@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-import classNames from 'classnames';
+import classnames from 'classnames';
 
 import {
   ReportRenderer,
@@ -120,11 +120,11 @@ export class Sharing extends React.Component {
       return <ErrorPage noLink />;
     }
 
-    const embeddedReport = type === 'report' && params.get('mode') === 'embed';
+    const isEmbeddedReport = type === 'report' && params.get('mode') === 'embed';
 
     const SharingView = this.getSharingView();
     return (
-      <div className={classNames('Sharing', {compact: embeddedReport})}>
+      <div className={classnames('Sharing', {compact: isEmbeddedReport})}>
         <div className="header">
           <div className="title-container">
             <EntityName
@@ -142,17 +142,22 @@ export class Sharing extends React.Component {
               href={this.getEntityUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="Button main title-button"
+              className={classnames('Button title-button', {
+                main: !isEmbeddedReport,
+                small: isEmbeddedReport,
+              })}
             >
               <Icon type="share" renderedIn="span" />
-              <span>{embeddedReport ? t('common.open') : t('common.sharing.openInOptimize')}</span>
+              <span>
+                {isEmbeddedReport ? t('common.open') : t('common.sharing.openInOptimize')}
+              </span>
             </a>
           </div>
           {type === 'report' && <InstanceCount report={evaluationResult} />}
         </div>
         <div className="content">
           {SharingView}
-          {embeddedReport && (
+          {isEmbeddedReport && (
             <>
               <IconLink href={this.getEntityUrl()} />
               <DiagramScrollLock />
