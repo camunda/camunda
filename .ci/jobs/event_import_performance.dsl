@@ -10,7 +10,7 @@ pipelineJob('event-import-performance') {
 
   definition {
     cps {
-      script(readFileFromWorkspace('.ci/pipelines/event_import_performance.groovy'))
+      script(readFileFromWorkspace('.ci/pipelines/event_based_process_import_performance.groovy'))
       sandbox()
     }
   }

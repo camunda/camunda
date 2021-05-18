@@ -1,7 +1,7 @@
 pipelineJob('event-cleanup-performance') {
 
   displayName 'Optimize Event Based Process History Cleanup performance'
-  description 'Test Optimize Event Based Process Import performance.'
+  description 'Test Optimize Event Based Process History Cleanup performance.'
 
   // By default, this job is disabled in non-prod envs.
   if (binding.variables.get("ENVIRONMENT") != "prod") {

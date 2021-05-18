@@ -1,7 +1,7 @@
 pipelineJob('java_compatibility') {
 
   displayName 'Java compatibility test'
-  description 'Run Optimize IT test suite with different Java versions.'
+  description 'Run IT suite with different Java versions.'
 
   // By default, this job is disabled in non-prod envs.
   if (binding.variables.get("ENVIRONMENT") != "prod") {

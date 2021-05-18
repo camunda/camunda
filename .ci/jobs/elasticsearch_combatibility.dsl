@@ -1,7 +1,7 @@
 pipelineJob('elasticsearch_compatibility') {
 
   displayName 'Elasticsearch compatibility test'
-  description 'Run Optimize IT test suite against different elasticsearch versions.'
+  description 'Runs IT suite with different supported Elasticsearch versions to check compatibility.'
 
   // By default, this job is disabled in non-prod envs.
   if (binding.variables.get("ENVIRONMENT") != "prod") {
@@ -16,7 +16,7 @@ pipelineJob('elasticsearch_compatibility') {
   }
 
   parameters {
-    stringParam('BRANCH', 'master', 'Branch to use for elasticsearch compatibility tests.')
+    stringParam('BRANCH', 'master', 'Branch to use for ITs.')
     stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }
 
