@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,9 +45,15 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class JournalSegmentDescriptor {
 
-  private static final byte CUR_VERSION = 2;
-  private static final byte NO_META_VERSION = 1;
   private static final int VERSION_LENGTH = Byte.BYTES;
+  // current descriptor version containing: header, metadata, header and descriptor
+  private static final byte CUR_VERSION = 2;
+  // previous descriptor version containing: header and descriptor
+  private static final byte NO_META_VERSION = 1;
+  // the combined length for each version of the descriptor (starting at version 1)
+  // V1 - 29: version byte (1) + header (8) + descriptor (20)
+  // V2 - 45: version byte (1) + header (8) + metadata(8) + header(8) + descriptor (20)
+  private static final int[] VERSION_LENGTHS = {29, 45};
 
   private long id;
   private long index;
@@ -210,6 +217,26 @@ public final class JournalSegmentDescriptor {
         + MessageHeaderEncoder.ENCODED_LENGTH * 2
         + DescriptorMetadataEncoder.BLOCK_LENGTH
         + SegmentDescriptorEncoder.BLOCK_LENGTH;
+  }
+
+  /** The largest encoding length across all versions of the descriptor. */
+  public static int getMaximumEncodingLength() {
+    return Arrays.stream(VERSION_LENGTHS)
+        .max()
+        .orElseThrow(
+            () -> new IllegalStateException("Expected to contain some supported version."));
+  }
+
+  /** The number of bytes required to read and write a descriptor of a given version. */
+  public static int getEncodingLengthForVersion(final byte version) {
+    if (version == 0 || version > VERSION_LENGTHS.length) {
+      throw new UnknownVersionException(
+          String.format(
+              "Expected version byte to be one [%d %d] but got %d instead.",
+              NO_META_VERSION, CUR_VERSION, version));
+    }
+
+    return VERSION_LENGTHS[version - 1];
   }
 
   /**

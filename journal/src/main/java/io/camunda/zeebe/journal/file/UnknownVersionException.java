@@ -13,17 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.journal.file.record;
+package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.util.exception.UnrecoverableException;
+public class UnknownVersionException extends RuntimeException {
 
-public final class CorruptedLogException extends UnrecoverableException {
-
-  public CorruptedLogException(final String message) {
+  public UnknownVersionException(final String message) {
     super(message);
-  }
-
-  public CorruptedLogException(final Throwable cause) {
-    super(cause);
   }
 }
