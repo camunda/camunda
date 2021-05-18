@@ -52,7 +52,7 @@ const OperationsPanel: React.FC<Props> = observer(
           toggle={toggleOperations}
           hasBackgroundColor
           verticalLabelOffset={27}
-          scrollable={status === 'fetched'}
+          scrollable
         >
           <Styled.OperationsList
             data-testid="operations-list"
