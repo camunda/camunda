@@ -11,6 +11,9 @@ import {Input} from 'modules/components/Input';
 const FiltersForm = styled.form`
   width: 100%;
   height: 100%;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 `;
 
 const Row = styled.div`
@@ -71,8 +74,8 @@ const ResetButtonContainer = styled(Panel.Footer)`
 `;
 
 const Fields = styled.div`
-  height: calc(100% - 38px);
   overflow-y: auto;
+  flex-grow: 1;
 `;
 
 export {FiltersForm, Row, VariableRow, ResetButtonContainer, Fields};
