@@ -82,15 +82,11 @@ public class PartitionTransitionImpl implements PartitionTransition {
       final List<PartitionStep> steps) {
     context.setCurrentRole(currentRole);
     context.setCurrentTerm(currentTerm);
-    closePartition()
-        .onComplete(
-            (nothing, err) -> installPartition(currentTerm, future, new ArrayList<>(steps)));
+    closePartition().onComplete((nothing, err) -> installPartition(future, new ArrayList<>(steps)));
   }
 
   private void installPartition(
-      final long currentTerm,
-      final CompletableActorFuture<Void> future,
-      final List<PartitionStep> steps) {
+      final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
     if (steps.isEmpty()) {
       LOG.debug(
           "Partition {} transition complete, installed {} resources!",
@@ -101,7 +97,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
     }
 
     final PartitionStep step = steps.remove(0);
-    step.open(currentTerm, context)
+    step.open(context)
         .onComplete(
             (value, err) -> {
               if (err != null) {
@@ -110,7 +106,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
                 future.completeExceptionally(err);
               } else {
                 openedSteps.add(step);
-                installPartition(currentTerm, future, steps);
+                installPartition(future, steps);
               }
             });
   }
