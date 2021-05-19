@@ -15,11 +15,10 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -65,24 +64,29 @@ public class InterruptingEventSubprocessConcurrencyTest {
             .create();
 
     // when
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withMessageName(MSG_NAME)
-        .await();
-    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withMessageName("msg")
-        .await();
+    final var intermediateSubscriptionCreated =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withMessageName("msg")
+            .getFirst();
+
+    final var eventSubprocessSubscriptionCreated =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withMessageName(MSG_NAME)
+            .getFirst();
 
     engineRule.writeRecords(
         RecordToWrite.command()
-            .message(
-                MessageIntent.PUBLISH,
-                new MessageRecord().setName("msg").setCorrelationKey("123").setTimeToLive(0)),
+            .processMessageSubscription(
+                ProcessMessageSubscriptionIntent.CORRELATE,
+                intermediateSubscriptionCreated.getValue()),
         RecordToWrite.command()
-            .message(
-                MessageIntent.PUBLISH,
-                new MessageRecord().setName(MSG_NAME).setCorrelationKey("123").setTimeToLive(0)));
+            .processMessageSubscription(
+                ProcessMessageSubscriptionIntent.CORRELATE,
+                eventSubprocessSubscriptionCreated.getValue()));
 
     // then
     assertThat(
