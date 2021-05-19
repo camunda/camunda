@@ -75,8 +75,7 @@ public final class SubProcessProcessor
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(completing);
               final var completed =
-                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
-                      element, completing);
+                  stateTransitionBehavior.transitionToCompleted(element, completing);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, completing));

@@ -88,7 +88,7 @@ public final class ExclusiveGatewayProcessor
     }
     final var activated = stateTransitionBehavior.transitionToActivated(activating);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    return stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
+    return stateTransitionBehavior.transitionToCompleted(element, completing);
   }
 
   private Either<Failure, ExecutableSequenceFlow> findSequenceFlowToTake(
