@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -20,10 +21,12 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 
 public final class RecordToWrite {
@@ -77,6 +80,14 @@ public final class RecordToWrite {
   public RecordToWrite message(final MessageIntent intent, final MessageRecordValue message) {
     recordMetadata.valueType(ValueType.MESSAGE).intent(intent);
     unifiedRecordValue = (MessageRecord) message;
+    return this;
+  }
+
+  public RecordToWrite processMessageSubscription(
+      final ProcessMessageSubscriptionIntent intent,
+      final ProcessMessageSubscriptionRecordValue message) {
+    recordMetadata.valueType(ValueType.PROCESS_MESSAGE_SUBSCRIPTION).intent(intent);
+    unifiedRecordValue = (ProcessMessageSubscriptionRecord) message;
     return this;
   }
 
