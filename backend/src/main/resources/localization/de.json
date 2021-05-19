@@ -706,7 +706,6 @@
     "editName": "{name} bearbeiten",
     "delete": "Löschen",
     "deleteEntity": "{entity} Löschen",
-    "deleteItems": "Elemente Löschen",
     "remove": "Entfernen",
     "removeEntity": "{entity} entfernen",
     "save": "Speichern",
@@ -795,7 +794,7 @@
       "label-plural": "Benutzeraufgaben"
     },
     "itemSelected": {
-      "label": "ausgewählter Element",
+      "label": "ausgewähltes Element",
       "label-plural": "ausgewählte Elemente"
     },
     "multiSelect": {
@@ -1089,7 +1088,7 @@
           "alert": "Diese Alarme werden gelöscht:"
         },
         "bulk": {
-          "report": "Alle ausgewählten Berichte werden von zugehörigen Dashboards und kombinierte Berichte entfernt und ihre Alarme werden gelöscht.",
+          "report": "Alle ausgewählten Berichte werden von zugehörigen Dashboards und kombinierten Berichten entfernt und ihre Alarme werden gelöscht.",
           "process": "Das Entfernen von Datenquellen löscht alle zugehörigen Berichte und deren Alarme."
         }
       },

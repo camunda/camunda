@@ -104,6 +104,10 @@
       flex: 0 0 18px;
       height: 18px;
       margin-right: 60px;
+
+      &.hidden {
+        visibility: hidden;
+      }
     }
 
     > div {

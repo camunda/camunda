@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
@@ -13,8 +13,9 @@ import {LoadingIndicator, Icon, Dropdown, Tooltip, Input} from 'components';
 import SearchField from './SearchField';
 import ListItem from './ListItem';
 
-import './EntityList.scss';
 import BulkMenu from './BulkMenu';
+
+import './EntityList.scss';
 
 export default function EntityList({
   name,
@@ -26,21 +27,20 @@ export default function EntityList({
   embedded,
   columns,
   sorting,
-  reload,
+  onChange,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [selected, setSelected] = useState([]);
 
   const entries = data || [];
-  const entriesIds = entries
-    .filter((entry) => entry.actions?.length > 0)
-    .map((entry, idx) => entry.id || idx);
-  const selectionMode = selected.length > 0;
 
   const matches = (value) =>
     typeof value == 'string' && value.toLowerCase().includes(searchQuery.toLowerCase());
   const searchFilteredData = entries.filter(({name, meta}) => matches(name) || meta.some(matches));
+  const filteredEntriesWithActions = searchFilteredData.filter(
+    (entry) => entry.actions?.length > 0
+  );
 
   const isEmpty = !isLoading && entries.length === 0;
   const hasResults = searchFilteredData.length > 0;
@@ -48,9 +48,13 @@ export default function EntityList({
   const hasSingleAction = entries.every(({actions}) => !actions || actions.length <= 1);
   const hasSorting = columns?.some((config) => config.key);
 
+  useEffect(() => {
+    setSelected([]);
+  }, [data]);
+
   return (
     <div
-      className={classnames('EntityList', {scrolled, embedded, selectionMode})}
+      className={classnames('EntityList', {scrolled, embedded, selectionMode: selected.length > 0})}
       onScroll={(evt) => setScrolled(evt.target.scrollTop > 0)}
     >
       <div className="header">
@@ -65,7 +69,7 @@ export default function EntityList({
                   <Dropdown.Option
                     checked={sorting?.key === key}
                     key={key}
-                    onClick={() => reload(key, defaultOrder)}
+                    onClick={() => onChange(key, defaultOrder)}
                   >
                     {name}
                   </Dropdown.Option>
@@ -73,25 +77,19 @@ export default function EntityList({
             </Dropdown>
           )}
           <BulkMenu
-            selectedEntries={entries
-              .filter((entity) => selected.includes(entity.id))
-              .map(({id, entityType}) => ({id, entityType}))}
-            setSelected={setSelected}
-            reload={reload}
+            selectedEntries={selected.map(({id, entityType}) => ({id, entityType}))}
+            onChange={onChange}
           />
           <div className="action">{action}</div>
         </div>
         {columns && hasResults && (
           <div className="columnHeaders">
             <Input
-              selected={selected}
-              onClick={(evt) => evt.stopPropagation()}
+              className={classnames({hidden: !filteredEntriesWithActions.length})}
               type="checkbox"
-              checked={selected.length === entriesIds.length}
+              checked={selected.length === filteredEntriesWithActions.length}
               onChange={({target: {checked}}) =>
-                checked
-                  ? setSelected([...new Set([...selected, ...entriesIds])])
-                  : setSelected(selected.filter((id) => !entriesIds.includes(id)))
+                checked ? setSelected(filteredEntriesWithActions) : setSelected([])
               }
             />
             {columns
@@ -103,7 +101,7 @@ export default function EntityList({
 
                 function changeSorting() {
                   if (sortable) {
-                    reload(
+                    onChange(
                       titleOrConfig.key,
                       sorted ? reverseOrder(sorting.order) : titleOrConfig.defaultOrder
                     );
@@ -142,11 +140,11 @@ export default function EntityList({
             {searchFilteredData.map((data, idx) => (
               <ListItem
                 key={idx}
-                selected={selected.includes(data.id)}
+                isSelected={selected.some((entry) => entry.id === data.id)}
                 onSelectionChange={(evt) => {
                   evt.target.checked
-                    ? setSelected([...selected, data.id])
-                    : setSelected(selected.filter((id) => id !== data.id));
+                    ? setSelected([...selected, data])
+                    : setSelected(selected.filter((entry) => entry.id !== data.id));
                 }}
                 data={data}
                 hasWarning={hasWarning}

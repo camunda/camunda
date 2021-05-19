@@ -181,7 +181,7 @@ it('should hide create new button if the user role is viewer', () => {
 it('should load collection entities with sort parameters', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('EntityList').prop('reload')('lastModifier', 'desc');
+  node.find('EntityList').prop('onChange')('lastModifier', 'desc');
 
   expect(loadCollectionEntities).toHaveBeenCalledWith('aCollectionId', 'lastModifier', 'desc');
 });
@@ -193,7 +193,7 @@ it('should set the loading state of the entity list', async () => {
   await flushPromises();
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
 
-  node.find('EntityList').prop('reload')('lastModifier', 'desc');
+  node.find('EntityList').prop('onChange')('lastModifier', 'desc');
 
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();

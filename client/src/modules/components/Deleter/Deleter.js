@@ -39,7 +39,7 @@ export default withErrorHandling(
           this.props.mightFail(
             checkConflicts(entity),
             async ({conflictedItems}) => {
-              if (this.props.onConflict) {
+              if (this.props.onConflict && conflictedItems.length > 0) {
                 this.props.onConflict(conflictedItems);
               } else {
                 this.setState({

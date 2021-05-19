@@ -191,7 +191,7 @@ export class Collection extends React.Component {
               empty={t('home.empty')}
               isLoading={isLoading}
               sorting={sorting}
-              reload={this.loadEntities}
+              onChange={this.loadEntities}
               columns={[
                 {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
                 {name: t('common.name'), key: 'name', defaultOrder: 'asc'},

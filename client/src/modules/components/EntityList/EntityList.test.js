@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
@@ -114,7 +114,7 @@ it('should always call onsorting change with default order from the sorting menu
       {...props}
       columns={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']}
       sorting={{key: 'name', order: 'asc'}}
-      reload={spy}
+      onChange={spy}
     />
   );
 
@@ -169,7 +169,7 @@ it('should call reload when clicking on the header column', () => {
     <EntityList
       {...props}
       columns={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
-      reload={spy}
+      onChange={spy}
     />
   );
 
@@ -185,7 +185,7 @@ it('should reverse the order when clicking on a header column that is already so
       {...props}
       columns={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
       sorting={{key: 'sortKey', order: 'asc'}}
-      reload={spy}
+      onChange={spy}
     />
   );
 
@@ -202,14 +202,14 @@ it('should select and deselect a list item', () => {
     .at(0)
     .simulate('selectionChange', {target: {checked: true}});
 
-  expect(node.find({selected: true})).toExist();
+  expect(node.find({isSelected: true})).toExist();
 
   node
     .find('ListItem')
     .at(0)
     .simulate('selectionChange', {target: {checked: false}});
 
-  expect(node.find({selected: true})).not.toExist();
+  expect(node.find({isSelected: true})).not.toExist();
 });
 
 it('should select/deselect all selectable events in view', () => {
@@ -229,12 +229,34 @@ it('should select/deselect all selectable events in view', () => {
     .find({type: 'checkbox'})
     .simulate('change', {target: {checked: true}});
 
-  expect(node.find({selected: true}).length).toBe(2);
+  expect(node.find({isSelected: true}).length).toBe(2);
 
   node
     .find('.columnHeaders')
     .find({type: 'checkbox'})
     .simulate('change', {target: {checked: false}});
 
-  expect(node.find({selected: true})).not.toExist();
+  expect(node.find({isSelected: true})).not.toExist();
+});
+
+it('should should reset the selection on data change', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={[
+        'Name',
+        {name: 'sortable', key: 'sortKey', defaultOrder: 'asc'},
+        {name: 'Another Column', key: 'sortKey2', defaultOrder: 'desc'},
+      ]}
+    />
+  );
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: true}});
+
+  runLastEffect();
+
+  expect(node.find({isSelected: true})).not.toExist();
 });

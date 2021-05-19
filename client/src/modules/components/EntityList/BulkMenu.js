@@ -13,7 +13,7 @@ import {showError} from 'notifications';
 
 import {deleteEntities, checkConflicts} from './service';
 
-export function BulkMenu({selectedEntries, reload, mightFail, setSelected}) {
+export function BulkMenu({selectedEntries, onChange, mightFail}) {
   const bulkRef = useRef();
   const selectionMode = selectedEntries.length > 0;
   const [deleting, setDeleting] = useState(false);
@@ -60,9 +60,8 @@ export function BulkMenu({selectedEntries, reload, mightFail, setSelected}) {
           mightFail(
             deleteEntities(selectedEntries),
             () => {
-              setSelected([]);
               setConflictType();
-              reload();
+              onChange();
             },
             showError
           )

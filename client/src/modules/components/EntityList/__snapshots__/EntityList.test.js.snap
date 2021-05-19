@@ -20,7 +20,6 @@ exports[`should match snapshot 1`] = `
       />
       <BulkMenuErrorHandler
         selectedEntries={Array []}
-        setSelected={[Function]}
       />
       <div
         className="action"
@@ -59,9 +58,9 @@ exports[`should match snapshot 1`] = `
           }
         }
         hasWarning={false}
+        isSelected={false}
         key="0"
         onSelectionChange={[Function]}
-        selected={false}
         singleAction={true}
       />
       <ListItem
@@ -79,9 +78,9 @@ exports[`should match snapshot 1`] = `
           }
         }
         hasWarning={false}
+        isSelected={false}
         key="1"
         onSelectionChange={[Function]}
-        selected={false}
         singleAction={true}
       />
       <ListItem
@@ -101,9 +100,9 @@ exports[`should match snapshot 1`] = `
           }
         }
         hasWarning={false}
+        isSelected={false}
         key="2"
         onSelectionChange={[Function]}
-        selected={false}
         singleAction={true}
       />
     </ul>
@@ -120,9 +119,8 @@ exports[`should not show a header entry for column entries that are hidden 1`] =
 >
   <ForwardRef(Input)
     checked={false}
+    className=""
     onChange={[Function]}
-    onClick={[Function]}
-    selected={Array []}
     type="checkbox"
   />
   <Tooltip
@@ -164,9 +162,8 @@ exports[`should show a column header if specified 1`] = `
 >
   <ForwardRef(Input)
     checked={false}
+    className=""
     onChange={[Function]}
-    onClick={[Function]}
-    selected={Array []}
     type="checkbox"
   />
   <Tooltip

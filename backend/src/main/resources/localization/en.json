@@ -706,7 +706,6 @@
     "editName": "Edit {name}",
     "delete": "Delete",
     "deleteEntity": "Delete {entity}",
-    "deleteItems": "Delete items",
     "remove": "Remove",
     "removeEntity": "Remove {entity}",
     "save": "Save",
@@ -1089,8 +1088,8 @@
           "alert": "The following Alert(s) will also be deleted:"
         },
         "bulk": {
-          "report": "Any selected Reports will be removed from associated Dashboards, Combined Reports and their Alerts will be deleted.",
-          "process": "Removing Data Sources deletes any associated Reports and their Alerts."
+          "report": "Any selected Reports will be removed from associated Dashboards, Combined Reports. Their Alerts will be deleted.",
+          "process": "Removing Data Sources deletes all associated Reports and their Alerts."
         }
       },
       "areYouSure": "Are you sure you want to proceed?",

@@ -15,7 +15,7 @@ import ListItemAction from './ListItemAction';
 import './ListItem.scss';
 
 export default function ListItem({
-  selected,
+  isSelected,
   onSelectionChange,
   data: {type, name, link, icon, meta = [], actions, warning},
   hasWarning,
@@ -27,7 +27,7 @@ export default function ListItem({
       <Input
         onClick={(evt) => evt.stopPropagation()}
         type="checkbox"
-        checked={selected}
+        checked={isSelected}
         onChange={onSelectionChange}
       />
       <Icon type={icon} />
@@ -58,7 +58,7 @@ export default function ListItem({
   return (
     <li
       className={classnames('ListItem', {
-        active: selected,
+        active: isSelected,
         selectable: actions?.length > 0,
       })}
     >

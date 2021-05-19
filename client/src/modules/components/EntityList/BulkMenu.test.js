@@ -19,14 +19,12 @@ jest.mock('./service', () => ({
 
 const props = {
   selectedEntries: [{id: 'reportId', type: 'report'}],
-  reload: jest.fn(),
+  onChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  setSelected: jest.fn(),
 };
 
 beforeEach(() => {
-  props.reload.mockClear();
-  props.setSelected.mockClear();
+  props.onChange.mockClear();
 });
 
 it('should show bulk operation dropdown', () => {
@@ -47,8 +45,7 @@ it('should delete selected entities, reset selected items and any conflicts on c
   node.find(Deleter).prop('deleteEntity')();
 
   expect(deleteEntities).toHaveBeenCalledWith(props.selectedEntries);
-  expect(props.setSelected).toHaveBeenCalled();
-  expect(props.reload).toHaveBeenCalled();
+  expect(props.onChange).toHaveBeenCalled();
 });
 
 it('should show conflict message if a conflict has happend', () => {
