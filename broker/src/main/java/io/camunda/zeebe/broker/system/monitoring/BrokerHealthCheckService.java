@@ -191,6 +191,15 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
     registerComponent(componentName, partition);
   }
 
+  public void removeMonitoredPartition(final int partitionId) {
+    final String componentName = String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId);
+    removeComponent(componentName);
+  }
+
+  private void removeComponent(final String componentName) {
+    actor.run(() -> healthMonitor.removeComponent(componentName));
+  }
+
   public boolean isBrokerHealthy() {
     return !actor.isClosed() && getBrokerHealth() == HealthStatus.HEALTHY;
   }

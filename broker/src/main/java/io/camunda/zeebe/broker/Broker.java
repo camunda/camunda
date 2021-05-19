@@ -417,7 +417,10 @@ public final class Broker implements AutoCloseable {
                 owningPartition.id().id(), zeebePartition);
             diskSpaceUsageListeners.add(zeebePartition);
             partitions.add(zeebePartition);
-            return zeebePartition;
+            return () -> {
+              healthCheckService.removeMonitoredPartition(partitionId);
+              zeebePartition.close();
+            };
           });
     }
     return partitionStartProcess.start();
