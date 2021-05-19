@@ -21,10 +21,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_INSTANCE_ID;
+import static org.camunda.optimize.service.es.writer.usertask.AbstractUserTaskWriter.createUpdateUserTaskMetricsScript;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @Component
@@ -55,6 +54,8 @@ public class CompletedActivityInstanceWriter extends AbstractActivityInstanceWri
         .put("userTaskIdField", USER_TASK_INSTANCE_ID)
         .put("flowNodeTypeField", FLOW_NODE_TYPE)
         .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
+        .put("flowNodeCanceledField", FLOW_NODE_CANCELED)
+        .put("flowNodeEndDateField", FLOW_NODE_END_DATE)
         .build()
     );
 
@@ -90,9 +91,18 @@ public class CompletedActivityInstanceWriter extends AbstractActivityInstanceWri
         "}\n" +
       "}\n" +
 
-      "ctx._source.${flowNodesField} = [];" +
-      "ctx._source.${flowNodesField}.addAll(existingFlowNodeInstancesById.values());" +
-      "ctx._source.${flowNodesField}.addAll(existingUserTaskInstancesById.values());"
+      "ctx._source.${flowNodesField} = [];\n" +
+      "ctx._source.${flowNodesField}.addAll(existingFlowNodeInstancesById.values());\n" +
+      "ctx._source.${flowNodesField}.addAll(existingUserTaskInstancesById.values());\n" +
+
+      "if (params.${flowNodesField}.stream().anyMatch(flowNode -> " +
+          "\"${userTaskFlowNodeType}\".equalsIgnoreCase(flowNode.${flowNodeTypeField}) " +
+          "&& flowNode.${flowNodeCanceledField} " +
+          "&& !flowNode.${flowNodeEndDateField}.isEmpty())){\n" +
+        // update userTask metrics only if a userTask has been canceled and already has an endDate (imported via
+        // CompletedUserTaskImport)
+        createUpdateUserTaskMetricsScript() +
+      "}"
     );
     // @formatter:on
   }

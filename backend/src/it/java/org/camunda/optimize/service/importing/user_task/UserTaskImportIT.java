@@ -478,6 +478,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
       .flatExtracting(ProcessInstanceDto::getUserTasks)
       .singleElement()
       .satisfies(userTask -> {
+        assertThat(userTask.getTotalDurationInMs()).isNotNull();
         assertThat(userTask.getWorkDurationInMs()).isNotNull().isZero();
         assertThat(userTask.getIdleDurationInMs()).isEqualTo(userTask.getTotalDurationInMs());
       });

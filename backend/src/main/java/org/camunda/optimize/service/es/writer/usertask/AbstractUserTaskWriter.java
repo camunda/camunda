@@ -55,7 +55,7 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
 
   protected abstract String createInlineUpdateScript();
 
-  protected static String createUpdateUserTaskMetricsScript() {
+  public static String createUpdateUserTaskMetricsScript() {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
         .put("flowNodesField", FLOW_NODE_INSTANCES)
