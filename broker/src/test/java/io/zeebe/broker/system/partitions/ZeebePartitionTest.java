@@ -124,10 +124,13 @@ public class ZeebePartitionTest {
               return CompletableActorFuture.completed(null);
             });
     when(raft.getRole()).thenReturn(Role.LEADER);
+    when(raft.term()).thenReturn(1L);
+    when(ctx.getCurrentRole()).thenReturn(Role.LEADER);
+    when(ctx.getCurrentTerm()).thenReturn(1L);
     when(raft.stepDown())
         .then(
             invocation -> {
-              partition.onNewRole(Role.FOLLOWER, 2);
+              partition.onNewRole(Role.FOLLOWER, 1);
               return CompletableFuture.completedFuture(null);
             });
 
@@ -140,7 +143,7 @@ public class ZeebePartitionTest {
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toLeader(1);
     order.verify(raft).stepDown();
-    order.verify(transition).toFollower(2);
+    order.verify(transition).toFollower(1);
   }
 
   @Test
@@ -159,6 +162,7 @@ public class ZeebePartitionTest {
               return CompletableActorFuture.completed(null);
             });
     when(raft.getRole()).thenReturn(Role.FOLLOWER);
+    when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
     when(raft.goInactive())
         .then(
             invocation -> {

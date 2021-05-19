@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.partitions;
 
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.zeebe.broker.PartitionListener;
@@ -64,6 +65,9 @@ public class PartitionContext {
   private ActorControl actor;
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
+
+  private long currentTerm;
+  private Role currentRole;
 
   public PartitionContext(
       final int nodeId,
@@ -284,5 +288,21 @@ public class PartitionContext {
 
   public boolean resumeExporting() throws IOException {
     return partitionProcessingState.resumeExporting();
+  }
+
+  public long getCurrentTerm() {
+    return currentTerm;
+  }
+
+  public void setCurrentTerm(final long currentTerm) {
+    this.currentTerm = currentTerm;
+  }
+
+  public Role getCurrentRole() {
+    return currentRole;
+  }
+
+  public void setCurrentRole(final Role currentRole) {
+    this.currentRole = currentRole;
   }
 }

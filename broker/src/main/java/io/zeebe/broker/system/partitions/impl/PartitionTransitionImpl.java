@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.partitions.impl;
 
+import io.atomix.raft.RaftServer.Role;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.partitions.PartitionContext;
 import io.zeebe.broker.system.partitions.PartitionStep;
@@ -41,17 +42,17 @@ public class PartitionTransitionImpl implements PartitionTransition {
 
   @Override
   public ActorFuture<Void> toFollower(final long currentTerm) {
-    return enqueueTransition(currentTerm, followerSteps);
+    return enqueueTransition(currentTerm, Role.FOLLOWER, followerSteps);
   }
 
   @Override
   public ActorFuture<Void> toLeader(final long currentTerm) {
-    return enqueueTransition(currentTerm, leaderSteps);
+    return enqueueTransition(currentTerm, Role.LEADER, leaderSteps);
   }
 
   @Override
   public ActorFuture<Void> toInactive() {
-    return enqueueTransition(INACTIVE_TERM, EMPTY_LIST);
+    return enqueueTransition(INACTIVE_TERM, Role.INACTIVE, EMPTY_LIST);
   }
 
   /**
@@ -60,31 +61,32 @@ public class PartitionTransitionImpl implements PartitionTransition {
    * which lead to undefined behavior.
    *
    * @param currentTerm
+   * @param currentRole
    * @param partitionStepList the steps which should be installed on the transition
    */
   private ActorFuture<Void> enqueueTransition(
-      final long currentTerm, final List<PartitionStep> partitionStepList) {
+      final long currentTerm, final Role currentRole, final List<PartitionStep> partitionStepList) {
     final var nextTransitionFuture = new CompletableActorFuture<Void>();
     final var nextCurrentTransition = currentTransition;
     currentTransition = nextTransitionFuture;
     nextCurrentTransition.onComplete(
-        (nothing, err) -> transition(currentTerm, nextTransitionFuture, partitionStepList));
+        (nothing, err) ->
+            transition(currentTerm, currentRole, nextTransitionFuture, partitionStepList));
     return nextTransitionFuture;
   }
 
   private void transition(
       final long currentTerm,
+      final Role currentRole,
       final CompletableActorFuture<Void> future,
       final List<PartitionStep> steps) {
-    closePartition()
-        .onComplete(
-            (nothing, err) -> installPartition(currentTerm, future, new ArrayList<>(steps)));
+    context.setCurrentRole(currentRole);
+    context.setCurrentTerm(currentTerm);
+    closePartition().onComplete((nothing, err) -> installPartition(future, new ArrayList<>(steps)));
   }
 
   private void installPartition(
-      final long currentTerm,
-      final CompletableActorFuture<Void> future,
-      final List<PartitionStep> steps) {
+      final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
     if (steps.isEmpty()) {
       LOG.debug(
           "Partition {} transition complete, installed {} resources!",
@@ -95,7 +97,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
     }
 
     final PartitionStep step = steps.remove(0);
-    step.open(currentTerm, context)
+    step.open(context)
         .onComplete(
             (value, err) -> {
               if (err != null) {
@@ -104,7 +106,7 @@ public class PartitionTransitionImpl implements PartitionTransition {
                 future.completeExceptionally(err);
               } else {
                 openedSteps.add(step);
-                installPartition(currentTerm, future, steps);
+                installPartition(future, steps);
               }
             });
   }
