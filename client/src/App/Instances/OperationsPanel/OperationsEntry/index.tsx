@@ -15,10 +15,15 @@ import ProgressBar from './ProgressBar';
 import {useHistory} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 
-const {UPDATE_VARIABLE, RESOLVE_INCIDENT, CANCEL_PROCESS_INSTANCE} =
-  OPERATION_TYPE;
+const {
+  ADD_VARIABLE,
+  UPDATE_VARIABLE,
+  RESOLVE_INCIDENT,
+  CANCEL_PROCESS_INSTANCE,
+} = OPERATION_TYPE;
 
 const TYPE_LABELS = {
+  [ADD_VARIABLE]: 'Edit',
   [UPDATE_VARIABLE]: 'Edit',
   [RESOLVE_INCIDENT]: 'Retry',
   [CANCEL_PROCESS_INSTANCE]: 'Cancel',
@@ -65,7 +70,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           {RESOLVE_INCIDENT === type && (
             <Styled.Retry data-testid="operation-retry-icon" />
           )}
-          {UPDATE_VARIABLE === type && (
+          {(UPDATE_VARIABLE === type || ADD_VARIABLE === type) && (
             <Styled.Edit data-testid="operation-edit-icon" />
           )}
           {CANCEL_PROCESS_INSTANCE === type && (

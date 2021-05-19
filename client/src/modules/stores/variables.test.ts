@@ -11,6 +11,11 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
 import {createInstance} from 'modules/testUtils';
+jest.mock('modules/constants/variables', () => ({
+  ...jest.requireActual('modules/constants/variables'),
+  MAX_VARIABLES_STORED: 5,
+  MAX_VARIABLES_PER_REQUEST: 3,
+}));
 
 describe('stores/variables', () => {
   const mockVariables = [
@@ -21,6 +26,8 @@ describe('stores/variables', () => {
       scopeId: '2251799813686374',
       processInstanceId: '2251799813686374',
       hasActiveOperation: false,
+      isFirst: true,
+      sortValues: ['mwst'],
     },
     {
       id: '2251799813686374-orderStatus',
@@ -29,6 +36,8 @@ describe('stores/variables', () => {
       scopeId: '2251799813686374',
       processInstanceId: '2251799813686374',
       hasActiveOperation: false,
+      isFirst: false,
+      sortValues: ['orderStatus'],
     },
     {
       id: '2251799813686374-paid',
@@ -37,6 +46,8 @@ describe('stores/variables', () => {
       scopeId: '2251799813686374',
       processInstanceId: '2251799813686374',
       hasActiveOperation: false,
+      isFirst: false,
+      sortValues: ['paid'],
     },
   ];
 
@@ -57,11 +68,21 @@ describe('stores/variables', () => {
       rest.get('/api/process-instances/:instanceId', (_, res, ctx) =>
         res.once(ctx.json({id: '123', state: 'ACTIVE'}))
       ),
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json(mockVariables))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json(mockVariables))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(mockVariableOperation))
+      ),
+      rest.get('/api/operations', (req, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              state: 'COMPLETED',
+            },
+          ])
+        )
       )
     );
 
@@ -88,22 +109,25 @@ describe('stores/variables', () => {
       id: '1',
       name: 'test',
       value: '1',
+      onSuccess: () => {},
       onError: () => {},
     });
 
-    expect(variablesStore.state.items).toEqual([
-      ...mockVariables,
-      {
-        hasActiveOperation: true,
-        name: 'test',
-        value: '1',
-        processInstanceId: '1',
-      },
-    ]);
+    expect(variablesStore.state.items).toEqual(mockVariables);
+    expect(variablesStore.state.pendingItem).toEqual({
+      name: 'test',
+      value: '1',
+      hasActiveOperation: true,
+      isFirst: false,
+      sortValues: null,
+    });
+
     currentInstanceStore.setCurrentInstance(
       createInstance({id: '123', state: 'CANCELED'})
     );
+
     expect(variablesStore.state.items).toEqual(mockVariables);
+    expect(variablesStore.state.pendingItem).toBe(null);
   });
 
   it('should poll variables when instance is running', async () => {
@@ -116,20 +140,22 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            ...mockVariables,
-            {
-              id: '2251799813686374-clientNo',
-              name: 'clientNo',
-              value: '"CNT-1211132-02"',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-          ])
-        )
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              ...mockVariables,
+              {
+                id: '2251799813686374-clientNo',
+                name: 'clientNo',
+                value: '"CNT-1211132-02"',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+              },
+            ])
+          )
       )
     );
     jest.runOnlyPendingTimers();
@@ -148,28 +174,30 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            ...mockVariables,
-            {
-              id: '2251799813686374-clientNo',
-              name: 'clientNo',
-              value: '"CNT-1211132-02"',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-            {
-              id: '2251799813686374-orderNo',
-              name: 'orderNo',
-              value: '"CMD0001-01"',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-          ])
-        )
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              ...mockVariables,
+              {
+                id: '2251799813686374-clientNo',
+                name: 'clientNo',
+                value: '"CNT-1211132-02"',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+              },
+              {
+                id: '2251799813686374-orderNo',
+                name: 'orderNo',
+                value: '"CMD0001-01"',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+              },
+            ])
+          )
       )
     );
     jest.runOnlyPendingTimers();
@@ -228,14 +256,22 @@ describe('stores/variables', () => {
   });
 
   it('should clear items', async () => {
-    await variablesStore.fetchVariables('1');
+    await variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
     expect(variablesStore.state.items).toEqual(mockVariables);
     variablesStore.clearItems();
     expect(variablesStore.state.items).toEqual([]);
   });
 
   it('should fetch variables', async () => {
-    variablesStore.fetchVariables('1');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
     expect(variablesStore.state.status).toBe('first-fetch');
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual(mockVariables)
@@ -246,48 +282,24 @@ describe('stores/variables', () => {
   describe('Add Variable', () => {
     it('should add variable', async () => {
       expect(variablesStore.state.items).toEqual([]);
+      expect(variablesStore.state.pendingItem).toBe(null);
+
       await variablesStore.addVariable({
         id: '1',
         name: 'test',
         value: '1',
+        onSuccess: () => {},
         onError: () => {},
       });
-      expect(variablesStore.state.items).toEqual([
-        {
-          name: 'test',
-          value: '1',
-          hasActiveOperation: true,
-          processInstanceId: '1',
-        },
-      ]);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
-        )
-      );
-
-      await variablesStore.addVariable({
-        id: '1',
-        name: 'test2',
-        value: '"value"',
-        onError: () => {},
+      expect(variablesStore.state.items).toEqual([]);
+      expect(variablesStore.state.pendingItem).toEqual({
+        name: 'test',
+        value: '1',
+        hasActiveOperation: true,
+        isFirst: false,
+        sortValues: null,
       });
-      expect(variablesStore.state.items).toEqual([
-        {
-          name: 'test',
-          value: '1',
-          hasActiveOperation: true,
-          processInstanceId: '1',
-        },
-        {
-          name: 'test2',
-          value: '"value"',
-          hasActiveOperation: true,
-          processInstanceId: '1',
-        },
-      ]);
     });
 
     it('should not add variable on server error', async () => {
@@ -306,6 +318,7 @@ describe('stores/variables', () => {
         id: '1',
         name: 'test',
         value: '1',
+        onSuccess: () => {},
         onError: mockOnError,
       });
       expect(variablesStore.state.items).toEqual([]);
@@ -326,6 +339,7 @@ describe('stores/variables', () => {
         id: '1',
         name: 'test',
         value: '1',
+        onSuccess: () => {},
         onError: mockOnError,
       });
       expect(variablesStore.state.items).toEqual([]);
@@ -335,7 +349,11 @@ describe('stores/variables', () => {
 
   describe('Update Variable', () => {
     it('should update variable', async () => {
-      await variablesStore.fetchVariables('1');
+      await variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
       expect(variablesStore.state.items).toEqual(mockVariables);
       await variablesStore.updateVariable({
         id: '1',
@@ -346,25 +364,31 @@ describe('stores/variables', () => {
       expect(variablesStore.state.items).toEqual([
         {
           id: '2251799813686374-mwst',
+          isFirst: true,
           name: 'mwst',
           value: '65',
           scopeId: '2251799813686374',
+          sortValues: ['mwst'],
           processInstanceId: '2251799813686374',
           hasActiveOperation: true,
         },
         {
           id: '2251799813686374-orderStatus',
+          isFirst: false,
           name: 'orderStatus',
           value: '"NEW"',
           scopeId: '2251799813686374',
+          sortValues: ['orderStatus'],
           processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
         {
           id: '2251799813686374-paid',
+          isFirst: false,
           name: 'paid',
           value: 'true',
           scopeId: '2251799813686374',
+          sortValues: ['paid'],
           processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
@@ -386,25 +410,31 @@ describe('stores/variables', () => {
       expect(variablesStore.state.items).toEqual([
         {
           id: '2251799813686374-mwst',
+          isFirst: true,
           name: 'mwst',
           value: '65',
           scopeId: '2251799813686374',
+          sortValues: ['mwst'],
           processInstanceId: '2251799813686374',
           hasActiveOperation: true,
         },
         {
           id: '2251799813686374-orderStatus',
+          isFirst: false,
           name: 'orderStatus',
           value: '"NEW"',
           scopeId: '2251799813686374',
+          sortValues: ['orderStatus'],
           processInstanceId: '2251799813686374',
           hasActiveOperation: false,
         },
         {
           id: '2251799813686374-paid',
+          isFirst: false,
           name: 'paid',
           value: 'false',
           scopeId: '2251799813686374',
+          sortValues: ['paid'],
           processInstanceId: '2251799813686374',
           hasActiveOperation: true,
         },
@@ -412,7 +442,11 @@ describe('stores/variables', () => {
     });
 
     it('should not update variable on server error', async () => {
-      await variablesStore.fetchVariables('1');
+      await variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
       expect(variablesStore.state.items).toEqual(mockVariables);
 
       mockServer.use(
@@ -435,7 +469,11 @@ describe('stores/variables', () => {
     });
 
     it('should not update variable on network error', async () => {
-      await variablesStore.fetchVariables('1');
+      await variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
       expect(variablesStore.state.items).toEqual(mockVariables);
 
       mockServer.use(
@@ -461,12 +499,17 @@ describe('stores/variables', () => {
   });
 
   it('should get hasActiveOperation', async () => {
-    await variablesStore.fetchVariables('1');
+    await variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
     expect(variablesStore.hasActiveOperation).toBe(false);
     await variablesStore.addVariable({
       id: '1',
       name: 'test',
       value: '1',
+      onSuccess: () => {},
       onError: () => {},
     });
     expect(variablesStore.hasActiveOperation).toBe(true);
@@ -474,14 +517,19 @@ describe('stores/variables', () => {
 
   it('should get hasNoVariables', async () => {
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json([]))
       )
     );
 
     // should be false when initial load is not complete
     expect(variablesStore.hasNoVariables).toBe(false);
-    variablesStore.fetchVariables('1');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     expect(variablesStore.state.status).toBe('first-fetch');
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -489,23 +537,33 @@ describe('stores/variables', () => {
     expect(variablesStore.hasNoVariables).toBe(true);
 
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json([]))
       )
     );
 
-    variablesStore.fetchVariables('1');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     // should be false when loading
     expect(variablesStore.hasNoVariables).toBe(false);
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
     expect(variablesStore.hasNoVariables).toBe(true);
 
-    variablesStore.fetchVariables('1');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json(mockVariables))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json(mockVariables))
       )
     );
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -514,22 +572,55 @@ describe('stores/variables', () => {
   });
 
   it('should reset store', async () => {
-    await variablesStore.fetchVariables('1');
+    await variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+    await variablesStore.addVariable({
+      id: '1',
+      name: 'test',
+      value: '1',
+      onSuccess: () => {},
+      onError: () => {},
+    });
+
     expect(variablesStore.state.items).toEqual(mockVariables);
+    expect(variablesStore.state.latestFetch).toEqual({
+      fetchType: 'initial',
+      itemsCount: 3,
+    });
+    expect(variablesStore.state.pendingItem).toEqual({
+      name: 'test',
+      value: '1',
+      hasActiveOperation: true,
+      isFirst: false,
+      sortValues: null,
+    });
     expect(variablesStore.state.status).toBe('fetched');
     variablesStore.reset();
     expect(variablesStore.state.items).toEqual([]);
+    expect(variablesStore.state.latestFetch).toEqual({
+      fetchType: null,
+      itemsCount: 0,
+    });
+    expect(variablesStore.state.pendingItem).toBe(null);
     expect(variablesStore.state.status).toBe('initial');
   });
 
   it('should not update state if store is reset when there are ongoing requests', async () => {
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json(mockVariables))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.status(500), ctx.json(mockVariables))
       )
     );
 
-    const variablesRequest = variablesStore.fetchVariables('1');
+    const variablesRequest = variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
     variablesStore.reset();
     expect(variablesStore.shouldCancelOngoingRequests).toBe(true);
     await variablesRequest;
@@ -537,118 +628,8 @@ describe('stores/variables', () => {
     expect(variablesStore.state.status).toBe('initial');
   });
 
-  it('should manage local and server variables correctly', async () => {
-    expect(variablesStore.state.items).toEqual([]);
-
-    await variablesStore.fetchVariables('1');
-    expect(variablesStore.state.items).toEqual(mockVariables);
-    await variablesStore.addVariable({
-      id: '1',
-      name: 'test1',
-      value: '123',
-      onError: () => {},
-    });
-
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json(mockVariableOperation))
-      )
-    );
-
-    await variablesStore.updateVariable({
-      id: '1',
-      name: 'paid',
-      value: 'false',
-      onError: () => {},
-    });
-
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '2251799813686374-mwst',
-              name: 'mwst',
-              value: '63.27',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-            {
-              id: '2251799813686374-orderStatus',
-              name: 'orderStatus',
-              value: '"NEW"',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-            {
-              id: '2251799813686374-paid',
-              name: 'paid',
-              value: 'true',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-            {
-              id: '2251799813686374-orderNo',
-              name: 'someNewVariableFromServer',
-              value: '"CMD0001-01"',
-              scopeId: '2251799813686374',
-              processInstanceId: '2251799813686374',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      )
-    );
-
-    await variablesStore.fetchVariables('1');
-
-    expect(variablesStore.state.items).toEqual([
-      {
-        hasActiveOperation: false,
-        id: '2251799813686374-mwst',
-        name: 'mwst',
-        scopeId: '2251799813686374',
-        value: '63.27',
-        processInstanceId: '2251799813686374',
-      },
-      {
-        hasActiveOperation: false,
-        id: '2251799813686374-orderStatus',
-        name: 'orderStatus',
-        scopeId: '2251799813686374',
-        value: '"NEW"',
-        processInstanceId: '2251799813686374',
-      },
-      {
-        hasActiveOperation: false,
-        id: '2251799813686374-orderNo',
-        name: 'someNewVariableFromServer',
-        scopeId: '2251799813686374',
-        value: '"CMD0001-01"',
-        processInstanceId: '2251799813686374',
-      },
-      {
-        id: '2251799813686374-paid',
-        name: 'paid',
-        value: 'false',
-        scopeId: '2251799813686374',
-        processInstanceId: '2251799813686374',
-        hasActiveOperation: true,
-      },
-      {
-        hasActiveOperation: true,
-        name: 'test1',
-        value: '123',
-        processInstanceId: '1',
-      },
-    ]);
-  });
-
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
+    const eventListeners: Record<string, Function> = {};
     const originalEventListener = window.addEventListener;
     window.addEventListener = jest.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
@@ -671,8 +652,9 @@ describe('stores/variables', () => {
     ];
 
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json(newMockVariables))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json(newMockVariables))
       )
     );
 
@@ -683,5 +665,160 @@ describe('stores/variables', () => {
     );
 
     window.addEventListener = originalEventListener;
+  });
+
+  it('should fetch prev/next variables', async () => {
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 3, scopeId: '1'},
+    });
+    expect(variablesStore.state.status).toBe('first-fetch');
+    await waitFor(() =>
+      expect(variablesStore.state.items).toEqual(mockVariables)
+    );
+    expect(variablesStore.state.status).toBe('fetched');
+
+    expect(variablesStore.state.items[0].name).toBe('mwst');
+    expect(
+      variablesStore.state.items[variablesStore.state.items.length - 1].name
+    ).toBe('paid');
+
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(true);
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '2251799813686374-test1',
+                name: 'test1',
+                value: '1',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+                isFirst: false,
+              },
+              {
+                id: '2251799813686374-test2',
+                name: 'test2',
+                value: '2',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+                isFirst: false,
+              },
+              {
+                id: '2251799813686374-test3',
+                name: 'test3',
+                value: '3',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+                isFirst: false,
+              },
+            ])
+          )
+      )
+    );
+
+    variablesStore.fetchNextVariables('1');
+    expect(variablesStore.state.status).toBe('fetching-next');
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(false);
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    expect(variablesStore.state.items[0].name).toBe('orderStatus');
+    expect(
+      variablesStore.state.items[variablesStore.state.items.length - 1].name
+    ).toBe('test3');
+
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(true);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(true);
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '2251799813686374-test4',
+                name: 'test4',
+                value: '4',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+                isFirst: false,
+              },
+              {
+                id: '2251799813686374-test5',
+                name: 'test5',
+                value: '5',
+                scopeId: '2251799813686374',
+                processInstanceId: '2251799813686374',
+                hasActiveOperation: false,
+                isFirst: false,
+              },
+            ])
+          )
+      )
+    );
+
+    variablesStore.fetchNextVariables('1');
+
+    expect(variablesStore.state.status).toBe('fetching-next');
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(false);
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    expect(variablesStore.state.items[0].name).toBe('test1');
+    expect(
+      variablesStore.state.items[variablesStore.state.items.length - 1].name
+    ).toBe('test5');
+
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(true);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(false);
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json(mockVariables))
+      )
+    );
+
+    variablesStore.fetchPreviousVariables('1');
+    expect(variablesStore.state.status).toBe('fetching-prev');
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(false);
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    expect(variablesStore.state.items[0].name).toBe('mwst');
+    expect(
+      variablesStore.state.items[variablesStore.state.items.length - 1].name
+    ).toBe('test2');
+
+    expect(variablesStore.shouldFetchPreviousVariables()).toBe(false);
+    expect(variablesStore.shouldFetchNextVariables()).toBe(true);
+  });
+
+  it('should get sort values', async () => {
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 3, scopeId: '1'},
+    });
+    expect(variablesStore.state.status).toBe('first-fetch');
+    await waitFor(() =>
+      expect(variablesStore.state.items).toEqual(mockVariables)
+    );
+    expect(variablesStore.state.status).toBe('fetched');
+
+    expect(variablesStore.getSortValues('initial')).toBe(undefined);
+    expect(variablesStore.getSortValues('prev')).toEqual(['mwst']);
+    expect(variablesStore.getSortValues('next')).toEqual(['paid']);
   });
 });

@@ -7,7 +7,13 @@
 import React from 'react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from './index';
-import {render, screen, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -16,6 +22,14 @@ import {MemoryRouter, Route} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {createInstance} from 'modules/testUtils';
+import userEvent from '@testing-library/user-event';
+
+const mockDisplayNotification = jest.fn();
+jest.mock('modules/notifications', () => ({
+  useNotifications: () => ({
+    displayNotification: mockDisplayNotification,
+  }),
+}));
 
 type Props = {
   children?: React.ReactNode;
@@ -34,19 +48,21 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('VariablePanel', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+            ])
+          )
       )
     );
 
@@ -58,18 +74,13 @@ describe('VariablePanel', () => {
     );
 
     flowNodeMetaDataStore.init();
-
+    flowNodeSelectionStore.init();
     currentInstanceStore.setCurrentInstance(
       createInstance({
         id: 'instance_id',
         state: 'ACTIVE',
       })
     );
-
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: '1',
-      flowNodeInstanceId: '2',
-    });
   });
 
   afterEach(() => {
@@ -115,13 +126,17 @@ describe('VariablePanel', () => {
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.get(
-        '/api/process-instances/invalid_instance/variables',
+      rest.post(
+        '/api/process-instances/invalid_instance/variables-new',
         (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
       )
     );
 
-    variablesStore.fetchVariables('invalid_instance');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: 'invalid_instance',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     expect(
       await screen.findByText('Variables could not be fetched')
@@ -134,12 +149,17 @@ describe('VariablePanel', () => {
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.get('/api/process-instances/invalid_instance/variables', (_, res) =>
-        res.networkError('A network error')
+      rest.post(
+        '/api/process-instances/invalid_instance/variables-new',
+        (_, res) => res.networkError('A network error')
       )
     );
 
-    variablesStore.fetchVariables('invalid_instance');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: 'invalid_instance',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     expect(
       await screen.findByText('Variables could not be fetched')
@@ -150,5 +170,323 @@ describe('VariablePanel', () => {
     render(<VariablePanel />, {wrapper: Wrapper});
 
     expect(await screen.findByText('test')).toBeInTheDocument();
+  });
+
+  it('should add new variable', async () => {
+    jest.useFakeTimers();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'batch-operation-id',
+          })
+        )
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+              {
+                id: '9007199254742796-foo',
+                name: 'foo',
+                value: '"bar"',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      ),
+      rest.get('/api/operations', (req, res, ctx) => {
+        if (
+          req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
+        ) {
+          return res.once(
+            ctx.json([
+              {
+                state: 'COMPLETED',
+              },
+            ])
+          );
+        }
+      })
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    ).toBeInTheDocument();
+
+    jest.runOnlyPendingTimers();
+
+    const withinVariablesList = within(screen.getByTestId('variables-list'));
+    expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Add variable'})
+    ).toBeInTheDocument();
+    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
+      headline: 'Variable added',
+    });
+
+    await waitFor(() =>
+      expect(withinVariablesList.getByTestId('foo')).toBeInTheDocument()
+    );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  it('should remove pending variable if scope id changes', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              flowNodeInstanceId: '2251799813686104',
+              instanceCount: 1,
+            })
+          )
+      )
+    );
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'batch-operation-id',
+          })
+        )
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json([]))
+      )
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    expect(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    ).toBeInTheDocument();
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: '1',
+      flowNodeInstanceId: '2',
+    });
+
+    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    expect(
+      screen.queryByTestId('edit-variable-spinner')
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: 'Add variable'})
+    ).toBeInTheDocument();
+  });
+
+  it('should display validation error if backend validation fails while adding variable', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.status(400), ctx.json({}))
+      )
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+
+    await waitForElementToBeRemoved(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    expect(mockDisplayNotification).not.toHaveBeenCalledWith('error', {
+      headline: 'Variable could not be saved',
+    });
+
+    expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), '2');
+    expect(
+      screen.queryByTitle('Variable should be unique')
+    ).not.toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), '{backspace}');
+    expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
+  });
+
+  it('should display error notification if add variable operation could not be created', async () => {
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json({}))
+      )
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+
+    await waitForElementToBeRemoved(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Add variable'})
+    ).toBeInTheDocument();
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+      headline: 'Variable could not be saved',
+    });
+  });
+
+  it('should display error notification if add variable operation fails', async () => {
+    jest.useFakeTimers();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'batch-operation-id',
+          })
+        )
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      ),
+      rest.get('/api/operations', (req, res, ctx) => {
+        if (
+          req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
+        ) {
+          return res.once(
+            ctx.json([
+              {
+                state: 'FAILED',
+              },
+            ])
+          );
+        }
+      })
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+
+    expect(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    ).toBeInTheDocument();
+
+    jest.runOnlyPendingTimers();
+
+    await waitForElementToBeRemoved(screen.getByTestId('foo'));
+
+    expect(
+      screen.getByRole('button', {name: 'Add variable'})
+    ).toBeInTheDocument();
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+      headline: 'Variable could not be saved',
+    });
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

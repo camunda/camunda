@@ -65,15 +65,19 @@ describe('Variables', () => {
   describe('Skeleton', () => {
     it('should display empty content if there are no variables', async () => {
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );
 
       render(<Variables />, {wrapper: Wrapper});
       flowNodeMetaDataStore.setMetaData(mockMetaData);
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
       expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
@@ -81,12 +85,16 @@ describe('Variables', () => {
 
     it('should display skeleton on initial load', async () => {
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
 
@@ -96,23 +104,31 @@ describe('Variables', () => {
 
     it('should display spinner on second variable fetch', async () => {
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      const variableList = variablesStore.fetchVariables('1');
+      const variableList = variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
       await variableList;
@@ -123,12 +139,16 @@ describe('Variables', () => {
   describe('Variables', () => {
     it('should render variables table', async () => {
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -149,12 +169,16 @@ describe('Variables', () => {
     it('should show/hide spinner next to variable according to it having an active operation', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -187,12 +211,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -208,12 +236,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -240,13 +272,17 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
 
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -292,13 +328,17 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
 
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -352,13 +392,17 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
 
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -404,84 +448,12 @@ describe('Variables', () => {
       expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
     });
 
-    it('should save new variable', async () => {
-      currentInstanceStore.setCurrentInstance(instanceMock);
-
-      mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
-      variablesStore.fetchVariables('1');
-
-      render(<Variables />, {wrapper: Wrapper});
-      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-
-      const newVariableName = 'newVariable';
-      const newVariableValue = '1234';
-
-      userEvent.type(
-        screen.getByRole('textbox', {name: /name/i}),
-        newVariableName
-      );
-      userEvent.type(
-        screen.getByRole('textbox', {name: /value/i}),
-        newVariableValue
-      );
-
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) => res.once(ctx.json(null))
-        )
-      );
-
-      userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
-
-      expect(
-        within(screen.getByTestId(newVariableName)).getByTestId(
-          'edit-variable-spinner'
-        )
-      ).toBeInTheDocument();
-
-      mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                ...mockVariables,
-                {
-                  id: '2251799813686037-mwst',
-                  name: 'newVariable',
-                  value: '1234',
-                  scopeId: '2251799813686037',
-                  processInstanceId: '2251799813686037',
-                  hasActiveOperation: false,
-                },
-              ])
-            )
-        )
-      );
-
-      await variablesStore.fetchVariables('with-newly-added-variable');
-      expect(
-        // @ts-expect-error ts-migrate(2345) FIXME: Type 'null' is not assignable to type 'HTMLElement... Remove this comment to see the full error message
-        within(screen.queryByTestId(newVariableName)).queryByTestId(
-          'edit-variable-spinner'
-        )
-      ).not.toBeInTheDocument();
-    });
-
     it('clicking edit variables while add mode is open, should not display a validation error', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -505,12 +477,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -541,12 +517,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -578,12 +558,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -618,12 +602,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -648,12 +636,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -703,12 +695,16 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
 
@@ -724,13 +720,17 @@ describe('Variables', () => {
       });
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
 
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -738,22 +738,26 @@ describe('Variables', () => {
       expect(screen.getByText('Add Variable')).toBeDisabled();
     });
 
-    it('should disable add variable button if add/edit variable button is clicked', async () => {
+    it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-      expect(screen.getByText('Add Variable')).toBeDisabled();
+      expect(screen.queryByText('Add Variable')).not.toBeInTheDocument();
 
       userEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
       expect(screen.getByText('Add Variable')).toBeEnabled();
@@ -765,36 +769,21 @@ describe('Variables', () => {
       expect(screen.getByText('Add Variable')).toBeEnabled();
     });
 
-    it('should disable add variable button when clicked', async () => {
-      currentInstanceStore.setCurrentInstance(instanceMock);
-
-      mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
-      variablesStore.fetchVariables('1');
-
-      render(<Variables />, {wrapper: Wrapper});
-      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-
-      expect(screen.getByText('Add Variable')).toBeEnabled();
-      userEvent.click(screen.getByText('Add Variable'));
-      expect(screen.getByText('Add Variable')).toBeDisabled();
-    });
-
     it('should disable add variable button when selected flow node is not running', async () => {
       mockServer.use(
-        rest.get(
-          '/api/process-instances/:instanceId/variables',
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );
 
       flowNodeMetaDataStore.init();
       currentInstanceStore.setCurrentInstance(instanceMock);
-      variablesStore.fetchVariables('1');
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
 
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));

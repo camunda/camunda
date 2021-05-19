@@ -5,18 +5,19 @@
  */
 
 interface VariableEntity {
+  isFirst: boolean;
   hasActiveOperation: boolean;
   id?: string;
   name: string;
-  scopeId?: string;
   value: string;
-  processInstanceId: ProcessInstanceEntity['id'];
+  sortValues: [string] | null;
 }
 
 type OperationEntityType =
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_PROCESS_INSTANCE'
-  | 'UPDATE_VARIABLE';
+  | 'UPDATE_VARIABLE'
+  | 'ADD_VARIABLE';
 
 type InstanceEntityState =
   | 'ACTIVE'

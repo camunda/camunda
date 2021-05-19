@@ -11,7 +11,7 @@ import {
   EditTextarea,
   EditButtonsTD,
 } from './styled';
-import {Field} from 'react-final-form';
+import {Field, useFormState} from 'react-final-form';
 import {useRef} from 'react';
 
 import {EditButtons} from './EditButtons';
@@ -29,11 +29,13 @@ const ExistingVariable: React.FC<Props> = ({
   variableValue,
   onHeightChange,
 }) => {
+  const formState = useFormState();
+
   const editInputTDRef = useRef<HTMLTableDataCellElement>(null);
 
   return (
     <>
-      <TD isBold={true}>
+      <TD>
         <Field name="name" initialValue={variableName}>
           {() => {
             return (
@@ -59,7 +61,7 @@ const ExistingVariable: React.FC<Props> = ({
                 maxRows={4}
                 data-testid="edit-value"
                 placeholder="Value"
-                $hasError={!isFieldValid(meta)}
+                $hasError={!isFieldValid(meta, formState.submitErrors?.value)}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   input.onChange(e);
                 }}

@@ -72,17 +72,12 @@ const Placeholder = styled.span`
   }}
 `;
 
-type TDProps = {
-  isBold?: boolean;
-};
-
-const TD = styled.td<TDProps>`
-  ${({theme, isBold}) => {
+const TD = styled.td`
+  ${({theme}) => {
     const colors = theme.colors.variables.td;
 
     return css`
       color: ${colors.color};
-      font-weight: ${isBold ? 'bold' : 'normal'};
 
       padding-bottom: 5px;
       padding-left: 16px;
@@ -143,9 +138,10 @@ const THead = styled.thead<THeadProps>`
 `;
 
 const VariableName = styled.span`
+  font-weight: bold;
   height: 100%;
-  padding-top: 4px;
-  margin-top: 3px;
+  padding: 4px 0;
+  margin: 3px 0;
   line-height: 18px;
   display: block;
   text-overflow: ellipsis;
@@ -199,10 +195,6 @@ const EditButtonsTD = styled.td`
   padding-top: 8px;
   display: flex;
   justify-content: flex-end;
-`;
-
-const AddButtonsTD = styled(EditButtonsTD)`
-  padding-top: 9px;
 `;
 
 const EditInputTD = styled.td`
@@ -353,14 +345,21 @@ const Plus = styled(DefaultPlus)`
   margin-right: 4px;
 `;
 
-const Footer = styled(Panel.Footer)`
-  position: absolute;
-  bottom: 0;
+type FooterProps = {
+  scrollBarWidth: number;
+};
 
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 41px;
+const Footer = styled(Panel.Footer)<FooterProps>`
+  ${({scrollBarWidth}) => {
+    return css`
+      position: absolute;
+      bottom: 0;
+
+      justify-content: space-between;
+      max-height: initial;
+      padding-right: ${scrollBarWidth}px;
+    `;
+  }}
 `;
 
 const TH = styled.th`
@@ -372,6 +371,10 @@ const Warning = styled.div`
   margin: 0 11px 0 6px;
   width: 16px;
   height: 16px;
+`;
+
+const EditButtonsContainer = styled.div`
+  display: flex;
 `;
 
 export {
@@ -389,7 +392,6 @@ export {
   AddTextarea,
   EditTextarea,
   EditButtonsTD,
-  AddButtonsTD,
   EditInputTD,
   DisplayTextTD,
   EditButton,
@@ -405,4 +407,5 @@ export {
   Plus,
   Footer,
   Warning,
+  EditButtonsContainer,
 };

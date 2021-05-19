@@ -39,6 +39,15 @@ type OperationPayload = {
   incidentId?: string;
 };
 
+type VariablePayload = {
+  pageSize: number;
+  scopeId: string;
+  searchAfter?: ReadonlyArray<string>;
+  searchAfterOrEqual?: ReadonlyArray<string>;
+  searchBefore?: ReadonlyArray<string>;
+  searchBeforeOrEqual?: ReadonlyArray<string>;
+};
+
 async function fetchProcessInstance(id: ProcessInstanceEntity['id']) {
   return get(`${URL}/${id}`);
 }
@@ -106,16 +115,18 @@ async function applyOperation(
   return post(`${URL}/${instanceId}/operation`, payload);
 }
 
-async function fetchVariables({
-  instanceId,
-  scopeId,
-}: {
-  instanceId: ProcessInstanceEntity['id'];
-  scopeId: Required<VariableEntity>['scopeId'];
-}) {
-  return get(`${URL}/${instanceId}/variables?scopeId=${scopeId}`);
+async function getOperation(batchOperationId: string) {
+  return get(`/api/operations?batchOperationId=${batchOperationId}`);
 }
 
+async function fetchVariables(
+  instanceId: ProcessInstanceEntity['id'],
+  payload: VariablePayload
+) {
+  return post(`${URL}/${instanceId}/variables-new`, payload);
+}
+
+export type {VariablePayload};
 export {
   fetchProcessInstances,
   fetchProcessInstance,
@@ -127,5 +138,6 @@ export {
   fetchProcessInstancesStatistics,
   applyBatchOperation,
   applyOperation,
+  getOperation,
   fetchVariables,
 };

@@ -18,16 +18,16 @@ fixture('Add/Edit Variables')
     await wait();
   })
   .beforeEach(async (t) => {
-    const {
-      initialData: {instance},
-    } = t.fixtureCtx;
-
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(`/instances/${instance.processInstanceKey}`);
   });
 
 test('Validations for add/edit variable works correctly', async (t) => {
+  const {
+    initialData: {instance},
+  } = t.fixtureCtx;
+  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+
   await t
     .expect(
       screen
@@ -155,6 +155,8 @@ test('Edit variables', async (t) => {
     initialData: {instance},
   } = t.fixtureCtx;
 
+  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+
   await t
     .expect(
       screen
@@ -215,6 +217,8 @@ test('Add variables', async (t) => {
   const {
     initialData: {instance},
   } = t.fixtureCtx;
+  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+
   await t
     .expect(
       screen
@@ -319,6 +323,11 @@ test('Add variables', async (t) => {
 });
 
 test('Should not change add variable state when enter is pressed', async (t) => {
+  const {
+    initialData: {instance},
+  } = t.fixtureCtx;
+  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+
   await t
     .expect(
       screen
@@ -349,6 +358,11 @@ test('Should not change add variable state when enter is pressed', async (t) => 
 });
 
 test('Remove fields when instance is canceled', async (t) => {
+  const {
+    initialData: {instance},
+  } = t.fixtureCtx;
+  await t.navigateTo(`/instances/${instance.processInstanceKey}`);
+
   await t
     .expect(
       screen
@@ -376,4 +390,79 @@ test('Remove fields when instance is canceled', async (t) => {
     .notOk()
     .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
     .notOk();
+});
+
+test('Infinite scrolling', async (t) => {
+  const {
+    initialData: {instanceWithManyVariables},
+  } = t.fixtureCtx;
+
+  await t.navigateTo(
+    `/instances/${instanceWithManyVariables.processInstanceKey}`
+  );
+
+  await t.expect(screen.queryByTestId('variables-list').exists).ok();
+
+  const withinVariablesList = within(screen.getByTestId('variables-list'));
+
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(52);
+
+  await t
+    .expect(screen.getByText('aa').exists)
+    .ok()
+    .expect(screen.getByText('bx').exists)
+    .ok();
+
+  await t.scrollIntoView(screen.getByText('bx'));
+
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(102);
+
+  await t
+    .expect(screen.getByText('aa').exists)
+    .ok()
+    .expect(screen.getByText('dv').exists)
+    .ok();
+
+  await t.scrollIntoView(screen.getByText('dv'));
+
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(152);
+
+  await t
+    .expect(screen.getByText('aa').exists)
+    .ok()
+    .expect(screen.getByText('ft').exists)
+    .ok();
+
+  await t.scrollIntoView(screen.getByText('ft'));
+
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(202);
+
+  await t
+    .expect(screen.getByText('aa').exists)
+    .ok()
+    .expect(screen.getByText('hr').exists)
+    .ok();
+
+  await t.scrollIntoView(screen.getByText('hr'));
+
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(202);
+
+  await t
+    .expect(screen.queryByText('aa').exists)
+    .notOk()
+    .expect(screen.getByText('by').exists)
+    .ok()
+    .expect(screen.getByText('jp').exists)
+    .ok();
+
+  await t.scrollIntoView(screen.getByText('by'));
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(202);
+
+  await t
+    .expect(screen.queryByText('jp').exists)
+    .notOk()
+    .expect(screen.getByText('aa').exists)
+    .ok()
+    .expect(screen.getByText('by').exists)
+    .ok();
 });

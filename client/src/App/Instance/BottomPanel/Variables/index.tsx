@@ -18,17 +18,23 @@ import {Table, TH, TR} from './VariablesTable';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {ExistingVariable} from './ExistingVariable';
 import {NewVariable} from './NewVariable';
+import {PendingVariable} from './PendingVariable';
 import {useForm, useFormState} from 'react-final-form';
+import {useInstancePageParams} from '../../useInstancePageParams';
+import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
+import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
 const Variables: React.FC = observer(() => {
   const {
-    state: {items: variables, status},
-    hasNoVariables,
+    state: {items: variables, pendingItem: pendingVariable, status},
     displayStatus,
     scopeId,
   } = variablesStore;
 
+  const scrollableContentRef = useRef<HTMLDivElement>(null);
   const variablesContentRef = useRef<HTMLDivElement>(null);
+  const variableRowRef = useRef<HTMLTableRowElement>(null);
+  const {processInstanceId} = useInstancePageParams();
 
   const isTextareaOutOfBounds = (
     itemRef: React.RefObject<HTMLTableDataCellElement>
@@ -66,9 +72,10 @@ const Variables: React.FC = observer(() => {
   const isViewMode =
     initialValues === undefined || Object.values(initialValues).length === 0;
 
+  const isAddMode = initialValues?.name === '' && initialValues?.value === '';
+
   const isVariableHeaderVisible =
-    !isViewMode ||
-    (!hasNoVariables && variablesStore.state.status === 'fetched');
+    isAddMode || variablesStore.displayStatus === 'variables';
 
   return (
     <>
@@ -88,105 +95,141 @@ const Variables: React.FC = observer(() => {
           <Skeleton type="info" label="The Flow Node has no Variables" />
         )}
         {(!isViewMode || displayStatus === 'variables') && (
-          <Styled.TableScroll>
-            <Table data-testid="variables-list">
-              <Styled.THead isVariableHeaderVisible={isVariableHeaderVisible}>
-                <TR>
-                  <Styled.TH>Variables</Styled.TH>
-                </TR>
-                {isVariableHeaderVisible && (
+          <InfiniteScroller
+            onVerticalScrollStartReach={async (scrollDown) => {
+              if (variablesStore.shouldFetchPreviousVariables() === false) {
+                return;
+              }
+              await variablesStore.fetchPreviousVariables(processInstanceId);
+
+              if (
+                variablesStore.state.items.length === MAX_VARIABLES_STORED &&
+                variablesStore.state.latestFetch.itemsCount !== 0
+              ) {
+                scrollDown(
+                  variablesStore.state.latestFetch.itemsCount *
+                    (variableRowRef.current?.offsetHeight ?? 0)
+                );
+              }
+            }}
+            onVerticalScrollEndReach={() => {
+              if (variablesStore.shouldFetchNextVariables() === false) {
+                return;
+              }
+              variablesStore.fetchNextVariables(processInstanceId);
+            }}
+          >
+            <Styled.TableScroll ref={scrollableContentRef}>
+              <Table data-testid="variables-list">
+                <Styled.THead isVariableHeaderVisible={isVariableHeaderVisible}>
                   <TR>
-                    <TH>Name</TH>
-                    <TH>Value</TH>
-                    <TH />
+                    <Styled.TH>Variables</Styled.TH>
                   </TR>
-                )}
-              </Styled.THead>
-              <tbody>
-                {variables.map(
-                  ({
-                    name: variableName,
-                    value: variableValue,
-                    hasActiveOperation,
-                  }) => (
-                    <TR
-                      key={variableName}
-                      data-testid={variableName}
-                      hasActiveOperation={hasActiveOperation}
-                    >
-                      {initialValues?.name === variableName &&
-                      currentInstanceStore.isRunning ? (
-                        <ExistingVariable
-                          variableName={variableName}
-                          variableValue={variableValue}
-                          onHeightChange={scrollToItem}
-                        />
-                      ) : (
-                        <>
-                          <Styled.TD isBold={true}>
-                            <Styled.VariableName title={variableName}>
-                              {variableName}
-                            </Styled.VariableName>
-                          </Styled.TD>
-                          <Styled.DisplayTextTD>
-                            <Styled.DisplayText>
-                              {variableValue}
-                            </Styled.DisplayText>
-                          </Styled.DisplayTextTD>
-                          {currentInstanceStore.isRunning && (
-                            <Styled.EditButtonsTD>
-                              {hasActiveOperation ? (
-                                <Styled.Spinner data-testid="edit-variable-spinner" />
-                              ) : (
-                                <Styled.EditButton
-                                  title="Enter edit mode"
-                                  type="button"
-                                  data-testid="edit-variable-button"
-                                  onClick={() => {
-                                    form.reset({
-                                      name: variableName,
-                                      value: variableValue,
-                                    });
-                                  }}
-                                  size="large"
-                                  iconButtonTheme="default"
-                                  icon={<Styled.EditIcon />}
-                                />
-                              )}
-                            </Styled.EditButtonsTD>
-                          )}
-                        </>
-                      )}
+                  {isVariableHeaderVisible && (
+                    <TR>
+                      <TH>Name</TH>
+                      <TH>Value</TH>
+                      <TH />
                     </TR>
-                  )
-                )}
-                {initialValues?.name === '' &&
-                  initialValues?.value === '' &&
-                  currentInstanceStore.isRunning && (
-                    <NewVariable onHeightChange={scrollToItem} />
                   )}
-              </tbody>
-            </Table>
-          </Styled.TableScroll>
+                </Styled.THead>
+                <tbody>
+                  {variables.map(
+                    ({
+                      name: variableName,
+                      value: variableValue,
+                      hasActiveOperation,
+                    }) => (
+                      <TR
+                        ref={variableRowRef}
+                        key={variableName}
+                        data-testid={variableName}
+                        hasActiveOperation={hasActiveOperation}
+                      >
+                        {initialValues?.name === variableName &&
+                        currentInstanceStore.isRunning ? (
+                          <ExistingVariable
+                            variableName={variableName}
+                            variableValue={variableValue}
+                            onHeightChange={scrollToItem}
+                          />
+                        ) : (
+                          <>
+                            <Styled.TD>
+                              <Styled.VariableName title={variableName}>
+                                {variableName}
+                              </Styled.VariableName>
+                            </Styled.TD>
+                            <Styled.DisplayTextTD>
+                              <Styled.DisplayText>
+                                {variableValue}
+                              </Styled.DisplayText>
+                            </Styled.DisplayTextTD>
+                            {currentInstanceStore.isRunning && (
+                              <Styled.EditButtonsTD>
+                                {hasActiveOperation ? (
+                                  <Styled.Spinner data-testid="edit-variable-spinner" />
+                                ) : (
+                                  <Styled.EditButton
+                                    title="Enter edit mode"
+                                    type="button"
+                                    data-testid="edit-variable-button"
+                                    onClick={() => {
+                                      form.reset({
+                                        name: variableName,
+                                        value: variableValue,
+                                      });
+                                    }}
+                                    size="large"
+                                    iconButtonTheme="default"
+                                    icon={<Styled.EditIcon />}
+                                  />
+                                )}
+                              </Styled.EditButtonsTD>
+                            )}
+                          </>
+                        )}
+                      </TR>
+                    )
+                  )}
+                </tbody>
+              </Table>
+            </Styled.TableScroll>
+          </InfiniteScroller>
         )}
       </Styled.VariablesContent>
-      <Styled.Footer>
-        <Styled.Button
-          title="Add variable"
-          size="small"
-          onClick={() => {
-            form.reset({name: '', value: ''});
-          }}
-          disabled={
-            status === 'first-fetch' ||
-            !isViewMode ||
-            (flowNodeSelectionStore.isRootNodeSelected
-              ? !currentInstanceStore.isRunning
-              : !flowNodeMetaDataStore.isSelectedInstanceRunning)
-          }
-        >
-          <Styled.Plus /> Add Variable
-        </Styled.Button>
+      <Styled.Footer
+        scrollBarWidth={
+          (scrollableContentRef?.current?.offsetWidth ?? 0) -
+          (scrollableContentRef?.current?.scrollWidth ?? 0)
+        }
+      >
+        {currentInstanceStore.isRunning && (
+          <>
+            {pendingVariable !== null && <PendingVariable />}
+            {isAddMode && pendingVariable === null && <NewVariable />}
+          </>
+        )}
+
+        {!isAddMode && pendingVariable === null && (
+          <Styled.Button
+            type="button"
+            title="Add variable"
+            size="small"
+            onClick={() => {
+              form.reset({name: '', value: ''});
+            }}
+            disabled={
+              status === 'first-fetch' ||
+              !isViewMode ||
+              (flowNodeSelectionStore.isRootNodeSelected
+                ? !currentInstanceStore.isRunning
+                : !flowNodeMetaDataStore.isSelectedInstanceRunning)
+            }
+          >
+            <Styled.Plus /> Add Variable
+          </Styled.Button>
+        )}
       </Styled.Footer>
     </>
   );

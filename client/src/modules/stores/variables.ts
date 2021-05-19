@@ -14,24 +14,47 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchVariables, applyOperation} from 'modules/api/instances';
-import {differenceWith, differenceBy} from 'lodash';
+import {
+  applyOperation,
+  getOperation,
+  fetchVariables,
+  VariablePayload,
+} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {STATE} from 'modules/constants';
+import {
+  MAX_VARIABLES_PER_REQUEST,
+  MAX_VARIABLES_STORED,
+} from 'modules/constants/variables';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
+type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   items: VariableEntity[];
-  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  pendingItem: VariableEntity | null;
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetching-next'
+    | 'fetching-prev'
+    | 'fetched'
+    | 'error';
+  latestFetch: {
+    fetchType: FetchType | null;
+    itemsCount: number;
+  };
 };
 
 const DEFAULT_STATE: State = {
   items: [],
+  pendingItem: null,
   status: 'initial',
+  latestFetch: {fetchType: null, itemsCount: 0},
 };
 
 class Variables extends NetworkReconnectionHandler {
@@ -40,9 +63,11 @@ class Variables extends NetworkReconnectionHandler {
   };
   shouldCancelOngoingRequests: boolean = false;
   intervalId: null | ReturnType<typeof setInterval> = null;
+  operationIntervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   variablesWithActiveOperationsDisposer: null | IReactionDisposer = null;
   fetchVariablesDisposer: null | IReactionDisposer = null;
+  instanceId: ProcessInstanceEntity['id'] | null = null;
 
   constructor() {
     super();
@@ -50,8 +75,11 @@ class Variables extends NetworkReconnectionHandler {
       state: observable,
       reset: override,
       setItems: action,
+      setPendingItem: action,
       handleFetchSuccess: action,
-      startFetch: action,
+      startFetching: action,
+      startFetchingNext: action,
+      startFetchingPrev: action,
       handleFetchFailure: action,
       clearItems: action,
       updateVariable: action,
@@ -61,10 +89,13 @@ class Variables extends NetworkReconnectionHandler {
       hasActiveOperation: computed,
       scopeId: computed,
       displayStatus: computed,
+      setLatestFetchDetails: action,
     });
   }
 
   init = (instanceId: ProcessInstanceEntity['id']) => {
+    this.instanceId = instanceId;
+
     this.variablesWithActiveOperationsDisposer = when(
       () => currentInstanceStore.state.instance?.state === STATE.CANCELED,
       this.removeVariablesWithActiveOperations
@@ -86,13 +117,94 @@ class Variables extends NetworkReconnectionHandler {
     this.fetchVariablesDisposer = autorun(() => {
       if (this.scopeId !== null) {
         this.clearItems();
-        this.fetchVariables(instanceId);
+        this.setPendingItem(null);
+        this.fetchVariables({
+          fetchType: 'initial',
+          instanceId,
+          payload: {
+            pageSize: MAX_VARIABLES_PER_REQUEST,
+            scopeId: this.scopeId ?? instanceId,
+          },
+        });
       }
     });
   };
 
   clearItems = () => {
     this.state.items = [];
+  };
+
+  setLatestFetchDetails = (fetchType: FetchType, itemsCount: number) => {
+    this.state.latestFetch.fetchType = fetchType;
+    this.state.latestFetch.itemsCount = itemsCount;
+  };
+
+  shouldFetchPreviousVariables = () => {
+    const {items, status} = this.state;
+    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+      return false;
+    }
+
+    return !items[0]?.isFirst;
+  };
+
+  shouldFetchNextVariables = () => {
+    const {latestFetch, items, status} = this.state;
+    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+      return false;
+    }
+
+    return (
+      (latestFetch.fetchType === 'next' &&
+        latestFetch.itemsCount === MAX_VARIABLES_PER_REQUEST) ||
+      (latestFetch.fetchType === 'prev' &&
+        items.length === MAX_VARIABLES_STORED) ||
+      latestFetch.fetchType === 'initial'
+    );
+  };
+
+  fetchPreviousVariables = async (instanceId: ProcessInstanceEntity['id']) => {
+    this.startFetchingPrev();
+
+    return this.fetchVariables({
+      fetchType: 'prev',
+      instanceId,
+      payload: {
+        pageSize: MAX_VARIABLES_PER_REQUEST,
+        scopeId: this.scopeId ?? instanceId,
+        searchBefore: this.getSortValues('prev'),
+      },
+    });
+  };
+
+  fetchNextVariables = async (instanceId: ProcessInstanceEntity['id']) => {
+    this.startFetchingNext();
+
+    return this.fetchVariables({
+      fetchType: 'next',
+      instanceId,
+      payload: {
+        pageSize: MAX_VARIABLES_PER_REQUEST,
+        scopeId: this.scopeId ?? instanceId,
+        searchAfter: this.getSortValues('next'),
+      },
+    });
+  };
+
+  getVariables = (fetchType: FetchType, items: VariableEntity[]) => {
+    switch (fetchType) {
+      case 'next':
+        const allVariables = [...this.state.items, ...items];
+
+        return allVariables.slice(
+          Math.max(allVariables.length - MAX_VARIABLES_STORED, 0)
+        );
+      case 'prev':
+        return [...items, ...this.state.items].slice(0, MAX_VARIABLES_STORED);
+      case 'initial':
+      default:
+        return items;
+    }
   };
 
   handleFetchFailure = (error?: Error) => {
@@ -107,7 +219,7 @@ class Variables extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  startFetch = () => {
+  startFetching = () => {
     if (this.state.status === 'initial') {
       this.state.status = 'first-fetch';
     } else {
@@ -115,8 +227,20 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
+  startFetchingNext = () => {
+    this.state.status = 'fetching-next';
+  };
+
+  startFetchingPrev = () => {
+    this.state.status = 'fetching-prev';
+  };
+
   setItems = (items: VariableEntity[]) => {
     this.state.items = items;
+  };
+
+  setPendingItem = (item: VariableEntity | null) => {
+    this.state.pendingItem = item;
   };
 
   get scopeId() {
@@ -129,11 +253,35 @@ class Variables extends NetworkReconnectionHandler {
     );
   }
 
+  getSortValues = (fetchType: FetchType) => {
+    const {items} = this.state;
+
+    if (fetchType === 'initial') {
+      if (items.length > 0 && !items[0].isFirst) {
+        return items[0].sortValues ?? undefined;
+      }
+
+      return undefined;
+    }
+    if (fetchType === 'next') {
+      return items[items.length - 1]?.sortValues ?? undefined;
+    }
+    if (fetchType === 'prev') {
+      return items[0]?.sortValues ?? undefined;
+    }
+  };
+
   handlePolling = async (processInstanceId: ProcessInstanceEntity['id']) => {
     try {
-      const response = await fetchVariables({
-        instanceId: processInstanceId,
+      const {items} = this.state;
+
+      const response = await fetchVariables(processInstanceId, {
         scopeId: this.scopeId || processInstanceId,
+        pageSize:
+          items.length <= MAX_VARIABLES_PER_REQUEST
+            ? MAX_VARIABLES_PER_REQUEST
+            : items.length,
+        searchAfterOrEqual: this.getSortValues('initial'),
       });
 
       if (this.shouldCancelOngoingRequests) {
@@ -142,7 +290,7 @@ class Variables extends NetworkReconnectionHandler {
       }
 
       if (this.intervalId !== null && response.ok) {
-        this.handleResponse(await response.json());
+        this.setItems(await response.json());
       }
 
       if (!response.ok) {
@@ -154,33 +302,52 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
-  handleResponse = async (response: VariableEntity[]) => {
-    if (this.state.items.length === 0) {
-      this.setItems(response);
-    } else {
-      const {items} = this.state;
-      const localVariables = differenceWith(
-        items,
-        response,
-        (item, {name, value}) => item.name === name && item.value === value
-      );
-      const serverVariables = differenceBy(response, localVariables, 'name');
+  handlePollingOperation = async (
+    operationId: string,
+    onSuccess: () => void,
+    onError: () => void
+  ) => {
+    try {
+      const response = await getOperation(operationId);
 
-      this.setItems([...serverVariables, ...localVariables]);
+      if (this.operationIntervalId !== null && response.ok) {
+        const operationDetail = await response.json();
+        if (operationDetail[0].state === 'COMPLETED') {
+          this.setPendingItem(null);
+          onSuccess();
+          this.stopPollingOperation();
+        } else if (operationDetail[0].state === 'FAILED') {
+          this.setPendingItem(null);
+          this.stopPollingOperation();
+          onError();
+        }
+      }
+
+      if (!response.ok) {
+        logger.error('Failed to poll Variable Operation');
+      }
+    } catch (error) {
+      logger.error('Failed to poll Variable Operation');
+      logger.error(error);
     }
-
-    this.handleFetchSuccess();
   };
 
   fetchVariables = this.retryOnConnectionLost(
-    async (instanceId: ProcessInstanceEntity['id']) => {
-      this.startFetch();
-
+    async ({
+      fetchType,
+      instanceId,
+      payload,
+    }: {
+      fetchType: FetchType;
+      instanceId: ProcessInstanceEntity['id'];
+      payload: VariablePayload;
+    }) => {
       try {
-        const response = await fetchVariables({
-          instanceId,
-          scopeId: this.scopeId ?? instanceId,
-        });
+        if (fetchType === 'initial') {
+          this.startFetching();
+        }
+
+        const response = await fetchVariables(instanceId, payload);
 
         if (this.shouldCancelOngoingRequests) {
           this.shouldCancelOngoingRequests = false;
@@ -188,7 +355,10 @@ class Variables extends NetworkReconnectionHandler {
         }
 
         if (response.ok) {
-          this.handleResponse(await response.json());
+          const variablesFromResponse = await response.json();
+          this.setItems(this.getVariables(fetchType, variablesFromResponse));
+          this.setLatestFetchDetails(fetchType, variablesFromResponse.length);
+
           this.handleFetchSuccess();
         } else {
           this.handleFetchFailure();
@@ -214,38 +384,51 @@ class Variables extends NetworkReconnectionHandler {
     id,
     name,
     value,
+    onSuccess,
     onError,
   }: {
     id: string;
     name: string;
     value: string;
+    onSuccess: () => void;
     onError: () => void;
   }) => {
-    this.setItems([
-      ...this.state.items,
-      {
-        name,
-        value,
-        hasActiveOperation: true,
-        processInstanceId: id,
-      },
-    ]);
+    this.setPendingItem({
+      name,
+      value,
+      hasActiveOperation: true,
+      isFirst: false,
+      sortValues: null,
+    });
 
     try {
+      this.stopPolling();
       const response = await applyOperation(id, {
-        operationType: 'UPDATE_VARIABLE',
+        operationType: 'ADD_VARIABLE',
         variableScopeId: this.scopeId || undefined,
         variableName: name,
         variableValue: value,
       });
 
-      if (!response.ok) {
-        this.setItems(this.state.items.filter((item) => item.name !== name));
+      if (response.ok) {
+        const {id} = await response.json();
+        this.startPollingOperation({operationId: id, onSuccess, onError});
+        return 'SUCCESSFUL';
+      } else {
+        this.setPendingItem(null);
+        if (response.status === 400) {
+          return 'VALIDATION_ERROR';
+        }
+
         onError();
+        return 'FAILED';
       }
     } catch {
-      this.setItems(this.state.items.filter((item) => item.name !== name));
+      this.setPendingItem(null);
       onError();
+      return 'FAILED';
+    } finally {
+      this.startPolling(this.instanceId);
     }
   };
 
@@ -274,13 +457,15 @@ class Variables extends NetworkReconnectionHandler {
     });
 
     try {
+      this.stopPolling();
+
       const response = await applyOperation(id, {
         operationType: 'UPDATE_VARIABLE',
         variableScopeId: this.scopeId || undefined,
         variableName: name,
         variableValue: value,
       });
-
+      this.startPolling(this.instanceId);
       if (!response.ok) {
         this.setSingleVariable(originalVariable);
         onError();
@@ -292,8 +477,11 @@ class Variables extends NetworkReconnectionHandler {
   };
 
   get hasActiveOperation() {
-    const {items} = this.state;
-    return items.some(({hasActiveOperation}) => hasActiveOperation);
+    const {items, pendingItem} = this.state;
+    return (
+      items.some(({hasActiveOperation}) => hasActiveOperation) ||
+      pendingItem !== null
+    );
   }
 
   get hasNoVariables() {
@@ -305,12 +493,15 @@ class Variables extends NetworkReconnectionHandler {
     this.state.items = this.state.items.filter(
       ({hasActiveOperation}) => !hasActiveOperation
     );
+    this.state.pendingItem = null;
   };
 
-  startPolling = async (instanceId: string) => {
-    this.intervalId = setInterval(() => {
-      this.handlePolling(instanceId);
-    }, 5000);
+  startPolling = async (instanceId: string | null) => {
+    if (instanceId !== null && this.intervalId === null) {
+      this.intervalId = setInterval(() => {
+        this.handlePolling(instanceId);
+      }, 5000);
+    }
   };
 
   stopPolling = () => {
@@ -319,6 +510,29 @@ class Variables extends NetworkReconnectionHandler {
     if (intervalId !== null) {
       clearInterval(intervalId);
       this.intervalId = null;
+    }
+  };
+
+  startPollingOperation = async ({
+    operationId,
+    onSuccess,
+    onError,
+  }: {
+    operationId: string;
+    onSuccess: () => void;
+    onError: () => void;
+  }) => {
+    this.operationIntervalId = setInterval(() => {
+      this.handlePollingOperation(operationId, onSuccess, onError);
+    }, 5000);
+  };
+
+  stopPollingOperation = () => {
+    const {operationIntervalId} = this;
+
+    if (operationIntervalId !== null) {
+      clearInterval(operationIntervalId);
+      this.operationIntervalId = null;
     }
   };
 
@@ -340,7 +554,10 @@ class Variables extends NetworkReconnectionHandler {
     if (this.hasNoVariables) {
       return 'no-variables';
     }
-    if (status === 'fetched' && items.length > 0) {
+    if (
+      ['fetched', 'fetching-next', 'fetching-prev'].includes(status) &&
+      items.length > 0
+    ) {
       return 'variables';
     }
 
@@ -354,10 +571,12 @@ class Variables extends NetworkReconnectionHandler {
       this.shouldCancelOngoingRequests = true;
     }
     this.stopPolling();
+    this.stopPollingOperation();
     this.state = {...DEFAULT_STATE};
     this.disposer?.();
     this.variablesWithActiveOperationsDisposer?.();
     this.fetchVariablesDisposer?.();
+    this.instanceId = null;
   }
 }
 

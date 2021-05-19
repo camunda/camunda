@@ -160,8 +160,9 @@ describe('InstanceHeader', () => {
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.get('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([mockVariable]))
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) => res.once(ctx.json([mockVariable]))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(null))
@@ -180,12 +181,17 @@ describe('InstanceHeader', () => {
       id: mockInstanceWithoutOperations.id,
       name: mockVariable.name,
       value: mockVariable.value,
+      onSuccess: () => {},
       onError: () => {},
     });
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
-    variablesStore.fetchVariables(mockInstanceWithActiveOperation.id);
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: mockInstanceWithActiveOperation.id,
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
   });

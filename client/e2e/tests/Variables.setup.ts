@@ -11,5 +11,21 @@ export async function setup() {
   const instance = await createSingleInstance('onlyIncidentsProcess', 1, {
     testData: 'something',
   });
-  return {instance};
+
+  let variables: Record<string, string> = {};
+
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+  alphabet.forEach((letter1) => {
+    alphabet.forEach((letter2) => {
+      variables[`${letter1}${letter2}`] = `${letter1}${letter2}`;
+    });
+  });
+
+  const instanceWithManyVariables = await createSingleInstance(
+    'onlyIncidentsProcess',
+    1,
+    variables
+  );
+  return {instance, instanceWithManyVariables};
 }

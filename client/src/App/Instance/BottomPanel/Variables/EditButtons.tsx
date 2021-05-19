@@ -4,51 +4,29 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Warning as WarningIcon} from 'modules/components/Warning';
-import {Warning, EditButton, CloseIcon, CheckIcon} from './styled';
+import {
+  Warning,
+  EditButton,
+  CloseIcon,
+  CheckIcon,
+  EditButtonsContainer,
+} from './styled';
 import {useForm, useFormState} from 'react-final-form';
-import {useNotifications} from 'modules/notifications';
-import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
-import {variablesStore} from 'modules/stores/variables';
 import {getError} from './getError';
+import {Warning as WarningIcon} from 'modules/components/Warning';
 
 const EditButtons: React.FC = () => {
-  const {processInstanceId} = useInstancePageParams();
-  const notifications = useNotifications();
   const form = useForm();
-  const {values, initialValues, errors} = useFormState();
+  const {values, initialValues, errors, submitErrors, dirtySinceLastSubmit} =
+    useFormState();
 
-  const handleError = () => {
-    notifications.displayNotification('error', {
-      headline: 'Variable could not be saved',
-    });
-  };
-
-  const exitEditMode = () => {
-    form.reset({});
-  };
-
-  const saveVariable = () => {
-    const params = {
-      id: processInstanceId,
-      name: values.name,
-      value: values.value,
-      onError: handleError,
-    };
-
-    if (initialValues.name === '') {
-      variablesStore.addVariable(params);
-    } else if (initialValues.name === values.name) {
-      variablesStore.updateVariable(params);
-    }
-
-    exitEditMode();
-  };
-
-  const errorMessage = getError(errors);
+  const errorMessage = getError(
+    errors,
+    dirtySinceLastSubmit ? [] : submitErrors
+  );
 
   return (
-    <>
+    <EditButtonsContainer>
       <Warning>
         {errorMessage !== undefined && <WarningIcon title={errorMessage} />}
       </Warning>
@@ -56,7 +34,7 @@ const EditButtons: React.FC = () => {
       <EditButton
         type="button"
         title="Exit edit mode"
-        onClick={exitEditMode}
+        onClick={() => form.reset({})}
         size="large"
         iconButtonTheme="default"
         icon={<CloseIcon />}
@@ -68,12 +46,12 @@ const EditButtons: React.FC = () => {
         disabled={
           initialValues.value === values.value || errorMessage !== undefined
         }
-        onClick={saveVariable}
+        onClick={() => form.submit()}
         size="large"
         iconButtonTheme="default"
         icon={<CheckIcon />}
       />
-    </>
+    </EditButtonsContainer>
   );
 };
 
