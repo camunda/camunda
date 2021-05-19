@@ -72,9 +72,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
         .ifRightOrLeft(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              final var completed =
-                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
-                      element, context);
+              final var completed = stateTransitionBehavior.transitionToCompleted(element, context);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));

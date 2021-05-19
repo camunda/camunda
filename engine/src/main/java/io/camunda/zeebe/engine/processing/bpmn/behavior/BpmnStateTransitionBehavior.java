@@ -155,28 +155,30 @@ public final class BpmnStateTransitionBehavior {
     }
   }
 
-  public <T extends ExecutableFlowNode>
-      BpmnElementContext transitionToCompletedWithParentNotification(
-          final T element, final BpmnElementContext context) {
-    final boolean endOfExecutionPath = element.getOutgoing().isEmpty();
+  /** @return context with updated intent */
+  public <T extends ExecutableFlowNode> BpmnElementContext transitionToCompleted(
+      final T element, final BpmnElementContext context) {
+    final boolean endOfExecutionPath;
+    if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
+      // a completing child process is not considered here.
+      // the corresponding call activity is informed of the
+      // child process completion explicitly by the process processor
+      endOfExecutionPath = false;
+    } else {
+      endOfExecutionPath = element.getOutgoing().isEmpty();
+    }
 
     if (endOfExecutionPath) {
       beforeExecutionPathCompleted(element, context);
     }
-    final var completed = transitionToCompleted(context);
+    final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
+    metrics.elementInstanceCompleted(context);
     if (endOfExecutionPath) {
       if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
         afterExecutionPathCompleted(element, completed);
       }
     }
     return completed;
-  }
-
-  /** @return context with updated intent */
-  public BpmnElementContext transitionToCompleted(final BpmnElementContext context) {
-    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    metrics.elementInstanceCompleted(context);
-    return transitionedContext;
   }
 
   /** @return context with updated intent */

@@ -70,7 +70,10 @@ public final class ProcessProcessor
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    transitionTo(element, context, stateTransitionBehavior::transitionToCompleted);
+    transitionTo(
+        element,
+        context,
+        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
   }
 
   @Override

@@ -91,8 +91,7 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
-    final var completed =
-        stateTransitionBehavior.transitionToCompletedWithParentNotification(element, context);
+    final var completed = stateTransitionBehavior.transitionToCompleted(element, context);
     stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
   }
 
