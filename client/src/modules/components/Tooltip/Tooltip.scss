@@ -76,16 +76,34 @@
     }
   }
 
+  .tooltipBridge:after {
+    content: ' ';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 15px;
+  }
+
   &.top {
     &:after {
       bottom: -9px;
       border-top-color: var(--black);
     }
+
+    .tooltipBridge:after {
+      bottom: -15px;
+    }
   }
 
-  &.bottom:after {
-    bottom: calc(100% - 1px);
-    border-bottom-color: var(--black);
+  &.bottom {
+    &:after {
+      bottom: calc(100% - 1px);
+      border-bottom-color: var(--black);
+    }
+
+    .tooltipBridge:after {
+      top: -15px;
+    }
   }
 }
 

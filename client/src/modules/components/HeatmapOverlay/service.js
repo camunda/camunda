@@ -215,7 +215,7 @@ export async function addDiagramTooltip({
   }
 
   // render tooltip react markup into the html tooltip container
-  await insertReactContent(tooltipContent, overlayHtml);
+  await insertReactContent(<div className="tooltipBridge">{tooltipContent}</div>, overlayHtml);
   overlaysContainer.appendChild(overlayHtml);
   const overlayHeight = overlayHtml.clientHeight;
   overlaysContainer.removeChild(overlayHtml);
