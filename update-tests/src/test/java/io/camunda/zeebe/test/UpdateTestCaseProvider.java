@@ -302,7 +302,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     Awaitility.await("until a message subscription is opened")
         .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(200))
-        .until(() -> state.hasLogContaining("MESSAGE_SUBSCRIPTION", "OPENED"));
+        .until(() -> state.hasLogContaining("MESSAGE_SUBSCRIPTION", "CREATED"));
 
     return -1L;
   }
@@ -311,7 +311,7 @@ public class UpdateTestCaseProvider implements ArgumentsProvider {
     Awaitility.await("until a start event message subscription is opened")
         .atMost(Duration.ofSeconds(5))
         .pollInterval(Duration.ofMillis(200))
-        .until(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "OPENED"));
+        .until(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "CREATED"));
 
     return -1L;
   }
