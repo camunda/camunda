@@ -97,7 +97,7 @@
     <version.failsafe>2.4.0</version.failsafe>
     <version.jqwik>1.5.1</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
-
+    <version.json-smart>2.4.7</version.json-smart>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -716,6 +716,13 @@
         <groupId>com.esotericsoftware</groupId>
         <artifactId>minlog</artifactId>
         <version>${version.minlog}</version>
+      </dependency>
+
+      <!-- primarily for dependency convergence in wiremock, can be removed once fixed upstream -->
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>${version.json-smart}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
