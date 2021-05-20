@@ -3883,10 +3883,10 @@ bowser@^2.8.1:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.11.0.tgz#5ca3c35757a7aa5771500c70a73a9f91ef420a8f"
   integrity sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==
 
-bpmn-js@^8.5.0:
-  version "8.5.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.5.0.tgz#fcfa1dddb67c95c2c5ff8c380759f32fe98fc2e1"
-  integrity sha512-5A6vn6pHO4/qSjOuTmst+kAmbH6zTlWJ3GXwp4oC79sO+eK+GDVhm0ZMBZOJhbsaWLl/oibXmL9mMwX7B+n0fg==
+bpmn-js@^8.6.0:
+  version "8.6.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-8.6.0.tgz#cdfa7fcc98878b0750197f55bc7b68c88eec8d6b"
+  integrity sha512-eDAW3cbqcJBP03RjD+/h077+aoPlLl/07ivEGitF5B3TAdygv6YE4vIvWaPP3bAATOoJE3sG/Jl5HvHvKuYy7w==
   dependencies:
     bpmn-moddle "^7.0.5"
     css.escape "^1.5.1"
