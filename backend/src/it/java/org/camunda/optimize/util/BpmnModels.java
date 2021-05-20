@@ -288,7 +288,7 @@ public class BpmnModels {
       .scriptTask("scriptTask")
         .scriptFormat("groovy")
         .scriptText("sleep(10)")
-      .connectTo("mergeExclusiveGateway")
+      .connectTo(START_LOOP)
       .done();
     // @formatter:on
   }

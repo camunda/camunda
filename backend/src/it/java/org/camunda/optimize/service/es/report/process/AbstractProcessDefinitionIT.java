@@ -128,6 +128,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     );
   }
 
+  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessOnTenant(final String key,
+                                                                                 final String tenantId) {
+    final BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram(key);
+    return engineIntegrationExtension.deployAndStartProcess(processModel, tenantId);
+  }
+
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
     return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
   }
@@ -208,11 +214,24 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected String deployAndStartMultiTenantSimpleServiceTaskProcess(final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
-    deployedTenants.stream()
-      .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
-    deployedTenants
-      .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
+    deployedTenants.forEach(tenant -> {
+      if (tenant != null) {
+        engineIntegrationExtension.createTenant(tenant);
+      }
+      deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant);
+    });
+
+    return processKey;
+  }
+
+  protected String deployAndStartMultiTenantSimpleUserTaskTaskProcess(final List<String> deployedTenants) {
+    final String processKey = "multiTenantProcess";
+    deployedTenants.forEach(tenant -> {
+      if (tenant != null) {
+        engineIntegrationExtension.createTenant(tenant);
+      }
+      deployAndStartSimpleUserTaskProcessOnTenant(processKey, tenant);
+    });
 
     return processKey;
   }
@@ -345,7 +364,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final String userTaskKey,
                                              final Number durationInMs) {
-    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstanceDto.getId(),
+      userTaskKey,
+      durationInMs.longValue()
+    );
   }
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,

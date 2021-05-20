@@ -15,10 +15,9 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createIdentityLinkFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createCandidateGroupFilterQuery;
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 @Component
@@ -30,22 +29,13 @@ public class CandidateGroupQueryFilter implements QueryFilter<IdentityLinkFilter
     if (!CollectionUtils.isEmpty(candidateGroupFilters)) {
       final List<QueryBuilder> filters = query.filter();
       for (IdentityLinkFilterDataDto candidateGroupFilter : candidateGroupFilters) {
-        // TODO revert this change once proper flownodetype filter for userTasks has been added in
-        //  ProcessReportDataDto.getAdditionalFiltersForReportType with OPT-5203
         filters.add(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            createIdentityLinkFilterQuery(
-              candidateGroupFilter,
-              USER_TASK_CANDIDATE_GROUPS,
-              createUserTaskFlowNodeTypeFilter()
-            ),
+            createCandidateGroupFilterQuery(candidateGroupFilter, createUserTaskFlowNodeTypeFilter()),
             ScoreMode.None
           )
         );
-//        filters.add(
-//          nestedQuery(FLOW_NODE_INSTANCES, createCandidateGroupFilterQuery(candidateGroupFilter), ScoreMode.None)
-//        );
       }
     }
   }

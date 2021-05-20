@@ -124,6 +124,10 @@ public class ProcessFilterBuilder {
     return CompletedOrCanceledFlowNodesOnlyFilterBuilder.construct(this);
   }
 
+  public InstancesContainingUserTasksFilterBuilder userTaskFlowNodesOnly() {
+    return InstancesContainingUserTasksFilterBuilder.construct(this);
+  }
+
   void addFilter(ProcessFilterDto<?> result) {
     filters.add(result);
   }

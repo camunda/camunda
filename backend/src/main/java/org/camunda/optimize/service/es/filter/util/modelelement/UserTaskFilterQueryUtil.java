@@ -96,15 +96,29 @@ public class UserTaskFilterQueryUtil extends ModelElementFilterQueryUtil {
         .forEach(filter -> {
           if (filter instanceof CandidateGroupFilterDto) {
             final IdentityLinkFilterDataDto filterData = (IdentityLinkFilterDataDto) filter.getData();
-            createIdentityLinkFilterQuery(filterData, USER_TASK_CANDIDATE_GROUPS, viewFilterInstanceQuery);
+            createCandidateGroupFilterQuery(filterData, viewFilterInstanceQuery);
           } else if (filter instanceof AssigneeFilterDto) {
             final IdentityLinkFilterDataDto filterData = (IdentityLinkFilterDataDto) filter.getData();
-            createIdentityLinkFilterQuery(filterData, USER_TASK_ASSIGNEE, viewFilterInstanceQuery);
+            createAssigneeFilterQuery(filterData, viewFilterInstanceQuery);
           }
         });
       return Optional.of(nestedQuery(NESTED_DOC, viewFilterInstanceQuery, ScoreMode.None));
     }
     return Optional.empty();
+  }
+
+  public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
+                                                       final BoolQueryBuilder queryBuilder) {
+    return createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE, queryBuilder);
+  }
+
+  public static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter,
+                                                             final BoolQueryBuilder queryBuilder) {
+    return createIdentityLinkFilterQuery(
+      candidateGroupFilter,
+      USER_TASK_CANDIDATE_GROUPS,
+      queryBuilder
+    );
   }
 
   private static void addFlowNodeStatusFilter(final BoolQueryBuilder boolQuery,
@@ -155,18 +169,21 @@ public class UserTaskFilterQueryUtil extends ModelElementFilterQueryUtil {
       .forEach(candidateFilterData -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(candidateFilterData)));
   }
 
-  public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
+  private static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
     return createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE, boolQuery());
   }
 
-  public static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
-    return createIdentityLinkFilterQuery(candidateGroupFilter, USER_TASK_CANDIDATE_GROUPS, boolQuery());
+  private static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
+    return createIdentityLinkFilterQuery(
+      candidateGroupFilter,
+      USER_TASK_CANDIDATE_GROUPS,
+      boolQuery()
+    );
   }
 
-  // TODO make private again once OPT-5203 is done and CandidateGroupQueryFilter and AssigneeQueryFilter have been adjusted
-  public static QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto identityFilter,
-                                                           final String valueField,
-                                                           final BoolQueryBuilder queryBuilder) {
+  private static QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto identityFilter,
+                                                            final String valueField,
+                                                            final BoolQueryBuilder queryBuilder) {
     if (CollectionUtils.isEmpty(identityFilter.getValues())) {
       throw new OptimizeValidationException("Filter values are not allowed to be empty.");
     }
