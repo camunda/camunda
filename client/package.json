@@ -46,6 +46,7 @@
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
+    "start-backend-withZeebe": "node scripts/start-backend zeebe",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js",
     "prepare": "cd .. && husky install client/.husky"

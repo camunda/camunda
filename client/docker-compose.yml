@@ -67,4 +67,17 @@ services:
       retries: 3
     volumes:
       - ./databaseDumps:/dump/
-
+  zeebe:
+    image: camunda/zeebe:${ZEEBE_VERSION:-1.0.0}
+    profiles: ['zeebe']
+    container_name: zeebe
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+    restart: always
+    volumes:
+      - ../zeebe-application.yml:/usr/local/zeebe/config/application.yaml
+    depends_on:
+      - elasticsearch
