@@ -9,6 +9,7 @@ package io.zeebe.db;
 
 import java.io.File;
 import java.util.Optional;
+import org.rocksdb.RocksDBException;
 
 /**
  * The zeebe database, to store key value pairs in different column families. The column families
@@ -64,4 +65,19 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * @return {@code true} if the column is empty, otherwise {@code false}
    */
   boolean isEmpty(ColumnFamilyType column, DbContext context);
+
+  /**
+   * Run a manual compaction on the state. It is recommended to disable auto compaction before
+   * calling this method and re-enable it after by calling {@link ZeebeDb#enableAutoCompaction()}
+   *
+   * @param outputLevelManualCompaction the level to which the files should be compacted
+   */
+  void compactFiles(final int outputLevelManualCompaction);
+
+  /**
+   * Enable auto compaction
+   *
+   * @throws RocksDBException when it cannot change the compaction configuration
+   */
+  void enableAutoCompaction() throws RocksDBException;
 }

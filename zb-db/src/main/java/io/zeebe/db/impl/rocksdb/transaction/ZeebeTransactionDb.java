@@ -27,17 +27,22 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.CompactionOptions;
 import org.rocksdb.DBOptions;
+import org.rocksdb.LevelMetaData;
+import org.rocksdb.MutableColumnFamilyOptions;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.RocksObject;
+import org.rocksdb.SstFileMetaData;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
@@ -170,6 +175,43 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   public boolean isEmpty(final ColumnFamilyNames columnFamilyName, final DbContext context) {
     final var columnFamilyHandle = columnFamilyMap.get(columnFamilyName);
     return isEmpty(columnFamilyHandle, context);
+  }
+
+  @Override
+  public void compactFiles(final int outputLevelManualCompaction) {
+    for (final ColumnFamilyHandle handle : handelToEnumMap.values()) {
+      compactFiles(handle, outputLevelManualCompaction);
+    }
+  }
+
+  @Override
+  public void enableAutoCompaction() throws RocksDBException {
+    final var options =
+        MutableColumnFamilyOptions.builder().setDisableAutoCompactions(false).build();
+    for (final ColumnFamilyHandle handle : handelToEnumMap.values()) {
+      optimisticTransactionDB.setOptions(handle, options);
+    }
+  }
+
+  private void compactFiles(
+      final ColumnFamilyHandle handle, final int outputLevelManualCompaction) {
+    final var columnFamilyMetadata =
+        optimisticTransactionDB.getBaseDB().getColumnFamilyMetaData(handle);
+    final var filenames =
+        columnFamilyMetadata.levels().stream()
+            .map(LevelMetaData::files)
+            .flatMap(files -> files.stream().map(SstFileMetaData::fileName))
+            .collect(Collectors.toList());
+
+    if (!filenames.isEmpty()) {
+      try {
+        optimisticTransactionDB.compactFiles(
+            new CompactionOptions(), handle, filenames, outputLevelManualCompaction, -1, null);
+      } catch (final RocksDBException e) {
+        // It is safe to ignore the exception as it does not result in any inconsistent state.
+        // Compaction may not have been successful.
+      }
+    }
   }
 
   protected void put(
