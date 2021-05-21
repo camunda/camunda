@@ -83,7 +83,7 @@
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^12.0.0",
     "license-checker": "^25.0.1",
-    "lint-staged": "^10.5.4",
+    "lint-staged": "^11.0.0",
     "mock-socket": "^9.0.3",
     "node-fetch": "^2.6.1",
     "node-sass": "^4.14.1",
