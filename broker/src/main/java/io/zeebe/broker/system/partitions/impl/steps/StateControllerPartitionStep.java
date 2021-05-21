@@ -42,7 +42,9 @@ public class StateControllerPartitionStep implements PartitionStep {
             context.getSnapshotReplication(),
             new AtomixRecordEntrySupplierImpl(
                 context.getZeebeIndexMapping(), context.getRaftLogReader()),
-            StatePositionSupplier::getHighestExportedPosition);
+            StatePositionSupplier::getHighestExportedPosition,
+            rocksDbConfig.getOutputLevelManualCompaction(),
+            rocksDbConfig.getTriggerFileCountManualCompaction());
 
     context.setSnapshotController(stateController);
     return CompletableActorFuture.completed(null);

@@ -65,7 +65,9 @@ public final class StateControllerImplTest {
             l ->
                 Optional.ofNullable(
                     new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
-            db -> exporterPosition.get());
+            db -> exporterPosition.get(),
+            1,
+            1000);
 
     autoCloseableRule.manage(snapshotController);
     autoCloseableRule.manage(store);
@@ -217,7 +219,7 @@ public final class StateControllerImplTest {
     // given
 
     // when
-    snapshotController.recover();
+    snapshotController.recover(false);
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
@@ -234,7 +236,7 @@ public final class StateControllerImplTest {
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     snapshotController.close();
-    snapshotController.recover();
+    snapshotController.recover(false);
     assertThat(snapshotController.isDbOpened()).isFalse();
     wrapper.wrap(snapshotController.openDb());
 
@@ -260,7 +262,7 @@ public final class StateControllerImplTest {
     snapshotController.close();
 
     // when
-    snapshotController.recover();
+    snapshotController.recover(false);
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -280,7 +282,7 @@ public final class StateControllerImplTest {
     corruptLatestSnapshot();
 
     // when/then
-    assertThatThrownBy(() -> snapshotController.recover())
+    assertThatThrownBy(() -> snapshotController.recover(false))
         .isInstanceOf(RuntimeException.class)
         .hasMessage("Failed to recover from snapshots");
   }

@@ -47,6 +47,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private final AtomixRecordEntrySupplier entrySupplier;
 
   private final SnapshotReplicationMetrics metrics;
+  private final int outputLevelManualCompaction;
+  private final int triggerFileCountManualCompaction;
 
   private ZeebeDb db;
   private final ConstructableSnapshotStore constructableSnapshotStore;
@@ -60,7 +62,9 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       final Path runtimeDirectory,
       final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
-      final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
+      final ToLongFunction<ZeebeDb> exporterPositionSupplier,
+      final int outputLevelManualCompaction,
+      final int triggerFileCountManualCompaction) {
     this.constructableSnapshotStore = constructableSnapshotStore;
     this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
@@ -69,6 +73,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     this.entrySupplier = entrySupplier;
     this.replication = replication;
     metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
+    this.outputLevelManualCompaction = outputLevelManualCompaction;
+    this.triggerFileCountManualCompaction = triggerFileCountManualCompaction;
   }
 
   @Override
@@ -108,7 +114,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   }
 
   @Override
-  public void recover() throws Exception {
+  public void recover(final boolean shouldForceCompactionAfterRecovery) throws Exception {
 
     if (Files.exists(runtimeDirectory)) {
       FileUtil.deleteFolder(runtimeDirectory);
@@ -125,6 +131,10 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
         // open database to verify that the snapshot is recoverable
         openDb();
         LOG.debug("Recovered state from snapshot '{}'", snapshot);
+
+        if (shouldForceCompactionAfterRecovery) {
+          tryCompactState();
+        }
       } catch (final Exception exception) {
         LOG.error(
             "Failed to open snapshot '{}'. No snapshots available to recover from. Manual action is required.",
@@ -150,6 +160,24 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   @Override
   public int getValidSnapshotsCount() {
     return constructableSnapshotStore.getLatestSnapshot().isPresent() ? 1 : 0;
+  }
+
+  private void tryCompactState() {
+    final var filesBeforeCompaction = runtimeDirectory.toFile().listFiles().length;
+
+    if (filesBeforeCompaction < triggerFileCountManualCompaction) {
+      return;
+    }
+    LOG.info(
+        "Running forced compaction of the state in {} with {} files.",
+        runtimeDirectory,
+        filesBeforeCompaction);
+    db.compactFiles(outputLevelManualCompaction);
+    final var filesAfterCompaction = runtimeDirectory.toFile().listFiles().length;
+    LOG.info(
+        "Completed forced compaction of the state in {}. The number of files is {}",
+        runtimeDirectory,
+        filesAfterCompaction);
   }
 
   @Override

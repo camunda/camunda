@@ -25,8 +25,18 @@ public class ZeebeDbPartitionStep implements PartitionStep {
 
     final ZeebeDb zeebeDb;
     try {
-      context.getSnapshotController().recover();
+
+      final boolean shouldForceCompactionAfterRecovery =
+          context
+              .getBrokerCfg()
+              .getExperimental()
+              .getRocksdb()
+              .isEnableManualCompactionOnRecovery();
+      context.getSnapshotController().recover(shouldForceCompactionAfterRecovery);
       zeebeDb = context.getSnapshotController().openDb();
+      // autocompaction would be disabled on startup to prevent the interference with the forced
+      // manual compaction.
+      renableAutoCompaction(zeebeDb);
     } catch (final Exception e) {
       Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
 
@@ -52,5 +62,15 @@ public class ZeebeDbPartitionStep implements PartitionStep {
   @Override
   public String getName() {
     return "ZeebeDb";
+  }
+
+  private void renableAutoCompaction(final ZeebeDb zeebeDb) {
+    try {
+      zeebeDb.enableAutoCompaction();
+    } catch (final Exception e) {
+      Loggers.SYSTEM_LOGGER.error(
+          "Could not enable auto compaction. This might result in large snapshots. Will continue processing anyway.",
+          e);
+    }
   }
 }

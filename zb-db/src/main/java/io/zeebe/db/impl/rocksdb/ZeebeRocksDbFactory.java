@@ -136,6 +136,10 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
     final int level0CompactionTrigger = 4;
     columnFamilyOptions
         // compaction
+        // temporary disable auto compaction so that it doesn't interfere with the forced manual
+        // compaction during recovery.
+        // Auto compaction should be explicitly re-enabled after manual compaction is completed.
+        .setDisableAutoCompactions(true)
         .setLevelCompactionDynamicLevelBytes(true)
         .setCompactionPriority(CompactionPriority.OldestSmallestSeqFirst)
         .setCompactionStyle(CompactionStyle.LEVEL)

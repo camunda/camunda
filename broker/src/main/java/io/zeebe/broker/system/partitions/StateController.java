@@ -24,8 +24,13 @@ public interface StateController extends AutoCloseable {
   /** Registers to consumes replicated snapshots. */
   void consumeReplicatedSnapshots();
 
-  /** Recovers the state from the latest snapshot. */
-  void recover() throws Exception;
+  /**
+   * Recovers the state from the latest snapshot.
+   *
+   * @param shouldForceCompactionAfterRecovery if true a manual compaction on the state is
+   *     triggered.
+   */
+  void recover(final boolean shouldForceCompactionAfterRecovery) throws Exception;
 
   /**
    * Opens the database from the latest snapshot.
