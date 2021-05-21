@@ -59,7 +59,7 @@ public class DecisionDefinitionWriter {
     Collections.emptyMap()
   );
 
-  public void importProcessDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+  public void importDecisionDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     log.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
@@ -102,12 +102,12 @@ public class DecisionDefinitionWriter {
       esClient,
       importItemName,
       decisionDefinitionOptimizeDtos,
-      this::addImportDecisionDefinitionXmlRequest
+      this::addImportDecisionDefinitionRequest
     );
   }
 
-  private void addImportDecisionDefinitionXmlRequest(final BulkRequest bulkRequest,
-                                                     final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+  private void addImportDecisionDefinitionRequest(final BulkRequest bulkRequest,
+                                                  final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,
       decisionDefinitionDto,
