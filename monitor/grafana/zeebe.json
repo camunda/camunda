@@ -9300,7 +9300,7 @@
           },
           "gridPos": {
             "h": 10,
-            "w": 8,
+            "w": 12,
             "x": 0,
             "y": 47
           },
@@ -9348,6 +9348,101 @@
           "yBucketSize": null
         },
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "The rate of failure of flush operations, averaged over 15s intervals",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 10,
+            "w": 12,
+            "x": 12,
+            "y": 47
+          },
+          "hiddenSeries": false,
+          "id": 255,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.5.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "exemplar": true,
+              "expr": "rate(zeebe_elasticsearch_exporter_failed_flush_total{namespace=~\"$namespace\", pod=~\"$pod\"}[15s]) / rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[15s])",
+              "interval": "",
+              "legendFormat": "{{pod}} Exporter {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Elasticsearch Exporter (Flush Failure Rate)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:58",
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:59",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "cards": {
             "cardPadding": null,
             "cardRound": null
@@ -9369,9 +9464,9 @@
           },
           "gridPos": {
             "h": 10,
-            "w": 8,
-            "x": 8,
-            "y": 47
+            "w": 12,
+            "x": 0,
+            "y": 57
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9432,9 +9527,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 10,
-            "w": 8,
-            "x": 16,
-            "y": 47
+            "w": 12,
+            "x": 12,
+            "y": 57
           },
           "hiddenSeries": false,
           "id": 185,
@@ -9538,7 +9633,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 57
+            "y": 67
           },
           "height": "400",
           "hiddenSeries": false,
