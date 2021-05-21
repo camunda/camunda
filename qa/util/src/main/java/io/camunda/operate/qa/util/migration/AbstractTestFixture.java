@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 public abstract class AbstractTestFixture implements TestFixture {
@@ -111,7 +112,7 @@ public abstract class AbstractTestFixture implements TestFixture {
 
   protected void startZeebe(final String version) {
     logger.info("************ Starting Zeebe {} ************", version);
-    broker = new ZeebeBrokerContainer("camunda/zeebe:" + version)
+    broker = new ZeebeBrokerContainer(DockerImageName.parse("camunda/zeebe:" + version))
         .withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data")
         .withNetwork(testContext.getNetwork())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");

@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 public class TestContainerUtil {
@@ -49,7 +50,7 @@ public class TestContainerUtil {
   private RestHighLevelClient esClient;
 
   public void startZeebe(final String dataFolderPath, final String version) {
-    broker = new ZeebeBrokerContainer("camunda/zeebe:" + version)
+    broker = new ZeebeBrokerContainer(DockerImageName.parse("camunda/zeebe:" + version))
         .withFileSystemBind(dataFolderPath, "/usr/local/zeebe/data")
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
         .withNetwork(getNetwork());
