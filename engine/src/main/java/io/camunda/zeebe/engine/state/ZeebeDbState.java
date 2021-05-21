@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
@@ -66,6 +68,7 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
+  private final MutableMigrationState mutableMigrationState;
 
   private final int partitionId;
 
@@ -99,6 +102,8 @@ public class ZeebeDbState implements MutableZeebeState {
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
+
+    mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -164,6 +169,11 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public MutableEventScopeInstanceState getEventScopeInstanceState() {
     return eventScopeInstanceState;
+  }
+
+  @Override
+  public MutableMigrationState getMigrationState() {
+    return mutableMigrationState;
   }
 
   @Override
