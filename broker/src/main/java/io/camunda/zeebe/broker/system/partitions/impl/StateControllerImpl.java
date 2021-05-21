@@ -23,7 +23,6 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -109,10 +108,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public void recover() throws Exception {
-
-    if (Files.exists(runtimeDirectory)) {
-      FileUtil.deleteFolder(runtimeDirectory);
-    }
+    FileUtil.deleteFolderIfExists(runtimeDirectory);
 
     final var optLatestSnapshot = constructableSnapshotStore.getLatestSnapshot();
     if (optLatestSnapshot.isPresent()) {
@@ -156,9 +152,11 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   public void close() throws Exception {
     if (db != null) {
       db.close();
-      LOG.debug("Closed database from '{}'.", runtimeDirectory);
       db = null;
+      LOG.debug("Closed database from '{}'.", runtimeDirectory);
     }
+
+    FileUtil.deleteFolderIfExists(runtimeDirectory);
   }
 
   boolean isDbOpened() {
