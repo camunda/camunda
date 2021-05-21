@@ -549,3 +549,19 @@
         # This is ok because Zeebe has its own way to recover after crash. This flag may have a performance impact.
         # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_DISABLEWAL
         # disableWal = false;
+
+        # If true, triggers a manual compaction on the state when the state is recovered from a snapshot.
+        # That happens during startup or when a leader change happens. This is useful when the state has thousands of file.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_ENABLEMANUALCOMPACTIONONRECOVERY
+        # enableManualCompactionOnRecovery = true;
+
+        # The level to which the files should be compacted during manual compaction. If a lower level is set and there are files
+        # in higher level, rocksdb may compact them to the higher level. This setting is used only when enableManualCompactionOnRecovery is true.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_OUTPUTLEVELMANUALCOMPACTION
+        # outputLevelManualCompaction = 1;
+
+        # When manual compaction on recovery is enabled, the compaction happend only if the number of files in the state
+        # is more than the given triggerFileCountManualCompaction. This is useful to prevent unnecessary compaction.
+        # This setting is used only when enableManualCompactionOnRecovery is true.
+        # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_ROCKSDB_TRIGGERFILECOUNTMANUALCOMPACTION
+        # triggerFileCountManualCompaction = 1000;
