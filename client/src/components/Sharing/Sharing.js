@@ -121,40 +121,48 @@ export class Sharing extends React.Component {
     }
 
     const isEmbeddedReport = type === 'report' && params.get('mode') === 'embed';
+    const header = params.get('header');
+    const showTitle = header !== 'linkOnly';
 
     const SharingView = this.getSharingView();
     return (
       <div className={classnames('Sharing', {compact: isEmbeddedReport})}>
-        <div className="header">
-          <div className="title-container">
-            <EntityName
-              details={
-                type === 'report' ? (
-                  <ReportDetails report={evaluationResult} />
-                ) : (
-                  <LastModifiedInfo entity={evaluationResult} />
-                )
-              }
-            >
-              {evaluationResult.name}
-            </EntityName>
-            <a
-              href={this.getEntityUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={classnames('Button title-button', {
-                main: !isEmbeddedReport,
-                small: isEmbeddedReport,
-              })}
-            >
-              <Icon type="share" renderedIn="span" />
-              <span>
-                {isEmbeddedReport ? t('common.open') : t('common.sharing.openInOptimize')}
-              </span>
-            </a>
+        {header !== 'hidden' && (
+          <div className="header">
+            <div className="title-container">
+              {showTitle && (
+                <EntityName
+                  details={
+                    type === 'report' ? (
+                      <ReportDetails report={evaluationResult} />
+                    ) : (
+                      <LastModifiedInfo entity={evaluationResult} />
+                    )
+                  }
+                >
+                  {evaluationResult.name}
+                </EntityName>
+              )}
+              {header !== 'titleOnly' && (
+                <a
+                  href={this.getEntityUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={classnames('Button title-button', {
+                    main: !isEmbeddedReport,
+                    small: isEmbeddedReport,
+                  })}
+                >
+                  <Icon type="share" renderedIn="span" />
+                  <span>
+                    {isEmbeddedReport ? t('common.open') : t('common.sharing.openInOptimize')}
+                  </span>
+                </a>
+              )}
+            </div>
+            {type === 'report' && showTitle && <InstanceCount report={evaluationResult} />}
           </div>
-          {type === 'report' && <InstanceCount report={evaluationResult} />}
-        </div>
+        )}
         <div className="content">
           {SharingView}
           {isEmbeddedReport && (

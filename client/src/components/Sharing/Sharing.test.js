@@ -214,3 +214,45 @@ it('should show a compact version and lock scroll when a shared report is embedd
   expect(node.find('.Sharing')).toHaveClassName('compact');
   expect(node.find('.title-button')).toHaveClassName('small');
 });
+
+it('should only show the title and hide the link to Optimize', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?header=titleOnly';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find(InstanceCount)).toExist();
+  expect(node.find('EntityName')).toExist();
+  expect(node.find('.title-button')).not.toExist();
+});
+
+it('should only show the link to Optimize and hide the title', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?header=linkOnly';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find('.title-button')).toExist();
+  expect(node.find('EntityName')).not.toExist();
+});
+
+it('should hide the whole header if specified', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?header=hidden';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find('.header')).not.toExist();
+});
