@@ -85,7 +85,9 @@ public final class AsyncSnapshotingTest {
                 Optional.of(
                     new Indexed(
                         l + 100, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
-            db -> Long.MAX_VALUE);
+            db -> Long.MAX_VALUE,
+            1,
+            1000);
 
     snapshotController.openDb();
     autoCloseableRule.manage(snapshotController);

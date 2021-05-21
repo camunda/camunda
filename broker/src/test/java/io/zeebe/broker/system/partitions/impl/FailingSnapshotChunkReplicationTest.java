@@ -65,7 +65,9 @@ public final class FailingSnapshotChunkReplicationTest {
             l ->
                 Optional.of(
                     new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
-            db -> Long.MAX_VALUE);
+            db -> Long.MAX_VALUE,
+            1,
+            1000);
     senderStore.addSnapshotListener(replicatorSnapshotController);
 
     receiverSnapshotController =
@@ -79,7 +81,9 @@ public final class FailingSnapshotChunkReplicationTest {
             l ->
                 Optional.ofNullable(
                     new Indexed(l, new ZeebeEntry(1, System.currentTimeMillis(), 1, 10, null), 0)),
-            db -> Long.MAX_VALUE);
+            db -> Long.MAX_VALUE,
+            1,
+            1000);
     receiverStore.addSnapshotListener(receiverSnapshotController);
 
     autoCloseableRule.manage(replicatorSnapshotController);
