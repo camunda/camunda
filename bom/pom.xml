@@ -29,7 +29,7 @@
     <version.netty>4.1.65.Final</version.netty>
 
     <version.java>11</version.java>
-    <plugin.version.javadoc>3.2.0</plugin.version.javadoc>
+    <plugin.version.javadoc>3.3.0</plugin.version.javadoc>
   </properties>
 
   <dependencyManagement>
