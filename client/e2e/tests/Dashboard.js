@@ -115,6 +115,37 @@ test('sharing', async (t) => {
   await t.expect(e.report.textContent).contains('Start Date');
 });
 
+test('sharing header parameters', async (t) => {
+  await u.createNewDashboard(t);
+
+  await u.save(t);
+
+  await t.click(e.shareButton);
+  await t.click(e.shareSwitch);
+
+  const shareUrl = await e.shareUrl.value;
+
+  await t.navigateTo(shareUrl + '?mode=embed');
+
+  await t.expect(e.shareOptimizeIcon.visible).ok();
+  await t.expect(e.shareTitle.visible).ok();
+  await t.expect(e.shareLink.visible).ok();
+
+  await t.navigateTo(shareUrl + '?mode=embed&header=hidden');
+
+  await t.expect(e.shareHeader.exists).notOk();
+
+  await t.navigateTo(shareUrl + '?header=titleOnly');
+
+  await t.expect(e.shareTitle.exists).ok();
+  await t.expect(e.shareLink.exists).notOk();
+
+  await t.navigateTo(shareUrl + '?mode=embed&header=linkOnly');
+
+  await t.expect(e.shareTitle.exists).notOk();
+  await t.expect(e.shareLink.exists).ok();
+});
+
 test('sharing with filters', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
