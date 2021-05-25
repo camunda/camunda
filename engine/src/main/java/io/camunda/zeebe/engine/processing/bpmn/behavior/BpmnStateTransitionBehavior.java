@@ -156,7 +156,7 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /** @return context with updated intent */
-  public <T extends ExecutableFlowNode> BpmnElementContext transitionToCompleted(
+  public <T extends ExecutableFlowNode> Either<Failure, BpmnElementContext> transitionToCompleted(
       final T element, final BpmnElementContext context) {
     final boolean endOfExecutionPath;
     if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
@@ -169,16 +169,23 @@ public final class BpmnStateTransitionBehavior {
     }
 
     if (endOfExecutionPath) {
-      beforeExecutionPathCompleted(element, context);
+      final var failureOrSuccess =
+          beforeExecutionPathCompleted(element, context).map(ok -> context);
+      if (failureOrSuccess.isLeft()) {
+        return failureOrSuccess;
+      }
     }
+
     final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
     metrics.elementInstanceCompleted(context);
+
     if (endOfExecutionPath) {
       if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
+        // afterExecutionPathCompleted is not allowed to fail (incident would be unresolvable)
         afterExecutionPathCompleted(element, completed);
       }
     }
-    return completed;
+    return Either.right(completed);
   }
 
   /** @return context with updated intent */
@@ -402,17 +409,14 @@ public final class BpmnStateTransitionBehavior {
     element.getOutgoing().forEach(sequenceFlow -> takeSequenceFlow(context, sequenceFlow));
   }
 
-  public void beforeExecutionPathCompleted(
+  public Either<Failure, ?> beforeExecutionPathCompleted(
       final ExecutableFlowElement element, final BpmnElementContext childContext) {
-
-    invokeElementContainerIfPresent(
+    return invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) -> {
-          containerProcessor.beforeExecutionPathCompleted(
-              containerScope, containerContext, childContext);
-          return Either.right(null);
-        });
+        (containerProcessor, containerScope, containerContext) ->
+            containerProcessor.beforeExecutionPathCompleted(
+                containerScope, containerContext, childContext));
   }
 
   // CALL ACTIVITY SPECIFIC

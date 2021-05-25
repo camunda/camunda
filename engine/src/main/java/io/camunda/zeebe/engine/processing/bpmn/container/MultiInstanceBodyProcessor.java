@@ -91,8 +91,11 @@ public final class MultiInstanceBodyProcessor
         .getOutputCollection()
         .ifPresent(variableName -> stateBehavior.propagateVariable(context, variableName));
 
-    final var completed = stateTransitionBehavior.transitionToCompleted(element, context);
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+    stateTransitionBehavior
+        .transitionToCompleted(element, context)
+        .ifRightOrLeft(
+            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
@@ -142,14 +145,21 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void beforeExecutionPathCompleted(
+  public Either<Failure, ?> beforeExecutionPathCompleted(
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
     final var updatedOrFailure = updateOutputCollection(element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
-      incidentBehavior.createIncident(updatedOrFailure.getLeft(), childContext);
+      return updatedOrFailure;
     }
+
+    if (!element.getLoopCharacteristics().isSequential()) {
+      return Either.right(null);
+    }
+
+    // test that input collection variable can be evaluated correctly
+    return readInputCollectionVariable(element, flowScopeContext).map(ok -> null);
   }
 
   @Override
@@ -165,6 +175,7 @@ public final class MultiInstanceBodyProcessor
 
       final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
       if (inputCollectionOrFailure.isLeft()) {
+        // this incident is un-resolvable
         incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
         return;
       }
