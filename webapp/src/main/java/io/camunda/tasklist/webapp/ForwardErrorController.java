@@ -71,9 +71,4 @@ public class ForwardErrorController implements ErrorController {
   private boolean isSSOProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(TasklistURIs.SSO_AUTH_PROFILE);
   }
-
-  @Override
-  public String getErrorPath() {
-    return "/error";
-  }
 }
