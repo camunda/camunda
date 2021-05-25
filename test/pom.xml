@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.26.4-SNAPSHOT</version>
+    <version>0.26.4</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath>../parent</relativePath>
   </parent>
