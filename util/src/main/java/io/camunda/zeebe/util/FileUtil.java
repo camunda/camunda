@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public final class FileUtil {
@@ -51,57 +52,19 @@ public final class FileUtil {
    * {@link #deleteFolder(Path)} preceded by a {@link Files#exists(Path, LinkOption...)}, as that is
    * more prone to race conditions.
    *
-   * @param directory the directory to delete (if or any of its files exists)
+   * @param folder the directory to delete (if or any of its files exists)
    * @throws IOException on failure to scan the directory and/or delete the file
    */
-  public static void deleteFolderIfExists(final Path directory) throws IOException {
-    Files.walkFileTree(
-        directory,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-              throws IOException {
-            try {
-              Files.delete(file);
-            } catch (final NoSuchFileException ignored) {
-              // ignored
-            }
-
-            return CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-              throws IOException {
-            try {
-              Files.delete(dir);
-            } catch (final NoSuchFileException ignored) {
-              // ignored
-            }
-
-            return CONTINUE;
-          }
-        });
+  public static void deleteFolderIfExists(final Path folder) throws IOException {
+    try {
+      Files.walkFileTree(folder, new FolderDeleter(Files::deleteIfExists));
+    } catch (final NoSuchFileException ignored) {
+      // ignored
+    }
   }
 
-  public static void deleteFolder(final Path directory) throws IOException {
-    Files.walkFileTree(
-        directory,
-        new SimpleFileVisitor<>() {
-          @Override
-          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-              throws IOException {
-            Files.delete(file);
-            return CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-              throws IOException {
-            Files.delete(dir);
-            return CONTINUE;
-          }
-        });
+  public static void deleteFolder(final Path folder) throws IOException {
+    Files.walkFileTree(folder, new FolderDeleter(Files::delete));
   }
 
   public static void copySnapshot(final Path runtimeDirectory, final Path snapshotDirectory)
@@ -156,5 +119,32 @@ public final class FileUtil {
     public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) {
       return CONTINUE;
     }
+  }
+
+  private static final class FolderDeleter extends SimpleFileVisitor<Path> {
+    private final FileDeleter deleter;
+
+    private FolderDeleter(final FileDeleter deleter) {
+      this.deleter = Objects.requireNonNull(deleter);
+    }
+
+    @Override
+    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+        throws IOException {
+      deleter.delete(file);
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
+        throws IOException {
+      deleter.delete(dir);
+      return CONTINUE;
+    }
+  }
+
+  @FunctionalInterface
+  private interface FileDeleter {
+    void delete(Path path) throws IOException;
   }
 }
