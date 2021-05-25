@@ -128,32 +128,28 @@ public class ElasticsearchClient {
       throw new ElasticsearchExporterException("Failed to flush bulk", e);
     }
 
-    final var success = checkBulkResponse(bulkResponse);
-    if (!success) {
-      throw new ElasticsearchExporterException("Failed to flush all items of the bulk");
+    if (bulkResponse.hasErrors()) {
+      throwCollectedBulkError(bulkResponse);
     }
 
     // all records where flushed, create new bulk request, otherwise retry next time
     bulkRequest = new ArrayList<>();
   }
 
-  private boolean checkBulkResponse(final BulkResponse bulkResponse) {
-    final var hasErrors = bulkResponse.hasErrors();
-    if (hasErrors) {
-      bulkResponse.getItems().stream()
-          .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
-          .flatMap(index -> Optional.ofNullable(index.getError()).stream())
-          .collect(Collectors.groupingBy(BulkItemError::getType))
-          .forEach(
-              (errorType, errors) ->
-                  log.warn(
-                      "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
-                      errors.size(),
-                      errorType,
-                      errors.get(0).getReason()));
-    }
+  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
+    final var collectedErrors = new ArrayList<String>();
+    bulkResponse.getItems().stream()
+        .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
+        .flatMap(index -> Optional.ofNullable(index.getError()).stream())
+        .collect(Collectors.groupingBy(BulkItemError::getType))
+        .forEach(
+            (errorType, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
+                        errors.size(), errorType, errors.get(0).getReason())));
 
-    return !hasErrors;
+    throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   private BulkResponse exportBulk() throws IOException {
