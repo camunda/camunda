@@ -66,7 +66,8 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     // when/then
     assertThatThrownBy(client::flush)
         .isInstanceOf(ElasticsearchExporterException.class)
-        .hasMessageContaining("Failed to flush bulk request:");
+        .hasMessageContaining(
+            "Failed to flush 10 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse]");
   }
 
   @Test
