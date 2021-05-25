@@ -10,8 +10,6 @@ package io.camunda.zeebe.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.protocol.record.Record;
@@ -22,14 +20,12 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegrationTestCase {
 
   private static final long RECORD_KEY = 1234L;
   private ElasticsearchExporterConfiguration configuration;
-  private Logger logSpy;
   private ElasticsearchClient client;
   private ArrayList<String> bulkRequest;
 
@@ -38,9 +34,10 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     elastic.start();
 
     configuration = getDefaultConfiguration();
-    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
     bulkRequest = new ArrayList<>();
-    client = new ElasticsearchClient(configuration, logSpy, bulkRequest);
+    client =
+        new ElasticsearchClient(
+            configuration, LoggerFactory.getLogger(ElasticsearchClientTest.class), bulkRequest);
   }
 
   @Test
@@ -69,14 +66,8 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     // when/then
     assertThatThrownBy(client::flush)
         .isInstanceOf(ElasticsearchExporterException.class)
-        .hasMessage("Failed to flush all items of the bulk");
-
-    verify(logSpy)
-        .warn(
-            "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
-            bulkSize,
-            "mapper_parsing_exception",
-            "failed to parse");
+        .hasMessageContaining(
+            "Failed to flush 10 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse]");
   }
 
   @Test
