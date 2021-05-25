@@ -10,11 +10,12 @@ package io.camunda.zeebe.broker.system.monitoring;
 import io.prometheus.client.Gauge;
 
 public class HealthMetrics {
+
   private static final Gauge HEALTH =
       Gauge.build()
           .namespace("zeebe")
           .name("health")
-          .help("Shows current health of the partition (1 = healthy, 0 = unhealthy)")
+          .help("Shows current health of the partition (1 = healthy, 0 = unhealthy, -1 = dead)")
           .labelNames("partition")
           .register();
   private final String partitionIdLabel;
@@ -29,5 +30,9 @@ public class HealthMetrics {
 
   public void setUnhealthy() {
     HEALTH.labels(partitionIdLabel).set(0);
+  }
+
+  public void setDead() {
+    HEALTH.labels(partitionIdLabel).set(-1);
   }
 }
