@@ -51,12 +51,13 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
-        .ifRightOrLeft(
+        .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              final var completed = stateTransitionBehavior.transitionToCompleted(element, context);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-            },
+              return stateTransitionBehavior.transitionToCompleted(element, context);
+            })
+        .ifRightOrLeft(
+            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 

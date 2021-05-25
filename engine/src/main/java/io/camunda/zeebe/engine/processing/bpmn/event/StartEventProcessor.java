@@ -42,7 +42,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
-        .map(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
+        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));

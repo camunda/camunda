@@ -47,11 +47,9 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
+        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
-            ok -> {
-              final var completed = stateTransitionBehavior.transitionToCompleted(element, context);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-            },
+            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
