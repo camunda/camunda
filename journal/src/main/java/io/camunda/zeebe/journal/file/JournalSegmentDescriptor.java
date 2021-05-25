@@ -51,8 +51,7 @@ public final class JournalSegmentDescriptor {
   private static final byte NO_META_VERSION = 1;
   // the combined length for each version of the descriptor (starting at version 1)
   // V1 - 29: version byte (1) + header (8) + descriptor (20)
-  // V2 - 45: version byte (1) + header (8) + metadata(8) + header(8) + descriptor (20)
-  private static final int[] VERSION_LENGTHS = {29, 45};
+  private static final int[] VERSION_LENGTHS = {29, getEncodingLength()};
 
   private long id;
   private long index;
