@@ -72,7 +72,11 @@
       "processPart": null,
       "sorting": null
     },
-    "processDefinitionVersions": ["all"],
-    "processDefinitionKey": "invoice"
+    "definitions": [
+      {
+        "key": "invoice",
+        "versions": ["all"]
+      }
+    ]
   }
 }
