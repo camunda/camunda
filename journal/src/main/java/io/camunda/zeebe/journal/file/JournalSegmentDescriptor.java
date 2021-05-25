@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -217,14 +216,6 @@ public final class JournalSegmentDescriptor {
         + MessageHeaderEncoder.ENCODED_LENGTH * 2
         + DescriptorMetadataEncoder.BLOCK_LENGTH
         + SegmentDescriptorEncoder.BLOCK_LENGTH;
-  }
-
-  /** The largest encoding length across all versions of the descriptor. */
-  public static int getMaximumEncodingLength() {
-    return Arrays.stream(VERSION_LENGTHS)
-        .max()
-        .orElseThrow(
-            () -> new IllegalStateException("Expected to contain some supported version."));
   }
 
   /** The number of bytes required to read and write a descriptor of a given version. */

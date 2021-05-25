@@ -26,4 +26,8 @@ public final class CorruptedLogException extends UnrecoverableException {
   public CorruptedLogException(final Throwable cause) {
     super(cause);
   }
+
+  public CorruptedLogException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
 }
