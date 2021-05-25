@@ -78,8 +78,4 @@ public class ForwardErrorController implements ErrorController {
     return Arrays.asList(environment.getActiveProfiles()).contains(OperateURIs.SSO_AUTH_PROFILE);
   }
 
-  @Override
-  public String getErrorPath() {
-    return "/error";
-  }
 }

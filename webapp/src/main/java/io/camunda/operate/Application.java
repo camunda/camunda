@@ -43,6 +43,10 @@ public class Application {
 
     //To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    // Workaround for https://github.com/spring-projects/spring-boot/issues/26627
+    System.setProperty(
+        "spring.config.location",
+        "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
     setDefaultProperties(springApplication);
