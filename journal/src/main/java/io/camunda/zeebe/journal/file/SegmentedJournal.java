@@ -587,25 +587,32 @@ public class SegmentedJournal implements Journal {
   }
 
   private JournalSegmentDescriptor readDescriptor(final File file) {
-    final int descriptorLength = JournalSegmentDescriptor.getEncodingLength();
-    if (file.length() < descriptorLength) {
-      throw new CorruptedLogException(
-          String.format(
-              "Log segment is smaller than a segment descriptor (%d < %d).",
-              file.length(), descriptorLength));
-    }
-
+    final int descriptorLength = JournalSegmentDescriptor.getMaximumEncodingLength();
     final ByteBuffer buffer = ByteBuffer.allocate(descriptorLength);
+
     try (final FileChannel channel = openChannel(file)) {
       final int readBytes = channel.read(buffer);
 
-      if (readBytes != -1 && readBytes < descriptorLength) {
+      final byte version = buffer.get(0);
+      final int expectedLength = JournalSegmentDescriptor.getEncodingLengthForVersion(version);
+
+      if (file.length() < expectedLength) {
+        throw new CorruptedLogException(
+            String.format(
+                "Expected segment with version %d to be at least %d bytes long but it only has %d.",
+                version, expectedLength, file.length()));
+      } else if (readBytes != -1 && readBytes < expectedLength) {
         throw new JournalException(
             String.format(
-                "Expected to read segment descriptor (%d bytes) but only read %d bytes.",
-                descriptorLength, readBytes));
+                "Expected to read %d bytes of segment with %d version but only read %d bytes.",
+                expectedLength, version, readBytes));
       }
+
       buffer.flip();
+    } catch (final IndexOutOfBoundsException e) {
+      throw new JournalException("Expected to read segment descriptor but nothing was read.", e);
+    } catch (final UnknownVersionException e) {
+      throw new CorruptedLogException(e);
     } catch (final IOException e) {
       throw new JournalException(e);
     }
