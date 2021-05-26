@@ -444,7 +444,7 @@ public class SegmentedJournal implements Journal {
         log.warn("Unexpected IOException on closing", e);
       }
     }
-    final JournalSegment segment = newSegment(new JournalSegmentFile(segmentFile), descriptor);
+    final JournalSegment segment = loadSegment(segmentFile, descriptor);
     log.debug("Created segment: {}", segment);
     return segment;
   }
@@ -452,28 +452,13 @@ public class SegmentedJournal implements Journal {
   /**
    * Creates a new segment instance.
    *
-   * @param segmentFile The segment file.
+   * @param file The segment file.
    * @param descriptor The segment descriptor.
    * @return The segment instance.
    */
-  protected JournalSegment newSegment(
-      final JournalSegmentFile segmentFile, final JournalSegmentDescriptor descriptor) {
+  protected JournalSegment loadSegment(final File file, final JournalSegmentDescriptor descriptor) {
+    final JournalSegmentFile segmentFile = new JournalSegmentFile(file);
     return new JournalSegment(segmentFile, descriptor, lastWrittenIndex, journalIndex);
-  }
-
-  /** Loads a segment. */
-  private JournalSegment loadSegment(final long segmentId) {
-    final File segmentFile = JournalSegmentFile.createSegmentFile(name, directory, segmentId);
-    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
-    try (final FileChannel channel = openChannel(segmentFile)) {
-      channel.read(buffer);
-      final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);
-      final JournalSegment segment = newSegment(new JournalSegmentFile(segmentFile), descriptor);
-      log.debug("Loaded disk segment: {} ({})", descriptor.id(), segmentFile.getName());
-      return segment;
-    } catch (final IOException e) {
-      throw new JournalException(e);
-    }
   }
 
   private FileChannel openChannel(final File file) {
@@ -505,7 +490,7 @@ public class SegmentedJournal implements Journal {
       try {
         log.debug("Found segment file: {}", file.getName());
         final JournalSegmentDescriptor descriptor = readDescriptor(file);
-        final JournalSegment segment = loadSegment(descriptor.id());
+        final JournalSegment segment = loadSegment(file, descriptor);
 
         if (i > 0) {
           checkForIndexGaps(segments.get(i - 1), segment);
