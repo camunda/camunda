@@ -22,6 +22,8 @@ import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -116,11 +118,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
     } else {
       if (openSupplier.getAsBoolean()) {
         try {
-          LOG.warn(
-              "Failed to activated jobs for worker {} and job type {}",
-              requestBuilder.getWorker(),
-              requestBuilder.getType(),
-              throwable);
+          logFailure(throwable);
         } finally {
           errorCallback.accept(throwable);
         }
@@ -131,6 +129,24 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   @Override
   public void onCompleted() {
     pollingDone();
+  }
+
+  private void logFailure(final Throwable throwable) {
+    final String errorMsg = "Failed to activated jobs for worker {} and job type {}";
+
+    if (throwable instanceof StatusRuntimeException) {
+      final StatusRuntimeException statusRuntimeException = (StatusRuntimeException) throwable;
+      if (statusRuntimeException.getStatus().getCode() == Status.RESOURCE_EXHAUSTED.getCode()) {
+        // Log RESOURCE_EXHAUSTED status exceptions only as trace, otherwise it is just too
+        // noisy. Furthermore it is not worth to be a warning since it is expected on a fully
+        // loaded cluster. It should be handled by our backoff mechanism, but if there is an
+        // issue or an configuration mistake the user can turn on trace logging to see this.
+        LOG.trace(errorMsg, requestBuilder.getWorker(), requestBuilder.getType(), throwable);
+        return;
+      }
+    }
+
+    LOG.warn(errorMsg, requestBuilder.getWorker(), requestBuilder.getType(), throwable);
   }
 
   private void pollingDone() {
