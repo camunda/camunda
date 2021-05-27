@@ -1386,6 +1386,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCheckScopeBulkDeletionConflictsRequest(final String collectionId, final List<String> collectionScopeIds) {
+    this.path = "collection/" + collectionId + "/scope/delete-conflicts";
+    this.method = POST;
+    this.body = getBody(collectionScopeIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
                                                                         String scopeEntryId,
                                                                         CollectionScopeEntryUpdateDto entryDto) {

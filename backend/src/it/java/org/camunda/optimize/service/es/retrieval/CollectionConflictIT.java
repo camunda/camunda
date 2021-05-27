@@ -24,6 +24,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,6 +35,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
@@ -56,6 +59,26 @@ public class CollectionConflictIT extends AbstractIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
+  }
+
+  @Test
+  public void checkDeleteConflictsForBulkDeleteOfCollectionScope_withoutAuthentication_fails() {
+    // when
+    Response response = checkScopeBulkDeletionConflictsNoAuth();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void checkDeleteConflictsForBulkDeleteOfCollectionScope_forUnauthorizedUser_fails() {
+    // when
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    String collectionId = collectionClient.createNewCollection();
+    Response response = checkScopeBulkDeletionConflictsWithUserAuthentication(collectionId);
+
+    // then the status code is forbidden
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -131,6 +154,50 @@ public class CollectionConflictIT extends AbstractIT {
     checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void checkScopeBulkDeletionConflicts_dashboardConflictInCollection(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    final String singleReportId = reportClient.createSingleReport(collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    List<String> collectionScopeIds = Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId());
+
+    // when
+    boolean response = collectionClient.collectionScopesHaveDeleteConflict(collectionId, collectionScopeIds);
+
+    // then
+    assertThat(response).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void checkScopeBulkDeletionConflicts_alertConflictInCollection(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    final String singleReportId = reportClient.createSingleReport(collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    alertClient.createAlertForReport(singleReportId);
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    List<String> collectionScopeIds = Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId());
+
+    // when
+    boolean response = collectionClient.collectionScopesHaveDeleteConflict(collectionId, collectionScopeIds);
+
+    // then
+    assertThat(response).isTrue();
+  }
+
   @Test
   public void getScopeDeletionConflicts_combinedReports() {
     // given
@@ -149,6 +216,60 @@ public class CollectionConflictIT extends AbstractIT {
     // then
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
     checkConflictedItems(conflictResponse, ConflictedItemType.COMBINED_REPORT, new String[]{combinedReportId});
+  }
+
+  @Test
+  public void scopeBulkDeletionHasConflicts_combinedReports() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    final CollectionScopeEntryDto scopeEntry2 =
+      new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    final String singleReportId =
+      reportClient.createSingleReport(collectionId, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+    final CollectionScopeEntryDto scopeEntry3 =
+      new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    final CollectionScopeEntryDto scopeEntry4 =
+      new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+
+    List<String> collectionScopeIds1 = Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId());
+    List<String> collectionScopeId2 = Arrays.asList(scopeEntry3.getId(), scopeEntry4.getId());
+
+    // when
+    boolean response = collectionClient.collectionScopesHaveDeleteConflict(collectionId, collectionScopeIds1);
+
+    // then
+    assertThat(response).isTrue();
+
+    // when
+    response = collectionClient.collectionScopesHaveDeleteConflict(collectionId, collectionScopeId2);
+
+    // then
+    assertThat(response).isFalse();
+  }
+
+  @Test
+  public void scopeBulkDeletionNoConflicts() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final CollectionScopeEntryDto scopeEntry2 =
+      new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    List<String> collectionScopeIds = Arrays.asList(scopeEntry1.getId(), scopeEntry2.getId());
+
+    // when
+    boolean response = collectionClient.collectionScopesHaveDeleteConflict(collectionId, collectionScopeIds);
+
+    // then
+    assertThat(response).isFalse();
   }
 
   @ParameterizedTest
@@ -236,6 +357,18 @@ public class CollectionConflictIT extends AbstractIT {
         force
       )
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
+  }
+
+  private Response checkScopeBulkDeletionConflictsNoAuth() {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildCheckScopeBulkDeletionConflictsRequest("doesntMatter", Collections.emptyList())
+      .withoutAuthentication().execute();
+  }
+
+  private Response checkScopeBulkDeletionConflictsWithUserAuthentication(String collectionId) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildCheckScopeBulkDeletionConflictsRequest(collectionId, Collections.emptyList())
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER).execute();
   }
 
 }

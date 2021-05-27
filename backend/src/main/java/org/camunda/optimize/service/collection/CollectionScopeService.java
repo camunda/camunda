@@ -331,6 +331,13 @@ public class CollectionScopeService {
     }
   }
 
+  public boolean hasConflictsForCollectionScopeDelete(String userId, String collectionId,
+                                                      List<String> collectionScopeIds) {
+    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+    return collectionScopeIds.stream()
+      .anyMatch(scopeEntryId -> !getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId).isEmpty());
+  }
+
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
                                                                              final CollectionDefinitionDto collectionDefinition) {
     List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);

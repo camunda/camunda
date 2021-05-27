@@ -31,6 +31,7 @@ import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
@@ -282,5 +283,15 @@ public class CollectionRestService {
     List<EntityResponseDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
+  }
+
+  @POST
+  @Path("/{id}/scope/delete-conflicts")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public boolean checkCollectionScopeConflicts(@Context ContainerRequestContext requestContext,
+                                               @PathParam("id") String collectionId,
+                                               @RequestBody List<String> collectionScopeIds) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionScopeService.hasConflictsForCollectionScopeDelete(userId, collectionId, collectionScopeIds);
   }
 }
