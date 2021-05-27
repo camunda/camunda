@@ -248,8 +248,7 @@ public final class ProcessingStateMachine {
         return;
       }
 
-      metrics.processingLatency(
-          metadata.getRecordType(), event.getTimestamp(), processingStartTime);
+      metrics.processingLatency(event.getTimestamp(), processingStartTime);
 
       processInTransaction(typedEvent);
 
