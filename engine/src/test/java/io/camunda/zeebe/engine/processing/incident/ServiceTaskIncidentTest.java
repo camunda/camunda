@@ -297,7 +297,7 @@ public class ServiceTaskIncidentTest {
                 .startEvent()
                 .serviceTask(
                     "task",
-                    b -> b.zeebeJobType("task").zeebeInputExpression("unknown_var", "output"))
+                    b -> b.zeebeJobType("task").zeebeInputExpression("unknown_var", "input"))
                 .done())
         .deploy();
 
