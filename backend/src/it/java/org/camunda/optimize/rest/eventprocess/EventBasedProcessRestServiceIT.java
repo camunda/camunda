@@ -61,6 +61,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,7 +80,9 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
@@ -107,6 +110,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     return Stream.of(
       Arguments.of(GET, "/eventBasedProcess", null),
       Arguments.of(GET, "/eventBasedProcess/someId/delete-conflicts", null),
+      Arguments.of(POST, "/eventBasedProcess/delete-conflicts", null),
       Arguments.of(POST, "/eventBasedProcess", null),
       Arguments.of(
         PUT, "/eventBasedProcess/someId", EventProcessMappingRequestDto.builder().name("someName").build()
@@ -235,7 +239,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .buildGenericRequest(method, path, payload)
       .execute();
 
-    // then the status code is not authorized
+    // then the status code is forbidden
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
@@ -1136,6 +1140,19 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void checkDeleteConflictsForBulkDeleteOfEventProcessMappings_withUnauthorizedUser() {
+    // when
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCheckBulkDeleteConflictsForEventProcessMappingRequest(new ArrayList<>())
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
   public void getDeleteConflictsForEventProcessMapping_returnsOnlyConflictedItems() {
     // given a published event process with various dependent resources created using its definition
     EventProcessMappingDto eventProcessMappingDto =
@@ -1187,6 +1204,122 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         new Tuple(conflictedDashboardId, ConflictedItemType.DASHBOARD),
         new Tuple(conflictedAlertId, ConflictedItemType.ALERT)
       );
+  }
+
+  @Test
+  public void bulkDeleteConflictsForEventProcessMapping_alertConflict() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
+
+    String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    String reportId1 = reportClient.createSingleReport(
+      collectionId,
+      PROCESS,
+      eventProcessDefinitionKey1,
+      Collections.emptyList()
+    );
+    alertClient.createAlertForReport(reportId1);
+
+    // when
+    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
+      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
+
+    // then
+    assertThat(response).isTrue();
+  }
+
+  @Test
+  public void bulkDeleteConflictsForEventProcessMapping_combinedReportConflict() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey2);
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey3);
+
+    String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    String reportId1 = reportClient.createSingleReport(
+      collectionId,
+      PROCESS,
+      eventProcessDefinitionKey1,
+      Collections.emptyList()
+    );
+    String reportId2 = reportClient.createSingleReport(
+      collectionId,
+      PROCESS,
+      eventProcessDefinitionKey1,
+      Collections.emptyList()
+    );
+
+    reportClient.createCombinedReport(collectionId, Arrays.asList(reportId1, reportId2));
+
+    // when
+    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
+      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
+
+    // then
+    assertThat(response).isTrue();
+  }
+
+  @Test
+  public void bulkDeleteConflictsForEventProcessMapping_dashboardConflict() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
+
+    String reportId1 = reportClient.createSingleReport(
+      collectionId,
+      PROCESS,
+      eventProcessDefinitionKey1,
+      Collections.emptyList()
+    );
+    String reportId2 = reportClient.createEmptySingleProcessReport();
+    dashboardClient.createDashboard(collectionId, Arrays.asList(reportId1, reportId2));
+
+    // when
+    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
+      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
+
+    // then
+    assertThat(response).isTrue();
+  }
+
+  @Test
+  public void bulkDeleteConflictsForEventProcessMapping_noConflicts() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
+      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
+
+    // then
+    assertThat(response).isFalse();
   }
 
   @Test
@@ -1498,6 +1631,16 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessId);
     // we execute the import cycle so the event instance index gets created
     executeImportCycle();
+  }
+
+  private String createNewCollectionWithScope(String eventProcessDefinitionKey) {
+    return collectionClient.createNewCollectionWithScope(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      PROCESS,
+      eventProcessDefinitionKey,
+      Collections.emptyList()
+    );
   }
 
 }

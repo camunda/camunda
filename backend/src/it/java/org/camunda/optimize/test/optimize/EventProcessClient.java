@@ -172,6 +172,11 @@ public class EventProcessClient {
     return getRequestExecutor().buildGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId);
   }
 
+  public boolean eventProcessMappingRequestBulkDeleteHasConflicts(final List<String> eventBasedProcessIds) {
+    return getRequestExecutor().buildCheckBulkDeleteConflictsForEventProcessMappingRequest(eventBasedProcessIds)
+      .execute(Boolean.class, Response.Status.OK.getStatusCode());
+  }
+
   public void deleteEventProcessMapping(final String eventProcessMappingId) {
     createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
   }

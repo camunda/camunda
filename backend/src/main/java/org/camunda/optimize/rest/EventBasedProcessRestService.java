@@ -214,6 +214,15 @@ public class EventBasedProcessRestService {
     return eventMappingCleanupService.doMappingCleanup(userId, requestDto);
   }
 
+  @POST
+  @Path("/delete-conflicts")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public boolean checkEventBasedProcessesHaveConflicts(@Context ContainerRequestContext requestContext,
+                                                       @RequestBody List<String> eventBasedProcessIds) {
+    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    return eventProcessService.hasDeleteConflicts(eventBasedProcessIds);
+  }
+
   private EventProcessRoleRequestDto<IdentityDto> resolveToEventProcessRoleDto(final String userId,
                                                                                final EventProcessRoleRequestDto<IdentityDto> eventProcessRoleRestDto) {
     IdentityDto simpleIdentityDto = eventProcessRoleRestDto.getIdentity();

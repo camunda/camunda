@@ -631,7 +631,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-
   public OptimizeRequestExecutor buildDeleteRoleToCollectionRequest(final String id,
                                                                     final String roleEntryId) {
     this.path = "collection/" + id + "/role/" + roleEntryId;
@@ -1324,6 +1323,13 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetDeleteConflictsForEventProcessMappingRequest(String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/delete-conflicts";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCheckBulkDeleteConflictsForEventProcessMappingRequest(List<String> eventBasedProcessConflictIds) {
+    this.path = "eventBasedProcess/delete-conflicts";
+    this.method = POST;
+    this.body = getBody(eventBasedProcessConflictIds);
     return this;
   }
 

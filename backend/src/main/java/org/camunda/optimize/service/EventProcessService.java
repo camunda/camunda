@@ -201,6 +201,11 @@ public class EventProcessService {
     return new ConflictResponseDto(conflictedItems);
   }
 
+  public boolean hasDeleteConflicts(final List<String> eventBasedProcessIds){
+    return eventBasedProcessIds.stream()
+      .anyMatch(eventBasedProcessId -> !getDeleteConflictingItems(eventBasedProcessId).getConflictedItems().isEmpty());
+  }
+
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
     reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
     collectionWriter.deleteScopeEntryFromAllCollections(CollectionScopeEntryDto.convertTypeAndKeyToScopeEntryId(
