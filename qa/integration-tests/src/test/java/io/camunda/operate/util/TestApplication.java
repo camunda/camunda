@@ -18,7 +18,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @SpringBootApplication
 @ComponentScan(basePackages = "io.camunda.operate",
   excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.REGEX,pattern="org\\.camunda\\.operate\\.util\\.apps\\..*"),
+    @ComponentScan.Filter(type=FilterType.REGEX,pattern="io\\.camunda\\.operate\\.util\\.apps\\..*"),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class),
   },
   nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)

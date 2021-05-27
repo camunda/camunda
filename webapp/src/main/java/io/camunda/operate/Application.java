@@ -26,9 +26,9 @@ import java.util.Set;
 @SpringBootApplication
 @ComponentScan(basePackages = "io.camunda.operate",
     excludeFilters = {
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.zeebeimport\\..*"),
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.webapp\\..*"),
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.archiver\\..*")
+        @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.zeebeimport\\..*"),
+        @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.webapp\\..*"),
+        @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.archiver\\..*")
     },
     //use fully qualified names as bean name, as we have classes with same names for different versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)

@@ -19,10 +19,11 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @SpringBootApplication
 @ComponentScan(basePackages = "io.camunda.operate",
   excludeFilters = {
-    @ComponentScan.Filter(type=FilterType.REGEX,pattern="org\\.camunda\\.operate\\.util\\.apps\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.zeebeimport\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.webapp\\..*"),
-      @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.it\\..*"),
+    @ComponentScan.Filter(type=FilterType.REGEX,pattern="io\\.camunda\\.operate\\.util\\.apps\\..*"),
+      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.zeebeimport\\..*"),
+      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.webapp\\..*"),
+      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.archiver\\..*"),
+      @ComponentScan.Filter(type= FilterType.REGEX,pattern="io\\.camunda\\.operate\\.it\\..*"),
       @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = TestApplication.class),
       @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class)
   },
