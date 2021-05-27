@@ -31,7 +31,7 @@ exports[`should match snapshot 1`] = `
     className="content"
   >
     <ul
-      className=""
+      className="itemsList"
     >
       <ListItem
         data={

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
 import Submenu from './Submenu';
 import DropdownOption from './DropdownOption';
@@ -79,6 +79,19 @@ it('should close the submenu when left arrow is pressed', () => {
   const container = node.find('.childrenContainer');
 
   container.simulate('keyDown', {key: 'ArrowLeft'});
+
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should open the submenu when right arrow is pressed', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Submenu forceToggle={spy}>
+      <DropdownOption>foo</DropdownOption>
+    </Submenu>
+  );
+
+  node.simulate('keyDown', {key: 'ArrowRight'});
 
   expect(spy).toHaveBeenCalled();
 });
