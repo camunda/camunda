@@ -17,10 +17,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.util.Either;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 public final class ProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -70,7 +72,10 @@ public final class ProcessProcessor
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    transitionTo(element, context, stateTransitionBehavior::transitionToCompleted);
+    transitionTo(
+        element,
+        context,
+        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
   }
 
   @Override
@@ -83,7 +88,10 @@ public final class ProcessProcessor
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
 
     if (noActiveChildInstances) {
-      transitionTo(element, context, stateTransitionBehavior::transitionToTerminated);
+      transitionTo(
+          element,
+          context,
+          terminating -> Either.right(stateTransitionBehavior.transitionToTerminated(terminating)));
     }
   }
 
@@ -141,19 +149,22 @@ public final class ProcessProcessor
                       eventTrigger,
                       flowScopeContext));
     } else if (stateBehavior.canBeTerminated(childContext)) {
-      transitionTo(element, flowScopeContext, stateTransitionBehavior::transitionToTerminated);
+      transitionTo(
+          element,
+          flowScopeContext,
+          context -> Either.right(stateTransitionBehavior.transitionToTerminated(context)));
     }
   }
 
   private void transitionTo(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext context,
-      final UnaryOperator<BpmnElementContext> transitionOperation) {
+      final Function<BpmnElementContext, Either<Failure, BpmnElementContext>> transitionOperation) {
 
-    final var action = getPostTransitionAction(element, context);
+    final var postTransitionAction = getPostTransitionAction(element, context);
     final var afterTransition = transitionOperation.apply(context);
-
-    action.accept(afterTransition);
+    afterTransition.ifRightOrLeft(
+        postTransitionAction, failure -> incidentBehavior.createIncident(failure, context));
   }
 
   private Consumer<BpmnElementContext> getPostTransitionAction(

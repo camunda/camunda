@@ -16,10 +16,13 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -256,5 +259,84 @@ public final class MultiInstanceIncidentTest {
             tuple(VariableIntent.UPDATED, "loopCounter", "2"),
             tuple(VariableIntent.UPDATED, "item", "3"),
             tuple(VariableIntent.UPDATED, "loopCounter", "3"));
+  }
+
+  @Test
+  public void shouldResolveIncidentDueToInputCollection() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("multi-task")
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.sequential()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT)))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("multi-task")
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    final var activatedTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    ENGINE
+        .variables()
+        .ofScope(activatedTask.getKey())
+        .withDocument(Collections.singletonMap(INPUT_COLLECTION, "not a list"))
+        .update();
+
+    completeNthJob(processInstanceKey, 1);
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(activatedTask.getKey())
+        .withDocument(Collections.singletonMap(INPUT_COLLECTION, List.of(1, 2, 3)))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    completeNthJob(processInstanceKey, 2);
+    completeNthJob(processInstanceKey, 3);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .limitToProcessInstanceCompleted()
+        .await();
+  }
+
+  private static void completeNthJob(final long processInstanceKey, final int n) {
+    final var nthJob = findNthJob(processInstanceKey, n);
+    ENGINE.job().withKey(nthJob.getKey()).complete();
+  }
+
+  private static Record<JobRecordValue> findNthJob(final long processInstanceKey, final int n) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .skip(n - 1)
+        .getFirst();
   }
 }

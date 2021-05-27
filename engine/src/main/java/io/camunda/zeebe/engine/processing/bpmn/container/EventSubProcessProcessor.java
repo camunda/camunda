@@ -56,11 +56,8 @@ public final class EventSubProcessProcessor
 
     variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .ifRightOrLeft(
-            ok ->
-                stateTransitionBehavior.transitionToCompletedWithParentNotification(
-                    element, completing),
-            failure -> incidentBehavior.createIncident(failure, completing));
+        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, completing));
   }
 
   @Override
