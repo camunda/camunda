@@ -53,40 +53,50 @@ type SummaryProps = {
   'data-testid'?: string;
 };
 
-const Summary: React.FC<SummaryProps> = ({
-  onToggle,
-  isFoldable = true,
-  isFolded,
-  indentation = 0,
-  isSelected,
-  onSelection,
-  children,
-  isLastChild,
-  nodeName,
-  ...props
-}) => {
-  return (
-    <SummaryContainer {...props} role="row" aria-selected={isSelected}>
-      {isFoldable && onToggle !== undefined ? (
-        <ExpandButton
-          onClick={onToggle}
-          isExpanded={!isFolded}
-          iconButtonTheme="foldable"
-          aria-label={isFolded ? `Unfold ${nodeName}` : `Fold ${nodeName}`}
-        />
-      ) : null}
-      <FocusButton showHoverState={!isSelected} onClick={onSelection}>
-        <SummaryLabel
-          isSelected={isSelected}
-          showPartialBorder={!isFolded}
-          showFullBorder={isLastChild}
-        >
-          {children}
-        </SummaryLabel>
-      </FocusButton>
-    </SummaryContainer>
-  );
-};
+const Summary = React.forwardRef<HTMLDivElement, SummaryProps>(
+  (
+    {
+      onToggle,
+      isFoldable = true,
+      isFolded,
+      indentation = 0,
+      isSelected,
+      onSelection,
+      children,
+      isLastChild,
+      nodeName,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <SummaryContainer
+        {...props}
+        ref={ref}
+        role="row"
+        aria-selected={isSelected}
+      >
+        {isFoldable && onToggle !== undefined ? (
+          <ExpandButton
+            onClick={onToggle}
+            isExpanded={!isFolded}
+            iconButtonTheme="foldable"
+            aria-label={isFolded ? `Unfold ${nodeName}` : `Fold ${nodeName}`}
+          />
+        ) : null}
+        <FocusButton showHoverState={!isSelected} onClick={onSelection}>
+          <SummaryLabel
+            isSelected={isSelected}
+            showPartialBorder={!isFolded}
+            showFullBorder={isLastChild}
+          >
+            {children}
+          </SummaryLabel>
+        </FocusButton>
+      </SummaryContainer>
+    );
+  }
+);
 
 type DetailsProps = {
   isFolded?: boolean;

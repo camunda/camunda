@@ -53,11 +53,13 @@ function completeTask(
     } else {
       return job.complete(variables);
     }
-  }
+  },
+  pollInterval = 300
 ) {
   zbc.createWorker({
     taskType,
     taskHandler,
+    pollInterval,
   });
 }
 

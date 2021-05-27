@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useRef} from 'react';
 import {Skeleton} from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
@@ -26,6 +26,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
     state: {status: diagramStatus},
   } = singleInstanceDiagramStore;
   const LOADING_STATES = ['initial', 'first-fetch'];
+  const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
 
   return (
     <Styled.Panel>
@@ -37,11 +38,29 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
             }
             flowNodeInstanceStore.fetchNext(instanceExecutionHistory.id);
           }}
+          onVerticalScrollStartReach={async (scrollDown) => {
+            if (instanceExecutionHistory?.id === undefined) {
+              return;
+            }
+
+            const fetchedInstancesCount =
+              await flowNodeInstanceStore.fetchPrevious(
+                instanceExecutionHistory.id
+              );
+
+            if (fetchedInstancesCount !== undefined) {
+              scrollDown(
+                fetchedInstancesCount *
+                  (flowNodeInstanceRowRef.current?.offsetHeight ?? 0)
+              );
+            }
+          }}
         >
           <Styled.FlowNodeInstanceLog data-testid="instance-history">
             <Styled.NodeContainer>
               <ul>
                 <FlowNodeInstancesTree
+                  rowRef={flowNodeInstanceRowRef}
                   flowNodeInstance={instanceExecutionHistory!}
                   treeDepth={1}
                 />

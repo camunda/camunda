@@ -13,14 +13,14 @@ export async function setup() {
   const processInstance = await createSingleInstance(
     'manyFlowNodeInstancesProcess',
     1,
-    {i: 0, loopCardinality: 60}
+    {i: 0, loopCardinality: 100}
   );
 
   const taskHandler: ZBWorkerTaskHandler = (job) => {
     return job.complete({...job.variables, i: job.variables.i + 1});
   };
 
-  completeTask('increment', false, {}, taskHandler);
+  completeTask('increment', false, {}, taskHandler, 50);
 
   return {
     processInstance,

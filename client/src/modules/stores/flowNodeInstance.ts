@@ -18,7 +18,8 @@ import {fetchFlowNodeInstances} from 'modules/api/flowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
-const PAGE_SIZE = 50;
+const MAX_INSTANCES_STORED = 200;
+const MAX_INSTANCES_PER_REQUEST = 50;
 
 type FlowNodeInstanceType = {
   id: string;
@@ -45,7 +46,8 @@ type State = {
     | 'fetching'
     | 'fetched'
     | 'error'
-    | 'fetching-next';
+    | 'fetching-next'
+    | 'fetching-prev';
   flowNodeInstances: FlowNodeInstances;
 };
 
@@ -71,6 +73,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       removeSubTree: action,
       startFetch: action,
       startFetchNext: action,
+      startFetchPrev: action,
       reset: override,
       isInstanceExecutionHistoryAvailable: computed,
       instanceExecutionHistory: computed,
@@ -112,9 +115,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
             treePath,
             processInstanceId,
             pageSize:
-              // round up to a multiple of a page size
-              Math.ceil(flowNodeInstance.children.length / PAGE_SIZE) *
-              PAGE_SIZE,
+              // round up to a multiple of MAX_INSTANCES_PER_REQUEST
+              Math.ceil(
+                flowNodeInstance.children.length / MAX_INSTANCES_PER_REQUEST
+              ) * MAX_INSTANCES_PER_REQUEST,
             searchAfterOrEqual: flowNodeInstance.children[0].sortValues,
           };
         }
@@ -142,60 +146,90 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   };
 
   fetchNext = async (treePath: string) => {
-    const processInstanceId = currentInstanceStore.state.instance?.id;
-    if (processInstanceId === undefined) {
+    if (
+      ['fetching-next', 'fetching-prev', 'fetching'].includes(this.state.status)
+    ) {
       return;
     }
 
-    if (['fetching-next', 'fetching'].includes(this.state.status)) {
-      return;
-    }
+    this.startFetchNext();
 
     const children = this.state.flowNodeInstances[treePath].children;
-    this.stopPolling();
-    this.startFetchNext();
-    try {
-      const response = await fetchFlowNodeInstances([
-        {
-          processInstanceId,
-          treePath,
-          pageSize: PAGE_SIZE,
-          searchAfter: children[children.length - 1].sortValues,
-        },
-      ]);
+    const flowNodeInstances = await this.fetchFlowNodeInstances({
+      treePath,
+      pageSize: MAX_INSTANCES_PER_REQUEST,
+      searchAfter: children[children.length - 1].sortValues,
+    });
 
-      if (response.ok) {
-        const flowNodeInstances: FlowNodeInstances = await response.json();
+    if (flowNodeInstances === undefined) {
+      return;
+    }
 
-        flowNodeInstances[treePath].children = [
-          ...this.state.flowNodeInstances[treePath].children,
-          ...flowNodeInstances[treePath].children,
-        ];
+    flowNodeInstances[treePath].children = [
+      ...this.state.flowNodeInstances[treePath].children,
+      ...flowNodeInstances[treePath].children,
+    ].slice(-MAX_INSTANCES_STORED);
 
-        this.handleFetchSuccess(flowNodeInstances);
-        this.startPolling();
-      } else {
-        this.handleFetchFailure();
-      }
-    } catch (error) {
-      this.handleFetchFailure(error);
+    this.handleFetchSuccess(flowNodeInstances);
+  };
+
+  fetchPrevious = async (treePath: string) => {
+    if (
+      ['fetching-next', 'fetching-prev', 'fetching'].includes(this.state.status)
+    ) {
+      return;
+    }
+
+    this.startFetchPrev();
+
+    const children = this.state.flowNodeInstances[treePath].children;
+    const flowNodeInstances = await this.fetchFlowNodeInstances({
+      treePath,
+      pageSize: MAX_INSTANCES_PER_REQUEST,
+      searchBefore: children[0].sortValues,
+    });
+
+    if (flowNodeInstances === undefined) {
+      return;
+    }
+
+    const fetchedInstancesCount = flowNodeInstances[treePath].children.length;
+
+    flowNodeInstances[treePath].children = [
+      ...flowNodeInstances[treePath].children,
+      ...this.state.flowNodeInstances[treePath].children,
+    ].slice(0, MAX_INSTANCES_STORED);
+
+    this.handleFetchSuccess(flowNodeInstances);
+
+    return fetchedInstancesCount;
+  };
+
+  fetchSubTree = async ({treePath}: {treePath: string}) => {
+    const flowNodeInstances = await this.fetchFlowNodeInstances({treePath});
+    if (flowNodeInstances !== undefined) {
+      this.handleFetchSuccess(flowNodeInstances);
     }
   };
 
-  fetchSubTree = async ({
+  fetchFlowNodeInstances = async ({
     treePath,
     pageSize,
     searchAfter,
+    searchBefore,
   }: {
     treePath: string;
     pageSize?: number;
     searchAfter?: FlowNodeInstanceType['sortValues'];
-  }) => {
+    searchBefore?: FlowNodeInstanceType['sortValues'];
+  }): Promise<FlowNodeInstances | undefined> => {
     const processInstanceId = currentInstanceStore.state.instance?.id;
 
     if (processInstanceId === undefined) {
       return;
     }
+
+    this.stopPolling();
 
     try {
       const response = await fetchFlowNodeInstances([
@@ -204,16 +238,19 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
           treePath,
           pageSize,
           searchAfter,
+          searchBefore,
         },
       ]);
 
       if (response.ok) {
-        this.handleFetchSuccess(await response.json());
+        return response.json();
       } else {
         this.handleFetchFailure();
       }
     } catch (error) {
       this.handleFetchFailure(error);
+    } finally {
+      this.startPolling();
     }
   };
 
@@ -233,10 +270,13 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
   fetchInstanceExecutionHistory = this.retryOnConnectionLost(
     async (processInstanceId: ProcessInstanceEntity['id']) => {
       this.startFetch();
-      this.fetchSubTree({
+      const flowNodeInstances = await this.fetchFlowNodeInstances({
         treePath: processInstanceId,
-        pageSize: PAGE_SIZE,
+        pageSize: MAX_INSTANCES_PER_REQUEST,
       });
+      if (flowNodeInstances !== undefined) {
+        this.handleFetchSuccess(flowNodeInstances);
+      }
     }
   );
 
@@ -250,6 +290,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
   startFetchNext = () => {
     this.state.status = 'fetching-next';
+  };
+
+  startFetchPrev = () => {
+    this.state.status = 'fetching-prev';
   };
 
   handleFetchFailure = (error?: Error) => {

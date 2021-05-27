@@ -733,6 +733,7 @@ export const createMultiInstanceFlowNodeInstances = (
   level1: FlowNodeInstances;
   level1Poll: FlowNodeInstances;
   level1Next: FlowNodeInstances;
+  level1Prev: FlowNodeInstances;
   level2: FlowNodeInstances;
   level3: FlowNodeInstances;
 } => {
@@ -777,6 +778,23 @@ export const createMultiInstanceFlowNodeInstances = (
             endDate: null,
             treePath: `${processInstanceId}/2251799813686472`,
             sortValues: [1606300828415, '2251799813686472'],
+          },
+        ],
+      },
+    },
+    level1Prev: {
+      [processInstanceId]: {
+        running: null,
+        children: [
+          {
+            id: '2251390423657139',
+            type: 'START_EVENT',
+            state: 'INCIDENT',
+            flowNodeId: 'startFilterMap',
+            startDate: '2020-08-18T12:08:00.205+0000',
+            endDate: null,
+            treePath: `${processInstanceId}/2251390423657139`,
+            sortValues: [1606300828415, '2251390423657139'],
           },
         ],
       },

@@ -46,11 +46,36 @@ test('Scrolling behavior', async (t) => {
 
   await t
     .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(50))
+    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
+    .match(/^StartEvent_1$/)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
     .eql(101);
 
   await t
     .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(100))
+    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
+    .match(/^StartEvent_1$/)
     .expect(screen.queryAllByTestId(/^tree-node-/).count)
-    .eql(125);
+    .eql(151);
+
+  await t
+    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(150))
+    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
+    .match(/^StartEvent_1$/)
+    .expect(screen.queryAllByTestId(/^tree-node-/).count)
+    .eql(201);
+
+  await t
+    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(200))
+    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
+    .match(/^Continue\?$/)
+    .expect(screen.queryAllByTestId(/^tree-node-/).count)
+    .eql(201);
+
+  await t
+    .scrollIntoView(screen.queryAllByTestId(/^tree-node-/).nth(1))
+    .expect(screen.queryAllByTestId(/^tree-node-/).nth(1).textContent)
+    .match(/^StartEvent_1$/)
+    .expect(screen.queryAllByTestId(/^tree-node-/).count)
+    .eql(201);
 });

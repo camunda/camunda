@@ -125,6 +125,49 @@ describe('stores/flowNodeInstance', () => {
     });
   });
 
+  it('should fetch previous instances', async () => {
+    mockServer.use(
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockFlowNodeInstances.level1))
+      ),
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(mockFlowNodeInstances.level1Prev))
+      )
+    );
+
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      })
+    );
+
+    flowNodeInstanceStore.init();
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+    });
+
+    await waitFor(() =>
+      expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual(
+        mockFlowNodeInstances.level1
+      )
+    );
+
+    await flowNodeInstanceStore.fetchPrevious(PROCESS_INSTANCE_ID);
+
+    await waitFor(() => {
+      expect(flowNodeInstanceStore.state.flowNodeInstances).toEqual({
+        [PROCESS_INSTANCE_ID]: {
+          ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID],
+          children: [
+            ...mockFlowNodeInstances.level1Prev[PROCESS_INSTANCE_ID].children,
+            ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID].children,
+          ],
+        },
+      });
+    });
+  });
+
   it('should retry fetch on network reconnection', async () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>

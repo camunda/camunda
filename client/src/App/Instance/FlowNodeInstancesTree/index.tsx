@@ -23,10 +23,11 @@ type Props = {
   flowNodeInstance: FlowNodeInstance;
   treeDepth: number;
   isLastChild?: boolean;
+  rowRef?: React.Ref<HTMLDivElement>;
 };
 
 const FlowNodeInstancesTree: React.FC<Props> = observer(
-  ({flowNodeInstance, treeDepth, isLastChild = true}) => {
+  ({flowNodeInstance, treeDepth, isLastChild = true, rowRef}) => {
     const {
       state: {flowNodeInstances},
       fetchSubTree,
@@ -87,6 +88,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         >
           {metaData !== undefined && (
             <Foldable.Summary
+              ref={treeDepth === 1 ? rowRef : null}
               data-testid={flowNodeInstance.id}
               onSelection={() => {
                 const isProcessInstance =
