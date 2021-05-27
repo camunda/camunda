@@ -286,4 +286,49 @@ public class ServiceTaskIncidentTest {
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentRecord.getKey());
   }
+
+  @Test
+  public void shouldResolveIncidentAndCreateNewIncidentWhenContinuationFails() {
+    // given a deployed process with a service task with an input expression
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process-incident-on-leaving-task")
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    b -> b.zeebeJobType("task").zeebeInputExpression("unknown_var", "output"))
+                .done())
+        .deploy();
+
+    // and an instance of that process is created without a variable for the input expression
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process-incident-on-leaving-task").create();
+
+    // and an incident created
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when we try to resolve the incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(incident.getKey())
+                .exists())
+        .describedAs("original incident is resolved")
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(i -> i.getKey() != incident.getKey())
+                .exists())
+        .describedAs("a new incident is created")
+        .isTrue();
+  }
 }
