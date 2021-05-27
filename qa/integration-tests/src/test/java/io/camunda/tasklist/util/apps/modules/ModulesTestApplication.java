@@ -22,14 +22,17 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.zeebe\\.tasklist\\.util\\.apps\\..*"),
+          pattern = "io\\.camunda\\.tasklist\\.util\\.apps\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.zeebe\\.tasklist\\.zeebeimport\\..*"),
+          pattern = "io\\.camunda\\.tasklist\\.zeebeimport\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.zeebe\\.tasklist\\.webapp\\..*"),
-      @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.zeebe\\.tasklist\\.it\\..*"),
+          pattern = "io\\.camunda\\.tasklist\\.webapp\\..*"),
+      @ComponentScan.Filter(
+          type = FilterType.REGEX,
+          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*"),
+      @ComponentScan.Filter(type = FilterType.REGEX, pattern = "io\\.camunda\\.tasklist\\.it\\..*"),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TestApplication.class),
       @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = Application.class)
     },

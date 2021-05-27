@@ -28,13 +28,13 @@ import org.springframework.core.env.ConfigurableEnvironment;
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.zeebe\\.tasklist\\.zeebeimport\\..*"),
+          pattern = "io\\.camunda\\.tasklist\\.zeebeimport\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.zeebe\\.tasklist\\.webapp\\..*"),
+          pattern = "io\\.camunda\\.tasklist\\.webapp\\..*"),
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.zeebe\\.tasklist\\.archiver\\..*")
+          pattern = "io\\.camunda\\.tasklist\\.archiver\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @EnableAutoConfiguration
