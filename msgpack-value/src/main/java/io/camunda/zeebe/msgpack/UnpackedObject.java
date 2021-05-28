@@ -26,6 +26,7 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
   @Override
   public void wrap(final DirectBuffer buff, final int offset, final int length) {
+    reset();
     reader.wrap(buff, offset, length);
     try {
       read(reader);
