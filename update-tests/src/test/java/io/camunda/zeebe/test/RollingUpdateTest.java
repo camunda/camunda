@@ -37,6 +37,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.Network;
 
 /**
@@ -47,6 +48,8 @@ import org.testcontainers.containers.Network;
  * between versions.
  */
 final class RollingUpdateTest {
+
+  public static final String TEST_IMAGE_TAG = "current-test";
   private static final String OLD_VERSION = VersionUtil.getPreviousVersion();
   private static final String NEW_VERSION = VersionUtil.getVersion();
   private static final BpmnModelInstance PROCESS =
@@ -56,7 +59,6 @@ final class RollingUpdateTest {
           .serviceTask("task2", s -> s.zeebeJobType("secondTask"))
           .endEvent()
           .done();
-
   private final Network network = Network.newNetwork();
   private final ZeebeCluster cluster =
       ZeebeCluster.builder()
@@ -128,8 +130,6 @@ final class RollingUpdateTest {
     broker.stop();
 
     try (final var client = cluster.newClientBuilder().build()) {
-      // until previous version points to 0.24, we cannot yet tune failure detection to be fast,
-      // so wait long enough for the broker to be removed even in slower systems
       Awaitility.await("broker is removed from topology")
           .atMost(Duration.ofSeconds(20))
           .pollInterval(Duration.ofMillis(100))
@@ -143,6 +143,12 @@ final class RollingUpdateTest {
             .until(() -> createProcessInstance(client), Objects::nonNull)
             .getProcessInstanceKey();
       }
+
+      // force the current leader to take a snapshot by just telling all the remaining nodes to take
+      // a snapshot - one of which is bound to be the leader
+      cluster.getBrokers().values().stream()
+          .filter(ContainerState::isRunning)
+          .forEach(this::takeSnapshot);
 
       // wait for a snapshot - even if 0 is not the leader, it will get the replicated snapshot
       // which is a good indicator we now have a snapshot
@@ -234,13 +240,28 @@ final class RollingUpdateTest {
 
       Awaitility.await("all jobs have been activated")
           .atMost(Duration.ofSeconds(5))
-          .untilAsserted(() -> assertThat(activatedJobs).isEqualTo(expectedActivatedJobs));
+          .untilAsserted(
+              () ->
+                  assertThat(activatedJobs)
+                      .as("the expected number of jobs has been activated")
+                      .isEqualTo(expectedActivatedJobs));
     }
+  }
+
+  private void takeSnapshot(
+      final ZeebeBrokerNode<? extends org.testcontainers.containers.GenericContainer<?>> node) {
+    final PartitionsActuatorClient partitionsActuatorClient =
+        new PartitionsActuatorClient(node.getExternalMonitoringAddress());
+    final Either<Throwable, Map<String, PartitionStatus>> result =
+        partitionsActuatorClient.takeSnapshot();
+    EitherAssert.assertThat(result).as("take snapshot operation was successful").isRight();
   }
 
   private void updateBroker(final ZeebeBrokerNode<?> broker) {
     broker.setDockerImageName(
-        ZeebeTestContainerDefaults.defaultTestImage().withTag(NEW_VERSION).asCanonicalNameString());
+        ZeebeTestContainerDefaults.defaultTestImage()
+            .withTag(TEST_IMAGE_TAG)
+            .asCanonicalNameString());
   }
 
   private ProcessInstanceEvent createProcessInstance(final ZeebeClient client) {
@@ -265,17 +286,20 @@ final class RollingUpdateTest {
       final ZeebeClient zeebeClient, final int brokerId) {
     final var topology = zeebeClient.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
+        .as("the topology contains all the brokers")
         .isComplete(cluster.getBrokers().size(), 1)
+        .as("the topology contains the updated broker")
         .hasBrokerSatisfying(
             brokerInfo -> {
-              assertThat(brokerInfo.getNodeId()).isEqualTo(brokerId);
-              assertThat(brokerInfo.getVersion()).isEqualTo(NEW_VERSION);
+              assertThat(brokerInfo.getNodeId()).as("the broker's node ID").isEqualTo(brokerId);
+              assertThat(brokerInfo.getVersion()).as("the broker's version").isEqualTo(NEW_VERSION);
             });
   }
 
   private void assertTopologyDoesNotContainerBroker(final ZeebeClient client, final int brokerId) {
     final var topology = client.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
+        .as("the topology does not contain broker %d", brokerId)
         .doesNotContainBroker(brokerId)
         .isComplete(cluster.getBrokers().size() - 1, 1);
   }
@@ -295,10 +319,13 @@ final class RollingUpdateTest {
     final Either<Throwable, Map<String, PartitionStatus>> response =
         partitionsActuatorClient.queryPartitions();
     EitherAssert.assertThat(response).isRight();
-
-    final PartitionStatus partitionStatus = response.get().get("1");
-    assertThat(partitionStatus).isNotNull();
-    assertThat(partitionStatus.snapshotId).isNotBlank();
+    assertThat(response.get())
+        .hasEntrySatisfying(
+            "1",
+            status ->
+                assertThat(status.snapshotId)
+                    .as("partition 1 reports the presence of a snapshot")
+                    .isNotBlank());
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
