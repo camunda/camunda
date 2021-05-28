@@ -1,1 +1,2 @@
+#!/bin/sh
 yarn --cwd client lint-staged
