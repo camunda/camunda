@@ -8,9 +8,9 @@
 package io.camunda.zeebe.engine.state.message;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.List;
 
 /**
  * This class keeps track of the last sent time of commands related to either message subscriptions
@@ -18,9 +18,10 @@ import java.util.TreeSet;
  */
 final class TransientSubscriptionCommandState {
 
-  private final SortedSet<CommandEntry> transientState = new TreeSet<>();
+  private final List<CommandEntry> transientState = new ArrayList<>();
 
   final void add(final CommandEntry commandEntryToAdd) {
+    removeEqualEntry(commandEntryToAdd);
     synchronized (transientState) {
       transientState.add(commandEntryToAdd);
     }
@@ -53,6 +54,7 @@ final class TransientSubscriptionCommandState {
   final Iterable<CommandEntry> getEntriesBefore(final long deadline) {
     final var result = new ArrayList<CommandEntry>();
     synchronized (transientState) {
+      Collections.sort(transientState);
       for (final CommandEntry commandEntry : transientState) {
         if (commandEntry.commandSentTime >= deadline) {
           break;
