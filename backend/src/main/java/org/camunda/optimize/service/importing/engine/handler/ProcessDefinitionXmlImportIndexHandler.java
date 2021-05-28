@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -26,7 +28,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -91,6 +93,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
   private QueryBuilder buildBasicQuery() {
     return QueryBuilders.boolQuery()
       .mustNot(existsQuery(PROCESS_DEFINITION_XML))
-      .must(termQuery(ENGINE, engineContext.getEngineAlias()));
+      .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
+      .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineContext.getEngineAlias()));
   }
 }

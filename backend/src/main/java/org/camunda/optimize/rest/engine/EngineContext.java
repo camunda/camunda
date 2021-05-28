@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -232,7 +233,7 @@ public class EngineContext {
       .version(engineDto.getVersionAsString())
       .versionTag(engineDto.getVersionTag())
       .name(engineDto.getName())
-      .engine(this.getEngineAlias())
+      .dataSource(new EngineDataSourceDto(this.getEngineAlias()))
       .tenantId(engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null)))
       .build();
   }
@@ -277,7 +278,7 @@ public class EngineContext {
       engineEntity.getVersionAsString(),
       engineEntity.getVersionTag(),
       engineEntity.getName(),
-      this.getEngineAlias(),
+      new EngineDataSourceDto(this.getEngineAlias()),
       engineEntity.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
     );
   }

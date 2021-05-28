@@ -12,6 +12,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -1988,7 +1989,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .version(version)
       .versionTag(VERSION_TAG)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .name(name)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
       .deleted(deleted)
@@ -2025,7 +2026,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .version(version)
       .versionTag(VERSION_TAG)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml(key + version + tenantId)
       .build();
   }

@@ -14,7 +14,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENA
 
 public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String DECISION_DEFINITION_ID = DEFINITION_ID;
   public static final String DECISION_DEFINITION_KEY = DEFINITION_KEY;
@@ -22,7 +22,6 @@ public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
   public static final String DECISION_DEFINITION_VERSION_TAG = DEFINITION_VERSION_TAG;
   public static final String DECISION_DEFINITION_NAME = DEFINITION_NAME;
   public static final String DECISION_DEFINITION_XML = "dmn10Xml";
-  public static final String ENGINE = DEFINITION_ENGINE;
   public static final String TENANT_ID = DEFINITION_TENANT_ID;
   public static final String INPUT_VARIABLE_NAMES = "inputVariableNames";
   public static final String OUTPUT_VARIABLE_NAMES = "outputVariableNames";

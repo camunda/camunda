@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -144,7 +145,7 @@ public class CacheRequestIT extends AbstractIT {
         DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto();
         decisionDefinitionDto.setDmn10Xml("DecisionModelXml");
         decisionDefinitionDto.setKey(key);
-        decisionDefinitionDto.setEngine(DEFAULT_ENGINE_ALIAS);
+        decisionDefinitionDto.setDataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
         decisionDefinitionDto.setVersion(version);
         decisionDefinitionDto.setId("id-" + key + "-version-" + version);
         elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
@@ -160,7 +161,7 @@ public class CacheRequestIT extends AbstractIT {
           processDefinitionOptimizeDto.setBpmn20Xml("ProcessModelXml");
           processDefinitionOptimizeDto.setKey(key);
           processDefinitionOptimizeDto.setVersion(version);
-          processDefinitionOptimizeDto.setEngine(DEFAULT_ENGINE_ALIAS);
+          processDefinitionOptimizeDto.setDataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
           processDefinitionOptimizeDto.setId("id-" + key + "-version-" + version);
           elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
             PROCESS_DEFINITION_INDEX_NAME, processDefinitionOptimizeDto.getId(), processDefinitionOptimizeDto

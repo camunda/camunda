@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION_TAG;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -46,7 +46,7 @@ public class DecisionDefinitionWriter {
     DECISION_DEFINITION_VERSION,
     DECISION_DEFINITION_VERSION_TAG,
     DECISION_DEFINITION_NAME,
-    ENGINE,
+    DATA_SOURCE,
     TENANT_ID
   );
 

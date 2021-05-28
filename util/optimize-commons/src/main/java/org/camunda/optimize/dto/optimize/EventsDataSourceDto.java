@@ -5,13 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
-@Data
-@AllArgsConstructor
-public abstract class ConfiguredDataSourceDto {
+@Getter
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class EventsDataSourceDto extends DataSourceDto {
 
-  private DataImportSourceType type;
+  public EventsDataSourceDto() {
+    super(DataImportSourceType.EVENTS, null);
+  }
 
 }

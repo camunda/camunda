@@ -8,6 +8,7 @@ package org.camunda.optimize.service.entities;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -440,7 +441,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
       .version(version)
       .versionTag(version)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml(DEFINITION_XML_STRING + version)
       .build();
   }
@@ -453,7 +454,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
       .version(version)
       .versionTag(version)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .dmn10Xml(DEFINITION_XML_STRING + version)
       .build();
   }

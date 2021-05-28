@@ -6,9 +6,9 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ConfiguredDataSourceDto;
-import org.camunda.optimize.dto.optimize.ConfiguredEngineDto;
-import org.camunda.optimize.dto.optimize.ConfiguredZeebeDto;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
@@ -42,7 +42,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   private final List<AbstractEngineImportMediatorFactory> engineMediatorFactories;
   private final List<AbstractZeebeImportMediatorFactory> zeebeMediatorFactories;
 
-  private List<AbstractImportScheduler<? extends ConfiguredDataSourceDto>> importSchedulers = new ArrayList<>();
+  private List<AbstractImportScheduler<? extends DataSourceDto>> importSchedulers = new ArrayList<>();
 
   public ImportSchedulerManagerService(final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                        final BeanFactory beanFactory,
@@ -61,14 +61,14 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
   @PreDestroy
   public synchronized void shutdown() {
-    for (AbstractImportScheduler<? extends ConfiguredDataSourceDto> oldScheduler : importSchedulers) {
+    for (AbstractImportScheduler<? extends DataSourceDto> oldScheduler : importSchedulers) {
       oldScheduler.stopImportScheduling();
       oldScheduler.shutdown();
     }
   }
 
   public synchronized void startSchedulers() {
-    for (AbstractImportScheduler<? extends ConfiguredDataSourceDto> scheduler : importSchedulers) {
+    for (AbstractImportScheduler<? extends DataSourceDto> scheduler : importSchedulers) {
       if (configurationService.isImportEnabled(scheduler.getDataImportSourceDto())) {
         scheduler.startImportScheduling();
       } else {
@@ -80,7 +80,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   }
 
   public synchronized void stopSchedulers() {
-    for (AbstractImportScheduler<? extends ConfiguredDataSourceDto> scheduler : importSchedulers) {
+    for (AbstractImportScheduler<? extends DataSourceDto> scheduler : importSchedulers) {
       scheduler.stopImportScheduling();
     }
   }
@@ -127,13 +127,13 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   }
 
   private synchronized void initSchedulers() {
-    final List<AbstractImportScheduler<? extends ConfiguredDataSourceDto>> schedulers = new ArrayList<>();
+    final List<AbstractImportScheduler<? extends DataSourceDto>> schedulers = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
         final List<ImportMediator> mediators = createEngineMediatorList(engineContext);
         final EngineImportScheduler scheduler = new EngineImportScheduler(
           mediators,
-          new ConfiguredEngineDto(engineContext.getEngineAlias())
+          new EngineDataSourceDto(engineContext.getEngineAlias())
         );
         schedulers.add(scheduler);
       } catch (Exception e) {
@@ -150,7 +150,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
       }
       ZeebeImportScheduler zeebeImportScheduler = new ZeebeImportScheduler(
         zeebeMediatorList,
-        new ConfiguredZeebeDto(zeebeConfig.getName(), zeebeConfig.getPartitionCount())
+        new ZeebeDataSourceDto(zeebeConfig.getName(), zeebeConfig.getPartitionCount())
       );
       schedulers.add(zeebeImportScheduler);
     }

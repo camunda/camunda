@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ConfiguredDataSourceDto;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
-public abstract class AbstractImportScheduler<T extends ConfiguredDataSourceDto> extends AbstractScheduledService {
+public abstract class AbstractImportScheduler<T extends DataSourceDto> extends AbstractScheduledService {
 
   protected final List<ImportMediator> importMediators;
   @Getter

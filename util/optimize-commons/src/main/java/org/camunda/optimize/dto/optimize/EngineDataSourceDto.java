@@ -12,15 +12,14 @@ import lombok.ToString;
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class ConfiguredZeebeDto extends ConfiguredDataSourceDto {
+public class EngineDataSourceDto extends DataSourceDto {
 
-  private String name;
-  private int partitionCount;
+  public EngineDataSourceDto() {
+    this(null);
+  }
 
-  public ConfiguredZeebeDto(final String name, final int partitionCount) {
-    super(DataImportSourceType.ZEEBE);
-    this.name = name;
-    this.partitionCount = partitionCount;
+  public EngineDataSourceDto(final String engineAlias) {
+    super(DataImportSourceType.ENGINE, engineAlias);
   }
 
 }

@@ -37,17 +37,17 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
                                       final String version,
                                       final String versionTag,
                                       final String name,
-                                      final String engine,
+                                      final DataSourceDto dataSource,
                                       final String tenantId) {
-    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, dataSource, tenantId, false, DefinitionType.PROCESS);
   }
 
   public ProcessDefinitionOptimizeDto(final String id,
-                                      final String engine,
+                                      final DataSourceDto dataSource,
                                       final String bpmn20Xml,
                                       final List<FlowNodeDataDto> flowNodeData,
                                       final Map<String, String> userTaskNames) {
-    super(id, engine);
+    super(id, dataSource);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
@@ -59,13 +59,13 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
                                       final String version,
                                       final String versionTag,
                                       final String name,
-                                      final String engine,
+                                      final DataSourceDto dataSource,
                                       final String tenantId,
                                       final String bpmn20Xml,
                                       final boolean deleted,
                                       final List<FlowNodeDataDto> flowNodeData,
                                       final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, deleted, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
@@ -82,4 +82,5 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
       ? new HashMap<>()
       : new HashMap<>(userTaskNames);
   }
+
 }

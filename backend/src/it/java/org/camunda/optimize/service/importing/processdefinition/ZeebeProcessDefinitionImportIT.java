@@ -13,6 +13,7 @@ import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractZeebeIT;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
@@ -61,7 +62,8 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
         assertThat(importedDef.isEventBased()).isFalse();
         assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(simpleProcess));
         assertThat(importedDef.getName()).isEqualTo(processName);
-        assertThat(importedDef.getEngine()).isEqualTo(ZeebeConstants.ZEEBE_SOURCE_NAME);
+        assertThat(importedDef.getDataSource().getType()).isEqualTo(DataImportSourceType.ZEEBE);
+        assertThat(importedDef.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(importedDef.getTenantId()).isNull();
         assertThat(importedDef.isDeleted()).isFalse();
         assertThat(importedDef.getUserTaskNames()).isEmpty();
@@ -96,7 +98,8 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
         assertThat(importedDef.isEventBased()).isFalse();
         assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(noNameStartEventProcess));
         assertThat(importedDef.getName()).isEqualTo(deployedProcess.getBpmnProcessId());
-        assertThat(importedDef.getEngine()).isEqualTo(ZeebeConstants.ZEEBE_SOURCE_NAME);
+        assertThat(importedDef.getDataSource().getType()).isEqualTo(DataImportSourceType.ZEEBE);
+        assertThat(importedDef.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(importedDef.getTenantId()).isNull();
         assertThat(importedDef.isDeleted()).isFalse();
         assertThat(importedDef.getUserTaskNames()).isEmpty();

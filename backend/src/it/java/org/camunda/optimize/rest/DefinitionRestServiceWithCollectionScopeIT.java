@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -1214,7 +1215,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .key(key)
       .version(version)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .name(name)
       .deleted(deleted)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
@@ -1234,7 +1235,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .name(name)
       .version(version)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .deleted(deleted)
       .bpmn20Xml(key + version + tenantId)
       .build();

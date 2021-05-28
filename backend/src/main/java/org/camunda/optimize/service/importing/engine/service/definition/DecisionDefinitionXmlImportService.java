@@ -11,6 +11,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -87,7 +88,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     return definitionKey.map(
       decisionKey -> new DecisionDefinitionOptimizeDto(
         engineEntity.getId(),
-        engineContext.getEngineAlias(),
+        new EngineDataSourceDto(engineContext.getEngineAlias()),
         engineEntity.getDmnXml(),
         extractInputVariables(dmnModelInstance, decisionKey),
         extractOutputVariables(dmnModelInstance, decisionKey)

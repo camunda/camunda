@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -71,8 +72,8 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_ENGINE;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
@@ -206,7 +207,7 @@ public class DefinitionReader {
   public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
-        .field(DEFINITION_ENGINE)
+        .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
         .size(LIST_FETCH_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(boolQuery()
@@ -245,7 +246,7 @@ public class DefinitionReader {
     // 2.1 group by engine
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
-        .field(DEFINITION_ENGINE)
+        .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
         .size(LIST_FETCH_LIMIT);
     // 1. group by key, type and tenant (composite aggregation)
     List<CompositeValuesSourceBuilder<?>> keyAndTypeAndTenantSources = new ArrayList<>();
@@ -685,7 +686,7 @@ public class DefinitionReader {
     // 2.3 group by engine
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
-        .field(DEFINITION_ENGINE)
+        .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
         .size(LIST_FETCH_LIMIT);
     // 1. group by key and type
     List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();

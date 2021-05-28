@@ -25,7 +25,6 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
   public static final String PROCESS_DEFINITION_XML = ProcessDefinitionOptimizeDto.Fields.bpmn20Xml;
   public static final String FLOW_NODE_DATA = ProcessDefinitionOptimizeDto.Fields.flowNodeData;
   public static final String USER_TASK_NAMES = ProcessDefinitionOptimizeDto.Fields.userTaskNames;
-  public static final String ENGINE = DEFINITION_ENGINE;
   public static final String TENANT_ID = DEFINITION_TENANT_ID;
 
   @Override

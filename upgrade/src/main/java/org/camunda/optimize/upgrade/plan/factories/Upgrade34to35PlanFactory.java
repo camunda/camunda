@@ -7,11 +7,13 @@ package org.camunda.optimize.upgrade.plan.factories;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
@@ -30,6 +32,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -52,7 +55,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.4.0")
       .toVersion("3.5.0")
-      .addUpgradeSteps(migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(dependencies))
+      .addUpgradeSteps(migrateDefinitions(dependencies))
       .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
       .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
       .addUpgradeStep(migrateProcessReports())
@@ -60,7 +63,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .build();
   }
 
-  private static List<UpgradeStep> migrateProcessAndEventProcessDefinitionsUpdateFlowNodeNamesFieldToFlowNodeData(
+  private static List<UpgradeStep> migrateDefinitions(
     UpgradeExecutionDependencies dependencies) {
     final Map<String, Object> processDefinitionIdsToFlowNodeDataProcessDefinition = getAllExistingDataForFlowNodes(
       ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME, dependencies);
@@ -69,25 +72,44 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
         ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME, dependencies);
 
     //@formatter:off
-    String script =
+    String updateFlowNodeDatascript =
+      // First part is to update the flow node data
       "ctx._source.flowNodeData = ((Map) params.get(ctx._source.id)).values();\n" +
       "ctx._source.remove(\"flowNodeNames\");\n";
+      // Second part is to update the data import source data
     //@formatter:on
 
     return Arrays.asList(
       new UpdateIndexStep(
         new ProcessDefinitionIndex(),
-        script,
+        updateFlowNodeDatascript + getUpdateImportSourceScript(DataImportSourceType.ENGINE.getId()),
         processDefinitionIdsToFlowNodeDataProcessDefinition,
         Collections.emptySet()
       ),
       new UpdateIndexStep(
         new EventProcessDefinitionIndex(),
-        script,
+        updateFlowNodeDatascript + getUpdateImportSourceScript(DataImportSourceType.EVENTS.getId()),
         processDefinitionIdsToFlowNodeDataEventProcessDefinition,
         Collections.emptySet()
+      ),
+      new UpdateIndexStep(
+        new DecisionDefinitionIndex(),
+        getUpdateImportSourceScript(DataImportSourceType.ENGINE.getId())
       )
     );
+  }
+
+  @NotNull
+  private static String getUpdateImportSourceScript(final String importType) {
+    //@formatter:off
+    return
+      "def dataSource = [\n" +
+      "  'type': \"" + importType + "\",\n" +
+      "  'name': ctx._source.engine\n" +
+      "];\n" +
+      "ctx._source.dataSource = dataSource;\n" +
+      "ctx._source.remove(\"engine\");\n";
+    //@formatter:on
   }
 
   private static List<UpgradeStep> mergeUserTaskAndFlowNodeData(final UpgradeExecutionDependencies dependencies,
@@ -214,7 +236,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
 
   private UpgradeStep migrateProcessReports() {
     final String script =
-    //@formatter:off
+      //@formatter:off
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.processDefinitionKey;\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
@@ -236,7 +258,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
 
   private UpgradeStep migrateDecisionReports() {
     final String script =
-    //@formatter:off
+      //@formatter:off
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.decisionDefinitionKey;\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +

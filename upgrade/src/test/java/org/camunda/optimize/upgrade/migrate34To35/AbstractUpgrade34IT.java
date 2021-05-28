@@ -8,6 +8,8 @@ package org.camunda.optimize.upgrade.migrate34To35;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+import org.camunda.optimize.upgrade.migrate34To35.indices.DecisionDefinitionIndexV4Old;
+import org.camunda.optimize.upgrade.migrate34To35.indices.DecisionInstanceIndexV4Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.EventProcessDefinitionIndexV3Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.EventProcessInstanceIndexV6Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessDefinitionIndexV4Old;
@@ -27,6 +29,7 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
   protected static final String PROCESS_INSTANCE_INDEX_ID = "processinstanceindexid";
 
   protected static final ProcessDefinitionIndexV4Old PROCESS_DEFINITION_INDEX = new ProcessDefinitionIndexV4Old();
+  protected static final DecisionDefinitionIndexV4Old DECISION_DEFINITION_INDEX = new DecisionDefinitionIndexV4Old();
   protected static final EventProcessDefinitionIndexV3Old EVENT_PROCESS_DEFINITION_INDEX =
     new EventProcessDefinitionIndexV3Old();
   protected static final EventProcessInstanceIndexV6Old EVENT_PROCESS_INSTANCE_INDEX =
@@ -42,6 +45,7 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
     initSchema(
       Arrays.asList(
         PROCESS_DEFINITION_INDEX,
+        DECISION_DEFINITION_INDEX,
         EVENT_PROCESS_DEFINITION_INDEX,
         PROCESS_INSTANCE_INDEX,
         EVENT_PROCESS_INSTANCE_INDEX,

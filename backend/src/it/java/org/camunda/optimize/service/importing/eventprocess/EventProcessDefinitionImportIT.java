@@ -53,7 +53,6 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
           .version("1")
           .versionTag(null)
           .name(simpleEventProcessMappingDto.getName())
-          .engine(null)
           .tenantId(null)
           .bpmn20Xml(simpleEventProcessMappingDto.getXml())
           .deleted(false)

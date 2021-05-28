@@ -17,7 +17,7 @@ public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator
   public static final String DEFINITION_VERSION = DefinitionOptimizeResponseDto.Fields.version;
   public static final String DEFINITION_VERSION_TAG = DefinitionOptimizeResponseDto.Fields.versionTag;
   public static final String DEFINITION_NAME = DefinitionOptimizeResponseDto.Fields.name;
-  public static final String DEFINITION_ENGINE = DefinitionOptimizeResponseDto.Fields.engine;
+  public static final String DATA_SOURCE = DefinitionOptimizeResponseDto.Fields.dataSource;
   public static final String DEFINITION_TENANT_ID = DefinitionOptimizeResponseDto.Fields.tenantId;
   public static final String DEFINITION_DELETED = DefinitionOptimizeResponseDto.Fields.deleted;
 
@@ -37,8 +37,9 @@ public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator
       .startObject(DEFINITION_VERSION_TAG)
         .field("type", "keyword")
       .endObject()
-      .startObject(DEFINITION_ENGINE)
-        .field("type", "keyword")
+      .startObject(DATA_SOURCE)
+        .field("type", "object")
+        .field("dynamic", true)
       .endObject()
       .startObject(DEFINITION_TENANT_ID)
         .field("type", "keyword")

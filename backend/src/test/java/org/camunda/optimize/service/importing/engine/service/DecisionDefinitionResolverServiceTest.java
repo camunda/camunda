@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
@@ -162,7 +163,7 @@ public class DecisionDefinitionResolverServiceTest {
         .version(version)
         .versionTag("aVersionTag")
         .name("name")
-        .engine("engine")
+        .dataSource(new EngineDataSourceDto("engine"))
         .deleted(false)
         .dmn10Xml("")
         .build()
@@ -179,7 +180,7 @@ public class DecisionDefinitionResolverServiceTest {
         .versionTag("aVersionTag")
         .name("name")
         .deleted(false)
-        .engine("engine")
+        .dataSource(new EngineDataSourceDto("engine"))
         .dmn10Xml("")
         .build();
     when(engineContext.fetchDecisionDefinition(any())).thenReturn(mockedDefinition);

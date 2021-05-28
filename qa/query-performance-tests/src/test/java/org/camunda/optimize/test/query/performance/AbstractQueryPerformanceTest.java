@@ -8,6 +8,7 @@ package org.camunda.optimize.test.query.performance;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -92,7 +93,12 @@ public abstract class AbstractQueryPerformanceTest {
 
   protected <T> void assertThatListEndpointMaxAllowedQueryTimeIsMet(final int numberOfExpectedElements,
                                                                     final Supplier<List<T>> elementFetcher) {
-    assertThatListEndpointMaxAllowedQueryTimeIsMet(numberOfExpectedElements, elementFetcher, null, getMaxAllowedQueryTime());
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(
+      numberOfExpectedElements,
+      elementFetcher,
+      null,
+      getMaxAllowedQueryTime()
+    );
   }
 
   protected <T> void assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(final int numberOfExpectedElements,
@@ -142,7 +148,7 @@ public abstract class AbstractQueryPerformanceTest {
       .version(version)
       .versionTag("aVersionTag")
       .tenantId(tenantId)
-      .engine(engineAlias)
+      .dataSource(new EngineDataSourceDto(engineAlias))
       .bpmn20Xml(Bpmn.convertToString(BpmnModels.getSingleUserTaskDiagram()))
       .build();
   }
@@ -156,7 +162,7 @@ public abstract class AbstractQueryPerformanceTest {
       .version(version)
       .versionTag("aVersionTag")
       .tenantId(tenantId)
-      .engine(engineAlias)
+      .dataSource(new EngineDataSourceDto(engineAlias))
       .name(name)
       .dmn10Xml(Dmn.convertToString(DmnModels.createDefaultDmnModel()))
       .build();

@@ -11,6 +11,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.engine.ActivityTypes;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -620,7 +621,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .name(definitionEngineDto.getName())
       .version(definitionEngineDto.getVersionAsString())
       .tenantId(definitionEngineDto.getTenantId().orElse(null))
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .deleted(true)
       .bpmn20Xml("someXml")
       .build();

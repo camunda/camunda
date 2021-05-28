@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.migrate34To35.indices;
 
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -21,17 +20,18 @@ import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 
-public class ProcessDefinitionIndexV4Old extends DefaultIndexMappingCreator {
+public class DecisionDefinitionIndexV4Old extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 4;
 
-  public static final String PROCESS_DEFINITION_XML = ProcessDefinitionOptimizeDto.Fields.bpmn20Xml;
-  public static final String USER_TASK_NAMES = ProcessDefinitionOptimizeDto.Fields.userTaskNames;
+  public static final String DECISION_DEFINITION_XML = "dmn10Xml";
+  public static final String INPUT_VARIABLE_NAMES = "inputVariableNames";
+  public static final String OUTPUT_VARIABLE_NAMES = "outputVariableNames";
   public static final String ENGINE = "engine";
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+    return ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
   }
 
   @Override
@@ -67,18 +67,16 @@ public class ProcessDefinitionIndexV4Old extends DefaultIndexMappingCreator {
       .startObject(DEFINITION_DELETED)
         .field("type", "boolean")
       .endObject()
-      .startObject("flowNodeNames")
-      .field("type", "object")
-      .field(MAPPING_ENABLED_SETTING, "false")
+      .startObject(INPUT_VARIABLE_NAMES)
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
-      .startObject(USER_TASK_NAMES)
-      .field("type", "object")
-      .field(MAPPING_ENABLED_SETTING, "false")
+      .startObject(OUTPUT_VARIABLE_NAMES)
+        .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()
-      .startObject(PROCESS_DEFINITION_XML)
-      .field("type", "text")
-      .field("index", true)
-      .field("analyzer", "is_present_analyzer")
+      .startObject(DECISION_DEFINITION_XML)
+        .field("type", "text")
+        .field("index", true)
+        .field("analyzer", "is_present_analyzer")
       .endObject();
     // @formatter:on
   }

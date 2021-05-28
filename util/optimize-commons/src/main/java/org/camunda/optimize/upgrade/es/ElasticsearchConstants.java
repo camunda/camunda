@@ -99,4 +99,8 @@ public class ElasticsearchConstants {
   public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE = "resource_already_exists_exception";
+
+  public static final String ENGINE_DATA_SOURCE = "engine";
+  public static final String ZEEBE_DATA_SOURCE = "zeebe";
+  public static final String EVENTS_DATA_SOURCE = "events";
 }

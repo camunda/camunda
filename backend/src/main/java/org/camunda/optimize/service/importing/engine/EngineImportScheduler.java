@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.engine;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ConfiguredEngineDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
@@ -19,12 +19,12 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class EngineImportScheduler extends AbstractImportScheduler<ConfiguredEngineDto> {
+public class EngineImportScheduler extends AbstractImportScheduler<EngineDataSourceDto> {
   // Iterating through this synchronized list is only thread-safe when synchronizing on the list itself, as per docs
   private final List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
 
   public EngineImportScheduler(final List<ImportMediator> importMediators,
-                               final ConfiguredEngineDto dataImportSourceDto) {
+                               final EngineDataSourceDto dataImportSourceDto) {
     super(importMediators, dataImportSourceDto);
   }
 
@@ -59,13 +59,13 @@ public class EngineImportScheduler extends AbstractImportScheduler<ConfiguredEng
   }
 
   public String getEngineAlias() {
-    return dataImportSourceDto.getAlias();
+    return dataImportSourceDto.getName();
   }
 
   private void notifyThatImportIsInProgress() {
     synchronized (importObservers) {
       for (final ImportObserver importObserver : importObservers) {
-        importObserver.importInProgress(dataImportSourceDto.getAlias());
+        importObserver.importInProgress(dataImportSourceDto.getName());
       }
     }
   }
@@ -73,7 +73,7 @@ public class EngineImportScheduler extends AbstractImportScheduler<ConfiguredEng
   private void notifyThatImportIsIdle() {
     synchronized (importObservers) {
       for (final ImportObserver importObserver : importObservers) {
-        importObserver.importIsIdle(dataImportSourceDto.getAlias());
+        importObserver.importIsIdle(dataImportSourceDto.getName());
       }
     }
   }

@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
@@ -119,23 +120,35 @@ public class DefinitionAuthorizationService {
     }
   }
 
-  public boolean isAuthorizedToAccessProcessDefinition(final String userId,
-                                                       final ProcessDefinitionOptimizeDto processDefinition) {
+  private boolean isAuthorizedToAccessProcessDefinition(final String userId,
+                                                        final ProcessDefinitionOptimizeDto processDefinition) {
     if (processDefinition.isEventBased()) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey())
         .orElse(false);
     } else {
-      return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
-        userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
-      );
+      if (processDefinition.getDataSource() instanceof EngineDataSourceDto) {
+        return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
+          userId,
+          processDefinition.getKey(),
+          processDefinition.getTenantId(),
+          processDefinition.getDataSource().getName()
+        );
+      }
     }
+    return false;
   }
 
-  public boolean isAuthorizedToAccessDecisionDefinition(final String userId,
-                                                        final DecisionDefinitionOptimizeDto decisionDefinition) {
-    return engineDefinitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
-      userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
-    );
+  private boolean isAuthorizedToAccessDecisionDefinition(final String userId,
+                                                         final DecisionDefinitionOptimizeDto decisionDefinition) {
+    if (decisionDefinition.getDataSource() instanceof EngineDataSourceDto) {
+      return engineDefinitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
+        userId,
+        decisionDefinition.getKey(),
+        decisionDefinition.getTenantId(),
+        decisionDefinition.getDataSource().getName()
+      );
+    }
+    return false;
   }
 
   private static <T> List<T> mergeTwoCollectionsWithDistinctValues(final Collection<T> firstCollection,

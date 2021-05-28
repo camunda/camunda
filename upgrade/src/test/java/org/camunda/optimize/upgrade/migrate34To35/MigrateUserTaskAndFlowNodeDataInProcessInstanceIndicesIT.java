@@ -125,7 +125,7 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
   @Test
   public void flowNodesMigrationInEventBasedInstanceIndices() {
     // given
-    executeBulk("steps/3.4/process/34-event-process-instances.json");
+    executeBulk("steps/3.4/processinstance/34-event-process-instances.json");
     final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(upgradeDependencies);
 
     // when
@@ -145,7 +145,7 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
   @Test
   public void flowNodesMigrationInNonEventBasedInstanceIndices() {
     // given
-    executeBulk("steps/3.4/process/34-process-instances.json");
+    executeBulk("steps/3.4/processinstance/34-process-instances.json");
     final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(upgradeDependencies);
 
     // when

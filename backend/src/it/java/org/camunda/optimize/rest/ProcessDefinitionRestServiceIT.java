@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -401,7 +402,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .version(version)
       .versionTag(VERSION_TAG)
       .tenantId(tenantId)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml(key + version + tenantId)
       .deleted(deleted)
       .build();

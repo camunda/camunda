@@ -1,6 +1,6 @@
 pipelineJob('upgrade-performance-static-dataset') {
 
-  displayName 'Upgrade performance test on large static dataset'
+  displayName 'Upgrade performance test on static dataset'
   description 'Test Optimize upgrade performance against a static dataset.'
 
   // By default, this job is disabled in non-prod envs.

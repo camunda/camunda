@@ -53,7 +53,9 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
         ),
         new ZeebeProcessDefinitionImportService(
           elasticsearchImportJobExecutor,
-          processDefinitionWriter
+          processDefinitionWriter,
+          configurationService.getConfiguredZeebe().getName(),
+          partitionId
         ),
         configurationService,
         new BackoffCalculator(configurationService)

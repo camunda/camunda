@@ -11,6 +11,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -1053,7 +1054,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .name(definitionEngineDto.getName())
       .version(definitionEngineDto.getVersionAsString())
       .tenantId(definitionEngineDto.getTenantId().orElse(null))
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .deleted(true)
       .dmn10Xml("someXml")
       .build();

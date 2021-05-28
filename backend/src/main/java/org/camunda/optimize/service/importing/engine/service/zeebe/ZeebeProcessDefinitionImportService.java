@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.service.zeebe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -21,14 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_SOURCE_NAME;
-
 @AllArgsConstructor
 @Slf4j
 public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeProcessDefinitionRecordDto> {
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final String zeebeName;
+  private final int partitionId;
 
   @Override
   public void executeImport(final List<ZeebeProcessDefinitionRecordDto> pageOfProcessDefinitions,
@@ -83,7 +84,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
       .name(BpmnModelUtil.extractProcessDefinitionName(String.valueOf(recordData.getBpmnProcessId()), bpmn)
               .orElse(recordData.getBpmnProcessId()))
       .bpmn20Xml(bpmn)
-      .engine(ZEEBE_SOURCE_NAME)
+      .dataSource(new ZeebeDataSourceDto(zeebeName, partitionId))
       .tenantId(null)
       .deleted(false)
       .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmn))

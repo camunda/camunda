@@ -27,7 +27,7 @@ class MigrateProcessDefinitionFlowNodeNamesIT extends AbstractUpgrade34IT {
   @Test
   public void migrateProcessDefinitionAddFlowNodeDataFieldAndDeleteFlowNodeNamesField() {
     // given
-    executeBulk("steps/3.4/process/34-process-definition.json");
+    executeBulk("steps/3.4/definition/34-process-definition.json");
     final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(upgradeDependencies);
 
     List<FlowNodeDataDto> instanceWithMixedFlowNodesExpectedFlowNode = Arrays.asList(
