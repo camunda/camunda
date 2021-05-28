@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.qa.migration.util;
 
+import java.time.Duration;
 import javax.annotation.PreDestroy;
 import io.camunda.operate.qa.util.migration.TestContext;
 import org.elasticsearch.client.ElasticsearchClient;
@@ -12,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
+import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @Component
@@ -32,6 +35,8 @@ public class ElasticsearchContainerUtil {
         .withNetwork(getNetwork())
         .withNetworkAliases(ELS_NETWORK_ALIAS)
         .withExposedPorts(ELS_PORT);
+    elsContainer
+        .setWaitStrategy(new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     elsContainer.start();
 
     testContext.setNetwork(getNetwork());

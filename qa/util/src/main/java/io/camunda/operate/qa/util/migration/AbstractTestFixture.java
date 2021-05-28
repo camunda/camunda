@@ -17,6 +17,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
@@ -55,7 +56,7 @@ public abstract class AbstractTestFixture implements TestFixture {
         .waitingFor(new HttpWaitStrategy()
             .forPort(8080)
             .forPath("/actuator/health")
-            .withReadTimeout(Duration.ofSeconds(30)));
+            .withReadTimeout(Duration.ofSeconds(120)));
     applyConfiguration(operateContainer, testContext.getInternalElsHost(),
         testContext.getInternalElsPort(), testContext.getInternalZeebeContactPoint());
     operateContainer.start();
@@ -116,6 +117,7 @@ public abstract class AbstractTestFixture implements TestFixture {
         .withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data")
         .withNetwork(testContext.getNetwork())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+    broker.setWaitStrategy(new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     addConfig(broker);
     broker.start();
     logger.info("************ Zeebe started  ************");
