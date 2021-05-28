@@ -22,8 +22,8 @@ function getPopoverPosition(
 ): PopoverPosition {
   // we only know the popover dimensions after it's render, so we approximate
   const POPOVER_APROXIMATE_HEIGHT = isSummaryPopover
-    ? POPOVER_TO_FLOWNODE_SPACE + 54 // 80
-    : POPOVER_TO_FLOWNODE_SPACE + 104; // 120
+    ? POPOVER_TO_FLOWNODE_SPACE + 54
+    : POPOVER_TO_FLOWNODE_SPACE + 153;
   const POPOVER_APROXIMATE_WIDTH = 190;
 
   const containerBoundary = diagramContainer.getBoundingClientRect();
