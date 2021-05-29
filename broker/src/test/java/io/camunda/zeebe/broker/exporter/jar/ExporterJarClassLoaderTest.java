@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
 import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.io.File;
+import java.lang.reflect.Constructor;
 import org.apache.logging.log4j.LogManager;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,7 +29,7 @@ public final class ExporterJarClassLoaderTest {
 
   @Test
   public void shouldLoadClassesPackagedInJar() throws Exception {
-    final Class exportedClass = TestJarExporter.class;
+    final Class<?> exportedClass = TestJarExporter.class;
     final File jarFile = jarCreator.create(exportedClass);
     final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
@@ -36,19 +37,20 @@ public final class ExporterJarClassLoaderTest {
     final Class<?> loadedClass = classLoader.loadClass(exportedClass.getCanonicalName());
 
     // then
+    final Constructor<?> constructor = loadedClass.getConstructor();
     assertThat(loadedClass).isNotEqualTo(exportedClass);
     assertThat(loadedClass.getDeclaredField("FOO").get(loadedClass)).isEqualTo(TestJarExporter.FOO);
-    assertThat(loadedClass.newInstance()).isInstanceOf(Exporter.class);
+    assertThat(constructor.newInstance()).isInstanceOf(Exporter.class);
   }
 
   @Test
   public void shouldLoadSystemClassesFromSystemClassLoader() throws Exception {
-    final Class exportedClass = TestJarExporter.class;
+    final Class<?> exportedClass = TestJarExporter.class;
     final File jarFile = jarCreator.create(exportedClass);
     final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class loadedClass = classLoader.loadClass(String.class.getCanonicalName());
+    final Class<?> loadedClass = classLoader.loadClass(String.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(String.class);
@@ -56,12 +58,12 @@ public final class ExporterJarClassLoaderTest {
 
   @Test
   public void shouldLoadZbExporterClassesFromSystemClassLoader() throws Exception {
-    final Class exportedClass = TestJarExporter.class;
+    final Class<?> exportedClass = TestJarExporter.class;
     final File jarFile = jarCreator.create(exportedClass);
     final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class loadedClass = classLoader.loadClass(Exporter.class.getCanonicalName());
+    final Class<?> loadedClass = classLoader.loadClass(Exporter.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(Exporter.class);
@@ -69,12 +71,12 @@ public final class ExporterJarClassLoaderTest {
 
   @Test
   public void shouldLoadSL4JClassesFromSystemClassLoader() throws Exception {
-    final Class exportedClass = TestJarExporter.class;
+    final Class<?> exportedClass = TestJarExporter.class;
     final File jarFile = jarCreator.create(exportedClass);
     final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class loadedClass = classLoader.loadClass(Logger.class.getCanonicalName());
+    final Class<?> loadedClass = classLoader.loadClass(Logger.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(Logger.class);
@@ -82,12 +84,12 @@ public final class ExporterJarClassLoaderTest {
 
   @Test
   public void shouldLoadLog4JClassesFromSystemClassLoader() throws Exception {
-    final Class exportedClass = TestJarExporter.class;
+    final Class<?> exportedClass = TestJarExporter.class;
     final File jarFile = jarCreator.create(exportedClass);
     final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class loadedClass = classLoader.loadClass(LogManager.class.getCanonicalName());
+    final Class<?> loadedClass = classLoader.loadClass(LogManager.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(LogManager.class);

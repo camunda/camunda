@@ -15,7 +15,6 @@ import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
 import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
 import java.io.File;
 import java.io.IOException;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -66,7 +65,7 @@ public final class ExporterJarRepositoryTest {
   @Test
   public void shouldLoadClassLoaderCorrectlyOnlyOnce() throws Exception {
     // given
-    final Class exportedClass = TestJarExporter.class;
+    final Class<?> exportedClass = TestJarExporter.class;
     final File jarFile = jarCreator.create(exportedClass);
 
     // when
