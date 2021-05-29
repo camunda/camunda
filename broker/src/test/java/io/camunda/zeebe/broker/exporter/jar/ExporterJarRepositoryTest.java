@@ -38,21 +38,6 @@ public final class ExporterJarRepositoryTest {
   }
 
   @Test
-  @Ignore // Temporary disable.. doesn't work on gcloud
-  public void shouldThrowExceptionOnLoadIfNotReadable() throws Exception {
-    // given
-    final File dummy = temporaryFolder.newFile("unreadable.jar");
-
-    // when (ignoring test if file cannot be set to not be readable)
-    assumeTrue(dummy.setReadable(false));
-
-    // then
-    // System.out.println("was set = " + isSet);
-    assertThatThrownBy(() -> jarRepository.load(dummy.getAbsolutePath()))
-        .isInstanceOf(ExporterJarLoadException.class);
-  }
-
-  @Test
   public void shouldThrowExceptionIfJarMissing() throws IOException {
     // given
     final File dummy = temporaryFolder.newFile("missing.jar");
