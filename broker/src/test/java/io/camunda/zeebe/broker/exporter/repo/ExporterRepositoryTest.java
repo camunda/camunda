@@ -33,11 +33,11 @@ public final class ExporterRepositoryTest {
   @Test
   public void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException {
     // given
-    final String id = "myExporter";
-    final Class<? extends Exporter> exporterClass = MinimalExporter.class;
+    final var id = "myExporter";
+    final var exporterClass = MinimalExporter.class;
 
     // when
-    final ExporterDescriptor descriptor = repository.load(id, exporterClass, null);
+    final var descriptor = repository.load(id, exporterClass, null);
 
     // then
     assertThat(descriptor).isNotNull();
@@ -47,8 +47,8 @@ public final class ExporterRepositoryTest {
   @Test
   public void shouldFailToLoadIfExporterInvalid() {
     // given
-    final String id = "exporter";
-    final Class<? extends Exporter> exporterClass = InvalidExporter.class;
+    final var id = "exporter";
+    final var exporterClass = InvalidExporter.class;
 
     // then
     assertThatThrownBy(() -> repository.load(id, exporterClass))
@@ -59,12 +59,12 @@ public final class ExporterRepositoryTest {
   @Test
   public void shouldLoadInternalExporter() throws ExporterLoadException, ExporterJarLoadException {
     // given
-    final ExporterCfg config = new ExporterCfg();
+    final var config = new ExporterCfg();
     config.setClassName(ControlledTestExporter.class.getCanonicalName());
     config.setJarPath(null);
 
     // when
-    final ExporterDescriptor descriptor = repository.load("controlled", config);
+    final var descriptor = repository.load("controlled", config);
 
     // then
     assertThat(config.isExternal()).isFalse();
@@ -76,7 +76,7 @@ public final class ExporterRepositoryTest {
     // given
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
-    final ExporterCfg config = new ExporterCfg();
+    final var config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
     // when
@@ -88,7 +88,7 @@ public final class ExporterRepositoryTest {
     args.put("bar", false);
 
     // when
-    final ExporterDescriptor descriptor = repository.load("exported", config);
+    final var descriptor = repository.load("exported", config);
 
     // then
     assertThat(config.isExternal()).isTrue();
@@ -104,7 +104,7 @@ public final class ExporterRepositoryTest {
     final var externalClass =
         new ByteBuddy().subclass(Object.class).name("com.acme.MyObject").make();
     final var jarFile = externalClass.toJar(temporaryFolder.newFile("library.jar"));
-    final ExporterCfg config = new ExporterCfg();
+    final var config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
     // when
@@ -123,7 +123,7 @@ public final class ExporterRepositoryTest {
     // given
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
-    final ExporterCfg config = new ExporterCfg();
+    final var config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
     // when

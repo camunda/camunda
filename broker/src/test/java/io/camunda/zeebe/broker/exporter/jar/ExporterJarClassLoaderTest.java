@@ -28,13 +28,13 @@ public final class ExporterJarClassLoaderTest {
   public void shouldLoadClassesPackagedInJar() throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = createExporterJar(exporterClass);
-    final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class<?> loadedClass = classLoader.loadClass(ExternalExporter.EXPORTER_CLASS_NAME);
+    final var loadedClass = classLoader.loadClass(ExternalExporter.EXPORTER_CLASS_NAME);
 
     // then
-    final Constructor<?> constructor = loadedClass.getConstructor();
+    final var constructor = loadedClass.getConstructor();
     assertThat(loadedClass.getDeclaredField("FOO").get(loadedClass)).isEqualTo("bar");
     assertThat(constructor.newInstance()).isInstanceOf(Exporter.class);
   }
@@ -43,10 +43,10 @@ public final class ExporterJarClassLoaderTest {
   public void shouldLoadSystemClassesFromSystemClassLoader() throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = createExporterJar(exporterClass);
-    final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class<?> loadedClass = classLoader.loadClass(String.class.getCanonicalName());
+    final var loadedClass = classLoader.loadClass(String.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(String.class);
@@ -56,10 +56,10 @@ public final class ExporterJarClassLoaderTest {
   public void shouldLoadZbExporterClassesFromSystemClassLoader() throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = createExporterJar(exporterClass);
-    final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class<?> loadedClass = classLoader.loadClass(Exporter.class.getCanonicalName());
+    final var loadedClass = classLoader.loadClass(Exporter.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(Exporter.class);
@@ -69,10 +69,10 @@ public final class ExporterJarClassLoaderTest {
   public void shouldLoadSL4JClassesFromSystemClassLoader() throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = createExporterJar(exporterClass);
-    final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class<?> loadedClass = classLoader.loadClass(Logger.class.getCanonicalName());
+    final var loadedClass = classLoader.loadClass(Logger.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(Logger.class);
@@ -82,10 +82,10 @@ public final class ExporterJarClassLoaderTest {
   public void shouldLoadLog4JClassesFromSystemClassLoader() throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = createExporterJar(exporterClass);
-    final ExporterJarClassLoader classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
+    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
-    final Class<?> loadedClass = classLoader.loadClass(LogManager.class.getCanonicalName());
+    final var loadedClass = classLoader.loadClass(LogManager.class.getCanonicalName());
 
     // then
     assertThat(loadedClass).isEqualTo(LogManager.class);
