@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.io.File;
-import org.apache.logging.log4j.LogManager;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
@@ -38,34 +38,8 @@ final class ExporterJarClassLoaderTest {
   }
 
   @Test
-  void shouldLoadSystemClassesFromSystemClassLoader(final @TempDir File tempDir) throws Exception {
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
-    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
-
-    // when
-    final var loadedClass = classLoader.loadClass(String.class.getCanonicalName());
-
-    // then
-    assertThat(loadedClass).isEqualTo(String.class);
-  }
-
-  @Test
-  void shouldLoadZbExporterClassesFromSystemClassLoader(final @TempDir File tempDir)
-      throws Exception {
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
-    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
-
-    // when
-    final var loadedClass = classLoader.loadClass(Exporter.class.getCanonicalName());
-
-    // then
-    assertThat(loadedClass).isEqualTo(Exporter.class);
-  }
-
-  @Test
-  void shouldLoadSL4JClassesFromSystemClassLoader(final @TempDir File tempDir) throws Exception {
+  void shouldUseSystemClassLoaderAsFallback(final @TempDir File tempDir)
+      throws IOException, ClassNotFoundException {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
     final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
@@ -75,18 +49,8 @@ final class ExporterJarClassLoaderTest {
 
     // then
     assertThat(loadedClass).isEqualTo(Logger.class);
-  }
-
-  @Test
-  void shouldLoadLog4JClassesFromSystemClassLoader(final @TempDir File tempDir) throws Exception {
-    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
-    final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
-
-    // when
-    final var loadedClass = classLoader.loadClass(LogManager.class.getCanonicalName());
-
-    // then
-    assertThat(loadedClass).isEqualTo(LogManager.class);
+    assertThat(classLoader.getParent())
+        .isEqualTo(getClass().getClassLoader())
+        .isEqualTo(ClassLoader.getSystemClassLoader());
   }
 }
