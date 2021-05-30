@@ -25,7 +25,7 @@ public final class ExporterJarRepositoryTest {
   @Test
   public void shouldThrowExceptionOnLoadIfNotAJar() throws IOException {
     // given
-    final File fake = temporaryFolder.newFile("fake-file");
+    final var fake = temporaryFolder.newFile("fake-file");
 
     // then
     assertThatThrownBy(() -> jarRepository.load(fake.getAbsolutePath()))
@@ -35,7 +35,7 @@ public final class ExporterJarRepositoryTest {
   @Test
   public void shouldThrowExceptionIfJarMissing() throws IOException {
     // given
-    final File dummy = temporaryFolder.newFile("missing.jar");
+    final var dummy = temporaryFolder.newFile("missing.jar");
 
     // when
     assertThat(dummy.delete()).isTrue();
@@ -48,7 +48,7 @@ public final class ExporterJarRepositoryTest {
   @Test
   public void shouldLoadClassLoaderForJar() throws IOException {
     // given
-    final File dummy = temporaryFolder.newFile("readable.jar");
+    final var dummy = temporaryFolder.newFile("readable.jar");
 
     // when (ignoring test if file cannot be set to be readable)
     assumeTrue(dummy.setReadable(true));
@@ -65,7 +65,7 @@ public final class ExporterJarRepositoryTest {
     final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
 
     // when
-    final ExporterJarClassLoader classLoader = jarRepository.load(jarFile.toPath());
+    final var classLoader = jarRepository.load(jarFile.toPath());
 
     // then
     assertThat(jarRepository.load(jarFile.toPath())).isEqualTo(classLoader);
