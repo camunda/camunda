@@ -240,6 +240,11 @@
       <artifactId>spring-boot-actuator</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
