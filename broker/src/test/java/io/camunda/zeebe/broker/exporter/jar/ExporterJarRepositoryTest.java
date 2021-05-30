@@ -11,20 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assume.assumeTrue;
 
-import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
-import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
+import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public final class ExporterJarRepositoryTest {
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ExporterJarRepository jarRepository = new ExporterJarRepository();
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
-  @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
 
   @Test
   public void shouldThrowExceptionOnLoadIfNotAJar() throws IOException {
@@ -65,14 +61,13 @@ public final class ExporterJarRepositoryTest {
   @Test
   public void shouldLoadClassLoaderCorrectlyOnlyOnce() throws Exception {
     // given
-    final Class<?> exportedClass = TestJarExporter.class;
-    final File jarFile = jarCreator.create(exportedClass);
+    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
+    final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
 
     // when
     final ExporterJarClassLoader classLoader = jarRepository.load(jarFile.toPath());
 
     // then
-    assertThat(classLoader.loadClass(exportedClass.getCanonicalName())).isNotEqualTo(exportedClass);
     assertThat(jarRepository.load(jarFile.toPath())).isEqualTo(classLoader);
   }
 }

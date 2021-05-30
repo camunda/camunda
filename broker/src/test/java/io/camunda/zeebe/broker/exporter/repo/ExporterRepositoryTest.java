@@ -12,26 +12,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
-import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
-import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
+import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import net.bytebuddy.ByteBuddy;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public final class ExporterRepositoryTest {
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
-
-  @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private final ExporterRepository repository = new ExporterRepository();
 
@@ -39,7 +34,7 @@ public final class ExporterRepositoryTest {
   public void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException {
     // given
     final String id = "myExporter";
-    final Class<? extends Exporter> exporterClass = TestJarExporter.class;
+    final Class<? extends Exporter> exporterClass = MinimalExporter.class;
 
     // when
     final ExporterDescriptor descriptor = repository.load(id, exporterClass, null);
@@ -79,13 +74,13 @@ public final class ExporterRepositoryTest {
   @Test
   public void shouldLoadExternalExporter() throws Exception {
     // given
-    final Class<? extends Exporter> exportedClass = TestJarExporter.class;
-    final File jarFile = jarCreator.create(exportedClass);
+    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
+    final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
     final ExporterCfg config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
     // when
-    config.setClassName(exportedClass.getCanonicalName());
+    config.setClassName(ExternalExporter.EXPORTER_CLASS_NAME);
     config.setJarPath(jarFile.getAbsolutePath());
     config.setArgs(args);
 
@@ -100,19 +95,20 @@ public final class ExporterRepositoryTest {
     assertThat(descriptor.getConfiguration().getArguments()).isEqualTo(config.getArgs());
     assertThat(descriptor.getConfiguration().getId()).isEqualTo("exported");
     assertThat(descriptor.newInstance().getClass().getCanonicalName())
-        .isEqualTo(exportedClass.getCanonicalName());
+        .isEqualTo(ExternalExporter.EXPORTER_CLASS_NAME);
   }
 
   @Test
   public void shouldFailToLoadNonExporterClasses() throws IOException {
     // given
-    final Class exportedClass = ExporterRepository.class;
-    final File jarFile = jarCreator.create(exportedClass);
+    final var externalClass =
+        new ByteBuddy().subclass(Object.class).name("com.acme.MyObject").make();
+    final var jarFile = externalClass.toJar(temporaryFolder.newFile("library.jar"));
     final ExporterCfg config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
     // when
-    config.setClassName(exportedClass.getCanonicalName());
+    config.setClassName("com.acme.MyObject");
     config.setJarPath(jarFile.getAbsolutePath());
     config.setArgs(args);
 
@@ -125,8 +121,8 @@ public final class ExporterRepositoryTest {
   @Test
   public void shouldFailToLoadNonExistingClass() throws IOException {
     // given
-    final Class exportedClass = ExporterRepository.class;
-    final File jarFile = jarCreator.create(exportedClass);
+    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
+    final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
     final ExporterCfg config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
@@ -147,6 +143,11 @@ public final class ExporterRepositoryTest {
       throw new IllegalStateException("what");
     }
 
+    @Override
+    public void export(final Record<?> record) {}
+  }
+
+  static class MinimalExporter implements Exporter {
     @Override
     public void export(final Record<?> record) {}
   }
