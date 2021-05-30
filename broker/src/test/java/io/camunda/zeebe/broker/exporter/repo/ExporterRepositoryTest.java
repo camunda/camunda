@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.exporter.repo;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
@@ -136,6 +137,52 @@ final class ExporterRepositoryTest {
     assertThatThrownBy(() -> repository.load("exported", config))
         .isInstanceOf(ExporterLoadException.class)
         .hasCauseInstanceOf(ClassNotFoundException.class);
+  }
+
+  @Test
+  void shouldSetTclOnValidation(final @TempDir File tempDir) throws IOException {
+    // given
+    final var config = new ExporterCfg();
+    final Map<String, Object> args = new HashMap<>();
+    final var classGenerator = new ByteBuddy();
+    final var exporterClass =
+        classGenerator
+            .subclass(TclValidationExporter.class)
+            .name(ExternalExporter.EXPORTER_CLASS_NAME)
+            .make();
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
+    final var configClass = classGenerator.subclass(Object.class).name("com.acme.Config").make();
+    configClass.inject(jarFile);
+
+    // when
+    config.setClassName(ExternalExporter.EXPORTER_CLASS_NAME);
+    config.setJarPath(jarFile.getAbsolutePath());
+    config.setArgs(args);
+
+    // then - if the thread context class loader is incorrectly set, then the configuration class
+    // will not be loadable and an exception is thrown during validation
+    assertThatCode(() -> repository.load("external", config)).doesNotThrowAnyException();
+  }
+
+  /**
+   * This implementation will attempt to load the class com.acme.Config via the thread context
+   * classloader. It's useful to test that the class loader is correctly set at validation time.
+   *
+   * <p>NOTE: although we only care about configure, we should implement the interface anyway to
+   * catch at compile time if the configure method ever changes.
+   *
+   * <p>NOTE: this class must also be public in order for the generated external exporter to
+   * subclass it
+   */
+  public static class TclValidationExporter implements Exporter {
+
+    @Override
+    public void configure(final Context context) throws Exception {
+      Thread.currentThread().getContextClassLoader().loadClass("com.acme.Config");
+    }
+
+    @Override
+    public void export(final Record<?> record) {}
   }
 
   static class InvalidExporter implements Exporter {

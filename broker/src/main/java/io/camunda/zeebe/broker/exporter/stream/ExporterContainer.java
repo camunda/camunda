@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
+import io.camunda.zeebe.broker.exporter.jar.ThreadContextUtil;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import org.slf4j.Logger;
 
+@SuppressWarnings("java:S112") // allow generic exception when calling Exporter#configure
 final class ExporterContainer implements Controller {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
@@ -61,7 +63,8 @@ final class ExporterContainer implements Controller {
 
   void openExporter() {
     LOG.debug("Open exporter with id '{}'", getId());
-    exporter.open(this);
+    ThreadContextUtil.runWithClassLoader(
+        () -> exporter.open(this), exporter.getClass().getClassLoader());
   }
 
   public ExporterContext getContext() {
@@ -128,7 +131,8 @@ final class ExporterContainer implements Controller {
 
   void configureExporter() throws Exception {
     LOG.debug("Configure exporter with id '{}'", getId());
-    exporter.configure(context);
+    ThreadContextUtil.runCheckedWithClassLoader(
+        () -> exporter.configure(context), exporter.getClass().getClassLoader());
   }
 
   boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord typedEvent) {
@@ -148,13 +152,15 @@ final class ExporterContainer implements Controller {
   }
 
   private void export(final Record<?> record) {
-    exporter.export(record);
+    ThreadContextUtil.runWithClassLoader(
+        () -> exporter.export(record), exporter.getClass().getClassLoader());
     lastUnacknowledgedPosition = record.getPosition();
   }
 
   public void close() {
     try {
-      exporter.close();
+      ThreadContextUtil.runCheckedWithClassLoader(
+          exporter::close, exporter.getClass().getClassLoader());
     } catch (final Exception e) {
       context.getLogger().error("Error on close", e);
     }
