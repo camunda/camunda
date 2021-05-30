@@ -12,22 +12,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import org.apache.logging.log4j.LogManager;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.Logger;
 
-public final class ExporterJarClassLoaderTest {
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+@Execution(ExecutionMode.CONCURRENT)
+final class ExporterJarClassLoaderTest {
 
   @Test
-  public void shouldLoadClassesPackagedInJar() throws Exception {
+  void shouldLoadClassesPackagedInJar(final @TempDir File tempDir) throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = createExporterJar(exporterClass);
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
@@ -40,9 +38,9 @@ public final class ExporterJarClassLoaderTest {
   }
 
   @Test
-  public void shouldLoadSystemClassesFromSystemClassLoader() throws Exception {
+  void shouldLoadSystemClassesFromSystemClassLoader(final @TempDir File tempDir) throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = createExporterJar(exporterClass);
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
@@ -53,9 +51,10 @@ public final class ExporterJarClassLoaderTest {
   }
 
   @Test
-  public void shouldLoadZbExporterClassesFromSystemClassLoader() throws Exception {
+  void shouldLoadZbExporterClassesFromSystemClassLoader(final @TempDir File tempDir)
+      throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = createExporterJar(exporterClass);
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
@@ -66,9 +65,9 @@ public final class ExporterJarClassLoaderTest {
   }
 
   @Test
-  public void shouldLoadSL4JClassesFromSystemClassLoader() throws Exception {
+  void shouldLoadSL4JClassesFromSystemClassLoader(final @TempDir File tempDir) throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = createExporterJar(exporterClass);
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
@@ -79,9 +78,9 @@ public final class ExporterJarClassLoaderTest {
   }
 
   @Test
-  public void shouldLoadLog4JClassesFromSystemClassLoader() throws Exception {
+  void shouldLoadLog4JClassesFromSystemClassLoader(final @TempDir File tempDir) throws Exception {
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = createExporterJar(exporterClass);
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var classLoader = ExporterJarClassLoader.ofPath(jarFile.toPath());
 
     // when
@@ -89,10 +88,5 @@ public final class ExporterJarClassLoaderTest {
 
     // then
     assertThat(loadedClass).isEqualTo(LogManager.class);
-  }
-
-  private File createExporterJar(final Unloaded<Exporter> exporterClass) throws IOException {
-    final var jarFile = temporaryFolder.newFile("exporter.jar");
-    return exporterClass.toJar(jarFile);
   }
 }

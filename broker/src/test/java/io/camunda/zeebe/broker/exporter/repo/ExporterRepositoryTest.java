@@ -17,21 +17,22 @@ import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import net.bytebuddy.ByteBuddy;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-public final class ExporterRepositoryTest {
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
+@Execution(ExecutionMode.CONCURRENT)
+final class ExporterRepositoryTest {
   private final ExporterRepository repository = new ExporterRepository();
 
   @Test
-  public void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException {
+  void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException {
     // given
     final var id = "myExporter";
     final var exporterClass = MinimalExporter.class;
@@ -45,7 +46,7 @@ public final class ExporterRepositoryTest {
   }
 
   @Test
-  public void shouldFailToLoadIfExporterInvalid() {
+  void shouldFailToLoadIfExporterInvalid() {
     // given
     final var id = "exporter";
     final var exporterClass = InvalidExporter.class;
@@ -57,7 +58,7 @@ public final class ExporterRepositoryTest {
   }
 
   @Test
-  public void shouldLoadInternalExporter() throws ExporterLoadException, ExporterJarLoadException {
+  void shouldLoadInternalExporter() throws ExporterLoadException, ExporterJarLoadException {
     // given
     final var config = new ExporterCfg();
     config.setClassName(ControlledTestExporter.class.getCanonicalName());
@@ -72,10 +73,10 @@ public final class ExporterRepositoryTest {
   }
 
   @Test
-  public void shouldLoadExternalExporter() throws Exception {
+  void shouldLoadExternalExporter(final @TempDir File tempDir) throws Exception {
     // given
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
@@ -99,11 +100,11 @@ public final class ExporterRepositoryTest {
   }
 
   @Test
-  public void shouldFailToLoadNonExporterClasses() throws IOException {
+  void shouldFailToLoadNonExporterClasses(final @TempDir File tempDir) throws IOException {
     // given
     final var externalClass =
         new ByteBuddy().subclass(Object.class).name("com.acme.MyObject").make();
-    final var jarFile = externalClass.toJar(temporaryFolder.newFile("library.jar"));
+    final var jarFile = externalClass.toJar(new File(tempDir, "library.jar"));
     final var config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
@@ -119,10 +120,10 @@ public final class ExporterRepositoryTest {
   }
 
   @Test
-  public void shouldFailToLoadNonExistingClass() throws IOException {
+  void shouldFailToLoadNonExistingClass(final @TempDir File tempDir) throws IOException {
     // given
     final var exporterClass = ExternalExporter.createUnloadedExporterClass();
-    final var jarFile = exporterClass.toJar(temporaryFolder.newFile("exporter.jar"));
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
     final var config = new ExporterCfg();
     final Map<String, Object> args = new HashMap<>();
 
