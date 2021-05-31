@@ -110,7 +110,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       return FAILED;
     }
 
-    LOGGER.debug("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
+    LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     return writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
   }
 
@@ -210,7 +210,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void abortInternal() {
     try {
-      LOGGER.debug("DELETE dir {}", directory);
+      LOGGER.debug("Aborting received snapshot in dir {}", directory);
       FileUtil.deleteFolder(directory);
     } catch (final NoSuchFileException nsfe) {
       LOGGER.debug(
