@@ -12,7 +12,7 @@ import deepEqual from 'fast-deep-equal';
 
 import {Button, Icon, Popover} from 'components';
 import {withErrorHandling} from 'HOC';
-import {getCollection} from 'services';
+import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 
@@ -20,6 +20,8 @@ import {loadTenants} from './service';
 import DefinitionEditor from './DefinitionEditor';
 
 import './DefinitionList.scss';
+
+const {formatVersions, formatTenants} = formatters;
 
 export function DefinitionList({
   mightFail,
@@ -54,20 +56,16 @@ export function DefinitionList({
     <ul className="DefinitionList">
       {definitions.map((definition, idx) => {
         const tenantInfo = getTenantInfoForDefinition(definition);
-        const tenants = definition.tenantIds.map(
-          (tenantId) => tenantInfo?.find(({id}) => id === tenantId).name ?? tenantId
-        );
 
         return (
           <li key={idx + definition.key} className={classnames({active: openPopover === idx})}>
-            <h4>{definition.displayName || definition.name}</h4>
+            <h4>{definition.displayName || definition.name || definition.key}</h4>
             <div className="info">
-              {t('common.definitionSelection.version.label')}:{' '}
-              {getVersionString(definition.versions)}
+              {t('common.definitionSelection.version.label')}: {formatVersions(definition.versions)}
             </div>
             {tenantInfo?.length > 1 && (
               <div className="info">
-                {t('common.tenant.label')}: {tenants.join(', ') || t('common.none')}
+                {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
               </div>
             )}
             <div className="actions">
@@ -106,18 +104,6 @@ export function DefinitionList({
       })}
     </ul>
   );
-}
-
-function getVersionString(versions) {
-  if (versions.length === 1 && versions[0] === 'all') {
-    return t('common.all');
-  } else if (versions.length === 1 && versions[0] === 'latest') {
-    return t('common.definitionSelection.latest');
-  } else if (versions.length) {
-    return versions.join(', ');
-  }
-
-  return t('common.none');
 }
 
 export default withRouter(withErrorHandling(DefinitionList));

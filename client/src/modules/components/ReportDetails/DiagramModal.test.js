@@ -23,35 +23,23 @@ jest.mock('services', () => {
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   close: jest.fn(),
+  definition: {
+    key: 'test',
+    name: 'Test Definition',
+    versions: ['testVersion'],
+    tenantIds: ['testTenant'],
+  },
 };
 
-it('Should display BPMNDiagram with the report xml', () => {
-  const data = {
-    definitions: [
-      {
-        key: 'test',
-        versions: ['testVersion'],
-        tenantIds: ['testTenant'],
-      },
-    ],
-  };
-  const node = shallow(<DiagramModal {...props} report={{reportType: 'process', data}} />);
+it('should display BPMNDiagram with the report xml', () => {
+  const node = shallow(<DiagramModal {...props} type="process" />);
   runLastEffect();
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('test', 'testVersion', 'testTenant');
   expect(node.find(BPMNDiagram).prop('xml')).toBe('process xml');
 });
 
-it('Should display DMNDiagram with the report xml', () => {
-  const data = {
-    definitions: [
-      {
-        key: 'test',
-        versions: ['testVersion'],
-        tenantIds: ['testTenant'],
-      },
-    ],
-  };
-  const node = shallow(<DiagramModal {...props} report={{reportType: 'decision', data}} />);
+it('should display DMNDiagram with the report xml', () => {
+  const node = shallow(<DiagramModal {...props} type="decision" />);
   runLastEffect();
   expect(loadDecisionDefinitionXml).toHaveBeenCalledWith('test', 'testVersion', 'testTenant');
   expect(node.find(DMNDiagram).prop('xml')).toBe('decision xml');

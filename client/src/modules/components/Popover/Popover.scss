@@ -12,8 +12,7 @@
     width: auto;
     min-width: 250px;
     background-color: var(--white);
-    border: 1px solid var(--silver-darken-80);
-    box-shadow: 0 2px 7px -4px var(--grey-darken-36);
+    box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.5);
     border-radius: 8px;
     margin-top: 10px;
     z-index: var(--z-popup);

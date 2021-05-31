@@ -7,6 +7,7 @@
 import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
+import deepEqual from 'fast-deep-equal';
 
 import {Button} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -20,7 +21,7 @@ import {loadTenants} from './service';
 
 import './SingleReportDetails.scss';
 
-const {formatTenantName} = formatters;
+const {formatVersions, formatTenants} = formatters;
 
 function getSelectedView(view, groupBy, type) {
   if (view.entity === 'variable') {
@@ -50,106 +51,78 @@ function getSelectedView(view, groupBy, type) {
   return viewString;
 }
 
-function getKey(data) {
-  return data.definitions[0]?.key;
-}
-function getName(data) {
-  return data.definitions[0]?.name;
-}
-function getVersions(data) {
-  return data.definitions[0]?.versions;
-}
-
 export function SingleReportDetails({report, showReportName, mightFail, location}) {
   const [tenants, setTenants] = useState();
   const [showRawData, setShowRawData] = useState();
   const [showDiagram, setShowDiagram] = useState();
 
   const reportName = report.name;
-  const key = getKey(report.data);
-  const name = getName(report.data);
-  const versions = getVersions(report.data);
+  const definitions = report.data.definitions;
   const type = report.reportType;
-  const nameOrKey = name || key;
   const isShared = location.pathname.startsWith('/share');
 
   useEffect(() => {
-    if (key && versions && !isShared) {
-      mightFail(loadTenants(key, versions, type), setTenants, showError);
+    if (definitions.length && !isShared) {
+      mightFail(loadTenants(definitions, type), setTenants, showError);
     } else {
       setTenants();
     }
-  }, [key, versions, isShared, type, mightFail]);
-
-  let tenantInfo;
-  if (tenants && tenants.length > 1) {
-    if (tenants.length === report.data.definitions[0].tenantIds.length) {
-      tenantInfo = t('common.all');
-    } else {
-      tenantInfo = report.data.definitions[0].tenantIds
-        .map((tenantId) => formatTenantName(tenants.find(({id}) => id === tenantId)))
-        .join(', ');
-    }
-  }
-
-  let versionInfo;
-  if (versions?.length === 1 && versions[0] === 'all') {
-    versionInfo = t('common.all');
-  } else if (versions?.length === 1 && versions[0] === 'latest') {
-    versionInfo = t('common.definitionSelection.latest');
-  } else if (versions) {
-    versionInfo = versions.join(', ');
-  }
+  }, [definitions, isShared, type, mightFail]);
 
   const closePopover = () => document.body.click();
+
+  function getTenantInfoForDefinition(definition) {
+    return tenants?.find(
+      ({key, versions}) => key === definition.key && deepEqual(versions, definition.versions)
+    )?.tenants;
+  }
 
   return (
     <div className="SingleReportDetails">
       {showReportName && <h2>{reportName}</h2>}
-      {name && (
-        <dl>
-          <dt>{t('report.definition.' + type)}</dt>
-          <dd>{name}</dd>
+      {definitions.length && (
+        <div>
+          <h3>{t('report.definition.' + type + (definitions.length > 1 ? '-plural' : ''))}</h3>
+          {definitions.map((definition, idx) => {
+            const tenantInfo = getTenantInfoForDefinition(definition);
 
-          {versionInfo && (
-            <>
-              <dt>{t('common.definitionSelection.version.label')}</dt>
-              <dd>{versionInfo}</dd>
-            </>
-          )}
-
-          {tenantInfo && (
-            <>
-              <dt>{t('common.tenant.label')}</dt>
-              <dd>{tenantInfo}</dd>
-            </>
-          )}
-
-          {report.data.view && report.data.groupBy && (
-            <>
-              <dt>{t('report.view.' + type)}</dt>
-              <dd
-                className={classnames({
-                  nowrap: report.data.view.entity === 'variable',
-                })}
-              >
-                {getSelectedView(report.data.view, report.data.groupBy, type)}
-              </dd>
-            </>
-          )}
-        </dl>
-      )}
-      {key && versionInfo && (
-        <div className="modalsButtons">
-          <Button link onClick={() => setShowRawData(true)}>
-            {t('common.entity.viewRawData')}
-          </Button>
-          <Button link onClick={() => setShowDiagram(true)}>
-            {t('common.entity.viewModel.' + report.reportType)}
-          </Button>
+            return (
+              <div key={idx + definition.key} className="definition">
+                <h4>{definition.displayName || definition.name || definition.key}</h4>
+                <div className="info">
+                  {t('common.definitionSelection.version.label')}:{' '}
+                  {formatVersions(definition.versions)}
+                </div>
+                {tenantInfo?.length > 1 && (
+                  <div className="info">
+                    {t('common.tenant.label')}: {formatTenants(definition.tenantIds, tenantInfo)}
+                  </div>
+                )}
+                <Button link className="modalButton" onClick={() => setShowDiagram(definition)}>
+                  {t('common.entity.viewModel.' + report.reportType)}
+                </Button>
+              </div>
+            );
+          })}
+          <hr />
         </div>
       )}
-      {name && <hr />}
+      {report.data.view && report.data.groupBy && (
+        <div>
+          <h3>{t('report.view.' + type)}</h3>
+          <h4
+            className={classnames({
+              nowrap: report.data.view.entity === 'variable',
+            })}
+          >
+            {getSelectedView(report.data.view, report.data.groupBy, type)}
+          </h4>
+          <Button className="rawDataButton modalButton" link onClick={() => setShowRawData(true)}>
+            {t('common.entity.viewRawData')}
+          </Button>
+          <hr />
+        </div>
+      )}
       {showRawData && (
         <RawDataModal
           report={report}
@@ -157,7 +130,7 @@ export function SingleReportDetails({report, showReportName, mightFail, location
           close={closePopover}
         />
       )}
-      {showDiagram && <DiagramModal report={report} name={nameOrKey} close={closePopover} />}
+      {showDiagram && <DiagramModal type={type} definition={showDiagram} close={closePopover} />}
     </div>
   );
 }

@@ -106,7 +106,7 @@ export const modalContainer = Selector('.Modal__content-container');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
 export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
-export const modalButton = (text) => Selector('.EntityName .modalsButtons .Button').withText(text);
+export const modalButton = (text) => Selector('.EntityName .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
 export const closeModalButton = Selector('.Modal .Button').withText('Close');

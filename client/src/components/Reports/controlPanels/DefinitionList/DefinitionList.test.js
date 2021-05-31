@@ -18,6 +18,7 @@ jest.mock('./service', () => ({
       tenants: [
         {id: 'a', name: 'Tenant A'},
         {id: 'b', name: 'Tenant B'},
+        {id: 'c', name: 'Tenant C'},
       ],
     },
   ]),
