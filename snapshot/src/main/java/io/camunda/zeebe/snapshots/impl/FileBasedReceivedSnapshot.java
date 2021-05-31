@@ -17,7 +17,6 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -211,12 +210,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private void abortInternal() {
     try {
       LOGGER.debug("Aborting received snapshot in dir {}", directory);
-      FileUtil.deleteFolder(directory);
-    } catch (final NoSuchFileException nsfe) {
-      LOGGER.debug(
-          "Tried to delete pending dir {}, but doesn't exist. Either was already removed or no chunk was applied until now.",
-          directory,
-          nsfe);
+      FileUtil.deleteFolderIfExists(directory);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
     } finally {
@@ -255,6 +249,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
+
+    snapshotStore.removePendingSnapshot(this);
   }
 
   @Override
