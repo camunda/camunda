@@ -215,8 +215,20 @@ it('should show a compact version and lock scroll when a shared report is embedd
   expect(node.find('.title-button')).toHaveClassName('small');
 });
 
-it('should only show the title and hide the link to Optimize', () => {
+it('should add report classname to the sharing container', () => {
   props.match.params.type = 'report';
+  props.location.search = '?header=hidden';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find('.Sharing')).toHaveClassName('report');
+});
+
+it('should only show the title and hide the link to Optimize', () => {
   props.location.search = '?header=titleOnly';
 
   const node = shallow(<Sharing {...props} />);
@@ -231,7 +243,6 @@ it('should only show the title and hide the link to Optimize', () => {
 });
 
 it('should only show the link to Optimize and hide the title', () => {
-  props.match.params.type = 'report';
   props.location.search = '?header=linkOnly';
 
   const node = shallow(<Sharing {...props} />);

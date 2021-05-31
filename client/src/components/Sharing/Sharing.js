@@ -120,20 +120,21 @@ export class Sharing extends React.Component {
       return <ErrorPage noLink />;
     }
 
-    const isEmbeddedReport = type === 'report' && params.get('mode') === 'embed';
+    const isEmbedded = params.get('mode') === 'embed';
+    const isReport = type === 'report';
     const header = params.get('header');
     const showTitle = header !== 'linkOnly';
 
     const SharingView = this.getSharingView();
     return (
-      <div className={classnames('Sharing', {compact: isEmbeddedReport})}>
+      <div className={classnames('Sharing', {compact: isEmbedded, report: isReport})}>
         {header !== 'hidden' && (
           <div className="header">
             <div className="title-container">
               {showTitle && (
                 <EntityName
                   details={
-                    type === 'report' ? (
+                    isReport ? (
                       <ReportDetails report={evaluationResult} />
                     ) : (
                       <LastModifiedInfo entity={evaluationResult} />
@@ -149,14 +150,12 @@ export class Sharing extends React.Component {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={classnames('Button title-button', {
-                    main: !isEmbeddedReport,
-                    small: isEmbeddedReport,
+                    main: !isEmbedded,
+                    small: isEmbedded,
                   })}
                 >
                   <Icon type="share" renderedIn="span" />
-                  <span>
-                    {isEmbeddedReport ? t('common.open') : t('common.sharing.openInOptimize')}
-                  </span>
+                  <span>{isEmbedded ? t('common.open') : t('common.sharing.openInOptimize')}</span>
                 </a>
               )}
             </div>
@@ -165,12 +164,8 @@ export class Sharing extends React.Component {
         )}
         <div className="content">
           {SharingView}
-          {isEmbeddedReport && (
-            <>
-              <IconLink href={this.getEntityUrl()} />
-              <DiagramScrollLock />
-            </>
-          )}
+          {isEmbedded && <IconLink href={this.getEntityUrl()} />}
+          {isEmbedded && isReport && <DiagramScrollLock />}
         </div>
       </div>
     );

@@ -57,7 +57,9 @@
   }
 
   &.compact {
-    padding: 10px;
+    &.report {
+      padding: 10px;
+    }
 
     > .header {
       margin-bottom: 15px;
@@ -74,6 +76,10 @@
         .Popover {
           margin-top: 4px;
         }
+      }
+
+      .title-button {
+        max-height: 25px;
       }
     }
 
