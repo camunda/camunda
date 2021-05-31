@@ -161,7 +161,7 @@ public final class FileBasedSnapshotStore extends Actor
       final var actualChecksum = SnapshotChecksum.calculate(path);
       if (expectedChecksum != actualChecksum) {
         LOGGER.warn(
-            "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted",
+            "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
             path,
             expectedChecksum,
             actualChecksum);
