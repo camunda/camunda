@@ -40,6 +40,7 @@
     <version.assertj>3.19.0</version.assertj>
     <version.awaitility>4.1.0</version.awaitility>
     <version.camunda>7.15.0</version.camunda>
+    <version.checkstyle>8.43</version.checkstyle>
     <version.commons-lang>3.12.0</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -858,6 +859,11 @@
               <groupId>io.camunda</groupId>
               <artifactId>zeebe-build-tools</artifactId>
               <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${version.checkstyle}</version>
             </dependency>
           </dependencies>
           <configuration>
