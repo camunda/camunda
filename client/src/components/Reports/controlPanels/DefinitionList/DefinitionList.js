@@ -21,7 +21,7 @@ import DefinitionEditor from './DefinitionEditor';
 
 import './DefinitionList.scss';
 
-export function DefinitionList({mightFail, location, definitions = [], type, onChange}) {
+export function DefinitionList({mightFail, location, definitions = [], type, onChange, onRemove}) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
 
@@ -73,10 +73,14 @@ export function DefinitionList({mightFail, location, definitions = [], type, onC
                   definition={definition}
                   tenantInfo={tenantInfo}
                   onChange={(change) => onChange(change, idx)}
+                  onRemove={() => {
+                    onRemove(idx);
+                    setOpenPopover();
+                  }}
                   type={type}
                 />
               </Popover>
-              <Button icon onClick={() => onChange(null, idx)}>
+              <Button icon onClick={() => onRemove(idx)}>
                 <Icon type="close-small" size="14px" />
               </Button>
             </div>

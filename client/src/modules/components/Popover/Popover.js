@@ -151,8 +151,8 @@ export default class Popover extends React.Component {
 
     const markup = (
       <div
-        className={classnames('overlay', this.props.renderInPortal, {
-          Popover: this.props.renderInPortal,
+        className={classnames('overlay', renderInPortal, {
+          Popover: renderInPortal,
         })}
         onClick={this.catchClick}
         style={overlayStyles}
@@ -168,7 +168,7 @@ export default class Popover extends React.Component {
             style={this.state.dialogStyles}
             className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
           >
-            {this.props.children}{' '}
+            {this.props.children}
           </div>
         </div>
       </div>

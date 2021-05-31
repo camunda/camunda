@@ -172,7 +172,6 @@ export class DecisionControlPanel extends React.Component {
               </span>
             </Button>
             <DefinitionSelection
-              renderInPortal="DefinitionSelection"
               type="decision"
               definitionKey={key}
               versions={versions}

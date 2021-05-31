@@ -25,12 +25,20 @@ import {loadTenants, loadVersions} from './service';
 
 import './DefinitionEditor.scss';
 
-export function DefinitionEditor({mightFail, collection, type, definition, tenantInfo, onChange}) {
+export function DefinitionEditor({
+  mightFail,
+  collection,
+  type,
+  definition,
+  tenantInfo,
+  onChange,
+  onRemove,
+}) {
   const [availableVersions, setAvailableVersions] = useState([]);
   const [selectedSpecificVersions, setSelectedSpecificVersions] = useState(
     isSpecificVersion(definition.versions) ? definition.versions : []
   );
-  const [availableTenants, setAvailableTenants] = useState(tenantInfo?.tenants);
+  const [availableTenants, setAvailableTenants] = useState(tenantInfo);
   const [xml, setXml] = useState();
   const [loadingXml, setLoadingXml] = useState(true);
   const [displayName, setDisplayName] = useState(definition.displayName);
@@ -124,7 +132,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
         </Button>
       </div>
       <div className="actionBar">
-        <Button small onClick={() => onChange(null)}>
+        <Button small onClick={onRemove}>
           <Icon type="close-small" />
           {t('common.removeEntity', {entity: t(`common.${type}.label`)})}
         </Button>

@@ -279,9 +279,7 @@ export default withErrorHandling(
                 <AddDefinition
                   type="process"
                   definitions={data.definitions}
-                  onAdd={(newDefinitions) => {
-                    this.addDefinition(newDefinitions);
-                  }}
+                  onAdd={this.addDefinition}
                 />
                 <span className={classnames('sectionToggle', {open: showSource})}>
                   <Icon type="down" />
@@ -290,13 +288,8 @@ export default withErrorHandling(
               <DefinitionList
                 type="process"
                 definitions={data.definitions}
-                onChange={(change, idx) => {
-                  if (change) {
-                    return this.changeDefinition(change, idx);
-                  } else {
-                    return this.removeDefinition(idx);
-                  }
-                }}
+                onChange={this.changeDefinition}
+                onRemove={this.removeDefinition}
               />
             </section>
             <section className={classnames('reportSetup', {hidden: !showSetup})}>

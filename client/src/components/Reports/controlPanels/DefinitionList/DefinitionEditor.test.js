@@ -43,7 +43,7 @@ const props = {
     versions: ['latest'],
     tenantIds: [null],
   },
-  tenantInfo: {tenants: [{id: null, name: 'Not Defined'}]},
+  tenantInfo: [{id: null, name: 'Not Defined'}],
 };
 
 it('should show available versions for the given definition', () => {
@@ -56,7 +56,7 @@ it('should show available versions for the given definition', () => {
 it('should show available tenants for the given definition and versions', () => {
   const node = shallow(<DefinitionEditor {...props} />);
 
-  expect(node.find('TenantPopover').prop('tenants')).toEqual(props.tenantInfo.tenants);
+  expect(node.find('TenantPopover').prop('tenants')).toEqual(props.tenantInfo);
 });
 
 it('should allow users to set a display name', () => {
@@ -100,9 +100,9 @@ it('should allow opening the diagram in a bigger modal', () => {
 
 it('should allow removing the definition', () => {
   const spy = jest.fn();
-  const node = shallow(<DefinitionEditor {...props} onChange={spy} />);
+  const node = shallow(<DefinitionEditor {...props} onRemove={spy} />);
 
   node.find('.actionBar').find(Button).simulate('click');
 
-  expect(spy).toHaveBeenCalledWith(null);
+  expect(spy).toHaveBeenCalled();
 });
