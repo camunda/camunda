@@ -5,8 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.processing.migration.to_1_1;
+package io.camunda.zeebe.engine.state.migration.to_1_1;
 
+import static io.camunda.zeebe.engine.state.migration.to_1_1.TestUtilities.createLegacyMessageSubscription;
+import static io.camunda.zeebe.engine.state.migration.to_1_1.TestUtilities.createLegacyProcessMessageSubscription;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
@@ -20,7 +22,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -111,26 +112,6 @@ public class DbMigrationStateTest {
     transientSubscriptionState.visitSubscriptionBefore(
         TEST_SENT_TIME,
         subscription -> Assertions.fail("Found unexpected subscription " + subscription));
-  }
-
-  private MessageSubscriptionRecord createMessageSubscriptionRecord(final long elementInstanceKey) {
-    final var record = new MessageSubscriptionRecord();
-    record.setProcessInstanceKey(0);
-    record.setElementInstanceKey(elementInstanceKey);
-    record.setMessageName(BufferUtil.wrapString("messageName"));
-    return record;
-  }
-
-  private LegacyMessageSubscription createLegacyMessageSubscription(
-      final long key, final long elementInstanceKey) {
-    final var subscription = new LegacyMessageSubscription();
-
-    final MessageSubscriptionRecord record = createMessageSubscriptionRecord(elementInstanceKey);
-
-    subscription.setRecord(record);
-    subscription.setKey(key);
-
-    return subscription;
   }
 
   @Test
@@ -238,29 +219,5 @@ public class DbMigrationStateTest {
     return subscriptionState.getSubscription(
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
-  }
-
-  private LegacyProcessMessageSubscription createLegacyProcessMessageSubscription(
-      final long key, final long elementInstanceKey) {
-    final var subscription = new LegacyProcessMessageSubscription();
-
-    final ProcessMessageSubscriptionRecord record =
-        createProcessMessageSubscriptionRecord(elementInstanceKey);
-
-    subscription.setRecord(record);
-    subscription.setKey(key);
-
-    return subscription;
-  }
-
-  private ProcessMessageSubscriptionRecord createProcessMessageSubscriptionRecord(
-      final long elementInstanceKey) {
-
-    final var record = new ProcessMessageSubscriptionRecord();
-    record.setProcessInstanceKey(0);
-    record.setSubscriptionPartitionId(0);
-    record.setElementInstanceKey(elementInstanceKey);
-    record.setMessageName(BufferUtil.wrapString("messageName"));
-    return record;
   }
 }
