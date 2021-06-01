@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.List;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,17 +24,24 @@ public class DbMigratorImpl implements DbMigrator {
           new MessageSubscriptionSentTimeMigration(), new ProcessSubscriptionSentTimeMigration());
 
   private final MutableZeebeState zeebeState;
-
+  private final Supplier<List<MigrationTask>> migrationSupplier;
   private boolean abortRequested = false;
 
   public DbMigratorImpl(final MutableZeebeState zeebeState) {
+    this(zeebeState, () -> MIGRATION_TASKS);
+  }
+
+  protected DbMigratorImpl(
+      final MutableZeebeState zeebeState, final Supplier<List<MigrationTask>> migrationSupplier) {
+
     this.zeebeState = zeebeState;
+    this.migrationSupplier = migrationSupplier;
   }
 
   @Override
   public void runMigrations() {
     LOGGER.info("Starting migrations ...");
-    MIGRATION_TASKS.forEach(this::handleMigrationJob);
+    migrationSupplier.get().forEach(this::handleMigrationJob);
     LOGGER.info("Finished running migrations");
   }
 
@@ -47,8 +55,6 @@ public class DbMigratorImpl implements DbMigrator {
     if (abortRequested) {
       return;
     }
-
-    final var identifier = migrationTask.getIdentifier();
 
     if (migrationTask.needsToRun(zeebeState)) {
       runMigration(migrationTask);
