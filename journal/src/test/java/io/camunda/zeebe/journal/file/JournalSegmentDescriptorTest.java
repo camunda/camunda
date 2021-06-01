@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
 import java.nio.ByteBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 class JournalSegmentDescriptorTest {
@@ -54,6 +56,51 @@ class JournalSegmentDescriptorTest {
     final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
 
     // when/then
+    assertThatThrownBy(() -> new JournalSegmentDescriptor(buffer))
+        .isInstanceOf(CorruptedLogException.class);
+  }
+
+  @Test
+  void shouldReadV1Message() {
+    // given
+    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+    final MutableDirectBuffer directBuffer = new UnsafeBuffer(buffer);
+    final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+    final SegmentDescriptorEncoder descriptorEncoder = new SegmentDescriptorEncoder();
+
+    directBuffer.putByte(0, (byte) 1);
+    descriptorEncoder
+        .wrapAndApplyHeader(directBuffer, 1, headerEncoder)
+        .id(123)
+        .index(456)
+        .maxSegmentSize(789);
+
+    // when
+    final JournalSegmentDescriptor descriptor = new JournalSegmentDescriptor(buffer);
+
+    // then
+    assertThat(descriptor.id()).isEqualTo(123);
+    assertThat(descriptor.index()).isEqualTo(456);
+    assertThat(descriptor.maxSegmentSize()).isEqualTo(789);
+  }
+
+  @Test
+  void shouldFailWithChecksumMismatch() {
+    // given
+    final ByteBuffer buffer = ByteBuffer.allocate(JournalSegmentDescriptor.getEncodingLength());
+    final JournalSegmentDescriptor descriptor =
+        JournalSegmentDescriptor.builder()
+            .withId(123)
+            .withIndex(456)
+            .withMaxSegmentSize(789)
+            .build();
+    descriptor.copyTo(buffer);
+
+    // when
+    final byte corruptByte = (byte) ~buffer.get(buffer.capacity() - 1);
+    buffer.put(buffer.capacity() - 1, corruptByte);
+
+    // then
     assertThatThrownBy(() -> new JournalSegmentDescriptor(buffer))
         .isInstanceOf(CorruptedLogException.class);
   }

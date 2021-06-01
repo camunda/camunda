@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.collection.Tuple;
+import java.util.Optional;
 
 public final class ExclusiveGatewayProcessor
     implements BpmnElementProcessor<ExecutableExclusiveGateway> {
@@ -49,19 +51,17 @@ public final class ExclusiveGatewayProcessor
   @Override
   public void onActivate(
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
-    if (element.getOutgoing().isEmpty()) {
-      // there are no flows to take: the gateway is an implicit end for the flow scope
-      transitionToCompleted(element, activating);
-    } else {
-      // find outgoing sequence flow with fulfilled condition or the default
-      findSequenceFlowToTake(element, activating)
-          .ifRightOrLeft(
-              sequenceFlow -> {
-                final BpmnElementContext completed = transitionToCompleted(element, activating);
-                stateTransitionBehavior.takeSequenceFlow(completed, sequenceFlow);
-              },
-              failure -> incidentBehavior.createIncident(failure, activating));
-    }
+    // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
+    findSequenceFlowToTake(element, activating)
+        .ifRightOrLeft(
+            optFlow ->
+                transitionToCompleted(element, activating)
+                    .ifRightOrLeft(
+                        completed ->
+                            optFlow.ifPresent(
+                                flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow)),
+                        incidentBehavior::createIncident),
+            failure -> incidentBehavior.createIncident(failure, activating));
   }
 
   @Override
@@ -81,22 +81,29 @@ public final class ExclusiveGatewayProcessor
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
-  private BpmnElementContext transitionToCompleted(
+  private Either<Tuple<Failure, BpmnElementContext>, BpmnElementContext> transitionToCompleted(
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
       throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
     }
     final var activated = stateTransitionBehavior.transitionToActivated(activating);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    return stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, completing)
+        .mapLeft(failure -> new Tuple<>(failure, completing));
   }
 
-  private Either<Failure, ExecutableSequenceFlow> findSequenceFlowToTake(
+  private Either<Failure, Optional<ExecutableSequenceFlow>> findSequenceFlowToTake(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+
+    if (element.getOutgoing().isEmpty()) {
+      // there are no flows to take: the gateway is an implicit end for the flow scope
+      return Either.right(Optional.empty());
+    }
 
     if (element.getOutgoing().size() == 1 && element.getOutgoing().get(0).getCondition() == null) {
       // only one flow without a condition, can just be taken
-      return Either.right(element.getOutgoing().get(0));
+      return Either.right(Optional.of(element.getOutgoing().get(0)));
     }
 
     for (final ExecutableSequenceFlow sequenceFlow : element.getOutgoingWithCondition()) {
@@ -108,14 +115,15 @@ public final class ExclusiveGatewayProcessor
 
       } else if (isFulfilledOrFailure.get()) {
         // the condition is fulfilled
-        return Either.right(sequenceFlow);
+        return Either.right(Optional.of(sequenceFlow));
       }
     }
 
     // no condition is fulfilled - try to take the default flow
     if (element.getDefaultFlow() != null) {
-      return Either.right(element.getDefaultFlow());
+      return Either.right(Optional.of(element.getDefaultFlow()));
     }
+
     return Either.left(
         new Failure(
             NO_OUTGOING_FLOW_CHOSEN_ERROR,

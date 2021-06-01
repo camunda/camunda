@@ -41,7 +41,7 @@ public class ObjectWriterFactoryTest {
     // when
     try {
       actual = getDefaultJsonObjectWriter().writeValueAsString(objectToSerialize);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       fail(e.getMessage());
       actual = "";
     }
@@ -61,7 +61,7 @@ public class ObjectWriterFactoryTest {
     // when
     try {
       actual = getDefaultJsonObjectWriter().writeValueAsString(objectToSerialize);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       fail(e.getMessage());
       actual = "";
     }
@@ -81,12 +81,48 @@ public class ObjectWriterFactoryTest {
     // when
     try {
       actual = getDefaultJsonObjectWriter().writeValueAsString(objectToSerialize);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       fail(e.getMessage());
       actual = "";
     }
 
     // then
     assertThat(actual).describedAs("Serialized form of DataSize").isEqualTo("\"512MB\"");
+  }
+
+  @Test
+  public void shouldReturnObjectWriterThatWritesDataSizesInKB() {
+    // given
+    final DataSize objectToSerialize = DataSize.ofKilobytes(512);
+
+    String actual;
+    // when
+    try {
+      actual = getDefaultJsonObjectWriter().writeValueAsString(objectToSerialize);
+    } catch (final JsonProcessingException e) {
+      fail(e.getMessage());
+      actual = "";
+    }
+
+    // then
+    assertThat(actual).describedAs("Serialized form of DataSize").isEqualTo("\"512KB\"");
+  }
+
+  @Test
+  public void shouldReturnObjectWriterThatWritesDataSizesInBytes() {
+    // given
+    final DataSize objectToSerialize = DataSize.ofBytes(512);
+
+    String actual;
+    // when
+    try {
+      actual = getDefaultJsonObjectWriter().writeValueAsString(objectToSerialize);
+    } catch (final JsonProcessingException e) {
+      fail(e.getMessage());
+      actual = "";
+    }
+
+    // then
+    assertThat(actual).describedAs("Serialized form of DataSize").isEqualTo("\"512B\"");
   }
 }

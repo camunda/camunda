@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -16,12 +17,17 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -170,6 +176,65 @@ public final class MultiInstanceIncidentTest {
   }
 
   @Test
+  public void shouldCollectOutputResultsForResolvedIncidentOfOutputElementExpression() {
+    // given an instance of a process with an output mapping referring to a variable 'undefined_var'
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(MULTI_TASK_PROCESS)
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    completeNthJob(processInstanceKey, 1);
+
+    // an incident is created because the variable `undefined_var` is missing
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when the missing variable is provided
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Maps.of(entry("undefined_var", 1)))
+        .update();
+
+    // and we resolve the incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // and complete the other jobs
+    completeNthJob(processInstanceKey, 2);
+    completeNthJob(processInstanceKey, 3);
+
+    // then the process is able to complete
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .exists())
+        .describedAs("the process has completed")
+        .isTrue();
+
+    // and all results can be collected
+    // note, that this failed in a bug where the task was completed at the same time the incident
+    // was created. If the problem was resolved and the other tasks completed, the multi instance
+    // would still complete normally, but would not have collected the output of the first task.
+    // for more information see: https://github.com/camunda-cloud/zeebe/issues/6546
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("results")
+                .limit(4)
+                .getLast())
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getValue)
+        .describedAs("the results have been collected")
+        .isEqualTo("[1,1,1]");
+  }
+
+  @Test
   public void shouldResolveIncident() {
     // given
     final long processInstanceKey =
@@ -256,5 +321,84 @@ public final class MultiInstanceIncidentTest {
             tuple(VariableIntent.UPDATED, "loopCounter", "2"),
             tuple(VariableIntent.UPDATED, "item", "3"),
             tuple(VariableIntent.UPDATED, "loopCounter", "3"));
+  }
+
+  @Test
+  public void shouldResolveIncidentDueToInputCollection() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("multi-task")
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.sequential()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT)))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("multi-task")
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    final var activatedTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    ENGINE
+        .variables()
+        .ofScope(activatedTask.getKey())
+        .withDocument(Collections.singletonMap(INPUT_COLLECTION, "not a list"))
+        .update();
+
+    completeNthJob(processInstanceKey, 1);
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(activatedTask.getKey())
+        .withDocument(Collections.singletonMap(INPUT_COLLECTION, List.of(1, 2, 3)))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    completeNthJob(processInstanceKey, 2);
+    completeNthJob(processInstanceKey, 3);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .limitToProcessInstanceCompleted()
+        .await();
+  }
+
+  private static void completeNthJob(final long processInstanceKey, final int n) {
+    final var nthJob = findNthJob(processInstanceKey, n);
+    ENGINE.job().withKey(nthJob.getKey()).complete();
+  }
+
+  private static Record<JobRecordValue> findNthJob(final long processInstanceKey, final int n) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .skip(n - 1)
+        .getFirst();
   }
 }

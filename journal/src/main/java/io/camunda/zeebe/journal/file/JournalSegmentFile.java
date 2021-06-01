@@ -18,11 +18,7 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.camunda.zeebe.journal.JournalException;
 import java.io.File;
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
 
 /**
  * Segment file utility.
@@ -94,7 +90,14 @@ final class JournalSegmentFile {
   /** Creates a segment file for the given directory, log name, segment ID, and segment version. */
   static File createSegmentFile(final String name, final File directory, final long id) {
     return new File(
-        directory, String.format("%s-%d.log", checkNotNull(name, "name cannot be null"), id));
+        directory,
+        String.format(
+            "%s%s%d%s%s",
+            checkNotNull(name, "name cannot be null"),
+            PART_SEPARATOR,
+            id,
+            EXTENSION_SEPARATOR,
+            EXTENSION));
   }
 
   /**
@@ -104,14 +107,6 @@ final class JournalSegmentFile {
    */
   public File file() {
     return file;
-  }
-
-  FileChannel openChannel(final StandardOpenOption... options) {
-    try {
-      return FileChannel.open(file.toPath(), options);
-    } catch (final IOException e) {
-      throw new JournalException(e);
-    }
   }
 
   public String name() {

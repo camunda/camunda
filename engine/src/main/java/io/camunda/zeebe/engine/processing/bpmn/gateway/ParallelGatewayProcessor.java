@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.gateway;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -17,9 +18,11 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public final class ParallelGatewayProcessor implements BpmnElementProcessor<ExecutableFlowNode> {
 
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
+  private final BpmnIncidentBehavior bpmnIncidentBehavior;
 
   public ParallelGatewayProcessor(final BpmnBehaviors behaviors) {
     stateTransitionBehavior = behaviors.stateTransitionBehavior();
+    bpmnIncidentBehavior = behaviors.incidentBehavior();
   }
 
   @Override
@@ -34,10 +37,14 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
     // incoming sequence flows are taken
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-    final var completed =
-        stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
-    // fork the process processing by taking all outgoing sequence flows of the parallel gateway
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+    stateTransitionBehavior
+        .transitionToCompleted(element, completing)
+        .ifRightOrLeft(
+            completed ->
+                // fork the process processing by taking all outgoing sequence flows of the parallel
+                // gateway
+                stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+            failure -> bpmnIncidentBehavior.createIncident(failure, completing));
   }
 
   @Override
