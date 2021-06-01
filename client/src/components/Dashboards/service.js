@@ -39,3 +39,150 @@ export async function isAuthorizedToShareDashboard(dashboardId) {
     return false;
   }
 }
+
+export function convertFilterToDefaultValues(availableFilter, filters) {
+  // dates
+  if (availableFilter.type === 'startDate' || availableFilter.type === 'endDate') {
+    return filters.find(({type}) => type === availableFilter.type)?.data ?? null;
+  }
+
+  // assignee / candidate group
+  if (availableFilter.type === 'assignee' || availableFilter.type === 'candidateGroup') {
+    return (
+      filters.find(
+        ({type, data}) =>
+          type === availableFilter.type && data.operator === availableFilter.data.operator
+      )?.data.values ?? null
+    );
+  }
+
+  // state
+  if (availableFilter.type === 'state') {
+    const defaultValues = filters
+      .filter(({type}) =>
+        [
+          'runningInstancesOnly',
+          'completedInstancesOnly',
+          'canceledInstancesOnly',
+          'nonCanceledInstancesOnly',
+          'suspendedInstancesOnly',
+          'nonSuspendedInstancesOnly',
+        ].includes(type)
+      )
+      .map(({type}) => type);
+
+    if (defaultValues.length > 0) {
+      return defaultValues;
+    }
+    return null;
+  }
+
+  // Boolean Variables
+  if (availableFilter.type === 'variable' && availableFilter.data.type === 'Boolean') {
+    return (
+      filters.find(
+        ({type, data}) =>
+          type === 'variable' && data.type === 'Boolean' && data.name === availableFilter.data.name
+      )?.data.data.values ?? null
+    );
+  }
+
+  // Date Variables
+  if (availableFilter.type === 'variable' && availableFilter.data.type === 'Date') {
+    return (
+      filters.find(
+        ({type, data}) =>
+          type === 'variable' && data.type === 'Date' && data.name === availableFilter.data.name
+      )?.data.data ?? null
+    );
+  }
+
+  // string and number variables
+  if (availableFilter.type === 'variable') {
+    return (
+      filters.find(
+        ({type, data}) =>
+          type === 'variable' &&
+          data.type === availableFilter.data.type &&
+          data.name === availableFilter.data.name &&
+          data.data.operator === availableFilter.data.data.operator
+      )?.data.data.values ?? null
+    );
+  }
+
+  return null;
+}
+
+export function getDefaultFilter(availableFilters) {
+  const filters = [];
+
+  availableFilters.forEach((availableFilter) => {
+    if (availableFilter?.data.defaultValues) {
+      if (availableFilter.type === 'state') {
+        return filters.push(
+          ...availableFilter.data.defaultValues.map((type) => ({filterLevel: 'instance', type}))
+        );
+      }
+
+      if (availableFilter.type === 'startDate' || availableFilter.type === 'endDate') {
+        return filters.push({
+          type: availableFilter.type,
+          filterLevel: 'instance',
+          data: availableFilter.data.defaultValues,
+        });
+      }
+
+      if (availableFilter.type === 'assignee' || availableFilter.type === 'candidateGroup') {
+        return filters.push({
+          type: availableFilter.type,
+          filterLevel: 'view',
+          data: {
+            operator: availableFilter.data.operator,
+            values: availableFilter.data.defaultValues,
+          },
+        });
+      }
+
+      if (availableFilter.type === 'variable' && availableFilter.data.type === 'Boolean') {
+        return filters.push({
+          type: availableFilter.type,
+          filterLevel: 'instance',
+          data: {
+            name: availableFilter.data.name,
+            type: availableFilter.data.type,
+            data: {values: availableFilter.data.defaultValues},
+          },
+        });
+      }
+
+      if (availableFilter.type === 'variable' && availableFilter.data.type === 'Date') {
+        return filters.push({
+          type: availableFilter.type,
+          filterLevel: 'instance',
+          data: {
+            name: availableFilter.data.name,
+            type: availableFilter.data.type,
+            data: availableFilter.data.defaultValues,
+          },
+        });
+      }
+
+      if (availableFilter.type === 'variable') {
+        return filters.push({
+          type: availableFilter.type,
+          filterLevel: 'instance',
+          data: {
+            name: availableFilter.data.name,
+            type: availableFilter.data.type,
+            data: {
+              operator: availableFilter.data.data.operator,
+              values: availableFilter.data.defaultValues,
+            },
+          },
+        });
+      }
+    }
+  });
+
+  return filters;
+}

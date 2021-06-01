@@ -19,6 +19,9 @@ jest.mock('react-full-screen', () => {
     useFullScreenHandle: () => handle,
   };
 });
+jest.mock('./service', () => ({
+  getDefaultFilter: () => [],
+}));
 
 beforeEach(() => {
   useFullScreenHandle().active = false;

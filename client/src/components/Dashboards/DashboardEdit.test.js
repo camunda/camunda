@@ -23,6 +23,10 @@ jest.mock('saveGuard', () => ({
 jest.mock('prompt', () => ({
   showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
 }));
+jest.mock('./service', () => ({
+  convertFilterToDefaultValues: () => null,
+  getDefaultFilter: () => [],
+}));
 
 beforeEach(() => {
   showPrompt.mockClear();

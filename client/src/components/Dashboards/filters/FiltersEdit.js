@@ -7,8 +7,6 @@
 import React, {useState} from 'react';
 import update from 'immutability-helper';
 
-import {getVariableNames, getVariableValues} from './service';
-
 import {Button, Icon, LabeledInput} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
 import {t} from 'translation';
@@ -18,14 +16,23 @@ import DateFilter from './DateFilter';
 import DashboardVariableFilter from './VariableFilter';
 import DashboardAssigneeFilter from './AssigneeFilter';
 
+import {getVariableNames, getVariableValues, isOfType} from './service';
+
 import './FiltersEdit.scss';
 
-export default function FiltersEdit({availableFilters, setAvailableFilters, reports}) {
+export default function FiltersEdit({
+  availableFilters,
+  setAvailableFilters,
+  reports,
+  filter = [],
+  setFilter,
+}) {
   const [filterToEdit, setFilterToEdit] = useState();
   const [allowCustomValues, setAllowCustomValues] = useState(false);
 
   function removeFilter(idxToRemove) {
     setAvailableFilters(availableFilters.filter((_, idx) => idx !== idxToRemove));
+    setFilter(filter.filter((filter) => !isOfType(filter, availableFilters[idxToRemove])));
   }
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
@@ -40,22 +47,58 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
         );
         switch (type) {
           case 'state':
-            return <InstanceStateFilter key={type}>{deleter}</InstanceStateFilter>;
+            return (
+              <InstanceStateFilter key={type} filter={filter} setFilter={setFilter}>
+                {deleter}
+              </InstanceStateFilter>
+            );
           case 'startDate':
           case 'endDate':
+            const dateFilter = filter.find((filter) => filter.type === type);
             return (
               <DateFilter
                 key={type}
                 emptyText={t('common.off')}
                 icon="calender"
                 title={t('dashboard.filter.types.' + type)}
+                filter={dateFilter?.data}
+                setFilter={(newFilter) => {
+                  const rest = filter.filter((filter) => filter !== dateFilter);
+                  if (newFilter) {
+                    setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
+                  } else {
+                    setFilter(rest);
+                  }
+                }}
               >
                 {deleter}
               </DateFilter>
             );
           case 'variable':
+            const variableFilter = filter.find(
+              (filter) =>
+                filter.type === 'variable' &&
+                filter.data.name === data.name &&
+                filter.data.type === data.type
+            );
             return (
-              <DashboardVariableFilter key={idx} config={data}>
+              <DashboardVariableFilter
+                key={idx}
+                config={data}
+                filter={variableFilter?.data.data}
+                reports={reports}
+                setFilter={(newFilter) => {
+                  const rest = filter.filter((filter) => filter !== variableFilter);
+                  if (newFilter) {
+                    setFilter([
+                      ...rest,
+                      {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
+                    ]);
+                  } else {
+                    setFilter(rest);
+                  }
+                }}
+              >
                 <Button
                   className="editButton"
                   icon
@@ -71,8 +114,23 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
             );
           case 'assignee':
           case 'candidateGroup':
+            const identityFilter = filter.find((filter) => filter.type === type);
             return (
-              <DashboardAssigneeFilter key={idx} config={data} type={type}>
+              <DashboardAssigneeFilter
+                key={idx}
+                config={data}
+                type={type}
+                filter={identityFilter?.data}
+                reports={reports}
+                setFilter={(newFilter) => {
+                  const rest = filter.filter((filter) => filter !== identityFilter);
+                  if (newFilter) {
+                    setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
+                  } else {
+                    setFilter(rest);
+                  }
+                }}
+              >
                 <Button
                   className="editButton"
                   icon
@@ -118,6 +176,7 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                 }
               })
             );
+            setFilter(filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit])));
             setFilterToEdit();
             setAllowCustomValues(false);
           }}
@@ -179,6 +238,9 @@ export default function FiltersEdit({availableFilters, setAvailableFilters, repo
                   }
                   return update(data, {data: {allowCustomValues: {$set: allowCustomValues}}});
                 })
+              );
+              setFilter(
+                filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit]))
               );
               setFilterToEdit();
               setAllowCustomValues(false);

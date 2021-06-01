@@ -9,6 +9,8 @@ import React, {useState, useEffect} from 'react';
 import {Button} from 'components';
 import {t} from 'translation';
 
+import {getDefaultFilter} from '../service';
+
 import InstanceStateFilter from './InstanceStateFilter';
 import DateFilter from './DateFilter';
 import VariableFilter from './VariableFilter';
@@ -41,7 +43,6 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 emptyText={t('common.off')}
                 title={t('dashboard.filter.types.' + type)}
                 icon="calender"
-                resetTrigger={resetTrigger}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== dateFilter);
@@ -66,6 +67,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 filter={variableFilter?.data.data}
                 config={data}
                 reports={reports}
+                resetTrigger={resetTrigger}
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== variableFilter);
                   if (newFilter) {
@@ -88,6 +90,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 config={data}
                 filter={identityFilter?.data}
                 reports={reports}
+                resetTrigger={resetTrigger}
                 type={type}
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== identityFilter);
@@ -105,7 +108,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
       })}
       <Button
         onClick={() => {
-          setFilter([]);
+          setFilter(getDefaultFilter(availableFilters));
           setResetTrigger(true);
         }}
       >

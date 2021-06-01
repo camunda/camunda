@@ -25,7 +25,12 @@ import {evaluateReport} from 'services';
 import {themed} from 'theme';
 import {t} from 'translation';
 
-import {getSharedDashboard, shareDashboard, revokeDashboardSharing} from './service';
+import {
+  getSharedDashboard,
+  shareDashboard,
+  revokeDashboardSharing,
+  getDefaultFilter,
+} from './service';
 import {FiltersView} from './filters';
 
 import {AutoRefreshBehavior, AutoRefreshIcon} from './AutoRefresh';
@@ -54,7 +59,7 @@ export function DashboardView(props) {
   const [autoRefreshHandle, setAutoRefreshHandle] = useState();
   const [deleting, setDeleting] = useState(null);
   const [filtersShown, setFiltersShown] = useState(availableFilters?.length > 0);
-  const [filter, setFilter] = useState([]);
+  const [filter, setFilter] = useState(getDefaultFilter(availableFilters));
   const fullScreenHandle = useFullScreenHandle();
 
   const themeRef = useRef(theme);
@@ -160,6 +165,7 @@ export function DashboardView(props) {
                       revokeEntitySharing={revokeDashboardSharing}
                       getSharedEntity={getSharedDashboard}
                       filter={filter}
+                      defaultFilter={getDefaultFilter(availableFilters)}
                     />
                   </Popover>
                 </React.Fragment>
@@ -180,6 +186,7 @@ export function DashboardView(props) {
                       setFilter([]);
                     } else {
                       setFiltersShown(true);
+                      setFilter(getDefaultFilter(availableFilters));
                     }
                   }}
                 >

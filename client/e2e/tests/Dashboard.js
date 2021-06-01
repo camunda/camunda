@@ -125,22 +125,22 @@ test('sharing header parameters', async (t) => {
 
   const shareUrl = await e.shareUrl.value;
 
-  await t.navigateTo(shareUrl + '?mode=embed');
+  await t.navigateTo(shareUrl + '&mode=embed');
 
   await t.expect(e.shareOptimizeIcon.visible).ok();
   await t.expect(e.shareTitle.visible).ok();
   await t.expect(e.shareLink.visible).ok();
 
-  await t.navigateTo(shareUrl + '?mode=embed&header=hidden');
+  await t.navigateTo(shareUrl + '&mode=embed&header=hidden');
 
   await t.expect(e.shareHeader.exists).notOk();
 
-  await t.navigateTo(shareUrl + '?header=titleOnly');
+  await t.navigateTo(shareUrl + '&header=titleOnly');
 
   await t.expect(e.shareTitle.exists).ok();
   await t.expect(e.shareLink.exists).notOk();
 
-  await t.navigateTo(shareUrl + '?mode=embed&header=linkOnly');
+  await t.navigateTo(shareUrl + '&mode=embed&header=linkOnly');
 
   await t.expect(e.shareTitle.exists).notOk();
   await t.expect(e.shareLink.exists).ok();

@@ -25,22 +25,48 @@ function getOperatorText(operator) {
   }
 }
 
-export function AssigneeFilter({config, setFilter, reports, mightFail, filter, type, children}) {
+export function AssigneeFilter({
+  config,
+  setFilter,
+  reports,
+  mightFail,
+  filter,
+  type,
+  children,
+  resetTrigger,
+}) {
   const [users, setUsers] = useState([]);
   const [names, setNames] = useState({});
 
-  const {operator, values, allowCustomValues} = config;
+  const {operator, values, defaultValues, allowCustomValues} = config;
 
   useEffect(() => {
-    mightFail(getAssigneeNames(type, values), (names) => {
+    const additionalValues = (defaultValues ?? []).filter((value) => !values.includes(value));
+    const allRequiredNames = [...values, ...additionalValues];
+
+    mightFail(getAssigneeNames(type, allRequiredNames), (names) => {
       setNames(
         names.reduce((obj, assignee) => {
           obj[assignee.id] = assignee;
           return obj;
         }, {})
       );
+      setUsers(
+        additionalValues.map((additionalValue) => {
+          if (additionalValue === null) {
+            return {
+              id: 'USER:null',
+              identity: {name: t('common.filter.assigneeModal.unassigned'), type: 'user'},
+            };
+          } else {
+            const identity = names.find(({id}) => id === additionalValue);
+            const newId = `${identity.type.toUpperCase()}:${additionalValue}`;
+            return {id: newId, identity};
+          }
+        })
+      );
     });
-  }, [mightFail, values, type]);
+  }, [mightFail, values, defaultValues, type, resetTrigger]);
 
   function addValue(value, scopedFilter = filter) {
     const newFilter = {

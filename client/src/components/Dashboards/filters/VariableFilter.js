@@ -12,7 +12,14 @@ import BooleanFilter from './BooleanFilter';
 
 import './VariableFilter.scss';
 
-export default function VariableFilter({filter, config, setFilter, children, reports}) {
+export default function VariableFilter({
+  filter,
+  config,
+  setFilter,
+  children,
+  reports,
+  resetTrigger,
+}) {
   let TypeComponent;
   switch (config.type) {
     case 'Date':
@@ -34,6 +41,7 @@ export default function VariableFilter({filter, config, setFilter, children, rep
       <TypeComponent
         filter={filter}
         type={config.type}
+        resetTrigger={resetTrigger}
         config={config}
         setFilter={setFilter}
         reports={reports}

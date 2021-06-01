@@ -21,6 +21,7 @@ import DragOverlay from './DragOverlay';
 import EditButton from './EditButton';
 
 import {FiltersEdit, AddFiltersButton} from './filters';
+import {convertFilterToDefaultValues, getDefaultFilter} from './service';
 
 import './DashboardEdit.scss';
 
@@ -32,6 +33,7 @@ export class DashboardEdit extends React.Component {
     this.state = {
       reports: initialReports,
       availableFilters: initialAvailableFilters || [],
+      filter: getDefaultFilter(initialAvailableFilters),
       name: name,
     };
   }
@@ -180,10 +182,25 @@ export class DashboardEdit extends React.Component {
   save = (stayInEditMode) => {
     return new Promise((resolve) => {
       const promises = [];
-      const {name, reports, availableFilters} = this.state;
+      const {name, reports, availableFilters, filter} = this.state;
 
       nowPristine();
-      promises.push(this.props.saveChanges(name, reports, availableFilters, stayInEditMode));
+      promises.push(
+        this.props.saveChanges(
+          name,
+          reports,
+          availableFilters.map((availableFilter) => {
+            return {
+              type: availableFilter.type,
+              data: {
+                ...availableFilter.data,
+                defaultValues: convertFilterToDefaultValues(availableFilter, filter),
+              },
+            };
+          }),
+          stayInEditMode
+        )
+      );
 
       if (stayInEditMode) {
         promises.push(
@@ -225,7 +242,7 @@ export class DashboardEdit extends React.Component {
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-    const {reports, name, availableFilters} = this.state;
+    const {reports, name, availableFilters, filter} = this.state;
 
     const optimizeReports = reports?.filter(({id, report}) => !!id || !!report);
 
@@ -257,6 +274,8 @@ export class DashboardEdit extends React.Component {
             reports={optimizeReports}
             persistReports={() => this.save(true)}
             availableFilters={availableFilters}
+            filter={filter}
+            setFilter={(filter) => this.setState({filter})}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
           />
         )}
@@ -264,6 +283,7 @@ export class DashboardEdit extends React.Component {
           <DashboardRenderer
             disableReportInteractions
             reports={reports}
+            filter={filter}
             loadReport={evaluateReport}
             addons={[
               <DragOverlay key="DragOverlay" />,
