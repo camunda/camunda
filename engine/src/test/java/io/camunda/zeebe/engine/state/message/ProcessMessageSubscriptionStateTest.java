@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
@@ -126,6 +127,20 @@ public final class ProcessMessageSubscriptionStateTest {
     assertThat(visited)
         .containsExactly(
             new Tuple<>(1L, wrapString("message1")), new Tuple<>(1L, wrapString("message2")));
+  }
+
+  @Test
+  public void callingPutWithRecordReturnedByGetMustNotThrowException() {
+    // given
+    final var key = 1L;
+    final var elementInstanceKey = 1L;
+    final var messageName = "messageName";
+
+    state.put(key, subscriptionRecord(messageName, "correlationKey", elementInstanceKey), 0L);
+
+    // when + then
+    final var subscription = state.getSubscription(elementInstanceKey, wrapString(messageName));
+    assertThatNoException().isThrownBy(() -> state.put(key, subscription.getRecord(), 0L));
   }
 
   private ProcessMessageSubscriptionRecord subscriptionRecordWithElementInstanceKey(
