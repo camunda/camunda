@@ -30,6 +30,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEven
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
@@ -42,7 +43,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
@@ -267,13 +267,15 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   @SneakyThrows
   protected Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
-    final OptimizeIndexNameService indexNameService = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    final OptimizeElasticsearchClient esClient =
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    final OptimizeIndexNameService indexNameService = esClient
       .getIndexNameService();
-    final GetIndexResponse getIndexResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    final GetIndexResponse getIndexResponse = esClient
       .getHighLevelClient()
       .indices().get(
         new GetIndexRequest(indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*"),
-        RequestOptions.DEFAULT
+        esClient.requestOptions()
       );
     return getIndexResponse.getAliases();
   }
@@ -291,8 +293,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getOptimizeElasticClient()
       .search(
-        new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder),
-        RequestOptions.DEFAULT
+        new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder)
       );
 
     EventProcessPublishStateDto result = null;
@@ -308,7 +309,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   @SneakyThrows
   protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromElasticsearch(final String definitionId) {
     final GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId), RequestOptions.DEFAULT);
+      .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId));
 
     EventProcessDefinitionDto result = null;
     if (getResponse.isExists()) {
@@ -329,10 +330,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessPublishStateId(final String publishStateId) {
     final List<EventProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(
-        new SearchRequest(new EventProcessInstanceIndex(publishStateId).getIndexName()),
-        RequestOptions.DEFAULT
-      );
+      .search(new SearchRequest(new EventProcessInstanceIndex(publishStateId).getIndexName()));
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       results.add(
         elasticSearchIntegrationTestExtension.getObjectMapper()

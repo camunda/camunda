@@ -22,7 +22,6 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -93,7 +92,7 @@ public class TelemetryDataService {
     String esVersion = INFORMATION_UNAVAILABLE_STRING;
 
     try {
-      esVersion = esClient.getHighLevelClient().info(RequestOptions.DEFAULT).getVersion().getNumber();
+      esVersion = esClient.getHighLevelClient().info(esClient.requestOptions()).getVersion().getNumber();
     } catch (IOException e) {
       log.info("Failed to retrieve Elasticsearch version for telemetry data.");
     }

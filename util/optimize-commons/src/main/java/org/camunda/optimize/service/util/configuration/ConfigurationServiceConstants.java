@@ -67,6 +67,7 @@ public class ConfigurationServiceConstants {
   public static final String DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionInputImport.basePackages";
   public static final String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionOutputImport.basePackages";
   public static final String BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.businessKeyImport.basePackages";
+  public static final String ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES = "$.plugin.elasticsearchCustomHeader.basePackages";
   public static final String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
   public static final String ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
   public static final String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";

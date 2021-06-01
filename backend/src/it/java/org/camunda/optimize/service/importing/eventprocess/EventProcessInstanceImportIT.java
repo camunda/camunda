@@ -758,8 +758,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*";
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .getHighLevelClient()
-      .indices().exists(new GetIndexRequest(indexAlias), RequestOptions.DEFAULT);
+      .exists(new GetIndexRequest(indexAlias));
   }
 
 }

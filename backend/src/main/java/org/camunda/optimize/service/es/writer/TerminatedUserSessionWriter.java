@@ -13,7 +13,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
@@ -48,7 +47,7 @@ public class TerminatedUserSessionWriter {
           .source(jsonSource, XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE);
 
-      esClient.index(request, RequestOptions.DEFAULT);
+      esClient.index(request);
     } catch (IOException e) {
       String message = "Could not write Optimize version to Elasticsearch.";
       log.error(message, e);

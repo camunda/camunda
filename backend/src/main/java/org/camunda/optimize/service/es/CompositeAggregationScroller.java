@@ -10,7 +10,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -59,7 +58,7 @@ public class CompositeAggregationScroller {
 
   private List<ParsedComposite.ParsedBucket> getNextPage() {
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest);
       final ParsedComposite compositeAggregationResult = extractCompositeAggregationResult(searchResponse);
 
       // find aggregation and adjust after key for next invocation

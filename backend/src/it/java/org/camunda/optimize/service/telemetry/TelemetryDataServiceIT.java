@@ -306,7 +306,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       .id(MetadataIndex.ID)
       .setRefreshPolicy(IMMEDIATE);
 
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request, RequestOptions.DEFAULT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request);
   }
 
   private LicenseKeyDto getTelemetryLicenseKey() {

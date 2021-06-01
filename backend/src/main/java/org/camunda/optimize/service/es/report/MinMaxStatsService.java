@@ -14,7 +14,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
@@ -173,7 +172,7 @@ public class MinMaxStatsService {
     final SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
     final SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not retrieve stats for script %s on index %s", script.toString(), indexName
@@ -246,7 +245,7 @@ public class MinMaxStatsService {
 
     SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format(
         "Could not retrieve stats for firstField %s and secondField %s on index %s",

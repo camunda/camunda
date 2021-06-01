@@ -155,7 +155,7 @@ public class ExportLimitsIT extends AbstractIT {
         bulkInsert.add(indexRequest);
       }
 
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().bulk(bulkInsert, RequestOptions.DEFAULT);
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().bulk(bulkInsert);
     }
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

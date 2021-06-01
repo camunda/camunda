@@ -167,7 +167,7 @@ public abstract class AbstractUpgradeIT {
     request.settings(indexSettings);
     request.mapping(indexMapping.getSource());
     indexMapping.setDynamic("false");
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
   }
 
   protected void executeBulk(final String bulkPayload) throws IOException {
@@ -199,7 +199,7 @@ public abstract class AbstractUpgradeIT {
   protected GetIndexResponse getIndicesForMapping(final IndexMappingCreator mapping) {
     return prefixAwareClient.getHighLevelClient().indices().get(
       new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mapping)),
-      RequestOptions.DEFAULT
+      prefixAwareClient.requestOptions()
     );
   }
 
@@ -207,7 +207,7 @@ public abstract class AbstractUpgradeIT {
   protected <T> Optional<T> getDocumentOfIndexByIdAs(final String indexName,
                                                      final String id,
                                                      final Class<T> valueType) {
-    final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id), RequestOptions.DEFAULT);
+    final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id));
     return getResponse.isSourceEmpty()
       ? Optional.empty()
       : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
@@ -232,10 +232,8 @@ public abstract class AbstractUpgradeIT {
 
   @SneakyThrows
   protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) {
-    final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)),
-      RequestOptions.DEFAULT
-    );
+    final SearchResponse searchResponse =
+      prefixAwareClient.search(new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)));
     return searchResponse.getHits().getHits();
   }
 
@@ -295,7 +293,7 @@ public abstract class AbstractUpgradeIT {
           .source(String.format("{\"password\" : \"admin\",\"username\" : \"admin%d\"}", i), XContentType.JSON)
       );
     }
-    prefixAwareClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+    prefixAwareClient.bulk(bulkRequest);
     prefixAwareClient.refresh(new RefreshRequest(indexName));
   }
 

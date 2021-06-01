@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +27,7 @@ public class TerminatedUserSessionReader {
     try {
       final GetRequest sessionByIdRequest = new GetRequest(TERMINATED_USER_SESSION_INDEX_NAME).id(sessionId);
       sessionByIdRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
-      return esClient.get(sessionByIdRequest, RequestOptions.DEFAULT).isExists();
+      return esClient.get(sessionByIdRequest).isExists();
     } catch (Exception e) {
       throw new OptimizeRuntimeException("Was not able to check for terminated session existence!", e);
     }

@@ -36,7 +36,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.script.Script;
@@ -104,7 +103,7 @@ public class CollectionWriter {
         .source(objectMapper.writeValueAsString(collectionDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write collection to Elasticsearch. ";
@@ -136,7 +135,7 @@ public class CollectionWriter {
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      UpdateResponse updateResponse = esClient.update(request);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         log.error(
@@ -173,7 +172,7 @@ public class CollectionWriter {
 
     DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String reason =
         String.format("Could not delete collection with id [%s]. ", collectionId);
@@ -366,7 +365,7 @@ public class CollectionWriter {
       .setRefreshPolicy(IMMEDIATE)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+    final UpdateResponse updateResponse = esClient.update(request);
 
     if (updateResponse.getShardInfo().getFailed() > 0) {
       final String message = String.format(errorMessage, collectionId);

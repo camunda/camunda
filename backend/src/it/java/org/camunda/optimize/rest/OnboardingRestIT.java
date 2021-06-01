@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -130,10 +129,7 @@ public class OnboardingRestIT extends AbstractIT {
   private Optional<OnboardingStateDto> getOnboardingStateFromElasticsearch(final String userId, final String key) {
     final GetResponse getResponse = elasticSearchIntegrationTestExtension
       .getOptimizeElasticClient()
-      .get(
-        new GetRequest(ONBOARDING_INDEX_NAME).id(userId + ":" + key),
-        RequestOptions.DEFAULT
-      );
+      .get(new GetRequest(ONBOARDING_INDEX_NAME).id(userId + ":" + key));
     return Optional.ofNullable(getResponse.getSourceAsString())
       .map(json -> {
         try {

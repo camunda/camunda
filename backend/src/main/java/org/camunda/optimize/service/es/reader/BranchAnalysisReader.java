@@ -24,7 +24,6 @@ import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -218,7 +217,7 @@ public class BranchAnalysisReader {
     final CountRequest searchRequest =
       new CountRequest(getProcessInstanceIndexAliasName(request.getProcessDefinitionKey())).query(query);
     try {
-      final CountResponse countResponse = esClient.count(searchRequest, RequestOptions.DEFAULT);
+      final CountResponse countResponse = esClient.count(searchRequest);
       return countResponse.getCount();
     } catch (IOException e) {
       String reason = String.format(

@@ -146,8 +146,7 @@ public class SchemaUpgradeClient {
       elasticsearchClient.update(
         new UpdateRequest(index, id)
           .doc(objectMapper.writeValueAsString(documentDto), XContentType.JSON)
-          .docAsUpsert(true),
-        RequestOptions.DEFAULT
+          .docAsUpsert(true)
       );
     } catch (Exception e) {
       final String message = String.format("Could not upsert document with id %s to index %s.", id, index);
@@ -157,7 +156,7 @@ public class SchemaUpgradeClient {
 
   public <T> Optional<T> getDocumentByIdAs(final String index, final String id, final Class<T> resultType) {
     try {
-      final GetResponse getResponse = elasticsearchClient.get(new GetRequest(index, id), RequestOptions.DEFAULT);
+      final GetResponse getResponse = elasticsearchClient.get(new GetRequest(index, id));
       return getResponse.isSourceEmpty()
         ? Optional.empty()
         : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), resultType));

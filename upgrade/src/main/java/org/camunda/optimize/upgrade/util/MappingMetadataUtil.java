@@ -42,7 +42,6 @@ import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIn
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 
 import java.io.IOException;
@@ -160,9 +159,7 @@ public class MappingMetadataUtil {
     checkNotProcessInstanceIndex(dynamicIndexPrefix);
     final GetAliasesResponse aliases;
     try {
-      aliases = esClient.getAlias(
-        new GetAliasesRequest(dynamicIndexPrefix + "*"), RequestOptions.DEFAULT
-      );
+      aliases = esClient.getAlias(new GetAliasesRequest(dynamicIndexPrefix + "*"));
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix, e);
     }
@@ -182,9 +179,7 @@ public class MappingMetadataUtil {
     try {
       GetAliasesRequest request = new GetAliasesRequest();
       request.indices(prefix + "*");
-      aliases = esClient.getAlias(
-        request, RequestOptions.DEFAULT
-      );
+      aliases = esClient.getAlias(request);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + prefix, e);
     }

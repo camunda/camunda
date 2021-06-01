@@ -29,7 +29,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -69,9 +68,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
@@ -130,7 +129,7 @@ public class DurationOutliersReader {
 
     SearchResponse search;
     try {
-      search = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      search = esClient.search(searchRequest);
     } catch (IOException e) {
       log.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
@@ -291,7 +290,7 @@ public class DurationOutliersReader {
         .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
-      final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(scrollSearchRequest);
       return ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
         response,
         ProcessInstanceIdDto.class,
@@ -339,7 +338,7 @@ public class DurationOutliersReader {
       outlierParams, outlierVariableTerms
     );
     return extractNestedProcessInstanceAgg(
-      esClient.search(nonOutliersTermOccurrencesRequest, RequestOptions.DEFAULT)
+      esClient.search(nonOutliersTermOccurrencesRequest)
     );
 
   }
@@ -357,9 +356,7 @@ public class DurationOutliersReader {
     final SearchRequest outlierTopVariableTermsRequest = createTopVariableTermsOfOutliersQuery(
       outlierParams, variableNames
     );
-    return extractNestedProcessInstanceAgg(
-      esClient.search(outlierTopVariableTermsRequest, RequestOptions.DEFAULT)
-    );
+    return extractNestedProcessInstanceAgg(esClient.search(outlierTopVariableTermsRequest));
   }
 
   private List<VariableTermDto> mapToVariableTermList(
@@ -585,7 +582,7 @@ public class DurationOutliersReader {
     final SearchRequest searchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
       .source(searchSourceBuilder);
     try {
-      final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest, RequestOptions.DEFAULT)
+      final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest)
         .getAggregations();
       final Aggregations allFlowNodeFilterAggs = ((Nested) allFlowNodesPercentileRanks.get(FLOW_NODE_INSTANCES)).getAggregations();
       return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
@@ -688,7 +685,7 @@ public class DurationOutliersReader {
 
     SearchResponse search;
     try {
-      search = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      search = esClient.search(searchRequest);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (ElasticsearchStatusException e) {

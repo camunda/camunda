@@ -19,7 +19,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -77,8 +76,8 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      unfilteredInstanceCountResponse = esClient.count(unfilteredInstanceCountRequest, RequestOptions.DEFAULT);
+      response = esClient.search(searchRequest);
+      unfilteredInstanceCountResponse = esClient.count(unfilteredInstanceCountRequest);
       executionContext.setUnfilteredInstanceCount(unfilteredInstanceCountResponse.getCount());
     } catch (IOException e) {
       String reason =

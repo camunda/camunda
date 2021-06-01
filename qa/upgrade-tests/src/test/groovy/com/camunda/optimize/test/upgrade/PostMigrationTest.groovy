@@ -227,9 +227,7 @@ class PostMigrationTest {
 
   private static void waitForOldIndexToBeCleanedUp(final String processMappingId) {
     final SearchResponse searchResponse = elasticsearchClient.search(
-      new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(new SearchSourceBuilder().size(10000)),
-      RequestOptions.DEFAULT
-    );
+      new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(new SearchSourceBuilder().size(10000)));
     List<String> eventIndicesForMapping = Arrays.stream(searchResponse.getHits().getHits())
       .map(hit -> hit.getSourceAsMap())
       .filter(publishState -> processMappingId.equals(publishState.get(EventProcessPublishStateDto.Fields.processMappingId)))

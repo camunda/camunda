@@ -18,9 +18,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.importing.ZeebeConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.Test;
@@ -216,11 +216,15 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
   private void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INDEX_NAME;
+    final OptimizeElasticsearchClient esClient =
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     Awaitility.dontCatchUncaughtExceptions()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-          .getHighLevelClient().indices().exists(new GetIndexRequest(expectedIndex), RequestOptions.DEFAULT)
+        esClient
+          .getHighLevelClient()
+          .indices()
+          .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
       ).isTrue());
     final CountRequest definitionCountRequest =
       new CountRequest(expectedIndex)
@@ -228,9 +232,9 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     Awaitility.catchUncaughtExceptions()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+        esClient
           .getHighLevelClient()
-          .count(definitionCountRequest, RequestOptions.DEFAULT)
+          .count(definitionCountRequest, esClient.requestOptions())
           .getCount())
         .isEqualTo(expectedDefinitionsCount));
   }

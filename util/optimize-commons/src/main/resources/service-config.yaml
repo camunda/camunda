@@ -356,6 +356,10 @@ plugin:
     # Look in the given base package list for business key import adaption plugins.
     # If empty, the import is not influenced.
     basePackages: []
+  elasticsearchCustomHeader:
+    # Look in the given base package list for Elasticsearch custom header fetching plugins.
+    # If empty, ES requests are not influenced.
+    basePackages: []
 
 serialization:
   # Define a custom date format that should be used for

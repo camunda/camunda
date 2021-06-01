@@ -58,8 +58,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
     // when
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
 
     // then
     assertThat(getResponse.isExists()).isTrue();

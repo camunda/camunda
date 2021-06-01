@@ -19,7 +19,6 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -185,7 +184,7 @@ public class ImportIT extends AbstractImportIT {
         buildDynamicSettings(embeddedOptimizeExtension.getConfigurationService()),
         indexName
       ),
-      RequestOptions.DEFAULT
+      esClient.requestOptions()
     );
   }
 

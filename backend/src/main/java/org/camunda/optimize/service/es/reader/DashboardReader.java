@@ -16,7 +16,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -45,7 +44,7 @@ public class DashboardReader {
 
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = String.format("Could not fetch dashboard with id [%s]", dashboardId);
       log.error(reason, e);
@@ -81,7 +80,7 @@ public class DashboardReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
       log.error(reason, e);
@@ -102,7 +101,7 @@ public class DashboardReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch dashboards for collection with id [%s]", collectionId);
       log.error(reason, e);
@@ -130,7 +129,7 @@ public class DashboardReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
       log.error(reason, e);

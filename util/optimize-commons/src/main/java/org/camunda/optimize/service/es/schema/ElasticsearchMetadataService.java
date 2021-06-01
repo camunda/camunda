@@ -20,7 +20,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
@@ -83,7 +82,7 @@ public class ElasticsearchMetadataService {
     searchRequest.source(searchSourceBuilder);
     final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
       long totalHits = searchResponse.getHits().getTotalHits().value;
       if (totalHits == 1) {
         MetadataDto parsed = objectMapper.readValue(
@@ -125,7 +124,7 @@ public class ElasticsearchMetadataService {
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      final UpdateResponse response = esClient.update(request, RequestOptions.DEFAULT);
+      final UpdateResponse response = esClient.update(request);
       if (!response.getResult().equals(DocWriteResponse.Result.CREATED)
         && !response.getResult().equals(DocWriteResponse.Result.UPDATED)) {
         log.error(ERROR_MESSAGE_ES_REQUEST);

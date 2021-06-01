@@ -26,7 +26,6 @@ import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -105,7 +104,7 @@ public class ReportReader {
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = String.format("Could not fetch single process report with id [%s]", reportId);
       log.error(reason, e);
@@ -134,7 +133,7 @@ public class ReportReader {
 
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = String.format("Could not fetch single decision report with id [%s]", reportId);
       log.error(reason, e);
@@ -263,7 +262,7 @@ public class ReportReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
       log.error(reason, e);
@@ -296,7 +295,7 @@ public class ReportReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format(
         "Was not able to fetch combined reports that contain reports with ids [%s]",
@@ -402,7 +401,7 @@ public class ReportReader {
     ).scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
-      return esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve reports!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve reports!", e);
@@ -417,7 +416,7 @@ public class ReportReader {
 
     MultiGetResponse multiGetItemResponses;
     try {
-      multiGetItemResponses = esClient.mget(request, RequestOptions.DEFAULT);
+      multiGetItemResponses = esClient.mget(request);
     } catch (IOException e) {
       String reason = String.format("Could not fetch report with id [%s]", reportId);
       log.error(reason, e);

@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.reindex.BulkByScrollTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ public class EsBulkByScrollTaskActionProgressReporter {
           .setDetailed(true);
 
         try {
-          ListTasksResponse response = esClient.getHighLevelClient().tasks().list(request, RequestOptions.DEFAULT);
+          ListTasksResponse response = esClient.getHighLevelClient().tasks().list(request, esClient.requestOptions());
           final List<BulkByScrollTask.Status> currentTasksStatus = response
             .getTasks()
             .stream()

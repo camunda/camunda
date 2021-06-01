@@ -20,7 +20,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
@@ -51,7 +50,7 @@ public class EventProcessMappingReader {
 
     final GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       final String reason = String.format("Could not fetch event based process with id [%s].", eventProcessMappingId);
       log.error(reason, e);
@@ -90,7 +89,7 @@ public class EventProcessMappingReader {
 
     final SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve event based processes!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event based processes!", e);
@@ -113,7 +112,7 @@ public class EventProcessMappingReader {
 
     final GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not fetch roles for event based process with id [%s].",
@@ -129,7 +128,8 @@ public class EventProcessMappingReader {
         result = objectMapper.readValue(getResponse.getSourceAsString(), EsEventProcessMappingDto.class)
           .getRoles();
       } catch (IOException e) {
-        final String reason = "Could not deserialize information for event based process with id: " + eventProcessMappingId;
+        final String reason =
+          "Could not deserialize information for event based process with id: " + eventProcessMappingId;
         log.error(
           "Was not able to retrieve roles for event based process with id [{}] from Elasticsearch. Reason: {}",
           eventProcessMappingId,

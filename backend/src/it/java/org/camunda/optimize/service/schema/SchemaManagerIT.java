@@ -21,7 +21,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.indices.GetFieldMappingsRequest;
 import org.elasticsearch.client.indices.GetFieldMappingsResponse;
@@ -292,7 +291,7 @@ public class SchemaManagerIT extends AbstractIT {
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
       updateSettingsRequest.settings(Settings.builder().put(DYNAMIC_SETTING_MAX_NGRAM_DIFF, "10").build());
       prefixAwareRestHighLevelClient.getHighLevelClient()
-        .indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+        .indices().putSettings(updateSettingsRequest, prefixAwareRestHighLevelClient.requestOptions());
     }
   }
 
@@ -314,7 +313,7 @@ public class SchemaManagerIT extends AbstractIT {
   private void assertIndexExists(String indexName) throws IOException {
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     GetIndexRequest request = new GetIndexRequest(indexName);
-    final boolean indexExists = esClient.exists(request, RequestOptions.DEFAULT);
+    final boolean indexExists = esClient.exists(request);
 
     assertThat(indexExists).isTrue();
   }
@@ -326,7 +325,9 @@ public class SchemaManagerIT extends AbstractIT {
       .indices(aliasForIndex)
       .fields(MyUpdatedEventIndex.MY_NEW_FIELD);
     GetFieldMappingsResponse response =
-      prefixAwareRestHighLevelClient.getHighLevelClient().indices().getFieldMapping(request, RequestOptions.DEFAULT);
+      prefixAwareRestHighLevelClient.getHighLevelClient()
+        .indices()
+        .getFieldMapping(request, prefixAwareRestHighLevelClient.requestOptions());
 
     final MyUpdatedEventIndex updatedEventType = new MyUpdatedEventIndex();
     final GetFieldMappingsResponse.FieldMappingMetadata fieldEntry =

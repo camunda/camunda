@@ -17,7 +17,6 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +45,7 @@ public class SharingWriter {
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write report share to Elasticsearch. " +
@@ -74,7 +73,7 @@ public class SharingWriter {
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write dashboard share to Elasticsearch. " +
@@ -104,7 +103,7 @@ public class SharingWriter {
         .source(objectMapper.writeValueAsString(updatedShare), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED) &&
         !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
@@ -134,7 +133,7 @@ public class SharingWriter {
 
     DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String reason =
         String.format("Could not delete report share with id [%s].", shareId);
@@ -159,7 +158,7 @@ public class SharingWriter {
 
     DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String reason =
         String.format("Could not delete dashboard share with id [%s].", shareId);

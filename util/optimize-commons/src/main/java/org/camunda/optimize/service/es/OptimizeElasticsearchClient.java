@@ -12,8 +12,10 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
+import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -65,6 +67,7 @@ import org.springframework.context.ApplicationContext;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -85,13 +88,22 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   @Getter
   private OptimizeIndexNameService indexNameService;
 
+  private RequestOptionsProvider requestOptionsProvider;
+
   @Setter
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
                                      final OptimizeIndexNameService indexNameService) {
+    this(highLevelClient, indexNameService, new RequestOptionsProvider(Collections.emptyList()));
+  }
+
+  public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
+                                     final OptimizeIndexNameService indexNameService,
+                                     final RequestOptionsProvider requestOptionsProvider) {
     this.highLevelClient = highLevelClient;
     this.indexNameService = indexNameService;
+    this.requestOptionsProvider = requestOptionsProvider;
   }
 
   @Override
@@ -100,9 +112,16 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
       highLevelClient.close();
       this.highLevelClient = ElasticsearchHighLevelRestClientBuilder.build(context.getBean(ConfigurationService.class));
       this.indexNameService = context.getBean(OptimizeIndexNameService.class);
+      final ElasticsearchCustomHeaderProvider customHeaderProvider =
+        context.getBean(ElasticsearchCustomHeaderProvider.class);
+      this.requestOptionsProvider = new RequestOptionsProvider(customHeaderProvider.getPlugins());
     } catch (IOException e) {
       log.error("There was an error closing Elasticsearch Client {}", highLevelClient);
     }
+  }
+
+  public RequestOptions requestOptions() {
+    return requestOptionsProvider.getRequestOptions();
   }
 
   public final void close() throws IOException {
@@ -113,124 +132,119 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     return getHighLevelClient().getLowLevelClient();
   }
 
-  public final BulkResponse bulk(final BulkRequest bulkRequest, final RequestOptions options) throws IOException {
+  public final BulkResponse bulk(final BulkRequest bulkRequest) throws IOException {
     bulkRequest.requests().forEach(this::applyIndexPrefix);
 
-    return highLevelClient.bulk(bulkRequest, options);
+    return highLevelClient.bulk(bulkRequest, requestOptions());
   }
 
-  public final CountResponse count(final CountRequest countRequest, final RequestOptions options) throws IOException {
+  public final CountResponse count(final CountRequest countRequest) throws IOException {
     applyIndexPrefixes(countRequest);
-    return highLevelClient.count(countRequest, options);
+    return highLevelClient.count(countRequest, requestOptions());
   }
 
-  public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws
-                                                                                                      IOException {
+  public final DeleteResponse delete(final DeleteRequest deleteRequest) throws IOException {
     applyIndexPrefix(deleteRequest);
 
-    return highLevelClient.delete(deleteRequest, options);
+    return highLevelClient.delete(deleteRequest, requestOptions());
   }
 
-  public final BulkByScrollResponse deleteByQuery(final DeleteByQueryRequest deleteByQueryRequest,
-                                                  final RequestOptions options)
+  public final BulkByScrollResponse deleteByQuery(final DeleteByQueryRequest deleteByQueryRequest)
     throws IOException {
     applyIndexPrefixes(deleteByQueryRequest);
 
-    return highLevelClient.deleteByQuery(deleteByQueryRequest, options);
+    return highLevelClient.deleteByQuery(deleteByQueryRequest, requestOptions());
   }
 
-  public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest, final RequestOptions options)
+  public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest)
     throws IOException {
     getAliasesRequest.indices(convertToPrefixedAliasNames(getAliasesRequest.indices()));
     getAliasesRequest.aliases(convertToPrefixedAliasNames(getAliasesRequest.aliases()));
-    return highLevelClient.indices().getAlias(getAliasesRequest, options);
+    return highLevelClient.indices().getAlias(getAliasesRequest, requestOptions());
   }
 
   public final boolean exists(final String indexName) throws IOException {
-    return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[]{indexName})), RequestOptions.DEFAULT);
+    return exists(new GetIndexRequest(convertToPrefixedAliasNames(new String[]{indexName})));
   }
 
-  public final boolean exists(final GetIndexRequest getRequest, final RequestOptions options) throws IOException {
-    final GetIndexRequest prefixedGetRequest = new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices()));
-    return highLevelClient.indices().exists(prefixedGetRequest, options);
+  public final boolean exists(final GetIndexRequest getRequest) throws IOException {
+    return highLevelClient.indices()
+      .exists(new GetIndexRequest(convertToPrefixedAliasNames(getRequest.indices())), requestOptions());
   }
 
   public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
     return highLevelClient.indices().exists(
       new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator)),
-      RequestOptions.DEFAULT
+      requestOptions()
     );
   }
 
   public final boolean templateExists(final String indexName) throws IOException {
     return highLevelClient.indices().existsTemplate(
       new IndexTemplatesExistRequest(convertToPrefixedAliasNames(new String[]{indexName})),
-      RequestOptions.DEFAULT
+      requestOptions()
     );
   }
 
-  public final GetResponse get(final GetRequest getRequest, final RequestOptions options) throws IOException {
+  public final GetResponse get(final GetRequest getRequest) throws IOException {
     getRequest.index(indexNameService.getOptimizeIndexAliasForIndex(getRequest.index()));
 
-    return highLevelClient.get(getRequest, options);
+    return highLevelClient.get(getRequest, requestOptions());
   }
 
-  public final IndexResponse index(final IndexRequest indexRequest, final RequestOptions options) throws IOException {
+  public final IndexResponse index(final IndexRequest indexRequest) throws IOException {
     applyIndexPrefix(indexRequest);
 
-    return highLevelClient.index(indexRequest, options);
+    return highLevelClient.index(indexRequest, requestOptions());
   }
 
-  public final GetMappingsResponse getMapping(final GetMappingsRequest getMappingsRequest,
-                                              final RequestOptions options) throws IOException {
+  public final GetMappingsResponse getMapping(final GetMappingsRequest getMappingsRequest) throws IOException {
     getMappingsRequest.indices(
       convertToPrefixedAliasNames(getMappingsRequest.indices())
     );
-    return highLevelClient.indices().getMapping(getMappingsRequest, options);
+    return highLevelClient.indices().getMapping(getMappingsRequest, requestOptions());
   }
 
-  public final MultiGetResponse mget(final MultiGetRequest multiGetRequest, final RequestOptions options)
+  public final MultiGetResponse mget(final MultiGetRequest multiGetRequest)
     throws IOException {
     multiGetRequest.getItems()
       .forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForIndex(item.index())));
 
-    return highLevelClient.mget(multiGetRequest, options);
+    return highLevelClient.mget(multiGetRequest, requestOptions());
   }
 
-  public final SearchResponse scroll(final SearchScrollRequest searchScrollRequest, final RequestOptions options)
+  public final SearchResponse scroll(final SearchScrollRequest searchScrollRequest)
     throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
-    return highLevelClient.scroll(searchScrollRequest, options);
+    return highLevelClient.scroll(searchScrollRequest, requestOptions());
   }
 
-  public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest,
-                                               final RequestOptions options) throws IOException {
+  public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
-    return highLevelClient.clearScroll(clearScrollRequest, options);
+    return highLevelClient.clearScroll(clearScrollRequest, requestOptions());
   }
 
-  public final SearchResponse search(final SearchRequest searchRequest, final RequestOptions options)
+  public final SearchResponse search(final SearchRequest searchRequest)
     throws IOException {
     applyIndexPrefixes(searchRequest);
-    return highLevelClient.search(searchRequest, options);
+    return highLevelClient.search(searchRequest, requestOptions());
   }
 
-  public final UpdateResponse update(final UpdateRequest updateRequest, final RequestOptions options)
+  public final UpdateResponse update(final UpdateRequest updateRequest)
     throws IOException {
     applyIndexPrefix(updateRequest);
 
-    return highLevelClient.update(updateRequest, options);
+    return highLevelClient.update(updateRequest, requestOptions());
   }
 
-  public final BulkByScrollResponse updateByQuery(final UpdateByQueryRequest updateByQueryRequest,
-                                                  final RequestOptions options) throws IOException {
+  public final BulkByScrollResponse updateByQuery(final UpdateByQueryRequest updateByQueryRequest) throws IOException {
     applyIndexPrefixes(updateByQueryRequest);
-    return highLevelClient.updateByQuery(updateByQueryRequest, options);
+    return highLevelClient.updateByQuery(updateByQueryRequest, requestOptions());
   }
 
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
     rolloverRequest = applyAliasPrefixAndRolloverConditions(rolloverRequest);
-    return highLevelClient.indices().rollover(rolloverRequest, RequestOptions.DEFAULT);
+    return highLevelClient.indices().rollover(rolloverRequest, requestOptions());
   }
 
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
@@ -241,7 +255,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   public void refresh(final RefreshRequest refreshRequest) {
     applyIndexPrefixes(refreshRequest);
     try {
-      getHighLevelClient().indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      getHighLevelClient().indices().refresh(refreshRequest, requestOptions());
     } catch (IOException e) {
       log.error("Could not refresh Optimize indexes!", e);
       throw new OptimizeRuntimeException("Could not refresh Optimize indexes!", e);
@@ -259,7 +273,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     log.debug("Deleting indices [{}].", indexNamesString);
     try {
       esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
-        .get(() -> highLevelClient.indices().delete(new DeleteIndexRequest(indexNames), RequestOptions.DEFAULT));
+        .get(() -> highLevelClient.indices().delete(new DeleteIndexRequest(indexNames), requestOptions()));
     } catch (FailsafeException failsafeException) {
       final Throwable cause = failsafeException.getCause();
       if (cause instanceof ElasticsearchStatusException) {
@@ -277,7 +291,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     log.debug("Deleting index template [{}].", prefixedIndexTemplateName);
     try {
       highLevelClient.indices().deleteTemplate(
-        new DeleteIndexTemplateRequest(prefixedIndexTemplateName), RequestOptions.DEFAULT
+        new DeleteIndexTemplateRequest(prefixedIndexTemplateName), requestOptions()
       );
     } catch (IOException e) {
       final String errorMessage = String.format("Could not delete index template [%s]!", prefixedIndexTemplateName);
@@ -293,9 +307,9 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     );
   }
 
-  public final SearchResponse searchWithoutPrefixing(final SearchRequest searchRequest, final RequestOptions options)
+  public final SearchResponse searchWithoutPrefixing(final SearchRequest searchRequest)
     throws IOException {
-    return highLevelClient.search(searchRequest, options);
+    return highLevelClient.search(searchRequest, requestOptions());
   }
 
   private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {

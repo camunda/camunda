@@ -22,7 +22,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -104,7 +103,7 @@ public class LicenseManager {
 
     IndexResponse indexResponse;
     try {
-      indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      indexResponse = esClient.index(request);
     } catch (IOException e) {
       String reason = "Could not store license in Elasticsearch. Maybe Optimize is not connected to Elasticsearch?";
       log.error(reason, e);
@@ -135,7 +134,7 @@ public class LicenseManager {
 
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = "Could not retrieve license from Elasticsearch.";
       log.error(reason, e);

@@ -17,7 +17,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -53,7 +52,7 @@ public class AlertReader {
 
     SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve stored alerts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve stored alerts!", e);
@@ -74,7 +73,7 @@ public class AlertReader {
 
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = String.format("Could not fetch alert with id [%s]", alertId);
       log.error(reason, e);
@@ -106,7 +105,7 @@ public class AlertReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch alerts for report with id [%s]", reportId);
       log.error(reason, e);
@@ -127,7 +126,7 @@ public class AlertReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch alerts for reports with ids [%s]", reportIds);
       log.error(reason, e);

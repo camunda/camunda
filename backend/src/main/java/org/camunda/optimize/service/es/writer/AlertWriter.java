@@ -19,7 +19,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
@@ -54,7 +53,7 @@ public class AlertWriter {
         .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write alert to Elasticsearch. " +
@@ -83,7 +82,7 @@ public class AlertWriter {
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      UpdateResponse updateResponse = esClient.update(request);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         String errorMessage = String.format(
@@ -120,7 +119,7 @@ public class AlertWriter {
 
     DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String reason =
         String.format("Could not delete alert with id [%s]. " +
@@ -154,7 +153,7 @@ public class AlertWriter {
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      esClient.update(request, RequestOptions.DEFAULT);
+      esClient.update(request);
     } catch (Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }

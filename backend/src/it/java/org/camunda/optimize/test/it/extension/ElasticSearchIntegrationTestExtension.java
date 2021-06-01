@@ -49,7 +49,6 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -60,7 +59,6 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -248,7 +246,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       RefreshRequest refreshAllIndicesRequest = new RefreshRequest(getIndexNameService().getIndexPrefix() + "*");
       getOptimizeElasticClient().getHighLevelClient()
         .indices()
-        .refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
+        .refresh(refreshAllIndicesRequest, getOptimizeElasticClient().requestOptions());
     } catch (Exception e) {
       throw new OptimizeIntegrationTestException("Could not refresh Optimize indices!", e);
     }
@@ -275,7 +273,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
         .id(id)
         .source(json, XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE); // necessary because otherwise I can't search for the entry immediately
-      getOptimizeElasticClient().index(request, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().index(request);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
@@ -298,7 +296,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   @SneakyThrows
   private void executeBulk(final BulkRequest bulkRequest) {
-    getOptimizeElasticClient().bulk(bulkRequest, RequestOptions.DEFAULT);
+    getOptimizeElasticClient().bulk(bulkRequest);
   }
 
   @SneakyThrows
@@ -325,7 +323,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)
     throws IOException {
     GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
-    GetResponse response = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT);
+    GetResponse response = prefixAwareRestHighLevelClient.get(getRequest);
     if (response.isExists()) {
       return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class)
         .getTimestampOfLastEntity();
@@ -357,7 +355,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
     request.settings(settings);
 
-    getOptimizeElasticClient().getHighLevelClient().indices().putSettings(request, RequestOptions.DEFAULT);
+    getOptimizeElasticClient().getHighLevelClient()
+      .indices()
+      .putSettings(request, getOptimizeElasticClient().requestOptions());
   }
 
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
@@ -391,7 +391,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .indices(indexNames)
       .source(searchSourceBuilder);
 
-    return prefixAwareRestHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+    return prefixAwareRestHighLevelClient.search(searchRequest);
   }
 
   public Integer getDocumentCountOf(final String indexName) {
@@ -401,7 +401,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public Integer getDocumentCountOf(final String indexName, final QueryBuilder documentQuery) {
     try {
       final CountResponse countResponse = getOptimizeElasticClient()
-        .count(new CountRequest(indexName).query(documentQuery), RequestOptions.DEFAULT);
+        .count(new CountRequest(indexName).query(documentQuery));
       return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
@@ -434,7 +434,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
     SearchResponse searchResponse;
     try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = getOptimizeElasticClient().search(searchRequest);
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException("Could not evaluate activity count in process instance indices.", e);
     }
@@ -471,7 +471,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
     SearchResponse searchResponse;
     try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = getOptimizeElasticClient().search(searchRequest);
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
         "Cannot evaluate variable instance count in process instance indices.",
@@ -516,7 +516,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
     SearchResponse searchResponse;
     try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = getOptimizeElasticClient().search(searchRequest);
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
         "Cannot evaluate variable instance count in process instance indices.",
@@ -535,7 +535,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .setRefresh(true);
 
     try {
-      getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().getHighLevelClient()
+        .deleteByQuery(request, getOptimizeElasticClient().requestOptions());
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not delete all Optimize data", e);
     }
@@ -560,7 +561,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
         .setRefresh(true);
 
     try {
-      getOptimizeElasticClient().getHighLevelClient().deleteByQuery(request, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().getHighLevelClient()
+        .deleteByQuery(request, getOptimizeElasticClient().requestOptions());
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
         "Could not delete data in index " + getIndexNameService().getOptimizeIndexAliasForIndex(index),
@@ -764,7 +766,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
           )
         ))
         .setRefreshPolicy(IMMEDIATE);
-      final UpdateResponse updateResponse = getOptimizeElasticClient().update(request, RequestOptions.DEFAULT);
+      final UpdateResponse updateResponse = getOptimizeElasticClient().update(request);
       if (updateResponse.getShardInfo().getFailed() > 0) {
         final String errorMessage = String.format(
           "Was not able to update event process roles with id [%s].", eventProcessId
@@ -802,7 +804,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     getOptimizeElasticClient().getHighLevelClient()
       .indices()
-      .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), RequestOptions.DEFAULT);
+      .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), getOptimizeElasticClient().requestOptions());
   }
 
   private void deleteAllEventProcessInstanceIndices() {
@@ -820,7 +822,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public boolean indexExists(final String indexOrAliasName) {
     final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
     try {
-      return getOptimizeElasticClient().exists(request, RequestOptions.DEFAULT);
+      return getOptimizeElasticClient().exists(request);
     } catch (IOException e) {
       final String message = String.format(
         "Could not check if [%s] index already exist.", String.join(",", indexOrAliasName)
@@ -835,7 +837,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   public String getEsVersion() {
     try {
-      return prefixAwareRestHighLevelClient.getHighLevelClient().info(RequestOptions.DEFAULT).getVersion().getNumber();
+      return prefixAwareRestHighLevelClient.getHighLevelClient()
+        .info(prefixAwareRestHighLevelClient.requestOptions())
+        .getVersion()
+        .getNumber();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not retrieve elasticsearch version.", e);
     }
@@ -852,9 +857,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private List<String> retrieveAllDynamicIndexKeysForPrefix(final String dynamicIndexPrefix) {
     final GetAliasesResponse aliases;
     try {
-      aliases = getOptimizeElasticClient().getAlias(
-        new GetAliasesRequest(dynamicIndexPrefix + "*"), RequestOptions.DEFAULT
-      );
+      aliases = getOptimizeElasticClient().getAlias(new GetAliasesRequest(dynamicIndexPrefix + "*"));
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix);
     }

@@ -19,7 +19,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
@@ -73,7 +72,7 @@ public class CombinedReportEvaluator {
     final List<BoolQueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions, singleReportEvaluator);
     final CountRequest instanceCountRequest = createInstanceCountRequest(baseQueries);
     try {
-      return esClient.count(instanceCountRequest, RequestOptions.DEFAULT).getCount();
+      return esClient.count(instanceCountRequest).getCount();
     } catch (IOException e) {
       final String message = String.format(
         "Could not count instances in combined report with single report IDs: [%s]",

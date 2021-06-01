@@ -276,13 +276,6 @@
       <version>1.0.7</version>
     </dependency>
 
-    <!-- ClassGraph  -->
-    <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-      <version>4.8.106</version>
-    </dependency>
-
     <!--Test dependencies-->
     <dependency>
       <groupId>org.springframework</groupId>

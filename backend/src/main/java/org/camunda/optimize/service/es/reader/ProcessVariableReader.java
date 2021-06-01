@@ -23,7 +23,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -185,7 +184,7 @@ public class ProcessVariableReader {
       new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest);
       final Aggregations aggregations = searchResponse.getAggregations();
 
       return extractVariableValues(aggregations, requestDto);

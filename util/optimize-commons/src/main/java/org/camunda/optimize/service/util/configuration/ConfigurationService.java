@@ -142,6 +142,7 @@ public class ConfigurationService {
   private List<String> decisionOutputImportPluginBasePackages;
   private List<String> decisionInputImportPluginBasePackages;
   private List<String> businessKeyImportPluginBasePackages;
+  private List<String> elasticsearchCustomHeaderPluginBasePackages;
   private String pluginDirectory;
 
   private String containerHost;
@@ -697,6 +698,15 @@ public class ConfigurationService {
       );
     }
     return authenticationExtractorPluginBasePackages;
+  }
+
+  public List<String> getElasticsearchCustomHeaderPluginBasePackages() {
+    if (elasticsearchCustomHeaderPluginBasePackages == null) {
+      elasticsearchCustomHeaderPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
+      );
+    }
+    return elasticsearchCustomHeaderPluginBasePackages;
   }
 
   public String getContainerHost() {

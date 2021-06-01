@@ -24,16 +24,10 @@ import org.mockserver.model.HttpRequest;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.CoreMatchers.everyItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
@@ -54,15 +48,12 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(authorizedEntities.size(), is(1));
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(collectionId)
-    );
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
-      contains(accessIdentityRolePairs.roleType)
-    );
+    assertThat(authorizedEntities)
+      .singleElement()
+      .satisfies(entity -> {
+        assertThat(entity.getId().equals(collectionId));
+        assertThat(entity.getCurrentUserRole().equals(accessIdentityRolePairs.getRoleType()));
+      });
   }
 
   @Test
@@ -87,14 +78,15 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(
+      allUpperCaseUserId,
+      actualUserId
+    );
 
     // then
-    assertThat(authorizedEntities.size(), is(1));
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(collectionId)
-    );
+    assertThat(authorizedEntities)
+      .singleElement()
+      .satisfies(entity -> assertThat(entity.getId().equals(collectionId)));
 
     mockedRequests.forEach(engineMockServer::verify);
   }
@@ -107,23 +99,21 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String combinedReportId = reportClient.createEmptyCombinedReport(null);
-    final String processReportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
-    final String decisionReportId = reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
+    final String processReportId =
+      reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
+    final String decisionReportId =
+      reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
     final String dashboardId = dashboardClient.createDashboard(null);
 
     // when
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(authorizedEntities.size(), is(5));
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(collectionId, combinedReportId, processReportId, decisionReportId, dashboardId)
-    );
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
-      everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
-    );
+    assertThat(authorizedEntities)
+      .hasSize(5)
+      .allSatisfy(response -> assertThat(response.getCurrentUserRole()).isGreaterThanOrEqualTo(RoleType.EDITOR))
+      .extracting(EntityResponseDto::getId)
+      .containsExactlyInAnyOrder(collectionId, combinedReportId, processReportId, decisionReportId, dashboardId);
   }
 
   @Test
@@ -135,23 +125,21 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String combinedReportId = reportClient.createEmptyCombinedReport(null);
-    final String processReportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
-    final String decisionReportId = reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
+    final String processReportId =
+      reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
+    final String decisionReportId =
+      reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionRequestDto());
     final String dashboardId = dashboardClient.createDashboard(null);
 
     // when
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(authorizedEntities.size(), is(5));
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(collectionId, combinedReportId, processReportId, decisionReportId, dashboardId)
-    );
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
-      everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
-    );
+    assertThat(authorizedEntities)
+      .hasSize(5)
+      .allSatisfy(response -> assertThat(response.getCurrentUserRole()).isGreaterThanOrEqualTo(RoleType.EDITOR))
+      .extracting(EntityResponseDto::getId)
+      .containsExactlyInAnyOrder(collectionId, combinedReportId, processReportId, decisionReportId, dashboardId);
   }
 
   @Test
@@ -170,7 +158,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(authorizedEntities.size(), is(0));
+    assertThat(authorizedEntities).isEmpty();
   }
 
   @Test
@@ -190,7 +178,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(authorizedEntities.size(), is(0));
+    assertThat(authorizedEntities).isEmpty();
   }
 
   @Test
@@ -208,7 +196,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(authorizedEntities.size(), is(0));
+    assertThat(authorizedEntities).isEmpty();
   }
 
   @Test
@@ -234,14 +222,15 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     dashboardClient.createDashboardAsUser(null, actualUserId, actualUserId);
 
     // when
-    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(allUpperCaseUserId, actualUserId);
+    final List<EntityResponseDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(
+      allUpperCaseUserId,
+      actualUserId
+    );
 
     // then
-    assertThat(authorizedEntities.size(), is(5));
-    assertThat(
-      authorizedEntities.stream().map(EntityResponseDto::getCurrentUserRole).collect(Collectors.toList()),
-      everyItem(greaterThanOrEqualTo(RoleType.EDITOR))
-    );
+    assertThat(authorizedEntities)
+      .hasSize(5)
+      .allSatisfy(response -> assertThat(response.getCurrentUserRole()).isGreaterThanOrEqualTo(RoleType.EDITOR));
 
     mockedRequests.forEach(engineMockServer::verify);
   }

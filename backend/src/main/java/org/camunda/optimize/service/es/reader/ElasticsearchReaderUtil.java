@@ -17,7 +17,6 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -115,7 +114,7 @@ public class ElasticsearchReaderUtil {
     final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
       .scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
     try {
-      currentScrollResp = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+      currentScrollResp = esClient.scroll(scrollRequest);
     } catch (IOException e) {
       String reason = String.format("Could not get scroll response through entries for scrollId [%s].", scrollId);
       log.error(reason, e);
@@ -142,7 +141,7 @@ public class ElasticsearchReaderUtil {
         final SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
         scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
         try {
-          currentScrollResp = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
+          currentScrollResp = esClient.scroll(scrollRequest);
           hits = currentScrollResp.getHits();
         } catch (IOException e) {
           String reason = String.format(
@@ -167,7 +166,7 @@ public class ElasticsearchReaderUtil {
     try {
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
-      ClearScrollResponse clearScrollResponse = esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+      ClearScrollResponse clearScrollResponse = esClient.clearScroll(clearScrollRequest);
       boolean succeeded = clearScrollResponse.isSucceeded();
       if (!succeeded) {
         String reason = String.format(

@@ -26,7 +26,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -180,8 +179,7 @@ public class ExternalEventReader {
 
     try {
       final SearchResponse searchResponse = esClient.search(
-        new SearchRequest(EXTERNAL_EVENTS_INDEX_NAME)
-          .source(searchSourceBuilder), RequestOptions.DEFAULT);
+        new SearchRequest(EXTERNAL_EVENTS_INDEX_NAME).source(searchSourceBuilder));
       return ImmutablePair.of(
         extractTimestampForAggregation(searchResponse.getAggregations().get(MIN_AGG)),
         extractTimestampForAggregation(searchResponse.getAggregations().get(MAX_AGG))
@@ -206,7 +204,7 @@ public class ExternalEventReader {
     final SearchRequest searchRequest = new SearchRequest(EXTERNAL_EVENTS_INDEX_NAME)
       .source(searchSourceBuilder);
     try {
-      return toPage(eventSearchRequestDto, esClient.search(searchRequest, RequestOptions.DEFAULT));
+      return toPage(eventSearchRequestDto, esClient.search(searchRequest));
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve events!", e);
     }
@@ -357,7 +355,7 @@ public class ExternalEventReader {
       .source(searchSourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest);
       return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventDto.class, objectMapper);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve ingested events by timestamp!", e);

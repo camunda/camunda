@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,7 +30,7 @@ public class OnboardingStateWriter {
     log.debug("Writing onboarding state [{}] to elasticsearch", onboardingStateDto.getId());
     try {
       final UpdateRequest request = createOnboardingStateUpsert(onboardingStateDto);
-      esClient.update(request, RequestOptions.DEFAULT);
+      esClient.update(request);
     } catch (IOException e) {
       final String errorMessage = String.format(
         "There were errors while writing the onboarding state [%s].", onboardingStateDto.getId()

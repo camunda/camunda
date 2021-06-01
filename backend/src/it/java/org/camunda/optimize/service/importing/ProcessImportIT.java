@@ -1057,8 +1057,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
 
     Nested nested = response.getAggregations()
       .get(FLOW_NODE_INSTANCES);

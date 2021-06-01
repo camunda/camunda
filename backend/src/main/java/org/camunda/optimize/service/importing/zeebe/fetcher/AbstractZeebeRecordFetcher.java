@@ -18,7 +18,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -70,7 +69,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.searchWithoutPrefixing(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.searchWithoutPrefixing(searchRequest);
     } catch (IOException | ElasticsearchStatusException e) {
       final String errorMessage =
         String.format("Was not able to retrieve zeebe records of type: %s", getRecordDescription());
@@ -87,7 +86,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
   private String getIndexAlias() {
     return configurationService.getConfiguredZeebe().getName() + "-" + getBaseIndexName();
   }
-  
+
   private boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
     if (e instanceof ElasticsearchStatusException) {
       return Arrays.stream(e.getSuppressed())

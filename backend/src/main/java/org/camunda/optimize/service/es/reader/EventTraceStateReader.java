@@ -16,7 +16,6 @@ import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
@@ -57,7 +56,7 @@ public class EventTraceStateReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch event trace states with trace ids [%s]", traceIds);
       log.error(reason, e);
@@ -85,7 +84,7 @@ public class EventTraceStateReader {
     SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = "Was not able to fetch event trace states";
       log.error(reason, e);
@@ -103,7 +102,7 @@ public class EventTraceStateReader {
     SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = "Was not able to fetch event trace states for given trace IDs";
       log.error(reason, e);

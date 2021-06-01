@@ -13,7 +13,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -71,7 +70,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
     try {
       // refresh to ensure we see the latest state
       esClient.refresh(new RefreshRequest(PROCESS_DEFINITION_INDEX_NAME));
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to search for process definitions!", e);
       throw new OptimizeRuntimeException("Was not able to search for process definitions!", e);

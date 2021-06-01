@@ -30,7 +30,6 @@ import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -196,7 +195,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
         .scroll(timeValueSeconds(dependencies.getConfigurationService().getEsScrollTimeoutInSeconds()));
     final SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = esClient.search(searchRequest);
     } catch (IOException e) {
       throw new UpgradeRuntimeException(String.format(
         "Was not able to retrieve entries of index with name  %s", indexName), e);

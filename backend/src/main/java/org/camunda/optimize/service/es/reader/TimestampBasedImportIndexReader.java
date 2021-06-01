@@ -16,7 +16,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +46,7 @@ public class TimestampBasedImportIndexReader {
         typeIndexComesFrom,
         engineAlias
       ));
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (Exception ignored) {
     }
 
@@ -80,7 +79,7 @@ public class TimestampBasedImportIndexReader {
 
     final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to get timestamp based import indices!", e);
       throw new OptimizeRuntimeException("Was not able to get timestamp based import indices!", e);

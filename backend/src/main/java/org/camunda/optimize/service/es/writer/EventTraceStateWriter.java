@@ -16,7 +16,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 
@@ -47,7 +46,7 @@ public class EventTraceStateWriter {
 
     if (bulkRequest.numberOfActions() > 0) {
       try {
-        final BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {
           final String errorMessage = String.format(
             "There were failures while writing event trace states. Received error message: %s",

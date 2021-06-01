@@ -22,7 +22,6 @@ import org.camunda.optimize.upgrade.es.TaskResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.indices.rollover.RolloverRequest;
 import org.elasticsearch.client.indices.rollover.RolloverResponse;
@@ -196,7 +195,7 @@ public class ElasticsearchWriterUtil {
 
     final String taskId;
     try {
-      taskId = esClient.getHighLevelClient().submitUpdateByQueryTask(request, RequestOptions.DEFAULT).getTask();
+      taskId = esClient.getHighLevelClient().submitUpdateByQueryTask(request, esClient.requestOptions()).getTask();
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Could not create updateBy task for [%s] with query [%s]!",
@@ -235,7 +234,7 @@ public class ElasticsearchWriterUtil {
 
     final String taskId;
     try {
-      taskId = esClient.getHighLevelClient().submitDeleteByQueryTask(request, RequestOptions.DEFAULT).getTask();
+      taskId = esClient.getHighLevelClient().submitDeleteByQueryTask(request, esClient.requestOptions()).getTask();
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Could not create delete task for [%s] with query [%s]!",
@@ -287,9 +286,9 @@ public class ElasticsearchWriterUtil {
 
   public static void doBulkRequest(OptimizeElasticsearchClient esClient, BulkRequest bulkRequest, String itemName) {
     try {
-      BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+      BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       if (bulkResponse.hasFailures()) {
-         throw new OptimizeRuntimeException(String.format(
+        throw new OptimizeRuntimeException(String.format(
           "There were failures while performing bulk on %s.%n%s Message: %s",
           itemName,
           getHintForErrorMsg(bulkResponse.buildFailureMessage()),

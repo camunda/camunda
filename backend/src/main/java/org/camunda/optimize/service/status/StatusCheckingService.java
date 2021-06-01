@@ -21,7 +21,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.stereotype.Component;
 
@@ -124,7 +123,7 @@ public class StatusCheckingService {
     try {
       ClusterHealthRequest request = new ClusterHealthRequest();
       ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
-        .health(request, RequestOptions.DEFAULT);
+        .health(request, esClient.requestOptions());
 
       isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
         && healthResponse.getStatus() != ClusterHealthStatus.RED;

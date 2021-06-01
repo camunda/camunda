@@ -25,7 +25,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -71,7 +70,7 @@ public class DashboardWriter {
         .source(objectMapper.writeValueAsString(dashboardDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write dashboard to Elasticsearch. " +
@@ -99,7 +98,7 @@ public class DashboardWriter {
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      UpdateResponse updateResponse = esClient.update(request);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         log.error(
@@ -172,7 +171,7 @@ public class DashboardWriter {
 
     DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String reason =
         String.format("Could not delete dashboard with id [%s].", dashboardId);

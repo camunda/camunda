@@ -21,7 +21,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -110,7 +109,7 @@ public class CorrelatedCamundaProcessInstanceReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = "Was not able to fetch sample correlation values";
       log.error(reason, e);
@@ -118,7 +117,7 @@ public class CorrelatedCamundaProcessInstanceReader {
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.warn("Was not able to fetch sample correlation values because no instance indices exist. " +
-                    "Returning empty list.");
+                   "Returning empty list.");
         return Collections.emptyList();
       }
       throw e;
@@ -159,7 +158,7 @@ public class CorrelatedCamundaProcessInstanceReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = "Was not able to fetch instances for correlation values";
       log.error(reason, e);
@@ -167,7 +166,7 @@ public class CorrelatedCamundaProcessInstanceReader {
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info("Was not able to fetch instances for correlation values because no instance indices exist. " +
-            "Returning empty list.");
+                   "Returning empty list.");
         return Collections.emptyList();
       }
       throw e;

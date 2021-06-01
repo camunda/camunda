@@ -283,7 +283,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       .setRefresh(true);
 
     try {
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().updateByQuery(request, RequestOptions.DEFAULT);
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().updateByQuery(request);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not set activity start dates to null.", e);
     }

@@ -689,7 +689,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
       new DeleteRequest(BUSINESS_KEY_INDEX_NAME)
         .id(processInstanceId)
         .setRefreshPolicy(IMMEDIATE);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request, RequestOptions.DEFAULT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request);
   }
 
   private ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {

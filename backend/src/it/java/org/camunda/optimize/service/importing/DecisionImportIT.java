@@ -965,8 +965,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .indices(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
   }
 
   private SearchResponse getDecisionInstanceIndexResponse() throws IOException {
@@ -978,8 +977,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .indices(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
   }
 
   private <T> T parseToDto(final SearchHit searchHit, Class<T> dtoClass) {

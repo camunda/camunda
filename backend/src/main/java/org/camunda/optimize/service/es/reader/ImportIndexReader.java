@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportI
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,7 +23,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDE
 @Component
 @Slf4j
 public class ImportIndexReader {
-  
+
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -35,8 +34,10 @@ public class ImportIndexReader {
 
     GetResponse getResponse = null;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
-    } catch (Exception ignored) {    }
+      getResponse = esClient.get(getRequest);
+    } catch (Exception ignored) {
+      // do nothing
+    }
 
 
     if (getResponse != null && getResponse.isExists()) {
@@ -50,7 +51,7 @@ public class ImportIndexReader {
       }
     } else {
       log.debug("Was not able to retrieve import index for type '{}' from Elasticsearch. " +
-        "Desired index does not exist.", id);
+                  "Desired index does not exist.", id);
       return Optional.empty();
     }
   }

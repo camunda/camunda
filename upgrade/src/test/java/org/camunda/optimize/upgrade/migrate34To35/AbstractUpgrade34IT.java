@@ -16,7 +16,6 @@ import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessDefinitionIndex
 import org.camunda.optimize.upgrade.migrate34To35.indices.ProcessInstanceIndexV6Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.SingleDecisionReportIndexV6Old;
 import org.camunda.optimize.upgrade.migrate34To35.indices.SingleProcessReportIndexV6Old;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -36,8 +35,10 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
     new EventProcessInstanceIndexV6Old(EVENT_PROCESS_INSTANCE_INDEX_ID);
   protected static final ProcessInstanceIndexV6Old PROCESS_INSTANCE_INDEX =
     new ProcessInstanceIndexV6Old(PROCESS_INSTANCE_INDEX_ID);
-  protected static final SingleProcessReportIndexV6Old SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV6Old();
-  protected static final SingleDecisionReportIndexV6Old SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV6Old();
+  protected static final SingleProcessReportIndexV6Old SINGLE_PROCESS_REPORT_INDEX =
+    new SingleProcessReportIndexV6Old();
+  protected static final SingleDecisionReportIndexV6Old SINGLE_DECISION_REPORT_INDEX =
+    new SingleDecisionReportIndexV6Old();
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -59,7 +60,7 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
   protected boolean indexExists(final IndexMappingCreator index) {
     final GetIndexRequest request = new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersion(index));
     try {
-      return prefixAwareClient.exists(request, RequestOptions.DEFAULT);
+      return prefixAwareClient.exists(request);
     } catch (IOException e) {
       final String message = String.format(
         "Could not check if [%s] index exists.", index.getIndexName()

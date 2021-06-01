@@ -13,7 +13,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -37,7 +36,7 @@ public class OnboardingStateReader {
 
     OnboardingStateDto result = null;
     try {
-      final GetResponse getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      final GetResponse getResponse = esClient.get(getRequest);
       if (getResponse.isExists()) {
         result = objectMapper.readValue(getResponse.getSourceAsString(), OnboardingStateDto.class);
       }

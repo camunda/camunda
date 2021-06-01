@@ -61,13 +61,10 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
     // then
     assertThat(
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-        .exists(new GetIndexRequest(getTraceStateIndexNameForDefinitionKey(definitionKey)), RequestOptions.DEFAULT)
-    ).isFalse();
+        .exists(new GetIndexRequest(getTraceStateIndexNameForDefinitionKey(definitionKey)))).isFalse();
     assertThat(
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-        .exists(
-          new GetIndexRequest(getSequenceCountIndexNameForDefinitionKey(definitionKey)), RequestOptions.DEFAULT
-        )
+        .exists(new GetIndexRequest(getSequenceCountIndexNameForDefinitionKey(definitionKey)))
     ).isFalse();
   }
 
@@ -201,7 +198,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
       TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo,
       EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase()
     )));
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().deleteByQuery(request, RequestOptions.DEFAULT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().deleteByQuery(request);
   }
 
   private void removeStoredOrderCountersForDefinitionKey(final String definitionKey) {

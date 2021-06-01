@@ -39,7 +39,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNInputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues"
     );
-    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
