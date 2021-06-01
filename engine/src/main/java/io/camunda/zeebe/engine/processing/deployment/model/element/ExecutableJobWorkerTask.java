@@ -11,13 +11,17 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import org.agrona.DirectBuffer;
 
-public class ExecutableServiceTask extends ExecutableActivity {
+/**
+ * An representation of a task that is based on a job and should be processed by a job worker. For
+ * example, a service task.
+ */
+public class ExecutableJobWorkerTask extends ExecutableActivity {
 
   private Expression type;
   private Expression retries;
   private DirectBuffer encodedHeaders = JobRecord.NO_HEADERS;
 
-  public ExecutableServiceTask(final String id) {
+  public ExecutableJobWorkerTask(final String id) {
     super(id);
   }
 

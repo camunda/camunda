@@ -11,27 +11,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.JobWorkerTaskBuilder;
+import io.camunda.zeebe.engine.util.JobWorkerTaskBuilderProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public final class ServiceTaskTest {
+/**
+ * Verifies the behavior of tasks that are based on jobs and should be processed by job workers. For
+ * example, service tasks.
+ */
+@RunWith(Parameterized.class)
+public final class JobWorkerTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -41,56 +54,25 @@ public final class ServiceTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance process(final Consumer<ServiceTaskBuilder> consumer) {
-    final var builder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().serviceTask("task");
+  @Parameter public JobWorkerTaskBuilder taskBuilder;
 
-    consumer.accept(builder);
+  @Parameters(name = "{0}")
+  public static Collection<Object[]> parameters() {
+    return JobWorkerTaskBuilderProvider.buildersAsParameters();
+  }
 
-    return builder.endEvent().done();
+  private BpmnModelInstance process(
+      final Consumer<AbstractJobWorkerTaskBuilder<?, ?>> taskModifier) {
+    final var processBuilder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent();
+
+    final var jobWorkerTaskBuilder = taskBuilder.build(processBuilder).id("task");
+    taskModifier.accept(jobWorkerTaskBuilder);
+
+    return jobWorkerTaskBuilder.endEvent().done();
   }
 
   @Test
-  public void shouldCreateJobFromServiceTaskWithJobTypeExpression() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(process(t -> t.zeebeJobTypeExpression("\"test\"")))
-        .deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // then
-    final Record<JobRecordValue> job =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(job.getValue()).hasType("test");
-  }
-
-  @Test
-  public void shouldCreateJobFromServiceTaskWithJobRetriesExpression() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(process(t -> t.zeebeJobType("test").zeebeJobRetriesExpression("5+3")))
-        .deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // then
-    final Record<JobRecordValue> job =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(job.getValue()).hasRetries(8);
-  }
-
-  @Test
-  public void shouldActivateServiceTask() {
+  public void shouldActivateTask() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobType("test"))).deploy();
 
@@ -101,7 +83,7 @@ public final class ServiceTaskTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.SERVICE_TASK)
+                .withElementType(taskBuilder.getTaskType())
                 .limit(3))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
@@ -109,16 +91,16 @@ public final class ServiceTaskTest {
             tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
-    final Record<ProcessInstanceRecordValue> serviceTask =
+    final Record<ProcessInstanceRecordValue> taskActivating =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementType(taskBuilder.getTaskType())
             .getFirst();
 
-    Assertions.assertThat(serviceTask.getValue())
+    Assertions.assertThat(taskActivating.getValue())
         .hasElementId("task")
-        .hasBpmnElementType(BpmnElementType.SERVICE_TASK)
+        .hasBpmnElementType(taskBuilder.getTaskType())
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey);
@@ -140,15 +122,15 @@ public final class ServiceTaskTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementType(taskBuilder.getTaskType())
             .getFirst();
 
-    final Record<JobRecordValue> job =
+    final Record<JobRecordValue> jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(job.getValue())
+    Assertions.assertThat(jobCreated.getValue())
         .hasType("test")
         .hasRetries(5)
         .hasElementInstanceKey(taskActivated.getKey())
@@ -159,7 +141,7 @@ public final class ServiceTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithProcessInstanceAndCustomHeaders() {
+  public void shouldCreateJobWithCustomHeaders() {
     // given
     ENGINE
         .deployment()
@@ -172,17 +154,52 @@ public final class ServiceTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final Record<JobRecordValue> job =
+    final Record<JobRecordValue> jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    final Map<String, String> customHeaders = jobCreated.getValue().getCustomHeaders();
     assertThat(customHeaders).hasSize(2).containsEntry("a", "b").containsEntry("c", "d");
   }
 
   @Test
-  public void shouldCompleteServiceTask() {
+  public void shouldCreateJobWithVariables() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(t -> t.zeebeJobType("taskWithVariables").zeebeInputExpression("x", "y")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("x", 1).create();
+
+    // then
+    final var variableCreated =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("y")
+            .getFirst();
+
+    Assertions.assertThat(variableCreated.getValue()).hasValue("1");
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    final List<JobRecordValue> activatedJobs =
+        ENGINE.jobs().withType("taskWithVariables").activate().getValue().getJobs();
+
+    assertThat(activatedJobs)
+        .hasSize(1)
+        .allSatisfy(
+            job -> assertThat(job.getVariables()).containsEntry("x", 1).containsEntry("y", 1));
+  }
+
+  @Test
+  public void shouldCompleteTask() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobType("test"))).deploy();
 
@@ -196,46 +213,50 @@ public final class ServiceTaskTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
-        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(taskBuilder.getTaskType(), ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(taskBuilder.getTaskType(), ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
-  public void shouldResolveIncidentsWhenTerminating() {
+  public void shouldCreateJobWithJobTypeExpression() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("type"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("type", "test").create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(jobCreated.getValue()).hasType("test");
+  }
+
+  @Test
+  public void shouldCreateJobWithJobRetriesExpression() {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(process(t -> t.zeebeJobTypeExpression("nonexisting_variable")))
+        .withXmlResource(process(t -> t.zeebeJobType("test").zeebeJobRetriesExpression("retries")))
         .deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
-    assertThat(
-            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(1))
-        .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATED);
 
     // when
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("retries", 8).create();
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceTerminated())
-        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSubsequence(
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
 
-    assertThat(
-            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
-        .extracting(Record::getIntent)
-        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+    Assertions.assertThat(jobCreated.getValue()).hasRetries(8);
   }
 }

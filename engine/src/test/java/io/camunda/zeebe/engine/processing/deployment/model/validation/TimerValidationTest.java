@@ -8,24 +8,14 @@
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import static io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult.expect;
-import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.VariablesLookup;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
-import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
-import java.util.Collection;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.camunda.bpm.model.xml.validation.ValidationResults;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -41,7 +31,7 @@ public final class TimerValidationTest {
 
     final var process = timerEventBuilder.timerWithCycle("foo").done();
 
-    validateProcess(
+    ProcessValidationUtil.validateProcess(
         process,
         expect(
             timerEventElementId,
@@ -56,7 +46,7 @@ public final class TimerValidationTest {
 
     final var process = timerEventBuilder.timerWithDuration("foo").done();
 
-    validateProcess(
+    ProcessValidationUtil.validateProcess(
         process,
         expect(
             timerEventElementId,
@@ -71,7 +61,7 @@ public final class TimerValidationTest {
 
     final var process = timerEventBuilder.timerWithDate("foo").done();
 
-    validateProcess(
+    ProcessValidationUtil.validateProcess(
         process,
         expect(
             timerEventElementId,
@@ -88,7 +78,7 @@ public final class TimerValidationTest {
 
     final var process = timerEventWithExpressionBuilder.apply("x");
 
-    validateProcess(
+    ProcessValidationUtil.validateProcess(
         process,
         expect(
             StartEvent.class,
@@ -107,7 +97,8 @@ public final class TimerValidationTest {
 
     final var process = timerEventWithExpressionBuilder.apply("!");
 
-    validateProcess(process, expect(TimerEventDefinition.class, "failed to parse expression '!'"));
+    ProcessValidationUtil.validateProcess(
+        process, expect(TimerEventDefinition.class, "failed to parse expression '!'"));
   }
 
   private static Stream<Arguments> timerEvents() {
@@ -227,41 +218,5 @@ public final class TimerValidationTest {
   private static Function<String, BpmnModelInstance> processBuilder(
       final Function<String, BpmnModelInstance> builder) {
     return builder;
-  }
-
-  private void validateProcess(
-      final BpmnModelInstance process, final ExpectedValidationResult expectation) {
-
-    Bpmn.validateModel(process);
-
-    final var validationResults =
-        validate(process).getResults().values().stream()
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
-
-    final var validationResultsAsString =
-        validationResults.stream()
-            .map(ExpectedValidationResult::toString)
-            .collect(Collectors.joining(",\n"));
-
-    assertThat(validationResults)
-        .describedAs(
-            "Expected validation failure%n<%s>%n but actual validation validationResults was%n<%s>",
-            expectation, validationResultsAsString)
-        .anyMatch(expectation::matches);
-  }
-
-  private static ValidationResults validate(final BpmnModelInstance model) {
-    final ModelWalker walker = new ModelWalker(model);
-    final ExpressionLanguage expressionLanguage =
-        ExpressionLanguageFactory.createExpressionLanguage();
-    final VariablesLookup emptyLookup = (name, scopeKey) -> null;
-    final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
-    final ValidationVisitor visitor =
-        new ValidationVisitor(
-            ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
-    walker.walk(visitor);
-
-    return visitor.getValidationResult();
   }
 }
