@@ -54,8 +54,10 @@ public final class AwaitProcessInstanceResultMetadata extends UnifiedRecordValue
 
   public AwaitProcessInstanceResultMetadata setFetchVariables(
       final ArrayProperty<StringValue> variables) {
-    fetchVariablesProperty.reset();
-    variables.forEach(variable -> fetchVariablesProperty.add().wrap(variable));
+    if (variables != fetchVariablesProperty) {
+      fetchVariablesProperty.reset();
+      variables.forEach(variable -> fetchVariablesProperty.add().wrap(variable));
+    }
     return this;
   }
 
