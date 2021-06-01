@@ -11,6 +11,7 @@ import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import userEvent from '@testing-library/user-event';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
@@ -56,7 +57,7 @@ describe('OperationsEntry', () => {
     );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
-    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText(OPERATIONS.CANCEL.id)).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByTestId('operation-cancel-icon')).toBeInTheDocument();
@@ -75,7 +76,7 @@ describe('OperationsEntry', () => {
     );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
-    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText(OPERATIONS.EDIT.id)).toBeInTheDocument();
     expect(screen.getByText('Edit')).toBeInTheDocument();
     expect(screen.getByTestId('operation-edit-icon')).toBeInTheDocument();

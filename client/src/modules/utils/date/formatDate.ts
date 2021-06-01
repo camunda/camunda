@@ -6,12 +6,15 @@
 
 import {format, parseISO} from 'date-fns';
 
-function parseDate(dateString: any) {
+function parseDate(dateString: string | Date) {
   return typeof dateString === 'string' ? parseISO(dateString) : dateString;
 }
 
-export function formatDate(dateString: any) {
+export function formatDate(
+  dateString: string | Date | null,
+  placeholder: string | null = '--'
+) {
   return dateString
     ? format(parseDate(dateString), 'yyyy-MM-dd HH:mm:ss')
-    : '--';
+    : placeholder;
 }

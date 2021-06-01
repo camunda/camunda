@@ -15,6 +15,7 @@ import {
   mockMultiInstanceBodyMetaData,
 } from './index.setup';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 describe('<Bar />', () => {
   afterEach(() => {
@@ -77,6 +78,6 @@ describe('<Bar />', () => {
 
     flowNodeTimeStampStore.toggleTimeStampVisibility();
 
-    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
   });
 });

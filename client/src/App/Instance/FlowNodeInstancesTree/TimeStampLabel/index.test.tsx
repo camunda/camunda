@@ -9,6 +9,7 @@ import {render, screen} from '@testing-library/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {TimeStampLabel} from './index';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 describe('TimeStampLabel', () => {
   it('should hide/display time stamp on time stamp toggle', () => {
@@ -19,10 +20,10 @@ describe('TimeStampLabel', () => {
       />,
       {wrapper: ThemeProvider}
     );
-    expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
+    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
     flowNodeTimeStampStore.toggleTimeStampVisibility();
-    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     flowNodeTimeStampStore.toggleTimeStampVisibility();
-    expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
+    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
   });
 });

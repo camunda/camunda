@@ -85,7 +85,9 @@ describe('IncidentsTable', () => {
       withinRow.getByText(mockProps.incidents[0].jobId)
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(mockProps.incidents[0].creationTime))
+      withinRow.getByText(
+        formatDate(mockProps.incidents[0].creationTime) || '--'
+      )
     ).toBeInTheDocument();
     expect(
       withinRow.getByText(mockProps.incidents[0].errorMessage)
@@ -104,7 +106,9 @@ describe('IncidentsTable', () => {
       withinRow.getByText(mockProps.incidents[1].jobId)
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(formatDate(mockProps.incidents[1].creationTime))
+      withinRow.getByText(
+        formatDate(mockProps.incidents[1].creationTime) || '--'
+      )
     ).toBeInTheDocument();
     expect(
       withinRow.getByText(mockProps.incidents[1].errorMessage)

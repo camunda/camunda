@@ -26,6 +26,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {createInstance} from 'modules/testUtils';
 import {Form} from 'react-final-form';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -811,11 +812,9 @@ describe('Variables', () => {
       });
 
       await waitFor(() =>
-        expect(flowNodeMetaDataStore.state.metaData).toEqual({
-          instanceMetadata: {
-            endDate: null,
-          },
-        })
+        expect(
+          flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate
+        ).toEqual(null)
       );
 
       expect(screen.getByText('Add Variable')).toBeEnabled();
@@ -841,11 +840,9 @@ describe('Variables', () => {
       });
 
       await waitFor(() =>
-        expect(flowNodeMetaDataStore.state.metaData).toEqual({
-          instanceMetadata: {
-            endDate: '2021-03-22T12:28:00.393+0000',
-          },
-        })
+        expect(
+          flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate
+        ).toEqual(MOCK_TIMESTAMP)
       );
 
       expect(screen.getByText('Add Variable')).toBeDisabled();

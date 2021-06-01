@@ -13,6 +13,8 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
 import {PopoverOverlay} from './';
 import {createInstance} from 'modules/testUtils';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import userEvent from '@testing-library/user-event';
 
 const FLOW_NODE_ID = 'startEvent';
 const FLOW_NODE_INSTANCE_ID = '2251799813686348';
@@ -32,6 +34,11 @@ const completedFlowNodeMetaData = {
     incidentErrorType: null,
     incidentErrorMessage: null,
     jobId: null,
+    jobType: null,
+    jobRetries: null,
+    jobWorker: null,
+    jobDeadline: '2021-03-26T10:00:00.000+0000',
+    jobCustomHeaders: null,
   },
 };
 
@@ -50,6 +57,11 @@ const incidentFlowNodeMetaData = {
     incidentErrorType: 'JOB_NO_RETRIES',
     incidentErrorMessage: 'No more retries left.',
     jobId: '2251799813690876',
+    jobType: null,
+    jobRetries: null,
+    jobWorker: null,
+    jobDeadline: null,
+    jobCustomHeaders: null,
   },
 };
 
@@ -123,17 +135,12 @@ describe('PopoverOverlay', () => {
       screen.getByRole('button', {name: 'Show more metadata'})
     ).toBeInTheDocument();
 
-    const {
-      incidentErrorMessage,
-      incidentErrorType,
-      jobId,
-      flowNodeInstanceId,
-      startDate,
-    } = incidentFlowNodeMetaData.instanceMetadata;
+    const {incidentErrorMessage, incidentErrorType, jobId, flowNodeInstanceId} =
+      incidentFlowNodeMetaData.instanceMetadata;
 
     expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
     expect(screen.getByText(jobId)).toBeInTheDocument();
-    expect(screen.getByText(startDate)).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText(incidentErrorType)).toBeInTheDocument();
     expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
   });
@@ -157,14 +164,65 @@ describe('PopoverOverlay', () => {
       screen.getByRole('button', {name: 'Show more metadata'})
     ).toBeInTheDocument();
 
-    const {flowNodeInstanceId, startDate} =
-      completedFlowNodeMetaData.instanceMetadata;
-
-    expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
-    expect(screen.getByText(startDate)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        completedFlowNodeMetaData.instanceMetadata.flowNodeInstanceId
+      )
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(MOCK_TIMESTAMP)).toHaveLength(2);
 
     expect(screen.queryByText(/jobId/)).not.toBeInTheDocument();
     expect(screen.queryByText(/incidentErrorType/)).not.toBeInTheDocument();
     expect(screen.queryByText(/incidentErrorMessage/)).not.toBeInTheDocument();
+  });
+
+  it('should render meta data modal', async () => {
+    mockServer.use(
+      rest.post(
+        `/api/process-instances/${FLOW_NODE_ID}/flow-node-metadata`,
+        (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
+      )
+    );
+
+    flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    await screen.findByText(/flowNodeInstanceId/);
+
+    userEvent.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(
+      screen.getByText(/Flow Node "startEvent" Metadata/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Close Modal'})
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/"flowNodeId": "startEvent"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"flowNodeInstanceId": "2251799813686348"/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"flowNodeType": "START_EVENT"/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"startDate": "2018-12-12 00:00:00"/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"endDate": "2018-12-12 00:00:00"/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"jobDeadline": "2018-12-12 00:00:00"/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"incidentErrorType": null/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"incidentErrorMessage": null/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"jobId": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobType": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobRetries": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobWorker": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobCustomHeaders": null/)).toBeInTheDocument();
   });
 });

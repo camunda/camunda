@@ -12,7 +12,6 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import {formatDate} from 'modules/utils/date';
 import {getProcessName} from 'modules/utils/instance';
 import {InstanceHeader} from './index';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
@@ -27,6 +26,7 @@ import {
 } from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -77,12 +77,6 @@ describe('InstanceHeader', () => {
 
     const processName = getProcessName(instance);
     const instanceState = mockInstanceWithActiveOperation.state;
-    const formattedStartDate = formatDate(
-      mockInstanceWithActiveOperation.startDate
-    );
-    const formattedEndDate = formatDate(
-      mockInstanceWithActiveOperation.endDate
-    );
 
     expect(screen.getByText(processName)).toBeInTheDocument();
     expect(
@@ -93,8 +87,8 @@ describe('InstanceHeader', () => {
         `Version ${mockInstanceWithActiveOperation.processVersion}`
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(formattedStartDate)).toBeInTheDocument();
-    expect(screen.getByText(formattedEndDate)).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText('--')).toBeInTheDocument();
     expect(screen.getByTestId(`${instanceState}-icon`)).toBeInTheDocument();
   });
 

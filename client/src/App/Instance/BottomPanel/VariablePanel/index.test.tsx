@@ -98,6 +98,7 @@ describe('VariablePanel', () => {
             ctx.json({
               flowNodeInstanceId: null,
               instanceCount: 2,
+              instanceMetadata: null,
             })
           )
       )

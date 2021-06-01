@@ -9,25 +9,35 @@ import {formatDate} from './formatDate';
 jest.unmock('modules/utils/date/formatDate');
 
 describe('formatDate', () => {
-  it('should return -- if date is null', () => {
+  it('should return default placeholder if date is null', () => {
     expect(formatDate(null)).toBe('--');
   });
 
+  it('should return custom placeholder, if date is null', () => {
+    const givenDate = null;
+    const expectedDate = '???';
+
+    expect(formatDate(givenDate, '???')).toEqual(expectedDate);
+  });
+
   it('should return formatted date (Date object)', () => {
-    // given
     const givenDate = new Date('2019-11-06T14:24:15.422');
     const expectedDate = '2019-11-06 14:24:15';
 
-    // then
     expect(formatDate(givenDate)).toEqual(expectedDate);
   });
 
   it('should return formatted date (Date string)', () => {
-    // given
     const givenDate = '2019-11-06T14:24:15.422';
     const expectedDate = '2019-11-06 14:24:15';
 
-    // then
     expect(formatDate(givenDate)).toEqual(expectedDate);
+  });
+
+  it('should return formatted date (Date object, custom placeholder)', () => {
+    const givenDate = new Date('2019-11-06T14:24:15.422');
+    const expectedDate = '2019-11-06 14:24:15';
+
+    expect(formatDate(givenDate, null)).toEqual(expectedDate);
   });
 });

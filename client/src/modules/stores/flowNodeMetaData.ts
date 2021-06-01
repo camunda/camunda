@@ -19,6 +19,7 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {formatDate} from 'modules/utils/date';
 
 type InstanceMetaData = {
   startDate: string;
@@ -128,7 +129,20 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
         });
 
         if (response.ok) {
-          this.setMetaData(await response.json());
+          const metaData = await response.json();
+
+          if (metaData.instanceMetadata !== null) {
+            const {startDate, endDate, jobDeadline} = metaData.instanceMetadata;
+
+            metaData.instanceMetadata = {
+              ...metaData.instanceMetadata,
+              startDate: formatDate(startDate, null),
+              endDate: formatDate(endDate, null),
+              jobDeadline: formatDate(jobDeadline, null),
+            };
+          }
+
+          this.setMetaData(metaData);
         } else {
           this.handleFetchFailure();
         }
