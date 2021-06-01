@@ -58,6 +58,8 @@ spec:
           value: docker-cluster
         - name: discovery.type
           value: single-node
+        - name: xpack.security.enabled
+          value: false
         - name: action.auto_create_index
           value: true
         - name: processors

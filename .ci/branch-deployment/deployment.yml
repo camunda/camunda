@@ -82,6 +82,8 @@ spec:
               value: elasticsearch
             - name: discovery.type
               value: single-node
+            - name: xpack.security.enabled
+              value: false
             - name: bootstrap.memory_lock
               value: "true"
             - name: processors
