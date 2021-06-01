@@ -161,13 +161,24 @@ const TextInput = styled(BasicInput)`
   ${errorBorders}
 `;
 
-const DisplayText = styled.div`
-  line-height: 18px;
-  word-break: break-word;
-  margin: 11px 94px 11px 0;
-  max-height: 76px;
-  overflow-y: auto;
-  overflow-wrap: break-word;
+type DisplayTextProps = {hasBackdrop?: boolean};
+
+const DisplayText = styled.div<DisplayTextProps>`
+  ${({hasBackdrop}) => {
+    return css`
+      line-height: 18px;
+      word-break: break-word;
+      margin: 11px 94px 11px 0;
+      max-height: 76px;
+      overflow-y: auto;
+      overflow-wrap: break-word;
+
+      ${hasBackdrop &&
+      css`
+        position: relative;
+      `}
+    `;
+  }}
 `;
 
 const textAreaStyles = css`

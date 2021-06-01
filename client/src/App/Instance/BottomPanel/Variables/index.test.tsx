@@ -34,6 +34,13 @@ type Props = {
   children?: React.ReactNode;
 };
 
+const mockDisplayNotification = jest.fn();
+jest.mock('modules/notifications', () => ({
+  useNotifications: () => ({
+    displayNotification: mockDisplayNotification,
+  }),
+}));
+
 const instanceMock = createInstance({id: '1'});
 
 const Wrapper = ({children}: Props) => {
@@ -139,6 +146,8 @@ describe('Variables', () => {
 
   describe('Variables', () => {
     it('should render variables table', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/variables-new',
@@ -688,6 +697,185 @@ describe('Variables', () => {
       expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
 
       global.console.error = originalConsoleError;
+    });
+
+    it('should get variable details on edit button click if the variables value was a preview', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json([
+                {
+                  id: '2251799813686037-clientNo',
+                  name: 'clientNo',
+                  value: '"value-preview"',
+                  scopeId: '2251799813686037',
+                  processInstanceId: '2251799813686037',
+                  hasActiveOperation: false,
+                  isPreview: true,
+                },
+                {
+                  id: '2251799813686037-mwst',
+                  name: 'mwst',
+                  value: '124.26',
+                  scopeId: '2251799813686037',
+                  processInstanceId: '2251799813686037',
+                  hasActiveOperation: false,
+                },
+              ])
+            )
+        )
+      );
+
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+      mockServer.use(
+        rest.get('/api/variables/:variableId', (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              id: '2251799813686037-clientNo',
+              name: 'clientNo',
+              value: '"full-value"',
+              scopeId: '2251799813686037',
+              processInstanceId: '2251799813686037',
+              hasActiveOperation: false,
+              isPreview: false,
+            })
+          )
+        )
+      );
+
+      userEvent.click(
+        within(screen.getByTestId('clientNo')).getByRole('button', {
+          name: /Enter edit mode/,
+        })
+      );
+      expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('mwst')).getByRole('button', {
+          name: 'Enter edit mode',
+        })
+      ).toBeDisabled();
+
+      await waitForElementToBeRemoved(screen.getByTestId('variable-backdrop'));
+
+      expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
+      expect(screen.getByText('"full-value"')).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId('mwst')).getByRole('button', {
+          name: 'Enter edit mode',
+        })
+      ).toBeEnabled();
+      expect(mockDisplayNotification).not.toHaveBeenCalled();
+    });
+
+    it('should display notification if error occurs when getting single variable details', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json([
+                {
+                  id: '2251799813686037-clientNo',
+                  name: 'clientNo',
+                  value: '"value-preview"',
+                  scopeId: '2251799813686037',
+                  processInstanceId: '2251799813686037',
+                  hasActiveOperation: false,
+                  isPreview: true,
+                },
+              ])
+            )
+        )
+      );
+
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+      mockServer.use(
+        rest.get('/api/variables/:variableId', (_, res, ctx) =>
+          res.once(ctx.status(500), ctx.json({}))
+        )
+      );
+
+      userEvent.click(
+        within(screen.getByTestId('clientNo')).getByRole('button', {
+          name: /Enter edit mode/,
+        })
+      );
+      expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
+
+      await waitForElementToBeRemoved(screen.getByTestId('variable-backdrop'));
+
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Variable could not be fetched',
+      });
+    });
+
+    it('should not get variable details on edit button click if the variables value was not a preview', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables-new',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json([
+                {
+                  id: '2251799813686037-clientNo',
+                  name: 'clientNo',
+                  value: '"full-value"',
+                  scopeId: '2251799813686037',
+                  processInstanceId: '2251799813686037',
+                  hasActiveOperation: false,
+                  isPreview: false,
+                },
+              ])
+            )
+        )
+      );
+
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.getByText('"full-value"')).toBeInTheDocument();
+
+      userEvent.click(
+        within(screen.getByTestId('clientNo')).getByRole('button', {
+          name: /Enter edit mode/,
+        })
+      );
+
+      expect(screen.queryByTestId('variable-backdrop')).not.toBeInTheDocument();
     });
   });
 

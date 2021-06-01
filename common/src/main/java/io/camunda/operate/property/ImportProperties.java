@@ -32,6 +32,11 @@ public class ImportProperties {
    */
   private boolean startLoadingDataOnStartup = true;
 
+  /**
+   * Variable size under which we won't store preview separately.
+   */
+  private int variableSizeThreshold = 8191;
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -78,5 +83,14 @@ public class ImportProperties {
 
   public void setFlowNodeTreeCacheSize(final int flowNodeTreeCacheSize) {
     this.flowNodeTreeCacheSize = flowNodeTreeCacheSize;
+  }
+
+  public int getVariableSizeThreshold() {
+    return variableSizeThreshold;
+  }
+
+  public ImportProperties setVariableSizeThreshold(final int variableSizeThreshold) {
+    this.variableSizeThreshold = variableSizeThreshold;
+    return this;
   }
 }

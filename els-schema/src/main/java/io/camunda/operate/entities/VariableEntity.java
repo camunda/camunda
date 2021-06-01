@@ -13,6 +13,8 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   private String name;
   private String value;
+  private String fullValue;
+  private boolean isPreview;
   private Long scopeKey;
   private Long processInstanceKey;
 
@@ -33,6 +35,24 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   public void setValue(String value) {
     this.value = value;
+  }
+
+  public String getFullValue() {
+    return fullValue;
+  }
+
+  public VariableEntity setFullValue(final String fullValue) {
+    this.fullValue = fullValue;
+    return this;
+  }
+
+  public boolean getIsPreview() {
+    return isPreview;
+  }
+
+  public VariableEntity setIsPreview(final boolean preview) {
+    isPreview = preview;
+    return this;
   }
 
   public Long getScopeKey() {
@@ -72,8 +92,10 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
       return false;
     }
     final VariableEntity that = (VariableEntity) o;
-    return Objects.equals(name, that.name) &&
+    return isPreview == that.isPreview &&
+        Objects.equals(name, that.name) &&
         Objects.equals(value, that.value) &&
+        Objects.equals(fullValue, that.fullValue) &&
         Objects.equals(scopeKey, that.scopeKey) &&
         Objects.equals(processInstanceKey, that.processInstanceKey) &&
         Arrays.equals(sortValues, that.sortValues);
@@ -81,7 +103,8 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(super.hashCode(), name, value, scopeKey, processInstanceKey);
+    int result = Objects
+        .hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey, processInstanceKey);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

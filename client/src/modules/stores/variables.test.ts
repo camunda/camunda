@@ -119,6 +119,7 @@ describe('stores/variables', () => {
       value: '1',
       hasActiveOperation: true,
       isFirst: false,
+      isPreview: false,
       sortValues: null,
     });
 
@@ -279,6 +280,54 @@ describe('stores/variables', () => {
     expect(variablesStore.state.status).toBe('fetched');
   });
 
+  it('should fetch variable', async () => {
+    const mockOnError = jest.fn();
+
+    // on success
+    mockServer.use(
+      rest.get('/api/variables/:variableId', (_, res, ctx) =>
+        res.once(ctx.json({id: 'variable-id', state: 'ACTIVE'}))
+      )
+    );
+
+    expect(variablesStore.state.loadingItemId).toBeNull();
+    variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
+    expect(variablesStore.state.loadingItemId).toBe('variable-id');
+
+    await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
+
+    expect(mockOnError).not.toHaveBeenCalled();
+
+    // on server error
+    mockServer.use(
+      rest.get('/api/variables/:variableId', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json({}))
+      )
+    );
+
+    variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
+    expect(variablesStore.state.loadingItemId).toBe('variable-id');
+
+    await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
+
+    expect(mockOnError).toHaveBeenCalledTimes(1);
+
+    // on network error
+
+    mockServer.use(
+      rest.get('/api/variables/:variableId', (_, res, ctx) =>
+        res.networkError('A network error')
+      )
+    );
+
+    variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
+    expect(variablesStore.state.loadingItemId).toBe('variable-id');
+
+    await waitFor(() => expect(variablesStore.state.loadingItemId).toBeNull());
+
+    expect(mockOnError).toHaveBeenCalledTimes(2);
+  });
+
   describe('Add Variable', () => {
     it('should add variable', async () => {
       expect(variablesStore.state.items).toEqual([]);
@@ -296,6 +345,7 @@ describe('stores/variables', () => {
       expect(variablesStore.state.pendingItem).toEqual({
         name: 'test',
         value: '1',
+        isPreview: false,
         hasActiveOperation: true,
         isFirst: false,
         sortValues: null,
@@ -593,6 +643,7 @@ describe('stores/variables', () => {
     expect(variablesStore.state.pendingItem).toEqual({
       name: 'test',
       value: '1',
+      isPreview: false,
       hasActiveOperation: true,
       isFirst: false,
       sortValues: null,

@@ -19,6 +19,7 @@ import {
   getOperation,
   fetchVariables,
   VariablePayload,
+  fetchVariable,
 } from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -35,6 +36,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
   items: VariableEntity[];
+  loadingItemId: VariableEntity['id'] | null;
   pendingItem: VariableEntity | null;
   status:
     | 'initial'
@@ -52,6 +54,7 @@ type State = {
 
 const DEFAULT_STATE: State = {
   items: [],
+  loadingItemId: null,
   pendingItem: null,
   status: 'initial',
   latestFetch: {fetchType: null, itemsCount: 0},
@@ -80,6 +83,7 @@ class Variables extends NetworkReconnectionHandler {
       startFetching: action,
       startFetchingNext: action,
       startFetchingPrev: action,
+      setLoadingItemId: action,
       handleFetchFailure: action,
       clearItems: action,
       updateVariable: action,
@@ -191,6 +195,34 @@ class Variables extends NetworkReconnectionHandler {
     });
   };
 
+  fetchVariable = async ({
+    id,
+    onError,
+  }: {
+    id: VariableEntity['id'];
+    onError: () => void;
+  }) => {
+    this.setLoadingItemId(id);
+
+    try {
+      const response = await fetchVariable(id);
+      if (response.ok) {
+        const variable = await response.json();
+
+        this.handleFetchVariableSuccess();
+        return variable;
+      } else {
+        this.handleFetchVariableFailure();
+        onError();
+        return null;
+      }
+    } catch (error) {
+      this.handleFetchVariableFailure(error);
+      onError();
+      return null;
+    }
+  };
+
   getVariables = (fetchType: FetchType, items: VariableEntity[]) => {
     switch (fetchType) {
       case 'next':
@@ -219,6 +251,18 @@ class Variables extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
+  handleFetchVariableFailure = (error?: Error) => {
+    this.setLoadingItemId(null);
+    logger.error('Failed to fetch Single Variable');
+    if (error !== undefined) {
+      logger.error(error);
+    }
+  };
+
+  handleFetchVariableSuccess = () => {
+    this.setLoadingItemId(null);
+  };
+
   startFetching = () => {
     if (this.state.status === 'initial') {
       this.state.status = 'first-fetch';
@@ -237,6 +281,10 @@ class Variables extends NetworkReconnectionHandler {
 
   setItems = (items: VariableEntity[]) => {
     this.state.items = items;
+  };
+
+  setLoadingItemId = (id: VariableEntity['id'] | null) => {
+    this.state.loadingItemId = id;
   };
 
   setPendingItem = (item: VariableEntity | null) => {
@@ -399,6 +447,7 @@ class Variables extends NetworkReconnectionHandler {
       hasActiveOperation: true,
       isFirst: false,
       sortValues: null,
+      isPreview: false,
     });
 
     try {

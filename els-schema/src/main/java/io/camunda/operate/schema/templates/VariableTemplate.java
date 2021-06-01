@@ -17,6 +17,7 @@ public class VariableTemplate extends AbstractTemplateDescriptor implements Proc
   public static final String SCOPE_KEY = "scopeKey";
   public static final String NAME = "name";
   public static final String VALUE = "value";
+  public static final String FULL_VALUE = "fullValue";
 
   @Override
   public String getIndexName() {

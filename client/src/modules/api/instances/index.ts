@@ -126,6 +126,10 @@ async function fetchVariables(
   return post(`${URL}/${instanceId}/variables-new`, payload);
 }
 
+async function fetchVariable(id: VariableEntity['id']) {
+  return get(`/api/variables/${id}`);
+}
+
 export type {VariablePayload};
 export {
   fetchProcessInstances,
@@ -140,4 +144,5 @@ export {
   applyOperation,
   getOperation,
   fetchVariables,
+  fetchVariable,
 };

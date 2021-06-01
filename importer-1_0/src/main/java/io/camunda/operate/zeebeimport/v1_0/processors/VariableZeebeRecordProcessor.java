@@ -15,7 +15,7 @@ import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebeimport.v1_0.record.value.VariableRecordValueImpl;
 import io.camunda.operate.zeebeimport.v1_0.record.Intent;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -46,6 +46,9 @@ public class VariableZeebeRecordProcessor {
   @Autowired
   private VariableTemplate variableTemplate;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   public void processVariableRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     VariableRecordValueImpl recordValue = (VariableRecordValueImpl)record.getValue();
 
@@ -62,7 +65,17 @@ public class VariableZeebeRecordProcessor {
     entity.setScopeKey(recordValue.getScopeKey());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setName(recordValue.getName());
-    entity.setValue(recordValue.getValue());
+    if (recordValue.getValue().length() > operateProperties.getImporter().getVariableSizeThreshold()) {
+      // store preview
+      entity.setValue(
+          recordValue
+              .getValue()
+              .substring(0, operateProperties.getImporter().getVariableSizeThreshold()));
+      entity.setFullValue(recordValue.getValue());
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(recordValue.getValue());
+    }
     return getVariableQuery(entity);
   }
 

@@ -11,6 +11,7 @@ interface VariableEntity {
   name: string;
   value: string;
   sortValues: [string] | null;
+  isPreview: boolean;
 }
 
 type OperationEntityType =

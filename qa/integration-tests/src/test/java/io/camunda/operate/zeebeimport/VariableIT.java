@@ -5,8 +5,10 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.webapp.rest.VariableRestService.VARIABLE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +22,8 @@ import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import java.util.Random;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -31,6 +35,10 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
   protected String getVariablesURL(Long processInstanceKey) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/variables-new", processInstanceKey);
+  }
+
+  protected String getVariableURL(String variableId) {
+    return VARIABLE_URL + "/" + variableId;
   }
 
   @Test
@@ -64,6 +72,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     assertThat(variables).hasSize(2);
     assertVariable(variables, "var1","\"initialValue\"");
     assertVariable(variables, "otherVar","123");
+    assertThat(variables).extracting(VariableDto::getIsPreview).containsOnly(false);
 
     //TC2 - when subprocess and task with input mapping are activated
     completeTask(processInstanceKey, "task1", null);
@@ -279,6 +288,103 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  public void testBigVariablesWithPreview() throws Exception {
+    // given
+    final int size = operateProperties.getImporter().getVariableSizeThreshold();
+    final String varSuffix = "9999999999";
+    final String bpmnProcessId = "testProcess";
+    String vars = createBigVarsWithSuffix(size, varSuffix);
+    final String flowNodeId = "taskA";
+    final Long processInstanceKey =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeId)
+            .startProcessInstance(bpmnProcessId, vars)
+            .waitUntil()
+            .flowNodeIsActive(flowNodeId)
+            .getProcessInstanceKey();
+
+    // when requesting list of variables
+    List<VariableDto> variables =
+        getVariables(
+            processInstanceKey,
+            new VariableRequestDto()
+                .setScopeId(String.valueOf(processInstanceKey))
+                .setPageSize(10));
+
+    //then "value" contains truncated value
+    Condition<String> suffix = new Condition<>(s -> s.contains(varSuffix), "contains");
+    Condition<String> length = new Condition<>(s -> s.length() == size, "length");
+    assertThat(variables).extracting(VariableDto::getValue).areNot(suffix).are(length);
+    assertThat(variables).extracting(VariableDto::getIsPreview).containsOnly(true);
+    String variableId = variables.get(0).getId();
+
+    //when requesting one variable
+    final VariableDto variable = getOneVariable(variableId);
+
+    //then
+    assertThat(variable.getValue()).contains(varSuffix);
+    assertThat(variable.getIsPreview()).isFalse();
+  }
+
+  private String createBigVarsWithSuffix(final int size, final String varSuffix) {
+    StringBuffer vars = new StringBuffer("{");
+    for (int i = 0; i < 3; i++) {
+      if (vars.length() > 1) {
+        vars.append(",\n");
+      }
+      vars.append("\"var")
+          .append(i)
+          .append("\": \"")
+          .append(createBigVariable(size) + varSuffix)
+          .append("\"");
+    }
+    vars.append("}");
+    return vars.toString();
+  }
+
+  @Test
+  public void testBigVariablesWithActiveOperations() throws Exception {
+    // given
+    final int size = operateProperties.getImporter().getVariableSizeThreshold();
+    final String varSuffix = "9999999999";
+    final String bpmnProcessId = "testProcess";
+    String vars = createBigVarsWithSuffix(size, varSuffix);
+    final String flowNodeId = "taskA";
+    final Long processInstanceKey =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeId)
+            .startProcessInstance(bpmnProcessId, vars)
+            .waitUntil()
+            .flowNodeIsActive(flowNodeId)
+            .getProcessInstanceKey();
+
+    //when
+    //we call UPDATE_VARIABLE operation on instance
+    final String varName = "var1";
+    final String newVarValue = createBigVariable(size);
+    postUpdateVariableOperation(processInstanceKey, varName, newVarValue + varSuffix);
+    elasticsearchTestRule.refreshOperateESIndices();
+
+    //then variable with new value is returned
+    List<VariableDto> variables = getVariables(processInstanceKey);
+
+    //then "value" contains truncated value
+    assertThat(variables)
+        .filteredOn(v -> v.getName().equals(varName))
+        .extracting(VariableDto::getValue)
+        .containsOnly(newVarValue);
+  }
+
+  private String createBigVariable(int size) {
+    Random random = new Random();
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < size; i++) {
+      sb.append(random.nextInt(9));
+    }
+    return sb.toString();
+  }
+
+  @Test
   public void testVariablesRequestFailOnEmptyScopeId() throws Exception {
     MvcResult mvcResult = mockMvc.perform(post(getVariablesURL(0L))
         .content(mockMvcTestRule.json(new VariableRequestDto()))
@@ -329,6 +435,15 @@ public class VariableIT extends OperateZeebeIntegrationTest {
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
     return mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
+  }
+
+  protected VariableDto getOneVariable(String variableId) throws Exception {
+    MvcResult mvcResult = mockMvc
+      .perform(get(getVariableURL(variableId)))
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+    return mockMvcTestRule.fromResponse(mvcResult, VariableDto.class);
   }
 
   protected Long findActivityInstanceId(List<FlowNodeInstanceEntity> allActivityInstances, String activityId) {

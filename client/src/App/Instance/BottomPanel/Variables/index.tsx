@@ -13,6 +13,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
+import {VariableBackdrop} from './VariableBackdrop';
 import {Skeleton} from './Skeleton';
 import {Table, TH, TR} from './VariablesTable';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -23,10 +24,11 @@ import {useForm, useFormState} from 'react-final-form';
 import {useInstancePageParams} from '../../useInstancePageParams';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
+import {useNotifications} from 'modules/notifications';
 
 const Variables: React.FC = observer(() => {
   const {
-    state: {items: variables, pendingItem: pendingVariable, status},
+    state: {items, pendingItem, loadingItemId, status},
     displayStatus,
     scopeId,
   } = variablesStore;
@@ -35,6 +37,7 @@ const Variables: React.FC = observer(() => {
   const variablesContentRef = useRef<HTMLDivElement>(null);
   const variableRowRef = useRef<HTMLTableRowElement>(null);
   const {processInstanceId} = useInstancePageParams();
+  const notifications = useNotifications();
 
   const isTextareaOutOfBounds = (
     itemRef: React.RefObject<HTMLTableDataCellElement>
@@ -134,11 +137,13 @@ const Variables: React.FC = observer(() => {
                   )}
                 </Styled.THead>
                 <tbody>
-                  {variables.map(
+                  {items.map(
                     ({
                       name: variableName,
                       value: variableValue,
                       hasActiveOperation,
+                      isPreview,
+                      id,
                     }) => (
                       <TR
                         ref={variableRowRef}
@@ -160,8 +165,12 @@ const Variables: React.FC = observer(() => {
                                 {variableName}
                               </Styled.VariableName>
                             </Styled.TD>
+
                             <Styled.DisplayTextTD>
-                              <Styled.DisplayText>
+                              <Styled.DisplayText
+                                hasBackdrop={loadingItemId === id}
+                              >
+                                {loadingItemId === id && <VariableBackdrop />}
                                 {variableValue}
                               </Styled.DisplayText>
                             </Styled.DisplayTextTD>
@@ -174,10 +183,34 @@ const Variables: React.FC = observer(() => {
                                     title="Enter edit mode"
                                     type="button"
                                     data-testid="edit-variable-button"
-                                    onClick={() => {
+                                    disabled={loadingItemId !== null}
+                                    onClick={async () => {
+                                      let value = variableValue;
+                                      if (isPreview) {
+                                        const variable =
+                                          await variablesStore.fetchVariable({
+                                            id,
+                                            onError: () => {
+                                              notifications.displayNotification(
+                                                'error',
+                                                {
+                                                  headline:
+                                                    'Variable could not be fetched',
+                                                }
+                                              );
+                                            },
+                                          });
+
+                                        if (variable === null) {
+                                          return;
+                                        }
+
+                                        value = variable.value;
+                                      }
+
                                       form.reset({
                                         name: variableName,
-                                        value: variableValue,
+                                        value,
                                       });
                                     }}
                                     size="large"
@@ -206,12 +239,12 @@ const Variables: React.FC = observer(() => {
       >
         {currentInstanceStore.isRunning && (
           <>
-            {pendingVariable !== null && <PendingVariable />}
-            {isAddMode && pendingVariable === null && <NewVariable />}
+            {pendingItem !== null && <PendingVariable />}
+            {isAddMode && pendingItem === null && <NewVariable />}
           </>
         )}
 
-        {!isAddMode && pendingVariable === null && (
+        {!isAddMode && pendingItem === null && (
           <Styled.Button
             type="button"
             title="Add variable"
@@ -224,7 +257,8 @@ const Variables: React.FC = observer(() => {
               !isViewMode ||
               (flowNodeSelectionStore.isRootNodeSelected
                 ? !currentInstanceStore.isRunning
-                : !flowNodeMetaDataStore.isSelectedInstanceRunning)
+                : !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
+              loadingItemId !== null
             }
           >
             <Styled.Plus /> Add Variable

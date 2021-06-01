@@ -402,7 +402,7 @@ public class OperateTester {
 
   public boolean hasVariable(String name, String value) {
     String variableValue = getVariable(name);
-    return value==null? (variableValue == null): value.equals(variableValue);
+    return value==null? (variableValue == null): value.contains(variableValue);
   }
 
   public List<IncidentEntity> getIncidents() {

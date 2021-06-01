@@ -21,6 +21,7 @@ public class VariableDto {
   private String id;
   private String name;
   private String value;
+  private boolean isPreview;
   private boolean hasActiveOperation = false;
 
   @ApiModelProperty(value = "True when variable is the first in current list")
@@ -56,6 +57,15 @@ public class VariableDto {
     this.value = value;
   }
 
+  public boolean getIsPreview() {
+    return isPreview;
+  }
+
+  public VariableDto setIsPreview(final boolean preview) {
+    isPreview = preview;
+    return this;
+  }
+
   public boolean isHasActiveOperation() {
     return hasActiveOperation;
   }
@@ -82,7 +92,82 @@ public class VariableDto {
     return this;
   }
 
-  public static VariableDto createFrom(VariableEntity variableEntity, List<OperationEntity> operations) {
+  public static VariableDto createFrom(VariableEntity variableEntity, List<OperationEntity> operations,
+      boolean fullValue, int variableSizeThreshold) {
+    if (variableEntity == null) {
+      return null;
+    }
+    VariableDto variable = new VariableDto();
+    variable.setId(variableEntity.getId());
+    variable.setName(variableEntity.getName());
+
+    if (fullValue) {
+      variable.setValue(variableEntity.getFullValue());
+      variable.setIsPreview(false);
+    } else {
+      variable.setValue(variableEntity.getValue());
+      variable.setIsPreview(variableEntity.getIsPreview());
+    }
+
+    if (CollectionUtil.isNotEmpty(operations)) {
+      List <OperationEntity> activeOperations = CollectionUtil.filter(operations,(o ->
+          o.getState().equals(OperationState.SCHEDULED)
+              || o.getState().equals(OperationState.LOCKED)
+              || o.getState().equals(OperationState.SENT)));
+      if (!activeOperations.isEmpty()) {
+        variable.setHasActiveOperation(true);
+        final String newValue = activeOperations.get(activeOperations.size() - 1)
+            .getVariableValue();
+        if (fullValue) {
+          variable.setValue(newValue);
+        } else if (newValue.length() > variableSizeThreshold) {
+          // set preview
+          variable.setValue(newValue.substring(0, variableSizeThreshold));
+          variable.setIsPreview(true);
+        } else {
+          variable.setValue(newValue);
+        }
+      }
+    }
+
+    //convert to String[]
+    if (variableEntity.getSortValues() != null) {
+      variable.setSortValues(Arrays.stream(variableEntity.getSortValues())
+          .map(String::valueOf)
+          .toArray(String[]::new));
+    }
+    return variable;
+  }
+
+  public static List<VariableDto> createFrom(List<VariableEntity> variableEntities,
+      Map<String, List<OperationEntity>> operations, int variableSizeThreshold) {
+    List<VariableDto> result = new ArrayList<>();
+    if (variableEntities != null) {
+      for (VariableEntity variableEntity: CollectionUtil.withoutNulls(variableEntities)) {
+        result.add(
+            createFrom(
+                variableEntity,
+                operations.get(variableEntity.getName()),
+                false,
+                variableSizeThreshold));
+    }
+    }
+    //find new variables
+    final Set<String> operationVarNames = operations.keySet();
+    if(variableEntities!=null) {
+      variableEntities.forEach(ve -> {
+        operationVarNames.remove(ve.getName());
+      });
+    }
+    operationVarNames.forEach(varName -> {
+      CollectionUtil.addNotNull(result, createFrom(operations.get(varName)));
+    });
+    return result;
+  }
+
+  @Deprecated
+  public static VariableDto createFromOld(VariableEntity variableEntity, List<OperationEntity> operations,
+      boolean fullValue) {
     if (variableEntity == null) {
       return null;
     }
@@ -101,6 +186,14 @@ public class VariableDto {
         variable.setValue(activeOperations.get(activeOperations.size() - 1).getVariableValue());
       }
     }
+    if (fullValue) {
+      variable.setValue(variableEntity.getFullValue());
+      variable.setIsPreview(false);
+    } else {
+      variable.setValue(variableEntity.getValue());
+      variable.setIsPreview(variableEntity.getIsPreview());
+    }
+
     //convert to String[]
     if (variableEntity.getSortValues() != null) {
       variable.setSortValues(Arrays.stream(variableEntity.getSortValues())
@@ -110,12 +203,14 @@ public class VariableDto {
     return variable;
   }
 
-  public static List<VariableDto> createFrom(List<VariableEntity> variableEntities, Map<String, List<OperationEntity>> operations) {
+  @Deprecated
+  public static List<VariableDto> createFromOld(List<VariableEntity> variableEntities,
+      Map<String, List<OperationEntity>> operations) {
     List<VariableDto> result = new ArrayList<>();
     if (variableEntities != null) {
       for (VariableEntity variableEntity: variableEntities) {
         if (variableEntity != null) {
-          result.add(createFrom(variableEntity, operations.get(variableEntity.getName())));
+          result.add(createFromOld(variableEntity, operations.get(variableEntity.getName()), false));
         }
       }
     }

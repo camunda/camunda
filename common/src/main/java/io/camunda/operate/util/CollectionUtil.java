@@ -7,6 +7,7 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.util.ConversionUtils.stringToLong;
 
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,7 +22,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 
 public abstract class CollectionUtil {
 
@@ -46,8 +46,8 @@ public abstract class CollectionUtil {
   }
 
   @SuppressWarnings("unchecked")
-  public static <T> List<T> withoutNulls(Collection<T> aCollection){
-    if(aCollection!=null) {
+  public static <T> List<T> withoutNulls(Collection<T> aCollection) {
+    if (aCollection != null) {
       return filter(aCollection, obj -> obj != null);
     }
     return Collections.EMPTY_LIST;

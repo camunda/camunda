@@ -5,29 +5,35 @@
  */
 package io.camunda.operate.webapp.es.reader;
 
+import static io.camunda.operate.schema.templates.VariableTemplate.FULL_VALUE;
 import static io.camunda.operate.schema.templates.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.schema.templates.VariableTemplate.NAME;
 import static io.camunda.operate.schema.templates.VariableTemplate.SCOPE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -46,6 +52,9 @@ public class VariableReader extends AbstractReader {
 
   @Autowired
   private OperationReader operationReader;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   public List<VariableDto> getVariables(final String processInstanceId,
       VariableRequestDto request) {
@@ -149,7 +158,8 @@ public class VariableReader extends AbstractReader {
     final ConstantScoreQueryBuilder query =
         constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery, varNameQ));
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
+        .fetchSource(null, FULL_VALUE);
 
     applySorting(searchSourceBuilder, request);
 
@@ -168,7 +178,11 @@ public class VariableReader extends AbstractReader {
 
       final Map<String, List<OperationEntity>> operations =
           operationReader.getUpdateOperationsPerVariableName(Long.valueOf(processInstanceId), scopeKey);
-      final List<VariableDto> variables = VariableDto.createFrom(variableEntities, operations);
+      final List<VariableDto> variables =
+          VariableDto.createFrom(
+              variableEntities,
+              operations,
+              operateProperties.getImporter().getVariableSizeThreshold());
 
       if (variables.size() > 0) {
         if (request.getSearchBefore() != null || request.getSearchBeforeOrEqual() != null) {
@@ -221,6 +235,27 @@ public class VariableReader extends AbstractReader {
     }
   }
 
+  public VariableDto getVariable(final String id) {
+    final IdsQueryBuilder idsQ = idsQuery().addIds(id);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
+        .source(new SearchSourceBuilder()
+            .query(idsQ));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value != 1) {
+        throw new NotFoundException(String.format("Variable with id %s not found.", id));
+      }
+      final VariableEntity variableEntity = fromSearchHit(
+          response.getHits().getHits()[0].getSourceAsString(), objectMapper, VariableEntity.class);
+      return VariableDto.createFrom(variableEntity, null, true,
+          operateProperties.getImporter().getVariableSizeThreshold());
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
   public VariableDto getVariableByName(
       final String processInstanceId, final String scopeId, final String variableName) {
 
@@ -241,7 +276,8 @@ public class VariableReader extends AbstractReader {
         final VariableEntity variableEntity = ElasticsearchUtil
             .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(),
                 objectMapper, VariableEntity.class);
-        return VariableDto.createFrom(variableEntity, null);
+        return VariableDto.createFrom(
+            variableEntity, null, true, operateProperties.getImporter().getVariableSizeThreshold());
       } else {
         return null;
       }
@@ -269,11 +305,10 @@ public class VariableReader extends AbstractReader {
     try {
       final List<VariableEntity> variableEntities = scroll(searchRequest, VariableEntity.class);
       final Map<String, List<OperationEntity>> operations = operationReader.getUpdateOperationsPerVariableName(processInstanceKey, scopeKey);
-      return VariableDto.createFrom(variableEntities, operations);
+      return VariableDto.createFromOld(variableEntities, operations);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
   }
-
 }

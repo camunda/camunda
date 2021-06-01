@@ -194,6 +194,12 @@ const theme = Object.freeze({
             backgroundColor: rgba(DARK_COLORS.ui05, 0.4),
           },
         },
+        backdrop: {
+          backgroundColor: rgba(DARK_COLORS.ui02, 0.75),
+          spinner: {
+            borderColor: SEMANTIC_COLORS.white,
+          },
+        },
         color: rgba(SEMANTIC_COLORS.white, 0.8),
       },
       bottomPanel: {
@@ -1163,6 +1169,12 @@ const theme = Object.freeze({
           tr: {
             borderColor: LIGHT_COLORS.ui05,
             backgroundColor: '#e7e9ed',
+          },
+        },
+        backdrop: {
+          backgroundColor: rgba(SEMANTIC_COLORS.white, 0.75),
+          spinner: {
+            borderColor: LIGHT_COLORS.ui06,
           },
         },
         color: rgba(LIGHT_COLORS.ui06, 0.8),
