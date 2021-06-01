@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.plan.factories;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
@@ -30,6 +31,11 @@ import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,11 +48,18 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+@Slf4j
 public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
 
   @Override
@@ -55,15 +68,14 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .fromVersion("3.4.0")
       .toVersion("3.5.0")
       .addUpgradeSteps(migrateDefinitions(dependencies))
-      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
-      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDecisionReports())
+      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
+      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
       .build();
   }
 
-  private static List<UpgradeStep> migrateDefinitions(
-    UpgradeExecutionDependencies dependencies) {
+  private static List<UpgradeStep> migrateDefinitions(final UpgradeExecutionDependencies dependencies) {
     final Map<String, Object> processDefinitionIdsToFlowNodeDataProcessDefinition = getAllExistingDataForFlowNodes(
       ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME, dependencies);
     final Map<String, Object> processDefinitionIdsToFlowNodeDataEventProcessDefinition =
@@ -113,10 +125,14 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
 
   private static List<UpgradeStep> mergeUserTaskAndFlowNodeData(final UpgradeExecutionDependencies dependencies,
                                                                 final boolean eventBased) {
-    List<String> indexIdentifiers = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
+    final List<String> indexIdentifiers = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
       dependencies.getEsClient(),
       eventBased
     );
+
+    if (!eventBased && !indexIdentifiers.isEmpty()) {
+      checkForAndLogIncompleteUserTasks(dependencies.getEsClient());
+    }
 
     return indexIdentifiers.stream()
       .map(indexIdentifier ->
@@ -131,7 +147,15 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     // @formatter:off
       return "" +
         "def flowNodeInstances = ctx._source.events;" +
-        "def userTaskInstances = ctx._source.userTasks;" +
+
+        // UserTasks are filtered due to importing edge case:
+        // UserTasks may not have an activityInstanceId due to import via IdentityLinkLog or CanceledUserTaskImport only.
+        // If the userTask has no activityInstanceId, we cannot associate it with a flowNode which is why these tasks are
+        // excluded from the migration and a warning is added to the logs so users can decide whether to reset their
+        // importers to recover the lost data.
+        "def userTaskInstances = ctx._source.userTasks.stream()" +
+          ".filter(userTask -> userTask.activityInstanceId != null)" +
+          ".collect(Collectors.toList());" +
 
         "for (flowNode in flowNodeInstances) {" +
           "flowNode.flowNodeInstanceId = flowNode.id;" +
@@ -149,7 +173,6 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
               ".findFirst()" +
               ".ifPresent(" +
                 "userTask -> {" +
-                  "flowNode.flowNodeInstanceId = userTask.activityInstanceId;" +
                   "flowNode.userTaskInstanceId = userTask.id;" +
                   "flowNode.dueDate = userTask.dueDate;" +
                   "flowNode.deleteReason = userTask.deleteReason;" +
@@ -180,10 +203,70 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
           "flowNodeInstances.add(userTask);" +
         "}" +
 
+        // Remove userTask flowNodeInstances whose userTaskInstances have not been imported/migrated
+        "flowNodeInstances.removeIf(" +
+          "flowNode -> flowNode.flowNodeType.equalsIgnoreCase(\"userTask\") && flowNode.userTaskInstanceId == null" +
+        ");" +
+
         "ctx._source.flowNodeInstances = flowNodeInstances;" +
         "ctx._source.remove(\"events\");" +
         "ctx._source.remove(\"userTasks\");";
       // @formatter:on
+  }
+
+  private static void checkForAndLogIncompleteUserTasks(final OptimizeElasticsearchClient esClient) {
+    final long incompleteUserTaskCount = getIncompleteUserTaskCount(esClient);
+    if (incompleteUserTaskCount > 0) {
+      log.warn(
+        String.format(
+          "Process instance data includes %s incomplete userTasks, this can happen due to an unfinished userTask " +
+            "import. This userTask data cannot be migrated and will be removed during migration, which will result in" +
+            " small inaccuracies in Optimize userTask data. Please refer to Optimize migration notes for more details" +
+            " and for instructions on how to resolve this issue after the migration has finished:%n" +
+            "https://docs.camunda.org/optimize/latest/technical-guide/update/3.4-to-3.5/",
+          incompleteUserTaskCount
+        )
+      );
+    }
+  }
+
+  private static long getIncompleteUserTaskCount(final OptimizeElasticsearchClient esClient) {
+    final String countAggName = "incompleteUserTaskCount";
+    final String filterAggName = "filterAggName";
+    final String nestedAggName = "nestedAgg";
+
+    AggregationBuilder countAgg = AggregationBuilders
+      .count(countAggName)
+      .field("userTasks.id");
+
+    countAgg = nested(nestedAggName, "userTasks")
+      .subAggregation(
+        wrapWithFilterLimitedParentAggregation(
+          filterAggName,
+          boolQuery()
+            .must(existsQuery("userTasks.id"))
+            .mustNot(existsQuery("userTasks.activityInstanceId")),
+          countAgg
+        ));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .fetchSource(false)
+      .aggregation(countAgg)
+      .size(0);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest);
+    } catch (IOException e) {
+      throw new UpgradeRuntimeException("Could not retrieve count of incomplete userTasks.", e);
+    }
+
+    final Aggregations unnestedAggs = ((Nested) response.getAggregations().get(nestedAggName)).getAggregations();
+    final Optional<Aggregations> unwrappedAggs = unwrapFilterLimitedAggregations(filterAggName, unnestedAggs);
+    final ValueCount count = unwrappedAggs.orElse(unnestedAggs).get(countAggName);
+    return count.getValue();
   }
 
   private static Map<String, Object> getAllExistingDataForFlowNodes(final String indexName,
@@ -276,4 +359,5 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     //@formatter:on
     return new UpdateIndexStep(new SingleDecisionReportIndex(), script);
   }
+
 }

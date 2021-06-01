@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.migrate34To35;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
@@ -14,6 +15,8 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade34to35PlanFactory;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -33,6 +36,11 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_N
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends AbstractUpgrade34IT {
+
+  @RegisterExtension
+  protected final LogCapturer upgradeLogCapturer = LogCapturer.create()
+    .forLevel(Level.WARN)
+    .captureForType(Upgrade34to35PlanFactory.class);
 
   private static final String OLD_USER_TASKS_FIELD_NAME = "userTasks";
   private static final String OLD_FLOW_NODE_INSTANCES_FIELD_NAME = "events";
@@ -132,13 +140,17 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchHit[] hitsAfterUpgrade = getAllDocumentsOfIndex(EVENT_PROCESS_INSTANCE_INDEX.getIndexName());
+    final SearchHit[] hitsAfterUpgrade = getAllDocumentsOfIndex(
+      EVENT_PROCESS_INSTANCE_INDEX_1.getIndexName(),
+      EVENT_PROCESS_INSTANCE_INDEX_2.getIndexName()
+    );
     final List<ProcessInstanceDto> instancesAfterUpgrade =
-      getAllDocumentsOfIndexAs(EVENT_PROCESS_INSTANCE_INDEX.getIndexName(), ProcessInstanceDto.class);
+      getAllDocumentsOfIndexAs(EVENT_PROCESS_INSTANCE_INDEX_1.getIndexName(), ProcessInstanceDto.class);
 
-    assertNewMapping(hitsAfterUpgrade);
+    assertNewMappingAndHitCount(hitsAfterUpgrade, 4);
     assertNonUserTaskFlowNodeContent(instancesAfterUpgrade);
     assertProcessInstanceIdInFlowNodeData(instancesAfterUpgrade);
+    assertIncompleteUserTaskLog(0);
   }
 
   @SneakyThrows
@@ -152,20 +164,67 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchHit[] hitsAfterUpgrade = getAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX.getIndexName());
-    final List<ProcessInstanceDto> instancesAfterUpgrade =
-      getAllDocumentsOfIndexAs(PROCESS_INSTANCE_INDEX.getIndexName(), ProcessInstanceDto.class);
+    final SearchHit[] hitsAfterUpgradeIndex = getAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_1.getIndexName());
+    final List<ProcessInstanceDto> instancesAfterUpgradeIndex =
+      getAllDocumentsOfIndexAs(PROCESS_INSTANCE_INDEX_1.getIndexName(), ProcessInstanceDto.class);
 
-    assertNewMapping(hitsAfterUpgrade);
-    assertNonUserTaskFlowNodeContent(instancesAfterUpgrade);
-    assertUserTaskContent(instancesAfterUpgrade);
-    assertProcessInstanceIdInFlowNodeData(instancesAfterUpgrade);
+    assertNewMappingAndHitCount(hitsAfterUpgradeIndex, 2);
+    assertNonUserTaskFlowNodeContent(instancesAfterUpgradeIndex);
+    assertUserTaskContent(instancesAfterUpgradeIndex);
+    assertProcessInstanceIdInFlowNodeData(instancesAfterUpgradeIndex);
+    assertIncompleteUserTaskLog(0);
+  }
+
+  @SneakyThrows
+  @Test
+  public void flowNodesMigrationInNonEventBasedInstanceIndices_edgeCases() {
+    // given "normal" process instances and instances with usertasks with missing activityInstanceIds
+    executeBulk("steps/3.4/processinstance/34-process-instances.json");
+    executeBulk("steps/3.4/processinstance/34-process-instances-with-incomplete-user-tasks.json");
+    final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(upgradeDependencies);
+
+    // when
+    upgradeProcedure.performUpgrade(upgradePlan);
+
+    // then
+    final SearchHit[] hitsAfterUpgradeIndex = getAllDocumentsOfIndex(
+      PROCESS_INSTANCE_INDEX_1.getIndexName(),
+      PROCESS_INSTANCE_INDEX_2.getIndexName()
+    );
+    final List<ProcessInstanceDto> instancesAfterUpgradeWithoutEdgeCases =
+      getAllDocumentsOfIndexAs(PROCESS_INSTANCE_INDEX_1.getIndexName(), ProcessInstanceDto.class);
+    final List<ProcessInstanceDto> instancesAfterUpgradeWithEdgeCases =
+      getAllDocumentsOfIndexAs(PROCESS_INSTANCE_INDEX_2.getIndexName(), ProcessInstanceDto.class);
+
+    // userTask/flowNode data was migrated correctly and incomplete userTasks/flowNodes were removed during migration
+    assertNewMappingAndHitCount(hitsAfterUpgradeIndex, 4);
+    assertNonUserTaskFlowNodeContent(instancesAfterUpgradeWithoutEdgeCases);
+    assertNonUserTaskFlowNodeContent(instancesAfterUpgradeWithEdgeCases);
+    assertUserTaskContent(instancesAfterUpgradeWithoutEdgeCases);
+    assertUserTaskContent(instancesAfterUpgradeWithEdgeCases);
+    assertProcessInstanceIdInFlowNodeData(instancesAfterUpgradeWithoutEdgeCases);
+    assertProcessInstanceIdInFlowNodeData(instancesAfterUpgradeWithEdgeCases);
+
+    // and incomplete userTasks have been logged correctly
+    assertIncompleteUserTaskLog(3);
+  }
+
+  @Test
+  public void flowNodesMigration_noData() {
+    // given no instance data to migrate
+    final UpgradePlan upgradePlan = new Upgrade34to35PlanFactory().createUpgradePlan(upgradeDependencies);
+
+    // when
+    upgradeProcedure.performUpgrade(upgradePlan);
+
+    // then migration completes and nothing was logged
+    assertIncompleteUserTaskLog(0);
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  private void assertNewMapping(final SearchHit[] hitsAfterUpgrade) {
+  private void assertNewMappingAndHitCount(final SearchHit[] hitsAfterUpgrade, final int expectedNumberOfHits) {
     assertThat(hitsAfterUpgrade)
-      .hasSize(2)
+      .hasSize(expectedNumberOfHits)
       .allSatisfy(
         instance -> {
           // userTasks Field has been removed
@@ -216,30 +275,30 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
 
           // Separately assert content of assignee- and candidateGroupOperations to ensure field by field comparison
           final Map<String, FlowNodeInstanceDto> userTaskMap = userTaskInstances.stream()
-            .collect(toMap(FlowNodeInstanceDto::getFlowNodeInstanceId, Function.identity()));
+            .collect(toMap(FlowNodeInstanceDto::getUserTaskInstanceId, Function.identity()));
 
-          assertThat(userTaskMap.get(EXPECTED_USER_TASK_1.getFlowNodeInstanceId()))
+          assertThat(userTaskMap.get(EXPECTED_USER_TASK_1.getUserTaskInstanceId()))
             .extracting(FlowNodeInstanceDto::getAssigneeOperations)
             .usingRecursiveComparison()
             .isEqualTo(EXPECTED_USER_TASK_1.getAssigneeOperations());
-          assertThat(userTaskMap.get(EXPECTED_USER_TASK_2.getFlowNodeInstanceId()))
+          assertThat(userTaskMap.get(EXPECTED_USER_TASK_2.getUserTaskInstanceId()))
             .extracting(FlowNodeInstanceDto::getAssigneeOperations)
             .usingRecursiveComparison()
             .isEqualTo(EXPECTED_USER_TASK_2.getAssigneeOperations());
-          assertThat(userTaskMap.get(EXPECTED_USER_TASK_3.getFlowNodeInstanceId()))
+          assertThat(userTaskMap.get(EXPECTED_USER_TASK_3.getUserTaskInstanceId()))
             .extracting(FlowNodeInstanceDto::getAssigneeOperations)
             .usingRecursiveComparison()
             .isEqualTo(EXPECTED_USER_TASK_3.getAssigneeOperations());
 
-          assertThat(userTaskMap.get(EXPECTED_USER_TASK_1.getFlowNodeInstanceId()))
+          assertThat(userTaskMap.get(EXPECTED_USER_TASK_1.getUserTaskInstanceId()))
             .extracting(FlowNodeInstanceDto::getCandidateGroupOperations)
             .usingRecursiveComparison()
             .isEqualTo(EXPECTED_USER_TASK_1.getCandidateGroupOperations());
-          assertThat(userTaskMap.get(EXPECTED_USER_TASK_2.getFlowNodeInstanceId()))
+          assertThat(userTaskMap.get(EXPECTED_USER_TASK_2.getUserTaskInstanceId()))
             .extracting(FlowNodeInstanceDto::getCandidateGroupOperations)
             .usingRecursiveComparison()
             .isEqualTo(EXPECTED_USER_TASK_2.getCandidateGroupOperations());
-          assertThat(userTaskMap.get(EXPECTED_USER_TASK_3.getFlowNodeInstanceId()))
+          assertThat(userTaskMap.get(EXPECTED_USER_TASK_3.getUserTaskInstanceId()))
             .extracting(FlowNodeInstanceDto::getCandidateGroupOperations)
             .usingRecursiveComparison()
             .isEqualTo(EXPECTED_USER_TASK_3.getCandidateGroupOperations());
@@ -254,6 +313,22 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
           .extracting(FlowNodeInstanceDto::getProcessInstanceId)
           .containsOnly(procInstance.getProcessInstanceId())
       );
+  }
+
+  private void assertIncompleteUserTaskLog(final int expectedIncompleteUserTaskCount) {
+    final String incompleteUserTaskLog = String.format(
+      "Process instance data includes %s incomplete userTasks, this can happen due to an unfinished userTask " +
+        "import. This userTask data cannot be migrated and will be removed during migration, which will result in" +
+        " small inaccuracies in Optimize userTask data. Please refer to Optimize migration notes for more details" +
+        " and for instructions on how to resolve this issue after the migration has finished:%n" +
+        "https://docs.camunda.org/optimize/latest/technical-guide/update/3.4-to-3.5/",
+      expectedIncompleteUserTaskCount
+    );
+    if (expectedIncompleteUserTaskCount == 0) {
+      upgradeLogCapturer.assertDoesNotContain(incompleteUserTaskLog);
+    } else {
+      upgradeLogCapturer.assertContains(incompleteUserTaskLog);
+    }
   }
 
 }

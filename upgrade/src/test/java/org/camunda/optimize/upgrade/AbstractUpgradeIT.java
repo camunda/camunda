@@ -48,7 +48,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
@@ -63,10 +62,13 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -145,6 +147,22 @@ public abstract class AbstractUpgradeIT {
       metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
+  }
+
+  protected void createIndicesWithAdditionalReadOnlyAliases(Map<IndexMappingCreator, Set<String>> indexMappingCreatorAliases) {
+    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
+      metadataService,
+      createDefaultConfiguration(),
+      indexNameService,
+      new ArrayList<>(indexMappingCreatorAliases.keySet())
+    );
+    for (Map.Entry<IndexMappingCreator, Set<String>> indexMappingToAlias : indexMappingCreatorAliases.entrySet()) {
+      elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
+        prefixAwareClient,
+        indexMappingToAlias.getKey(),
+        indexMappingToAlias.getValue()
+      );
+    }
   }
 
   protected void setMetadataVersion(String version) {
