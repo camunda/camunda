@@ -247,18 +247,17 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
                   && !persistingSnapshot) {
                 persistingSnapshot = true;
 
+                LOG.debug(
+                    "Current commit position {} >= {}, committing snapshot {}.",
+                    currentCommitPosition,
+                    lastWrittenEventPosition,
+                    pendingSnapshot);
                 final var snapshotPersistFuture = pendingSnapshot.persist();
 
                 snapshotPersistFuture.onComplete(
                     (snapshot, persistError) -> {
                       if (persistError != null) {
                         LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
-                      } else {
-                        LOG.debug(
-                            "Current commit position {} >= {}, snapshot {} is valid and has been persisted.",
-                            currentCommitPosition,
-                            lastWrittenEventPosition,
-                            snapshot.getId());
                       }
                       lastWrittenEventPosition = null;
                       takingSnapshot = false;

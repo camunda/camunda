@@ -187,7 +187,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
-    LOG.debug("New snapshot {} was persisted. Start replicating.", newPersistedSnapshot.getId());
+    LOG.debug("Start replicating new snapshot {}", newPersistedSnapshot.getId());
     // replicate snapshots when new snapshot was committed
     try (final var snapshotChunkReader = newPersistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {

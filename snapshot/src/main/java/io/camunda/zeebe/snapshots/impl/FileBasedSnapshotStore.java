@@ -440,7 +440,7 @@ public final class FileBasedSnapshotStore extends Actor
               currentPersistedSnapshotRef.get()));
     }
 
-    LOGGER.info("Committed new snapshot {}", newPersistedSnapshot);
+    LOGGER.info("Committed new snapshot {}", newPersistedSnapshot.getId());
 
     snapshotMetrics.incrementSnapshotCount();
     observeSnapshotSize(newPersistedSnapshot);

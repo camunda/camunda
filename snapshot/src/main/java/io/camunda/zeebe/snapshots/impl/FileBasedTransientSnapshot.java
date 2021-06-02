@@ -156,8 +156,6 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         + directory
         + ", checksum="
         + checksum
-        + ", snapshotStore="
-        + snapshotStore
         + ", metadata="
         + metadata
         + '}';
