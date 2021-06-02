@@ -120,7 +120,12 @@ public final class EngineProcessors {
         maxFragmentSize,
         writers);
 
-    addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
+    addIncidentProcessors(
+        zeebeState,
+        bpmnStreamProcessor,
+        typedRecordProcessors,
+        writers,
+        zeebeState.getKeyGenerator());
 
     return typedRecordProcessors;
   }
@@ -203,9 +208,10 @@ public final class EngineProcessors {
       final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers) {
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
     IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers);
+        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers, keyGenerator);
   }
 
   private static void addMessageProcessors(

@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -52,17 +53,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
+  private final KeyGenerator keyGenerator;
 
   public ResolveIncidentProcessor(
       final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
-      final Writers writers) {
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
     jobState = zeebeState.getJobState();
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
