@@ -105,7 +105,7 @@ spec:
         - name: discovery.type
           value: single-node
         - name: xpack.security.enabled
-          value: false
+          value: "false"
         - name: action.auto_create_index
           value: "true"
         - name: bootstrap.memory_lock

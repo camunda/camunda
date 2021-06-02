@@ -83,7 +83,7 @@ spec:
             - name: discovery.type
               value: single-node
             - name: xpack.security.enabled
-              value: false
+              value: "false"
             - name: bootstrap.memory_lock
               value: "true"
             - name: processors
