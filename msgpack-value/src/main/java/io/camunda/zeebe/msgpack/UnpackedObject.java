@@ -32,7 +32,9 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
       read(reader);
     } catch (final Exception e) {
       throw new RuntimeException(
-          "Could not deserialize object. Deserialization stuck at offset "
+          "Could not deserialize object ["
+              + getClass().getSimpleName()
+              + "]. Deserialization stuck at offset "
               + reader.getOffset()
               + " of length "
               + length,
