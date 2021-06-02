@@ -28,7 +28,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -233,7 +232,7 @@ public class SchemaUpgradeClient {
   public void createIndexFromTemplate(final String indexNameWithSuffix) {
     CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
     try {
-      getHighLevelRestClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
+      getHighLevelRestClient().indices().create(createIndexRequest, elasticsearchClient.requestOptions());
     } catch (ElasticsearchStatusException e) {
       if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug("Index {} from template already exists.", indexNameWithSuffix);
@@ -262,7 +261,7 @@ public class SchemaUpgradeClient {
       indicesAliasesRequest.addAliasAction(removeAllAliasesAction);
       indicesAliasesRequest.addAliasAction(addReadOnlyAliasAction);
 
-      getHighLevelRestClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
+      getHighLevelRestClient().indices().updateAliases(indicesAliasesRequest, elasticsearchClient.requestOptions());
     } catch (Exception e) {
       String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -283,7 +282,7 @@ public class SchemaUpgradeClient {
         .writeIndex(isWriteAlias)
         .aliases(indexAliases.toArray(new String[0]));
       indicesAliasesRequest.addAliasAction(aliasAction);
-      getHighLevelRestClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
+      getHighLevelRestClient().indices().updateAliases(indicesAliasesRequest, elasticsearchClient.requestOptions());
     } catch (Exception e) {
       String errorMessage = String.format("Could not add alias to index [%s]!", completeIndexName);
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -295,7 +294,7 @@ public class SchemaUpgradeClient {
     try {
       return getHighLevelRestClient()
         .indices()
-        .getAlias(aliasesRequest, RequestOptions.DEFAULT)
+        .getAlias(aliasesRequest, elasticsearchClient.requestOptions())
         .getAliases();
     } catch (Exception e) {
       String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
@@ -310,7 +309,7 @@ public class SchemaUpgradeClient {
       final IndexRequest indexRequest = new IndexRequest(aliasName);
       indexRequest.source(data, XContentType.JSON);
       indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      getHighLevelRestClient().index(indexRequest, RequestOptions.DEFAULT);
+      getHighLevelRestClient().index(indexRequest, elasticsearchClient.requestOptions());
     } catch (Exception e) {
       String errorMessage = String.format("Could not add data to indexAlias [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -330,7 +329,8 @@ public class SchemaUpgradeClient {
     request.setScript(createDefaultScriptWithSpecificDtoParams(updateScript, parameters, objectMapper));
     final String taskId;
     try {
-      taskId = getHighLevelRestClient().submitUpdateByQueryTask(request, RequestOptions.DEFAULT).getTask();
+      taskId = getHighLevelRestClient().submitUpdateByQueryTask(request, elasticsearchClient.requestOptions())
+        .getTask();
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Could not create updateBy task for [%s] with query [%s]!",
@@ -352,7 +352,8 @@ public class SchemaUpgradeClient {
     request.setQuery(query);
     final String taskId;
     try {
-      taskId = getHighLevelRestClient().submitDeleteByQueryTask(request, RequestOptions.DEFAULT).getTask();
+      taskId = getHighLevelRestClient().submitDeleteByQueryTask(request, elasticsearchClient.requestOptions())
+        .getTask();
     } catch (Exception e) {
       final String errorMessage = String.format(
         "Could not create deleteBy task for [%s] with query [%s]!", aliasName, query
@@ -371,7 +372,7 @@ public class SchemaUpgradeClient {
     try {
       return new HashSet<>(
         getHighLevelRestClient().indices()
-          .getAlias(getAliasesRequest, RequestOptions.DEFAULT)
+          .getAlias(getAliasesRequest, elasticsearchClient.requestOptions())
           .getAliases()
           .getOrDefault(indexName, Sets.newHashSet())
       );
@@ -392,10 +393,10 @@ public class SchemaUpgradeClient {
   private boolean areDocCountsEqual(final String sourceIndex, final String targetIndex) {
     try {
       final long sourceIndexDocCount = elasticsearchClient.getHighLevelClient()
-        .count(new CountRequest(sourceIndex), RequestOptions.DEFAULT)
+        .count(new CountRequest(sourceIndex), elasticsearchClient.requestOptions())
         .getCount();
       final long targetIndexDocCount = elasticsearchClient.getHighLevelClient()
-        .count(new CountRequest(targetIndex), RequestOptions.DEFAULT)
+        .count(new CountRequest(targetIndex), elasticsearchClient.requestOptions())
         .getCount();
       return sourceIndexDocCount == targetIndexDocCount;
     } catch (Exception e) {
@@ -412,7 +413,8 @@ public class SchemaUpgradeClient {
     try {
       final ListTasksResponse tasksResponse = elasticsearchClient.getHighLevelClient().tasks()
         .list(
-          new ListTasksRequest().setDetailed(true).setActions("indices:data/write/reindex"), RequestOptions.DEFAULT
+          new ListTasksRequest().setDetailed(true).setActions("indices:data/write/reindex"),
+          elasticsearchClient.requestOptions()
         );
       return tasksResponse.getTasks().stream()
         .filter(taskInfo ->
@@ -458,7 +460,7 @@ public class SchemaUpgradeClient {
   }
 
   private String submitReindexTask(final ReindexRequest reindexRequest) throws IOException {
-    return getHighLevelRestClient().submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
+    return getHighLevelRestClient().submitReindexTask(reindexRequest, elasticsearchClient.requestOptions()).getTask();
   }
 
   private void waitUntilTaskIsFinished(final String taskId,

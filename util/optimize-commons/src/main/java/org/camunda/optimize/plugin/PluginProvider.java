@@ -15,17 +15,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ClassUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -37,7 +38,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
   private List<PluginType> registeredPlugins = new ArrayList<>();
 
   @PostConstruct
-  private void initPlugins() {
+  public void initPlugins() {
     log.debug("Reloading plugins...");
     registeredPlugins = new ArrayList<>();
     for (Path pluginJar : pluginJarLoader.getPluginJars()) {
@@ -73,9 +74,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
         pluginClasses.loadClasses().forEach(pluginClass -> {
           try {
             if (validPluginClass(pluginClass)) {
-              @SuppressWarnings(UNCHECKED_CAST)
-              PluginType plugin = (PluginType) pluginClass.newInstance();
-              registeredPlugins.add(plugin);
+              registerPlugin(pluginClass);
             } else {
               String reason = String.format(
                 "Plugin class [%s] is not valid because it has no default constructor!",
@@ -97,6 +96,16 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
       }
     } else {
       log.debug("No base packages configured for plugin class {}.", getPluginClass().getSimpleName());
+    }
+  }
+
+  private void registerPlugin(final Class<?> pluginClass) throws InstantiationException, IllegalAccessException {
+    try {
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      PluginType plugin = (PluginType) pluginClass.getDeclaredConstructor().newInstance();
+      registeredPlugins.add(plugin);
+    } catch (NoSuchMethodException | InvocationTargetException ex) {
+      throw new OptimizeRuntimeException("Plugin class [%s] could not be constructed");
     }
   }
 

@@ -12,14 +12,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
@@ -311,23 +309,6 @@ public class DefinitionService implements ConfigurationReloadable {
     );
   }
 
-  public Optional<String> getDefinitionXml(final DefinitionType type,
-                                           final String userId,
-                                           final String definitionKey,
-                                           final List<String> definitionVersions,
-                                           final List<String> tenantIds) {
-    switch (type) {
-      case PROCESS:
-        return getDefinitionWithXml(type, userId, definitionKey, definitionVersions, tenantIds)
-          .map(def -> ((ProcessDefinitionOptimizeDto) def).getBpmn20Xml());
-      case DECISION:
-        return getDefinitionWithXml(type, userId, definitionKey, definitionVersions, tenantIds)
-          .map(def -> ((DecisionDefinitionOptimizeDto) def).getDmn10Xml());
-      default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
-    }
-  }
-
   public <T extends DefinitionOptimizeResponseDto> Optional<T> getDefinitionWithXml(final DefinitionType type,
                                                                                     final String userId,
                                                                                     final String definitionKey,
@@ -456,7 +437,7 @@ public class DefinitionService implements ConfigurationReloadable {
     final Set<String> authorizedTenantIds) {
     final TenantIdWithDefinitionsDto notDefinedTenantEntry = definitionsGroupedByTenant.get(TENANT_NOT_DEFINED.getId());
     if (notDefinedTenantEntry != null) {
-      authorizedTenantIds.forEach(authorizedTenantId -> {
+      authorizedTenantIds.forEach(authorizedTenantId ->
         // definitions of the not defined tenant need to be added to all other tenant entries
         // as technically there can be data on shared definitions for any of them
         definitionsGroupedByTenant.compute(authorizedTenantId, (tenantId, tenantIdWithDefinitionsDto) -> {
@@ -472,8 +453,8 @@ public class DefinitionService implements ConfigurationReloadable {
           tenantIdWithDefinitionsDto.setDefinitions(mergedDefinitionList);
 
           return tenantIdWithDefinitionsDto;
-        });
-      });
+        })
+      );
     }
   }
 

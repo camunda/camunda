@@ -87,6 +87,7 @@ public class SchemaUpgradeClientReindexTest {
   public void init() {
     when(elasticsearchClient.getHighLevelClient()).thenReturn(highLevelRestClient);
     when(elasticsearchClient.getIndexNameService()).thenReturn(indexNameService);
+    when(elasticsearchClient.requestOptions()).thenReturn(RequestOptions.DEFAULT);
     when(highLevelRestClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
     this.underTest = createSchemaUpgradeClient(
       schemaManager, metadataService, configurationService, elasticsearchClient
@@ -168,7 +169,6 @@ public class SchemaUpgradeClientReindexTest {
     // given
     final String index1 = "index1";
     final String index2 = "index2";
-    final String taskId = "12345";
 
     when(
       elasticsearchClient.getHighLevelClient()

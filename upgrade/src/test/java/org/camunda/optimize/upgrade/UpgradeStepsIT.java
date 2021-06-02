@@ -26,7 +26,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
@@ -74,7 +73,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
-        RequestOptions.DEFAULT
+        prefixAwareClient.requestOptions()
       )
     ).isTrue();
     final GetAliasesResponse alias = getAliasesForAlias(
@@ -101,7 +100,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
-        RequestOptions.DEFAULT
+        prefixAwareClient.requestOptions()
       )
     ).isTrue();
     final GetAliasesResponse alias = getAliasesForAlias(
@@ -220,7 +219,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     request.alias(new Alias(aliasForIndex).writeIndex(true));
     request.alias(new Alias(readOnlyAliasForIndex).writeIndex(false));
     request.mapping(TEST_INDEX_V1.getSource());
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -293,7 +292,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().existsTemplate(new IndexTemplatesExistRequest(
         indexNameService.getOptimizeIndexTemplateNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1)
-      ), RequestOptions.DEFAULT)
+      ), prefixAwareClient.requestOptions())
     ).isFalse();
   }
 
@@ -506,7 +505,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
     request.alias(new Alias(aliasForIndex));
     request.mapping(TEST_INDEX_V1.getSource());
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
   }
 
   @SuppressWarnings(UNCHECKED_CAST)

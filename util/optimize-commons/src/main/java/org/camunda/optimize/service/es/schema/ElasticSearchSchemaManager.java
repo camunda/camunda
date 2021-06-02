@@ -132,21 +132,21 @@ public class ElasticSearchSchemaManager {
 
   public boolean indexExists(final OptimizeElasticsearchClient esClient,
                              final String indexName) {
-    return indicesExist(Collections.singletonList(indexName), esClient);
+    return indicesExistWithNames(esClient, Collections.singletonList(indexName));
   }
 
   public boolean indicesExist(final OptimizeElasticsearchClient esClient,
                               final List<IndexMappingCreator> mappings) {
-    return indicesExist(
+    return indicesExistWithNames(
+      esClient,
       mappings.stream()
         .map(IndexMappingCreator::getIndexName)
-        .collect(toList()),
-      esClient
+        .collect(toList())
     );
   }
 
-  public boolean indicesExist(final List<String> indexNames,
-                              final OptimizeElasticsearchClient esClient) {
+  private boolean indicesExistWithNames(final OptimizeElasticsearchClient esClient,
+                                        final List<String> indexNames) {
     return StreamSupport.stream(Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
       .allMatch(indices -> {
         final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));

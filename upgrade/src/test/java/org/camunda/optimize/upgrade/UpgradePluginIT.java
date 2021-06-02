@@ -3,85 +3,82 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.plugin.elasticsearch;
+package org.camunda.optimize.upgrade;
 
-import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
-import org.mockserver.model.RequestDefinition;
 import org.mockserver.verify.VerificationTimes;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.IntStream;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
-
-  private ConfigurationService configurationService;
+public class UpgradePluginIT extends AbstractUpgradeIT {
 
   @BeforeEach
   public void setup() {
-    configurationService = embeddedOptimizeExtension.getConfigurationService();
     configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
   @Test
-  public void fixedCustomHeadersAddedToElasticsearchRequest() {
+  public void fixedHeaderPluginsAreUsedDuringUpgrade() {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
+    setUpUpgradeDependenciesWithConfiguration(configurationService);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-
-    // when
-    statusClient.getStatus();
+    // given
+    performUpgrade();
 
     // then
-    esMockServer.verify(request().withHeader(new Header("Authorization", "Bearer fixedToken")));
+    esMockServer.verify(
+      request().withHeader(new Header("Authorization", "Bearer fixedToken")),
+      VerificationTimes.atLeast(2)
+    );
   }
 
   @Test
-  public void dynamicCustomHeadersAddedToElasticsearchRequest() {
+  public void dynamicCustomHeaderPluginsAreUsedDuringUpgrade() {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
+    setUpUpgradeDependenciesWithConfiguration(configurationService);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-
-    // when
-    statusClient.getStatus();
-    statusClient.getStatus();
-    statusClient.getStatus();
+    // given
+    performUpgrade();
 
     // then
-    final RequestDefinition[] allRequests = esMockServer.retrieveRecordedRequests(null);
-    assertThat(allRequests).hasSizeGreaterThan(1);
-    IntStream.range(0, allRequests.length)
-      .forEach(integerSuffix -> esMockServer.verify(
-        request().withHeader(new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
-        VerificationTimes.once()
-      ));
+    esMockServer.verify(
+      request().withHeader(new Header("Authorization", "Bearer dynamicToken_0")),
+      VerificationTimes.once()
+    );
+    esMockServer.verify(
+      request().withHeader(new Header("Authorization", "Bearer dynamicToken_1")),
+      VerificationTimes.once()
+    );
+    esMockServer.verify(
+      request().withHeader(new Header("Authorization", "Bearer dynamicToken_2")),
+      VerificationTimes.once()
+    );
   }
 
   @Test
-  public void multipleCustomHeadersAddedToElasticsearchRequest() {
+  public void multipleCustomHeaderPluginsAreUsedDuringUpgrade() {
     // given
     String[] basePackages = {
       "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
       "org.camunda.optimize.testplugin.elasticsearch.custom"
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
+    setUpUpgradeDependenciesWithConfiguration(configurationService);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-
-    // when
-    statusClient.getStatus();
+    // given
+    performUpgrade();
 
     // then
     esMockServer.verify(request().withHeaders(
@@ -90,10 +87,22 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
     ), VerificationTimes.once());
   }
 
+  private void performUpgrade() {
+    upgradeProcedure.performUpgrade(
+      UpgradePlanBuilder.createUpgradePlan()
+        .fromVersion(FROM_VERSION)
+        .toVersion(INTERMEDIATE_VERSION)
+        .addUpgradeSteps(ImmutableList.of(
+          new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1),
+          buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1)
+        ))
+        .build()
+    );
+  }
+
   private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
-    embeddedOptimizeExtension.reloadConfiguration();
   }
 
 }

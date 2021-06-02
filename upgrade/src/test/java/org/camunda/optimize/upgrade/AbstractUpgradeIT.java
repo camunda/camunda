@@ -114,8 +114,18 @@ public abstract class AbstractUpgradeIT {
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
     elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
 
+    setUpUpgradeDependenciesWithConfiguration(configurationService);
+    cleanAllDataFromElasticsearch();
+    createEmptyEnvConfig();
+    initSchema(Collections.singletonList(METADATA_INDEX));
+    setMetadataVersion(FROM_VERSION);
+
+    prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
+  }
+
+  protected void setUpUpgradeDependenciesWithConfiguration(ConfigurationService configurationService) {
     this.upgradeDependencies =
-      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(this.configurationService);
+      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(configurationService);
     this.objectMapper = upgradeDependencies.getObjectMapper();
     this.prefixAwareClient = upgradeDependencies.getEsClient();
     this.indexNameService = upgradeDependencies.getIndexNameService();
@@ -126,13 +136,6 @@ public abstract class AbstractUpgradeIT {
       createSchemaUpgradeClient(upgradeDependencies),
       new UpgradeStepLogService()
     );
-
-    cleanAllDataFromElasticsearch();
-    createEmptyEnvConfig();
-    initSchema(Collections.singletonList(METADATA_INDEX));
-    setMetadataVersion(FROM_VERSION);
-
-    prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
   }
 
   @AfterEach

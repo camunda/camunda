@@ -89,7 +89,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
   public void importIsNotAffectedWithWrongPackagePath() {
     addDMNInputImportPluginBasePackagesToConfiguration("ding.dong.package.is.wrong");
     addDMNOutputImportPluginBasePackagesToConfiguration("not.a.valid.package.AwesomeOutputAdapter");
-    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<>() {{
       put("amount", 300);
       put("invoiceCategory", "Misc");
     }});
@@ -126,7 +126,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericValues",
       "org.camunda.optimize.testplugin.adapter.variable.dmn5.SetAllStringInputsToFoo"
     );
-    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<>() {{
       put("amount", 300);
       put("invoiceCategory", "notFoo");
     }});
@@ -154,7 +154,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNOutputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput"
     );
-    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
@@ -174,7 +174,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     addDMNInputImportPluginBasePackagesToConfiguration(
       "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues"
     );
-    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
+    final DecisionDefinitionEngineDto decision = deployAndStartDecisionDefinition(new HashMap<>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
