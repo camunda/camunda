@@ -115,9 +115,9 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       final State stateOfJob = jobState.getState(jobKey);
       if (stateOfJob == State.ERROR_THROWN) {
         // todo (#6000): resolve incident for UNHANDLED_ERROR_EVENT
-        // at time of writing the process cannot be fixed, so this incident cannot be resolved
-        final var message = String.format(RESOLVE_UNHANDLED_ERROR_INCIDENT_MESSAGE, jobKey);
-        rejectResolveCommand(command, responseWriter, message, RejectionType.PROCESSING_ERROR);
+        // at time of writing the process cannot be fixed, so just recreate the incident
+        stateWriter.appendFollowUpEvent(
+            keyGenerator.nextKey(), IncidentIntent.CREATED, incidentRecord);
       }
     } else {
       attemptToContinueProcessProcessing(
