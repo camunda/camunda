@@ -30,9 +30,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
@@ -115,15 +118,18 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
-      .orElse(Collections.emptyMap());
+    return reportData.getDefinitions().stream()
+      .map(definitionDto -> definitionService.getDefinition(
+        DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+      ))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .map(ProcessDefinitionOptimizeDto.class::cast)
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .map(Map::entrySet)
+      .flatMap(Collection::stream)
+      // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
+      .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
   }
 
   @Override

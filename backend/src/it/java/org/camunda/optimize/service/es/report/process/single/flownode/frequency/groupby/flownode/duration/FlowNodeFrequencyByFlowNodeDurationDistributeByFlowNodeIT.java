@@ -41,6 +41,9 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
   extends ModelElementFrequencyByModelElementDurationByModelElementIT {
 
   private static final ImmutableList<String> FLOW_NODES = ImmutableList.of(END_EVENT, START_EVENT, USER_TASK_1);
+  private static final ImmutableList<String> FLOW_NODES_2 = ImmutableList.of(
+    END_EVENT + 2, START_EVENT + 2, USER_TASK_2
+  );
 
   @Override
   protected ProcessInstanceEngineDto startProcessInstanceCompleteTaskAndModifyDuration(
@@ -77,6 +80,11 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
     return FLOW_NODES;
   }
 
+  @Override
+  protected List<String> getSecondProcessExpectedModelElements() {
+    return FLOW_NODES_2;
+  }
+
   @Test
   public void multipleProcessInstances_runningInstanceDurationIsCalculated() {
     // given
@@ -103,7 +111,7 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>resultDto = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> resultDto = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -139,14 +147,24 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
       .add()
       .buildList();
     reportData.setFilter(filterYieldingNoResults);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(3L);
-    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), createDurationBucketKey(1000))).isPresent();
-    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), createDurationBucketKey(5000))).isPresent();
-    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), createDurationBucketKey(10000))).isNotPresent();
+    assertThat(MapResultUtil.getDataEntryForKey(
+      result.getFirstMeasureData(),
+      createDurationBucketKey(1000)
+    )).isPresent();
+    assertThat(MapResultUtil.getDataEntryForKey(
+      result.getFirstMeasureData(),
+      createDurationBucketKey(5000)
+    )).isPresent();
+    assertThat(MapResultUtil.getDataEntryForKey(
+      result.getFirstMeasureData(),
+      createDurationBucketKey(10000)
+    )).isNotPresent();
     assertThat(result.getFirstMeasureData()).allSatisfy(bucket -> {
       if (bucket.getKey().equals(createDurationBucketKey(1000)) ||
         bucket.getKey().equals(createDurationBucketKey(5000))) {

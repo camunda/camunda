@@ -62,7 +62,7 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final Double setDuration, final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(final Double setDuration, final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).hasSize(1);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
@@ -73,7 +73,7 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForSeveralProcesses(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForSeveralProcessesInstances(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())

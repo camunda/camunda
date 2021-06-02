@@ -33,8 +33,10 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,7 +80,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
   }
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance =
@@ -124,7 +126,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
   }
 
   @Test
-  public void reportEvaluationForOneProcess_whenAssigneeCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenAssigneeCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance =
@@ -154,6 +156,56 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
         .groupByContains(localDateTimeToString(startOfToday))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_USERNAME)
       .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForMultipleProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    // freeze date to avoid instability when test runs on the edge of the day
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId()
+    );
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId()
+    );
+
+    final Double expectedDuration = 20.;
+    changeDuration(processInstanceDto1, expectedDuration);
+    changeDuration(processInstanceDto2, expectedDuration);
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains(DEFAULT_USERNAME, expectedDuration, DEFAULT_FULLNAME)
+          .distributedByContains(SECOND_USER, expectedDuration, SECOND_USER_FULLNAME)
+      .doAssert(result);
     // @formatter:on
   }
 

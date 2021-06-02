@@ -52,7 +52,7 @@ import static org.camunda.optimize.util.BpmnModels.PARALLEL_GATEWAY;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
-public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class FlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void simpleReportEvaluation_StringVariable() {
@@ -113,7 +113,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "doubleVar",
       VariableType.DOUBLE
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -156,7 +157,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -214,7 +216,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     HyperMapAsserter.MeasureAdder asserter = HyperMapAsserter.asserter()
@@ -261,17 +264,23 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(result.getFirstMeasureData()).isNotNull()
+      .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // the bucket span covers the earliest and the latest date variable value
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData().get(0).getKey()));
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData()
+                                                                                    .get(0)
+                                                                                    .getKey()));
     final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(result.getFirstMeasureData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+      .from(formatter.parse(result.getFirstMeasureData()
+                              .get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1)
+                              .getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue =
       dateVarValue.plusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVarValue.truncatedTo(ChronoUnit.MILLIS);
@@ -318,7 +327,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "testVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -354,7 +364,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -366,6 +377,43 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
         .distributedByContains(END_EVENT, null, END_EVENT)
         .distributedByContains(START_EVENT, 1., START_EVENT)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1)
+      .doAssert(result);
+    //@formatter:on
+  }
+
+  @Test
+  public void resultContainsFlowNodesFromMultipleProcesses() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final String variableName = "stringVar";
+    final Map<String, Object> variables = Collections.singletonMap(variableName, "aStringValue");
+    engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleServiceTaskProcess(key1, SERVICE_TASK_ID_1), variables
+    );
+    engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleServiceTaskProcess(key2, SERVICE_TASK_ID_2), variables
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(key1, ALL_VERSIONS, variableName, VariableType.STRING);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    //@formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupByContains("aStringValue")
+      .distributedByContains(END_EVENT, 2., END_EVENT)
+      .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+      .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+      .distributedByContains(START_EVENT, 2., START_EVENT)
       .doAssert(result);
     //@formatter:on
   }
@@ -396,7 +444,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result counts the multi instance process correctly
     //@formatter:off
@@ -433,7 +482,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version with instance counts from all versions
     // @formatter:off
@@ -469,7 +519,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes only the flownodes of the latest version with instance counts from all versions
     // @formatter:off
@@ -504,7 +555,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance counts from all specified versions (1 and 2)
@@ -542,7 +594,8 @@ public class CountFlowNodeFrequencyByVariableByFlowNodeReportEvaluationIT extend
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance counts from all specified versions (1 and 2)

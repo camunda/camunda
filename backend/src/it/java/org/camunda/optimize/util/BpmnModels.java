@@ -69,7 +69,11 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getSingleUserTaskDiagram(String procDefKey) {
-    return getSingleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, USER_TASK_1);
+    return getSingleUserTaskDiagram(procDefKey, USER_TASK_1);
+  }
+
+  public static BpmnModelInstance getSingleUserTaskDiagram(String procDefKey, String userTaskName) {
+    return getSingleUserTaskDiagram(procDefKey, START_EVENT, END_EVENT, userTaskName);
   }
 
   public static BpmnModelInstance getSingleUserTaskDiagram(String procDefKey, String startEventName,

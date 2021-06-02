@@ -33,7 +33,7 @@ public class UserTaskFrequencyByUserTaskStartDateByCandidateGroupReportEvaluatio
   extends UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvaluationIT {
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();

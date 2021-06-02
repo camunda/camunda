@@ -24,9 +24,12 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
@@ -81,15 +84,17 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
   }
 
   private Map<String, String> getModelElementNames(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
+    return reportData.getDefinitions().stream()
+      .map(definitionDto -> definitionService.getDefinition(
+        DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+      ))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .map(this::extractModelElementNames)
-      .orElse(Collections.emptyMap());
+      .map(Map::entrySet)
+      .flatMap(Collection::stream)
+      // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
+      .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
   }
 
   @Override

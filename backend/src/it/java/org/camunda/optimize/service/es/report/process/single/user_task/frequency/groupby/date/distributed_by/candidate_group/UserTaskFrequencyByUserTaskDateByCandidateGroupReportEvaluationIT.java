@@ -31,8 +31,10 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,7 +77,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
   }
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     final OffsetDateTime now = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
@@ -117,7 +119,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
   }
 
   @Test
-  public void reportEvaluationForOneProcess_whenCandidateGroupCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenCandidateGroupCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -146,6 +148,52 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
         .groupByContains(localDateTimeToString(startOfToday))
           .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_ID)
       .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForMultipleProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    // freeze date to avoid instability when test runs on the edge of the day
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto1.getId(), FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto2.getId(), SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(localDateTimeToString(startOfToday))
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+      .doAssert(result);
     // @formatter:on
   }
 

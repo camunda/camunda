@@ -49,7 +49,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -75,7 +75,7 @@ public class DurationAggregationService {
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForScriptedField(
       context,
       searchSourceBuilder.query(),
-      getIndexName(context),
+      getIndexNames(context),
       durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
@@ -90,7 +90,7 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context, searchSourceBuilder.query(), getIndexName(context), FLOW_NODE_INSTANCES, durationCalculationScript
+      context, searchSourceBuilder.query(), getIndexNames(context), FLOW_NODE_INSTANCES, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
       context, distributedByPart, durationCalculationScript, minMaxStats, this::createEventLimitingFilterQuery
@@ -107,7 +107,7 @@ public class DurationAggregationService {
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
       context,
       searchSourceBuilder.query(),
-      getIndexName(context),
+      getIndexNames(context),
       FLOW_NODE_INSTANCES,
       durationCalculationScript,
       createUserTaskFlowNodeTypeFilter()
@@ -261,7 +261,7 @@ public class DurationAggregationService {
     );
   }
 
-  private String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
-    return getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey());
+  private String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    return getProcessInstanceIndexAliasNames(context.getReportData());
   }
 }

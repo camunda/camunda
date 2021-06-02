@@ -46,7 +46,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
   extends UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT {
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());

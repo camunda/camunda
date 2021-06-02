@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -67,7 +68,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -103,7 +104,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessesInstances() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -126,6 +127,45 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SERVICE_TASK_ID)).isPresent();
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SERVICE_TASK_ID).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10., 30., 20.));
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key1, SERVICE_TASK_ID));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    changeActivityDuration(processInstanceDto1, 10.);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key2, SERVICE_TASK_ID_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    changeActivityDuration(processInstanceDto2, 30.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(processDefinition2.getKey()));
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupedByContains(SERVICE_TASK_ID, calculateExpectedValueGivenDurationsDefaultAggr(10.))
+        .groupedByContains(SERVICE_TASK_ID_2, calculateExpectedValueGivenDurationsDefaultAggr(30.))
+        .groupedByContains(END_EVENT, calculateExpectedValueGivenDurationsDefaultAggr(10., 30.))
+        .groupedByContains(START_EVENT, calculateExpectedValueGivenDurationsDefaultAggr(10., 30.))
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -586,7 +626,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto runningInstance =
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeFlowNodeStartDate(
       runningInstance.getId(),
       USER_TASK_1,

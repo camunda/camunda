@@ -29,7 +29,7 @@ public class VariableAggregationContext {
   private final ZoneId timezone;
   private final CustomBucketDto customBucketDto;
   private final AggregateByDateUnit dateUnit;
-  private final String indexName;
+  private final String[] indexNames;
   private final QueryBuilder baseQueryForMinMaxStats;
   private final List<AggregationBuilder> subAggregations;
   private MinMaxStatDto variableRangeMinMaxStats;

@@ -106,7 +106,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_forOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>result) {
+  protected void assertHyperMap_forOneProcessInstanceWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>result) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -129,7 +129,7 @@ public class UserTaskWorkDurationByUserTaskByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
+  protected void assertHyperMap_ForSeveralProcessInstancesWithAllAggregationTypes(
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
     assertThat(result.getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)

@@ -59,7 +59,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends ProcessGroupByPart
           minMaxStatsService.getMinMaxDateRangeForCrossField(
             context,
             baseQuery,
-            getIndexName(context),
+            getIndexNames(context),
             START_DATE,
             END_DATE
           ));
@@ -74,7 +74,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends ProcessGroupByPart
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxDateRangeForCrossField(
       context,
       searchSourceBuilder.query(),
-      getIndexName(context),
+      getIndexNames(context),
       START_DATE,
       END_DATE
     );

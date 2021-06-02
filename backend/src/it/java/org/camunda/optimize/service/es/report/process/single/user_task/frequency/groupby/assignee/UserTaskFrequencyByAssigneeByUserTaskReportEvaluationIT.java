@@ -27,6 +27,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,7 +64,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   }
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -107,7 +108,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   }
 
   @Test
-  public void reportEvaluationForOneProcess_whenAssigneeCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenAssigneeCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -125,7 +126,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -138,7 +139,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   }
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -161,7 +162,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getFirstProperty()).isEqualTo(ViewProperty.FREQUENCY);
 
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -182,7 +183,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessesInstances() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
@@ -197,7 +198,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -220,6 +222,48 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
           .distributedByContains(USER_TASK_B, 1.)
+      .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance1.getId());
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstance2.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+          .distributedByContains(USER_TASK_1, 1.)
+          .distributedByContains(USER_TASK_2, null)
+        .groupByContains(SECOND_USER, SECOND_USER_FULLNAME)
+          .distributedByContains(USER_TASK_1, null)
+          .distributedByContains(USER_TASK_2, 1.)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -248,7 +292,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -302,7 +347,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -356,7 +402,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     // @formatter:off
@@ -396,8 +443,10 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult1 = reportClient.evaluateHyperMapReport(reportData1).getResult();
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult2 = reportClient.evaluateHyperMapReport(reportData2).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult1 = reportClient.evaluateHyperMapReport(
+      reportData1).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult2 = reportClient.evaluateHyperMapReport(
+      reportData2).getResult();
 
     // then
     // @formatter:off
@@ -438,7 +487,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -450,7 +500,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getFirstMeasureData()).isEmpty();
@@ -514,7 +565,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(flowNodeStatusTestValues.processFilter);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getFirstMeasureData()).hasSize(1);
@@ -547,7 +599,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList());
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     assertThat(actualResult.getFirstMeasureData()).hasSize(1);
@@ -578,15 +631,16 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .measure(ViewProperty.FREQUENCY)
-        .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-          .distributedByContains(USER_TASK_1, 2.)
+      .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
+      .distributedByContains(USER_TASK_1, 2.)
       .doAssert(actualResult);
   }
 
@@ -605,7 +659,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(
+      reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
@@ -634,7 +689,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult = reportClient.evaluateHyperMapReport(reportData).getResult();
+    ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     HyperMapAsserter.asserter()

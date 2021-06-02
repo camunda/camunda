@@ -106,7 +106,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
 
   private MinMaxStatDto getMinMaxDateStats(final ExecutionContext<ProcessReportDataDto> context,
                                            final QueryBuilder baseQuery) {
-    return minMaxStatsService.getMinMaxDateRange(context, baseQuery, getIndexName(context), getDateField());
+    return minMaxStatsService.getMinMaxDateRange(context, baseQuery, getIndexNames(context), getDateField());
   }
 
   @Override

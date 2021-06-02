@@ -36,11 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -65,7 +62,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
           minMaxStatsService.getMinMaxDateRangeForNestedField(
             context,
             baseQuery,
-            getIndexName(context),
+            getIndexNames(context),
             getDateField(),
             getPathToElementField(),
             getFilterQuery(context)
@@ -85,7 +82,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRangeForNestedField(
       context,
       searchSourceBuilder.query(),
-      getIndexName(context),
+      getIndexNames(context),
       getDateField(),
       getPathToElementField(),
       getFilterQuery(context)

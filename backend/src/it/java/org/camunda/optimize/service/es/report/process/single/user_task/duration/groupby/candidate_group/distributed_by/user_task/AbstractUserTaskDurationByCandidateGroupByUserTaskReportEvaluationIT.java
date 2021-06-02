@@ -31,6 +31,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.util.BpmnModels;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +82,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   }
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -129,7 +130,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   }
 
   @Test
-  public void reportEvaluationForOneProcess_whenCandidateCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenCandidateCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto =
@@ -163,7 +164,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   }
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     // set current time to now for easier evaluation of duration of unassigned tasks
     OffsetDateTime now = OffsetDateTime.now();
@@ -196,10 +197,10 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
 
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
-    assertHyperMap_ForOneProcessWithUnassignedTasks(actualResult);
+    assertHyperMap_ForOneProcessInstanceWithUnassignedTasks(actualResult);
   }
 
-  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
+  protected void assertHyperMap_ForOneProcessInstanceWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -259,7 +260,55 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto1.getId(), FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    changeDuration(processInstanceDto1, SET_DURATIONS[0]);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto2.getId(), SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
+    changeDuration(processInstanceDto2, SET_DURATIONS[1]);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+      .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
+      .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]))
+      .distributedByContains(USER_TASK_2, null)
+      .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
+      .distributedByContains(USER_TASK_1, null)
+      .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]))
+      .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessInstances() {
     // given
     // set current time to now for easier evaluation of duration of unassigned tasks
     OffsetDateTime now = OffsetDateTime.now();
@@ -288,10 +337,10 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // then
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult = evaluationResponse.getResult();
-    assertHyperMap_ForSeveralProcesses(actualResult);
+    assertHyperMap_ForSeveralProcessInstances(actualResult);
   }
 
-  protected void assertHyperMap_ForSeveralProcesses(final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
+  protected void assertHyperMap_ForSeveralProcessInstances(final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -317,7 +366,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   }
 
   @Test
-  public void reportEvaluationForSeveralProcessesWithAllAggregationTypes() {
+  public void reportEvaluationForSeveralProcessInstancesWithAllAggregationTypes() {
     // given
     // set current time to now for easier evaluation of duration of unassigned tasks
     OffsetDateTime now = OffsetDateTime.now();
@@ -347,10 +396,10 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
       .getResult();
 
     // then
-    assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(result);
+    assertHyperMap_ForSeveralProcessInstancesWithAllAggregationTypes(result);
   }
 
-  protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
+  protected void assertHyperMap_ForSeveralProcessInstancesWithAllAggregationTypes(
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
     Assertions.assertThat(actualResult.getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)

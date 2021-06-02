@@ -26,10 +26,12 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,7 +76,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -114,7 +116,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public void reportEvaluationForOneProcess_whenCandidateCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenCandidateCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -141,7 +143,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -218,7 +220,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessInstances() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
@@ -248,6 +250,46 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.);
     assertThat(result.getInstanceCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstance1.getId(), FIRST_CANDIDATE_GROUP_ID);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstance2.getId(), SECOND_CANDIDATE_GROUP_ID);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> actualResult = evaluationResponse.getResult();
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+        .groupedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+        .groupedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test

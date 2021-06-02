@@ -29,7 +29,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 
 @RequiredArgsConstructor
 public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDistributedByPart {
@@ -115,7 +115,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
     return minMaxStatsService.getMinMaxDateRange(
       context,
       context.getDistributedByMinMaxBaseQuery(),
-      getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey()),
+      getProcessInstanceIndexAliasNames(context.getReportData()),
       getDateField()
     );
   }

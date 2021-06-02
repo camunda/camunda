@@ -28,6 +28,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -73,7 +74,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -119,7 +120,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   @Test
-  public void reportEvaluationForOneProcess_whenCandidateGroupCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenCandidateGroupCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -151,7 +152,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -197,7 +198,7 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessInstances() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
@@ -237,6 +238,48 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
           .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
           .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
       .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto1.getId(), FIRST_CANDIDATE_GROUP_ID);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto2.getId(), SECOND_CANDIDATE_GROUP_ID);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+        .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, 1., FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
+        .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
+          .distributedByContains(SECOND_CANDIDATE_GROUP_ID, 1., SECOND_CANDIDATE_GROUP_NAME)
+      .doAssert(result);
     // @formatter:on
   }
 

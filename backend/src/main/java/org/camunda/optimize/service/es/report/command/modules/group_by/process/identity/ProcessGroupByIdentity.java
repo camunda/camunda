@@ -40,7 +40,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
@@ -107,16 +109,17 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
   protected abstract IdentityType getIdentityType();
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
+    return reportData.getDefinitions().stream()
+      .map(definitionDto -> definitionService.getDefinition(
+        DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+      ))
+      .filter(Optional::isPresent)
+      .map(Optional::get)
+      .map(ProcessDefinitionOptimizeDto.class::cast)
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
       .map(Map::keySet)
-      .orElse(Collections.emptySet());
+      .flatMap(Collection::stream)
+      .collect(Collectors.toSet());
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,

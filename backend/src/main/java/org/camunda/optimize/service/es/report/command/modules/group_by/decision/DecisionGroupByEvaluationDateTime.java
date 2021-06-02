@@ -59,7 +59,7 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
       context,
       searchSourceBuilder.query(),
-      getIndexName(context),
+      getIndexNames(context),
       EVALUATION_DATE_TIME
     );
 

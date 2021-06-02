@@ -52,7 +52,7 @@ import static org.camunda.optimize.service.es.report.command.service.VariableAgg
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLE_HISTOGRAM_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasNames;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
@@ -91,7 +91,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
       .variablePath(VARIABLES)
       .nestedVariableNameField(getNestedVariableNameField())
       .nestedVariableValueFieldLabel(getNestedVariableValueFieldLabel(getVariableType(context)))
-      .indexName(getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey()))
+      .indexNames(getProcessInstanceIndexAliasNames(context.getReportData()))
       .timezone(context.getTimezone())
       .customBucketDto(context.getReportData().getConfiguration().getDistributeByCustomBucket())
       .dateUnit(getDistributeByDateUnit(context))

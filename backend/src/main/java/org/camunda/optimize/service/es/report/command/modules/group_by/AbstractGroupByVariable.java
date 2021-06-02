@@ -94,7 +94,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
           getVariablePath(),
           getNestedVariableNameFieldLabel(),
           getNestedVariableValueFieldLabel(getVariableType(context)),
-          getIndexName(context),
+          getIndexNames(context),
           baseQuery
         )
       );
@@ -117,7 +117,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .variablePath(getVariablePath())
       .nestedVariableNameField(getNestedVariableNameFieldLabel())
       .nestedVariableValueFieldLabel(getNestedVariableValueFieldLabel(getVariableType(context)))
-      .indexName(getIndexName(context))
+      .indexNames(getIndexNames(context))
       .timezone(context.getTimezone())
       .customBucketDto(context.getReportData().getConfiguration().getCustomBucket())
       .dateUnit(getGroupByDateUnit(context))

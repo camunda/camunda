@@ -93,7 +93,7 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
                                                     final UserTaskDurationTime userTaskDurationTime) {
     return minMaxStatsService.getScriptedMinMaxStats(
       baseQuery,
-      getIndexName(context),
+      getIndexNames(context),
       FLOW_NODE_INSTANCES,
       getDurationScript(userTaskDurationTime),
       createUserTaskFlowNodeTypeFilter()

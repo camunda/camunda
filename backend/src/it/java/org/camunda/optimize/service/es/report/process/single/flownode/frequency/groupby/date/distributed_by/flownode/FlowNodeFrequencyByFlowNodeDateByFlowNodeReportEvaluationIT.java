@@ -30,6 +30,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDateByModelElementReportEvaluationIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.util.DateCreationFreezer;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,12 +55,14 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
 public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationIT
   extends ModelElementFrequencyByModelElementDateByModelElementReportEvaluationIT {
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessDefinition() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -102,6 +106,45 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
   }
 
   @Test
+  public void reportEvaluationForMultipleProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    // freeze date to avoid instability when test runs on the edge of the day
+    final OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key1, SERVICE_TASK_ID_1));
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key2, SERVICE_TASK_ID_2));
+    engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupByContains(localDateTimeToString(startOfToday))
+      .distributedByContains(END_EVENT, 2., END_EVENT)
+      .distributedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_ID_1)
+      .distributedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_ID_2)
+      .distributedByContains(START_EVENT, 2., START_EVENT)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
   public void simpleReportEvaluationById() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
@@ -121,7 +164,7 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       reportClient.evaluateHyperMapReportById(reportId);
 
     // then
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = evaluationResponse.getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
@@ -169,7 +212,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -207,7 +251,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -251,7 +296,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -301,7 +347,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -341,7 +388,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -373,7 +421,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -418,7 +467,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
@@ -458,7 +508,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -489,7 +540,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     final List<ProcessFilterDto<?>> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -530,7 +582,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
         .filterLevel(FilterApplicationLevel.VIEW)
         .add()
         .buildList());
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -567,7 +620,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     final List<HyperMapResultEntryDto> resultData = result.getFirstMeasureData();
@@ -601,7 +655,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -638,7 +693,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       firstDefinition.getVersionAsString(),
       latestDefinition.getVersionAsString()
     ));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -672,7 +728,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
     reportData.setProcessDefinitionVersion(ALL_VERSIONS);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off
@@ -708,7 +765,8 @@ public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationI
       firstDefinition.getVersionAsString(),
       latestDefinition.getVersionAsString()
     ));
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     // @formatter:off

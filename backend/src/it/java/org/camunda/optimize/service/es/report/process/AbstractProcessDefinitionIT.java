@@ -12,6 +12,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -42,16 +43,18 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -330,6 +333,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
       .getId();
+  }
+
+  protected ReportDataDefinitionDto createReportDataDefinitionDto(final String currentKey) {
+    return new ReportDataDefinitionDto(currentKey, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS);
   }
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
