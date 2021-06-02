@@ -17,7 +17,7 @@ exports[`should show bulk operation dropdown 1`] = `
 exports[`should show conflict message if a conflict has happend 1`] = `
 <React.Fragment>
   <React.Fragment>
-    Removing Data Sources deletes all associated Reports and their Alerts.
+    test
     <br />
      
     <br />

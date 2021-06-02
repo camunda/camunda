@@ -18,6 +18,8 @@ import {
   editSource,
   removeSource,
   checkDeleteSourceConflicts,
+  checkSourcesConflicts,
+  deleteSources,
 } from './service';
 
 import AddSourceModal from './modals/AddSourceModal';
@@ -114,13 +116,26 @@ export default withErrorHandling(
                 </Button>
               )
             }
+            bulkActions={[
+              {
+                type: 'delete',
+                action: async (selectedSources) => await deleteSources(collection, selectedSources),
+                checkConflicts: async (selectedSources) =>
+                  await checkSourcesConflicts(collection, selectedSources),
+                conflictMessage: t('common.deleter.affectedMessage.bulk.process'),
+              },
+            ]}
+            onChange={() => {
+              this.getSources();
+              this.props.onChange();
+            }}
             empty={t('home.sources.notCreated')}
             isLoading={!sources}
             columns={[t('home.sources.definitionName'), t('common.tenant.label-plural')]}
             data={
               sources &&
               sources.map((source) => {
-                const {definitionKey, definitionName, definitionType, tenants} = source;
+                const {id, definitionKey, definitionName, definitionType, tenants} = source;
                 const actions = [];
                 if (!readOnly) {
                   if (!hasUnauthorized(tenants)) {
@@ -141,7 +156,7 @@ export default withErrorHandling(
                 }
 
                 return {
-                  id: definitionKey,
+                  id,
                   entityType: 'process',
                   className: definitionType,
                   icon: 'data-source',

@@ -18,7 +18,13 @@ import {format} from 'dates';
 import PublishModal from './PublishModal';
 import UsersModal from './UsersModal';
 import GenerationModal from './GenerationModal';
-import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
+import {
+  loadProcesses,
+  createProcess,
+  removeProcess,
+  cancelPublish,
+  deleteProcesses,
+} from './service';
 
 import './EventsProcesses.scss';
 
@@ -133,6 +139,13 @@ export class EventsProcesses extends React.Component {
               <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
             </Dropdown>
           }
+          bulkActions={[
+            {
+              type: 'delete',
+              action: deleteProcesses,
+            },
+          ]}
+          onChange={this.loadList}
           columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
           data={
             processes &&

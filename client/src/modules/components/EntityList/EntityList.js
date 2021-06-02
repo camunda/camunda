@@ -21,6 +21,7 @@ export default function EntityList({
   name,
   children,
   action,
+  bulkActions,
   isLoading,
   data,
   empty,
@@ -76,10 +77,9 @@ export default function EntityList({
                 ))}
             </Dropdown>
           )}
-          <BulkMenu
-            selectedEntries={selected.map(({id, entityType}) => ({id, entityType}))}
-            onChange={onChange}
-          />
+          {bulkActions && (
+            <BulkMenu bulkActions={bulkActions} selectedEntries={selected} onChange={onChange} />
+          )}
           <div className="action">{action}</div>
         </div>
         {columns && hasResults && (

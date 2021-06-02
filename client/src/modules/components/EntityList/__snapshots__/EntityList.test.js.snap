@@ -18,9 +18,6 @@ exports[`should match snapshot 1`] = `
         onChange={[Function]}
         value=""
       />
-      <BulkMenuErrorHandler
-        selectedEntries={Array []}
-      />
       <div
         className="action"
       >

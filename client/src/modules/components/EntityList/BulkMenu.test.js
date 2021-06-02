@@ -9,22 +9,22 @@ import {shallow} from 'enzyme';
 
 import {Deleter} from 'components';
 
-import {deleteEntities, checkConflicts} from './service';
 import {BulkMenu} from './BulkMenu';
-
-jest.mock('./service', () => ({
-  deleteEntities: jest.fn(),
-  checkConflicts: jest.fn(),
-}));
+import {Dropdown} from '../Dropdown';
 
 const props = {
   selectedEntries: [{id: 'reportId', type: 'report'}],
   onChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  bulkActions: [
+    {type: 'delete', action: jest.fn(), checkConflicts: jest.fn(), conflictMessage: 'test'},
+  ],
 };
 
 beforeEach(() => {
   props.onChange.mockClear();
+  props.bulkActions[0].action.mockClear();
+  props.bulkActions[0].checkConflicts.mockClear();
 });
 
 it('should show bulk operation dropdown', () => {
@@ -42,16 +42,18 @@ it('should not dropdown if there are no selected entries', () => {
 it('should delete selected entities, reset selected items and any conflicts on confirmation', () => {
   const node = shallow(<BulkMenu {...props} />);
 
+  node.find(Dropdown.Option).simulate('click');
   node.find(Deleter).prop('deleteEntity')();
 
-  expect(deleteEntities).toHaveBeenCalledWith(props.selectedEntries);
+  expect(props.bulkActions[0].action).toHaveBeenCalledWith(props.selectedEntries);
   expect(props.onChange).toHaveBeenCalled();
 });
 
 it('should show conflict message if a conflict has happend', () => {
   const node = shallow(<BulkMenu {...props} />);
 
-  node.find(Deleter).prop('onConflict')([{type: 'report'}]);
+  node.find(Dropdown.Option).simulate('click');
+  node.find(Deleter).prop('onConflict')();
 
   expect(node.find(Deleter).prop('descriptionText')).toMatchSnapshot();
 });
@@ -59,7 +61,8 @@ it('should show conflict message if a conflict has happend', () => {
 it('should check for conflicts in the selected entries', () => {
   const node = shallow(<BulkMenu {...props} />);
 
-  node.find(Deleter).prop('checkConflicts')();
+  node.find(Dropdown.Option).simulate('click');
+  node.find(Deleter).prop('checkConflicts')(props.selectedEntries);
 
-  expect(checkConflicts).toHaveBeenCalledWith(props.selectedEntries);
+  expect(props.bulkActions[0].checkConflicts).toHaveBeenCalledWith(props.selectedEntries);
 });

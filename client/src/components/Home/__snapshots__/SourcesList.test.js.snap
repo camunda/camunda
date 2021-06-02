@@ -6,6 +6,16 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
 >
   <EntityList
     action={false}
+    bulkActions={
+      Array [
+        Object {
+          "action": [Function],
+          "checkConflicts": [Function],
+          "conflictMessage": "Removing Data Sources deletes all associated Reports and their Alerts.",
+          "type": "delete",
+        },
+      ]
+    }
     columns={
       Array [
         "Definition Name",
@@ -19,7 +29,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           "className": "process",
           "entityType": "process",
           "icon": "data-source",
-          "id": "defKey",
+          "id": "process:defKey",
           "meta": Array [
             "Not defined, Sales, (Unauthorized Tenant)",
           ],
@@ -31,7 +41,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           "className": "decision",
           "entityType": "process",
           "icon": "data-source",
-          "id": "defKey2",
+          "id": "decision:defKey2",
           "meta": Array [
             "Not defined, Marketing",
           ],
@@ -43,6 +53,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     empty="There are no sources added yet"
     isLoading={false}
     name="Data Sources"
+    onChange={[Function]}
   />
   <DeleterErrorHandler
     checkConflicts={[Function]}
@@ -106,7 +117,7 @@ Object {
   "className": "decision",
   "entityType": "process",
   "icon": "data-source",
-  "id": "defKey2",
+  "id": "decision:defKey2",
   "meta": Array [
     false,
   ],
@@ -129,6 +140,16 @@ exports[`should match snapshot 1`] = `
         Add
       </ForwardRef(Button)>
     }
+    bulkActions={
+      Array [
+        Object {
+          "action": [Function],
+          "checkConflicts": [Function],
+          "conflictMessage": "Removing Data Sources deletes all associated Reports and their Alerts.",
+          "type": "delete",
+        },
+      ]
+    }
     columns={
       Array [
         "Definition Name",
@@ -148,7 +169,7 @@ exports[`should match snapshot 1`] = `
           "className": "process",
           "entityType": "process",
           "icon": "data-source",
-          "id": "defKey",
+          "id": "process:defKey",
           "meta": Array [
             "Not defined, Sales, (Unauthorized Tenant)",
           ],
@@ -171,7 +192,7 @@ exports[`should match snapshot 1`] = `
           "className": "decision",
           "entityType": "process",
           "icon": "data-source",
-          "id": "defKey2",
+          "id": "decision:defKey2",
           "meta": Array [
             "Not defined, Marketing",
           ],
@@ -183,6 +204,7 @@ exports[`should match snapshot 1`] = `
     empty="There are no sources added yet"
     isLoading={false}
     name="Data Sources"
+    onChange={[Function]}
   />
   <DeleterErrorHandler
     checkConflicts={[Function]}

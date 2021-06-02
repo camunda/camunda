@@ -11,13 +11,12 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
-import {deleteEntities, checkConflicts} from './service';
-
-export function BulkMenu({selectedEntries, onChange, mightFail}) {
+export function BulkMenu({bulkActions, selectedEntries, onChange, mightFail}) {
   const bulkRef = useRef();
   const selectionMode = selectedEntries.length > 0;
-  const [deleting, setDeleting] = useState(false);
-  const [conflictType, setConflictType] = useState();
+  const [action, setAction] = useState(null);
+  const [conflict, setConflict] = useState(false);
+  const deleteAction = bulkActions.find((action) => action.type === 'delete');
 
   // remove the primary state of the main button when bulk actions button exists
   useEffect(() => {
@@ -33,6 +32,11 @@ export function BulkMenu({selectedEntries, onChange, mightFail}) {
     }
   }, [selectionMode]);
 
+  function reset() {
+    setConflict(false);
+    setAction(null);
+  }
+
   return (
     <div ref={bulkRef} className="BulkMenu">
       {selectionMode && (
@@ -43,50 +47,42 @@ export function BulkMenu({selectedEntries, onChange, mightFail}) {
             'common.itemSelected.' + (selectedEntries.length > 1 ? 'label-plural' : 'label')
           )}`}
         >
-          <Dropdown.Option
-            onClick={() => {
-              setDeleting(true);
-            }}
-          >
-            {t('common.delete')}
-          </Dropdown.Option>
+          {deleteAction && (
+            <Dropdown.Option onClick={() => setAction(deleteAction)}>
+              {t('common.delete')}
+            </Dropdown.Option>
+          )}
         </Dropdown>
       )}
 
       <Deleter
         type="items"
-        entity={deleting}
+        entity={action?.type === 'delete' && selectedEntries}
         deleteEntity={() =>
           mightFail(
-            deleteEntities(selectedEntries),
+            action.action(selectedEntries),
             () => {
-              setConflictType();
+              reset();
               onChange();
             },
             showError
           )
         }
-        onClose={() => {
-          setDeleting(false);
-          setConflictType();
-        }}
+        onClose={reset}
         deleteButtonText={t('common.delete')}
         descriptionText={
           <>
-            {conflictType && (
+            {conflict && (
               <>
-                {t(`common.deleter.affectedMessage.bulk.${conflictType}`)}
+                {action.conflictMessage}
                 <br /> <br />
               </>
             )}
             {t('common.deleter.areYouSureSelected')}
           </>
         }
-        checkConflicts={() => checkConflicts(selectedEntries)}
-        onConflict={(conflictedItems) => {
-          const hasReport = conflictedItems.some((item) => item.type === 'report');
-          setConflictType(hasReport ? 'process' : 'report');
-        }}
+        checkConflicts={action?.checkConflicts}
+        onConflict={() => setConflict(true)}
       />
     </div>
   );

@@ -38,12 +38,14 @@ export default withErrorHandling(
           this.setState({loading: true});
           this.props.mightFail(
             checkConflicts(entity),
-            async ({conflictedItems}) => {
-              if (this.props.onConflict && conflictedItems.length > 0) {
-                this.props.onConflict(conflictedItems);
+            async (response) => {
+              if (typeof response === 'boolean') {
+                if (response) {
+                  this.props.onConflict?.();
+                }
               } else {
                 this.setState({
-                  conflicts: conflictedItems.reduce((obj, conflict) => {
+                  conflicts: response.conflictedItems.reduce((obj, conflict) => {
                     obj[conflict.type] = obj[conflict.type] || [];
                     obj[conflict.type].push(conflict);
                     return obj;
@@ -64,7 +66,7 @@ export default withErrorHandling(
       }
 
       if (prevState.loading && !this.state.loading) {
-        this.cancelButton.current.focus();
+        this.cancelButton.current?.focus();
       }
     }
 

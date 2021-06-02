@@ -104,3 +104,58 @@ export async function importEntity(json, collectionId) {
   }
   return await post('api/import', json, {query});
 }
+
+export async function deleteEntities(entities, collectionId) {
+  const query = {};
+  if (collectionId) {
+    query.collectionId = collectionId;
+  }
+
+  return await post(`api/entities/delete`, formatRequest(entities));
+}
+
+export async function checkConflicts(entities, collectionId) {
+  const query = {};
+  if (collectionId) {
+    query.collectionId = collectionId;
+  }
+
+  const response = await post(`api/entities/delete-conflicts`, formatRequest(entities));
+
+  return await response.json();
+}
+
+export async function deleteAlerts(alerts) {
+  return await post('api/alert/delete', getIds(alerts));
+}
+
+export async function deleteSources(collectionId, scopes) {
+  return await post(`api/collection/${collectionId}/scope/delete`, getIds(scopes));
+}
+
+export async function checkSourcesConflicts(collectionId, scopes) {
+  const response = await post(
+    `api/collection/${collectionId}/scope/delete-conflicts`,
+    getIds(scopes)
+  );
+
+  return await response.json();
+}
+
+export async function deleteUsers(collectionId, users) {
+  return await post(`api/collection/${collectionId}/roles/delete`, getIds(users));
+}
+
+function getIds(entities) {
+  return entities.map(({id}) => id);
+}
+
+function formatRequest(entities) {
+  return entities.reduce(
+    (entitesMap, entity) => {
+      entitesMap[entity.entityType + 's'].push(entity.id);
+      return entitesMap;
+    },
+    {reports: [], dashboards: [], collections: []}
+  );
+}

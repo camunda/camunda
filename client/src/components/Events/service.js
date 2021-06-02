@@ -95,3 +95,10 @@ export async function loadExternalGroups(query) {
 
   return await response.json();
 }
+
+export async function deleteProcesses(processes) {
+  return await post(
+    'api/eventBasedProcess/delete',
+    processes.map(({id}) => id)
+  );
+}

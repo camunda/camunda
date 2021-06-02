@@ -14,7 +14,7 @@ import {withErrorHandling} from 'HOC';
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 
-import {addUser, editUser, removeUser, getUsers} from './service';
+import {addUser, editUser, removeUser, getUsers, deleteUsers} from './service';
 import './UserList.scss';
 
 export default withErrorHandling(
@@ -76,6 +76,13 @@ export default withErrorHandling(
                 </Button>
               )
             }
+            bulkActions={[
+              {
+                type: 'delete',
+                action: (selectedUsers) => deleteUsers(collection, selectedUsers),
+              },
+            ]}
+            onChange={this.updateList}
             empty={t('common.notFound')}
             isLoading={!users}
             columns={[t('common.name'), t('home.members'), t('home.roles.role')]}
@@ -88,7 +95,7 @@ export default withErrorHandling(
                 const isLastManager = role === 'manager' && numberOfManagers === 1;
 
                 return {
-                  id: identity.id,
+                  id: user.id,
                   entityType: 'user',
                   className: identity.type,
                   icon: identity.type === 'group' ? 'user-group' : 'user',
