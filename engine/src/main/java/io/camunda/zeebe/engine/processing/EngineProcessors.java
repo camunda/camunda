@@ -200,7 +200,7 @@ public final class EngineProcessors {
   }
 
   private static void addIncidentProcessors(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {

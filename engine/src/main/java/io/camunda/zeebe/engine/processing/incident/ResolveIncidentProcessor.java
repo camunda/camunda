@@ -22,8 +22,8 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -54,7 +54,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final JobState jobState;
 
   public ResolveIncidentProcessor(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
