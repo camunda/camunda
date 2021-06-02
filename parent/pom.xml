@@ -134,7 +134,6 @@
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <!-- TODO: may not be necessary to have this, though we will want it for the update tests -->
     <backwards.compat.version>1.0.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
   </properties>
