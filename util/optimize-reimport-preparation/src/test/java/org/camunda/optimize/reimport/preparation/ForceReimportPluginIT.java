@@ -3,9 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.plugin.elasticsearch;
+package org.camunda.optimize.reimport.preparation;
 
-import org.camunda.optimize.AbstractIT;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,8 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
-public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
+@Slf4j
+public class ForceReimportPluginIT extends AbstractEventProcessIT {
 
   private ConfigurationService configurationService;
 
@@ -32,30 +34,28 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
   }
 
   @Test
-  public void fixedCustomHeadersAddedToElasticsearchRequest() {
+  public void fixedElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
-    statusClient.getStatus();
+    forceReimportOfEngineData();
 
     // then
     esMockServer.verify(request().withHeader(new Header("Authorization", "Bearer fixedToken")));
   }
 
   @Test
-  public void dynamicCustomHeadersAddedToElasticsearchRequest() {
+  public void dynamicElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
-    statusClient.getStatus();
-    statusClient.getStatus();
-    statusClient.getStatus();
+    forceReimportOfEngineData();
 
     // then
     final RequestDefinition[] allRequests = esMockServer.retrieveRecordedRequests(null);
@@ -68,7 +68,7 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
   }
 
   @Test
-  public void multipleCustomHeadersAddedToElasticsearchRequest() {
+  public void multipleElasticsearchCustomHeaderPluginsAreUsedDuringForcedReimport() {
     // given
     String[] basePackages = {
       "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
@@ -78,13 +78,17 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
-    statusClient.getStatus();
+    forceReimportOfEngineData();
 
     // then
     esMockServer.verify(request().withHeaders(
       new Header("Authorization", "Bearer dynamicToken_0"),
       new Header("CustomHeader", "customValue")
     ), VerificationTimes.once());
+  }
+
+  private void forceReimportOfEngineData() {
+    ReimportPreparation.performReimport(configurationService);
   }
 
   private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(String... basePackages) {
