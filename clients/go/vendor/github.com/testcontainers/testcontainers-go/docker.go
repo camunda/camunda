@@ -23,8 +23,10 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/moby/term"
 	"github.com/pkg/errors"
 
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -45,8 +47,6 @@ type DockerContainer struct {
 	WaitingFor wait.Strategy
 	Image      string
 
-	// Cache to retrieve container information without re-fetching them from dockerd
-	raw               *types.ContainerJSON
 	provider          *DockerProvider
 	sessionID         uuid.UUID
 	terminationSignal chan bool
@@ -130,6 +130,9 @@ func (c *DockerContainer) MappedPort(ctx context.Context, port nat.Port) (nat.Po
 		if port.Proto() != "" && k.Proto() != port.Proto() {
 			continue
 		}
+		if len(p) == 0 {
+			continue
+		}
 		return nat.NewPort(k.Proto(), p[0].HostPort)
 	}
 
@@ -173,6 +176,11 @@ func (c *DockerContainer) Start(ctx context.Context) error {
 
 // Terminate is used to kill the container. It is usually triggered by as defer function.
 func (c *DockerContainer) Terminate(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case c.terminationSignal <- true:
+	default:
+	}
 	err := c.provider.client.ContainerRemove(ctx, c.GetContainerID(), types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		Force:         true,
@@ -180,23 +188,18 @@ func (c *DockerContainer) Terminate(ctx context.Context) error {
 
 	if err == nil {
 		c.sessionID = uuid.UUID{}
-		c.raw = nil
 	}
 
 	return err
 }
 
 func (c *DockerContainer) inspectContainer(ctx context.Context) (*types.ContainerJSON, error) {
-	if c.raw != nil {
-		return c.raw, nil
-	}
 	inspect, err := c.provider.client.ContainerInspect(ctx, c.ID)
 	if err != nil {
 		return nil, err
 	}
-	c.raw = &inspect
 
-	return c.raw, nil
+	return &inspect, nil
 }
 
 // Logs will fetch both STDOUT and STDERR from the current container. Returns a
@@ -341,10 +344,14 @@ func (c *DockerContainer) CopyFileToContainer(ctx context.Context, hostFilePath 
 // from the container and will send them to each added LogConsumer
 func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 	go func() {
+		since := ""
+		// if the socket is closed we will make additional logs request with updated Since timestamp
+	BEGIN:
 		options := types.ContainerLogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 			Follow:     true,
+			Since:      since,
 		}
 
 		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
@@ -370,6 +377,12 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				h := make([]byte, 8)
 				_, err := r.Read(h)
 				if err != nil {
+					// proper type matching requires https://go-review.googlesource.com/c/go/+/250357/ (go 1.16)
+					if strings.Contains(err.Error(), "use of closed connection") {
+						now := time.Now()
+						since = fmt.Sprintf("%d.%09d", now.Unix(), int64(now.Nanosecond()))
+						goto BEGIN
+					}
 					// this explicitly ignores errors
 					// because we want to keep procesing even if one of our reads fails
 					continue
@@ -381,7 +394,7 @@ func (c *DockerContainer) StartLogProducer(ctx context.Context) error {
 				}
 				logType := h[0]
 				if logType > 2 {
-					panic(fmt.Sprintf("received inavlid log type: %d", logType))
+					panic(fmt.Sprintf("received invalid log type: %d", logType))
 				}
 
 				// a map of the log type --> int representation in the header, notice the first is blank, this is stdin, but the go docker client doesn't allow following that in logs
@@ -425,6 +438,11 @@ type DockerNetwork struct {
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
 func (n *DockerNetwork) Remove(ctx context.Context) error {
+	select {
+	// close reaper if it was created
+	case n.terminationSignal <- true:
+	default:
+	}
 	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
@@ -463,6 +481,7 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	}
 
 	buildOptions := types.ImageBuildOptions{
+		BuildArgs:  img.GetBuildArgs(),
 		Dockerfile: img.GetDockerfile(),
 		Context:    buildContext,
 		Tags:       []string{repoTag},
@@ -471,6 +490,14 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 	resp, err := p.client.ImageBuild(ctx, buildContext, buildOptions)
 	if err != nil {
 		return "", err
+	}
+
+	if img.ShouldPrintBuildLog() {
+		termFd, isTerm := term.GetFdInfo(os.Stderr)
+		err = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stderr, termFd, isTerm, nil)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// need to read the response from Docker, I think otherwise the image
