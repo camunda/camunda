@@ -1,5 +1,13 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
 package io.camunda.zeebe.test.util.testcontainers;
 
+import java.time.Duration;
 import org.testcontainers.containers.GenericContainer;
 
 /**
@@ -18,7 +26,8 @@ import org.testcontainers.containers.GenericContainer;
  * <p>TODO(npepinpe): document, and add to zeebe-test-container as base capability
  */
 public final class RemoteDebugger {
-  private static final int DEFAULT_REMOTE_DEBUGGER_PORT = 5005;
+  public static final int DEFAULT_REMOTE_DEBUGGER_PORT = 5005;
+  public static final Duration DEFAULT_START_TIMEOUT = Duration.ofMinutes(5);
 
   private RemoteDebugger() {}
 
@@ -42,5 +51,7 @@ public final class RemoteDebugger {
             + port
             + " "
             + javaOpts);
+
+    container.withStartupTimeout(DEFAULT_START_TIMEOUT);
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.test.util.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
@@ -19,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
+import org.agrona.LangUtil;
 import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,7 @@ final class ContainerState implements CloseableResource {
 
   private String brokerVersion;
   private String gatewayVersion;
+  private boolean withRemoteDebugging;
 
   public ZeebeClient client() {
     return client;
@@ -86,6 +89,10 @@ final class ContainerState implements CloseableResource {
   }
 
   public void start(final boolean enableDebug) {
+    start(enableDebug, false);
+  }
+
+  public void start(final boolean enableDebug, final boolean withRemoteDebugging) {
     final String contactPoint;
     broker =
         new ZeebeContainer(ZeebeTestContainerDefaults.defaultTestImage().withTag(brokerVersion))
@@ -96,6 +103,19 @@ final class ContainerState implements CloseableResource {
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
             .withZeebeData(volume)
             .withNetwork(network);
+    this.withRemoteDebugging = withRemoteDebugging;
+
+    if (withRemoteDebugging) {
+      RemoteDebugger.configureContainer(broker);
+      LOG.info("================================================");
+      LOG.info("About to start broker....");
+      LOG.info(
+          "The broker will wait for a debugger to connect to it at port "
+              + RemoteDebugger.DEFAULT_REMOTE_DEBUGGER_PORT
+              + ". It will wait for "
+              + RemoteDebugger.DEFAULT_START_TIMEOUT.toString());
+      LOG.info("================================================");
+    }
 
     if (enableDebug) {
       broker = broker.withEnv("ZEEBE_DEBUG", "true");
@@ -125,6 +145,7 @@ final class ContainerState implements CloseableResource {
     return partitionsActuatorClient;
   }
 
+  @SuppressWarnings("java:S2925") // allow Thread.sleep usage in test if remote debugging is enabled
   public void onFailure() {
     if (broker != null) {
       log("Broker", broker.getLogs());
@@ -132,6 +153,16 @@ final class ContainerState implements CloseableResource {
 
     if (gateway != null) {
       log("Gateway", gateway.getLogs());
+    }
+
+    if (withRemoteDebugging) {
+      try {
+        LOG.info("Blocking for an hour to allow analysis with remote debugging");
+        Thread.sleep(Duration.ofHours(1).toMillis());
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        LangUtil.rethrowUnchecked(e);
+      }
     }
   }
 
