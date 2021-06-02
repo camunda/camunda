@@ -9,14 +9,16 @@ import {shallow} from 'enzyme';
 
 import {storeLicense} from './service';
 
-import License from './License';
+import {License} from './License';
 
 jest.mock('./service', () => ({
   storeLicense: jest.fn().mockReturnValue({}),
 }));
 
 it('should store a new license', async () => {
-  const node = shallow(<License />);
+  const node = shallow(
+    <License mightFail={jest.fn().mockImplementation((data, cb) => cb(data))} />
+  );
 
   node.find('textarea').simulate('change', {target: {value: 'new license key'}});
   node.find('Form').simulate('submit', {preventDefault: jest.fn()});

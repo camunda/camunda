@@ -8,29 +8,31 @@ import React, {useState, useEffect} from 'react';
 
 import {Form, Labeled, Button, MessageBox} from 'components';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
 
 import {Header, Footer} from '..';
 import {validateLicense, storeLicense} from './service';
 
 import './License.scss';
 
-export default function License() {
+export function License({mightFail}) {
   const [licenseInfo, setLicenseInfo] = useState(null);
+  const [error, setError] = useState(null);
   const [licenseText, setLicenseText] = useState('');
   const [willReload, setWillReload] = useState(false);
 
   useEffect(() => {
-    (async () => setLicenseInfo(await validateLicense()))();
-  }, []);
+    mightFail(validateLicense(), setLicenseInfo, setError);
+  }, [mightFail]);
 
   return (
     <>
       <Header noActions />
       <main className="License">
-        {licenseInfo && (
-          <MessageBox type={licenseInfo.errorCode ? 'error' : 'success'}>
-            {licenseInfo.errorCode ? (
-              t('apiErrors.' + licenseInfo.errorCode)
+        {(licenseInfo || error) && (
+          <MessageBox type={error ? 'error' : 'success'}>
+            {error ? (
+              error.message
             ) : (
               <>
                 {t('license.licensedFor')} {licenseInfo.customerId}.{' '}
@@ -51,14 +53,16 @@ export default function License() {
           onSubmit={async (evt) => {
             evt.preventDefault();
 
-            const result = await storeLicense(licenseText);
-
-            if (!result.errorCode) {
-              setTimeout(() => (window.location.href = './'), 10000);
-              setWillReload(true);
-            }
-
-            setLicenseInfo(result);
+            mightFail(
+              storeLicense(licenseText),
+              (license) => {
+                setError(null);
+                setLicenseInfo(license);
+                setTimeout(() => (window.location.href = './'), 10000);
+                setWillReload(true);
+              },
+              setError
+            );
           }}
         >
           <Labeled label={t('license.licenseKey')}>
@@ -76,3 +80,5 @@ export default function License() {
     </>
   );
 }
+
+export default withErrorHandling(License);
