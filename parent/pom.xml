@@ -1117,7 +1117,6 @@
           <version>${plugin.version.proto-backwards-compatibility}</version>
           <configuration>
             <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
-            <allowBreakingChanges>true</allowBreakingChanges>
           </configuration>
           <executions>
             <execution>
