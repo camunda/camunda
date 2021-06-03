@@ -82,6 +82,8 @@ spec:
       - name: JAVA_TOOL_OPTIONS
         value: |
           -XX:MaxRAMFraction=\$(LIMITS_CPU)
+      - name: CI
+        value: "true"
     resources:
       limits:
         cpu: 2
