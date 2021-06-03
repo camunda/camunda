@@ -458,18 +458,6 @@
           <type>war</type>
           <version>${project.version}</version>
         </dependency>
-        <dependency>
-          <groupId>org.camunda.optimize</groupId>
-          <artifactId>optimize-main-test-plugin</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.camunda.optimize</groupId>
-          <artifactId>optimize-pluginloading-test-plugin</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-        </dependency>
       </dependencies>
 
       <build>
@@ -654,6 +642,18 @@
                 </configuration>
               </execution>
             </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.camunda.optimize</groupId>
+                <artifactId>optimize-main-test-plugin</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.camunda.optimize</groupId>
+                <artifactId>optimize-pluginloading-test-plugin</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
