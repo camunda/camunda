@@ -7,8 +7,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Operate Importer 1.0</name>
-  <artifactId>operate-importer-1_0</artifactId>
+  <name>Operate Importer 1.1</name>
+  <artifactId>operate-importer-1_1</artifactId>
 
   <dependencies>
 
@@ -23,7 +23,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>compile</scope>
-      <version>1.0.0</version>
+      <version>${version.zeebe}</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 
@@ -62,7 +62,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v100</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v110</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

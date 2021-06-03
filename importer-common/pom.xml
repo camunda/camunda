@@ -8,7 +8,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <name>Operate Importer Common</name>
-  <artifactId>operate-qa-importer-common</artifactId>
+  <artifactId>operate-importer-common</artifactId>
 
   <dependencies>
     <dependency>
