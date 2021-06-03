@@ -50,6 +50,10 @@
         {
           "code": "java.method.removed",
           "old": "method io.camunda.zeebe.broker.Broker io.camunda.zeebe.test.EmbeddedBrokerRule::getBroker()"
+        },
+        {
+          "code": "java.class.externalClassNoLongerExposedInAPI",
+          "justification": "The changes above caused us to no longer expose certain types in the API, however we do not want to expose these types, as such ignore these for this release"
         }
       ]
     }
