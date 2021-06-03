@@ -79,7 +79,7 @@ it('should catch errors', (done) => {
   });
 });
 
-it('should pass errors via props', (done) => {
+it('should pass an error and reset it via props', (done) => {
   const error = new Error();
   const Component = withErrorHandling(
     class extends React.Component {
@@ -94,7 +94,15 @@ it('should pass errors via props', (done) => {
         );
       }
       render() {
-        return (this.props.error && this.props.error.toString()) || null;
+        return (
+          (this.props.error && (
+            <>
+              {this.props.error.toString()}
+              <button onClick={() => this.props.resetError()} />
+            </>
+          )) ||
+          null
+        );
       }
     }
   );
@@ -103,6 +111,8 @@ it('should pass errors via props', (done) => {
   setTimeout(async () => {
     await node.update();
     expect(node).toIncludeText(error.toString());
+    node.find('button').simulate('click');
+    expect(node).not.toIncludeText(error.toString());
     done();
   });
 });

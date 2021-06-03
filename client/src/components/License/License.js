@@ -15,14 +15,13 @@ import {validateLicense, storeLicense} from './service';
 
 import './License.scss';
 
-export function License({mightFail}) {
+export function License({mightFail, error, resetError}) {
   const [licenseInfo, setLicenseInfo] = useState(null);
-  const [error, setError] = useState(null);
   const [licenseText, setLicenseText] = useState('');
   const [willReload, setWillReload] = useState(false);
 
   useEffect(() => {
-    mightFail(validateLicense(), setLicenseInfo, setError);
+    mightFail(validateLicense(), setLicenseInfo);
   }, [mightFail]);
 
   return (
@@ -50,19 +49,15 @@ export function License({mightFail}) {
         )}
         <Form
           compact
-          onSubmit={async (evt) => {
+          onSubmit={(evt) => {
             evt.preventDefault();
 
-            mightFail(
-              storeLicense(licenseText),
-              (license) => {
-                setError(null);
-                setLicenseInfo(license);
-                setTimeout(() => (window.location.href = './'), 10000);
-                setWillReload(true);
-              },
-              setError
-            );
+            mightFail(storeLicense(licenseText), (license) => {
+              resetError();
+              setLicenseInfo(license);
+              setTimeout(() => (window.location.href = './'), 10000);
+              setWillReload(true);
+            });
           }}
         >
           <Labeled label={t('license.licenseKey')}>
