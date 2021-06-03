@@ -33,7 +33,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-qa-importer</artifactId>
+      <artifactId>operate-importer</artifactId>
       <version>${project.version}</version>
     </dependency>
 
