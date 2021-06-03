@@ -15,6 +15,7 @@
     <module>data-generator</module>
     <module>importer-common</module>
     <module>importer-100</module>
+    <module>importer-110</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>

@@ -31,6 +31,12 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-importer-110</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- SPRING BOOT -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
