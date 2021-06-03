@@ -193,7 +193,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       // There is no snapshot, but the log has been compacted!
       throw new IllegalStateException(
           String.format(
-              "Expected to find a snapshot at index >= log's first index %d, but found snapshot %d",
+              "Expected to find a snapshot at index >= log's first index %d, but found snapshot %d. A previous snapshot is most likely corrupted.",
               raftLog.getFirstIndex(), currentSnapshotIndex));
     }
   }
@@ -286,16 +286,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void removeRoleChangeListener(final RaftRoleChangeListener listener) {
     roleChangeListeners.remove(listener);
-  }
-
-  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
-  public void addFailureListener(final FailureListener listener) {
-    failureListeners.add(listener);
-  }
-
-  /** Remove a failure listener */
-  public void removeFailureListener(final FailureListener listener) {
-    failureListeners.remove(listener);
   }
 
   /**
@@ -544,6 +534,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   @Override
   public HealthStatus getHealthStatus() {
     return health;
+  }
+
+  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
+  public void addFailureListener(final FailureListener listener) {
+    failureListeners.add(listener);
+  }
+
+  /** Remove a failure listener */
+  public void removeFailureListener(final FailureListener listener) {
+    failureListeners.remove(listener);
   }
 
   private void notifyRoleChangeListeners() {
