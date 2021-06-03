@@ -87,10 +87,10 @@ spec:
     resources:
       limits:
         cpu: 2
-        memory: 2Gi
+        memory: 4Gi
       requests:
         cpu: 2
-        memory: 2Gi
+        memory: 4Gi
   - name: docker
     image: docker:18.06-dind
     args: ["--storage-driver=overlay2"]
