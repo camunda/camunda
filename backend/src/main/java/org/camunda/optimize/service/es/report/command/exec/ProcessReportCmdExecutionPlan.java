@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 @Slf4j
 public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, ProcessReportDataDto> {
@@ -49,7 +50,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
 
   @Override
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
-    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
+    final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
     queryFilterEnhancer.addFilterToQuery(
       boolQueryBuilder,
       getAllFilters(context.getReportData()),
@@ -61,18 +62,22 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
 
   @Override
   protected BoolQueryBuilder setupUnfilteredBaseQuery(final ProcessReportDataDto reportData) {
-    return DefinitionQueryUtil.createDefinitionQuery(
-      reportData.getDefinitionKey(),
-      reportData.getDefinitionVersions(),
-      reportData.getTenantIds(),
-      new ProcessInstanceIndex(reportData.getProcessDefinitionKey()),
-      processDefinitionReader::getLatestVersionToKey
-    );
+    final BoolQueryBuilder multiDefinitionFilterQuery = boolQuery().minimumShouldMatch(1);
+    reportData.getDefinitions().forEach(definitionDto -> multiDefinitionFilterQuery.should(
+      DefinitionQueryUtil.createDefinitionQuery(
+        definitionDto.getKey(),
+        definitionDto.getVersions(),
+        definitionDto.getTenantIds(),
+        new ProcessInstanceIndex(definitionDto.getKey()),
+        processDefinitionReader::getLatestVersionToKey
+      )
+    ));
+    return multiDefinitionFilterQuery;
   }
 
   @Override
-  protected String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
-    return getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey());
+  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
 
   @Override

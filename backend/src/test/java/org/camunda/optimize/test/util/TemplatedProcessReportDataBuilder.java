@@ -31,7 +31,7 @@ public class TemplatedProcessReportDataBuilder {
     Collections.singletonList(ReportDataDefinitionDto.builder().build());
   private String variableName;
   private VariableType variableType;
-  private AggregateByDateUnit groupByDateInterval;
+  private AggregateByDateUnit groupByDateInterval = AggregateByDateUnit.AUTOMATIC;
   private AggregateByDateUnit distributeByDateInterval;
   private AggregateByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;

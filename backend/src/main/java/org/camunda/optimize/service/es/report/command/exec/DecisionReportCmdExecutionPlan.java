@@ -16,13 +16,14 @@ import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPa
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.util.DefinitionQueryUtil;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 @Slf4j
 public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, DecisionReportDataDto> {
@@ -44,25 +45,30 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
 
   @Override
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<DecisionReportDataDto> context) {
-    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
+    final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
     queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, context.getReportData().getFilter(), context.getTimezone());
     return boolQueryBuilder;
   }
 
   @Override
   protected BoolQueryBuilder setupUnfilteredBaseQuery(final DecisionReportDataDto reportData) {
-    return createDefinitionQuery(
-      reportData.getDefinitionKey(),
-      reportData.getDefinitionVersions(),
-      reportData.getTenantIds(),
-      new DecisionInstanceIndex(reportData.getDefinitionKey()),
-      decisionDefinitionReader::getLatestVersionToKey
-    );
+    final BoolQueryBuilder definitionFilterQuery = boolQuery().minimumShouldMatch(1);
+    // for decision reports only one (the first) definition is supported
+    reportData.getDefinitions().stream().findFirst().ifPresent(definitionDto -> definitionFilterQuery.should(
+      DefinitionQueryUtil.createDefinitionQuery(
+        definitionDto.getKey(),
+        definitionDto.getVersions(),
+        definitionDto.getTenantIds(),
+        new DecisionInstanceIndex(definitionDto.getKey()),
+        decisionDefinitionReader::getLatestVersionToKey
+      )
+    ));
+    return definitionFilterQuery;
   }
 
   @Override
-  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
-    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
+  protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
+    return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
   }
 
   @Override

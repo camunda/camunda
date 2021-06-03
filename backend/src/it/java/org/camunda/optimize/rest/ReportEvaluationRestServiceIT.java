@@ -18,11 +18,9 @@ import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEva
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -31,10 +29,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Filt
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
@@ -48,7 +44,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
-import org.camunda.optimize.util.DmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -68,8 +63,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
@@ -109,83 +102,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-  }
-
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateReportById_withMultipleDefinitionsOnlyDataForTheFirstIsIncluded(final ReportType reportType) {
-    // given
-    final String key1 = "key1";
-    final String key2 = "key2";
-    // note: we are keeping track of the definition id here as the instance id's are not easily obtainable for
-    // decisions
-    final String firstDefinitionId;
-    switch (reportType) {
-      case PROCESS:
-        firstDefinitionId = engineIntegrationExtension
-          .deployAndStartProcess(BpmnModels.getSingleServiceTaskProcess(key1))
-          .getDefinitionId();
-        engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleServiceTaskProcess(key2));
-        break;
-      case DECISION:
-        firstDefinitionId = engineIntegrationExtension
-          .deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key1))
-          .getId();
-        engineIntegrationExtension.deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key2));
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
-    }
-
-    importAllEngineEntitiesFromScratch();
-
-    final List<ReportDataDefinitionDto> definitions = Arrays.asList(
-      ReportDataDefinitionDto.builder()
-        .key(key1)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build(),
-      ReportDataDefinitionDto.builder()
-        .key(key2)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build()
-    );
-
-    // when
-    switch (reportType) {
-      case PROCESS:
-        final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> processReportResponse =
-          reportClient.evaluateRawReportById(addSingleProcessReportWithDefinition(
-            TemplatedProcessReportDataBuilder.createReportData()
-              .setReportDataType(ProcessReportDataType.RAW_DATA)
-              .definitions(definitions)
-              .build()
-          ));
-
-        // then
-        assertThat(processReportResponse.getResult().getData())
-          .extracting(RawDataProcessInstanceDto::getProcessDefinitionId)
-          .containsExactly(firstDefinitionId);
-        break;
-      case DECISION:
-        final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> decisionReportResponse =
-          reportClient.evaluateDecisionRawReportById(addSingleDecisionReportWithDefinition(
-            DecisionReportDataBuilder.create()
-              .setReportDataType(DecisionReportDataType.RAW_DATA)
-              .definitions(definitions)
-              .build()
-          ));
-
-        // then
-        assertThat(decisionReportResponse.getResult().getData())
-          .extracting(RawDataDecisionInstanceDto::getDecisionDefinitionId)
-          .containsExactly(firstDefinitionId);
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
-    }
-
   }
 
   @Test
@@ -704,82 +620,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-  }
-
-  @ParameterizedTest
-  @EnumSource(ReportType.class)
-  public void evaluateUnsavedReport_withMultipleDefinitionsOnlyDataForTheFirstIsIncluded(final ReportType reportType) {
-    // given
-    final String key1 = "key1";
-    final String key2 = "key2";
-    // note: we are keeping track of the definition id here as the instance id's are not easily obtainable for
-    // decisions
-    final String firstDefinitionId;
-    switch (reportType) {
-      case PROCESS:
-        firstDefinitionId = engineIntegrationExtension
-          .deployAndStartProcess(BpmnModels.getSingleServiceTaskProcess(key1))
-          .getDefinitionId();
-        engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleServiceTaskProcess(key2));
-        break;
-      case DECISION:
-        firstDefinitionId = engineIntegrationExtension
-          .deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key1))
-          .getId();
-        engineIntegrationExtension.deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key2));
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
-    }
-
-    importAllEngineEntitiesFromScratch();
-
-    final List<ReportDataDefinitionDto> definitions = Arrays.asList(
-      ReportDataDefinitionDto.builder()
-        .key(key1)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build(),
-      ReportDataDefinitionDto.builder()
-        .key(key2)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build()
-    );
-
-    // when
-    switch (reportType) {
-      case PROCESS:
-        final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> processReportResponse =
-          reportClient.evaluateRawReport(
-            TemplatedProcessReportDataBuilder.createReportData()
-              .setReportDataType(ProcessReportDataType.RAW_DATA)
-              .definitions(definitions)
-              .build()
-          );
-
-        // then
-        assertThat(processReportResponse.getResult().getData())
-          .extracting(RawDataProcessInstanceDto::getProcessDefinitionId)
-          .containsExactly(firstDefinitionId);
-        break;
-      case DECISION:
-        final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> decisionReportResponse =
-          reportClient.evaluateDecisionRawReport(
-            DecisionReportDataBuilder.create()
-              .setReportDataType(DecisionReportDataType.RAW_DATA)
-              .definitions(definitions)
-              .build()
-          );
-
-        // then
-        assertThat(decisionReportResponse.getResult().getData())
-          .extracting(RawDataDecisionInstanceDto::getDecisionDefinitionId)
-          .containsExactly(firstDefinitionId);
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
-    }
   }
 
   @ParameterizedTest
