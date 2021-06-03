@@ -1,0 +1,57 @@
+[
+  {
+    "extension": "revapi.differences",
+    "configuration": {
+      "justification": "Hide or remove previously exposed types which come from external modules which offer no backwards compatibility guarantees",
+      "ignore": true,
+      "differences": [
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field io.camunda.zeebe.test.EmbeddedBrokerRule.broker",
+          "new": "field io.camunda.zeebe.test.EmbeddedBrokerRule.broker",
+          "oldVisibility": "protected",
+          "newVisibility": "private"
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field io.camunda.zeebe.test.EmbeddedBrokerRule.brokerCfg",
+          "new": "field io.camunda.zeebe.test.EmbeddedBrokerRule.brokerCfg",
+          "oldVisibility": "protected",
+          "newVisibility": "private"
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field io.camunda.zeebe.test.EmbeddedBrokerRule.configurators",
+          "new": "field io.camunda.zeebe.test.EmbeddedBrokerRule.configurators",
+          "oldVisibility": "protected",
+          "newVisibility": "private"
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field io.camunda.zeebe.test.EmbeddedBrokerRule.controlledActorClock",
+          "new": "field io.camunda.zeebe.test.EmbeddedBrokerRule.controlledActorClock",
+          "oldVisibility": "protected",
+          "newVisibility": "private"
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field io.camunda.zeebe.test.EmbeddedBrokerRule.recordingExporterTestWatcher",
+          "new": "field io.camunda.zeebe.test.EmbeddedBrokerRule.recordingExporterTestWatcher",
+          "oldVisibility": "protected",
+          "newVisibility": "private"
+        },
+        {
+          "code": "java.field.visibilityReduced",
+          "old": "field io.camunda.zeebe.test.EmbeddedBrokerRule.springBrokerBridge",
+          "new": "field io.camunda.zeebe.test.EmbeddedBrokerRule.springBrokerBridge",
+          "oldVisibility": "protected",
+          "newVisibility": "private"
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.broker.Broker io.camunda.zeebe.test.EmbeddedBrokerRule::getBroker()"
+        }
+      ]
+    }
+  }
+]

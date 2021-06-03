@@ -55,17 +55,14 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
         <configuration>
-          <ignored>
-            <ignored>
-              <!-- ignore new methods in the Zeebe element instance interfaces -->
-              <className>io/camunda/zeebe/model/bpmn/instance/zeebe/*</className>
-              <differenceType>7012</differenceType>
-              <method>*</method>
-            </ignored>
-          </ignored>
+          <analysisConfigurationFiles>
+            <configurationFile>
+              <path>revapi.json</path>
+            </configurationFile>
+          </analysisConfigurationFiles>
         </configuration>
       </plugin>
     </plugins>
