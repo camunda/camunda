@@ -169,6 +169,13 @@
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.camunda.optimize</groupId>
+            <artifactId>optimize-main-test-plugin</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
     <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
