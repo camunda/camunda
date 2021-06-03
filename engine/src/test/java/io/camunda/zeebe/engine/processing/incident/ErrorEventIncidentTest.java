@@ -40,25 +40,35 @@ public final class ErrorEventIncidentTest {
           .boundaryEvent("error", b -> b.error(ERROR_CODE))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance END_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .endEvent("error", e -> e.error(ERROR_CODE))
           .done();
+  private static final BpmnModelInstance EVENT_SUB_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .eventSubProcess(
+              "error",
+              subprocess ->
+                  subprocess
+                      .startEvent("error-start", s -> s.error(ERROR_CODE).interrupting(true))
+                      .serviceTask("task-in-subprocess", t -> t.zeebeJobType(JOB_TYPE))
+                      .endEvent())
+          .startEvent()
+          .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+          .endEvent()
+          .done();
 
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCreateIncident() {
-    // given
+  public void shouldCreateIncidentWhenThrownErrorIsUncaught() {
+    // given process with boundary error event
     ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when
+    // when error thrown with different error code
     final var jobEvent =
         ENGINE
             .job()
@@ -69,13 +79,12 @@ public final class ErrorEventIncidentTest {
             .throwError();
 
     // then
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(incidentEvent.getValue())
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("unhandled error event incident created")
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage("error thrown")
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
@@ -117,21 +126,7 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldCreateIncidentIfErrorIsThrownFromInterruptingEventSubprocess() {
     // given
-    final var process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .eventSubProcess(
-                "error",
-                subprocess ->
-                    subprocess
-                        .startEvent("error-start", s -> s.error(ERROR_CODE).interrupting(true))
-                        .serviceTask("task-in-subprocess", t -> t.zeebeJobType(JOB_TYPE))
-                        .endEvent())
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE.deployment().withXmlResource(EVENT_SUB_PROCESS).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -154,13 +149,11 @@ public final class ErrorEventIncidentTest {
     ENGINE.job().withKey(jobKey).withType(JOB_TYPE).withErrorCode(ERROR_CODE).throwError();
 
     // then
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(incidentEvent.getValue())
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
             String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
