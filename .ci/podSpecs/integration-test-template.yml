@@ -51,6 +51,9 @@ spec:
           value: ""
       securityContext:
         privileged: true
+      volumeMounts:
+        - mountPath: /var/lib/docker
+          name: docker-storage
       tty: true
       resources:
         limits:
@@ -59,3 +62,6 @@ spec:
         requests:
           cpu: 18
           memory: 60Gi
+  volumes:
+    - name: docker-storage
+      emptyDir: {}
