@@ -43,15 +43,13 @@ public class DefaultClusterMembershipService
     implements ManagedClusterMembershipService {
 
   private static final Logger LOGGER = getLogger(DefaultClusterMembershipService.class);
-
   private static final String HEARTBEAT_MESSAGE = "atomix-cluster-membership";
 
   private final ManagedNodeDiscoveryService discoveryService;
   private final BootstrapService bootstrapService;
   private final GroupMembershipProtocol protocol;
-
-  private final AtomicBoolean started = new AtomicBoolean();
   private final StatefulMember localMember;
+  private final AtomicBoolean started = new AtomicBoolean();
   private final GroupMembershipEventListener membershipEventListener = this::handleMembershipEvent;
 
   public DefaultClusterMembershipService(
@@ -89,13 +87,6 @@ public class DefaultClusterMembershipService
     return protocol.getMember(memberId);
   }
 
-  /** Handles a group membership event. */
-  private void handleMembershipEvent(final GroupMembershipEvent event) {
-    post(
-        new ClusterMembershipEvent(
-            ClusterMembershipEvent.Type.valueOf(event.type().name()), event.member()));
-  }
-
   @Override
   public CompletableFuture<ClusterMembershipService> start() {
     if (started.compareAndSet(false, true)) {
@@ -110,7 +101,7 @@ public class DefaultClusterMembershipService
               })
           .thenApply(
               v -> {
-                LOGGER.info("Started");
+                LOGGER.info("Started cluster membership service for member {}", localMember);
                 return this;
               });
     }
@@ -134,9 +125,16 @@ public class DefaultClusterMembershipService
                 localMember.setReachable(false);
                 bootstrapService.getMessagingService().unregisterHandler(HEARTBEAT_MESSAGE);
                 protocol.removeListener(membershipEventListener);
-                LOGGER.info("Stopped");
+                LOGGER.info("Stopped cluster membership service for member {}", localMember);
               });
     }
     return CompletableFuture.completedFuture(null);
+  }
+
+  /** Handles a group membership event. */
+  private void handleMembershipEvent(final GroupMembershipEvent event) {
+    post(
+        new ClusterMembershipEvent(
+            ClusterMembershipEvent.Type.valueOf(event.type().name()), event.member()));
   }
 }
