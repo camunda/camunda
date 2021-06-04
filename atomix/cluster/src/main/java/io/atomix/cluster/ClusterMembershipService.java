@@ -19,7 +19,6 @@ package io.atomix.cluster;
 import io.atomix.utils.event.ListenerService;
 import io.atomix.utils.net.Address;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Service for obtaining information about the individual members within the cluster. */
 public interface ClusterMembershipService
@@ -38,29 +37,6 @@ public interface ClusterMembershipService
    * @return set of cluster members
    */
   Set<Member> getMembers();
-
-  /**
-   * Returns the set of active reachable members.
-   *
-   * @return the set of active reachable members
-   */
-  default Set<Member> getReachableMembers() {
-    return getMembers().stream().filter(member -> member.isReachable()).collect(Collectors.toSet());
-  }
-
-  /**
-   * Returns the specified member node.
-   *
-   * <p>This is a convenience method that wraps the given {@link String} in a {@link MemberId}. To
-   * avoid unnecessary object allocation, repeated invocations of this method should instead use
-   * {@link #getMember(MemberId)}.
-   *
-   * @param memberId the member identifier
-   * @return the member or {@code null} if no node with the given identifier exists
-   */
-  default Member getMember(final String memberId) {
-    return getMember(MemberId.from(memberId));
-  }
 
   /**
    * Returns the specified member.
