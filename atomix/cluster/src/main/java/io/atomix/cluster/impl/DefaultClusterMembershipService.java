@@ -43,7 +43,6 @@ public class DefaultClusterMembershipService
     implements ManagedClusterMembershipService {
 
   private static final Logger LOGGER = getLogger(DefaultClusterMembershipService.class);
-  private static final String HEARTBEAT_MESSAGE = "atomix-cluster-membership";
 
   private final ManagedNodeDiscoveryService discoveryService;
   private final BootstrapService bootstrapService;
@@ -61,15 +60,7 @@ public class DefaultClusterMembershipService
     this.discoveryService = checkNotNull(discoveryService, "discoveryService cannot be null");
     this.bootstrapService = checkNotNull(bootstrapService, "bootstrapService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
-    this.localMember =
-        new StatefulMember(
-            localMember.id(),
-            localMember.address(),
-            localMember.zone(),
-            localMember.rack(),
-            localMember.host(),
-            localMember.properties(),
-            version);
+    this.localMember = new StatefulMember(localMember, version);
   }
 
   @Override
@@ -105,6 +96,7 @@ public class DefaultClusterMembershipService
                 return this;
               });
     }
+
     return CompletableFuture.completedFuture(null);
   }
 
@@ -123,11 +115,11 @@ public class DefaultClusterMembershipService
               () -> {
                 localMember.setActive(false);
                 localMember.setReachable(false);
-                bootstrapService.getMessagingService().unregisterHandler(HEARTBEAT_MESSAGE);
                 protocol.removeListener(membershipEventListener);
                 LOGGER.info("Stopped cluster membership service for member {}", localMember);
               });
     }
+
     return CompletableFuture.completedFuture(null);
   }
 
@@ -135,6 +127,8 @@ public class DefaultClusterMembershipService
   private void handleMembershipEvent(final GroupMembershipEvent event) {
     post(
         new ClusterMembershipEvent(
-            ClusterMembershipEvent.Type.valueOf(event.type().name()), event.member()));
+            ClusterMembershipEvent.Type.valueOf(event.type().name()),
+            event.member(),
+            event.time()));
   }
 }
