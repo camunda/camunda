@@ -18,12 +18,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -52,17 +53,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
   private final JobState jobState;
+  private final KeyGenerator keyGenerator;
 
   public ResolveIncidentProcessor(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
-      final Writers writers) {
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
     jobState = zeebeState.getJobState();
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
@@ -111,9 +115,9 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       final State stateOfJob = jobState.getState(jobKey);
       if (stateOfJob == State.ERROR_THROWN) {
         // todo (#6000): resolve incident for UNHANDLED_ERROR_EVENT
-        // at time of writing the process cannot be fixed, so this incident cannot be resolved
-        final var message = String.format(RESOLVE_UNHANDLED_ERROR_INCIDENT_MESSAGE, jobKey);
-        rejectResolveCommand(command, responseWriter, message, RejectionType.PROCESSING_ERROR);
+        // at time of writing the process cannot be fixed, so just recreate the incident
+        stateWriter.appendFollowUpEvent(
+            keyGenerator.nextKey(), IncidentIntent.CREATED, incidentRecord);
       }
     } else {
       attemptToContinueProcessProcessing(
