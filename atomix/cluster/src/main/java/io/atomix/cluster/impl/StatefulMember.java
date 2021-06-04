@@ -22,12 +22,10 @@ import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
 
 /** Default cluster node. */
 public final class StatefulMember extends Member {
   private final Version version;
-  private final AtomicLong timestamp = new AtomicLong();
   private volatile boolean active;
   private volatile boolean reachable;
 
@@ -41,35 +39,11 @@ public final class StatefulMember extends Member {
       final Version version) {
     super(id, address, zone, rack, host, properties);
     this.version = version;
-    timestamp.set(1);
-  }
-
-  /**
-   * Returns the member logical timestamp.
-   *
-   * @return the member logical timestamp
-   */
-  public long getTimestamp() {
-    return timestamp.get();
-  }
-
-  /**
-   * Sets the member's logical timestamp.
-   *
-   * @param timestamp the member's logical timestamp
-   */
-  void setTimestamp(final long timestamp) {
-    this.timestamp.accumulateAndGet(timestamp, Math::max);
-  }
-
-  /** Increments the member's timestamp. */
-  void incrementTimestamp() {
-    timestamp.incrementAndGet();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), version, timestamp);
+    return Objects.hash(super.hashCode(), version);
   }
 
   @Override
@@ -87,7 +61,7 @@ public final class StatefulMember extends Member {
     }
 
     final StatefulMember that = (StatefulMember) o;
-    return version.equals(that.version) && timestamp.get() == that.timestamp.get();
+    return version.equals(that.version);
   }
 
   @Override
