@@ -146,9 +146,9 @@ public class DefaultClusterMembershipServiceTest {
     assertTrue(clusterService1.getMember(MemberId.from("2")).isActive());
     assertTrue(clusterService1.getMember(MemberId.from("3")).isActive());
 
-    assertEquals("1.0.0", clusterService1.getMember("1").version().toString());
-    assertEquals("1.0.0", clusterService1.getMember("2").version().toString());
-    assertEquals("1.0.1", clusterService1.getMember("3").version().toString());
+    assertEquals("1.0.0", clusterService1.getMember(MemberId.from("1")).version().toString());
+    assertEquals("1.0.0", clusterService1.getMember(MemberId.from("2")).version().toString());
+    assertEquals("1.0.1", clusterService1.getMember(MemberId.from("3")).version().toString());
 
     final Member anonymousMember = buildMember(4);
     final BootstrapService ephemeralBootstrapService =
@@ -184,10 +184,10 @@ public class DefaultClusterMembershipServiceTest {
     assertEquals(4, clusterService3.getMembers().size());
     assertEquals(4, ephemeralClusterService.getMembers().size());
 
-    assertEquals("1.0.0", clusterService1.getMember("1").version().toString());
-    assertEquals("1.0.0", clusterService1.getMember("2").version().toString());
-    assertEquals("1.0.1", clusterService1.getMember("3").version().toString());
-    assertEquals("1.1.0", clusterService1.getMember("4").version().toString());
+    assertEquals("1.0.0", clusterService1.getMember(MemberId.from("1")).version().toString());
+    assertEquals("1.0.0", clusterService1.getMember(MemberId.from("2")).version().toString());
+    assertEquals("1.0.1", clusterService1.getMember(MemberId.from("3")).version().toString());
+    assertEquals("1.1.0", clusterService1.getMember(MemberId.from("4")).version().toString());
 
     clusterService1.stop().join();
 
