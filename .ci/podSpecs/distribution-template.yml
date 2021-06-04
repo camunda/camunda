@@ -72,7 +72,8 @@ spec:
     - name: docker
       image: docker:20.10.5-dind
       args:
-        - --storage-driver=overlay
+        - --storage-driver
+        - overlay2
         - --ipv6
         - --fixed-cidr-v6
         - "2001:db8:1::/64"
