@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.camunda.zeebe.broker.exporter.jar.ExporterJarRepository;
+import io.camunda.zeebe.broker.exporter.jar.ThreadContextUtil;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import java.util.Collections;
@@ -88,7 +89,9 @@ public final class ExporterRepository {
     try {
       final Exporter instance = descriptor.newInstance();
       final ExporterContext context = new ExporterContext(LOG, descriptor.getConfiguration());
-      instance.configure(context);
+
+      ThreadContextUtil.runCheckedWithClassLoader(
+          () -> instance.configure(context), instance.getClass().getClassLoader());
     } catch (final Exception ex) {
       throw new ExporterLoadException(descriptor.getId(), "failed validation", ex);
     }
