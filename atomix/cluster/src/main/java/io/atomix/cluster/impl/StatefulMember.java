@@ -17,11 +17,8 @@
 package io.atomix.cluster.impl;
 
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.atomix.utils.Version;
-import io.atomix.utils.net.Address;
 import java.util.Objects;
-import java.util.Properties;
 
 /** Default cluster node. */
 public final class StatefulMember extends Member {
@@ -29,15 +26,14 @@ public final class StatefulMember extends Member {
   private volatile boolean active;
   private volatile boolean reachable;
 
-  public StatefulMember(
-      final MemberId id,
-      final Address address,
-      final String zone,
-      final String rack,
-      final String host,
-      final Properties properties,
-      final Version version) {
-    super(id, address, zone, rack, host, properties);
+  public StatefulMember(final Member member, final Version version) {
+    super(
+        member.id(),
+        member.address(),
+        member.zone(),
+        member.rack(),
+        member.host(),
+        member.properties());
     this.version = version;
   }
 
