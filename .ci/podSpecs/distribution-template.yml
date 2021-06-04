@@ -72,7 +72,8 @@ spec:
     - name: docker
       image: docker:20.10.5-dind
       args:
-        - --storage-driver=overlay
+        - --storage-driver
+        - overlay2
         - --ipv6
         - --fixed-cidr-v6
         - "2001:db8:1::/64"
@@ -85,6 +86,9 @@ spec:
       securityContext:
         privileged: true
       tty: true
+      volumeMounts:
+        - mountPath: /var/lib/docker
+          name: docker-storage
       resources:
         limits:
           cpu: 12
@@ -92,3 +96,6 @@ spec:
         requests:
           cpu: 12
           memory: 50Gi
+  volumes:
+    - name: docker-storage
+      emptyDir: { }

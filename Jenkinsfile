@@ -514,7 +514,7 @@ def templatePodspec(String podspecPath, flags = [:]) {
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags
 
-    def nodePoolName = "agents-n1-standard-32-netssd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
+    def nodePoolName = "agents-n1-standard-32-physsd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
 
     String templateString = readTrusted(podspecPath)
 
