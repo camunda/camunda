@@ -20,21 +20,16 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Default cluster node. */
-public class StatefulMember extends Member {
+public final class StatefulMember extends Member {
   private final Version version;
   private final AtomicLong timestamp = new AtomicLong();
   private volatile boolean active;
   private volatile boolean reachable;
-
-  public StatefulMember(final MemberId id, final Address address) {
-    super(id, address);
-    version = null;
-    timestamp.set(0);
-  }
 
   public StatefulMember(
       final MemberId id,
@@ -70,6 +65,29 @@ public class StatefulMember extends Member {
   /** Increments the member's timestamp. */
   void incrementTimestamp() {
     timestamp.incrementAndGet();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), version, timestamp);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final StatefulMember that = (StatefulMember) o;
+    return version.equals(that.version) && timestamp.get() == that.timestamp.get();
   }
 
   @Override
