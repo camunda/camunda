@@ -52,6 +52,7 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -66,6 +67,7 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -84,6 +86,7 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
@@ -112,26 +115,16 @@
           </dependency>
         </dependencies>
       </plugin>
+
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
         <configuration>
-          <ignored>
-            <ignored>
-              <!-- ignore new methods in the Record interface -->
-              <className>io/camunda/zeebe/protocol/record/Record</className>
-              <method>*</method>
-              <differenceType>7012</differenceType>
-            </ignored>
-            <ignored>
-              <!-- ignore new methods in the interface -->
-              <className>
-                io/zeebe/protocol/record/value/**/**
-              </className>
-              <method>*</method>
-              <differenceType>7012</differenceType>
-            </ignored>
-          </ignored>
+          <analysisConfigurationFiles>
+            <configurationFile>
+              <path>revapi.json</path>
+            </configurationFile>
+          </analysisConfigurationFiles>
         </configuration>
       </plugin>
     </plugins>
