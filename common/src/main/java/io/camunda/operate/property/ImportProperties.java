@@ -17,6 +17,8 @@ public class ImportProperties {
 
   private static final int DEFAULT_FLOW_NODE_TREE_CACHE_SIZE = 1000;
 
+  public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -35,7 +37,7 @@ public class ImportProperties {
   /**
    * Variable size under which we won't store preview separately.
    */
-  private int variableSizeThreshold = 8191;
+  private int variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;

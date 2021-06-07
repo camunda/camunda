@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.schema.migration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -20,6 +21,7 @@ public class ProcessorStep implements Step {
   
   private String description;
   private OffsetDateTime createdDate;
+  @JsonIgnore //OPE-1310
   private OffsetDateTime appliedDate;
   private String indexName;
   private boolean isApplied = false;

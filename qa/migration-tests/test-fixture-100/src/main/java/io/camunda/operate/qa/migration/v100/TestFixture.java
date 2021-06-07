@@ -21,6 +21,9 @@ public class TestFixture extends AbstractTestFixture {
   @Autowired
   private BigProcessDataGenerator bigProcessDataGenerator;
 
+  @Autowired
+  private BigVariableDataGenerator bigVariableDataGenerator;
+
   @Override
   public void setup(TestContext testContext) {
     super.setup(testContext);
@@ -38,6 +41,7 @@ public class TestFixture extends AbstractTestFixture {
     try {
       basicProcessDataGenerator.createData(testContext);
       bigProcessDataGenerator.createData(testContext);
+      bigVariableDataGenerator.createData(testContext);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
