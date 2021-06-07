@@ -26,7 +26,7 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -34,6 +34,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +47,9 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TasklistTester {
+
+  private static final String GRAPHQL_DEFAULT_VARIABLE_FRAGMENT =
+      "graphql/variableIT/full-variable-fragment.graphql";
 
   private ZeebeClient zeebeClient;
   private ElasticsearchTestRule elasticsearchTestRule;
@@ -166,6 +170,16 @@ public class TasklistTester {
     return getTasksByPath("$.data.tasks");
   }
 
+  public GraphQLResponse getTaskById(String taskId) throws IOException {
+    return getTaskById(taskId, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
+  }
+
+  public GraphQLResponse getTaskById(String taskId, String fragmentResource) throws IOException {
+    final ObjectNode taskIdQ = objectMapper.createObjectNode().put("taskId", taskId);
+    return graphQLTestTemplate.perform(
+        "graphql/taskIT/get-task.graphql", taskIdQ, Collections.singletonList(fragmentResource));
+  }
+
   public List<TaskDTO> getCreatedTasks() throws IOException {
     graphQLResponse =
         graphQLTestTemplate.postForResource("graphql/taskIT/get-created-tasks.graphql");
@@ -179,19 +193,61 @@ public class TasklistTester {
   }
 
   public GraphQLResponse getAllTasks() throws IOException {
+    return getAllTasks(GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
+  }
+
+  public GraphQLResponse getAllTasks(String fragmentResource) throws IOException {
     final ObjectNode query = objectMapper.createObjectNode();
     query.putObject("query");
-    return this.getTasksByQueryAsVariable(query);
+    return this.getTasksByQueryAsVariable(query, fragmentResource);
   }
 
   public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables) throws IOException {
-    graphQLResponse = graphQLTestTemplate.perform("graphql/get-tasks-by-query.graphql", variables);
+    return getTasksByQueryAsVariable(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
+  }
+
+  public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables, String fragmentResource)
+      throws IOException {
+    graphQLResponse =
+        graphQLTestTemplate.perform(
+            "graphql/get-tasks-by-query.graphql",
+            variables,
+            Collections.singletonList(fragmentResource));
     return graphQLResponse;
   }
 
   public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables) throws IOException {
+    return getVariablesByTaskIdAndNames(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
+  }
+
+  public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables, String fragmentResource)
+      throws IOException {
     graphQLResponse =
-        graphQLTestTemplate.perform("graphql/variableIT/get-variables.graphql", variables);
+        graphQLTestTemplate.perform(
+            "graphql/variableIT/get-variables.graphql",
+            variables,
+            Collections.singletonList(fragmentResource));
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getVariableById(String variableId) throws IOException {
+    final ObjectNode variableQ = objectMapper.createObjectNode().put("variableId", variableId);
+    graphQLResponse =
+        graphQLTestTemplate.perform(
+            "graphql/variableIT/get-variable.graphql",
+            variableQ,
+            Collections.singletonList(GRAPHQL_DEFAULT_VARIABLE_FRAGMENT));
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getVariableById(String variableId, String fragmentResource)
+      throws IOException {
+    final ObjectNode variableQ = objectMapper.createObjectNode().put("variableId", variableId);
+    graphQLResponse =
+        graphQLTestTemplate.perform(
+            "graphql/variableIT/get-variable.graphql",
+            variableQ,
+            Collections.singletonList(fragmentResource));
     return graphQLResponse;
   }
 
@@ -370,11 +426,11 @@ public class TasklistTester {
     return taskIsCompleted(flowNodeBpmnId);
   }
 
-  private List<VariableDTO> createVariablesList(String... variables) {
+  private List<VariableInputDTO> createVariablesList(String... variables) {
     assertThat(variables.length % 2).isEqualTo(0);
-    final List<VariableDTO> result = new ArrayList<>();
+    final List<VariableInputDTO> result = new ArrayList<>();
     for (int i = 0; i < variables.length; i = i + 2) {
-      result.add(new VariableDTO().setName(variables[i]).setValue(variables[i + 1]));
+      result.add(new VariableInputDTO().setName(variables[i]).setValue(variables[i + 1]));
     }
     return result;
   }

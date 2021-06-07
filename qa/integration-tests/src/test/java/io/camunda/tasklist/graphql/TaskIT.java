@@ -39,8 +39,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   public static final String ELEMENT_ID = "taskA";
   public static final String BPMN_PROCESS_ID = "testProcess";
-  public static final String GET_TASK_QUERY_PATTERN =
-      "{task(id: \"%s\"){id name processName creationTime completionTime assignee {username} variables {name} taskState}}";
   public static final String TASK_RESULT_PATTERN =
       "{id name assignee {username firstname lastname}}";
   public static final String CLAIM_TASK_MUTATION_PATTERN =
@@ -689,8 +687,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
-    final GraphQLResponse taskResponse =
-        tester.when().getTaskByQuery(String.format(GET_TASK_QUERY_PATTERN, taskId));
+    final GraphQLResponse taskResponse = tester.getTaskById(taskId);
 
     // then
     assertEquals(taskId, taskResponse.get("$.data.task.id"));
@@ -704,13 +701,13 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldNotReturnTaskWithWrongId() {
+  public void shouldNotReturnTaskWithWrongId() throws IOException {
     final GraphQLResponse taskResponse =
         tester
             .having()
             .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
             .when()
-            .getTaskByQuery(String.format(GET_TASK_QUERY_PATTERN, "wrongTaskId"));
+            .getTaskById("wrongTaskId");
     // then
     assertNull(taskResponse.get("$.data"));
     assertEquals("1", taskResponse.get("$.errors.length()"));

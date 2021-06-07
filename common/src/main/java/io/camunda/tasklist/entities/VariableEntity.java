@@ -15,6 +15,8 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
 
   private String name;
   private String value;
+  private String fullValue;
+  private boolean isPreview;
   private String scopeFlowNodeId;
   private String processInstanceId;
 
@@ -37,6 +39,24 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
 
   public VariableEntity setValue(final String value) {
     this.value = value;
+    return this;
+  }
+
+  public String getFullValue() {
+    return fullValue;
+  }
+
+  public VariableEntity setFullValue(final String fullValue) {
+    this.fullValue = fullValue;
+    return this;
+  }
+
+  public boolean getIsPreview() {
+    return isPreview;
+  }
+
+  public VariableEntity setIsPreview(final boolean preview) {
+    isPreview = preview;
     return this;
   }
 
@@ -70,14 +90,17 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
       return false;
     }
     final VariableEntity that = (VariableEntity) o;
-    return Objects.equals(name, that.name)
+    return isPreview == that.isPreview
+        && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
+        && Objects.equals(fullValue, that.fullValue)
         && Objects.equals(scopeFlowNodeId, that.scopeFlowNodeId)
         && Objects.equals(processInstanceId, that.processInstanceId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, value, scopeFlowNodeId, processInstanceId);
+    return Objects.hash(
+        super.hashCode(), name, value, fullValue, isPreview, scopeFlowNodeId, processInstanceId);
   }
 }

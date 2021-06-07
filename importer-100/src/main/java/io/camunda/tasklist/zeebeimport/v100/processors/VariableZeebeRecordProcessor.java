@@ -10,6 +10,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.zeebeimport.v100.record.Intent;
 import io.camunda.tasklist.zeebeimport.v100.record.value.VariableRecordValueImpl;
@@ -43,6 +44,8 @@ public class VariableZeebeRecordProcessor {
 
   @Autowired private VariableIndex variableIndex;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   public void processVariableRecord(Record record, BulkRequest bulkRequest)
       throws PersistenceException {
     final VariableRecordValueImpl recordValue = (VariableRecordValueImpl) record.getValue();
@@ -61,7 +64,18 @@ public class VariableZeebeRecordProcessor {
     entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
     entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
     entity.setName(recordValue.getName());
-    entity.setValue(recordValue.getValue());
+    if (recordValue.getValue().length()
+        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
+      // store preview
+      entity.setValue(
+          recordValue
+              .getValue()
+              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(recordValue.getValue());
+    }
+    entity.setFullValue(recordValue.getValue());
     return getVariableQuery(entity);
   }
 

@@ -13,15 +13,10 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
   private String taskId;
   private String name;
   private String value;
+  private String fullValue;
+  private boolean isPreview;
 
   public TaskVariableEntity() {}
-
-  public TaskVariableEntity(final String taskId, final String name, final String value) {
-    this.setId(getIdBy(taskId, name));
-    this.taskId = taskId;
-    this.name = name;
-    this.value = value;
-  }
 
   public static String getIdBy(String taskId, String name) {
     return String.format("%s-%s", taskId, name);
@@ -54,6 +49,49 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
     return this;
   }
 
+  public String getFullValue() {
+    return fullValue;
+  }
+
+  public TaskVariableEntity setFullValue(final String fullValue) {
+    this.fullValue = fullValue;
+    return this;
+  }
+
+  public boolean getIsPreview() {
+    return isPreview;
+  }
+
+  public TaskVariableEntity setIsPreview(final boolean preview) {
+    isPreview = preview;
+    return this;
+  }
+
+  public static TaskVariableEntity createFrom(
+      String taskId, String name, String value, int variableSizeThreshold) {
+    final TaskVariableEntity entity =
+        new TaskVariableEntity().setId(getIdBy(taskId, name)).setTaskId(taskId).setName(name);
+    if (value.length() > variableSizeThreshold) {
+      // store preview
+      entity.setValue(value.substring(0, variableSizeThreshold));
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(value);
+    }
+    entity.setFullValue(value);
+    return entity;
+  }
+
+  public static TaskVariableEntity createFrom(String taskId, VariableEntity variableEntity) {
+    return new TaskVariableEntity()
+        .setId(getIdBy(taskId, variableEntity.getName()))
+        .setTaskId(taskId)
+        .setName(variableEntity.getName())
+        .setValue(variableEntity.getValue())
+        .setIsPreview(variableEntity.getIsPreview())
+        .setFullValue(variableEntity.getFullValue());
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -66,13 +104,15 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
       return false;
     }
     final TaskVariableEntity that = (TaskVariableEntity) o;
-    return Objects.equals(taskId, that.taskId)
+    return isPreview == that.isPreview
+        && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
-        && Objects.equals(value, that.value);
+        && Objects.equals(value, that.value)
+        && Objects.equals(fullValue, that.fullValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value);
+    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
   }
 }

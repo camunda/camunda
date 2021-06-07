@@ -14,11 +14,11 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TaskValidationException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.es.TaskReaderWriter;
-import io.camunda.tasklist.webapp.es.VariableReaderWriter;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import java.io.IOException;
@@ -38,13 +38,14 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @Autowired private TaskReaderWriter taskReaderWriter;
 
-  @Autowired private VariableReaderWriter variableReaderWriter;
+  @Autowired private VariableService variableService;
 
   @Autowired private ObjectMapper objectMapper;
 
-  public TaskDTO completeTask(String taskId, List<VariableDTO> variables) {
+  public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
     final Map<String, Object> variablesMap =
-        variables.stream().collect(Collectors.toMap(VariableDTO::getName, this::extractTypedValue));
+        variables.stream()
+            .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
     // validate
     final SearchHit taskSearchHit;
     try {
@@ -68,11 +69,11 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     completeJobCommand.send().join();
     // persist completion and variables
     final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskSearchHit);
-    variableReaderWriter.persistTaskVariables(taskId, variables);
+    variableService.persistTaskVariables(taskId, variables);
     return TaskDTO.createFrom(completedTask, objectMapper);
   }
 
-  private Object extractTypedValue(VariableDTO var) {
+  private Object extractTypedValue(VariableInputDTO var) {
     try {
       return objectMapper.readValue(var.getValue(), Object.class);
     } catch (IOException e) {

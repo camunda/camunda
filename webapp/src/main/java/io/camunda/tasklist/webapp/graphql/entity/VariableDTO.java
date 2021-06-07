@@ -6,12 +6,27 @@
 package io.camunda.tasklist.webapp.graphql.entity;
 
 import io.camunda.tasklist.entities.TaskVariableEntity;
+import io.camunda.tasklist.entities.VariableEntity;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class VariableDTO {
 
+  private String id;
   private String name;
   private String value;
+  private boolean isValueTruncated;
+  private String previewValue;
+
+  public String getId() {
+    return id;
+  }
+
+  public VariableDTO setId(final String id) {
+    this.id = id;
+    return this;
+  }
 
   public String getName() {
     return name;
@@ -31,8 +46,54 @@ public class VariableDTO {
     return this;
   }
 
+  public boolean getIsValueTruncated() {
+    return isValueTruncated;
+  }
+
+  public VariableDTO setIsValueTruncated(final boolean valueTruncated) {
+    isValueTruncated = valueTruncated;
+    return this;
+  }
+
+  public String getPreviewValue() {
+    return previewValue;
+  }
+
+  public VariableDTO setPreviewValue(final String previewValue) {
+    this.previewValue = previewValue;
+    return this;
+  }
+
   public static VariableDTO createFrom(TaskVariableEntity variableEntity) {
-    return new VariableDTO().setName(variableEntity.getName()).setValue(variableEntity.getValue());
+    final VariableDTO variableDTO =
+        new VariableDTO().setId(variableEntity.getId()).setName(variableEntity.getName());
+    variableDTO
+        .setPreviewValue(variableEntity.getValue())
+        .setIsValueTruncated(variableEntity.getIsPreview())
+        .setValue(variableEntity.getFullValue());
+    return variableDTO;
+  }
+
+  public static VariableDTO createFrom(VariableEntity variableEntity) {
+    final VariableDTO variableDTO =
+        new VariableDTO().setId(variableEntity.getId()).setName(variableEntity.getName());
+    variableDTO
+        .setPreviewValue(variableEntity.getValue())
+        .setIsValueTruncated(variableEntity.getIsPreview())
+        .setValue(variableEntity.getFullValue());
+    return variableDTO;
+  }
+
+  public static List<VariableDTO> createFrom(List<VariableEntity> variableEntities) {
+    final List<VariableDTO> result = new ArrayList<>();
+    if (variableEntities != null) {
+      for (VariableEntity variableEntity : variableEntities) {
+        if (variableEntity != null) {
+          result.add(createFrom(variableEntity));
+        }
+      }
+    }
+    return result;
   }
 
   @Override
@@ -44,11 +105,15 @@ public class VariableDTO {
       return false;
     }
     final VariableDTO that = (VariableDTO) o;
-    return Objects.equals(name, that.name) && Objects.equals(value, that.value);
+    return isValueTruncated == that.isValueTruncated
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(previewValue, that.previewValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, value);
+    return Objects.hash(id, name, value, isValueTruncated, previewValue);
   }
 }

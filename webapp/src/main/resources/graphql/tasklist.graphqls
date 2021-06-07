@@ -63,8 +63,14 @@ enum TaskState {
 }
 # Variable used in task.
 type Variable {
+    id: ID!
     name: String!
+    # full variable value
     value: String!
+    # value preview (limited in size)
+    previewValue: String!
+    # shows, whether previewValue contains truncated value or full value
+    isValueTruncated: Boolean!
 }
 # Change or add a variable with name and value.
 input VariableInput {
@@ -89,6 +95,8 @@ type Query {
     form(id: String!, processDefinitionId: String!): Form
     # Get a collection of Variables by name
     variables(taskId: String!, variableNames: [String!]!): [Variable!]!
+    # Get the variables by variable id
+    variable(id: String!): Variable!
 }
 # What can be changed.
 type Mutation {

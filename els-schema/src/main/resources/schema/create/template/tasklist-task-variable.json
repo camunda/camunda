@@ -20,6 +20,13 @@
 			},
 			"key": {
 				"type": "long"
+			},
+			"fullValue": {
+				"type": "keyword",
+				"ignore_above": 8191
+			},
+			"isPreview": {
+				"type": "boolean"
 			}
 		}
 	}

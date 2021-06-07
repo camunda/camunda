@@ -1,0 +1,14 @@
+query getTask($taskId: String!){
+    task(id: $taskId){
+        id
+        name
+        processName
+        creationTime
+        completionTime
+        assignee {username}
+        variables {
+            ... variableFields
+        }
+        taskState
+    }
+}

@@ -5,7 +5,6 @@
  */
 package io.camunda.tasklist.it;
 
-import static io.camunda.tasklist.graphql.TaskIT.GET_TASK_QUERY_PATTERN;
 import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_CANCELED_CHECK;
 import static io.camunda.tasklist.util.ElasticsearchChecks.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -149,8 +148,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   private void assertAllInstancesInAlias(int count, String id) throws IOException {
     assertThat(tester.getAllTasks().get("$.data.tasks.length()")).isEqualTo(String.valueOf(count));
-    final String taskId =
-        tester.getByQuery(String.format(GET_TASK_QUERY_PATTERN, id)).get("$.data.task.id");
+    final String taskId = tester.getTaskById(id).get("$.data.task.id");
     assertThat(taskId).isEqualTo(id);
   }
 

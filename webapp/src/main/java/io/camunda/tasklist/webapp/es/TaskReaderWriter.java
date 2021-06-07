@@ -99,7 +99,7 @@ public class TaskReaderWriter {
   @NotNull
   public SearchHit getTaskRawResponse(final String id) throws IOException {
 
-    final QueryBuilder query = idsQuery().addIds(String.valueOf(id));
+    final QueryBuilder query = idsQuery().addIds(id);
 
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(taskTemplate)

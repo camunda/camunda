@@ -11,13 +11,16 @@ import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.V
 import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
-import io.camunda.tasklist.webapp.es.VariableReaderWriter.GetVariablesRequest;
+import graphql.schema.SelectedField;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.dataloader.DataLoader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -47,7 +50,7 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
             .getDataLoaderRegistry()
             .get()
             .getDataLoader(VARIABLE_DATA_LOADER);
-    return dataloader.load(GetVariablesRequest.createFrom(task));
+    return dataloader.load(GetVariablesRequest.createFrom(task, getFieldNames(dfe)));
   }
 
   public String getProcessName(TaskDTO task) {
@@ -65,5 +68,11 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
       return task.getFlowNodeBpmnId();
     }
     return taskName;
+  }
+
+  private Set<String> getFieldNames(DataFetchingEnvironment dataFetchingEnvironment) {
+    return dataFetchingEnvironment.getSelectionSet().getFields().stream()
+        .map(SelectedField::getName)
+        .collect(Collectors.toSet());
   }
 }

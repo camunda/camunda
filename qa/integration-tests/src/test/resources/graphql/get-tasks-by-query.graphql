@@ -11,8 +11,7 @@ query getTasks($query: TaskQuery!){
             lastname
         }
         variables {
-            name
-            value
+            ... variableFields
         }
         taskState
         sortValues

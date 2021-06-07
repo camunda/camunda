@@ -26,6 +26,9 @@ public class ImportProperties {
   /** Indicates, whether loading of Zeebe data should start on startup. */
   private boolean startLoadingDataOnStartup = true;
 
+  /** Variable size under which we won't store preview separately. */
+  private int variableSizeThreshold = 8191;
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -64,5 +67,14 @@ public class ImportProperties {
 
   public void setSchedulerBackoff(int schedulerBackoff) {
     this.schedulerBackoff = schedulerBackoff;
+  }
+
+  public int getVariableSizeThreshold() {
+    return variableSizeThreshold;
+  }
+
+  public ImportProperties setVariableSizeThreshold(final int variableSizeThreshold) {
+    this.variableSizeThreshold = variableSizeThreshold;
+    return this;
   }
 }

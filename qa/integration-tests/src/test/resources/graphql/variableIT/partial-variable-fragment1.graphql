@@ -1,0 +1,6 @@
+fragment variableFields on Variable {
+    id
+    name
+    isValueTruncated
+    previewValue
+}

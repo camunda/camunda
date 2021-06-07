@@ -10,11 +10,11 @@ import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
-import io.camunda.tasklist.webapp.es.VariableReaderWriter;
-import io.camunda.tasklist.webapp.es.VariableReaderWriter.GetVariablesRequest;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.webapp.service.VariableService;
+import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +34,7 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
 
   @Autowired private UserReader userReader;
 
-  @Autowired private VariableReaderWriter variableReaderWriter;
+  @Autowired private VariableService variableService;
 
   @Override
   public GraphQLContext build(HttpServletRequest req, HttpServletResponse response) {
@@ -67,7 +67,7 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
     dataLoaderRegistry.register(
         VARIABLE_DATA_LOADER,
         new DataLoader<GetVariablesRequest, List<VariableDTO>>(
-            req -> CompletableFuture.supplyAsync(() -> variableReaderWriter.getVariables(req))));
+            req -> CompletableFuture.supplyAsync(() -> variableService.getVariables(req))));
     return dataLoaderRegistry;
   }
 }

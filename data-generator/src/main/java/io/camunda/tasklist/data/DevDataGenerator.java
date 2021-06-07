@@ -12,6 +12,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
@@ -53,6 +54,8 @@ public class DevDataGenerator implements DataGenerator {
   @Autowired private FormIndex formIndex;
 
   @Autowired private TaskTemplate taskTemplate;
+
+  @Autowired private PayloadUtil payloadUtil;
 
   private Random random = new Random();
 
@@ -136,7 +139,8 @@ public class DevDataGenerator implements DataGenerator {
 
   private void startSimpleProcess() {
     String payload = null;
-    if (random.nextBoolean()) {
+    final int choice = random.nextInt(3);
+    if (choice == 0) {
       payload =
           "{\"stringVar\":\"varValue"
               + random.nextInt(100)
@@ -147,6 +151,8 @@ public class DevDataGenerator implements DataGenerator {
               + " \"objectVar\": "
               + "   {\"testVar\":555, \n"
               + "   \"testVar2\": \"dkjghkdg\"}}";
+    } else if (choice == 1) {
+      payload = payloadUtil.readJSONStringFromClasspath("/large-payload.json");
     }
     ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", payload);
   }
