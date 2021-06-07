@@ -327,7 +327,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       "    \"name\" : ctx._source.data.processDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
       "    \"versions\" : ctx._source.data.processDefinitionVersions,\n" +
-      "    \"tenantIds\" : ctx._source.data.tenantIds\n" +
+      "    \"tenantIds\" : ctx._source.data.tenantIds != null ? ctx._source.data.tenantIds : Collections.singletonList(null)\n" +
       "  ]);\n" +
       "}\n" +
       "ctx._source.data.remove(\"processDefinitionKey\");\n" +
@@ -349,7 +349,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       "    \"name\" : ctx._source.data.decisionDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
       "    \"versions\" : ctx._source.data.decisionDefinitionVersions,\n" +
-      "    \"tenantIds\" : ctx._source.data.tenantIds\n" +
+      "    \"tenantIds\" : ctx._source.data.tenantIds != null ? ctx._source.data.tenantIds : Collections.singletonList(null)\n" +
       "  ]);\n" +
       "}\n" +
       "ctx._source.data.remove(\"decisionDefinitionKey\");\n" +

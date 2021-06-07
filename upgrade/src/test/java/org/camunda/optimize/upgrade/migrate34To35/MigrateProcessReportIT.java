@@ -11,16 +11,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.Upgrade34to35PlanFactory;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
 public class MigrateProcessReportIT extends AbstractUpgrade34IT {
 
@@ -38,7 +41,7 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
     final String indexName = SINGLE_PROCESS_REPORT_INDEX.getIndexName();
     final SearchHit[] reportsAfterUpgrade = getAllDocumentsOfIndex(indexName);
     assertThat(reportsAfterUpgrade)
-      .hasSize(2)
+      .hasSize(3)
       .allSatisfy(report -> {
         final Map<String, Object> reportAsMap = report.getSourceAsMap();
         final Map<String, Object> reportData = (Map<String, Object>) reportAsMap.get(SingleProcessReportIndex.DATA);
@@ -75,12 +78,12 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
       .extracting(SingleReportDataDto::getDefinitions)
       .satisfies(definitions -> {
         assertThat(definitions).containsExactly(
-          ReportDataDefinitionDto.builder()
-            .key("invoice")
-            .name("Invoice Receipt")
-            .versions(Collections.singletonList("2"))
-            .tenantIds(Collections.singletonList("tenant1"))
-            .build()
+          new ReportDataDefinitionDto(
+            "invoice",
+            "Invoice Receipt",
+            Collections.singletonList("2"),
+            Arrays.asList("tenant1")
+          )
         );
       });
 
@@ -93,6 +96,24 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
       .extracting(ReportDefinitionDto::getData)
       .extracting(SingleReportDataDto::getDefinitions)
       .satisfies(definitions -> assertThat(definitions).isEmpty());
+
+    assertThat(getDocumentOfIndexByIdAs(
+      indexName,
+      "96c1f30b-6dc9-4951-b32a-f620cc93aab2",
+      SingleProcessReportDefinitionRequestDto.class
+    ))
+      .isPresent().get()
+      .extracting(ReportDefinitionDto::getData)
+      .extracting(SingleReportDataDto::getDefinitions)
+      .satisfies(definitions -> {
+        assertThat(definitions).containsExactly(
+          new ReportDataDefinitionDto(
+            "test",
+            Collections.singletonList(ALL_VERSIONS),
+            CollectionClient.DEFAULT_TENANTS
+          )
+        );
+      });
   }
 
 }

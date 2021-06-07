@@ -64,7 +64,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionKey(final String key) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setKey(key);
   }
@@ -73,7 +73,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionName(final String name) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setName(name);
   }
@@ -86,7 +86,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionVersions(final List<String> versions) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersions(versions);
   }
@@ -95,7 +95,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionVersion(final String version) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersion(version);
   }

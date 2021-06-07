@@ -50,7 +50,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionKey(final String key) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setKey(key);
   }
@@ -59,7 +59,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionName(String name) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setName(name);
   }
@@ -72,7 +72,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionVersions(final List<String> versions) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersions(versions);
   }
@@ -81,7 +81,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionVersion(final String version) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersion(version);
   }

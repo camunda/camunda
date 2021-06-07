@@ -22,13 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 
 public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReportRestServiceIT {
 
@@ -54,17 +50,8 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
     importAllEngineEntitiesFromScratch();
 
-    final List<ReportDataDefinitionDto> definitions = Arrays.asList(
-      ReportDataDefinitionDto.builder()
-        .key(key1)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build(),
-      ReportDataDefinitionDto.builder()
-        .key(key2)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build()
+    final List<ReportDataDefinitionDto> definitions = List.of(
+      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
     );
 
     // when
@@ -96,17 +83,8 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
 
     importAllEngineEntitiesFromScratch();
 
-    final List<ReportDataDefinitionDto> definitions = Arrays.asList(
-      ReportDataDefinitionDto.builder()
-        .key(key1)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build(),
-      ReportDataDefinitionDto.builder()
-        .key(key2)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build()
+    final List<ReportDataDefinitionDto> definitions = List.of(
+      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
     );
 
     // when

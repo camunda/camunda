@@ -27,8 +27,7 @@ public class TemplatedProcessReportDataBuilder {
 
   private ProcessReportDataType reportDataType;
 
-  private List<ReportDataDefinitionDto> definitions =
-    Collections.singletonList(ReportDataDefinitionDto.builder().build());
+  private List<ReportDataDefinitionDto> definitions = Collections.singletonList(new ReportDataDefinitionDto());
   private String variableName;
   private VariableType variableType;
   private AggregateByDateUnit groupByDateInterval = AggregateByDateUnit.AUTOMATIC;

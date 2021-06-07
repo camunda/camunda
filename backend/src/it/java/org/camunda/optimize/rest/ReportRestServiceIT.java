@@ -104,18 +104,12 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   public void createNewSingleReportWithMultipleDefinitions(final ReportType reportType) {
     // given
     final List<ReportDataDefinitionDto> definitions = Arrays.asList(
-      ReportDataDefinitionDto.builder()
-        .key(RANDOM_KEY)
-        .name(RANDOM_STRING)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build(),
-      ReportDataDefinitionDto.builder()
-        .key(RANDOM_KEY + 2)
-        .name(RANDOM_STRING + 2)
-        .versions(Collections.singletonList(ALL_VERSIONS))
-        .tenantIds(DEFAULT_TENANT_IDS)
-        .build()
+      new ReportDataDefinitionDto(
+        RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+      ),
+      new ReportDataDefinitionDto(
+        RANDOM_KEY + 2, RANDOM_STRING + 2, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+      )
     );
 
     // when
