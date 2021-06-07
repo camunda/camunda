@@ -98,31 +98,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          if (snapshot != null) {
-            future.complete(snapshot);
-            return;
-          }
-
-          if (!takenFuture.isDone()) {
-            future.completeExceptionally(new IllegalStateException("Snapshot is not taken"));
-            return;
-          }
-
-          if (!isValid) {
-            future.completeExceptionally(
-                new IllegalStateException("Snapshot is not valid. It may have been deleted."));
-            return;
-          }
-
-          try {
-            snapshot = snapshotStore.newSnapshot(metadata, directory, checksum);
-            future.complete(snapshot);
-          } catch (final Exception e) {
-            future.completeExceptionally(e);
-          }
-        });
+    actor.call(() -> persistInternal(future));
     return future;
   }
 
@@ -134,6 +110,33 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   @Override
   public Path getPath() {
     return directory;
+  }
+
+  private void persistInternal(final CompletableActorFuture<PersistedSnapshot> future) {
+    if (snapshot != null) {
+      future.complete(snapshot);
+      return;
+    }
+
+    if (!takenFuture.isDone()) {
+      future.completeExceptionally(new IllegalStateException("Snapshot is not taken"));
+      return;
+    }
+
+    if (!isValid) {
+      future.completeExceptionally(
+          new IllegalStateException("Snapshot is not valid. It may have been deleted."));
+      return;
+    }
+
+    try {
+      snapshot = snapshotStore.newSnapshot(metadata, directory, checksum);
+      future.complete(snapshot);
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
+    }
+
+    snapshotStore.removePendingSnapshot(this);
   }
 
   private void abortInternal() {
@@ -156,8 +159,6 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         + directory
         + ", checksum="
         + checksum
-        + ", snapshotStore="
-        + snapshotStore
         + ", metadata="
         + metadata
         + '}';

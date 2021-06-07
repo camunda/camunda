@@ -31,7 +31,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
-      "Finished taking snapshot, need to wait until last written event position {} is committed, current commit position is {}. After that snapshot can be marked as valid.";
+      "Finished taking temporary snapshot, need to wait until last written event position {} is committed, current commit position is {}. After that snapshot will be committed.";
   private static final String ERROR_MSG_ON_RESOLVE_PROCESSED_POS =
       "Unexpected error in resolving last processed position.";
   private static final String ERROR_MSG_ON_RESOLVE_WRITTEN_POS =
@@ -206,7 +206,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
                             "Could not take a snapshot for {}", processorName, snapshotTakenError);
                         return;
                       }
-                      LOG.debug("Created pending snapshot for {}", processorName);
+                      LOG.trace("Created temporary snapshot for {}", processorName);
                       pendingSnapshot = optionalPendingSnapshot.get();
                       onRecovered();
 
@@ -247,18 +247,17 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
                   && !persistingSnapshot) {
                 persistingSnapshot = true;
 
+                LOG.debug(
+                    "Current commit position {} >= {}, committing snapshot {}.",
+                    currentCommitPosition,
+                    lastWrittenEventPosition,
+                    pendingSnapshot);
                 final var snapshotPersistFuture = pendingSnapshot.persist();
 
                 snapshotPersistFuture.onComplete(
                     (snapshot, persistError) -> {
                       if (persistError != null) {
                         LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
-                      } else {
-                        LOG.info(
-                            "Current commit position {} >= {}, snapshot {} is valid and has been persisted.",
-                            currentCommitPosition,
-                            lastWrittenEventPosition,
-                            snapshot.getId());
                       }
                       lastWrittenEventPosition = null;
                       takingSnapshot = false;

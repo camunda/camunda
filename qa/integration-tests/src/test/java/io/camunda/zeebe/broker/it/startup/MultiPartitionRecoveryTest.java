@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.broker.it.startup;
 
+import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.it.clustering.ClusteringRule;
 import io.camunda.zeebe.broker.it.util.GrpcClientRule;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -25,9 +27,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
 
 @RunWith(Parameterized.class)
 public final class MultiPartitionRecoveryTest {
+
+  private static final Logger LOG = TestLoggers.TEST_LOGGER;
 
   private static final String PROCESS_ID = "process";
 
@@ -54,13 +59,13 @@ public final class MultiPartitionRecoveryTest {
   public static Object[][] restartAction() {
     return new Object[][] {
       new Object[] {
-        (Consumer<MultiPartitionRecoveryTest>) (test -> test.restartBroker(0)), "restart one"
+        (Consumer<MultiPartitionRecoveryTest>) (test -> test.restartLeader(1)), "restart one"
       },
       new Object[] {
-        (Consumer<MultiPartitionRecoveryTest>) (test -> test.restartBroker(1)), "restart two"
+        (Consumer<MultiPartitionRecoveryTest>) (test -> test.restartLeader(2)), "restart two"
       },
       new Object[] {
-        (Consumer<MultiPartitionRecoveryTest>) (test -> test.restartBroker(2)), "restart three"
+        (Consumer<MultiPartitionRecoveryTest>) (test -> test.restartLeader(3)), "restart three"
       }
     };
   }
@@ -109,12 +114,15 @@ public final class MultiPartitionRecoveryTest {
               final var processInstanceKey = processInstanceEvent.getProcessInstanceKey();
               final var partitionId = Protocol.decodePartitionId(processInstanceKey);
               partitionIds.remove(Integer.valueOf(partitionId));
-              return partitionIds.isEmpty();
-            });
+              return partitionIds;
+            },
+            List::isEmpty);
   }
 
-  protected void restartBroker(final int nodeId) {
+  protected void restartLeader(final int partitionId) {
+    final var nodeId = clusteringRule.getLeaderForPartition(partitionId).getNodeId();
     clusteringRule.restartBroker(nodeId);
+    LOG.info("Restarted broker {} which was the leader of partition {}", nodeId, partitionId);
   }
 
   private void deploy(final BpmnModelInstance process, final String s) {

@@ -46,7 +46,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.docker-java-api>3.2.8</version.docker-java-api>
-    <version.elasticsearch>7.13.0</version.elasticsearch>
+    <version.elasticsearch>7.13.1</version.elasticsearch>
     <version.error-prone>2.7.1</version.error-prone>
     <version.grpc>1.38.0</version.grpc>
     <version.gson>2.8.7</version.gson>
@@ -64,15 +64,15 @@
     <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.14.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>3.10.0</version.mockito>
-    <version.mockito-jupiter>3.10.0</version.mockito-jupiter>
+    <version.mockito>3.11.0</version.mockito>
+    <version.mockito-jupiter>3.11.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.24</version.msgpack>
     <version.netty-tcnative>2.0.39.Final</version.netty-tcnative>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.11.0</version.prometheus>
-    <version.protobuf>3.17.1</version.protobuf>
-    <version.protobuf-common>2.3.1</version.protobuf-common>
+    <version.protobuf>3.17.2</version.protobuf>
+    <version.protobuf-common>2.3.2</version.protobuf-common>
     <version.micrometer>1.7.0</version.micrometer>
     <version.rocksdbjni>6.20.3</version.rocksdbjni>
     <version.sbe>1.22.0</version.sbe>
@@ -99,6 +99,8 @@
     <version.jqwik>1.5.1</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
+    <version.byte-buddy>1.11.1</version.byte-buddy>
+    <version.revapi>0.24.2</version.revapi>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -123,17 +125,17 @@
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
     <plugin.version.spotbugs>4.2.3</plugin.version.spotbugs>
     <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
-    <plugin.version.clirr>2.8</plugin.version.clirr>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
     <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
+    <plugin.version.revapi>0.14.3</plugin.version.revapi>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
     <backwards.compat.version>1.0.0</backwards.compat.version>
-    <ignored.changes.file>ignored-changes.xml</ignored.changes.file>
+    <ignored.changes.file>ignored-changes.json</ignored.changes.file>
   </properties>
 
   <dependencyManagement>
@@ -714,6 +716,12 @@
       </dependency>
 
       <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy</artifactId>
+        <version>${version.byte-buddy}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>minlog</artifactId>
         <version>${version.minlog}</version>
@@ -769,24 +777,55 @@
           </configuration>
         </plugin>
 
+        <!-- compatibility checks/guard -->
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>${plugin.version.clirr}</version>
-          <configuration>
-            <comparisonVersion>${backwards.compat.version}</comparisonVersion>
-            <ignoredDifferencesFile>${ignored.changes.file}</ignoredDifferencesFile>
-            <!-- TODO(menski): Enable again after 1.0 release -->
-            <skip>true</skip>
-          </configuration>
+          <groupId>org.revapi</groupId>
+          <artifactId>revapi-maven-plugin</artifactId>
+          <version>${plugin.version.revapi}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.revapi</groupId>
+              <artifactId>revapi-java</artifactId>
+              <version>${version.revapi}</version>
+            </dependency>
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>zeebe-build-tools</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
           <executions>
             <execution>
+              <phase>verify</phase>
+              <id>check</id>
               <goals>
                 <goal>check</goal>
               </goals>
-              <phase>verify</phase>
             </execution>
           </executions>
+          <configuration>
+            <!-- see the property's documentation as to why -->
+            <checkDependencies>true</checkDependencies>
+            <!-- expands maven properties in the configuration files -->
+            <expandProperties>true</expandProperties>
+            <!-- allows us to pre-defined ignored-changes, even when missing -->
+            <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
+            <analysisConfigurationFiles combine.children="append">
+              <!-- uses the default configuration file packaged in build-tools -->
+              <configurationFile>
+                <resource>revapi/revapi.json</resource>
+              </configurationFile>
+              <!-- will pick up a project relative ignored-changes file -->
+              <configurationFile>
+                <path>${ignored.changes.file}</path>
+              </configurationFile>
+            </analysisConfigurationFiles>
+            <!--
+              unfortunately we cannot use the meta version LATEST since we want to run this on
+              different branches which need to compare to different versions
+              -->
+            <oldVersion>${backwards.compat.version}</oldVersion>
+          </configuration>
         </plugin>
 
         <plugin>
@@ -1110,7 +1149,6 @@
           <version>${plugin.version.proto-backwards-compatibility}</version>
           <configuration>
             <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
-            <allowBreakingChanges>true</allowBreakingChanges>
           </configuration>
           <executions>
             <execution>
