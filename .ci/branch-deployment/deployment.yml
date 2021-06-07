@@ -68,7 +68,7 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 30
           httpGet:
-            path: /
+            path: /api/readyz
             port: optimize-http
         resources:
           limits:
@@ -86,6 +86,7 @@ spec:
           subPath: OptimizeLicense.txt
       - name: cambpm
         image: "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:@CAMBPM_VERSION@"
+        imagePullPolicy: Always
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS

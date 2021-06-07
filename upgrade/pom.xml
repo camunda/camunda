@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.0</version>
+    <version>3.5.0</version>
   </parent>
 
   <artifactId>upgrade-optimize</artifactId>
@@ -144,6 +144,38 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-valid-test-plugins</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>optimize-main-test-plugin</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/testPluginsValid</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.camunda.optimize</groupId>
+            <artifactId>optimize-main-test-plugin</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
     <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>

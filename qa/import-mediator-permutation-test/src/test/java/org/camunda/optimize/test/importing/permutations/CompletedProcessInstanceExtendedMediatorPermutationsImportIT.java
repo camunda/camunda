@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
@@ -46,7 +46,7 @@ public class CompletedProcessInstanceExtendedMediatorPermutationsImportIT extend
   @ParameterizedTest(name = "Completed Process Instances are fully imported with mediator order {0}")
   @MethodSource("completedActivityRelatedMediators")
   public void completedInstanceIsFullyImportedCamundaEventImportEnabled(
-    final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+    final List<Class<? extends ImportMediator>> mediatorOrder) {
 
     logMediatorOrder(mediatorOrder);
     // when
@@ -70,12 +70,12 @@ public class CompletedProcessInstanceExtendedMediatorPermutationsImportIT extend
             assertThat(variable.getType()).isNotNull();
             assertThat(variable.getVersion()).isEqualTo(1L);
           });
-        assertThat(persistedProcessInstanceDto.getEvents())
+        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
           .hasSize(3)
           .allSatisfy(activity -> {
             assertThat(activity.getStartDate()).isNotNull();
             assertThat(activity.getEndDate()).isNotNull();
-            assertThat(activity.getDurationInMs()).isGreaterThanOrEqualTo(0L);
+            assertThat(activity.getTotalDurationInMs()).isGreaterThanOrEqualTo(0L);
           });
         assertThat(persistedProcessInstanceDto.getUserTasks())
           .hasSize(1)
@@ -97,7 +97,7 @@ public class CompletedProcessInstanceExtendedMediatorPermutationsImportIT extend
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(6);
   }
 
-  private static Stream<List<Class<? extends EngineImportMediator>>> completedActivityRelatedMediators() {
+  private static Stream<List<Class<? extends ImportMediator>>> completedActivityRelatedMediators() {
     return getMediatorPermutationsStream(
       ImmutableList.of(
         CompletedActivityInstanceEngineImportMediator.class,

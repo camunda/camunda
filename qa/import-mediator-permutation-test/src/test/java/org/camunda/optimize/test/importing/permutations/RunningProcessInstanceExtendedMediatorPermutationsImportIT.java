@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
@@ -47,7 +47,7 @@ public class RunningProcessInstanceExtendedMediatorPermutationsImportIT extends 
 
   @ParameterizedTest(name = "Running Activities are fully imported with mediator order {0}")
   @MethodSource("runningActivityRelatedMediators")
-  public void runningInstanceIsFullyImported(final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+  public void runningInstanceIsFullyImported(final List<Class<? extends ImportMediator>> mediatorOrder) {
 
     logMediatorOrder(mediatorOrder);
 
@@ -68,10 +68,10 @@ public class RunningProcessInstanceExtendedMediatorPermutationsImportIT extends 
         assertThat(persistedProcessInstanceDto.getEndDate()).isNull();
         assertThat(persistedProcessInstanceDto.getState()).isEqualTo(ACTIVE_STATE);
 
-        assertThat(persistedProcessInstanceDto.getEvents())
+        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
           .hasSize(numberOfEventsToImport)
           .allSatisfy(activity -> assertThat(activity.getStartDate()).isNotNull())
-          .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getDurationInMs)
+          .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getTotalDurationInMs)
           .contains(tuple(USER_TASK_1, null, null));
         assertThat(persistedProcessInstanceDto.getUserTasks())
           .hasSize(1)
@@ -94,7 +94,7 @@ public class RunningProcessInstanceExtendedMediatorPermutationsImportIT extends 
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(1 + numberOfEventsToImport);
   }
 
-  private static Stream<List<Class<? extends EngineImportMediator>>> runningActivityRelatedMediators() {
+  private static Stream<List<Class<? extends ImportMediator>>> runningActivityRelatedMediators() {
     return getMediatorPermutationsStream(
       ImmutableList.of(
         RunningActivityInstanceEngineImportMediator.class,

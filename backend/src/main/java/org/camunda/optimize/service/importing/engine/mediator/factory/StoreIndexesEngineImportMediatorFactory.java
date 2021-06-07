@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportMediator;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -20,11 +20,11 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class StoreIndexesEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class StoreIndexesEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final ImportIndexWriter importIndexWriter;
 
   public StoreIndexesEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                 final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                 final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                  final ConfigurationService configurationService,
                                                  final ImportIndexWriter importIndexWriter) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
@@ -32,7 +32,7 @@ public class StoreIndexesEngineImportMediatorFactory extends AbstractImportMedia
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(createStoreIndexImportMediator(engineContext));
   }
 

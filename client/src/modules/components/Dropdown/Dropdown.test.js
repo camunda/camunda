@@ -312,60 +312,8 @@ it('should pass open, offset, setOpened, setClosed, forceToggle and closeParent 
   expect(submenuNode).toHaveProp('closeParent');
 });
 
-it('should open a submenu when it is opened', () => {
-  const node = mount(
-    <Dropdown>
-      <Dropdown.Submenu />
-      <Dropdown.Submenu />
-    </Dropdown>
-  );
-
-  node.setState({openSubmenu: 0});
-
-  expect(node.find(Dropdown.Submenu).at(0)).toHaveProp('open', true);
-});
-
-it('should not open a submenu when it is opened, but another is forced open', () => {
-  const node = mount(
-    <Dropdown>
-      <Dropdown.Submenu />
-      <Dropdown.Submenu />
-    </Dropdown>
-  );
-
-  node.setState({openSubmenu: 0, fixedSubmenu: 1});
-
-  expect(node.find(Dropdown.Submenu).at(0)).toHaveProp('open', false);
-  expect(node.find(Dropdown.Submenu).at(1)).toHaveProp('open', true);
-});
-
-it('should open a submenu when pressing the right arrow on a submenu entry', () => {
-  const node = mount(
-    <Dropdown label="Click me">
-      <Dropdown.Submenu />
-    </Dropdown>,
-    {attachTo: container}
-  );
-
-  node.instance().setState({open: true});
-  node.find(Dropdown.Submenu).first().getDOMNode().focus();
-
-  node.simulate('keyDown', {key: 'ArrowRight'});
-
-  expect(node.state('fixedSubmenu')).toBe(0);
-});
-
 it('should add scrollable class when there is no enough space to show all items', () => {
-  const node = mount(
-    <Dropdown>
-      <Dropdown.Option>1</Dropdown.Option>
-      <Dropdown.Option>2</Dropdown.Option>
-      <Dropdown.Option>3</Dropdown.Option>
-      <Dropdown.Option>4</Dropdown.Option>
-      <Dropdown.Option>5</Dropdown.Option>
-      <Dropdown.Option>6</Dropdown.Option>
-    </Dropdown>
-  );
+  const node = mount(<Dropdown />);
 
   const specs = {
     oneItemHeight: 30,
@@ -382,7 +330,7 @@ it('should add scrollable class when there is no enough space to show all items'
   node.update();
 
   expect(node.state().listStyles.height).toBe(specs.footerTop - 10);
-  expect(node.find('.menu > ul').first()).toHaveClassName('scrollable');
+  expect(node.find('.menu > DropdownOptionsList').first()).toHaveClassName('scrollable');
 });
 
 it('flip dropdown vertically when there is no enough space', () => {

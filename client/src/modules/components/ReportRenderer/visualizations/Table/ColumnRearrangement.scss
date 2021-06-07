@@ -5,7 +5,23 @@
 }
 
 .ColumnRearrangement .tableHeader {
-  cursor: grab;
+  cursor: move;
+
+  &:not([data-group]):hover:after,
+  &.childDragged:after {
+    background: var(--white);
+    height: 100%;
+    width: 20px;
+    content: '.';
+    position: absolute;
+    left: 5px;
+    top: -5px;
+    font-size: 20px;
+    font-weight: normal;
+    color: var(--grey-base-40);
+    text-shadow: 0 5px var(--grey-base-40), 0 10px var(--grey-base-40), 5px 0 var(--grey-base-40),
+      5px 5px var(--grey-base-40), 5px 10px var(--grey-base-40);
+  }
 }
 
 .ColumnRearrangement__draggedColumn {

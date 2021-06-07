@@ -12,6 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.ModelParseException;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
@@ -43,7 +44,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeData;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromEventCountDto;
@@ -270,13 +271,15 @@ public class EventCountService {
   private void validateEventCountSuggestionsParameters(final EventCountRequestDto eventCountRequestDto,
                                                        final Map<String, EventMappingDto> currentMappings,
                                                        final BpmnModelInstance bpmnModelForXml) {
-    Map<String, String> xmlFlowNodeIds = eventCountRequestDto.getXml() == null ? Collections.emptyMap() :
-      extractFlowNodeNames(bpmnModelForXml);
+    List<FlowNodeDataDto> xmlFlowNodeIds = eventCountRequestDto.getXml() == null ? Collections.emptyList() :
+      extractFlowNodeData(bpmnModelForXml);
     String targetFlowNodeId = eventCountRequestDto.getTargetFlowNodeId();
-    if (targetFlowNodeId != null && !xmlFlowNodeIds.containsKey(targetFlowNodeId)) {
+    Set<String> flowNodeIds = xmlFlowNodeIds.stream().map(flowNode -> flowNode.getId()).collect(Collectors.toSet());
+
+    if (targetFlowNodeId != null && !flowNodeIds.contains(targetFlowNodeId)) {
       throw new BadRequestException("Target Flow Node IDs must exist within the provided XML");
     }
-    if (currentMappings != null && !xmlFlowNodeIds.keySet().containsAll(currentMappings.keySet())) {
+    if (currentMappings != null && !flowNodeIds.containsAll(currentMappings.keySet())) {
       throw new BadRequestException("All Flow Node IDs for event mappings must exist within the provided XML");
     }
   }

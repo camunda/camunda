@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
@@ -57,7 +57,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitions()
-        .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 
@@ -89,7 +89,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       () -> embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDefinitions()
-        .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode())
+        .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode())
     );
   }
 

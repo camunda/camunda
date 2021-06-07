@@ -135,6 +135,16 @@ engine-commons:
     # infinite amount of time.
     timeout: 0
 
+zeebe:
+  # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
+  enabled: false
+  # The name suffix of the exported Zeebe records. This must match the record-prefix configured in the exporter of the instance
+  name: 'zeebe-record'
+  # The number of partitions configured for the Zeebe record source
+  partitionCount: 1
+  # The max page size for importing Zeebe data
+  maxImportPageSize: 10000
+
 import:
   data:
     activity-instance:
@@ -346,6 +356,10 @@ plugin:
     # Look in the given base package list for business key import adaption plugins.
     # If empty, the import is not influenced.
     basePackages: []
+  elasticsearchCustomHeader:
+    # Look in the given base package list for Elasticsearch custom header fetching plugins.
+    # If empty, ES requests are not influenced.
+    basePackages: []
 
 serialization:
   # Define a custom date format that should be used for
@@ -472,7 +486,7 @@ eventBasedProcess:
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
     enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
-    maxPageSize: 10000
+    maxPageSize: 5000
   eventIngestion:
     # Secret token to be provided on the Ingestion REST API when ingesting data.
     # If set `null` a random token will be generated with each startup of Optimize and logged.

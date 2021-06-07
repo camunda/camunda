@@ -48,7 +48,7 @@ export function RawDataModal({name, report, close, mightFail}) {
           query
         ),
         setRawDataReport,
-        async (e) => setError({status: e.status, data: await e.json()})
+        setError
       );
     },
     [mightFail, report]

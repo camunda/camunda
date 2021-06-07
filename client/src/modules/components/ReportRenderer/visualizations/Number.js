@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback} from 'react';
 import fitty from 'fitty';
 
 import {formatters, reportConfig} from 'services';
@@ -17,16 +17,15 @@ import './Number.scss';
 export default function Number({report, formatter}) {
   const {data, result, reportType} = report;
   const {targetValue, precision} = data.configuration;
-  const numberText = useRef();
 
-  useEffect(() => {
-    if (numberText.current) {
-      fitty(numberText.current, {
+  const containerRef = useCallback((node) => {
+    if (node) {
+      fitty(node, {
         minSize: 5,
         maxSize: 55,
       });
     }
-  }, [targetValue]);
+  }, []);
 
   if (targetValue && targetValue.active) {
     let min, max;
@@ -51,7 +50,7 @@ export default function Number({report, formatter}) {
 
   return (
     <div className="Number">
-      <div className="container" ref={numberText}>
+      <div className="container" ref={containerRef}>
         {result.measures.map((measure, idx) => {
           let viewString;
 

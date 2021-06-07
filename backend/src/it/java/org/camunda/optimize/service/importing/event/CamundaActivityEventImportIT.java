@@ -11,6 +11,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.engine.ActivityTypes;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -21,7 +22,6 @@ import org.camunda.optimize.service.importing.AbstractImportIT;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.search.SearchHit;
@@ -450,7 +450,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       createExpectedIndexNameForProcessDefinition(firstProcessInstanceEngineDto.getProcessDefinitionKey()),
       createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey())
     );
-    assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isTrue();
+    assertThat(esClient.exists(request)).isTrue();
 
     // then events have been saved in each index
     assertThat(getSavedEventsForProcessDefinitionKey(firstProcessInstanceEngineDto.getProcessDefinitionKey()))
@@ -480,7 +480,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       createExpectedIndexNameForProcessDefinition(firstProcessInstanceEngineDto.getProcessDefinitionKey()),
       createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey())
     );
-    assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isTrue();
+    assertThat(esClient.exists(request)).isTrue();
 
     // then events have been saved in each index. The conversion to set is to remove duplicate entries due to
     // multiple import batches
@@ -508,7 +508,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     GetIndexRequest request = new GetIndexRequest(
       createExpectedIndexNameForProcessDefinition(processInstanceEngineDto.getProcessDefinitionKey()));
-    assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isFalse();
+    assertThat(esClient.exists(request)).isFalse();
   }
 
   @Test
@@ -601,16 +601,18 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void createCamundaActivityEventsIndexForKey(final String key) {
+    final OptimizeElasticsearchClient esClient =
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     final OptimizeIndexNameService indexNameService =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().getIndexNameService();
+      esClient.getIndexNameService();
     final CamundaActivityEventIndex newIndex = new CamundaActivityEventIndex(key);
     CreateIndexRequest request = new CreateIndexRequest(
       indexNameService.getOptimizeIndexNameWithVersion(newIndex)
     ).alias(new Alias(indexNameService.getOptimizeIndexAliasForIndex(newIndex.getIndexName())));
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    esClient
       .getHighLevelClient()
       .indices()
-      .create(request, RequestOptions.DEFAULT);
+      .create(request, esClient.requestOptions());
   }
 
   private void saveDeletedDefinitionToElasticsearch(final ProcessDefinitionEngineDto definitionEngineDto) {
@@ -620,7 +622,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .name(definitionEngineDto.getName())
       .version(definitionEngineDto.getVersionAsString())
       .tenantId(definitionEngineDto.getTenantId().orElse(null))
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .deleted(true)
       .bpmn20Xml("someXml")
       .build();

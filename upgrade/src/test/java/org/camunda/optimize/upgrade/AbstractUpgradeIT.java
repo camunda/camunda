@@ -41,16 +41,18 @@ import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -60,10 +62,13 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -109,8 +114,18 @@ public abstract class AbstractUpgradeIT {
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
     elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
 
+    setUpUpgradeDependenciesWithConfiguration(configurationService);
+    cleanAllDataFromElasticsearch();
+    createEmptyEnvConfig();
+    initSchema(Collections.singletonList(METADATA_INDEX));
+    setMetadataVersion(FROM_VERSION);
+
+    prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
+  }
+
+  protected void setUpUpgradeDependenciesWithConfiguration(ConfigurationService configurationService) {
     this.upgradeDependencies =
-      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(this.configurationService);
+      UpgradeUtil.createUpgradeDependenciesWithAConfigurationService(configurationService);
     this.objectMapper = upgradeDependencies.getObjectMapper();
     this.prefixAwareClient = upgradeDependencies.getEsClient();
     this.indexNameService = upgradeDependencies.getIndexNameService();
@@ -121,13 +136,6 @@ public abstract class AbstractUpgradeIT {
       createSchemaUpgradeClient(upgradeDependencies),
       new UpgradeStepLogService()
     );
-
-    cleanAllDataFromElasticsearch();
-    createEmptyEnvConfig();
-    initSchema(Collections.singletonList(METADATA_INDEX));
-    setMetadataVersion(FROM_VERSION);
-
-    prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
   }
 
   @AfterEach
@@ -142,6 +150,22 @@ public abstract class AbstractUpgradeIT {
       metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
+  }
+
+  protected void createIndicesWithAdditionalReadOnlyAliases(Map<IndexMappingCreator, Set<String>> indexMappingCreatorAliases) {
+    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
+      metadataService,
+      createDefaultConfiguration(),
+      indexNameService,
+      new ArrayList<>(indexMappingCreatorAliases.keySet())
+    );
+    for (Map.Entry<IndexMappingCreator, Set<String>> indexMappingToAlias : indexMappingCreatorAliases.entrySet()) {
+      elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
+        prefixAwareClient,
+        indexMappingToAlias.getKey(),
+        indexMappingToAlias.getValue()
+      );
+    }
   }
 
   protected void setMetadataVersion(String version) {
@@ -164,7 +188,7 @@ public abstract class AbstractUpgradeIT {
     request.settings(indexSettings);
     request.mapping(indexMapping.getSource());
     indexMapping.setDynamic("false");
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
   }
 
   protected void executeBulk(final String bulkPayload) throws IOException {
@@ -196,7 +220,7 @@ public abstract class AbstractUpgradeIT {
   protected GetIndexResponse getIndicesForMapping(final IndexMappingCreator mapping) {
     return prefixAwareClient.getHighLevelClient().indices().get(
       new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mapping)),
-      RequestOptions.DEFAULT
+      prefixAwareClient.requestOptions()
     );
   }
 
@@ -204,7 +228,7 @@ public abstract class AbstractUpgradeIT {
   protected <T> Optional<T> getDocumentOfIndexByIdAs(final String indexName,
                                                      final String id,
                                                      final Class<T> valueType) {
-    final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id), RequestOptions.DEFAULT);
+    final GetResponse getResponse = prefixAwareClient.get(new GetRequest(indexName, id));
     return getResponse.isSourceEmpty()
       ? Optional.empty()
       : Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
@@ -229,10 +253,8 @@ public abstract class AbstractUpgradeIT {
 
   @SneakyThrows
   protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) {
-    final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)),
-      RequestOptions.DEFAULT
-    );
+    final SearchResponse searchResponse =
+      prefixAwareClient.search(new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)));
     return searchResponse.getHits().getHits();
   }
 
@@ -281,6 +303,19 @@ public abstract class AbstractUpgradeIT {
     return new UpdateDataStep(
       index, termQuery("username", "admin"), "ctx._source.password = ctx._source.password + \"1\""
     );
+  }
+
+  protected void insertTestDocuments(final int amount) throws IOException {
+    final String indexName = TEST_INDEX_V1.getIndexName();
+    final BulkRequest bulkRequest = new BulkRequest();
+    for (int i = 0; i < amount; i++) {
+      bulkRequest.add(
+        new IndexRequest(indexName)
+          .source(String.format("{\"password\" : \"admin\",\"username\" : \"admin%d\"}", i), XContentType.JSON)
+      );
+    }
+    prefixAwareClient.bulk(bulkRequest);
+    prefixAwareClient.refresh(new RefreshRequest(indexName));
   }
 
 }

@@ -26,7 +26,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
@@ -74,7 +73,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
-        RequestOptions.DEFAULT
+        prefixAwareClient.requestOptions()
       )
     ).isTrue();
     final GetAliasesResponse alias = getAliasesForAlias(
@@ -101,7 +100,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
         new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
-        RequestOptions.DEFAULT
+        prefixAwareClient.requestOptions()
       )
     ).isTrue();
     final GetAliasesResponse alias = getAliasesForAlias(
@@ -220,7 +219,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     request.alias(new Alias(aliasForIndex).writeIndex(true));
     request.alias(new Alias(readOnlyAliasForIndex).writeIndex(false));
     request.mapping(TEST_INDEX_V1.getSource());
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -293,7 +292,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().existsTemplate(new IndexTemplatesExistRequest(
         indexNameService.getOptimizeIndexTemplateNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1)
-      ), RequestOptions.DEFAULT)
+      ), prefixAwareClient.requestOptions())
     ).isFalse();
   }
 
@@ -312,10 +311,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(TEST_INDEX_V2.getIndexName()),
-      RequestOptions.DEFAULT
-    );
+    final SearchResponse searchResponse = prefixAwareClient.search(new SearchRequest(TEST_INDEX_V2.getIndexName()));
 
     assertThat(searchResponse.getHits())
       .hasSize(1)
@@ -341,9 +337,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(TEST_INDEX_V2.getIndexName()),
-      RequestOptions.DEFAULT
-    );
+      new SearchRequest(TEST_INDEX_V2.getIndexName()));
     assertThat(searchResponse.getHits())
       .hasSize(1)
       .extracting(SearchHit::getSourceAsMap)
@@ -368,9 +362,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(TEST_INDEX_V2.getIndexName()),
-      RequestOptions.DEFAULT
-    );
+      new SearchRequest(TEST_INDEX_V2.getIndexName()));
     assertThat(searchResponse.getHits().getHits()).isEmpty();
   }
 
@@ -454,7 +446,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     IndexRequest indexRequest = new IndexRequest("users")
       .source("{\"name\": \"yuri_loza\"}", XContentType.JSON);
 
-    prefixAwareClient.index(indexRequest, RequestOptions.DEFAULT);
+    prefixAwareClient.index(indexRequest);
 
     prefixAwareClient.refresh(new RefreshRequest("*"));
 
@@ -484,9 +476,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(METADATA_INDEX.getIndexName()),
-      RequestOptions.DEFAULT
-    );
+      new SearchRequest(METADATA_INDEX.getIndexName()));
     assertThat(searchResponse.getHits())
       .hasSize(1)
       .extracting(SearchHit::getSourceAsMap)
@@ -495,7 +485,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   }
 
   private GetAliasesResponse getAliasesForAlias(final String readOnlyAliasForIndex) throws IOException {
-    return prefixAwareClient.getAlias(new GetAliasesRequest(readOnlyAliasForIndex), RequestOptions.DEFAULT);
+    return prefixAwareClient.getAlias(new GetAliasesRequest(readOnlyAliasForIndex));
   }
 
   private void assertThatIndexIsSetAsWriteIndex(final String versionedIndexName, final GetAliasesResponse alias) {
@@ -515,14 +505,14 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
     request.alias(new Alias(aliasForIndex));
     request.mapping(TEST_INDEX_V1.getSource());
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    prefixAwareClient.getHighLevelClient().indices().create(request, prefixAwareClient.requestOptions());
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
   private Map<String, Object> getMappingFields() throws IOException {
     GetMappingsRequest request = new GetMappingsRequest();
     request.indices(TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
-    GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request, RequestOptions.DEFAULT);
+    GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request);
     final Object propertiesMap = getMappingResponse.mappings()
       .values()
       .stream()
@@ -545,11 +535,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   private Map<String, Set<AliasMetadata>> getAliasMap(final String aliasName) {
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
     try {
-      return prefixAwareClient
-        .getHighLevelClient()
-        .indices()
-        .getAlias(aliasesRequest, RequestOptions.DEFAULT)
-        .getAliases();
+      return prefixAwareClient.getAlias(aliasesRequest).getAliases();
     } catch (IOException e) {
       String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
       throw new OptimizeRuntimeException(message, e);

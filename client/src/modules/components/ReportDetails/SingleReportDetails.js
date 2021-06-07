@@ -51,13 +51,13 @@ function getSelectedView(view, groupBy, type) {
 }
 
 function getKey(data) {
-  return data.processDefinitionKey || data.decisionDefinitionKey;
+  return data.definitions[0].key;
 }
 function getName(data) {
-  return data.processDefinitionName || data.decisionDefinitionName;
+  return data.definitions[0].name;
 }
 function getVersions(data) {
-  return data.processDefinitionVersions || data.decisionDefinitionVersions;
+  return data.definitions[0].versions;
 }
 
 export function SingleReportDetails({report, showReportName, mightFail, location}) {
@@ -83,10 +83,10 @@ export function SingleReportDetails({report, showReportName, mightFail, location
 
   let tenantInfo;
   if (tenants && tenants.length > 1) {
-    if (tenants.length === report.data.tenantIds.length) {
+    if (tenants.length === report.data.definitions[0].tenantIds.length) {
       tenantInfo = t('common.all');
     } else {
-      tenantInfo = report.data.tenantIds
+      tenantInfo = report.data.definitions[0].tenantIds
         .map((tenantId) => formatTenantName(tenants.find(({id}) => id === tenantId)))
         .join(', ');
     }

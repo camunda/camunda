@@ -8,8 +8,8 @@ package org.camunda.optimize.service.variable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.DefinitionService.prepareTenantListForDefinitionSearch;
 import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
@@ -30,22 +31,30 @@ public class DecisionVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
 
 
-  public List<DecisionVariableNameResponseDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
-    ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
-    return decisionVariableReader.getInputVariableNames(
-      variableRequestDto.getDecisionDefinitionKey(),
-      variableRequestDto.getDecisionDefinitionVersions(),
-      prepareTenantListForDefinitionSearch(variableRequestDto.getTenantIds())
-    );
+  public List<DecisionVariableNameResponseDto> getInputVariableNames(List<DecisionVariableNameRequestDto> variableRequestDtos) {
+    return variableRequestDtos.stream()
+      .flatMap(entry -> decisionVariableReader
+        .getInputVariableNames(
+          entry.getDecisionDefinitionKey(),
+          entry.getDecisionDefinitionVersions(),
+          prepareTenantListForDefinitionSearch(entry.getTenantIds())
+        ).stream()
+      )
+      .distinct()
+      .collect(Collectors.toList());
   }
 
-  public List<DecisionVariableNameResponseDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
-    ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
-    return decisionVariableReader.getOutputVariableNames(
-      variableRequestDto.getDecisionDefinitionKey(),
-      variableRequestDto.getDecisionDefinitionVersions(),
-      prepareTenantListForDefinitionSearch(variableRequestDto.getTenantIds())
-    );
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames(List<DecisionVariableNameRequestDto> variableRequestDtos) {
+    return variableRequestDtos.stream()
+      .flatMap(entry -> decisionVariableReader
+        .getOutputVariableNames(
+          entry.getDecisionDefinitionKey(),
+          entry.getDecisionDefinitionVersions(),
+          prepareTenantListForDefinitionSearch(entry.getTenantIds())
+        ).stream()
+      )
+      .distinct()
+      .collect(Collectors.toList());
   }
 
   public List<String> getInputVariableValues(String userId, DecisionVariableValueRequestDto requestDto) {

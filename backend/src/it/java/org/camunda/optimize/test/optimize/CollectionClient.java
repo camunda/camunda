@@ -395,6 +395,12 @@ public class CollectionClient {
       .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public boolean collectionScopesHaveDeleteConflict(final String collectionId, final List<String> collectionScopeIds) {
+    return getRequestExecutor()
+      .buildCheckScopeBulkDeletionConflictsRequest(collectionId, collectionScopeIds)
+      .execute(Boolean.class, Response.Status.OK.getStatusCode());
+  }
+
   public void assertCollectionIsDeleted(final String idToDelete) {
     getRequestExecutor()
       .buildGetCollectionRequest(idToDelete)

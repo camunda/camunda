@@ -16,7 +16,7 @@ services:
       timeout: 5s
       retries: 10
   elasticsearch-old:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${OLD_ES_VERSION:-7.5.1}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${OLD_ES_VERSION:-7.8.0}
     container_name: upgrade-schema-tests-old-elasticsearch-version
     volumes:
       - essnapshot:/var/tmp:rw
@@ -38,7 +38,7 @@ services:
       timeout: 5s
       retries: 10
   elasticsearch-new:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-7.5.1}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-7.8.0}
     container_name: upgrade-schema-tests-new-elasticsearch-version
     volumes:
       - essnapshot:/var/tmp:rw
@@ -61,7 +61,7 @@ services:
       retries: 10
   # dummy container to wait for all others to be healthy and block docker-compose up until that happened
   wait_until_ready:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-7.5.1}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-7.8.0}
     container_name: wait_until_ready
     command: /usr/bin/true
     depends_on: {

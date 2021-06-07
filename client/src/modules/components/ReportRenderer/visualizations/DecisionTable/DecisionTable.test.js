@@ -31,7 +31,11 @@ const props = {
       configuration: {
         xml: 'dmn xml string',
       },
-      decisionDefinitionKey: 'key',
+      definitions: [
+        {
+          key: 'key',
+        },
+      ],
     },
     result: {
       instanceCount: 3,

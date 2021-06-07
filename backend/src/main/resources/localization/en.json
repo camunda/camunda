@@ -248,7 +248,7 @@
     "reportSetup": "Report Setup",
     "downloadCSV": "Download CSV",
     "measure": "Measure",
-    "addMeasure": "Add Measure",
+    "addMeasure": "Add measure",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -455,7 +455,7 @@
         "work": "Work",
         "total": "Total"
       },
-      "userTaskDistributedBy": "Distributed By",
+      "userTaskDistributedBy": "Distribution",
       "visibleNodes": {
         "legend": "Customize Node Display",
         "btn": "Select Flow Nodes...",
@@ -727,7 +727,6 @@
     "and": "and",
     "off": "Off",
     "none": "None",
-    "nothing": "Nothing",
     "all": "All",
     "above": "above",
     "below": "below",
@@ -747,6 +746,7 @@
     "dataSource": "Data Source",
     "selected": "Selected",
     "documentation": "documentation",
+    "open": "Open",
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"

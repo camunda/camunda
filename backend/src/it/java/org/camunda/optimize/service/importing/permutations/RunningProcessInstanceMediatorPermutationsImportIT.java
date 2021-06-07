@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
@@ -40,7 +40,7 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
 
   @ParameterizedTest(name = "Running Activities are fully imported with mediator order {0}")
   @MethodSource("runningActivityRelatedMediators")
-  public void runningInstanceIsFullyImported(final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+  public void runningInstanceIsFullyImported(final List<Class<? extends ImportMediator>> mediatorOrder) {
     // when
     performOrderedImport(mediatorOrder);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -55,11 +55,11 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
         assertThat(persistedProcessInstanceDto.getEndDate()).isNull();
         assertThat(persistedProcessInstanceDto.getState()).isEqualTo(ACTIVE_STATE);
 
-        assertThat(persistedProcessInstanceDto.getEvents())
+        assertThat(persistedProcessInstanceDto.getFlowNodeInstances())
           // only the running activity is imported
           .hasSize(1)
           .allSatisfy(activity -> assertThat(activity.getStartDate()).isNotNull())
-          .extracting(FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getDurationInMs)
+          .extracting(FlowNodeInstanceDto::getEndDate, FlowNodeInstanceDto::getTotalDurationInMs)
           .singleElement()
           .isEqualTo(tuple(null, null));
         assertThat(persistedProcessInstanceDto.getUserTasks())
@@ -83,7 +83,7 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  private static Stream<List<Class<? extends EngineImportMediator>>> runningActivityRelatedMediators() {
+  private static Stream<List<Class<? extends ImportMediator>>> runningActivityRelatedMediators() {
     return getMediatorPermutationsStream(ImmutableList.of(
       RunningActivityInstanceEngineImportMediator.class,
       RunningUserTaskInstanceEngineImportMediator.class,

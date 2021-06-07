@@ -13,16 +13,16 @@ import java.time.OffsetDateTime;
 @Data
 public class HistoricActivityInstanceEngineDto implements EngineDto {
 
-  protected String id;
+  protected String id; // aka FlowNodeInstanceDto.flowNodeInstanceId
   protected String parentActivityInstanceId;
-  protected String activityId;
+  protected String activityId; // aka FlowNodeInstanceDto.flowNodeId
   protected String activityName;
-  protected String activityType;
+  protected String activityType; // aka FlowNodeInstanceDto.flowNodeType
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
   protected String executionId;
-  protected String taskId;
+  protected String taskId; // aka FlowNodeInstanceDto.userTaskInstanceId
   protected String calledProcessInstanceId;
   protected String calledCaseInstanceId;
   protected String assignee;

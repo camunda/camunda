@@ -8,13 +8,12 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.events.EventCountService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.exceptions.EventProcessManagementForbiddenException;
@@ -41,7 +40,6 @@ import java.util.List;
 @AllArgsConstructor
 @Path("/event")
 @Component
-@Secured
 @Slf4j
 public class EventRestService {
 

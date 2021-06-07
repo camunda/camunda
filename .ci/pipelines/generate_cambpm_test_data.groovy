@@ -8,7 +8,7 @@ def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 
 def static NODE_POOL_SIMPLE_AGENT() { return "agents-n1-standard-32-netssd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 
@@ -104,6 +104,7 @@ spec:
           subPath: gcloud
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: DB_DRIVER
         value: org.postgresql.Driver
@@ -222,7 +223,7 @@ pipeline {
                                   if [ "${USE_E2E_PRESETS}" = true ]; then
                                     mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
                                   else
-                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}' --startDate "03/01/2018" --endDate "03/01/2020" --jdbcDriver "org.postgresql.Driver" --dbUrl "jdbc:postgresql://localhost:5432/engine" --dbUser "camunda" --dbPassword "camunda""
+                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation exec:java -Dexec.args="--processDefinitions '${PROCESS_DEFINITIONS}' --numberOfProcessInstances ${NUM_PROCESS_INSTANCES} --numberOfDecisionInstances ${NUM_DECISION_INSTANCES} --decisionDefinitions '${DECISION_DEFINITIONS}' --adjustProcessInstanceDates '${ADJUST_PROCESS_INSTANCE_DATES}' --startDate "03/01/2018" --endDate "03/01/2020" --jdbcDriver "org.postgresql.Driver" --dbUrl "jdbc:postgresql://localhost:5432/engine" --dbUser "camunda" --dbPassword "camunda""
                                   fi
                                 """)
                             }

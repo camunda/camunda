@@ -141,7 +141,7 @@ public class AuthenticationIT extends AbstractIT {
         .buildAuthTestRequest()
         .withoutAuthentication()
         .addSingleCookie(OPTIMIZE_AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + token)
-        .addSingleCookie(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
+        .addSingleHeader(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
         .execute();
 
     // then

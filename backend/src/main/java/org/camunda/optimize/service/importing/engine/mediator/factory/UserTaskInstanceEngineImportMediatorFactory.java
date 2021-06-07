@@ -10,10 +10,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningUserTaskInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedUserTaskInstanceImportService;
@@ -26,12 +26,12 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
 
   public UserTaskInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                                      final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter) {
@@ -41,7 +41,7 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractImportM
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
       createRunningUserTaskInstanceEngineImportMediator(engineContext),
       createCompletedUserTaskInstanceEngineImportMediator(engineContext)

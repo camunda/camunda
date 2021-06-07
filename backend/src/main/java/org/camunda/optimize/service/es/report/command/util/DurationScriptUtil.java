@@ -15,12 +15,12 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 
@@ -107,16 +107,16 @@ public class DurationScriptUtil {
                                                                  final long currRequestDateInMs,
                                                                  final String durationFieldName) {
     params.put("currRequestDateInMs", currRequestDateInMs);
-    params.put("startDateFieldName", USER_TASKS + "." + USER_TASK_START_DATE);
-    params.put("endDateFieldName", USER_TASKS + "." + USER_TASK_END_DATE);
-    params.put("assigneeFieldName", USER_TASKS + "." + USER_TASK_ASSIGNEE);
-    params.put("totalDurationFieldName", USER_TASKS + "." + USER_TASK_TOTAL_DURATION);
-    params.put("idleDurationFieldName", USER_TASKS + "." + USER_TASK_IDLE_DURATION);
-    params.put("workDurationFieldName", USER_TASKS + "." + USER_TASK_WORK_DURATION);
+    params.put("startDateFieldName", FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE);
+    params.put("endDateFieldName", FLOW_NODE_INSTANCES + "." + FLOW_NODE_END_DATE);
+    params.put("assigneeFieldName", FLOW_NODE_INSTANCES + "." + USER_TASK_ASSIGNEE);
+    params.put("totalDurationFieldName", FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
+    params.put("idleDurationFieldName", FLOW_NODE_INSTANCES + "." + USER_TASK_IDLE_DURATION);
+    params.put("workDurationFieldName", FLOW_NODE_INSTANCES + "." + USER_TASK_WORK_DURATION);
 
     final String variableDefinitionScript =
       getUserTaskDurationCalculationVariableDefinitionScriptPart();
-    if (durationFieldName.contains(USER_TASK_TOTAL_DURATION)) {
+    if (durationFieldName.contains(FLOW_NODE_TOTAL_DURATION)) {
       return getUserTaskTotalDurationCalculationScriptPart(variableDefinitionScript);
     } else if (durationFieldName.contains(USER_TASK_IDLE_DURATION)) {
       return getUserTaskIdleDurationCalculationScriptPart(variableDefinitionScript);
@@ -192,7 +192,7 @@ public class DurationScriptUtil {
 
       // We require work time and userTask is currently idle, this can happen in two scenarios:
       "else if (isCurrentlyIdle) {\n" +
-        "if(hasWorkDuration) {\n" +
+        "if (hasWorkDuration) {\n" +
           // 1) claims have occurred and hence work duration already been calculated during import
           "result = doc[params.workDurationFieldName].value;\n" +
         "} else {\n" +

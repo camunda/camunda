@@ -18,6 +18,7 @@ import java.util.List;
 
 @Component
 public class FlowNodeFrequencyGroupByFlowNodeDurationCmd extends ProcessCmd<List<MapResultEntryDto>> {
+
   public FlowNodeFrequencyGroupByFlowNodeDurationCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }

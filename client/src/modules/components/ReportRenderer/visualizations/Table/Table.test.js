@@ -12,10 +12,7 @@ import processRawData from './processRawData';
 
 import {getWebappEndpoints} from 'config';
 
-jest.mock('./processRawData', () => ({
-  process: jest.fn().mockReturnValue({}),
-  decision: jest.fn().mockReturnValue({}),
-}));
+jest.mock('./processRawData', () => jest.fn().mockReturnValue({}));
 
 jest.mock('./processDefaultData', () =>
   jest.fn().mockReturnValue({head: ['col1', 'col2', {id: 'col3'}]})
@@ -98,7 +95,7 @@ it('should process raw data', async () => {
   );
   runLastEffect();
 
-  expect(processRawData.process).toHaveBeenCalled();
+  expect(processRawData).toHaveBeenCalled();
 });
 
 it('should load report when updating sorting', () => {

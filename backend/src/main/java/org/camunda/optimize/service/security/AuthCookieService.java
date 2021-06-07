@@ -111,27 +111,28 @@ public class AuthCookieService {
 
   private static Optional<String> extractAuthorizationCookie(ContainerRequestContext requestContext) {
     // load just issued token if set by previous filter
-    String authorizationHeader = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
-    if (authorizationHeader == null) {
-      /* Check cookies for optimize authorization header*/
+    String authorizationValue = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
+    if (authorizationValue == null) {
       for (Map.Entry<String, Cookie> c : requestContext.getCookies().entrySet()) {
         if (OPTIMIZE_AUTHORIZATION.equals(c.getKey())) {
-          authorizationHeader = c.getValue().getValue();
+          authorizationValue = c.getValue().getValue();
         }
       }
     }
-    return Optional.ofNullable(authorizationHeader);
+    return Optional.ofNullable(authorizationValue);
   }
 
   private static Optional<String> extractAuthorizationCookie(HttpServletRequest servletRequest) {
-    if (servletRequest.getCookies() != null) {
+    // load just issued token if set by previous filter
+    String authorizationValue = (String) servletRequest.getAttribute(OPTIMIZE_AUTHORIZATION);
+    if (authorizationValue == null && servletRequest.getCookies() != null) {
       for (javax.servlet.http.Cookie cookie : servletRequest.getCookies()) {
         if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
           return Optional.of(cookie.getValue());
         }
       }
     }
-    return Optional.empty();
+    return Optional.ofNullable(authorizationValue);
   }
 
   private static Optional<String> extractTokenFromAuthorizationValue(final String authCookieValue) {

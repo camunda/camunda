@@ -6,10 +6,13 @@
 package com.camunda.optimize.test.upgrade
 
 import org.camunda.optimize.OptimizeRequestExecutor
-import org.camunda.optimize.service.metadata.Version
+import org.camunda.optimize.test.optimize.HealthClient
 import org.camunda.optimize.test.optimize.StatusClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import javax.ws.rs.ProcessingException
+import javax.ws.rs.core.Response
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -18,6 +21,8 @@ import static java.util.concurrent.TimeUnit.SECONDS
 import static org.awaitility.Awaitility.await
 
 class OptimizeWrapper {
+  private static final Logger log = LoggerFactory.getLogger(OptimizeWrapper.class);
+
   String optimizeVersion
   String optimizeDirectory
   String configDirectory
@@ -36,9 +41,9 @@ class OptimizeWrapper {
 
   def copyLicense(String licensePath) {
     Files.copy(
-            new File(licensePath).toPath(),
-            new File("${configDirectory}/OptimizeLicense.txt").toPath(),
-            StandardCopyOption.REPLACE_EXISTING
+      new File(licensePath).toPath(),
+      new File("${configDirectory}/OptimizeLicense.txt").toPath(),
+      StandardCopyOption.REPLACE_EXISTING
     )
   }
 
@@ -46,7 +51,7 @@ class OptimizeWrapper {
     if (this.upgradeProcess) {
       throw new RuntimeException("Upgrade is already running, wait for it to finish.")
     }
-    println "Running upgrade to Optimize ${optimizeVersion} on Elasticsearch with port ${elasticPort}..."
+    log.info("Running upgrade to Optimize ${optimizeVersion} on Elasticsearch with port ${elasticPort}...");
     def environmentVars = getCurrentEnvironmentVariables()
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
     def command = ["/bin/bash", "./upgrade/upgrade.sh", "--skip-warning"]
@@ -60,19 +65,19 @@ class OptimizeWrapper {
     }
     this.upgradeProcess.waitFor(timeoutInMinutes, MINUTES)
     if (this.upgradeProcess.exitValue() == 0) {
-      println "Successfully upgraded to Optimize ${optimizeVersion}"
+      log.info("Successfully upgraded to Optimize ${optimizeVersion}");
       this.upgradeProcess = null;
     } else {
-      println "Error output: ${upgradeProcess.text}"
+      log.info("Error output: ${upgradeProcess.text}");
       throw new Exception("Failed upgrading to Optimize ${optimizeVersion}!")
     }
   }
 
-  synchronized def start(int timeoutInSeconds = 60) {
+  synchronized def start() {
     if (this.process) {
       throw new RuntimeException("Already started, stop it first.")
     }
-    println "Starting Optimize ${optimizeVersion}..."
+    log.info("Starting Optimize ${optimizeVersion}...");
     def environmentVars = getCurrentEnvironmentVariables()
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
     environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[demo]")
@@ -82,31 +87,21 @@ class OptimizeWrapper {
     def command = ["/bin/bash", "./optimize-startup.sh"]
     this.process = command.execute(environmentVars, new File(optimizeDirectory))
     try {
-      StatusClient statusClient = new StatusClient(() -> requestExecutor)
-      println "Waiting for Optimize ${optimizeVersion} to boot..."
-      def isOldVersion = isOldVersion()
-      if (isOldVersion) {
-        await()
-        // this delay is here for avoiding race conditions of still running initializations
-        // after the endpoint is available, should be solved with a proper health-check endpoint in future, OPT-3442
-                .pollDelay(30, SECONDS)
-                .atMost(timeoutInSeconds, MINUTES)
-                .ignoreException(ProcessingException)
-                .until(statusClient::getOldStatus, getStartPredicate(true))
-      } else {
-        await()
-        // this delay is here for avoiding race conditions of still running initializations
-        // after the endpoint is available, should be solved with a proper health-check endpoint in future, OPT-3442
-                .pollDelay(30, SECONDS)
-                .atMost(timeoutInSeconds, MINUTES)
-                .ignoreException(ProcessingException)
-                .until(statusClient::getStatus, getStartPredicate(false))
-      }
-
-      println "Optimize ${optimizeVersion} is up!"
+      HealthClient healthClient = new HealthClient(() -> requestExecutor)
+      log.info("Waiting for Optimize ${optimizeVersion} to boot...");
+      await()
+      // this delay is here for avoiding race conditions of still running initializations
+        .pollDelay(30, SECONDS)
+        .atMost(60, SECONDS)
+        .ignoreException(ProcessingException)
+        .until(
+          healthClient::getReadiness,
+          response -> Response.Status.OK.getStatusCode() == response.getStatus()
+        )
+      log.info("Optimize ${optimizeVersion} is up!");
       return this.process
     } catch (Exception e) {
-      println "Optimize did not start within ${timeoutInSeconds}s."
+      log.error("Optimize did not start within 60s.");
       stop()
       throw e
     }
@@ -114,52 +109,24 @@ class OptimizeWrapper {
 
   synchronized def stop() {
     if (this.process) {
-      println "Stopping Optimize ${optimizeVersion}..."
+      log.info("Stopping Optimize ${optimizeVersion}...");
       this.process.destroy()
       this.process = null
-      println "Optimize ${optimizeVersion} was stopped."
+      log.info("Optimize ${optimizeVersion} was stopped.");
     }
   }
 
   def waitForImportToFinish(int timeoutInMinutes = 90) {
     StatusClient statusClient = new StatusClient(() -> requestExecutor)
-    println "Waiting for Optimize ${optimizeVersion} import to become idle..."
-    def isOldVersion = isOldVersion()
-    if (isOldVersion) {
-      await()
-              .atMost(timeoutInMinutes, MINUTES)
-              .ignoreException(ProcessingException)
-              .until(statusClient::getOldStatus, getStatusResponsePredicate(true))
-    } else {
-      await()
-              .atMost(timeoutInMinutes, MINUTES)
-              .ignoreException(ProcessingException)
-              .until(statusClient::getStatus, getStatusResponsePredicate(false))
-    }
-
-    println "Optimize ${optimizeVersion} import is idle!"
-  }
-
-  private def isOldVersion() {
-    def optimizeMajor = Version.getMajorVersionFrom(optimizeVersion)
-    def optimizeMinor = Version.getMinorVersionFrom(optimizeVersion)
-    return Integer.parseInt(optimizeMajor) < 3 || (Integer.parseInt(optimizeMajor) == 3 && Integer.parseInt(optimizeMinor) < 3)
-  }
-
-  private def getStartPredicate(boolean isOldVersion) {
-    if (isOldVersion) {
-      return (statusResponse -> statusResponse.connectionStatus.engineConnections.values().every())
-    } else {
-      return (statusResponse -> statusResponse.engineStatus.values().every(connectionStatus -> connectionStatus.getIsConnected()))
-    }
-  }
-
-  private def getStatusResponsePredicate(boolean isOldVersion) {
-    if (isOldVersion) {
-      return (statusResponse -> statusResponse.isImporting.values().every(isImporting -> !isImporting))
-    } else {
-      return (statusResponse -> statusResponse.engineStatus.values().every(connectionStatus -> !connectionStatus.getIsImporting()))
-    }
+    log.info("Waiting for Optimize ${optimizeVersion} import to become idle...");
+    await()
+      .atMost(timeoutInMinutes, MINUTES)
+      .ignoreException(ProcessingException)
+      .until(
+        statusClient::getStatus,
+        statusResponse -> statusResponse.engineStatus.values().every(connectionStatus -> !connectionStatus.getIsImporting())
+      )
+    log.info("Optimize ${optimizeVersion} import is idle!");
   }
 
   private static List<String> getCurrentEnvironmentVariables() {

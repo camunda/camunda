@@ -11,6 +11,9 @@ import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
@@ -55,14 +58,14 @@ public class ConfigurationService {
   // @formatter:off
   private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
     new TypeRef<HashMap<String, EngineConfiguration>>() {};
-  private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<List<String>>() {};
-  private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF =
-    new TypeRef<HashMap<String, WebhookConfiguration>>() {};
+  private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
+  private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF = new TypeRef<>() {};
   // @formatter:on
 
   private ReadContext configJsonContext;
 
   private Map<String, EngineConfiguration> configuredEngines;
+  private ZeebeConfiguration configuredZeebe;
   private Integer tokenLifeTime;
   private String tokenSecret;
   private Boolean sameSiteCookieFlagEnabled;
@@ -138,6 +141,7 @@ public class ConfigurationService {
   private List<String> decisionOutputImportPluginBasePackages;
   private List<String> decisionInputImportPluginBasePackages;
   private List<String> businessKeyImportPluginBasePackages;
+  private List<String> elasticsearchCustomHeaderPluginBasePackages;
   private String pluginDirectory;
 
   private String containerHost;
@@ -220,6 +224,16 @@ public class ConfigurationService {
       configuredEngines = configJsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, ENGINES_MAP_TYPEREF);
     }
     return configuredEngines;
+  }
+
+  public ZeebeConfiguration getConfiguredZeebe() {
+    if (configuredZeebe == null) {
+      configuredZeebe = configJsonContext.read(
+        ConfigurationServiceConstants.CONFIGURED_ZEEBE,
+        ZeebeConfiguration.class
+      );
+    }
+    return configuredZeebe;
   }
 
   public Optional<String> getTokenSecret() {
@@ -685,6 +699,15 @@ public class ConfigurationService {
     return authenticationExtractorPluginBasePackages;
   }
 
+  public List<String> getElasticsearchCustomHeaderPluginBasePackages() {
+    if (elasticsearchCustomHeaderPluginBasePackages == null) {
+      elasticsearchCustomHeaderPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES, LIST_OF_STRINGS_TYPE_REF
+      );
+    }
+    return elasticsearchCustomHeaderPluginBasePackages;
+  }
+
   public String getContainerHost() {
     if (containerHost == null) {
       containerHost = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
@@ -816,9 +839,15 @@ public class ConfigurationService {
       .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  public boolean isEngineImportEnabled(String engineAlias) {
-    return getEngineConfiguration(engineAlias).map(EngineConfiguration::isImportEnabled)
-      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
+  public boolean isImportEnabled(DataSourceDto dataSourceDto) {
+    if (dataSourceDto instanceof EngineDataSourceDto) {
+      final EngineDataSourceDto engineSource = (EngineDataSourceDto) dataSourceDto;
+      return getEngineConfiguration(engineSource.getName()).map(EngineConfiguration::isImportEnabled)
+        .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineSource.getName()));
+    } else if (dataSourceDto instanceof ZeebeDataSourceDto) {
+      return getConfiguredZeebe().isEnabled();
+    }
+    throw new OptimizeConfigurationException("Invalid data import source");
   }
 
   public Optional<EngineConfiguration> getEngineConfiguration(String engineAlias) {
@@ -1010,7 +1039,10 @@ public class ConfigurationService {
 
   public UserIdentityCacheConfiguration getUserIdentityCacheConfiguration() {
     if (userIdentityCacheConfiguration == null) {
-      userIdentityCacheConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, UserIdentityCacheConfiguration.class);
+      userIdentityCacheConfiguration = configJsonContext.read(
+        IDENTITY_SYNC_CONFIGURATION,
+        UserIdentityCacheConfiguration.class
+      );
     }
     return userIdentityCacheConfiguration;
   }

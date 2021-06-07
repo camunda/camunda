@@ -188,7 +188,14 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
   }
 }
 
-export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
+export async function addDiagramTooltip({
+  viewer,
+  element,
+  tooltipContent,
+  theme,
+  onMouseEnter,
+  onMouseLeave,
+}) {
   const elementGraphics = viewer.get('elementRegistry').getGraphics(element);
   const overlaysContainer = document.body.querySelector('.djs-overlay-container');
   if (!elementGraphics || !tooltipContent || !overlaysContainer) {
@@ -197,42 +204,52 @@ export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
 
   // create overlay node from html
   const overlayHtml = document.createElement('div');
-  overlayHtml.classList.add('Tooltip');
-  overlayHtml.classList.add('top');
-  overlayHtml.classList.add('center');
-  overlayHtml.classList.add(theme === 'light' ? 'light' : 'dark');
+  overlayHtml.classList.add('Tooltip', 'top', 'center', theme === 'light' ? 'light' : 'dark');
+
+  if (onMouseEnter) {
+    overlayHtml.addEventListener('mouseenter', onMouseEnter);
+  }
+
+  if (onMouseLeave) {
+    overlayHtml.addEventListener('mouseleave', onMouseLeave);
+  }
 
   // render tooltip react markup into the html tooltip container
-  ReactDOM.render(tooltipContent, overlayHtml, () => {
-    overlaysContainer.appendChild(overlayHtml);
-    const overlayHeight = overlayHtml.clientHeight;
-    overlaysContainer.removeChild(overlayHtml);
+  await insertReactContent(<div className="tooltipBridge">{tooltipContent}</div>, overlayHtml);
+  overlaysContainer.appendChild(overlayHtml);
+  const overlayHeight = overlayHtml.clientHeight;
+  overlaysContainer.removeChild(overlayHtml);
 
-    const nodeWidth = elementGraphics.querySelector('.djs-visual').getBBox().width;
-    const position = {
-      left: nodeWidth / 2,
-    };
+  const nodeWidth = elementGraphics.querySelector('.djs-visual').getBBox().width;
+  const position = {
+    left: nodeWidth / 2,
+  };
 
-    if (
-      viewer.get('elementRegistry').get(element).y - viewer.get('canvas').viewbox().y <
-      overlayHeight
-    ) {
-      position.bottom = 0;
-      const classList = overlayHtml.classList;
-      classList.remove('top');
-      classList.add('bottom');
-    } else {
-      position.top = 0;
-    }
+  if (
+    viewer.get('elementRegistry').get(element).y - viewer.get('canvas').viewbox().y <
+    overlayHeight
+  ) {
+    position.bottom = 0;
+    const classList = overlayHtml.classList;
+    classList.remove('top');
+    classList.add('bottom');
+  } else {
+    position.top = 0;
+  }
 
-    // add overlay to viewer
-    return viewer.get('overlays').add(element, 'TOOLTIP', {
-      position,
-      show: {
-        minZoom: -Infinity,
-        maxZoom: +Infinity,
-      },
-      html: overlayHtml,
-    });
+  // add overlay to viewer
+  return viewer.get('overlays').add(element, 'TOOLTIP', {
+    position,
+    show: {
+      minZoom: -Infinity,
+      maxZoom: +Infinity,
+    },
+    html: overlayHtml,
+  });
+}
+
+function insertReactContent(tooltipContent, overlayHtml) {
+  return new Promise((resolve) => {
+    ReactDOM.render(tooltipContent, overlayHtml, resolve);
   });
 }

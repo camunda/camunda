@@ -27,9 +27,13 @@ const props = {
 
 it('Should display BPMNDiagram with the report xml', () => {
   const data = {
-    processDefinitionKey: 'test',
-    processDefinitionVersions: ['testVersion'],
-    tenantIds: ['testTenant'],
+    definitions: [
+      {
+        key: 'test',
+        versions: ['testVersion'],
+        tenantIds: ['testTenant'],
+      },
+    ],
   };
   const node = shallow(<DiagramModal {...props} report={{reportType: 'process', data}} />);
   runLastEffect();
@@ -39,9 +43,13 @@ it('Should display BPMNDiagram with the report xml', () => {
 
 it('Should display DMNDiagram with the report xml', () => {
   const data = {
-    decisionDefinitionKey: 'test',
-    decisionDefinitionVersions: ['testVersion'],
-    tenantIds: ['testTenant'],
+    definitions: [
+      {
+        key: 'test',
+        versions: ['testVersion'],
+        tenantIds: ['testTenant'],
+      },
+    ],
   };
   const node = shallow(<DiagramModal {...props} report={{reportType: 'decision', data}} />);
   runLastEffect();

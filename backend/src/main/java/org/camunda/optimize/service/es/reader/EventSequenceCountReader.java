@@ -23,7 +23,6 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -95,7 +94,7 @@ public class EventSequenceCountReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve event sequence counts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event sequence counts!", e);
@@ -162,9 +161,7 @@ public class EventSequenceCountReader {
   public Set<String> getIndexSuffixesForCurrentSequenceCountIndices() {
     final GetAliasesResponse aliases;
     try {
-      aliases = esClient.getAlias(
-        new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
-      );
+      aliases = esClient.getAlias(new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"));
     } catch (IOException e) {
       final String errorMessage = "Could not retrieve the index keys for sequence count indices!";
       log.error(errorMessage, e);
@@ -206,7 +203,7 @@ public class EventSequenceCountReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String errorMessage = "Was not able to retrieve event sequence counts for given event types!";
       log.error(errorMessage, e);
@@ -226,7 +223,7 @@ public class EventSequenceCountReader {
 
     SearchResponse scrollResponse;
     try {
-      scrollResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Was not able to retrieve event sequence counts for index key %s!",

@@ -30,7 +30,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @RequiredArgsConstructor
 @Component
@@ -91,14 +92,18 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
                                                     final QueryBuilder baseQuery,
                                                     final UserTaskDurationTime userTaskDurationTime) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, getIndexName(context), USER_TASKS, getDurationScript(userTaskDurationTime)
+      baseQuery,
+      getIndexName(context),
+      FLOW_NODE_INSTANCES,
+      getDurationScript(userTaskDurationTime),
+      createUserTaskFlowNodeTypeFilter()
     );
   }
 
   private Script getDurationScript(final UserTaskDurationTime userTaskDurationTime) {
     return DurationScriptUtil.getUserTaskDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      USER_TASKS + "." + userTaskDurationTime.getDurationFieldName()
+      FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName()
     );
   }
 

@@ -39,8 +39,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   @Test
   public void processReportAcrossAllVersions() {
     // given
-    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
-    deployProcessAndStartInstances(1);
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstancesAndFinishUserTasks(2);
+    deployProcessAndStartInstancesAndFinishUserTasks(1);
     importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
@@ -60,9 +60,9 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   @Test
   public void processReportAcrossMultipleVersions() {
     // given
-    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
-    deployProcessAndStartInstances(1);
-    ProcessDefinitionEngineDto definition3 = deployProcessAndStartInstances(3);
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstancesAndFinishUserTasks(2);
+    deployProcessAndStartInstancesAndFinishUserTasks(1);
+    ProcessDefinitionEngineDto definition3 = deployProcessAndStartInstancesAndFinishUserTasks(3);
 
     importAllEngineEntitiesFromScratch();
 
@@ -83,8 +83,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   @Test
   public void processReportsWithLatestVersion() {
     // given
-    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
-    deployProcessAndStartInstances(1);
+    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstancesAndFinishUserTasks(2);
+    deployProcessAndStartInstancesAndFinishUserTasks(1);
 
     importAllEngineEntitiesFromScratch();
 
@@ -102,7 +102,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     }
 
     // when
-    deployProcessAndStartInstances(4);
+    deployProcessAndStartInstancesAndFinishUserTasks(4);
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     importAllEngineEntitiesFromScratch();
 
@@ -119,7 +120,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   @Test
   public void missingDefinitionVersionReturnsEmptyResult() {
     // given
-    ProcessDefinitionEngineDto definition = deployProcessAndStartInstances(1);
+    ProcessDefinitionEngineDto definition = deployProcessAndStartInstancesAndFinishUserTasks(1);
 
     importAllEngineEntitiesFromScratch();
 
@@ -157,19 +158,21 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     return reports;
   }
 
-  private ProcessDefinitionEngineDto deployProcessAndStartInstances(int nInstancesToStart) {
-    ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
+  private ProcessDefinitionEngineDto deployProcessAndStartInstancesAndFinishUserTasks(int nInstancesToStart) {
+    ProcessDefinitionEngineDto definition = deploySimpleUserTaskProcess();
     IntStream.range(0, nInstancesToStart).forEach(
       i -> engineIntegrationExtension.startProcessInstance(
         definition.getId(),
         ImmutableMap.of(VARIABLE_NAME, i)
       )
     );
+    engineIntegrationExtension.finishAllRunningUserTasks();
     return definition;
   }
 
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
-      DEFINITION_KEY));
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcess() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleUserTaskDiagram(DEFINITION_KEY)
+    );
   }
 }

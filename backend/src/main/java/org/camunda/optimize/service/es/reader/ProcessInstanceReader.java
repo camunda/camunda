@@ -16,7 +16,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -144,7 +143,7 @@ public class ProcessInstanceReader {
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
-      final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(scrollSearchRequest);
       result.getEntities().addAll(ElasticsearchReaderUtil.mapHits(
         response.getHits(),
         resolvedLimit,

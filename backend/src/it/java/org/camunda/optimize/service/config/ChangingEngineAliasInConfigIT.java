@@ -11,7 +11,7 @@ import org.apache.commons.math3.analysis.function.Gaussian;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -54,11 +54,11 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
     importAllEngineEntitiesFromScratch();
 
-    final List<DefinitionWithTenantsResponseDto> allDefinitions = definitionClient.getAllDefinitions();
+    final List<DefinitionResponseDto> allDefinitions = definitionClient.getAllDefinitions();
 
     // then the result should not contain the decision/process definitions from the first engine
     assertThat(allDefinitions)
-      .extracting(DefinitionWithTenantsResponseDto::getKey)
+      .extracting(DefinitionResponseDto::getKey)
       .containsExactlyInAnyOrder(PROCESS_KEY_2, DECISION_KEY_2);
   }
 

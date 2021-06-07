@@ -10,10 +10,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionImportService;
@@ -28,13 +28,13 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
-public class DecisionDefinitionEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   public DecisionDefinitionEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                       final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                        final ConfigurationService configurationService,
                                                        final DecisionDefinitionWriter decisionDefinitionWriter,
                                                        final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
@@ -46,7 +46,7 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractImpor
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return configurationService.isImportDmnDataEnabled() ?
       ImmutableList.of(
         createDecisionDefinitionEngineImportMediator(engineContext),

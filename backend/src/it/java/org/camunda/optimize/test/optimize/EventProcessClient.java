@@ -172,6 +172,11 @@ public class EventProcessClient {
     return getRequestExecutor().buildGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId);
   }
 
+  public boolean eventProcessMappingRequestBulkDeleteHasConflicts(final List<String> eventBasedProcessIds) {
+    return getRequestExecutor().buildCheckBulkDeleteConflictsForEventProcessMappingRequest(eventBasedProcessIds)
+      .execute(Boolean.class, Response.Status.OK.getStatusCode());
+  }
+
   public void deleteEventProcessMapping(final String eventProcessMappingId) {
     createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
@@ -313,17 +318,16 @@ public class EventProcessClient {
       .duration(60000L)
       .state(ProcessInstanceConstants.COMPLETED_STATE)
       .variables(Collections.emptyList())
-      .userTasks(Collections.emptyList())
       .incidents(Collections.emptyList())
-      .events(eventsToInclude.stream()
+      .flowNodeInstances(eventsToInclude.stream()
                 .map(ingestedEvent -> FlowNodeInstanceDto.builder()
-                  .id(ingestedEvent.getId())
-                  .activityId(IdGenerator.getNextId())
+                  .flowNodeInstanceId(ingestedEvent.getId())
+                  .flowNodeId(IdGenerator.getNextId())
                   .processInstanceId(ingestedEvent.getTraceid())
                   .startDate(LocalDateUtil.getCurrentDateTime().minusSeconds(30L))
                   .endDate(LocalDateUtil.getCurrentDateTime().minusSeconds(10L))
-                  .durationInMs(0L)
-                  .activityType("startEvent")
+                  .totalDurationInMs(0L)
+                  .flowNodeType("startEvent")
                   .build()
                 ).collect(Collectors.toList()))
       .build();

@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.ERROR_PAGE;
 
 public class LicenseFilter implements Filter {
 
@@ -77,17 +76,13 @@ public class LicenseFilter implements Filter {
         logger.warn("Given License is invalid or not available!");
         constructForbiddenResponse(servletResponse, e);
         return;
-      } catch (Exception e) {
-        logger.error("could not fetch license", e);
-        servletResponse.sendRedirect(ERROR_PAGE);
-        return;
       }
     }
     chain.doFilter(request, response);
   }
 
-  private void constructForbiddenResponse(HttpServletResponse servletResponse, OptimizeLicenseException ex) throws
-                                                                                                            IOException {
+  private void constructForbiddenResponse(HttpServletResponse servletResponse, OptimizeLicenseException ex)
+    throws IOException {
     servletResponse.getWriter().write("{\"errorCode\": \"" + ex.getErrorCode() + "\"}");
     servletResponse.setContentType("application/json");
     servletResponse.setCharacterEncoding("UTF-8");

@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION_TAG;
-import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -46,7 +46,7 @@ public class DecisionDefinitionWriter {
     DECISION_DEFINITION_VERSION,
     DECISION_DEFINITION_VERSION_TAG,
     DECISION_DEFINITION_NAME,
-    ENGINE,
+    DATA_SOURCE,
     TENANT_ID
   );
 
@@ -59,7 +59,7 @@ public class DecisionDefinitionWriter {
     Collections.emptyMap()
   );
 
-  public void importProcessDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+  public void importDecisionDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     log.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
@@ -102,12 +102,12 @@ public class DecisionDefinitionWriter {
       esClient,
       importItemName,
       decisionDefinitionOptimizeDtos,
-      this::addImportDecisionDefinitionXmlRequest
+      this::addImportDecisionDefinitionRequest
     );
   }
 
-  private void addImportDecisionDefinitionXmlRequest(final BulkRequest bulkRequest,
-                                                     final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+  private void addImportDecisionDefinitionRequest(final BulkRequest bulkRequest,
+                                                  final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,
       decisionDefinitionDto,

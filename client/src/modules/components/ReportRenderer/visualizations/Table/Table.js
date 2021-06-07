@@ -22,7 +22,6 @@ import './Table.scss';
 export function Table(props) {
   const {report, updateReport, mightFail, loadReport} = props;
   const {
-    reportType,
     combined,
     data: {view, groupBy, configuration},
     result,
@@ -69,7 +68,7 @@ export function Table(props) {
   } else {
     let tableData;
     if (view.properties[0] === 'rawData') {
-      tableData = processRawData[reportType](props, camundaEndpoints);
+      tableData = processRawData(props, camundaEndpoints);
       tableData.fetchData = fetchData;
       tableData.loading = loading;
       tableData.defaultPageSize = result.pagination.limit;

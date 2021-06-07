@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityType
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
@@ -22,6 +23,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
 import org.camunda.optimize.test.optimize.AlertClient
@@ -33,6 +35,10 @@ import org.camunda.optimize.test.util.ProcessReportDataType
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
+import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.search.SearchResponse
+import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
@@ -44,6 +50,7 @@ import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
 
 class PostMigrationTest {
   private static final String DEFAULT_USER = "demo";
@@ -180,6 +187,7 @@ class PostMigrationTest {
       eventProcessClient.updateEventProcessMapping(currentEventProcessMappingId, eventProcessMappingDto);
       eventProcessClient.publishEventProcessMapping(currentEventProcessMappingId);
       eventProcessClient.waitForEventProcessPublish(currentEventProcessMappingId);
+      waitForOldIndexToBeCleanedUp(currentEventProcessMappingId);
     });
 
     final List<EventProcessMappingDto> republishedEventProcessMappings =
@@ -215,6 +223,27 @@ class PostMigrationTest {
       .isNotEmpty()
       .extracting((Function<EventProcessMappingDto, EventProcessState>) EventProcessMappingDto::getState)
       .allSatisfy(eventProcessState -> assertThat(eventProcessState == EventProcessState.PUBLISHED));
+  }
+
+  private static void waitForOldIndexToBeCleanedUp(final String processMappingId) {
+    final SearchResponse searchResponse = elasticsearchClient.search(
+      new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(new SearchSourceBuilder().size(10000)));
+    List<String> eventIndicesForMapping = Arrays.stream(searchResponse.getHits().getHits())
+      .map(hit -> hit.getSourceAsMap())
+      .filter(publishState -> processMappingId.equals(publishState.get(EventProcessPublishStateDto.Fields.processMappingId)))
+      .map(publishState -> (String) publishState.get(EventProcessPublishStateDto.Fields.id))
+      .map(publishStateId -> new EventProcessInstanceIndex(publishStateId).getIndexName())
+      .collect(Collectors.toList());
+    boolean singleIndexExists = false;
+    while (!singleIndexExists) {
+      def indexCount = eventIndicesForMapping.stream()
+        .filter(indexName -> elasticsearchClient.exists(indexName))
+        .count();
+      log.info("There are {} Event Process Instance Indices for process mapping with ID {}. Index names: {}",
+        indexCount, processMappingId, eventIndicesForMapping);
+      singleIndexExists = indexCount == 1;
+      Thread.sleep(5000L);
+    }
   }
 
   private static AuthorizedProcessReportEvaluationResponseDto<List<RawDataInstanceDto>> evaluateRawDataReportForProcessKey(

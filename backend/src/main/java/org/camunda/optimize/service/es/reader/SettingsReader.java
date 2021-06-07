@@ -14,7 +14,6 @@ import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -37,7 +36,7 @@ public class SettingsReader {
 
     SettingsResponseDto result = null;
     try {
-      final GetResponse getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      final GetResponse getResponse = esClient.get(getRequest);
       if (getResponse.isExists()) {
         result = objectMapper.readValue(getResponse.getSourceAsString(), SettingsResponseDto.class);
       }

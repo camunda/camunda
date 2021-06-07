@@ -9,6 +9,10 @@ import React from 'react';
 import {addDiagramTooltip} from './service';
 
 export default class Tooltip extends React.Component {
+  state = {
+    openOverlayId: null,
+  };
+
   render() {
     return null;
   }
@@ -21,10 +25,13 @@ export default class Tooltip extends React.Component {
     }
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     const {viewer, alwaysShow} = this.props;
 
-    this.removeOverlays(viewer);
+    if (prevProps.alwaysShow && !alwaysShow) {
+      this.removeAllOverlays(viewer);
+    }
+
     if (alwaysShow) {
       this.addAllTooltips();
     }
@@ -33,30 +40,61 @@ export default class Tooltip extends React.Component {
   addAllTooltips = () => {
     const {viewer, formatter, data} = this.props;
     Object.keys(data).forEach((id) => {
-      addDiagramTooltip(viewer, id, formatter(data[id], id), this.props.theme);
+      addDiagramTooltip({
+        viewer,
+        element: id,
+        tooltipContent: formatter(data[id], id),
+        theme: this.props.theme,
+      });
     });
   };
 
   componentWillUnmount() {
     this.props.viewer.get('eventBus').off('element.hover', this.renderTooltip);
-    this.removeOverlays(this.props.viewer);
+    this.removeAllOverlays(this.props.viewer);
   }
 
-  renderTooltip = ({element: {id}}) => {
+  renderTooltip = async ({element: {id}}) => {
     const {viewer, alwaysShow} = this.props;
 
     if (alwaysShow) {
       return;
     }
 
-    this.removeOverlays(viewer);
     const value = this.props.data[id];
     if (value !== undefined) {
-      addDiagramTooltip(viewer, id, this.props.formatter(value, id), this.props.theme);
+      this.removeAllOverlays(viewer);
+      this.setState({
+        openOverlayId: await addDiagramTooltip({
+          viewer,
+          element: id,
+          tooltipContent: this.props.formatter(value, id),
+          theme: this.props.theme,
+          onMouseEnter: this.onMouseEnter,
+          onMouseLeave: this.onMouseLeave,
+        }),
+      });
+    } else {
+      this.scheduleRemoveOverlay(viewer, this.state.openOverlayId);
     }
   };
 
-  removeOverlays = (viewer) => {
+  onMouseEnter = () => {
+    clearTimeout(this.scheduledRemove);
+  };
+
+  onMouseLeave = () => {
+    this.removeAllOverlays(this.props.viewer);
+    this.setState({openOverlayId: null});
+  };
+
+  scheduleRemoveOverlay = (viewer, openOverlayId) => {
+    if (openOverlayId) {
+      this.scheduledRemove = setTimeout(() => viewer.get('overlays').remove(openOverlayId), 300);
+    }
+  };
+
+  removeAllOverlays = (viewer) => {
     viewer.get('overlays').remove({type: 'TOOLTIP'});
   };
 }

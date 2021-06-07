@@ -6,7 +6,7 @@
   border-bottom: 1px solid var(--silver-darken-87);
   margin-left: 20px;
   flex-shrink: 0;
-  width: 308px;
+  width: 320px;
   display: flex;
   flex-direction: column;
 
@@ -22,11 +22,11 @@
   }
 
   .filter.header {
-    padding: 12px 20px;
+    padding: 9px 20px 0 20px;
     border-top: 1px solid var(--silver-darken-87);
 
     .sectionTitle {
-      margin: 0;
+      margin-bottom: 0;
     }
   }
 
@@ -34,8 +34,13 @@
     text-transform: uppercase;
     font-weight: 500;
     font-size: 11px;
-    margin-bottom: 15px;
+    margin: -12px 0 3px -20px;
+    padding: 12px 20px;
+    width: calc(100% + 40px);
     color: var(--grey-darken-13);
+    background: transparent;
+    text-align: left;
+    border: none;
 
     .Icon {
       color: var(--black);
@@ -48,9 +53,14 @@
       width: 16px;
       height: 16px;
       margin-left: 10px;
+      transition: transform 0.1s;
 
       .Icon {
         margin: 0;
+      }
+
+      &:not(.open) {
+        transform: rotate(-90deg);
       }
     }
   }
@@ -61,11 +71,11 @@
 
   section {
     padding: 20px;
-    padding-top: 12px;
+    padding-top: 9px;
     border-top: 1px solid var(--silver-darken-87);
 
     &.hidden {
-      padding-bottom: 12px;
+      padding-bottom: 0;
 
       ul,
       &.filter,
@@ -96,12 +106,20 @@
     margin: 0;
     padding: 0;
     flex-grow: 1;
-    margin-top: 20px;
+    margin-top: 5px;
 
     > li {
-      margin-bottom: 10px;
+      margin-top: 15px;
       display: flex;
       align-items: center;
+
+      &:first-child {
+        margin-top: 0;
+      }
+
+      &.Measure ~ .Measure {
+        margin-top: 5px;
+      }
 
       > * {
         width: 100%;
@@ -112,19 +130,34 @@
       }
 
       &.addMeasure {
-        float: right;
+        margin-top: 5px;
+        width: 200px;
+        margin-left: 79px;
+
+        font-size: 12px;
+
+        .Button {
+          background-color: var(--silver-darken-94);
+          border: 1.5px dashed var(--silver-darken-80);
+          text-align: left;
+          color: var(--grey-base-40);
+          height: 32px;
+          font-size: 11px;
+        }
       }
 
       > .label {
         color: var(--grey-base-40);
         font-size: 12px;
         display: inline-block;
-        flex: 0 0 80px;
+        flex: 0 0 79px;
         vertical-align: middle;
+        text-align: right;
+        padding-right: 6px;
       }
 
       > .Select {
-        flex: 0 1 187px;
+        flex: 0 1 200px;
         min-width: 0;
 
         .activateButton {

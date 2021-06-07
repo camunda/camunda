@@ -8,7 +8,7 @@ package org.camunda.optimize.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
+import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.web.socket.server.standard.SpringConfigurator;
@@ -22,15 +22,17 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.STATUS_WEBSOCKET_PATH;
+
 @RequiredArgsConstructor
-@ServerEndpoint(value = "/ws/status", configurator = SpringConfigurator.class)
+@ServerEndpoint(value = STATUS_WEBSOCKET_PATH, configurator = SpringConfigurator.class)
 @Slf4j
 public class StatusWebSocket {
 
   private final StatusCheckingService statusCheckingService;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
-  private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
+  private final ImportSchedulerManagerService importSchedulerManagerService;
 
   private Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
@@ -43,7 +45,7 @@ public class StatusWebSocket {
         session
       );
       statusReportJobs.put(session.getId(), job);
-      engineImportSchedulerManagerService.subscribeImportObserver(job);
+      importSchedulerManagerService.subscribeImportObserver(job);
       log.debug("starting to report status for session [{}]", session.getId());
     } else {
       log.debug("cannot create status report job for [{}], max connections exceeded", session.getId());
@@ -65,7 +67,7 @@ public class StatusWebSocket {
   private void removeSession(Session session) {
     if (statusReportJobs.containsKey(session.getId())) {
       StatusNotifier job = statusReportJobs.remove(session.getId());
-      engineImportSchedulerManagerService.unsubscribeImportObserver(job);
+      importSchedulerManagerService.unsubscribeImportObserver(job);
     }
   }
 

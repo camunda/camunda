@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_NAME;
@@ -41,7 +41,7 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     PROCESS_DEFINITION_VERSION,
     PROCESS_DEFINITION_VERSION_TAG,
     PROCESS_DEFINITION_NAME,
-    ENGINE,
+    DATA_SOURCE,
     TENANT_ID
   );
 
@@ -95,7 +95,7 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
 
   @Override
   Script createUpdateScript(final ProcessDefinitionOptimizeDto processDefinitionDto) {
-    return ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, processDefinitionDto);
+    return ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
   }
 
   private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
@@ -106,7 +106,7 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
       esClient,
       importItemName,
       procDefs,
-      (request, dto) -> addImportProcessDefinitionToRequest(request, dto)
+      this::addImportProcessDefinitionToRequest
     );
   }
 }

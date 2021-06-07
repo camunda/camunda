@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
-import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.ImportMediator;
+import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
@@ -28,7 +28,7 @@ import static java.util.stream.Collectors.toList;
 
 @Component
 @Slf4j
-public class PersistEventIndexHandlerStateMediator implements EngineImportMediator {
+public class PersistEventIndexHandlerStateMediator implements ImportMediator {
 
   @Autowired
   private ImportIndexWriter importIndexWriter;
@@ -56,7 +56,7 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
     try {
       final List<ImportIndexDto> importIndices = importIndexHandlerRegistry.getAllHandlers()
         .stream()
-        .map(ImportIndexHandler::getIndexStateDto)
+        .map(EngineImportIndexHandler::getIndexStateDto)
         .filter(indexDto -> indexDto instanceof ImportIndexDto)
         .map(indexDto -> (ImportIndexDto) indexDto)
         .collect(toList());

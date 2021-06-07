@@ -10,10 +10,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedIncidentFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.OpenIncidentFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.incident.CompletedIncidentImportService;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class IncidentEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
 
   private final CompletedIncidentWriter completedIncidentWriter;
   private final OpenIncidentWriter openIncidentWriter;
@@ -34,7 +34,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractImportMediatorF
   public IncidentEngineImportMediatorFactory(final CompletedIncidentWriter completedIncidentWriter,
                                              final OpenIncidentWriter openIncidentWriter,
                                              final BeanFactory beanFactory,
-                                             final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                             final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                              final ConfigurationService configurationService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.completedIncidentWriter = completedIncidentWriter;
@@ -42,7 +42,7 @@ public class IncidentEngineImportMediatorFactory extends AbstractImportMediatorF
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
       createCompletedIncidentEngineImportMediator(engineContext),
       createOpenIncidentEngineImportMediator(engineContext)

@@ -4,7 +4,7 @@
 
 Node 14.15.4+
 Docker 17.12.0+
-Docker Compose 1.21.0+
+Docker Compose 1.29.2+
 [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 
 ## Installation
@@ -20,6 +20,9 @@ yarn
 ```
 
 ## Login to GCP
+
+GCP is used to store artifacts that will be downloaded automatically.
+First, a login to GCP is needed (if you don't have access, ask the infra team for it).
 
 ```bash
 gcloud auth application-default login

@@ -15,6 +15,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -87,7 +88,6 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
       }
     }
     addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
-
     compositeCommandResult.setGroups(groupedData);
   }
 
@@ -114,15 +114,15 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
+    return BpmnModelUtil.extractFlowNodeNames(
+      definitionService.getDefinition(
         DefinitionType.PROCESS,
         reportData.getDefinitionKey(),
         reportData.getDefinitionVersions(),
         reportData.getTenantIds()
       )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeNames())
-      .orElse(Collections.emptyMap());
+        .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeData())
+        .orElse(Collections.emptyList()));
   }
 
   @Override

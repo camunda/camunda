@@ -4,7 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 static String gCloudAndMavenAgent() {
   return """

@@ -1,0 +1,11 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+. "$(dirname "$0")/common.sh"
+
+if ! command -v yarn &> /dev/null; then
+  echo "Skipping pre-commit because yarn does not exist"
+  exit
+fi
+
+cd client
+yarn lint-staged

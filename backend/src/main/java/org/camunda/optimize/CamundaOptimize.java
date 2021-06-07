@@ -14,6 +14,6 @@ public interface CamundaOptimize {
 
   void startEngineImportSchedulers();
 
-  void stopEngineImportSchedulers();
+  void stopImportSchedulers();
 
 }

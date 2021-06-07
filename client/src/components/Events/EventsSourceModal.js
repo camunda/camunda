@@ -129,11 +129,13 @@ export default withErrorHandling(
     loadVariables = (processDefinitionKey, processDefinitionVersions, tenantIds) => {
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         this.props.mightFail(
-          loadVariables({
-            processDefinitionKey,
-            processDefinitionVersions,
-            tenantIds,
-          }),
+          loadVariables([
+            {
+              processDefinitionKey,
+              processDefinitionVersions,
+              tenantIds,
+            },
+          ]),
           (variables) => this.setState({variables}),
           showError
         );

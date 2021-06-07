@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
 import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
@@ -131,7 +131,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
     assertThat(processInstances)
       .hasSize(2)
       .flatExtracting(ProcessInstanceDto::getUserTasks)
-      .extracting(UserTaskInstanceDto::getAssignee)
+      .extracting(FlowNodeInstanceDto::getAssignee)
       .containsExactlyInAnyOrder(ASSIGNEE_ID_JOHN, ASSIGNEE_ID_JEAN);
   }
 

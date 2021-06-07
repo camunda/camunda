@@ -38,10 +38,15 @@ public class ElasticsearchConstants {
   public static final String MAPPING_ENABLED_SETTING = "enabled";
 
   public static final String MAPPING_PROPERTY_TYPE = "type";
+  public static final String FORMAT_PROPERTY_TYPE = "format";
 
   public static final String TYPE_KEYWORD = "keyword";
   public static final String TYPE_LONG = "long";
   public static final String TYPE_DATE = "date";
+  public static final String TYPE_BOOLEAN = "boolean";
+  public static final String TYPE_OBJECT = "object";
+  public static final String TYPE_TEXT = "text";
+  public static final String TYPE_NESTED = "nested";
 
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_MULTI_ALIAS = "decision-instance";
@@ -68,6 +73,8 @@ public class ElasticsearchConstants {
   public static final String EXTERNAL_EVENTS_INDEX_NAME = "event";
   public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
 
+  public static final String ZEEBE_PROCESS_INDEX_NAME = "process";
+
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
   public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME = "event-process-publish-state";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
@@ -92,4 +99,8 @@ public class ElasticsearchConstants {
   public static final String TOO_MANY_BUCKETS_EXCEPTION_TYPE = "too_many_buckets_exception";
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE = "resource_already_exists_exception";
+
+  public static final String ENGINE_DATA_SOURCE = "engine";
+  public static final String ZEEBE_DATA_SOURCE = "zeebe";
+  public static final String EVENTS_DATA_SOURCE = "events";
 }

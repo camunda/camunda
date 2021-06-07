@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
+import classnames from 'classnames';
 
 import {
   ReportRenderer,
@@ -20,8 +21,10 @@ import {
   DiagramScrollLock,
 } from 'components';
 import {withErrorHandling} from 'HOC';
-import {evaluateEntity, createLoadReportCallback} from './service';
 import {t} from 'translation';
+
+import IconLink from './IconLink';
+import {evaluateEntity, createLoadReportCallback} from './service';
 
 import './Sharing.scss';
 
@@ -57,11 +60,10 @@ export class Sharing extends React.Component {
           loading: false,
         });
       },
-      async (e) => {
-        const errorData = await e.json();
+      (error) => {
         this.setState({
-          evaluationResult: errorData.reportDefinition,
-          error: {status: e.status, data: errorData},
+          evaluationResult: error.reportDefinition,
+          error,
           loading: false,
         });
       }
@@ -118,37 +120,52 @@ export class Sharing extends React.Component {
       return <ErrorPage noLink />;
     }
 
+    const isEmbedded = params.get('mode') === 'embed';
+    const isReport = type === 'report';
+    const header = params.get('header');
+    const showTitle = header !== 'linkOnly';
+
     const SharingView = this.getSharingView();
     return (
-      <div className="Sharing">
-        <div className="header">
-          <div className="title-container">
-            <EntityName
-              details={
-                type === 'report' ? (
-                  <ReportDetails report={evaluationResult} />
-                ) : (
-                  <LastModifiedInfo entity={evaluationResult} />
-                )
-              }
-            >
-              {evaluationResult.name}
-            </EntityName>
-            <a
-              href={this.getEntityUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="Button main title-button"
-            >
-              <Icon type="share" renderedIn="span" />
-              <span>{t('common.sharing.openInOptimize')}</span>
-            </a>
+      <div className={classnames('Sharing', {compact: isEmbedded, report: isReport})}>
+        {header !== 'hidden' && (
+          <div className="header">
+            <div className="title-container">
+              {showTitle && (
+                <EntityName
+                  details={
+                    isReport ? (
+                      <ReportDetails report={evaluationResult} />
+                    ) : (
+                      <LastModifiedInfo entity={evaluationResult} />
+                    )
+                  }
+                >
+                  {evaluationResult.name}
+                </EntityName>
+              )}
+              {header !== 'titleOnly' && (
+                <a
+                  href={this.getEntityUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={classnames('Button title-button', {
+                    main: !isEmbedded,
+                    small: isEmbedded,
+                  })}
+                >
+                  <Icon type="share" renderedIn="span" />
+                  <span>{isEmbedded ? t('common.open') : t('common.sharing.openInOptimize')}</span>
+                </a>
+              )}
+            </div>
+            {type === 'report' && showTitle && <InstanceCount report={evaluationResult} />}
           </div>
-          {type === 'report' && <InstanceCount report={evaluationResult} />}
-        </div>
+        )}
         <div className="content">
           {SharingView}
-          {type === 'report' && params.get('mode') === 'embed' && <DiagramScrollLock />}
+          {isEmbedded && <IconLink href={this.getEntityUrl()} />}
+          {isEmbedded && isReport && <DiagramScrollLock />}
         </div>
       </div>
     );

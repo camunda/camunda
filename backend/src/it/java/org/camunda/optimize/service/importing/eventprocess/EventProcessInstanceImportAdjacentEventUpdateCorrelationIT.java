@@ -80,13 +80,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           )
           .satisfies(
             eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getEvents())
+              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
                 .satisfies(flowNodeInstances -> assertThat(flowNodeInstances)
                   .allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance)
-                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
                   .extracting(
-                    FlowNodeInstanceDto::getId,
-                    FlowNodeInstanceDto::getActivityId,
+                    FlowNodeInstanceDto::getFlowNodeInstanceId,
+                    FlowNodeInstanceDto::getFlowNodeId,
                     FlowNodeInstanceDto::getStartDate,
                     FlowNodeInstanceDto::getEndDate
                   )
@@ -149,13 +149,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           )
           .satisfies(
             eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getEvents())
+              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
                 .satisfies(events -> assertThat(events)
                   .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
                   .extracting(
-                    FlowNodeInstanceDto::getId,
-                    FlowNodeInstanceDto::getActivityId,
+                    FlowNodeInstanceDto::getFlowNodeInstanceId,
+                    FlowNodeInstanceDto::getFlowNodeId,
                     FlowNodeInstanceDto::getStartDate,
                     FlowNodeInstanceDto::getEndDate
                   )
@@ -218,13 +218,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           )
           .satisfies(
             eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getEvents())
+              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
                 .satisfies(events -> assertThat(events)
                   .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
                   .extracting(
-                    FlowNodeInstanceDto::getId,
-                    FlowNodeInstanceDto::getActivityId,
+                    FlowNodeInstanceDto::getFlowNodeInstanceId,
+                    FlowNodeInstanceDto::getFlowNodeId,
                     FlowNodeInstanceDto::getStartDate,
                     FlowNodeInstanceDto::getEndDate
                   )
@@ -290,13 +290,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           .hasFieldOrPropertyWithValue(
             EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
           );
-        assertThat(processInstanceDto.getEvents())
+        assertThat(processInstanceDto.getFlowNodeInstances())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
             .extracting(
-              FlowNodeInstanceDto::getId,
-              FlowNodeInstanceDto::getActivityId,
+              FlowNodeInstanceDto::getFlowNodeInstanceId,
+              FlowNodeInstanceDto::getFlowNodeId,
               FlowNodeInstanceDto::getStartDate,
               FlowNodeInstanceDto::getEndDate
             )
@@ -372,13 +372,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .isEmpty();
-        assertThat(processInstanceDto.getEvents())
+        assertThat(processInstanceDto.getFlowNodeInstances())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
             .extracting(
-              FlowNodeInstanceDto::getId,
-              FlowNodeInstanceDto::getActivityId,
+              FlowNodeInstanceDto::getFlowNodeInstanceId,
+              FlowNodeInstanceDto::getFlowNodeId,
               FlowNodeInstanceDto::getStartDate,
               FlowNodeInstanceDto::getEndDate
             )
@@ -454,13 +454,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
       .singleElement()
       .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates()).isEmpty();
-        assertThat(processInstanceDto.getEvents())
+        assertThat(processInstanceDto.getFlowNodeInstances())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
             .extracting(
-              FlowNodeInstanceDto::getId,
-              FlowNodeInstanceDto::getActivityId,
+              FlowNodeInstanceDto::getFlowNodeInstanceId,
+              FlowNodeInstanceDto::getFlowNodeId,
               FlowNodeInstanceDto::getStartDate,
               FlowNodeInstanceDto::getEndDate
             )
@@ -538,13 +538,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           )
           .satisfies(
             eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getEvents())
+              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
                 .satisfies(events -> assertThat(events)
                   .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
                   .extracting(
-                    FlowNodeInstanceDto::getId,
-                    FlowNodeInstanceDto::getActivityId,
+                    FlowNodeInstanceDto::getFlowNodeInstanceId,
+                    FlowNodeInstanceDto::getFlowNodeId,
                     FlowNodeInstanceDto::getStartDate,
                     FlowNodeInstanceDto::getEndDate
                   )
@@ -607,13 +607,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           )
           .satisfies(
             eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getEvents())
+              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
                 .satisfies(events -> assertThat(events)
                   .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
                   .extracting(
-                    FlowNodeInstanceDto::getId,
-                    FlowNodeInstanceDto::getActivityId,
+                    FlowNodeInstanceDto::getFlowNodeInstanceId,
+                    FlowNodeInstanceDto::getFlowNodeId,
                     FlowNodeInstanceDto::getStartDate,
                     FlowNodeInstanceDto::getEndDate
                   )
@@ -676,13 +676,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           )
           .satisfies(
             eventProcessInstanceDto -> {
-              assertThat(eventProcessInstanceDto.getEvents())
+              assertThat(eventProcessInstanceDto.getFlowNodeInstances())
                 .satisfies(events -> assertThat(events)
                   .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+                    .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
                   .extracting(
-                    FlowNodeInstanceDto::getId,
-                    FlowNodeInstanceDto::getActivityId,
+                    FlowNodeInstanceDto::getFlowNodeInstanceId,
+                    FlowNodeInstanceDto::getFlowNodeId,
                     FlowNodeInstanceDto::getStartDate,
                     FlowNodeInstanceDto::getEndDate
                   )
@@ -748,13 +748,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           .hasFieldOrPropertyWithValue(
             EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates, Collections.emptyList()
           );
-        assertThat(processInstanceDto.getEvents())
+        assertThat(processInstanceDto.getFlowNodeInstances())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
             .extracting(
-              FlowNodeInstanceDto::getId,
-              FlowNodeInstanceDto::getActivityId,
+              FlowNodeInstanceDto::getFlowNodeInstanceId,
+              FlowNodeInstanceDto::getFlowNodeId,
               FlowNodeInstanceDto::getStartDate,
               FlowNodeInstanceDto::getEndDate
             )
@@ -825,13 +825,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .isEmpty();
-        assertThat(processInstanceDto.getEvents())
+        assertThat(processInstanceDto.getFlowNodeInstances())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
             .extracting(
-              FlowNodeInstanceDto::getId,
-              FlowNodeInstanceDto::getActivityId,
+              FlowNodeInstanceDto::getFlowNodeInstanceId,
+              FlowNodeInstanceDto::getFlowNodeId,
               FlowNodeInstanceDto::getStartDate,
               FlowNodeInstanceDto::getEndDate
             )
@@ -904,13 +904,13 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .isEmpty();
-        assertThat(processInstanceDto.getEvents())
+        assertThat(processInstanceDto.getFlowNodeInstances())
           .satisfies(events -> assertThat(events)
             .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
-              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
+              .hasNoNullFieldsOrPropertiesExcept(NULLABLE_FLOW_NODE_FIELDS_TO_IGNORE))
             .extracting(
-              FlowNodeInstanceDto::getId,
-              FlowNodeInstanceDto::getActivityId,
+              FlowNodeInstanceDto::getFlowNodeInstanceId,
+              FlowNodeInstanceDto::getFlowNodeId,
               FlowNodeInstanceDto::getStartDate,
               FlowNodeInstanceDto::getEndDate
             )

@@ -16,12 +16,11 @@ import org.camunda.optimize.dto.optimize.query.status.StatusResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
+import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +39,7 @@ public class StatusCheckingService {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
-  private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
+  private final ImportSchedulerManagerService importSchedulerManagerService;
 
   private LoadingCache<EngineContext, Boolean> engineConnectionCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.MINUTES)
@@ -73,7 +72,7 @@ public class StatusCheckingService {
   private StatusResponseDto getStatusResponse(final boolean skipCache) {
     StatusResponseDto statusWithProgress = new StatusResponseDto();
     statusWithProgress.setConnectedToElasticsearch(isConnectedToElasticSearch());
-    Map<String, Boolean> importStatusMap = engineImportSchedulerManagerService.getImportStatusMap();
+    Map<String, Boolean> importStatusMap = importSchedulerManagerService.getImportStatusMap();
     Map<String, EngineStatusDto> engineConnections = new HashMap<>();
     for (EngineContext e : engineContextFactory.getConfiguredEngines()) {
       EngineStatusDto engineConnection = new EngineStatusDto();
@@ -124,7 +123,7 @@ public class StatusCheckingService {
     try {
       ClusterHealthRequest request = new ClusterHealthRequest();
       ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
-        .health(request, RequestOptions.DEFAULT);
+        .health(request, esClient.requestOptions());
 
       isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
         && healthResponse.getStatus() != ClusterHealthStatus.RED;

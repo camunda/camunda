@@ -34,8 +34,16 @@ it('should expose a global addNotifications method', () => {
 it('should process and show an error notification', async () => {
   const node = shallow(<Notifications />);
 
-  await showError({json: async () => ({errorMessage: 'Error content'})});
+  await showError({message: 'Error content'});
 
   expect(node.find('Notification')).toExist();
+  expect(node.find('Notification').prop('config').text).toBe('Error content');
+});
+
+it('should accept string error', async () => {
+  const node = shallow(<Notifications />);
+
+  await showError('Error content');
+
   expect(node.find('Notification').prop('config').text).toBe('Error content');
 });

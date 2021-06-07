@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -82,7 +83,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
       .id(PROCESS_DEFINITION_ID)
       .key(PROCESS_DEFINITION_KEY)
       .version(PROCESS_DEFINITION_VERSION_1)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml(readDiagram())
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
@@ -106,7 +107,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
       .processInstanceId(PROCESS_INSTANCE_ID)
       .startDate(OffsetDateTime.now())
       .endDate(OffsetDateTime.now())
-      .events(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
+      .flowNodeInstances(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
       .build();
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
@@ -116,7 +117,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
 
-    procInst.setEvents(
+    procInst.setFlowNodeInstances(
       createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
@@ -127,8 +128,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
   private List<FlowNodeInstanceDto> createEventList(String[] activityIds) {
     List<FlowNodeInstanceDto> events = new ArrayList<>(activityIds.length);
     for (String activityId : activityIds) {
-      FlowNodeInstanceDto event = new FlowNodeInstanceDto();
-      event.setActivityId(activityId);
+      FlowNodeInstanceDto event = FlowNodeInstanceDto.builder().flowNodeId(activityId).build();
       events.add(event);
     }
     return events;

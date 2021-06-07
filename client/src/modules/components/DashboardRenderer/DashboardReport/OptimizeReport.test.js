@@ -70,9 +70,7 @@ it('should not provide a link to the report when link is disabled', async () => 
 
 it('should display the name of a failing report', async () => {
   loadReport.mockReturnValue({
-    json: () => ({
-      reportDefinition: {name: 'Failing Name'},
-    }),
+    reportDefinition: {name: 'Failing Name'},
   });
   const node = shallow(
     <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
@@ -84,23 +82,19 @@ it('should display the name of a failing report', async () => {
 });
 
 it('should pass an error message if there is an error and no report is returned', async () => {
-  loadReport.mockReturnValueOnce({
+  const error = {
     status: 400,
-    json: () => ({
-      errorMessage: 'Is failing',
-      reportDefinition: null,
-    }),
-  });
+    errorMessage: 'Is failing',
+    reportDefinition: null,
+  };
+  loadReport.mockReturnValueOnce(error);
 
   const node = await shallow(
     <OptimizeReport {...props} mightFail={(data, success, fail) => fail(data)} disableNameLink />
   );
   await flushPromises();
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({
-    status: 400,
-    data: {errorMessage: 'Is failing', reportDefinition: null},
-  });
+  expect(node.find(ReportRenderer).prop('error')).toEqual(error);
 
   node.setProps({mightFail: props.mightFail});
   await node.instance().loadReport();

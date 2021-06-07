@@ -15,7 +15,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
@@ -46,7 +45,7 @@ public class SettingsWriter {
 
     try {
       final UpdateRequest request = createSettingsUpsert(settingsDto);
-      esClient.update(request, RequestOptions.DEFAULT);
+      esClient.update(request);
     } catch (IOException e) {
       final String errorMessage = "There were errors while writing settings.";
       log.error(errorMessage, e);

@@ -1,0 +1,12 @@
+.IconLink {
+  position: fixed;
+  height: 20px;
+  left: 10px;
+  bottom: 10px;
+  opacity: 0.5;
+  z-index: var(--z-above);
+
+  img {
+    width: 20px;
+  }
+}

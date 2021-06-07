@@ -48,7 +48,7 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
     final Number durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMillis);
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMillis);
     return processInstance;
   }
 
@@ -87,10 +87,10 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
 
     final ProcessInstanceEngineDto runningProcessInstance =
       engineIntegrationExtension.startProcessInstance(definition.getId());
-    engineDatabaseExtension.changeAllActivityDurations(
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(
       runningProcessInstance.getId(), completedActivityInstanceDurations
     );
-    engineDatabaseExtension.changeActivityInstanceStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
+    engineDatabaseExtension.changeFlowNodeStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
     importAllEngineEntitiesFromScratch();
 
     // when

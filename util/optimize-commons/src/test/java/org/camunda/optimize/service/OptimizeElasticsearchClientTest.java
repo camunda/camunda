@@ -7,12 +7,11 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.rest.RestStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -40,16 +39,14 @@ public class OptimizeElasticsearchClientTest {
 
   private OptimizeElasticsearchClient underTest;
 
-  @BeforeEach
-  public void init() {
-    this.underTest = new OptimizeElasticsearchClient(highLevelRestClient, indexNameService);
-  }
-
   @Test
   public void indexDeleteIsRetriedOnPendingSnapshot() throws IOException, InterruptedException {
     // given
+    RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider();
+    underTest = new OptimizeElasticsearchClient(highLevelRestClient, indexNameService, requestOptionsProvider);
     underTest.setSnapshotInProgressRetryDelaySeconds(1);
-    given(highLevelRestClient.indices().delete(any(DeleteIndexRequest.class), eq(RequestOptions.DEFAULT)))
+    given(highLevelRestClient.indices()
+            .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
       .willAnswer(invocation -> {
         throw new ElasticsearchStatusException("snapshot_in_progress_exception", RestStatus.BAD_REQUEST);
       });
@@ -60,19 +57,21 @@ public class OptimizeElasticsearchClientTest {
 
     // and hit the client which failed
     verify(highLevelRestClient.indices(), timeout(100).atLeastOnce())
-      .delete(any(DeleteIndexRequest.class), eq(RequestOptions.DEFAULT));
+      .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions()));
     // then the delete operation is not completed
     assertThat(deleteIndexTask.isTerminated()).isFalse();
 
     // then it is retried and completes eventually
-    given(highLevelRestClient.indices().delete(any(DeleteIndexRequest.class), eq(RequestOptions.DEFAULT)))
+    given(highLevelRestClient.indices()
+            .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions())))
       .willReturn(null);
 
     verify(highLevelRestClient.indices(), timeout(2000).atLeast(2))
-      .delete(any(DeleteIndexRequest.class), eq(RequestOptions.DEFAULT));
+      .delete(any(DeleteIndexRequest.class), eq(requestOptionsProvider.getRequestOptions()));
 
     // then the delete operation is completed
     deleteIndexTask.shutdown();
     assertThat(deleteIndexTask.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
   }
+
 }

@@ -81,7 +81,7 @@ public class StatusWebSocketIT extends AbstractIT {
   @Test
   public void importNotInProgressStatusOnlyUpdatedOnValueChange() throws Exception {
     // given
-    embeddedOptimizeExtension.stopEngineImportScheduling();
+    embeddedOptimizeExtension.stopImportScheduling();
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 
     // when status socket connects
@@ -99,7 +99,7 @@ public class StatusWebSocketIT extends AbstractIT {
   @Test
   public void importInProgressStatusOnlyUpdatedOnValueChange() throws Exception {
     // given
-    embeddedOptimizeExtension.stopEngineImportScheduling();
+    embeddedOptimizeExtension.stopImportScheduling();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 
@@ -137,8 +137,7 @@ public class StatusWebSocketIT extends AbstractIT {
       engineIntegrationExtension.deployAndStartProcess(processModel);
 
       // then
-      embeddedOptimizeExtension.getImportSchedulerManager()
-        .getImportSchedulers()
+      embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()
         .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
       assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
       assertThat(socket.getReceivedTwoUpdatesLatch().getCount()).isEqualTo(1L);

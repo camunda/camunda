@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +15,7 @@ import java.util.List;
 @Configuration
 public class ConfigurationServiceBuilder {
 
-  public static final List<String> DEFAULT_CONFIG_LOCATIONS = ImmutableList.of(
+  public static final List<String> DEFAULT_CONFIG_LOCATIONS = List.of(
     "service-config.yaml", "environment-config.yaml"
   );
 

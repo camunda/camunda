@@ -48,30 +48,6 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
     return publishedInstanceIndices.values();
   }
 
-  public synchronized void cleanupIndexes() {
-    eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(true)
-      .forEach(publishStateDto -> {
-        try {
-          final ProcessInstanceIndex processInstanceIndex = new EventProcessInstanceIndex(publishStateDto.getId());
-          final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
-            elasticsearchClient, processInstanceIndex
-          );
-          if (indexAlreadyExists) {
-            final AtomicInteger usageCount = usageCountPerIndex.get(publishStateDto.getId());
-            if (usageCount == null || usageCount.get() == 0) {
-              elasticSearchSchemaManager.deleteOptimizeIndex(elasticsearchClient, processInstanceIndex);
-            }
-          }
-        } catch (final Exception e) {
-          log.error(
-            "Failed cleaning up event process instance index for deleted publish state with id [{}]",
-            publishStateDto.getId(),
-            e
-          );
-        }
-      });
-  }
-
   public synchronized void syncAvailableIndices() {
     eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(true)
       .forEach(publishStateDto -> publishedInstanceIndices.remove(publishStateDto.getId()));
@@ -98,6 +74,31 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
         } catch (final Exception e) {
           log.error(
             "Failed ensuring event process instance index is present for definition id [{}]", publishStateDto.getId(), e
+          );
+        }
+      });
+    cleanupIndexes();
+  }
+
+  private synchronized void cleanupIndexes() {
+    eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(true)
+      .forEach(publishStateDto -> {
+        try {
+          final ProcessInstanceIndex processInstanceIndex = new EventProcessInstanceIndex(publishStateDto.getId());
+          final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
+            elasticsearchClient, processInstanceIndex
+          );
+          if (indexAlreadyExists) {
+            final AtomicInteger usageCount = usageCountPerIndex.get(publishStateDto.getId());
+            if (usageCount == null || usageCount.get() == 0) {
+              elasticSearchSchemaManager.deleteOptimizeIndex(elasticsearchClient, processInstanceIndex);
+            }
+          }
+        } catch (final Exception e) {
+          log.error(
+            "Failed cleaning up event process instance index for deleted publish state with id [{}]",
+            publishStateDto.getId(),
+            e
           );
         }
       });

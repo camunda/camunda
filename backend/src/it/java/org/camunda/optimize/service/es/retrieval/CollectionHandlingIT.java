@@ -96,8 +96,7 @@ public class CollectionHandlingIT extends AbstractIT {
     GetRequest getRequest = new GetRequest()
       .index(COLLECTION_INDEX_NAME)
       .id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
 
     // then
     assertThat(getResponse.isExists()).isTrue();

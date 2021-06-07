@@ -53,7 +53,7 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 30
             httpGet:
-              path: /
+              path: /api/readyz
               port: optimize-http
           resources:
             limits:

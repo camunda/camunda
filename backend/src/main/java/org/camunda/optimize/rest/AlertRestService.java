@@ -8,7 +8,6 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -28,7 +27,6 @@ import javax.ws.rs.core.MediaType;
 @AllArgsConstructor
 @Path("/alert")
 @Component
-@Secured
 public class AlertRestService {
 
   private final AlertService alertService;

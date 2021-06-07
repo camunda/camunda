@@ -258,7 +258,7 @@ public class FlowNodeStatusQueryFiltersIT extends AbstractFilterIT {
     ProcessInstanceEngineDto firstTaskCanceledInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.cancelActivityInstance(firstTaskCanceledInstance.getId(), USER_TASK_1);
-    engineDatabaseExtension.changeActivityDuration(firstTaskCanceledInstance.getId(), USER_TASK_1, 10000L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstTaskCanceledInstance.getId(), USER_TASK_1, 10000L);
     ProcessInstanceEngineDto secondTaskCanceledInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(secondTaskCanceledInstance.getId());

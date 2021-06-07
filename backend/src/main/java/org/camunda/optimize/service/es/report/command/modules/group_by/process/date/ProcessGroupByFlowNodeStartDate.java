@@ -15,7 +15,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Slf4j
 @Component
@@ -34,7 +34,7 @@ public class ProcessGroupByFlowNodeStartDate extends ProcessGroupByFlowNodeDate 
 
   @Override
   protected String getDateField() {
-    return EVENTS + "." + FlowNodeInstanceDto.Fields.startDate;
+    return FLOW_NODE_INSTANCES + "." + FlowNodeInstanceDto.Fields.startDate;
   }
 
 }

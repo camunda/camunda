@@ -9,7 +9,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -60,17 +60,17 @@ public abstract class AbstractImportMediatorPermutationsIT {
   }
 
   @SneakyThrows
-  protected void performOrderedImport(final List<Class<? extends EngineImportMediator>> mediatorOrder) {
+  protected void performOrderedImport(final List<Class<? extends ImportMediator>> mediatorOrder) {
     for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getImportSchedulers()) {
-      final List<EngineImportMediator> sortedMediators = scheduler
+      .getEngineImportSchedulers()) {
+      final List<ImportMediator> sortedMediators = scheduler
         .getImportMediators()
         .stream()
         .filter(engineImportMediator -> mediatorOrder.contains(engineImportMediator.getClass()))
         .sorted(Comparator.comparingInt(o -> mediatorOrder.indexOf(o.getClass())))
         .collect(toList());
 
-      for (EngineImportMediator sortedMediator : sortedMediators) {
+      for (ImportMediator sortedMediator : sortedMediators) {
         // run and wait for each mediator to finish the import run to force a certain execution order
         sortedMediator.runImport().get(30, TimeUnit.SECONDS);
       }
@@ -83,8 +83,8 @@ public abstract class AbstractImportMediatorPermutationsIT {
     );
   }
 
-  protected static Stream<List<Class<? extends EngineImportMediator>>> getMediatorPermutationsStream(
-    final List<Class<? extends EngineImportMediator>> mediatorClasses) {
+  protected static Stream<List<Class<? extends ImportMediator>>> getMediatorPermutationsStream(
+    final List<Class<? extends ImportMediator>> mediatorClasses) {
     return Collections2.permutations(mediatorClasses).stream();
   }
 }

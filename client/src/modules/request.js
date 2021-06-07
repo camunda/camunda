@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {t} from 'translation';
+
 const handlers = [];
 
 export function put(url, body, options = {}) {
@@ -74,7 +76,7 @@ export async function request(payload) {
   if (response.status >= 200 && response.status < 300) {
     return response;
   } else {
-    throw response;
+    throw await parseError(response);
   }
 }
 
@@ -104,4 +106,25 @@ function processBody(body) {
   }
 
   return JSON.stringify(body);
+}
+
+async function parseError(error) {
+  let parsedProps = {message: error.message || 'Unknown error'};
+
+  if (typeof error.json === 'function') {
+    try {
+      const {errorCode, errorMessage, ...errorProps} = await error.json();
+      parsedProps = {
+        message: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
+        ...errorProps,
+      };
+    } catch (e) {
+      // We should show an error, but cannot parse the error
+      // e.g. the server did not return the expected error object
+      console.error('Tried to parse error object, but failed', error);
+      return error;
+    }
+  }
+
+  return {status: error.status, ...parsedProps};
 }

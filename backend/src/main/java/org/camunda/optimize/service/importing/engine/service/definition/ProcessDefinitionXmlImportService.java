@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -20,7 +21,7 @@ import org.camunda.optimize.service.importing.engine.service.ImportService;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeData;
 import static org.camunda.optimize.service.util.BpmnModelUtil.extractUserTaskNames;
 import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
@@ -77,12 +78,10 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
     final BpmnModelInstance bpmnModelInstance = parseBpmnModel(engineEntity.getBpmn20Xml());
     return new ProcessDefinitionOptimizeDto(
       engineEntity.getId(),
-      engineContext.getEngineAlias(),
+      new EngineDataSourceDto(engineContext.getEngineAlias()),
       engineEntity.getBpmn20Xml(),
-      extractFlowNodeNames(bpmnModelInstance),
+      extractFlowNodeData(bpmnModelInstance),
       extractUserTaskNames(bpmnModelInstance)
     );
   }
-
-
 }

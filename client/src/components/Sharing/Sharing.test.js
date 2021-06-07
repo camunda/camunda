@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {ReportRenderer, InstanceCount} from 'components';
 
 import {Sharing} from './Sharing';
+import IconLink from './IconLink';
 import {evaluateEntity} from './service';
 
 jest.mock('./service', () => {
@@ -58,12 +59,14 @@ it('should display an error message if evaluation was unsuccessful', () => {
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {errorMessage: 'testError', reportDefinition: {}};
-  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+  props.match.params.type = 'report';
+  const testError = {status: 400, message: 'testError', reportDefinition: {}};
+  const mightFail = (promise, cb, err) => err(testError);
 
   const node = await shallow(<Sharing {...props} mightFail={mightFail} />);
+  await flushPromises();
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
+  expect(node.find(ReportRenderer).prop('error')).toEqual(testError);
 });
 
 it('should display an error message if type is invalid', () => {
@@ -195,7 +198,7 @@ it('should render an href directing to view mode ignoring /external sub url', ()
   );
 });
 
-it('should add a DiagramScrollLock when a shared report is embedded', () => {
+it('should show a compact version and lock scroll when a shared report is embedded', () => {
   props.match.params.type = 'report';
   props.location.search = '?mode=embed';
 
@@ -207,4 +210,60 @@ it('should add a DiagramScrollLock when a shared report is embedded', () => {
   });
 
   expect(node.find('DiagramScrollLock')).toExist();
+  expect(node.find(IconLink)).toExist();
+  expect(node.find('.Sharing')).toHaveClassName('compact');
+  expect(node.find('.title-button')).toHaveClassName('small');
+});
+
+it('should add report classname to the sharing container', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?header=hidden';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find('.Sharing')).toHaveClassName('report');
+});
+
+it('should only show the title and hide the link to Optimize', () => {
+  props.location.search = '?header=titleOnly';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find(InstanceCount)).toExist();
+  expect(node.find('EntityName')).toExist();
+  expect(node.find('.title-button')).not.toExist();
+});
+
+it('should only show the link to Optimize and hide the title', () => {
+  props.location.search = '?header=linkOnly';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find('.title-button')).toExist();
+  expect(node.find('EntityName')).not.toExist();
+});
+
+it('should hide the whole header if specified', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?header=hidden';
+
+  const node = shallow(<Sharing {...props} />);
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name', id: 'aReportId'},
+  });
+
+  expect(node.find('.header')).not.toExist();
 });

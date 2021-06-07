@@ -21,15 +21,7 @@ exports[`show match snapshot 1`] = `
     </Component>
     <Component>
       <ReactMarkdown
-        astPlugins={Array []}
-        escapeHtml={true}
-        parserOptions={Object {}}
-        plugins={Array []}
-        rawSourcePos={false}
-        renderers={Object {}}
-        skipHtml={false}
         source="#hello world"
-        sourcePos={false}
         transformLinkUri={[Function]}
       />
     </Component>

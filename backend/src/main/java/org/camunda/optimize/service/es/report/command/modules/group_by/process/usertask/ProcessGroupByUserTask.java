@@ -35,14 +35,14 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
-  private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
+  private static final String USER_TASK_ID_TERMS_AGGREGATION = "userTaskIds";
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
@@ -53,7 +53,7 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
     final TermsAggregationBuilder userTaskTermsAggregation = AggregationBuilders
       .terms(USER_TASK_ID_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
-      .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID);
+      .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
     distributedByPart.createAggregations(context).forEach(userTaskTermsAggregation::subAggregation);
     return Collections.singletonList(createFilteredUserTaskAggregation(context, userTaskTermsAggregation));
   }

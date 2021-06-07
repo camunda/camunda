@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.4.0</version>
+    <version>3.5.0</version>
   </parent>
 
   <artifactId>upgrade-tests</artifactId>
@@ -19,7 +19,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>3.0.7</version>
+      <version>3.0.8</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>

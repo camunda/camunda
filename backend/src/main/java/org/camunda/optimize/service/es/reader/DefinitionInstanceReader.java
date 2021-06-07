@@ -15,7 +15,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -66,7 +65,7 @@ public class DefinitionInstanceReader {
 
     final SearchResponse response;
     try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      response = esClient.search(searchRequest);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(String.format(
         "Was not able to retrieve definition keys for instances of type %s",

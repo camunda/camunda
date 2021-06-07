@@ -10,14 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,24 +36,19 @@ public class DecisionDefinitionXmlWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importProcessDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
+  public void importDecisionDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
       importItemName,
       decisionDefinitions,
-      (request, dto) -> addImportProcessDefinitionXmlRequest(request, dto)
+      this::addImportDecisionDefinitionXmlRequest
     );
   }
 
-  private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
-                                                    final OptimizeDto optimizeDto) {
-    if (!(optimizeDto instanceof DecisionDefinitionOptimizeDto)) {
-      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
-    }
-    DecisionDefinitionOptimizeDto decisionDefinitionDto = (DecisionDefinitionOptimizeDto) optimizeDto;
-
+  private void addImportDecisionDefinitionXmlRequest(final BulkRequest bulkRequest,
+                                                     final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,
       decisionDefinitionDto,

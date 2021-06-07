@@ -16,7 +16,8 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createAssigneeFilterQuery;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 @Component
@@ -29,7 +30,11 @@ public class AssigneeQueryFilter implements QueryFilter<IdentityLinkFilterDataDt
       final List<QueryBuilder> filters = query.filter();
       for (IdentityLinkFilterDataDto assigneeFilter : assigneeFilters) {
         filters.add(
-          nestedQuery(USER_TASKS, createAssigneeFilterQuery(assigneeFilter), ScoreMode.None)
+          nestedQuery(
+            FLOW_NODE_INSTANCES,
+            createAssigneeFilterQuery(assigneeFilter, createUserTaskFlowNodeTypeFilter()),
+            ScoreMode.None
+          )
         );
       }
     }

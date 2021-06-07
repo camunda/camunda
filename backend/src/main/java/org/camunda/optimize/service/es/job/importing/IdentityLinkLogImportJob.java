@@ -8,9 +8,11 @@ package org.camunda.optimize.service.es.job.importing;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 
 import java.util.List;
@@ -34,7 +36,8 @@ public class IdentityLinkLogImportJob extends ElasticsearchImportJob<IdentityLin
 
   @Override
   protected void persistEntities(final List<IdentityLinkLogEntryDto> newOptimizeEntities) {
-    identityLinkLogWriter.importIdentityLinkLogs(newOptimizeEntities);
+    final List<ImportRequestDto> importRequests = identityLinkLogWriter.generateIdentityLinkLogImports(newOptimizeEntities);
+    ElasticsearchWriterUtil.executeImportRequestsAsBulk("identity link logs", importRequests);
     try {
       assigneeCandidateGroupService.addIdentitiesIfNotPresent(mapToIdentityDtos(newOptimizeEntities));
     } catch (final Exception e) {

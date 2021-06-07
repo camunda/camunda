@@ -18,6 +18,7 @@ const license = require('./license');
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
+const zeebeMode = process.argv.indexOf('zeebe') > -1;
 
 // if we are in ci mode we assume data generation is already complete
 let engineDataGenerationComplete = ciMode;
@@ -39,6 +40,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     const backendVersion = data.project.version;
     const elasticSearchVersion = data.project.properties['elasticsearch.version'];
     const cambpmVersion = data.project.properties['camunda.engine.version'];
+    const zeebeVersion = data.project.properties['zeebe.version'];
 
     startManagementServer();
 
@@ -138,6 +140,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
             ES_VERSION: elasticSearchVersion,
             CAMBPM_VERSION: cambpmVersion,
+            ZEEBE_VERSION: zeebeVersion,
+            ...(zeebeMode && {COMPOSE_PROFILES: 'zeebe'}),
           },
         });
 

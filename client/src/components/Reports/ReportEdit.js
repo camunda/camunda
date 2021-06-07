@@ -39,11 +39,11 @@ export class ReportEdit extends React.Component {
     serverError: this.props.error,
   };
 
-  async componentDidMount() {
+  componentDidMount() {
     const {report} = this.state;
 
     if (this.isReportComplete(report) && !report.result) {
-      this.loadReport(report);
+      this.loadUpdatedReport(report);
       nowDirty(t('report.label'), this.save);
     }
   }
@@ -60,12 +60,11 @@ export class ReportEdit extends React.Component {
       this.props.mightFail(
         updateEntity(endpoint, id, {name, data}, {query: {force: this.state.conflict !== null}}),
         () => resolve(id),
-        async (error) => {
-          if (error.status === 409) {
-            const {conflictedItems} = await error.json();
+        (error) => {
+          if (error.status === 409 && error.conflictedItems) {
             this.setState({
               report: update(this.state.report, {name: {$set: name}}),
-              conflict: conflictedItems.reduce(
+              conflict: error.conflictedItems.reduce(
                 (obj, conflict) => {
                   obj[conflict.type].push(conflict);
                   return obj;
@@ -211,26 +210,17 @@ export class ReportEdit extends React.Component {
             },
             resolve
           ),
-        async (e) => {
-          const errorData = await e.json();
-          if (errorData) {
+        (serverError) => {
+          if (serverError.reportDefinition) {
             this.setState(
               {
-                report: errorData.reportDefinition,
-                serverError: {status: e.status, data: errorData},
+                report: serverError.reportDefinition,
+                serverError,
               },
               resolve
             );
           } else {
-            this.setState(
-              {
-                serverError: {
-                  status: e.status,
-                  data: {errorMessage: t('apiErrors.reportEvaluationError')},
-                },
-              },
-              resolve
-            );
+            this.setState({serverError}, resolve);
           }
         }
       )
@@ -270,7 +260,8 @@ export class ReportEdit extends React.Component {
                     report={report}
                     previous={[data.view, data.groupBy]}
                     disabled={
-                      (!data.processDefinitionKey && !data.decisionDefinitionKey) ||
+                      !data.definitions.length ||
+                      !data.definitions[0].key ||
                       !data.view ||
                       !data.groupBy
                     }

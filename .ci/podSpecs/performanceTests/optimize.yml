@@ -61,12 +61,12 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 30
           httpGet:
-            path: /
+            path: /api/readyz
             port: optimize-http
         resources:
           limits:
             cpu: 4
-            memory: 5Gi
+            memory: 6Gi
           requests:
             cpu: 4
             memory: 5Gi

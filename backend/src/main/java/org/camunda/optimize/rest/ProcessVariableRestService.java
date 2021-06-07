@@ -11,11 +11,11 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -26,25 +26,26 @@ import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 @AllArgsConstructor
-@Path("/variables")
+@Path(ProcessVariableRestService.PROCESS_VARIABLES_PATH)
 @Component
 public class ProcessVariableRestService {
 
+  public static final String PROCESS_VARIABLES_PATH = "/variables";
+
   private final ProcessVariableService processVariableService;
-  private SessionService sessionService;
+  private final SessionService sessionService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<ProcessVariableNameResponseDto> getVariableNames(@Context ContainerRequestContext requestContext,
-                                                               ProcessVariableNameRequestDto variableRequestDto) {
-
-    return processVariableService.getVariableNames(variableRequestDto);
+  public List<ProcessVariableNameResponseDto> getVariableNames(
+    @Context final ContainerRequestContext requestContext,
+    @Valid final List<ProcessVariableNameRequestDto> variableRequestDtos) {
+    return processVariableService.getVariableNames(variableRequestDtos);
   }
 
   @POST
   @Path("/reports")
-  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(@Context ContainerRequestContext requestContext,
@@ -55,7 +56,6 @@ public class ProcessVariableRestService {
 
   @POST
   @Path("/values")
-  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValues(@Context ContainerRequestContext requestContext,
@@ -66,7 +66,6 @@ public class ProcessVariableRestService {
 
   @POST
   @Path("/values/reports")
-  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValuesForReports(@Context ContainerRequestContext requestContext,

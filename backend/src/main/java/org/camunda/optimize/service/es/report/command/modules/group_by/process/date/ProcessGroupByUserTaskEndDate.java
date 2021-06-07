@@ -14,8 +14,8 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Slf4j
 @Component
@@ -34,7 +34,7 @@ public class ProcessGroupByUserTaskEndDate extends ProcessGroupByUserTaskDate {
 
   @Override
   protected String getDateField() {
-    return USER_TASKS + "." + USER_TASK_END_DATE;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_END_DATE;
   }
 
 }

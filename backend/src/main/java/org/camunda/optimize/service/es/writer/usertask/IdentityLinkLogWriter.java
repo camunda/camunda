@@ -10,14 +10,13 @@ import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -27,15 +26,23 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_TIMESTAMP;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ASSIGNEE_OPERATION_USER_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.CANDIDATE_GROUP_OPERATION_GROUP_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.CANDIDATE_GROUP_OPERATION_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.CANDIDATE_GROUP_OPERATION_TIMESTAMP;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.CANDIDATE_GROUP_OPERATION_TYPE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUP_OPERATIONS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_INSTANCE_ID;
+import static org.camunda.optimize.service.es.writer.usertask.UserTaskDurationScriptUtil.createUpdateUserTaskMetricsScript;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 
@@ -49,7 +56,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     super(esClient, elasticSearchSchemaManager, objectMapper);
   }
 
-  public void importIdentityLinkLogs(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
+  public List<ImportRequestDto> generateIdentityLinkLogImports(final List<IdentityLinkLogEntryDto> identityLinkLogs) {
     final String importItemName = "identity link logs";
     log.debug("Writing [{}] {} to ES.", identityLinkLogs.size(), importItemName);
 
@@ -57,41 +64,42 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       // we need to group by concurrent to make sure that the order is preserved
       .collect(groupingByConcurrent(IdentityLinkLogEntryDto::getTaskId));
 
-    final List<UserTaskInstanceDto> userTaskInstances = new ArrayList<>();
+    final List<FlowNodeInstanceDto> userTaskInstances = new ArrayList<>();
     for (List<IdentityLinkLogEntryDto> identityLinkLogEntryDtoList : identityLinksByTaskId.values()) {
       final IdentityLinkLogEntryDto firstOperationEntry = identityLinkLogEntryDtoList.get(0);
       final List<AssigneeOperationDto> assigneeOperations = mapToAssigneeOperationDtos(identityLinkLogEntryDtoList);
       final List<CandidateGroupOperationDto> candidateGroupOperations =
         mapToCandidateGroupOperationDtos(identityLinkLogEntryDtoList);
-      userTaskInstances.add(new UserTaskInstanceDto(
-        firstOperationEntry.getTaskId(),
-        firstOperationEntry.getProcessInstanceId(),
-        firstOperationEntry.getProcessDefinitionKey(),
-        firstOperationEntry.getEngine(),
-        extractAssignee(assigneeOperations),
-        extractCandidateGroups(candidateGroupOperations),
-        assigneeOperations,
-        candidateGroupOperations
-      ));
+      userTaskInstances.add(
+        FlowNodeInstanceDto.builder()
+          .userTaskInstanceId(firstOperationEntry.getTaskId())
+          .processInstanceId(firstOperationEntry.getProcessInstanceId())
+          .processDefinitionKey(firstOperationEntry.getProcessDefinitionKey())
+          .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
+          .engine(firstOperationEntry.getEngine())
+          .assignee(extractAssignee(assigneeOperations))
+          .candidateGroups(extractCandidateGroups(candidateGroupOperations))
+          .assigneeOperations(assigneeOperations)
+          .candidateGroupOperations(candidateGroupOperations)
+          .build()
+      );
     }
 
-    final Map<String, List<UserTaskInstanceDto>> processInstanceIdToUserTasks = new HashMap<>();
-    for (UserTaskInstanceDto userTask : userTaskInstances) {
+    final Map<String, List<FlowNodeInstanceDto>> processInstanceIdToUserTasks = new HashMap<>();
+    for (FlowNodeInstanceDto userTask : userTaskInstances) {
       processInstanceIdToUserTasks.putIfAbsent(userTask.getProcessInstanceId(), new ArrayList<>());
       processInstanceIdToUserTasks.get(userTask.getProcessInstanceId()).add(userTask);
     }
 
-    createInstanceIndicesIfMissing(userTaskInstances, UserTaskInstanceDto::getProcessDefinitionKey);
+    createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getProcessDefinitionKey);
 
-    final List<ImportRequestDto> importRequests = processInstanceIdToUserTasks.entrySet().stream()
+    return processInstanceIdToUserTasks.entrySet().stream()
       .map(entry -> ImportRequestDto.builder()
         .importName(importItemName)
         .esClient(esClient)
         .request(createUserTaskUpdateImportRequest(entry))
         .build())
       .collect(Collectors.toList());
-
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(importItemName, importRequests);
   }
 
   private List<CandidateGroupOperationDto> mapToCandidateGroupOperationDtos(
@@ -168,38 +176,59 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
 
   @Override
   protected String createInlineUpdateScript() {
-    return
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("flowNodesField", FLOW_NODE_INSTANCES)
+        .put("flowNodeTypeField", FLOW_NODE_TYPE)
+        .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
+        .put("userTaskIdField", USER_TASK_INSTANCE_ID)
+        .put("assigneeOperationsField", USER_TASK_ASSIGNEE_OPERATIONS)
+        .put("assigneeOpIdField", ASSIGNEE_OPERATION_ID)
+        .put("assigneeOpTimestampField", ASSIGNEE_OPERATION_TIMESTAMP)
+        .put("candidateGroupOperationsField", USER_TASK_CANDIDATE_GROUP_OPERATIONS)
+        .put("candidateGroupOpIdField", CANDIDATE_GROUP_OPERATION_ID)
+        .put("candidateGroupOpTimestampField", CANDIDATE_GROUP_OPERATION_TIMESTAMP)
+        .build()
+    );
+
+    return substitutor.replace(
       // @formatter:off
       // 1 check for existing userTask
-      "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
-      "def existingUserTasksById = ctx._source.userTasks.stream()" +
-        ".collect(Collectors.toMap(task -> task.id, task -> task, (t1, t2) -> t1));\n" +
-      "for (def currentUserTask : params.userTasks) {\n" +
-        //
-        "def existingTask = existingUserTasksById.get(currentUserTask.id);\n" +
+      "if (ctx._source.${flowNodesField} == null) ctx._source.${flowNodesField} = [];\n" +
+      "def userTaskInstancesById = ctx._source.${flowNodesField}.stream()" +
+        ".filter(flowNode -> \"${userTaskFlowNodeType}\".equalsIgnoreCase(flowNode.${flowNodeTypeField}))" +
+        ".collect(Collectors.toMap(flowNode -> flowNode.${userTaskIdField}, flowNode -> flowNode, (fn1, fn2) -> fn1));\n" +
+      "for (def currentUserTask : params.${flowNodesField}) {\n" +
+        // Ignore flowNodes that aren't userTasks
+        "if(!\"${userTaskFlowNodeType}\".equalsIgnoreCase(currentUserTask.${flowNodeTypeField})){ continue; }\n"+
+
+        "def existingTask = userTaskInstancesById.get(currentUserTask.${userTaskIdField});\n" +
         "if (existingTask != null) {\n" +
           // 2.1.1 if it exists add the assignee operation to the existing ones
-          "def existingOperationsById = existingTask.assigneeOperations.stream()\n" +
-            ".collect(Collectors.toMap(operation -> operation.id, operation -> operation));\n" +
-          "currentUserTask.assigneeOperations.stream()\n" +
-            ".forEachOrdered(operation -> existingOperationsById.putIfAbsent(operation.id, operation));\n" +
+          "if(existingTask.${assigneeOperationsField} == null) { existingTask.${assigneeOperationsField} = []; }\n" +
+          "def existingOperationsById = existingTask.${assigneeOperationsField}.stream()\n" +
+            ".collect(Collectors.toMap(operation -> operation.${assigneeOpIdField}, operation -> operation));\n" +
+          "currentUserTask.${assigneeOperationsField}.stream()\n" +
+            ".forEachOrdered(operation -> existingOperationsById.putIfAbsent(operation.${assigneeOpIdField}, operation));\n" +
           "def assigneeOperations = new ArrayList(existingOperationsById.values());" +
-          "Collections.sort(assigneeOperations, (o1, o2) -> o1.timestamp.compareTo(o2.timestamp));\n" +
+          "Collections.sort(assigneeOperations, (o1, o2) -> o1.${assigneeOpTimestampField}.compareTo(o2.${assigneeOpTimestampField}));\n" +
           "existingTask.assigneeOperations = assigneeOperations;\n" +
           // 2.1.2 if it exists add the candidate group operation to the existing ones
-          "existingOperationsById = existingTask.candidateGroupOperations.stream()\n" +
-            ".collect(Collectors.toMap(operation -> operation.id, operation -> operation));\n" +
-          "currentUserTask.candidateGroupOperations.stream()\n" +
-            ".forEachOrdered(operation -> existingOperationsById.putIfAbsent(operation.id, operation));\n" +
+          "if(existingTask.${candidateGroupOperationsField} == null) { existingTask.${candidateGroupOperationsField} = []; }\n" +
+          "existingOperationsById = existingTask.${candidateGroupOperationsField}.stream()\n" +
+            ".collect(Collectors.toMap(operation -> operation.${candidateGroupOpIdField}, operation -> operation));\n" +
+          "currentUserTask.${candidateGroupOperationsField}.stream()\n" +
+            ".forEachOrdered(operation -> existingOperationsById.putIfAbsent(operation.${candidateGroupOpIdField}, operation));\n" +
           "def candidateOperations = new ArrayList(existingOperationsById.values());" +
-          "Collections.sort(candidateOperations, (o1, o2) -> o1.timestamp.compareTo(o2.timestamp));\n" +
+          "Collections.sort(candidateOperations, (o1, o2) -> o1.${candidateGroupOpTimestampField}.compareTo(o2.${candidateGroupOpTimestampField}));\n" +
           "existingTask.candidateGroupOperations = candidateOperations;\n" +
         "} else {\n" +
           // 2.2 if it doesn't exist add it with id and assignee/candidate group operations set
-          "existingUserTasksById.put(currentUserTask.id, currentUserTask);\n" +
+          "userTaskInstancesById.put(currentUserTask.${userTaskIdField}, currentUserTask);\n" +
         "}\n" +
       "}\n" +
-      "ctx._source.userTasks = existingUserTasksById.values();\n" +
+        "ctx._source.${flowNodesField}.removeIf(flowNode -> \"${userTaskFlowNodeType}\".equalsIgnoreCase(flowNode.${flowNodeTypeField}));\n" +
+        "ctx._source.${flowNodesField}.addAll(userTaskInstancesById.values());\n") +
        createUpdateAssigneeScript() +
        createUpdateCandidateGroupScript() +
        createUpdateUserTaskMetricsScript();
@@ -209,9 +238,12 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     // @formatter:off
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-      .put("userTasksField", USER_TASKS)
+      .put("flowNodesField", FLOW_NODE_INSTANCES)
+      .put("flowNodeTypeField", FLOW_NODE_TYPE)
+      .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
       .put("assigneeField", USER_TASK_ASSIGNEE)
       .put("assigneeOperationsField", USER_TASK_ASSIGNEE_OPERATIONS)
+      .put("assigneeOpTimestampField", ASSIGNEE_OPERATION_TIMESTAMP)
       .put("assigneeOperationTypeField", ASSIGNEE_OPERATION_TYPE)
       .put("assigneeOperationUserIdField", ASSIGNEE_OPERATION_USER_ID)
       .put("identityLinkOperationAdd", IDENTITY_LINK_OPERATION_ADD)
@@ -219,14 +251,20 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     );
 
     return substitutor.replace(
-      "if (ctx._source.${userTasksField} != null) {\n" +
-        "for (def currentTask : ctx._source.${userTasksField}) {\n" +
-          "def assignee = currentTask.${assigneeOperationsField}.stream()\n" +
+      "if (ctx._source.${flowNodesField} != null) {\n" +
+        "for (def currentFlowNode : ctx._source.${flowNodesField}) {\n" +
+          // Ignore any flowNodes that arent userTasks
+          "if(!\"${userTaskFlowNodeType}\".equalsIgnoreCase(currentFlowNode.${flowNodeTypeField})) {\n" +
+            "continue;\n" +
+          "}\n" +
+
+          "if(currentFlowNode.${assigneeOperationsField} == null) { currentFlowNode.${assigneeOperationsField} = []; }\n" +
+          "def assignee = currentFlowNode.${assigneeOperationsField}.stream()\n" +
           "  .reduce((first, second) -> { \n" +
-          "    boolean sameTimestampAndFirstIsAddOperation = first.timestamp.equals(second.timestamp) &&" +
+          "    boolean sameTimestampAndFirstIsAddOperation = first.${assigneeOpTimestampField}.equals(second.${assigneeOpTimestampField}) &&" +
           "      \"${identityLinkOperationAdd}\".equals(first.${assigneeOperationTypeField}) &&" +
           "      !\"${identityLinkOperationAdd}\".equals(second.${assigneeOperationTypeField});\n" +
-          "     return sameTimestampAndFirstIsAddOperation? first: second;\n" +
+          "     return sameTimestampAndFirstIsAddOperation ? first : second;\n" +
           "})\n" +
           "  .map(logEntry -> {\n" +
           "    if(\"${identityLinkOperationAdd}\".equals(logEntry.${assigneeOperationTypeField})) {\n" +
@@ -236,7 +274,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
           "    }\n" +
           "  })\n" +
           "  .orElse(null);\n" +
-          "currentTask.${assigneeField} = assignee;\n" +
+          "currentFlowNode.${assigneeField} = assignee;\n" +
         "}\n" +
       "}\n"
     );
@@ -247,7 +285,9 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     // @formatter:off
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-      .put("userTasksField", USER_TASKS)
+      .put("flowNodesField", FLOW_NODE_INSTANCES)
+      .put("flowNodeTypeField", FLOW_NODE_TYPE)
+      .put("userTaskFlowNodeType", FLOW_NODE_TYPE_USER_TASK)
       .put("candidateGroupsField", USER_TASK_CANDIDATE_GROUPS)
       .put("candidateGroupOperationsField", USER_TASK_CANDIDATE_GROUP_OPERATIONS)
       .put("candidateGroupOperationTypeField", CANDIDATE_GROUP_OPERATION_TYPE)
@@ -257,10 +297,16 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     );
 
     return substitutor.replace(
-      "if (ctx._source.${userTasksField} != null) {\n" +
-        "for (def currentTask : ctx._source.${userTasksField}) {\n" +
+      "if (ctx._source.${flowNodesField} != null) {\n" +
+        "for (def currentFlowNode : ctx._source.${flowNodesField}) {\n" +
+          // Ignore any flowNodes that arent userTasks
+        "if(!\"${userTaskFlowNodeType}\".equalsIgnoreCase(currentFlowNode.${flowNodeTypeField})) {\n" +
+            "continue;\n" +
+          "}\n" +
+
+          "if(currentFlowNode.${candidateGroupOperationsField} == null) { currentFlowNode.${candidateGroupOperationsField} = []; }\n" +
           "Set candidateGroups = new HashSet();\n" +
-          "currentTask.${candidateGroupOperationsField}.stream()\n" +
+          "currentFlowNode.${candidateGroupOperationsField}.stream()\n" +
           "  .forEach(logEntry -> {\n" +
           "    if (\"${identityLinkOperationAdd}\".equals(logEntry.${candidateGroupOperationTypeField})) {\n" +
           "      candidateGroups.add(logEntry.${candidateGroupOperationGroupIdField});\n" +
@@ -268,7 +314,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
           "      candidateGroups.remove(logEntry.${candidateGroupOperationGroupIdField});\n" +
           "    }\n" +
           "  });\n" +
-          "currentTask.${candidateGroupsField} = new ArrayList(candidateGroups);\n" +
+          "currentFlowNode.${candidateGroupsField} = new ArrayList(candidateGroups);\n" +
         "}\n" +
       "}\n"
     );

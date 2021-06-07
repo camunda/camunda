@@ -32,16 +32,18 @@ export class DecisionControlPanel extends React.Component {
     scrolled: false,
     showSource: true,
     showSetup: true,
-    showFilter: true,
+    showFilter: false,
   };
 
   componentDidMount() {
-    this.loadVariables(this.props.report.data);
+    this.loadVariables(this.props.report.data?.definitions?.[0]);
   }
 
-  loadVariables = ({decisionDefinitionKey, decisionDefinitionVersions, tenantIds}) => {
-    if (decisionDefinitionKey && decisionDefinitionVersions && tenantIds) {
-      const payload = {decisionDefinitionKey, decisionDefinitionVersions, tenantIds};
+  loadVariables = ({key, versions, tenantIds}) => {
+    if (key && versions && tenantIds) {
+      const payload = [
+        {decisionDefinitionKey: key, decisionDefinitionVersions: versions, tenantIds},
+      ];
       return new Promise((resolve, reject) => {
         this.props.mightFail(
           Promise.all([loadInputVariables(payload), loadOutputVariables(payload)]),
@@ -53,15 +55,11 @@ export class DecisionControlPanel extends React.Component {
     }
   };
 
-  loadXml = ({decisionDefinitionKey, decisionDefinitionVersions, tenantIds}) => {
-    if (decisionDefinitionKey && decisionDefinitionVersions?.[0] && tenantIds) {
+  loadXml = ({key, versions, tenantIds}) => {
+    if (key && versions?.[0] && tenantIds) {
       return new Promise((resolve, reject) => {
         this.props.mightFail(
-          loadDecisionDefinitionXml(
-            decisionDefinitionKey,
-            decisionDefinitionVersions[0],
-            tenantIds[0]
-          ),
+          loadDecisionDefinitionXml(key, versions[0], tenantIds[0]),
           resolve,
           (error) => reject(showError(error))
         );
@@ -96,9 +94,11 @@ export class DecisionControlPanel extends React.Component {
     const {groupBy, configuration} = this.props.report.data;
     const {columnOrder, includedColumns, excludedColumns} = configuration.tableColumns;
     const definitionData = {
-      decisionDefinitionKey: key,
-      decisionDefinitionVersions: versions,
+      key,
+      versions,
       tenantIds,
+      name,
+      displayName: name,
     };
 
     this.props.setLoading(true);
@@ -108,10 +108,7 @@ export class DecisionControlPanel extends React.Component {
     ]);
 
     const change = {
-      decisionDefinitionKey: {$set: key},
-      decisionDefinitionName: {$set: name},
-      decisionDefinitionVersions: {$set: versions},
-      tenantIds: {$set: tenantIds},
+      definitions: {$set: [definitionData]},
       configuration: {xml: {$set: xml}},
     };
 
@@ -150,53 +147,51 @@ export class DecisionControlPanel extends React.Component {
   render() {
     const {data, result} = this.props.report;
     const {
-      decisionDefinitionKey,
-      decisionDefinitionVersions,
-      tenantIds,
+      definitions,
       filter,
       configuration: {xml},
     } = data;
     const {showSource, showSetup, showFilter, scrolled} = this.state;
 
+    const {key, versions, tenantIds} = definitions?.[0] ?? {};
+
     return (
       <div className="DecisionControlPanel ReportControlPanel">
         <section className={classnames('select', 'source', {hidden: !showSource})}>
-          <h3 className="sectionTitle">
+          <Button
+            className="sectionTitle"
+            onClick={() => {
+              this.setState({showSource: !showSource});
+            }}
+          >
             <Icon type="data-source" />
             {t('common.dataSource')}
-            <Button
-              icon
-              className="sectionToggle"
-              onClick={() => {
-                this.setState({showSource: !showSource});
-              }}
-            >
-              <Icon type={showSource ? 'up' : 'down'} />
-            </Button>
-          </h3>
+            <span className={classnames('sectionToggle', {open: showSource})}>
+              <Icon type="down" />
+            </span>
+          </Button>
           <DefinitionSelection
             type="decision"
-            definitionKey={decisionDefinitionKey}
-            versions={decisionDefinitionVersions}
+            definitionKey={key}
+            versions={versions}
             tenants={tenantIds}
             xml={xml}
             onChange={this.changeDefinition}
           />
         </section>
         <section className={classnames('reportSetup', {hidden: !showSetup})}>
-          <h3 className="sectionTitle">
+          <Button
+            className="sectionTitle"
+            onClick={() => {
+              this.setState({showSetup: !showSetup});
+            }}
+          >
             <Icon type="report" />
             {t('report.reportSetup')}
-            <Button
-              icon
-              className="sectionToggle"
-              onClick={() => {
-                this.setState({showSetup: !showSetup});
-              }}
-            >
-              <Icon type={showSetup ? 'up' : 'down'} />
-            </Button>
-          </h3>
+            <span className={classnames('sectionToggle', {open: showSetup})}>
+              <Icon type="down" />
+            </span>
+          </Button>
           <ul>
             {['view', 'groupBy'].map((field, idx, fields) => {
               const previous = fields
@@ -213,7 +208,7 @@ export class DecisionControlPanel extends React.Component {
                     value={data[field]}
                     variables={this.state.variables}
                     previous={previous}
-                    disabled={!decisionDefinitionKey || previous.some((entry) => !entry)}
+                    disabled={!key || previous.some((entry) => !entry)}
                     onChange={(newValue) => this.updateReport(field, newValue)}
                   />
                 </li>
@@ -222,20 +217,19 @@ export class DecisionControlPanel extends React.Component {
           </ul>
         </section>
         <div className="filter header">
-          <h3 className="sectionTitle">
+          <Button
+            className="sectionTitle"
+            onClick={() => {
+              this.setState({showFilter: !showFilter});
+            }}
+          >
             <Icon type="filter" />
             {t('common.filter.label')}
-            <Button
-              icon
-              className="sectionToggle"
-              onClick={() => {
-                this.setState({showFilter: !showFilter});
-              }}
-            >
-              <Icon type={showFilter ? 'up' : 'down'} />
-            </Button>
+            <span className={classnames('sectionToggle', {open: showFilter})}>
+              <Icon type="down" />
+            </span>
             {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
-          </h3>
+          </Button>
         </div>
         <div
           className={classnames('scrollable', {withDivider: scrolled || !showFilter})}
@@ -245,8 +239,8 @@ export class DecisionControlPanel extends React.Component {
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}
-              decisionDefinitionKey={decisionDefinitionKey}
-              decisionDefinitionVersions={decisionDefinitionVersions}
+              decisionDefinitionKey={key}
+              decisionDefinitionVersions={versions}
               tenants={tenantIds}
               variables={this.state.variables}
             />

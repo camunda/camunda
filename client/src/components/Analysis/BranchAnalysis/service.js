@@ -25,19 +25,12 @@ export async function loadFrequencyData(
   return await response.json();
 }
 
-function createFlowNodeFrequencyReport(
-  processDefinitionKey,
-  processDefinitionVersions,
-  tenantIds,
-  filter
-) {
+function createFlowNodeFrequencyReport(key, versions, tenantIds, filter) {
   return {
     combined: false,
     reportType: 'process',
     data: {
-      processDefinitionKey,
-      processDefinitionVersions,
-      tenantIds,
+      definitions: [{key, versions, tenantIds}],
       filter,
       view: {
         entity: 'flowNode',

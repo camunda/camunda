@@ -32,8 +32,11 @@ import org.elasticsearch.repositories.fs.FsRepository
 import org.elasticsearch.search.aggregations.AggregationBuilders
 import org.elasticsearch.search.aggregations.bucket.nested.Nested
 import org.elasticsearch.search.builder.SearchSourceBuilder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class ElasticClient {
+  private static final Logger log = LoggerFactory.getLogger(ElasticClient.class);
   private static final String[] SETTINGS_FILTER = [
     "index.analysis.*", "index.number_of_shards", "index.number_of_replicas",
     "index.max_ngram_diff", "index.mapping.*", "index.refresh_interval"
@@ -72,16 +75,16 @@ class ElasticClient {
   }
 
   def refreshAll() {
-    println "Refreshing all indices of ${name} Elasticsearch..."
+    log.info("Refreshing all indices of ${name} Elasticsearch...");
     client.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT)
-    println "Successfully refreshed all indices of ${name} Elasticsearch!"
+    log.info("Successfully refreshed all indices of ${name} Elasticsearch!");
   }
 
   def cleanIndicesAndTemplates() {
-    println "Wiping all indices & templates from ${name} Elasticsearch..."
+    log.info("Wiping all indices & templates from ${name} Elasticsearch...");
     client.indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT)
     client.indices().deleteTemplate(new DeleteIndexTemplateRequest("*"), RequestOptions.DEFAULT)
-    println "Successfully wiped all indices & templates from ${name} Elasticsearch!"
+    log.info("Successfully wiped all indices & templates from ${name} Elasticsearch!");
   }
 
   def getSettings(String indexPattern = DEFAULT_OPTIMIZE_INDEX_PATTERN) {
@@ -106,7 +109,7 @@ class ElasticClient {
   }
 
   def createSnapshotRepository() {
-    println "Creating snapshot repository on ${name} Elasticsearch..."
+    log.info("Creating snapshot repository on ${name} Elasticsearch...");
     def settings = Settings.builder()
       .put(FsRepository.LOCATION_SETTING.getKey(), "/var/tmp")
       .put(FsRepository.COMPRESS_SETTING.getKey(), true)
@@ -115,11 +118,11 @@ class ElasticClient {
       new PutRepositoryRequest(SNAPSHOT_REPOSITORY_NAME).settings(settings).type(FsRepository.TYPE),
       RequestOptions.DEFAULT
     )
-    println "Done creating snapshot repository on ${name} Elasticsearch!"
+    log.info("Done creating snapshot repository on ${name} Elasticsearch!");
   }
 
   def createSnapshot(Boolean waitForCompletion = true) {
-    println "Creating snapshot on ${name} Elasticsearch..."
+    log.info("Creating snapshot on ${name} Elasticsearch...");
     // using low level client for compatibility here, see https://github.com/elastic/elasticsearch/pull/57661
     final Request createSnapshotRequest = new Request(
       "PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME
@@ -131,27 +134,27 @@ class ElasticClient {
       throw new RuntimeException("Failed Creating Snapshot, statusCode: ${response.getStatusLine().getStatusCode()}")
     }
     if (waitForCompletion) {
-      println "Done creating snapshot on ${name} Elasticsearch!"
+      log.info("Done creating snapshot on ${name} Elasticsearch!");
     } else {
-      println "Done starting asynchronous snapshot operation on ${name} Elasticsearch!"
+      log.info("Done starting asynchronous snapshot operation on ${name} Elasticsearch!");
     }
   }
 
   def restoreSnapshot() {
-    println "Restoring snapshot on ${name} Elasticsearch..."
+    log.info("Restoring snapshot on ${name} Elasticsearch...");
     client.snapshot().restore(
       new RestoreSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME)
         .includeGlobalState(true)
         .waitForCompletion(true),
       RequestOptions.DEFAULT
     )
-    println "Done restoring snapshot on ${name} Elasticsearch!"
+    log.info("Done restoring snapshot on ${name} Elasticsearch!");
   }
 
   def deleteSnapshot() {
-    println "Deleting snapshot on ${name} Elasticsearch..."
+    log.info("Deleting snapshot on ${name} Elasticsearch...");
     client.snapshot().delete(new DeleteSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME), RequestOptions.DEFAULT)
-    println "Done deleting snapshot on ${name} Elasticsearch!"
+    log.info("Done deleting snapshot on ${name} Elasticsearch!");
   }
 
   long getDocumentCount(String indexName) {

@@ -33,6 +33,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil;
 import org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil;
@@ -76,6 +77,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CompletedFlowNodesOnlyQueryFilter completedFlowNodesOnlyQueryFilter;
   private final CanceledFlowNodesOnlyQueryFilter canceledFlowNodesOnlyQueryFilter;
   private final CompletedOrCanceledFlowNodesOnlyQueryFilter completedOrCanceledFlowNodesOnlyQueryFilter;
+  private final InstancesContainingUserTasksFilter instancesContainingUserTasksFilter;
 
   @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
@@ -114,6 +116,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         query, extractFilters(filters, CanceledFlowNodesOnlyFilterDto.class), timezone);
       completedOrCanceledFlowNodesOnlyQueryFilter.addFilters(
         query, extractFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), timezone);
+      instancesContainingUserTasksFilter.addFilters(
+        query, extractFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), timezone);
     }
     addInstanceFilterForViewLevelMatching(query, filters);
   }

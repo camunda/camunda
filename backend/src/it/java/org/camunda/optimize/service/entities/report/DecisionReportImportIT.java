@@ -8,6 +8,7 @@ package org.camunda.optimize.service.entities.report;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -166,7 +167,7 @@ public class DecisionReportImportIT extends AbstractExportImportIT {
     assertThat(importedReport.getName()).isEqualTo(reportDefinitionToImport.getName());
     assertThat(importedReport.getData())
       .usingRecursiveComparison()
-      .ignoringFields(DecisionReportDataDto.Fields.decisionDefinitionVersions)
+      .ignoringFields(SingleReportDataDto.Fields.definitions + "." + ReportDataDefinitionDto.Fields.versions)
       .ignoringFields(SingleReportDataDto.Fields.configuration)
       .isEqualTo(reportDefinitionToImport.getData());
     assertThat(importedReport.getData().getConfiguration())

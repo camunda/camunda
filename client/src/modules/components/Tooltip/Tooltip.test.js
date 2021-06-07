@@ -151,6 +151,9 @@ it('should call onMouseEnter and onMouseLeave functions if specified', () => {
 it('should switch alignment and position if no space at the edges of the screen', () => {
   jest.spyOn(document.body, 'clientHeight', 'get').mockReturnValueOnce(100);
   jest.spyOn(document.body, 'clientWidth', 'get').mockReturnValueOnce(100);
+  jest
+    .spyOn(window, 'getComputedStyle')
+    .mockImplementationOnce(() => ({getPropertyValue: () => '7px'}));
 
   const tooltip = {getBoundingClientRect: () => ({width: 50, height: 50})};
   const hoverElement = {

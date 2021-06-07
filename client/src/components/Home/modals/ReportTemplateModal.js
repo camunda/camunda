@@ -79,23 +79,12 @@ export default function ReportTemplateModal({onClose}) {
       onClose={onClose}
       templates={templates}
       entity="report"
-      templateToState={({
-        name,
-        template,
-        definitionKey,
-        versions,
-        definitionName,
-        tenants,
-        xml,
-      }) => ({
+      templateToState={({name, template, definitions, xml}) => ({
         name,
         data: {
           ...(template || {}),
           configuration: {...(template?.configuration || {}), xml},
-          processDefinitionKey: definitionKey,
-          processDefinitionVersions: versions,
-          processDefinitionName: definitionName,
-          tenantIds: tenants,
+          definitions,
         },
       })}
     />

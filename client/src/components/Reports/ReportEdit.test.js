@@ -37,9 +37,13 @@ const report = {
   reportType: 'process',
   combined: false,
   data: {
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['aVersion'],
-    tenantIds: [],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['aVersion'],
+        tenantIds: [],
+      },
+    ],
     configuration: {},
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
@@ -104,8 +108,9 @@ it('should evaluate the report on mount if the config is complete, but the resul
   evaluateReport.mockClear();
   evaluateReport.mockReturnValue(report);
 
-  await shallow(<ReportEdit {...props} report={{...report, result: null}} />);
+  const node = shallow(<ReportEdit {...props} report={{...report, result: null}} />);
 
+  expect(node.find('LoadingIndicator')).toExist();
   expect(evaluateReport).toHaveBeenCalled();
 });
 
@@ -163,7 +168,13 @@ it('should use original data as result data if report cant be evaluated on cance
     originalData: {
       ...report,
       data: {
-        processDefinitionKey: '123',
+        definitions: [
+          {
+            key: '123',
+            versions: ['1'],
+            tenantIds: [null],
+          },
+        ],
         configuration: {},
       },
     },
@@ -172,13 +183,13 @@ it('should use original data as result data if report cant be evaluated on cance
   evaluateReport.mockReturnValueOnce(null);
   node.instance().cancel();
 
-  expect(node.state().report.data.processDefinitionKey).toEqual('123');
+  expect(node.state().report.data.definitions[0].key).toEqual('123');
 });
 
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 
-  const mightFail = (promise, cb, err) => err({status: 409, json: () => ({conflictedItems})});
+  const mightFail = (promise, cb, err) => err({status: 409, conflictedItems});
 
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
 
@@ -250,7 +261,7 @@ it('should only resolve the save promise if a decision for conflicts has been ma
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
 
   mightFail.mockImplementationOnce((promise, cb, err) =>
-    err({status: 409, json: () => ({conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})})
+    err({status: 409, conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})
   );
 
   let promiseResolved = false;
@@ -320,11 +331,11 @@ it('should show loading indicator if specified by children components', () => {
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {errorMessage: 'testError', reportDefinition: report};
-  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+  const testError = {status: 400, message: 'testError', reportDefinition: report};
+  const mightFail = (promise, cb, err) => err(testError);
 
   const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
   await node.instance().loadReport(undefined, report);
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
+  expect(node.find(ReportRenderer).prop('error')).toEqual(testError);
 });

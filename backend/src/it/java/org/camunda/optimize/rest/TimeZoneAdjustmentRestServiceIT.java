@@ -138,9 +138,9 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
@@ -184,13 +184,13 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), now);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
@@ -272,18 +272,18 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), START_EVENT, now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), START_EVENT, now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), START_EVENT, now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), START_EVENT, now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), END_EVENT, now);
-    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), END_EVENT, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto2.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstanceDto1.getId(), END_EVENT, now);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstanceDto1.getId(), END_EVENT, now);
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()

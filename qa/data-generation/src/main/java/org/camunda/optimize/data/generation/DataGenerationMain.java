@@ -42,13 +42,24 @@ public class DataGenerationMain {
     final Map<String, String> arguments = extractArguments(args);
     DataGenerationInformation dataGenerationInformation = extractDataGenerationInformation(arguments);
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
-    String startDate = arguments.get("startDate");
-    String endDate = arguments.get("endDate");
-    checkDateSpectrum(startDate, endDate);
+    validateProcessInstanceDateParameters(arguments);
     main.generateData();
-    String dbUser = "dbUser";
-    String dbUrl = arguments.get("dbUrl");
-    update(startDate, endDate, arguments.get("jdbcDriver"), arguments.get("dbUrl"), arguments.get("dbUser"), arguments.get("dbPassword"));
+    updateProcessInstanceDatesIfRequired(arguments);
+  }
+
+  public void generateData() {
+    DataGenerationExecutor dataGenerationExecutor =
+      new DataGenerationExecutor(dataGenerationInformation);
+    logger.info("Start generating data...");
+    dataGenerationExecutor.executeDataGeneration();
+    dataGenerationExecutor.awaitDataGenerationTermination();
+    logger.info("Finished data generation!");
+  }
+
+  private static void validateProcessInstanceDateParameters(final Map<String, String> arguments) throws ParseException {
+    if (Boolean.parseBoolean(arguments.get("adjustProcessInstanceDates"))) {
+      checkDateSpectrum(arguments.get("startDate"), arguments.get("endDate"));
+    }
   }
 
   private static DataGenerationInformation extractDataGenerationInformation(Map<String, String> arguments) {
@@ -103,7 +114,7 @@ public class DataGenerationMain {
     return arguments;
   }
 
-  public static void checkDateSpectrum(String startDate, String endDate) throws ParseException {
+  private static void checkDateSpectrum(String startDate, String endDate) throws ParseException {
     SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
     try {
       Date startDateObject = format.parse(startDate);
@@ -128,6 +139,7 @@ public class DataGenerationMain {
     arguments.put("numberOfDecisionInstances", String.valueOf(10_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
     arguments.put("removeDeployments", "true");
+    arguments.put("adjustProcessInstanceDates", "true");
     arguments.put("startDate", "01/01/2018");
     arguments.put("endDate", "01/01/2020");
     arguments.put("jdbcDriver", JDBC_DRIVER);
@@ -159,19 +171,18 @@ public class DataGenerationMain {
     }
   }
 
-  public void generateData() {
-    DataGenerationExecutor dataGenerationExecutor =
-      new DataGenerationExecutor(dataGenerationInformation);
-    logger.info("Start generating data...");
-    dataGenerationExecutor.executeDataGeneration();
-    dataGenerationExecutor.awaitDataGenerationTermination();
-    logger.info("Finished data generation!");
-  }
-
-  public static void update(String startDate, String endDate, String driver, String url, String user,
-                            String userPassword) {
-    DBConnector dbConnector = new DBConnector(driver, url, user, userPassword);
-    dbConnector.updateProcessInstances(startDate, endDate);
-    logger.info("Updated endDate and startDate of process instances in db!");
+  private static void updateProcessInstanceDatesIfRequired(final Map<String, String> arguments) {
+    if (Boolean.parseBoolean(arguments.get("adjustProcessInstanceDates"))) {
+      DBConnector dbConnector = new DBConnector(
+        arguments.get("jdbcDriver"),
+        arguments.get("dbUrl"),
+        arguments.get("dbUser"),
+        arguments.get("dbPassword")
+      );
+      dbConnector.updateProcessInstances(arguments.get("startDate"), arguments.get("endDate"));
+      logger.info("Updated endDate and startDate of process instances in db!");
+    } else {
+      logger.info("Skipping process instance start- and endDate adjustments.");
+    }
   }
 }

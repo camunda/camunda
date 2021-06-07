@@ -7,13 +7,18 @@ package org.camunda.optimize.service.export;
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -30,11 +35,10 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT;
-import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
-public class ProcessCsvExportServiceIT extends AbstractIT {
+public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
+
   private static final String FAKE = "FAKE";
 
   @ParameterizedTest
@@ -59,6 +63,46 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
     String stringExpected = getExpectedContentAsString(processInstance, expectedCSV);
 
     assertThat(actualContent).isEqualTo(stringExpected);
+  }
+
+  @Test
+  public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
+    // given
+    OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
+    Long expectedDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
+
+    ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleOneUserTasksDefinition();
+    ProcessInstanceEngineDto runningInstanceOneWeek = engineIntegrationExtension.startProcessInstance(
+      processDefinitionEngineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceOneWeek.getId(), twoWeeksAgo);
+
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto currentReport = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
+      .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+
+    ReportSortingDto sortingOrder = new ReportSortingDto();
+    sortingOrder.setBy(ProcessInstanceIndex.START_DATE);
+    String reportId = createAndStoreDefaultReportDefinitionWithSortByDuration(currentReport, sortingOrder);
+    String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(
+      "/csv/process/single/raw_process_data_duration_is_calculated_correctly.csv");
+    expectedString = expectedString.replace("${PI_ID_1}", runningInstanceOneWeek.getId());
+    expectedString = expectedString.replace("${PD_ID_1}", runningInstanceOneWeek.getDefinitionId());
+    expectedString = expectedString.replace("${START_DATE_1}", twoWeeksAgo.toString());
+    expectedString = expectedString.replace("${DURATION}", expectedDuration.toString());
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
+
+    // then
+    String actualContent = getResponseContentAsString(response);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(actualContent).isEqualTo(expectedString);
   }
 
   @Test
@@ -87,6 +131,148 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
     assertThat(getResponseContentAsString(response)).isNotEmpty();
   }
 
+  @MethodSource("getSortingParamsAndExpectedResults")
+  @ParameterizedTest
+  public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
+    // given
+    OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    OffsetDateTime twoDaysAgo = now.minusDays(2L);
+    OffsetDateTime threeDaysAgo = now.minusDays(3L);
+    OffsetDateTime oneWeekAgo = now.minusWeeks(1L);
+    OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
+
+    long completedInstanceOneWeekDuration = oneWeekAgo.toInstant().toEpochMilli() - twoWeeksAgo.toInstant()
+      .toEpochMilli();
+    long completedInstanceOneDayDuration = twoDaysAgo.toInstant().toEpochMilli() - threeDaysAgo.toInstant()
+      .toEpochMilli();
+    long runningInstanceTwoDaysDuration = now.toInstant().toEpochMilli() - twoDaysAgo.toInstant().toEpochMilli();
+    long runningInstanceTwoWeeksDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
+
+    ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleOneUserTasksDefinition();
+    ProcessInstanceEngineDto completedInstanceOneWeek = engineIntegrationExtension.startProcessInstance(
+      processDefinitionEngineDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceOneWeek.getId());
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      completedInstanceOneWeek.getId(),
+      twoWeeksAgo,
+      oneWeekAgo
+    );
+
+    final ProcessInstanceEngineDto completedInstanceOneDay = engineIntegrationExtension.startProcessInstance(
+      processDefinitionEngineDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceOneDay.getId());
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      completedInstanceOneDay.getId(),
+      threeDaysAgo,
+      twoDaysAgo
+    );
+
+    final ProcessInstanceEngineDto runningInstanceTwoDays = engineIntegrationExtension.startProcessInstance(
+      processDefinitionEngineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceTwoDays.getId(), twoDaysAgo);
+
+    final ProcessInstanceEngineDto runningInstanceTwoWeeks = engineIntegrationExtension.startProcessInstance(
+      processDefinitionEngineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceTwoWeeks.getId(), twoWeeksAgo);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto currentReport = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
+      .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+
+    ReportSortingDto sortingOrder = new ReportSortingDto();
+    sortingOrder.setOrder(order);
+    sortingOrder.setBy(ProcessInstanceIndex.DURATION);
+    String reportId = createAndStoreDefaultReportDefinitionWithSortByDuration(currentReport, sortingOrder);
+    String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(
+      "/csv/process/single/raw_data_sort_by_duration.csv");
+    if (order == SortOrder.ASC) {
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        1,
+        completedInstanceOneDay,
+        threeDaysAgo,
+        twoDaysAgo,
+        completedInstanceOneDayDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        2,
+        runningInstanceTwoDays,
+        twoDaysAgo,
+        null,
+        runningInstanceTwoDaysDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        3,
+        completedInstanceOneWeek,
+        twoWeeksAgo,
+        oneWeekAgo,
+        completedInstanceOneWeekDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        4,
+        runningInstanceTwoWeeks,
+        twoWeeksAgo,
+        null,
+        runningInstanceTwoWeeksDuration
+      );
+
+    } else {
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        1,
+        runningInstanceTwoWeeks,
+        twoWeeksAgo,
+        null,
+        runningInstanceTwoWeeksDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        2,
+        completedInstanceOneWeek,
+        twoWeeksAgo,
+        oneWeekAgo,
+        completedInstanceOneWeekDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        3,
+        runningInstanceTwoDays,
+        twoDaysAgo,
+        null,
+        runningInstanceTwoDaysDuration
+      );
+
+      expectedString = replaceExpectedValuesForInstance(
+        expectedString,
+        4,
+        completedInstanceOneDay,
+        threeDaysAgo,
+        twoDaysAgo,
+        completedInstanceOneDayDuration
+      );
+    }
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
+
+    // then
+    String actualContent = getResponseContentAsString(response);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(actualContent).isEqualTo(expectedString);
+  }
+
   private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance, String expectedCSV) {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${PI_ID}", processInstance.getId());
@@ -108,8 +294,18 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
+  private String createAndStoreDefaultReportDefinitionWithSortByDuration(ProcessReportDataDto reportData,
+                                                                         ReportSortingDto order) {
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
+    singleProcessReportDefinitionDto.setData(reportData);
+    singleProcessReportDefinitionDto.setId("something");
+    singleProcessReportDefinitionDto.getData().getConfiguration().setSorting(order);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
   @SneakyThrows
-  private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
+  protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     HashMap<String, Object> variables = new HashMap<>();
     variables.put("1", "test");
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleProcessWithVariables(variables);
@@ -117,12 +313,12 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
     OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START_EVENT, 0L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END_EVENT, 0L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceEngineDto.getId(), START_EVENT, 0L);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceEngineDto.getId(), END_EVENT, 0L);
     return processInstanceEngineDto;
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = getSimpleBpmnDiagram();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
@@ -135,8 +331,23 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
         .setProcessDefinitionVersion(FAKE)
         .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
         .build();
-    reportDataDto.setFilter(ProcessFilterBuilder.filter().runningFlowNodesOnly().filterLevel(FilterApplicationLevel.VIEW).add().buildList());
+    reportDataDto.setFilter(ProcessFilterBuilder.filter()
+                              .runningFlowNodesOnly()
+                              .filterLevel(FilterApplicationLevel.VIEW)
+                              .add()
+                              .buildList());
     return reportDataDto;
+  }
+
+  private String replaceExpectedValuesForInstance(String expectedString, int rowNum,
+                                                  ProcessInstanceEngineDto processInstance, OffsetDateTime startDate,
+                                                  OffsetDateTime endDate, Long duration) {
+    expectedString = expectedString.replace("${PI_ID_" + rowNum + "}","\"" + String.valueOf(processInstance.getId()) + "\"");
+    expectedString = expectedString.replace("${PD_ID_" + rowNum + "}", "\"" + String.valueOf(processInstance.getDefinitionId()) + "\"");
+    expectedString = expectedString.replace("${START_DATE_" + rowNum + "}","\"" + String.valueOf(startDate) + "\"");
+    expectedString = expectedString.replace("${DURATION_" + rowNum + "}", "\"" + String.valueOf(duration) + "\"");
+    expectedString = expectedString.replace("${END_DATE_" + rowNum + "}", endDate == null ? "" : "\"" + String.valueOf(endDate) + "\"");
+    return expectedString;
   }
 
   private static Stream<Arguments> getParameters() {
@@ -206,6 +417,13 @@ public class ProcessCsvExportServiceIT extends AbstractIT {
         "/csv/process/single/flownode_duration_group_by_flownodes_results.csv",
         "Flow Node Duration Grouped By Flow Node - Running and null duration"
       )
+    );
+  }
+
+  private static Stream<Arguments> getSortingParamsAndExpectedResults() {
+    return Stream.of(
+      Arguments.of(SortOrder.ASC),
+      Arguments.of(SortOrder.DESC)
     );
   }
 

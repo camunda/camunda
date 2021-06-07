@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -61,7 +60,6 @@ public class CandidateGroupRestService {
   @Path(CANDIDATE_GROUP_DEFINITION_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @Secured
   public IdentitySearchResultResponseDto searchCandidateGroups(@Context final ContainerRequestContext requestContext,
                                                                @Valid final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
@@ -72,7 +70,6 @@ public class CandidateGroupRestService {
   @Path(CANDIDATE_GROUP_REPORTS_SEARCH_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @Secured
   public IdentitySearchResultResponseDto searchCandidateGroups(@Context final ContainerRequestContext requestContext,
                                                                @Valid final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
@@ -83,7 +80,6 @@ public class CandidateGroupRestService {
   @Path("/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @Secured
   public List<String> getCandidateGroupsForProcessDefinition(@Context ContainerRequestContext requestContext,
                                                              AssigneeRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);

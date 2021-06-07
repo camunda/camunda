@@ -1,0 +1,32 @@
+---
+zeebe:
+  broker:
+    cluster:
+      partitionsCount: 2
+    exporters:
+      optimize:
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter
+        args:
+          url: "http://localhost:9200"
+          bulk:
+            delay: 1
+            size: 1
+          index:
+            prefix: zeebe-record
+            createTemplate: true
+            command: false
+            event: true
+            rejection: false
+            deployment: false
+            process: true
+            error: false
+            incident: false
+            job: false
+            jobBatch: false
+            message: false
+            messageSubscription: false
+            variable: false
+            variableDocument: false
+            processInstance: true
+            processInstanceCreation: false
+            processMessageSubscription: false

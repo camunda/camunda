@@ -11,10 +11,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningProcessInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedProcessInstanceImportService;
@@ -27,14 +27,14 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
 
   public ProcessInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                    final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
                                                     final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                     final CompletedProcessInstanceWriter completedProcessInstanceWriter,
@@ -48,7 +48,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
       createCompletedProcessInstanceEngineImportMediator(engineContext),
       createRunningProcessInstanceEngineImportMediator(engineContext)

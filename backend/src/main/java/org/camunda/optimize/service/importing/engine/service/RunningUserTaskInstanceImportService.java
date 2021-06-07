@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -16,6 +16,8 @@ import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWr
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @Slf4j
 public class RunningUserTaskInstanceImportService implements ImportService<HistoricUserTaskInstanceDto> {
@@ -38,8 +40,8 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      final List<UserTaskInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      final ElasticsearchImportJob<UserTaskInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
+      final List<FlowNodeInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+      final ElasticsearchImportJob<FlowNodeInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
         newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
@@ -54,14 +56,14 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<UserTaskInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities) {
+  private List<FlowNodeInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities) {
     return engineEntities.stream()
       .filter(instance -> instance.getProcessInstanceId() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<UserTaskInstanceDto> createElasticsearchImportJob(final List<UserTaskInstanceDto> userTasks,
+  private ElasticsearchImportJob<FlowNodeInstanceDto> createElasticsearchImportJob(final List<FlowNodeInstanceDto> userTasks,
                                                                                    Runnable callback) {
     final RunningUserTaskElasticsearchImportJob importJob = new RunningUserTaskElasticsearchImportJob(
       runningUserTaskInstanceWriter,
@@ -71,20 +73,23 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
     return importJob;
   }
 
-  private UserTaskInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
-    return new UserTaskInstanceDto(
-      engineEntity.getId(),
-      engineEntity.getProcessInstanceId(),
-      engineEntity.getProcessDefinitionKey(),
-      engineContext.getEngineAlias(),
-      engineEntity.getTaskDefinitionKey(),
-      engineEntity.getActivityInstanceId(),
-      engineEntity.getStartTime(),
-      null,
-      engineEntity.getDue(),
-      engineEntity.getDeleteReason(),
-      null
-    );
+  private FlowNodeInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
+    return FlowNodeInstanceDto.builder()
+      .userTaskInstanceId(engineEntity.getId())
+      .flowNodeId(engineEntity.getTaskDefinitionKey())
+      .flowNodeInstanceId(engineEntity.getActivityInstanceId())
+      .processInstanceId(engineEntity.getProcessInstanceId())
+      .processDefinitionKey(engineEntity.getProcessDefinitionKey())
+      .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
+      .engine(engineContext.getEngineAlias())
+      .startDate(engineEntity.getStartTime())
+      .dueDate(engineEntity.getDue())
+      .deleteReason(engineEntity.getDeleteReason())
+      // HistoricUserTaskInstanceDto does not have a bool canceled field. To avoid having to parse the deleteReason,
+      // canceled defaults to false and writers do not overwrite existing canceled states.
+      // The completedActivityInstanceWriter will overwrite the correct state.
+      .canceled(false)
+      .build();
   }
 
 }

@@ -16,7 +16,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createCanceledFlowNodesOnlyFilterQuery;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
@@ -29,7 +29,7 @@ public class CanceledFlowNodesOnlyQueryFilter implements QueryFilter<CanceledFlo
                          final ZoneId timezone) {
     if (!CollectionUtils.isEmpty(canceledFlowNodesFilterData)) {
       List<QueryBuilder> filters = query.filter();
-      filters.add(nestedQuery(EVENTS, createCanceledFlowNodesOnlyFilterQuery(boolQuery()), ScoreMode.None));
+      filters.add(nestedQuery(FLOW_NODE_INSTANCES, createCanceledFlowNodesOnlyFilterQuery(boolQuery()), ScoreMode.None));
     }
   }
 

@@ -61,6 +61,7 @@ spec:
         memory: 8Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: JAVA_OPTS
         value: "-Xms3g -Xmx3g -XX:MaxMetaspaceSize=256m"
@@ -138,7 +139,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("8-slim"))
+          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("11-slim"))
         }
       }
       steps {

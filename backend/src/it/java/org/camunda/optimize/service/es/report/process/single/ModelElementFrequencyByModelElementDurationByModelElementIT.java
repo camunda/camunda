@@ -181,7 +181,7 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     final List<String> selectedTenants = newArrayList(tenantId1);
-    final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(
+    final String processKey = deployAndStartMultiTenantSimpleUserTaskTaskProcess(
       newArrayList(null, tenantId1, tenantId2)
     );
 

@@ -19,7 +19,7 @@ export function DecisionTable({report, theme}) {
   const {
     result: {data, instanceCount},
     data: {
-      decisionDefinitionKey,
+      definitions: [{key}],
       configuration: {xml, hideAbsoluteValue, hideRelativeValue, showGradientBars},
     },
   } = report;
@@ -72,7 +72,7 @@ export function DecisionTable({report, theme}) {
     <div className="DecisionTable">
       <DMNDiagram
         xml={xml}
-        decisionDefinitionKey={decisionDefinitionKey}
+        decisionDefinitionKey={key}
         additionalModules={additionalModules}
         onLoad={onLoad}
       >

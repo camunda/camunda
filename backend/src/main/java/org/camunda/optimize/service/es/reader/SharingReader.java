@@ -19,7 +19,6 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -57,7 +56,7 @@ public class SharingReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = "Was not able to fetch report share.";
       log.error(reason, e);
@@ -86,7 +85,7 @@ public class SharingReader {
 
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = String.format("Could not fetch report share with id [%s]", shareId);
       log.error(reason, e);
@@ -112,7 +111,7 @@ public class SharingReader {
 
     GetResponse getResponse;
     try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+      getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       String reason = String.format("Could not fetch dashboard share with id [%s]", shareId);
       log.error(reason, e);
@@ -175,7 +174,7 @@ public class SharingReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format("Was not able to fetch share for dashboard with id [%s]", dashboardId);
       log.error(reason, e);
@@ -194,7 +193,7 @@ public class SharingReader {
 
     SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve report shares!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve report shares!", e);
@@ -238,7 +237,7 @@ public class SharingReader {
 
     SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve dashboard shares!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve dashboard shares!", e);

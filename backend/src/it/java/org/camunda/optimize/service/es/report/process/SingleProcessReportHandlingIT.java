@@ -88,8 +88,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // when
     GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
 
     // then
     assertThat(getResponse.isExists()).isTrue();

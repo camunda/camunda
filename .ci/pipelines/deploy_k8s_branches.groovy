@@ -168,10 +168,13 @@ pipeline {
               while ! nc -z -w 3 localhost 8090; do
                 sleep 5
               done
+              # using -H 'Expect:' to disable 100-continue behavior of curl, see https://gms.tf/when-curl-sends-100-continue.html
               curl -v -X POST \
                 http://localhost:8090/api/ingestion/event/batch \
+                -H 'Expect:' \
                 -H 'Content-Type: application/cloudevents-batch+json' \
                 -H 'Authorization: secret' \
+                -f --connect-timeout 5 --max-time 10 --retry 60 --retry-delay 0 --retry-max-time 600 --retry-all-errors\
                 --data "@${WORKSPACE}/optimize/client/demo-data/eventIngestionBatch.json"
             """)
           }

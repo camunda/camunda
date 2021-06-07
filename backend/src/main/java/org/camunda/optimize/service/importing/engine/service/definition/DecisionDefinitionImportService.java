@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -102,7 +103,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
       .version(String.valueOf(engineDto.getVersion()))
       .versionTag(engineDto.getVersionTag())
       .name(engineDto.getName())
-      .engine(engineContext.getEngineAlias())
+      .dataSource(new EngineDataSourceDto(engineContext.getEngineAlias()))
       .tenantId(engineDto.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)))
       .deleted(engineDto.isDeleted())
       .build();

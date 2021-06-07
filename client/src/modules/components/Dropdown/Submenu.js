@@ -19,6 +19,7 @@ export default class Submenu extends React.Component {
     super(props);
 
     this.containerRef = React.createRef();
+    this.menuObserver = new MutationObserver(this.calculatePlacement);
 
     this.state = {styles: {}, scrollable: false};
   }
@@ -49,6 +50,9 @@ export default class Submenu extends React.Component {
   };
 
   onMouseLeave = (evt) => {
+    if (this.props.disabled) {
+      return;
+    }
     this.props.setClosed(evt);
   };
 
@@ -97,12 +101,22 @@ export default class Submenu extends React.Component {
   };
 
   componentDidMount() {
-    new MutationObserver(this.calculatePlacement).observe(this.containerRef.current, {
+    this.menuObserver.observe(this.containerRef.current, {
       childList: true,
       subtree: true,
     });
 
     this.initilizeHeaderAndFooterRefs();
+  }
+
+  componentWillUnmount() {
+    this.menuObserver.disconnect();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (!prevProps.open && this.props.open) {
+      document.activeElement.querySelector('[tabindex="0"]')?.focus();
+    }
   }
 
   initilizeHeaderAndFooterRefs() {
@@ -165,15 +179,22 @@ export default class Submenu extends React.Component {
         onClick={this.onClick}
         onMouseOver={this.onMouseOver}
         onMouseLeave={this.onMouseLeave}
+        onKeyDown={(evt) => {
+          if (evt.key === 'ArrowRight' && !this.props.disabled) {
+            this.props.forceToggle(evt);
+          }
+        }}
       >
         {this.props.label}
         <Icon type="right" className="rightIcon" />
         {this.props.open && (
           <div
-            onClick={this.props.closeParent}
-            onKeyDown={this.onKeyDown}
             className={classnames('childrenContainer', {scrollable: this.state.scrollable})}
             style={this.state.styles}
+            onKeyDown={this.onKeyDown}
+            onClick={this.props.closeParent}
+            onMouseEnter={this.props.onMenuMouseEnter}
+            onMouseLeave={this.props.onMenuMouseLeave}
           >
             <div className="hoverGuard" />
             {this.props.children}

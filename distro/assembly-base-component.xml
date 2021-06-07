@@ -64,6 +64,7 @@
     </file>
     <file>
       <source>src/LicenseBook_Optimize.txt</source>
+      <filtered>true</filtered>
       <outputDirectory></outputDirectory>
     </file>
     <file>

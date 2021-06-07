@@ -33,6 +33,8 @@
     display: flex;
     flex-direction: row;
     flex-grow: 1;
+    min-height: 30px;
+    justify-content: flex-end;
   }
 
   > .content {
@@ -51,6 +53,38 @@
   .OptimizeReport:hover {
     .Popover__button {
       opacity: 1;
+    }
+  }
+
+  &.compact {
+    &.report {
+      padding: 10px;
+    }
+
+    > .header {
+      margin-bottom: 15px;
+
+      .EntityName {
+        padding-right: 10px;
+
+        > .name-container .name {
+          font-size: 14px;
+          font-weight: bold;
+          line-height: 30px;
+        }
+
+        .Popover {
+          margin-top: 4px;
+        }
+      }
+
+      .title-button {
+        max-height: 25px;
+      }
+    }
+
+    > .content {
+      margin-bottom: 0;
     }
   }
 }

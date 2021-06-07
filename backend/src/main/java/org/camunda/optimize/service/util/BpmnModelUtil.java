@@ -18,6 +18,7 @@ import org.camunda.bpm.model.bpmn.instance.Process;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
+import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
@@ -46,16 +47,8 @@ public class BpmnModelUtil {
     }
   }
 
-  public static Map<String, String> extractFlowNodeNames(final String bpmn20Xml) {
-    return extractFlowNodeNames(parseBpmnModel(bpmn20Xml));
-  }
-
-  public static Map<String, String> extractFlowNodeNames(final BpmnModelInstance model) {
-    return extractFlowNodeNames(model, FlowNode.class);
-  }
-
-  public static Map<String, String> extractUserTaskNames(final BpmnModelInstance model) {
-    return extractFlowNodeNames(model, UserTask.class);
+  public static List<FlowNodeDataDto> extractFlowNodeData(final String bpmn20Xml) {
+    return extractFlowNodeData(parseBpmnModel(bpmn20Xml));
   }
 
   public static Optional<String> extractProcessDefinitionName(final String definitionKey, final String xml) {
@@ -66,6 +59,7 @@ public class BpmnModelUtil {
       return processes.stream()
         .filter(process -> process.getId().equals(definitionKey))
         .map(Process::getName)
+        .filter(Objects::nonNull)
         .findFirst();
     } catch (Exception exc) {
       log.warn("Failed parsing the BPMN xml.", exc);
@@ -110,12 +104,28 @@ public class BpmnModelUtil {
       .collect(Collectors.toList());
   }
 
-  private static <T extends FlowNode> Map<String, String> extractFlowNodeNames(final BpmnModelInstance model,
-                                                                               final Class<T> nodeType) {
+  public static Map<String, String> extractUserTaskNames(final BpmnModelInstance model) {
     final Map<String, String> result = new HashMap<>();
-    for (T node : model.getModelElementsByType(nodeType)) {
-      result.put(node.getId(), node.getName());
+    for (UserTask userTask : model.getModelElementsByType(UserTask.class)) {
+      result.put(userTask.getId(), userTask.getName());
     }
     return result;
+  }
+
+  public static List<FlowNodeDataDto> extractFlowNodeData(final BpmnModelInstance model) {
+    final List<FlowNodeDataDto> result = new ArrayList<>();
+    for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
+      FlowNodeDataDto flowNode = new FlowNodeDataDto(node.getId(), node.getName(), node.getElementType().getTypeName());
+      result.add(flowNode);
+    }
+    return result;
+  }
+
+  public static Map<String, String> extractFlowNodeNames(List<FlowNodeDataDto> flowNodes) {
+    final Map<String, String> flowNodeNames = new HashMap<>();
+    for (FlowNodeDataDto flowNode : flowNodes) {
+      flowNodeNames.put(flowNode.getId(), flowNode.getName());
+    }
+    return flowNodeNames;
   }
 }

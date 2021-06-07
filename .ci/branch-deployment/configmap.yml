@@ -96,7 +96,7 @@ data:
         # Optimize directly to a dedicated process instance in Cockpit
         webapps:
           # Defines the endpoint where to find the camunda webapps
-          endpoint: 'http://localhost:8080/camunda'
+          endpoint: 'https://stage.optimize.camunda.cloud/camunda'
           # Enables/disables linking to other Camunda Web Applications
           enabled: true
     es:

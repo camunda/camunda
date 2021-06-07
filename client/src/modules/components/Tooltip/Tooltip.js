@@ -35,7 +35,7 @@ export default function Tooltip({
 
     const body = document.fullscreenElement || document.body;
     const tooltipBox = tooltip.current.getBoundingClientRect();
-    const tooltipMargin = 14; // top and bottom margin
+    const tooltipMargin = getTooltipMargin(tooltip.current);
     const tooltipHeight = tooltipBox.height + tooltipMargin;
     const hoverElementBox = hoverElement.current.getBoundingClientRect();
 
@@ -117,4 +117,11 @@ export default function Tooltip({
         )}
     </>
   );
+}
+
+function getTooltipMargin(tooltip) {
+  const tooltipStyles = window.getComputedStyle(tooltip);
+  const getProperty = (property) => Number(tooltipStyles.getPropertyValue(property).match(/\d+/));
+
+  return getProperty('margin-top') + getProperty('margin-bottom');
 }

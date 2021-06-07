@@ -114,7 +114,7 @@ export default function EntityList({
           <div className="empty">{t('common.notFound')}</div>
         )}
         {hasResults && (
-          <ul className={classnames({isLoading})}>
+          <ul className={classnames('itemsList', {isLoading})}>
             {searchFilteredData.map((data, idx) => (
               <ListItem
                 key={idx}

@@ -21,14 +21,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
 
 public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
 
@@ -47,29 +44,15 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
-    assertThat(getExecutedFlowNodeCount(result), is(4L));
-    final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains(resultLabels.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
-  }
-
-  private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstanceDto) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-      .build();
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(4L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(4)
+      .extracting(MapResultEntryDto::getLabel)
+      .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -85,17 +68,11 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
-    assertThat(getExecutedFlowNodeDuration(result), is(4L));
-    final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains(resultLabels.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    assertThat(getExecutedFlowNodeDuration(result)).isEqualTo(4L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(4)
+      .extracting(MapResultEntryDto::getLabel)
+      .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -123,20 +100,15 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
-    assertThat(getExecutedFlowNodeCount(result), is(4L));
-    final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains("endKey", "startName", "task1Name", "task2Key")
-    );
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(4L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(4)
+      .extracting(MapResultEntryDto::getLabel)
+      .containsExactly("endKey", "startName", "task1Name", "task2Key");
   }
 
   @Test
@@ -164,20 +136,15 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
-    assertThat(getExecutedFlowNodeCount(result), is(4L));
-    final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains("Ac", "ax", "fooBar1", "foobar2")
-    );
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(4L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(4)
+      .extracting(MapResultEntryDto::getLabel)
+      .containsExactly("Ac", "ax", "fooBar1", "foobar2");
   }
 
   @Test
@@ -201,19 +168,15 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
-    final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order
-      contains("Ac", "ax", "fooBar1", "foobar2")
-    );
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(4L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(4)
+      .extracting(MapResultEntryDto::getLabel)
+      .containsExactly("Ac", "ax", "fooBar1", "foobar2");
   }
 
   @Test
@@ -226,7 +189,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     testExpectedResultValueOrderForDurationReports(Comparator.nullsLast(Comparator.naturalOrder()), SortOrder.ASC);
   }
 
-  private void testExpectedResultValueOrderForDurationReports(final Comparator expectedOrderComparator,
+  private void testExpectedResultValueOrderForDurationReports(final Comparator<Double> expectedOrderComparator,
                                                               final SortOrder sortOrder) {
     // given
     final ProcessInstanceEngineDto processDefinition = deployProcessWithServiceAndUserTask();
@@ -239,18 +202,21 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto> resultData = result.getFirstMeasureData();
-    assertThat(resultData.size(), is(4));
     // end activity not executed due running userTask
-    assertThat(getExecutedFlowNodeDuration(result), is(3L));
-    final List<Double> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getValue)
-      .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect ascending order, nulls last
-      contains(resultLabels.stream().sorted(expectedOrderComparator).toArray())
-    );
+    assertThat(getExecutedFlowNodeDuration(result)).isEqualTo(3L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(4)
+      .extracting(MapResultEntryDto::getValue)
+      .isSortedAccordingTo(expectedOrderComparator);
+  }
+
+  private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstanceDto) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+      .build();
   }
 
   private ProcessInstanceEngineDto deployProcessWithTwoTasksAndLabels() {

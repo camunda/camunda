@@ -383,8 +383,8 @@ public class IncidentImportIT extends AbstractImportIT {
   @SneakyThrows
   private void importOpenIncidents() {
     for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getImportSchedulers()) {
-      final EngineImportMediator mediator = scheduler
+      .getEngineImportSchedulers()) {
+      final ImportMediator mediator = scheduler
         .getImportMediators()
         .stream()
         .filter(engineImportMediator -> OpenIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
@@ -398,8 +398,8 @@ public class IncidentImportIT extends AbstractImportIT {
   @SneakyThrows
   private void importResolvedIncidents() {
     for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getImportSchedulers()) {
-      final EngineImportMediator mediator = scheduler
+      .getEngineImportSchedulers()) {
+      final ImportMediator mediator = scheduler
         .getImportMediators()
         .stream()
         .filter(engineImportMediator -> CompletedIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))

@@ -13,7 +13,8 @@ import org.camunda.optimize.service.es.report.command.service.DateAggregationSer
 import org.elasticsearch.index.query.QueryBuilder;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Slf4j
 public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByModelElementDate {
@@ -28,9 +29,13 @@ public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByM
     return createUserTaskAggregationFilter(context.getReportData());
   }
 
+  protected QueryBuilder getModelElementTypeFilterQuery() {
+    return createUserTaskFlowNodeTypeFilter();
+  }
+
   @Override
   protected String getPathToElementField() {
-    return USER_TASKS;
+    return FLOW_NODE_INSTANCES;
   }
 
 }

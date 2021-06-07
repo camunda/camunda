@@ -1,6 +1,6 @@
 webhookAlerting:
   webhooks:
-  # Name of the webhook, must be unique.
+    # Name of the webhook, must be unique.
     'testWebhook':
       # URL of the webhook which can receive alerts from Optimize
       url: 'someUrl'
@@ -13,3 +13,6 @@ webhookAlerting:
       # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
       # Optimize will replace this placeholder with the content of the alert message.
       defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
+zeebe:
+  # Toggles whether Optimize should attempt to import data from the connected Zeebe instance
+  enabled: true

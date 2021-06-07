@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -215,7 +216,7 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
     assertThat(importedReport.getName()).isEqualTo(reportDefinitionToImport.getName());
     assertThat(importedReport.getData())
       .usingRecursiveComparison()
-      .ignoringFields(ProcessReportDataDto.Fields.processDefinitionVersions)
+      .ignoringFields(SingleReportDataDto.Fields.definitions + "." + ReportDataDefinitionDto.Fields.versions)
       .ignoringFields(SingleReportDataDto.Fields.configuration)
       .isEqualTo(reportDefinitionToImport.getData());
     assertThat(importedReport.getData().getConfiguration())

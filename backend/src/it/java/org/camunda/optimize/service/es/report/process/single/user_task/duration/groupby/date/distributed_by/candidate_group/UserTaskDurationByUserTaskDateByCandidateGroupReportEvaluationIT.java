@@ -1132,14 +1132,14 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
   protected abstract ProcessReportDataType getReportDataType();
 
   protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
-    engineDatabaseExtension.changeUserTaskEndDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(updates);
   }
 
   protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
                                     final String userTaskKey,
                                     final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
-    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

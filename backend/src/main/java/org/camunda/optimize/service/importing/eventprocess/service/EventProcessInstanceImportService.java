@@ -170,9 +170,9 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
         processInstanceDto.getCorrelatedEventsById().put(eventId, eventCorrelationStateDto);
 
         final FlowNodeInstanceDto flowNodeInstance = FlowNodeInstanceDto.builder()
-          .id(eventId)
-          .activityId(eventToFlowNodeMapping.getFlowNodeId())
-          .activityType(eventToFlowNodeMapping.getFlowNodeType())
+          .flowNodeInstanceId(eventId)
+          .flowNodeId(eventToFlowNodeMapping.getFlowNodeId())
+          .flowNodeType(eventToFlowNodeMapping.getFlowNodeType())
           .processInstanceId(processInstanceDto.getProcessInstanceId())
           .canceled(getCanceledState(eventDto).orElse(null))
           .build();
@@ -227,14 +227,14 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     switch (eventToFlowNodeMapping.getMappedAs()) {
       case START:
         eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-          .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getId()));
+          .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
         flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
         // if there are no start mappings present on any next adjacent node we default to end being start time
         // as otherwise there is no guarantee the end is ever set on this flow node instance
         if (noStartMappingOnAtLeastOneOfTheNextMappedFlowNodes(eventToFlowNodeMapping)) {
           flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
           eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-            .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getId()));
+            .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
           // we also propagate start time updates to any following flow nodes without an own start mapping
           // as the start date is now the endDate of this flowNodeInstance as well
           updateStartDateTimeForNextFlowNodesWithoutOwnStartMapping(
@@ -247,11 +247,11 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
         break;
       case END:
         eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-          .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getId()));
+          .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
         flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
         if (eventToFlowNodeMapping.getPreviousMappedFlowNodeIds().isEmpty()) {
           eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-            .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getId()));
+            .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
           flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
         }
         updateStartDateTimeForNextFlowNodesWithoutOwnStartMapping(
@@ -261,7 +261,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
       default:
         throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventToFlowNodeMapping.getMappedAs());
     }
-    processInstanceDto.getEvents().add(flowNodeInstance);
+    processInstanceDto.getFlowNodeInstances().add(flowNodeInstance);
   }
 
   private void updateInstanceForSingleMappedBpmnNodeEvent(final EventProcessInstanceDto processInstanceDto,
@@ -273,17 +273,17 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     // BPMN Events that do not have a timer property should have a duration of 0
     flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
     eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-      .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getId()));
+      .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
     flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
     eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-      .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getId()));
+      .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
     updateEndDateTimeForPreviousFlowNodesWithoutOwnEndMapping(
       eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
     );
     updateStartDateTimeForNextFlowNodesWithoutOwnStartMapping(
       eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
     );
-    processInstanceDto.getEvents().add(flowNodeInstance);
+    processInstanceDto.getFlowNodeInstances().add(flowNodeInstance);
   }
 
   private void updateInstanceForStartAndEndMappedNodeEvent(final EventProcessInstanceDto processInstanceDto,
@@ -295,17 +295,17 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     switch (eventToFlowNodeMapping.getMappedAs()) {
       case START:
         eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-          .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getId()));
+          .put(MappedEventType.START, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
         // start events will create actual flow node instances
         flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
-        processInstanceDto.getEvents().add(flowNodeInstance);
+        processInstanceDto.getFlowNodeInstances().add(flowNodeInstance);
         updateEndDateTimeForPreviousFlowNodesWithoutOwnEndMapping(
           eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
         );
         break;
       case END:
         eventCorrelationStateDto.getCorrelatedAsToFlowNodeInstanceIds()
-          .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getId()));
+          .put(MappedEventType.END, Sets.newHashSet(flowNodeInstance.getFlowNodeInstanceId()));
         // end events we only handle as updates to not create duplicate instances
         flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
         final FlowNodeInstanceUpdateDto previousMappingEventUpdate = FlowNodeInstanceUpdateDto.builder()

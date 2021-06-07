@@ -16,7 +16,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createFlowNodeDurationFilterQuery;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
 @Component
@@ -28,7 +28,7 @@ public class FlowNodeDurationQueryFilter implements QueryFilter<FlowNodeDuration
     if (CollectionUtils.isNotEmpty(durationFilters)) {
       final List<QueryBuilder> filters = query.filter();
       durationFilters.forEach(filter -> filters.add(nestedQuery(
-        EVENTS, createFlowNodeDurationFilterQuery(filter), ScoreMode.None)));
+        FLOW_NODE_INSTANCES, createFlowNodeDurationFilterQuery(filter), ScoreMode.None)));
     }
   }
 

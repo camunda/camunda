@@ -7,9 +7,11 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Button, Icon, Select} from 'components';
+import {Button, Icon} from 'components';
+
 import DropdownOption from './DropdownOption';
 import Submenu from './Submenu';
+import DropdownOptionsList from './DropdownOptionsList';
 import {findLetterOption} from './service';
 
 import './Dropdown.scss';
@@ -23,8 +25,6 @@ export default class Dropdown extends React.Component {
 
     this.state = {
       open: false,
-      openSubmenu: null,
-      fixedSubmenu: null,
       menuStyle: {right: 0},
       listStyles: {},
     };
@@ -37,17 +37,14 @@ export default class Dropdown extends React.Component {
 
     if (!disabled) {
       const newOpenState = !this.state.open;
-      this.setState(
-        {open: newOpenState, openSubmenu: null, fixedSubmenu: null},
-        () => onOpen && onOpen(newOpenState)
-      );
+      this.setState({open: newOpenState}, () => onOpen?.(newOpenState));
       this.calculateMenuStyle(newOpenState);
     }
   };
 
   close = ({target}) => {
     if (this.state.open && !this.container.contains(target)) {
-      this.setState({open: false, openSubmenu: null});
+      this.setState({open: false});
       this.calculateMenuStyle(false);
     }
   };
@@ -138,24 +135,6 @@ export default class Dropdown extends React.Component {
       this.close({});
     }
 
-    if (evt.key === 'ArrowRight') {
-      if (options[selectedOption].classList.contains('Submenu')) {
-        this.setState(
-          {
-            fixedSubmenu: [...this.container.querySelectorAll('li > *')].indexOf(
-              options[selectedOption]
-            ),
-          },
-          () => {
-            const childElement = document.activeElement.querySelector('[tabindex="0"]');
-            if (childElement) {
-              childElement.focus();
-            }
-          }
-        );
-      }
-    }
-
     if (evt.key === 'ArrowDown') {
       if (!this.state.open) {
         evt.target.click();
@@ -214,34 +193,14 @@ export default class Dropdown extends React.Component {
           ref={this.menuContainer}
           style={menuStyle}
         >
-          <ul className={classnames({scrollable})} style={listStyles}>
-            {React.Children.map(children, (child, idx) => (
-              <li key={idx}>
-                {child && (child.type === Submenu || child.type === Select.Submenu)
-                  ? React.cloneElement(child, {
-                      open:
-                        this.state.fixedSubmenu === idx ||
-                        (this.state.fixedSubmenu === null && this.state.openSubmenu === idx),
-                      offset: this.menuContainer.current && this.menuContainer.current.offsetWidth,
-                      setOpened: () => {
-                        this.setState({openSubmenu: idx});
-                      },
-                      setClosed: () => {
-                        this.setState({openSubmenu: null});
-                      },
-                      forceToggle: (evt) => {
-                        evt.stopPropagation();
-                        evt.preventDefault();
-                        this.setState(({fixedSubmenu}) => {
-                          return {fixedSubmenu: fixedSubmenu === idx ? null : idx};
-                        });
-                      },
-                      closeParent: () => this.setState({open: false, openSubmenu: null}),
-                    })
-                  : child}
-              </li>
-            ))}
-          </ul>
+          <DropdownOptionsList
+            open={open}
+            closeParent={() => this.close({})}
+            className={classnames({scrollable})}
+            style={listStyles}
+          >
+            {children}
+          </DropdownOptionsList>
         </div>
       </div>
     );

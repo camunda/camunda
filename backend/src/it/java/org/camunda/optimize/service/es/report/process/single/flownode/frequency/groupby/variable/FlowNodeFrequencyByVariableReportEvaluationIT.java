@@ -399,11 +399,11 @@ public class FlowNodeFrequencyByVariableReportEvaluationIT extends AbstractProce
     final ProcessInstanceEngineDto firstInstance =
       deployAndStartSimpleUserTaskProcess(Collections.singletonMap("doubleVar", 1.0));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(firstInstance.getId(), USER_TASK_1, 10000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(firstInstance.getId(), USER_TASK_1, 10000);
     final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
       firstInstance.getDefinitionId(), Collections.singletonMap("doubleVar", 2.0));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeActivityDuration(secondInstance.getId(), USER_TASK_1, 20000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(secondInstance.getId(), USER_TASK_1, 20000);
     importAllEngineEntitiesFromScratch();
 
     // when`

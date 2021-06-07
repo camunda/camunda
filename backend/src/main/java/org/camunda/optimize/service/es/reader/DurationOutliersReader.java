@@ -29,7 +29,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -69,9 +68,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
@@ -113,7 +112,7 @@ public class DurationOutliersReader {
 
     long interval = getInterval(query, outlierParams.getFlowNodeId(), outlierParams.getProcessDefinitionKey());
     HistogramAggregationBuilder histogram = AggregationBuilders.histogram(AGG_HISTOGRAM)
-      .field(EVENTS + "." + ACTIVITY_DURATION)
+      .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
       .interval(interval);
 
     NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(outlierParams.getFlowNodeId(), histogram);
@@ -130,7 +129,7 @@ public class DurationOutliersReader {
 
     SearchResponse search;
     try {
-      search = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      search = esClient.search(searchRequest);
     } catch (IOException e) {
       log.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
@@ -146,7 +145,7 @@ public class DurationOutliersReader {
       throw e;
     }
 
-    return ((Histogram) ((Filter) ((Nested) search.getAggregations().get(EVENTS)).getAggregations()
+    return ((Histogram) ((Filter) ((Nested) search.getAggregations().get(FLOW_NODE_INSTANCES)).getAggregations()
       .get(AGG_FILTERED_FLOW_NODES)).getAggregations().get(AGG_HISTOGRAM)).getBuckets()
       .stream()
       .map(b -> {
@@ -163,18 +162,18 @@ public class DurationOutliersReader {
   public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams) {
     final BoolQueryBuilder processInstanceQuery = createProcessDefinitionFilterQuery(processDefinitionParams);
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(AGG_STATS)
-      .field(EVENTS + "." + ACTIVITY_DURATION);
+      .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
     CompositeAggregationBuilder compositeActivityIdsAgg = new CompositeAggregationBuilder(
       COMPOSITE_FLOW_NODE_IDS_AGG,
       Collections.singletonList(
-        new TermsValuesSourceBuilder(FLOW_NODE_ID_AGG).field(EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID)
+        new TermsValuesSourceBuilder(FLOW_NODE_ID_AGG).field(FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_ID)
       )
     )
       .size(configurationService.getEsAggregationBucketLimit())
       .subAggregation(stats);
 
-    NestedAggregationBuilder nested = AggregationBuilders.nested(AGG_NESTED, EVENTS)
+    NestedAggregationBuilder nested = AggregationBuilders.nested(AGG_NESTED, FLOW_NODE_INSTANCES)
       .subAggregation(compositeActivityIdsAgg);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -271,7 +270,7 @@ public class DurationOutliersReader {
     final BoolQueryBuilder mainFilterQuery = createProcessDefinitionFilterQuery(outlierParams);
     // flowNode id & outlier duration
     final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
-    mainFilterQuery.must(nestedQuery(EVENTS, flowNodeFilterQuery, ScoreMode.None));
+    mainFilterQuery.must(nestedQuery(FLOW_NODE_INSTANCES, flowNodeFilterQuery, ScoreMode.None));
     // variable name & term
     final BoolQueryBuilder variableTermFilterQuery = boolQuery()
       .must(termQuery(VARIABLES + "." + VARIABLE_NAME, outlierParams.getVariableName()))
@@ -291,7 +290,7 @@ public class DurationOutliersReader {
         .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
-      final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
+      final SearchResponse response = esClient.search(scrollSearchRequest);
       return ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
         response,
         ProcessInstanceIdDto.class,
@@ -317,16 +316,16 @@ public class DurationOutliersReader {
 
   private BoolQueryBuilder createFlowNodeOutlierQuery(final FlowNodeOutlierParametersDto outlierParams) {
     final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
-      .must(termQuery(EVENTS + "." + ACTIVITY_ID, outlierParams.getFlowNodeId()))
+      .must(termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, outlierParams.getFlowNodeId()))
       .minimumShouldMatch(1);
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gt(outlierParams.getHigherOutlierBound())
+        rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).gt(outlierParams.getHigherOutlierBound())
       );
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lt(outlierParams.getLowerOutlierBound())
+        rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).lt(outlierParams.getLowerOutlierBound())
       );
     }
     return flowNodeFilterQuery;
@@ -339,7 +338,7 @@ public class DurationOutliersReader {
       outlierParams, outlierVariableTerms
     );
     return extractNestedProcessInstanceAgg(
-      esClient.search(nonOutliersTermOccurrencesRequest, RequestOptions.DEFAULT)
+      esClient.search(nonOutliersTermOccurrencesRequest)
     );
 
   }
@@ -357,9 +356,7 @@ public class DurationOutliersReader {
     final SearchRequest outlierTopVariableTermsRequest = createTopVariableTermsOfOutliersQuery(
       outlierParams, variableNames
     );
-    return extractNestedProcessInstanceAgg(
-      esClient.search(outlierTopVariableTermsRequest, RequestOptions.DEFAULT)
-    );
+    return extractNestedProcessInstanceAgg(esClient.search(outlierTopVariableTermsRequest));
   }
 
   private List<VariableTermDto> mapToVariableTermList(
@@ -419,17 +416,17 @@ public class DurationOutliersReader {
   private SearchRequest createTopVariableTermsOfNonOutliersQuery(final FlowNodeOutlierParametersDto outlierParams,
                                                                  final Map<String, Set<String>> variablesAndTerms) {
     final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
-      .must(termQuery(EVENTS + "." + ACTIVITY_ID, outlierParams.getFlowNodeId()))
+      .must(termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, outlierParams.getFlowNodeId()))
       .minimumShouldMatch(1);
 
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(outlierParams.getHigherOutlierBound())
+        rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).lte(outlierParams.getHigherOutlierBound())
       );
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
-        rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(outlierParams.getLowerOutlierBound())
+        rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).gte(outlierParams.getLowerOutlierBound())
       );
     }
 
@@ -461,7 +458,10 @@ public class DurationOutliersReader {
       AggregationBuilders.reverseNested(AGG_REVERSE_NESTED_PROCESS_INSTANCE)
         .subAggregation(nestedVariableAggregation)
     );
-    final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(EVENTS, EVENTS)
+    final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(
+      FLOW_NODE_INSTANCES,
+      FLOW_NODE_INSTANCES
+    )
       .subAggregation(flowNodeFilterAggregation);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -544,7 +544,10 @@ public class DurationOutliersReader {
       .query(processInstanceQuery)
       .fetchSource(false)
       .size(0);
-    final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(EVENTS, EVENTS);
+    final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(
+      FLOW_NODE_INSTANCES,
+      FLOW_NODE_INSTANCES
+    );
     searchSourceBuilder.aggregation(nestedFlowNodeAggregation);
     deviationForEachFlowNode
       .forEach((bucket) -> {
@@ -558,15 +561,15 @@ public class DurationOutliersReader {
 
           final FilterAggregationBuilder lowerOutlierEventFilter = AggregationBuilders.filter(
             LOWER_DURATION_AGG,
-            rangeQuery(EVENTS + "." + ACTIVITY_DURATION).lte(stdDeviationBoundLower)
+            rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).lte(stdDeviationBoundLower)
           );
 
           final FilterAggregationBuilder higherOutlierEventFilter = AggregationBuilders.filter(
             HIGHER_DURATION_AGG,
-            rangeQuery(EVENTS + "." + ACTIVITY_DURATION).gte(stdDeviationBoundHigher)
+            rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).gte(stdDeviationBoundHigher)
           );
 
-          final TermQueryBuilder terms = termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
+          final TermQueryBuilder terms = termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, flowNodeId);
           final FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(
             getFilteredFlowNodeAggregationName(flowNodeId), terms
           );
@@ -579,9 +582,9 @@ public class DurationOutliersReader {
     final SearchRequest searchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
       .source(searchSourceBuilder);
     try {
-      final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest, RequestOptions.DEFAULT)
+      final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest)
         .getAggregations();
-      final Aggregations allFlowNodeFilterAggs = ((Nested) allFlowNodesPercentileRanks.get(EVENTS)).getAggregations();
+      final Aggregations allFlowNodeFilterAggs = ((Nested) allFlowNodesPercentileRanks.get(FLOW_NODE_INSTANCES)).getAggregations();
       return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
@@ -667,7 +670,7 @@ public class DurationOutliersReader {
 
   private long getInterval(final BoolQueryBuilder query, final String flowNodeId, final String processDefinitionKey) {
     StatsAggregationBuilder statsAgg = AggregationBuilders.stats(AGG_STATS)
-      .field(EVENTS + "." + ACTIVITY_DURATION);
+      .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
     NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(flowNodeId, statsAgg);
 
@@ -682,7 +685,7 @@ public class DurationOutliersReader {
 
     SearchResponse search;
     try {
-      search = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      search = esClient.search(searchRequest);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (ElasticsearchStatusException e) {
@@ -697,10 +700,10 @@ public class DurationOutliersReader {
     }
 
     double min = ((Stats) ((Filter) ((Nested) search.getAggregations()
-      .get(EVENTS)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
+      .get(FLOW_NODE_INSTANCES)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
       .get(AGG_STATS)).getMin();
     double max = ((Stats) ((Filter) ((Nested) search.getAggregations()
-      .get(EVENTS)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
+      .get(FLOW_NODE_INSTANCES)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
       .get(AGG_STATS)).getMax();
 
     if (max == min) {
@@ -713,17 +716,17 @@ public class DurationOutliersReader {
 
   private NestedAggregationBuilder buildNestedFlowNodeFilterAggregation(final String flowNodeId,
                                                                         final AggregationBuilder subAggregation) {
-    TermQueryBuilder terms = termQuery(EVENTS + "." + ACTIVITY_ID, flowNodeId);
+    TermQueryBuilder terms = termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, flowNodeId);
 
     FilterAggregationBuilder filteredFlowNodes = AggregationBuilders.filter(AGG_FILTERED_FLOW_NODES, terms);
     filteredFlowNodes.subAggregation(subAggregation);
 
-    return AggregationBuilders.nested(EVENTS, EVENTS).subAggregation(filteredFlowNodes);
+    return AggregationBuilders.nested(FLOW_NODE_INSTANCES, FLOW_NODE_INSTANCES).subAggregation(filteredFlowNodes);
   }
 
   private ParsedReverseNested extractNestedProcessInstanceAgg(final SearchResponse outlierTopVariableTermsResponse) {
     return ((HasAggregations) ((HasAggregations) outlierTopVariableTermsResponse.getAggregations()
-      .get(EVENTS)).getAggregations().get(AGG_FILTERED_FLOW_NODES))
+      .get(FLOW_NODE_INSTANCES)).getAggregations().get(AGG_FILTERED_FLOW_NODES))
       .getAggregations()
       .get(AGG_REVERSE_NESTED_PROCESS_INSTANCE);
   }

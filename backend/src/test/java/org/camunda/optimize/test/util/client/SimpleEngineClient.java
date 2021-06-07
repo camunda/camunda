@@ -1139,7 +1139,12 @@ public class SimpleEngineClient {
         // @formatter:on
       } catch (IOException e) {
         throw new OptimizeRuntimeException(
-          "Could not get historic user task instances for process instance ID: " + processInstanceId, e
+          String.format(
+            "Could not get historic user task instances with taskDefinitionKey %s for process instance ID:%s",
+            taskDefinitionKey,
+            processInstanceId
+          ),
+          e
         );
       }
     } catch (URISyntaxException e) {

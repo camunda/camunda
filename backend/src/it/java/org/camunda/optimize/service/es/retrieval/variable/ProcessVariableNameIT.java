@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
@@ -56,6 +57,40 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   }
 
   @Test
+  public void getVariableNames_multipleDefinitions() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition();
+    Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("var1", "value1");
+    variables1.put("var2", "value2");
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables1);
+    final ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition();
+    Map<String, Object> variables2 = new HashMap<>();
+    // duplicate variable "var2" should not appear twice
+    variables2.put("var2", "value4");
+    variables2.put("var3", "value4");
+    variables2.put("var4", "value4");
+    engineIntegrationExtension.startProcessInstance(processDefinition2.getId(), variables2);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(Arrays.asList(
+      new ProcessVariableNameRequestDto(
+        processDefinition1.getKey(), Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+      ),
+      new ProcessVariableNameRequestDto(
+        processDefinition2.getKey(), Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+      )
+    ));
+
+    // then
+    assertThat(variableResponse)
+      .extracting(ProcessVariableNameResponseDto::getName)
+      .containsExactly("var1", "var2", "var3", "var4");
+  }
+
+  @Test
   public void getVariableNamesSingleBucketFilteredBySingleTenant() {
     // given
     final String tenantId1 = "tenantId1";
@@ -72,8 +107,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     variableNameRequestDto.setProcessDefinitionKey(processDefinition);
     variableNameRequestDto.setProcessDefinitionVersion(ALL_VERSIONS);
     variableNameRequestDto.setTenantIds(selectedTenants);
-    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(
-      variableNameRequestDto);
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient
+      .getProcessVariableNames(variableNameRequestDto);
 
     // then
     assertThat(variableResponse).hasSize(selectedTenants.size());

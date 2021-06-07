@@ -15,40 +15,55 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.es.reader.ProcessVariableReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.NestedSortBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Slf4j
@@ -61,7 +76,10 @@ public class ProcessViewRawData extends ProcessViewPart {
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
+  private final ProcessVariableReader processVariableReader;
   private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
+  private static final String CURRENT_TIME = "currentTime";
+  private static final String PARAMS_CURRENT_TIME = "params." + CURRENT_TIME;
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
@@ -74,6 +92,14 @@ public class ProcessViewRawData extends ProcessViewPart {
                                   final ExecutionContext<ProcessReportDataDto> context) {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
 
+    final BoolQueryBuilder variableQuery = boolQuery().must(baseQuery);
+    final Set<String> allVariableNamesForMatchingInstances =
+      processVariableReader.getVariableNamesForInstancesMatchingQuery(variableQuery)
+        .stream()
+        .map(ProcessVariableNameResponseDto::getName)
+        .collect(Collectors.toSet());
+    context.setAllVariablesNames(allVariableNamesForMatchingInstances);
+
     final String sortByField = context.getReportConfiguration().getSorting()
       .flatMap(ReportSortingDto::getBy)
       .orElse(ProcessInstanceIndex.START_DATE);
@@ -84,7 +110,7 @@ public class ProcessViewRawData extends ProcessViewPart {
 
     final SearchSourceBuilder search = searchRequest.source()
       .fetchSource(true)
-      .fetchSource(null, new String[]{EVENTS, USER_TASKS});
+      .fetchSource(null, new String[]{FLOW_NODE_INSTANCES});
     if (context.isExport()) {
       search.size(
         context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
@@ -98,7 +124,13 @@ public class ProcessViewRawData extends ProcessViewPart {
         .size(context.getPagination().getLimit())
         .from(context.getPagination().getOffset());
     }
-    addSorting(sortByField, sortOrder, searchRequest.source());
+    Map<String, Object> params = new HashMap<>();
+    params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
+    searchRequest.source().scriptField(
+      CURRENT_TIME,
+      createDefaultScriptWithSpecificDtoParams(PARAMS_CURRENT_TIME, params, objectMapper)
+    );
+    addSorting(sortByField, sortOrder, searchRequest.source(), params);
   }
 
   @Override
@@ -110,13 +142,37 @@ public class ProcessViewRawData extends ProcessViewPart {
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
+    Function<SearchHit, ProcessInstanceDto> mappingFunction = hit -> {
+      try {
+        final ProcessInstanceDto processInstance = objectMapper.readValue(
+          hit.getSourceAsString(),
+          ProcessInstanceDto.class
+        );
+        if (processInstance.getDuration() == null && processInstance.getStartDate() != null) {
+          final Optional<ReportSortingDto> sorting = context.getReportConfiguration().getSorting();
+          if (sorting.isPresent() && sorting.get().getBy().isPresent()
+            && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
+            processInstance.setDuration(Math.round(Double.parseDouble(hit.getSortValues()[0].toString())));
+          } else {
+            Long currentTime = hit.getFields().get(CURRENT_TIME).getValue();
+            processInstance.setDuration(currentTime - processInstance.getStartDate().toInstant().toEpochMilli());
+          }
+        }
+        return processInstance;
+      } catch (IOException e) {
+        final String reason = "Error while mapping search results to Process Instances";
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason);
+      }
+    };
+
     final List<ProcessInstanceDto> rawDataProcessInstanceDtos;
     if (context.isExport()) {
       rawDataProcessInstanceDtos =
         ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
           response,
           ProcessInstanceDto.class,
-          objectMapper,
+          mappingFunction,
           esClient,
           configurationService.getEsScrollTimeoutInSeconds(),
           context.getPagination().getLimit()
@@ -124,15 +180,18 @@ public class ProcessViewRawData extends ProcessViewPart {
     } else {
       rawDataProcessInstanceDtos = ElasticsearchReaderUtil.mapHits(
         response.getHits(),
+        Integer.MAX_VALUE,
         ProcessInstanceDto.class,
-        objectMapper
+        mappingFunction
       );
     }
 
     final List<RawDataProcessInstanceDto> rawData = rawDataSingleReportResultDtoMapper.mapFrom(
       rawDataProcessInstanceDtos,
-      objectMapper
+      objectMapper,
+      context.getAllVariablesNames()
     );
+
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
     return ViewResult.builder().rawData(rawData).build();
   }
@@ -147,7 +206,8 @@ public class ProcessViewRawData extends ProcessViewPart {
     dataForCommandKey.setView(new ProcessViewDto(ViewProperty.RAW_DATA));
   }
 
-  private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
+  private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder,
+                          Map<String, Object> params) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
       searchSourceBuilder.sort(
@@ -156,8 +216,29 @@ public class ProcessViewRawData extends ProcessViewPart {
           .setNestedSort(
             new NestedSortBuilder(VARIABLES)
               .setFilter(termQuery(getNestedVariableNameField(), variableName))
-          ).order(sortOrder)
-      );
+          ).order(sortOrder));
+    } else if (sortByField.equals(ProcessInstanceIndex.DURATION)) {
+      params.put("duration", ProcessInstanceIndex.DURATION);
+      params.put("startDate", ProcessInstanceIndex.START_DATE);
+      //when running the query, ES throws an error message for checking the existence of the value of a field with
+      // doc['field'].value == null
+      //and recommends using doc['field'].size() == 0
+      //@formatter:off
+      String query =
+        "if (doc[params.duration].size() == 0) {" +
+        "params.currentTime - doc[params.startDate].value.toInstant()" +
+        " .toEpochMilli() }" +
+        "else { " +
+        " doc[params.duration].value" +
+        "}";
+      //@formatter:on
+
+      Script script = createDefaultScriptWithSpecificDtoParams(query, params, objectMapper);
+      searchSourceBuilder.sort(
+        SortBuilders.scriptSort(
+          script,
+          ScriptSortBuilder.ScriptSortType.NUMBER
+        ).order(sortOrder));
     } else {
       searchSourceBuilder.sort(
         SortBuilders.fieldSort(sortByField).order(sortOrder)

@@ -19,7 +19,6 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
@@ -54,7 +53,7 @@ public class ExternalEventWriter {
 
     if (bulkRequest.numberOfActions() > 0) {
       try {
-        final BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {
           final String errorMessage = String.format(
             "There were failures while writing events. Received error message: %s",

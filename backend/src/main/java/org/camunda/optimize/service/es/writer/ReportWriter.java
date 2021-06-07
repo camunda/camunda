@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -31,7 +33,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.NestedQueryBuilder;
@@ -74,7 +75,7 @@ public class ReportWriter {
     NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE
   );
   private static final String PROCESS_DEFINITION_PROPERTY = String.join(
-    ".", DATA, ProcessReportDataDto.Fields.processDefinitionKey
+    ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key
   );
 
   private final ObjectMapper objectMapper;
@@ -103,7 +104,7 @@ public class ReportWriter {
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write report to Elasticsearch. ";
@@ -145,7 +146,7 @@ public class ReportWriter {
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write single process report to Elasticsearch.";
@@ -186,7 +187,7 @@ public class ReportWriter {
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
-      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      IndexResponse indexResponse = esClient.index(request);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write single decision report to Elasticsearch.";
@@ -253,7 +254,7 @@ public class ReportWriter {
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      final UpdateResponse updateResponse = esClient.update(request);
       if (updateResponse.getShardInfo().getFailed() > 0) {
         log.error(
           "Was not able to update report with id [{}] and name [{}].", updatedReport.getId(), updatedReport.getName()
@@ -330,7 +331,7 @@ public class ReportWriter {
 
     DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String reason =
         String.format("Could not delete combined report with id [%s].", reportId);

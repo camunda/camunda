@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 
@@ -309,7 +310,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .versionTag(VERSION_TAG)
       .tenantId(tenantId)
       .deleted(deleted)
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .name(name)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
       .build();

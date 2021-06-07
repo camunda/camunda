@@ -39,8 +39,8 @@ public class UserOperationLogImportIT extends AbstractImportIT {
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
-    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()).hasSizeGreaterThan(0);
-    embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()
+    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()).hasSizeGreaterThan(0);
+    embeddedOptimizeExtension.getImportSchedulerManager().getEngineImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
   }
 
@@ -392,5 +392,5 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
     return processInstance;
   }
-  
+
 }

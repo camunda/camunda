@@ -41,6 +41,10 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
+beforeEach(() => {
+  loadVariables.mockClear();
+});
+
 it('should disable the submit button if no definition selected', () => {
   const node = shallow(<EventsSourceModal {...props} />);
 
@@ -69,11 +73,13 @@ it('load variables after selecting a process definition', () => {
     tenantIds: ['a', 'b'],
   });
 
-  expect(loadVariables).toHaveBeenCalledWith({
-    processDefinitionKey: 'test',
-    processDefinitionVersions: ['1'],
-    tenantIds: ['a', 'b'],
-  });
+  expect(loadVariables).toHaveBeenCalledWith([
+    {
+      processDefinitionKey: 'test',
+      processDefinitionVersions: ['1'],
+      tenantIds: ['a', 'b'],
+    },
+  ]);
 });
 
 it('should apply the source to the state when editing a source', () => {

@@ -41,8 +41,6 @@ import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
@@ -134,26 +132,26 @@ public class ElasticSearchSchemaManager {
 
   public boolean indexExists(final OptimizeElasticsearchClient esClient,
                              final String indexName) {
-    return indicesExist(Collections.singletonList(indexName), esClient);
+    return indicesExistWithNames(esClient, Collections.singletonList(indexName));
   }
 
   public boolean indicesExist(final OptimizeElasticsearchClient esClient,
                               final List<IndexMappingCreator> mappings) {
-    return indicesExist(
+    return indicesExistWithNames(
+      esClient,
       mappings.stream()
         .map(IndexMappingCreator::getIndexName)
-        .collect(toList()),
-      esClient
+        .collect(toList())
     );
   }
 
-  public boolean indicesExist(final List<String> indexNames,
-                              final OptimizeElasticsearchClient esClient) {
+  private boolean indicesExistWithNames(final OptimizeElasticsearchClient esClient,
+                                        final List<String> indexNames) {
     return StreamSupport.stream(Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
       .allMatch(indices -> {
         final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
         try {
-          return esClient.exists(request, RequestOptions.DEFAULT);
+          return esClient.exists(request);
         } catch (IOException e) {
           final String message = String.format(
             "Could not check if [%s] index(es) already exist.", String.join(",", indices)
@@ -267,7 +265,7 @@ public class ElasticSearchSchemaManager {
     );
     request.settings(indexSettings);
     request.mapping(mapping.getSource());
-    esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+    esClient.getHighLevelClient().indices().create(request, esClient.requestOptions());
   }
 
   private void createOptimizeIndexWithWriteAliasFromTemplate(final OptimizeElasticsearchClient esClient,
@@ -279,7 +277,7 @@ public class ElasticSearchSchemaManager {
       createIndexRequest.alias(new Alias(aliasName).writeIndex(true));
     }
     try {
-      esClient.getHighLevelClient().indices().create(createIndexRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().create(createIndexRequest, esClient.requestOptions());
     } catch (IOException e) {
       String message = String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
@@ -302,7 +300,7 @@ public class ElasticSearchSchemaManager {
       ));
 
     try {
-      esClient.getHighLevelClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().putTemplate(templateRequest, esClient.requestOptions());
     } catch (Exception e) {
       final String message = String.format("Could not create or update template %s.", templateName);
       throw new OptimizeRuntimeException(message, e);
@@ -333,7 +331,7 @@ public class ElasticSearchSchemaManager {
       .forEach(templateRequest::alias);
 
     try {
-      esClient.getHighLevelClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().putTemplate(templateRequest, esClient.requestOptions());
     } catch (IOException e) {
       String message = String.format("Could not create or update template %s", templateName);
       log.warn(message, e);
@@ -353,7 +351,8 @@ public class ElasticSearchSchemaManager {
     final boolean indexBlocked;
     try {
       final GetSettingsResponse settingsResponse = esClient.getHighLevelClient().indices().getSettings(
-        new GetSettingsRequest().indices(esClient.getIndexNameService().getIndexPrefix() + "*"), RequestOptions.DEFAULT
+        new GetSettingsRequest().indices(esClient.getIndexNameService().getIndexPrefix() + "*"),
+        esClient.requestOptions()
       );
       indexBlocked = Streams.stream(settingsResponse.getIndexToSettings().valuesIt())
         .anyMatch(settings -> settings.getAsBoolean(INDEX_READ_ONLY_SETTING, false));
@@ -369,7 +368,7 @@ public class ElasticSearchSchemaManager {
       );
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
-        esClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+        esClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, esClient.requestOptions());
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Could not unblock Elasticsearch indices!", e);
       }
@@ -378,7 +377,7 @@ public class ElasticSearchSchemaManager {
 
   public void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
                                                IndexMappingCreator indexMapping) {
-    updateIndexDynamicSettingsAndMappings(esClient.getHighLevelClient(), indexMapping);
+    updateIndexDynamicSettingsAndMappings(esClient, indexMapping);
     if (indexMapping.isCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
     }
@@ -393,14 +392,15 @@ public class ElasticSearchSchemaManager {
     );
   }
 
-  private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, IndexMappingCreator indexMapping) {
+  private void updateIndexDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
+                                                     IndexMappingCreator indexMapping) {
     final String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
       updateSettingsRequest.indices(indexName);
       updateSettingsRequest.settings(indexSettings);
-      esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, esClient.requestOptions());
     } catch (IOException e) {
       String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
@@ -409,7 +409,7 @@ public class ElasticSearchSchemaManager {
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
       putMappingRequest.source(indexMapping.getSource());
-      esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().putMapping(putMappingRequest, esClient.requestOptions());
     } catch (IOException e) {
       String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);

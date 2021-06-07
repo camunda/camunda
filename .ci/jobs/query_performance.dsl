@@ -1,7 +1,7 @@
 pipelineJob('query-performance-tests') {
 
-  displayName 'Query performance test on large static dataset'
-  description 'Test Optimize Query Performance against a large static dataset. This ensures that even with a large dataset queries do not take too long.'
+  displayName 'Query performance test on static dataset'
+  description 'Test Optimize Query Performance against a static dataset.'
 
   // By default, this job is disabled in non-prod envs.
   if (binding.variables.get("ENVIRONMENT") != "prod") {

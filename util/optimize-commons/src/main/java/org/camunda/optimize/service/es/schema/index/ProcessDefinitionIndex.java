@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENA
 
 public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
   public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;
@@ -23,9 +23,8 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
   public static final String PROCESS_DEFINITION_VERSION_TAG = DEFINITION_VERSION_TAG;
   public static final String PROCESS_DEFINITION_NAME = DEFINITION_NAME;
   public static final String PROCESS_DEFINITION_XML = ProcessDefinitionOptimizeDto.Fields.bpmn20Xml;
-  public static final String FLOW_NODE_NAMES = ProcessDefinitionOptimizeDto.Fields.flowNodeNames;
+  public static final String FLOW_NODE_DATA = ProcessDefinitionOptimizeDto.Fields.flowNodeData;
   public static final String USER_TASK_NAMES = ProcessDefinitionOptimizeDto.Fields.userTaskNames;
-  public static final String ENGINE = DEFINITION_ENGINE;
   public static final String TENANT_ID = DEFINITION_TENANT_ID;
 
   @Override
@@ -42,7 +41,7 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return super.addProperties(xContentBuilder)
-      .startObject(FLOW_NODE_NAMES)
+      .startObject(FLOW_NODE_DATA)
         .field("type", "object")
         .field(MAPPING_ENABLED_SETTING, "false")
       .endObject()

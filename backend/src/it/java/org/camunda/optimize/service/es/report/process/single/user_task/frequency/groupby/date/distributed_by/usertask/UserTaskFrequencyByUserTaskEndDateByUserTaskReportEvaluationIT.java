@@ -27,13 +27,14 @@ public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT
 
   @Override
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskEndDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(updates);
   }
 
   @Override
   protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
                                         final String userTaskKey,
                                         final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

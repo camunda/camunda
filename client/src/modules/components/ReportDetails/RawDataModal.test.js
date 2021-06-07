@@ -53,12 +53,12 @@ it('evaluate the raw data of the report on mount', () => {
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
-  const testError = {errorMessage: 'testError', reportDefinition: {}};
-  const mightFail = (promise, cb, err) => err({status: 400, json: () => testError});
+  const testError = {message: 'testError', reportDefinition: {}, status: 400};
+  const mightFail = (promise, cb, err) => err(testError);
 
   const node = shallow(<RawDataModal {...props} mightFail={mightFail} />);
   runLastEffect();
   await flushPromises();
 
-  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, data: testError});
+  expect(node.find(ReportRenderer).prop('error')).toEqual({status: 400, ...testError});
 });

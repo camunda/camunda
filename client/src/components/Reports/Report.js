@@ -81,11 +81,10 @@ export class Report extends React.Component {
           report: response,
         });
       },
-      async (e) => {
-        const errorData = await e.json();
+      async (serverError) => {
         this.setState({
-          report: errorData.reportDefinition,
-          serverError: {status: e.status, data: errorData},
+          report: serverError.reportDefinition,
+          serverError,
         });
       }
     );

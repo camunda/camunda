@@ -47,13 +47,5 @@
     flex-direction: column;
     height: auto;
     top: -999em;
-
-    > ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      flex: 1 1 auto;
-      min-height: 0px;
-    }
   }
 }

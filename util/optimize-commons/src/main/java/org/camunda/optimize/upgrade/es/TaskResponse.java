@@ -15,7 +15,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static java.util.Map.Entry.comparingByKey;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -105,16 +109,28 @@ public class TaskResponse {
     private String type;
     @JsonProperty("reason")
     private String reason;
-    @JsonProperty("phase")
-    private String phase;
+    @JsonProperty("script_stack")
+    private List<String> scriptStack;
+    @JsonProperty("caused_by")
+    private Map<String, Object> causedBy;
 
     @Override
     public String toString() {
+      String scriptStackString = scriptStack == null ? null : scriptStack.stream()
+        .map(stackLine -> "\n" + stackLine)
+        .collect(Collectors.toList())
+        .toString();
+      final String causedByString = Optional.ofNullable(causedBy)
+        .map(causes -> causes.entrySet()
+          .stream()
+          .sorted(comparingByKey())
+          .map(entry -> entry.getKey() + "=" + entry.getValue())
+          .collect(Collectors.joining(",", "'{", "}'")))
+        .orElse(null);
       return "Error{" +
-        "type='" + type + '\'' +
-        ", reason='" + reason + '\'' +
-        ", phase='" + phase + '\'' +
-        '}';
+        "type='" + type + "\', reason='" + reason + '\'' +
+        ", script_stack='" + scriptStackString + "\'\n" +
+        "caused_by=" + causedByString + '}';
     }
   }
 

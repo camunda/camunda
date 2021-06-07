@@ -9,12 +9,12 @@ import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
@@ -64,16 +64,16 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getUserTasks()).hasSize(2);
         assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+          processInstanceDto.getUserTasks().stream().map(FlowNodeInstanceDto::getFlowNodeId).collect(toList()))
           .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
         processInstanceDto.getUserTasks().forEach(simpleUserTaskInstanceDto -> {
-          assertThat(simpleUserTaskInstanceDto.getId()).isNotNull();
-          assertThat(simpleUserTaskInstanceDto.getActivityId()).isNotNull();
-          assertThat(simpleUserTaskInstanceDto.getActivityInstanceId()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getUserTaskInstanceId()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getFlowNodeId()).isNotNull();
+          assertThat(simpleUserTaskInstanceDto.getFlowNodeInstanceId()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getStartDate()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getEndDate()).isNotNull();
           assertThat(simpleUserTaskInstanceDto.getDueDate()).isNull();
@@ -98,20 +98,21 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(processInstanceDto -> {
-        assertThat(processInstanceDto.getUserTasks()).hasSize(1);
-        assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
-          .containsExactlyInAnyOrder(USER_TASK_1);
-        processInstanceDto.getUserTasks().forEach(userTask -> {
-          assertThat(userTask.getId()).isNotNull();
-          assertThat(userTask.getActivityId()).isNotNull();
-          assertThat(userTask.getActivityInstanceId()).isNotNull();
-          assertThat(userTask.getStartDate()).isNotNull();
-          assertThat(userTask.getEndDate()).isNull();
-          assertThat(userTask.getTotalDurationInMs()).isNull();
-        });
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks())
+          .singleElement()
+          .satisfies(
+            userTask -> {
+              assertThat(userTask.getFlowNodeId()).isEqualTo(USER_TASK_1);
+              assertThat(userTask.getUserTaskInstanceId()).isNotNull();
+              assertThat(userTask.getFlowNodeId()).isNotNull();
+              assertThat(userTask.getFlowNodeInstanceId()).isNotNull();
+              assertThat(userTask.getStartDate()).isNotNull();
+              assertThat(userTask.getEndDate()).isNull();
+              assertThat(userTask.getTotalDurationInMs()).isNull();
+            }
+          );
       });
   }
 
@@ -129,13 +130,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
       .singleElement()
       .satisfies(processInstanceDto -> assertThat(processInstanceDto.getUserTasks())
         .singleElement()
-        .satisfies(task -> {
-          assertThat(task.getActivityId()).isEqualTo(USER_TASK_1);
-          assertThat(task.getId()).isNotNull();
-          assertThat(task.getActivityId()).isNotNull();
-          assertThat(task.getStartDate()).isNotNull();
-          assertThat(task.getEndDate()).isNotNull();
-          assertThat(task.getCanceled()).isTrue();
+        .satisfies(userTask -> {
+          assertThat(userTask.getFlowNodeId()).isEqualTo(USER_TASK_1);
+          assertThat(userTask.getUserTaskInstanceId()).isNotNull();
+          assertThat(userTask.getFlowNodeInstanceId()).isNotNull();
+          assertThat(userTask.getStartDate()).isNotNull();
+          assertThat(userTask.getEndDate()).isNotNull();
+          assertThat(userTask.getCanceled()).isTrue();
         }));
   }
 
@@ -152,22 +153,21 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(allProcessInstances).hasSize(2);
-    assertThat(allProcessInstances)
+    assertThat(allProcessInstances).hasSize(2)
       .filteredOn(savedInstance -> savedInstance.getProcessInstanceId().equals(firstInstance.getId()))
       .singleElement()
-      .satisfies(instance -> assertThat(instance.getUserTasks()).hasSize(1).singleElement().satisfies(task -> {
-        assertThat(task.getActivityId()).isEqualTo(USER_TASK_1);
+      .satisfies(instance -> assertThat(instance.getUserTasks()).singleElement().satisfies(task -> {
+        assertThat(task.getFlowNodeId()).isEqualTo(USER_TASK_1);
         assertThat(task.getCanceled()).isTrue();
       }));
     assertThat(allProcessInstances)
       .filteredOn(savedInstance -> savedInstance.getProcessInstanceId().equals(secondInstance.getId()))
       .singleElement()
-      .satisfies(instance -> assertThat(instance.getUserTasks()).hasSize(1).singleElement().satisfies(task -> {
-        assertThat(task.getActivityId()).isEqualTo(USER_TASK_1);
-        // The task has not completed so it been marked as not canceled
-        assertThat(task.getCanceled()).isNull();
-      }));
+      .satisfies(
+        instance -> assertThat(instance.getUserTasks()).singleElement().satisfies(task -> {
+          assertThat(task.getFlowNodeId()).isEqualTo(USER_TASK_1);
+          assertThat(task.getCanceled()).isFalse();
+        }));
   }
 
   @Test
@@ -183,24 +183,18 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
-      .satisfies(processInstanceDto -> {
-        assertThat(processInstanceDto.getUserTasks()).hasSize(2);
-        assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
-          .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
-        processInstanceDto.getUserTasks().forEach(simpleUserTaskInstanceDto -> {
-          assertThat(simpleUserTaskInstanceDto.getId()).isNotNull();
-          assertThat(simpleUserTaskInstanceDto.getActivityId()).isNotNull();
-          assertThat(simpleUserTaskInstanceDto.getStartDate()).isNotNull();
-          assertThat(simpleUserTaskInstanceDto.getEndDate()).isNotNull();
-        });
-        assertThat(processInstanceDto.getUserTasks())
-          .extracting(UserTaskInstanceDto::getActivityId, UserTaskInstanceDto::getCanceled)
-          .containsExactlyInAnyOrder(
-            Tuple.tuple(USER_TASK_1, false),
-            Tuple.tuple(USER_TASK_2, true)
-          );
-      });
+      .satisfies(processInstanceDto -> assertThat(processInstanceDto.getUserTasks()).hasSize(2)
+        .allSatisfy(userTask -> {
+          assertThat(userTask.getUserTaskInstanceId()).isNotNull();
+          assertThat(userTask.getFlowNodeId()).isNotNull();
+          assertThat(userTask.getStartDate()).isNotNull();
+          assertThat(userTask.getEndDate()).isNotNull();
+        })
+        .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
+        .containsExactlyInAnyOrder(
+          Tuple.tuple(USER_TASK_1, false),
+          Tuple.tuple(USER_TASK_2, true)
+        ));
   }
 
   @Test
@@ -216,14 +210,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(processInstanceDto -> {
-        assertThat(processInstanceDto.getUserTasks()).hasSize(2);
-        assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(2)
+          .extracting(FlowNodeInstanceDto::getFlowNodeId)
           .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
         processInstanceDto.getUserTasks().forEach(userTask -> {
-          if (USER_TASK_1.equals(userTask.getActivityId())) {
+          if (USER_TASK_1.equals(userTask.getFlowNodeId())) {
             assertThat(userTask.getEndDate()).isNotNull();
           } else {
             assertThat(userTask.getEndDate()).isNull();
@@ -262,14 +255,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(processInstanceDto -> {
-        assertThat(processInstanceDto.getUserTasks()).hasSize(2);
-        assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(2)
+          .extracting(FlowNodeInstanceDto::getFlowNodeId)
           .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
         processInstanceDto.getUserTasks().forEach(userTask -> {
-          if (USER_TASK_1.equals(userTask.getActivityId())) {
+          if (USER_TASK_1.equals(userTask.getFlowNodeId())) {
             assertThat(userTask.getEndDate()).isNotNull();
           } else {
             assertThat(userTask.getEndDate()).isNull();
@@ -293,16 +285,12 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(processInstanceDto -> {
-        assertThat(processInstanceDto.getUserTasks()).hasSize(1);
-        assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getActivityId).collect(toList()))
-          .containsExactlyInAnyOrder(USER_TASK_1);
-        assertThat(
-          processInstanceDto.getUserTasks().stream().map(UserTaskInstanceDto::getId).collect(toList()))
-          .doesNotContain(independentUserTaskId.toString());
-      });
+      .singleElement()
+      .satisfies(processInstanceDto -> assertThat(processInstanceDto.getUserTasks()).singleElement()
+        .satisfies(userTask -> {
+          assertThat(userTask.getFlowNodeId()).isEqualTo(USER_TASK_1);
+          assertThat(userTask.getFlowNodeInstanceId()).isNotEqualTo(independentUserTaskId.toString());
+        }));
   }
 
   @Test
@@ -324,8 +312,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.deployAndStartProcess(
-      BpmnModels.getSingleUserTaskDiagram());
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     // only first task finished
     engineIntegrationExtension.finishAllRunningUserTasks();
 
@@ -343,17 +330,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
           assertThat(
             persistedProcessInstanceDto.getUserTasks()
               .stream()
-              .map(UserTaskInstanceDto::getActivityId)
+              .map(FlowNodeInstanceDto::getFlowNodeId)
               .collect(toList()))
             .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
         } else {
-          assertThat(persistedProcessInstanceDto.getUserTasks()).hasSize(1);
-          assertThat(
-            persistedProcessInstanceDto.getUserTasks()
-              .stream()
-              .map(UserTaskInstanceDto::getActivityId)
-              .collect(toList()))
-            .containsExactlyInAnyOrder(USER_TASK_1);
+          assertThat(persistedProcessInstanceDto.getUserTasks())
+            .singleElement()
+            .satisfies(userTask -> assertThat(userTask.getFlowNodeId()).isEqualTo(USER_TASK_1));
         }
       });
   }
@@ -387,8 +370,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(persistedProcessInstanceDto -> {
+      .singleElement()
+      .satisfies(persistedProcessInstanceDto -> {
         persistedProcessInstanceDto.getUserTasks()
           .forEach(userTask -> assertThat(userTask.getIdleDurationInMs()).isEqualTo(idleDuration));
       });
@@ -445,16 +428,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(persistedProcessInstanceDto -> {
+      .singleElement()
+      .satisfies(persistedProcessInstanceDto -> {
         persistedProcessInstanceDto.getUserTasks()
-          .forEach(userTask -> assertThat(userTask.getWorkDurationInMs()).isEqualTo(firstWorkDuration + secondWorkDuration));
-      });
-    assertThat(storedProcessInstances)
-      .hasSize(1)
-      .allSatisfy(persistedProcessInstanceDto -> {
-        persistedProcessInstanceDto.getUserTasks()
-          .forEach(userTask -> assertThat(userTask.getIdleDurationInMs()).isEqualTo(firstIdleDuration + secondIdleDuration));
+          .forEach(userTask -> {
+            assertThat(userTask.getWorkDurationInMs()).isEqualTo(firstWorkDuration + secondWorkDuration);
+            assertThat(userTask.getIdleDurationInMs()).isEqualTo(firstIdleDuration + secondIdleDuration);
+          });
       });
   }
 
@@ -493,14 +473,14 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then the usertask is assumed to have been idle the entire time,
     // meaning idle == total and work == 0
-    final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(storedProcessInstances)
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .hasSize(1)
       .flatExtracting(ProcessInstanceDto::getUserTasks)
-      .allSatisfy(userTask -> {
-        assertThat(userTask.getWorkDurationInMs()).isNotNull();
+      .singleElement()
+      .satisfies(userTask -> {
+        assertThat(userTask.getTotalDurationInMs()).isNotNull();
+        assertThat(userTask.getWorkDurationInMs()).isNotNull().isZero();
         assertThat(userTask.getIdleDurationInMs()).isEqualTo(userTask.getTotalDurationInMs());
-        assertThat(userTask.getWorkDurationInMs()).isZero();
       });
   }
 
@@ -542,13 +522,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   @SneakyThrows
   private void importCompletedActivityAndProcessInstances() {
     for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
-      .getImportSchedulers()) {
-      final List<EngineImportMediator> mediators = scheduler.getImportMediators()
+      .getEngineImportSchedulers()) {
+      final List<ImportMediator> mediators = scheduler.getImportMediators()
         .stream()
         .filter(mediator -> CompletedActivityInstanceEngineImportMediator.class.equals(mediator.getClass()) ||
           CompletedProcessInstanceEngineImportMediator.class.equals(mediator.getClass()))
         .collect(Collectors.toList());
-      for (EngineImportMediator mediator : mediators) {
+      for (ImportMediator mediator : mediators) {
         mediator.runImport().get(10, TimeUnit.SECONDS);
       }
     }

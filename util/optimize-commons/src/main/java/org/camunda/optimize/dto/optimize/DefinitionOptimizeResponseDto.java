@@ -24,14 +24,14 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
   private String version;
   private String versionTag;
   private String name;
-  private String engine;
+  private DataSourceDto dataSource;
   private String tenantId;
   private boolean deleted;
   @JsonIgnore
   private DefinitionType type;
 
-  protected DefinitionOptimizeResponseDto(final String id, final String engine) {
+  protected DefinitionOptimizeResponseDto(final String id, final DataSourceDto dataSource) {
     this.id = id;
-    this.engine = engine;
+    this.dataSource = dataSource;
   }
 }

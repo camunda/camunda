@@ -23,7 +23,6 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Component
 public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDataProcessInstanceDto>> {
@@ -53,7 +52,6 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDat
     return commandResult;
   }
 
-  @SuppressWarnings(UNCHECKED_CAST)
   private void addNewVariablesAndDtoFieldsToTableColumnConfig(
     final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext,
     final CommandEvaluationResult<List<RawDataProcessInstanceDto>> result) {
@@ -70,4 +68,5 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDat
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
+
 }

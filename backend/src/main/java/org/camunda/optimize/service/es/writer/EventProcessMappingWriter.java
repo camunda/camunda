@@ -24,7 +24,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
@@ -61,7 +60,7 @@ public class EventProcessMappingWriter {
           XContentType.JSON
         )
         .setRefreshPolicy(IMMEDIATE);
-      indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      indexResponse = esClient.index(request);
     } catch (IOException e) {
       final String errorMessage = String.format("There was a problem while writing the event based process [%s].", id);
       log.error(errorMessage, e);
@@ -95,7 +94,7 @@ public class EventProcessMappingWriter {
 
     final DeleteResponse deleteResponse;
     try {
-      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+      deleteResponse = esClient.delete(request);
     } catch (IOException e) {
       String errorMessage = String.format("Could not delete event based process with id [%s]. ", eventProcessMappingId);
       log.error(errorMessage, e);
@@ -123,7 +122,7 @@ public class EventProcessMappingWriter {
         .script(updateScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      final UpdateResponse updateResponse = esClient.update(request);
       if (!updateResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
         String errorMessage = String.format("Could not update event based process [%s] to Elasticsearch.", id);
         log.error(errorMessage);

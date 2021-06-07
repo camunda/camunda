@@ -77,10 +77,9 @@ public class EventProcessDefinitionImportService {
       .version("1")
       .name(eventProcessPublishStateDto.getName())
       .tenantId(null)
-      .engine(null)
       .bpmn20Xml(eventProcessPublishStateDto.getXml())
       .deleted(false)
-      .flowNodeNames(BpmnModelUtil.extractFlowNodeNames(bpmnModelInstance))
+      .flowNodeData(BpmnModelUtil.extractFlowNodeData(bpmnModelInstance))
       .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmnModelInstance))
       .build();
   }

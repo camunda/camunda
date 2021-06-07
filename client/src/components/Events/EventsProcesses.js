@@ -111,14 +111,8 @@ export class EventsProcesses extends React.Component {
     }));
 
   render() {
-    const {
-      processes,
-      deleting,
-      redirect,
-      publishing,
-      editingAccess,
-      openGenerationModal,
-    } = this.state;
+    const {processes, deleting, redirect, publishing, editingAccess, openGenerationModal} =
+      this.state;
 
     if (redirect) {
       return <Redirect to={redirect} />;

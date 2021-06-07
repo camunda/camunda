@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.EventProcessService;
@@ -58,7 +57,6 @@ import static java.util.stream.Collectors.toList;
 @AllArgsConstructor
 @Path("/eventBasedProcess")
 @Component
-@Secured
 public class EventBasedProcessRestService {
 
   private final EventProcessService eventProcessService;
@@ -216,6 +214,15 @@ public class EventBasedProcessRestService {
     return eventMappingCleanupService.doMappingCleanup(userId, requestDto);
   }
 
+  @POST
+  @Path("/delete-conflicts")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public boolean checkEventBasedProcessesHaveConflicts(@Context ContainerRequestContext requestContext,
+                                                       @RequestBody List<String> eventBasedProcessIds) {
+    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    return eventProcessService.hasDeleteConflicts(eventBasedProcessIds);
+  }
+
   private EventProcessRoleRequestDto<IdentityDto> resolveToEventProcessRoleDto(final String userId,
                                                                                final EventProcessRoleRequestDto<IdentityDto> eventProcessRoleRestDto) {
     IdentityDto simpleIdentityDto = eventProcessRoleRestDto.getIdentity();
@@ -276,7 +283,7 @@ public class EventBasedProcessRestService {
 
   private String getDefinitionName(final String userId, final String eventSource) {
     return definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource, userId)
-      .map(DefinitionWithTenantsResponseDto::getName)
+      .map(DefinitionResponseDto::getName)
       .orElse(eventSource);
   }
 }

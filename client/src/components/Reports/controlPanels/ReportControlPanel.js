@@ -37,21 +37,21 @@ export default withErrorHandling(
         scrolled: false,
         showSource: true,
         showSetup: true,
-        showFilter: true,
+        showFilter: false,
       };
     }
 
     componentDidMount() {
       const data = this.props.report.data;
-      this.loadVariables(data);
-      this.loadFlowNodeNames(data);
+      this.loadVariables(data?.definitions?.[0]);
+      this.loadFlowNodeNames(data?.definitions?.[0]);
     }
 
-    loadFlowNodeNames = ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
-      if (processDefinitionKey && processDefinitionVersions && tenantIds) {
+    loadFlowNodeNames = ({key, versions, tenantIds}) => {
+      if (key && versions && tenantIds) {
         return new Promise((resolve, reject) => {
           this.props.mightFail(
-            getFlowNodeNames(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
+            getFlowNodeNames(key, versions[0], tenantIds[0]),
             (flowNodeNames) => this.setState({flowNodeNames}, resolve),
             (error) => reject(showError(error))
           );
@@ -59,11 +59,17 @@ export default withErrorHandling(
       }
     };
 
-    loadVariables = ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
-      if (processDefinitionKey && processDefinitionVersions && tenantIds) {
+    loadVariables = ({key, versions, tenantIds}) => {
+      if (key && versions && tenantIds) {
         return new Promise((resolve, reject) => {
           this.props.mightFail(
-            loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+            loadVariables([
+              {
+                processDefinitionKey: key,
+                processDefinitionVersions: versions,
+                tenantIds,
+              },
+            ]),
             (variables) => this.setState({variables}, resolve),
             (error) => reject(showError(error))
           );
@@ -71,15 +77,11 @@ export default withErrorHandling(
       }
     };
 
-    loadXml = ({processDefinitionKey, processDefinitionVersions, tenantIds}) => {
-      if (processDefinitionKey && processDefinitionVersions?.[0] && tenantIds) {
+    loadXml = ({key, versions, tenantIds}) => {
+      if (key && versions?.[0] && tenantIds) {
         return new Promise((resolve, reject) => {
           this.props.mightFail(
-            loadProcessDefinitionXml(
-              processDefinitionKey,
-              processDefinitionVersions[0],
-              tenantIds[0]
-            ),
+            loadProcessDefinitionXml(key, versions[0], tenantIds[0]),
             resolve,
             (error) => reject(showError(error))
           );
@@ -134,14 +136,16 @@ export default withErrorHandling(
           processPart,
           heatmapTargetValue: {values},
         },
-        processDefinitionKey,
+        definitions: [{key: definitionKey}],
       } = this.props.report.data;
       const targetFlowNodes = Object.keys(values);
 
       const definitionData = {
-        processDefinitionKey: key,
-        processDefinitionVersions: versions,
+        key,
+        versions,
         tenantIds,
+        name: name,
+        displayName: name,
       };
 
       this.props.setLoading(true);
@@ -152,10 +156,9 @@ export default withErrorHandling(
       ]);
 
       const change = {
-        processDefinitionKey: {$set: key},
-        processDefinitionName: {$set: name},
-        processDefinitionVersions: {$set: versions},
-        tenantIds: {$set: tenantIds},
+        definitions: {
+          $set: [definitionData],
+        },
         configuration: {xml: {$set: xml}},
       };
 
@@ -164,7 +167,7 @@ export default withErrorHandling(
         variableConfig.reset(change);
       }
 
-      if (columnOrder.length && key !== processDefinitionKey) {
+      if (columnOrder.length && key !== definitionKey) {
         change.configuration.tableColumns = {columnOrder: {$set: []}};
       }
 
@@ -205,65 +208,50 @@ export default withErrorHandling(
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, scrolled, flowNodeNames, variables} = this.state;
 
+      const {key, versions, tenantIds} = data.definitions?.[0] ?? {};
+
       const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
       const shouldAllowAddingMeasure = data.view?.properties.length === 1 && shouldDisplayMeasure;
 
       return (
         <div className="ReportControlPanel">
           <section className={classnames('select', 'source', {hidden: !showSource})}>
-            <h3 className="sectionTitle">
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showSource: !showSource});
+              }}
+            >
               <Icon type="data-source" />
               {t('common.dataSource')}
-              <Button
-                icon
-                className="sectionToggle"
-                onClick={() => {
-                  this.setState({showSource: !showSource});
-                }}
-              >
-                <Icon type={showSource ? 'up' : 'down'} />
-              </Button>
-            </h3>
+              <span className={classnames('sectionToggle', {open: showSource})}>
+                <Icon type="down" />
+              </span>
+            </Button>
             <DefinitionSelection
               type="process"
-              definitionKey={data.processDefinitionKey}
-              versions={data.processDefinitionVersions}
-              tenants={data.tenantIds}
+              definitionKey={key}
+              versions={versions}
+              tenants={tenantIds}
               xml={data.configuration.xml}
               onChange={this.changeDefinition}
               renderDiagram
             />
           </section>
           <section className={classnames('reportSetup', {hidden: !showSetup})}>
-            <h3 className="sectionTitle">
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showSetup: !showSetup});
+              }}
+            >
               <Icon type="report" />
               {t('report.reportSetup')}
-              <Button
-                icon
-                className="sectionToggle"
-                onClick={() => {
-                  this.setState({showSetup: !showSetup});
-                }}
-              >
-                <Icon type={showSetup ? 'up' : 'down'} />
-              </Button>
-            </h3>
+              <span className={classnames('sectionToggle', {open: showSetup})}>
+                <Icon type="down" />
+              </span>
+            </Button>
             <ul>
-              <li className="addMeasure">
-                <Button
-                  small
-                  disabled={!shouldAllowAddingMeasure}
-                  onClick={() =>
-                    this.updateReport('view', {
-                      ...data.view,
-                      properties: ['frequency', 'duration'],
-                    })
-                  }
-                >
-                  <Icon type="plus" />
-                  {t('report.addMeasure')}
-                </Button>
-              </li>
               <li className="select">
                 <span className="label">{t(`report.view.label`)}</span>
                 <ReportSelect
@@ -272,7 +260,7 @@ export default withErrorHandling(
                   value={data.view}
                   report={this.props.report}
                   variables={{variable: variables}}
-                  disabled={!data.processDefinitionKey}
+                  disabled={!key}
                   onChange={(newValue) => this.updateReport('view', newValue)}
                 />
                 {data.view?.entity === 'variable' && (
@@ -288,6 +276,20 @@ export default withErrorHandling(
                   updateAggregation={this.props.updateReport}
                 />
               )}
+              {shouldAllowAddingMeasure && (
+                <li className="addMeasure">
+                  <Button
+                    onClick={() =>
+                      this.updateReport('view', {
+                        ...data.view,
+                        properties: ['frequency', 'duration'],
+                      })
+                    }
+                  >
+                    + {t('report.addMeasure')}
+                  </Button>
+                </li>
+              )}
               <li className="select">
                 <span className="label">{t(`report.groupBy.label`)}</span>
                 <ReportSelect
@@ -296,7 +298,7 @@ export default withErrorHandling(
                   value={data.groupBy}
                   report={this.props.report}
                   variables={{variable: variables}}
-                  disabled={!data.processDefinitionKey || !data.view}
+                  disabled={!key || !data.view}
                   onChange={(newValue) => this.updateReport('groupBy', newValue)}
                   previous={[data.view]}
                 />
@@ -337,20 +339,19 @@ export default withErrorHandling(
             </ul>
           </section>
           <div className="filter header">
-            <h3 className="sectionTitle">
+            <Button
+              className="sectionTitle"
+              onClick={() => {
+                this.setState({showFilter: !showFilter});
+              }}
+            >
               <Icon type="filter" />
               {t('common.filter.label')}
-              <Button
-                icon
-                className="sectionToggle"
-                onClick={() => {
-                  this.setState({showFilter: !showFilter});
-                }}
-              >
-                <Icon type={showFilter ? 'up' : 'down'} />
-              </Button>
+              <span className={classnames('sectionToggle', {open: showFilter})}>
+                <Icon type="down" />
+              </span>
               {data.filter?.length > 0 && <span className="filterCount">{data.filter.length}</span>}
-            </h3>
+            </Button>
           </div>
           <div
             className={classnames('scrollable', {withDivider: scrolled || !showFilter})}
@@ -361,9 +362,9 @@ export default withErrorHandling(
                 flowNodeNames={flowNodeNames}
                 data={data.filter}
                 onChange={this.props.updateReport}
-                processDefinitionKey={data.processDefinitionKey}
-                processDefinitionVersions={data.processDefinitionVersions}
-                tenantIds={data.tenantIds}
+                processDefinitionKey={key}
+                processDefinitionVersions={versions}
+                tenantIds={tenantIds}
                 xml={data.configuration.xml}
                 variables={variables}
               />

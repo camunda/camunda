@@ -65,7 +65,7 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 30
           httpGet:
-            path: /
+            path: /api/readyz
             port: optimize-http
         resources:
           requests:
@@ -84,6 +84,7 @@ spec:
 ################################################################################
       - name: cambpm
         image: "camunda/camunda-bpm-platform:@CAMBPM_VERSION@"
+        imagePullPolicy: Always
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS

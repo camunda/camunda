@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.user_task;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableSet;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.util.BpmnModels;
@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
+import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -164,11 +165,11 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(2);
       Set<String> expectedAssignees = ImmutableSet.of(DEFAULT_USERNAME, "secondUser");
       Set<String> actualAssignees = userTasks.stream()
-        .map(UserTaskInstanceDto::getAssignee)
+        .map(FlowNodeInstanceDto::getAssignee)
         .collect(Collectors.toSet());
       assertThat(actualAssignees).isEqualTo(expectedAssignees);
     }
@@ -196,7 +197,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(2);
       Set<String> expectedCandidateGroups = ImmutableSet.of("firstGroup", "secondGroup");
       Set<String> actualCandidateGroups = userTasks.stream()
@@ -231,7 +232,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(1);
       List<AssigneeOperationDto> assigneeOperations = userTasks.get(0).getAssigneeOperations();
       assertThat(assigneeOperations.get(0).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
@@ -259,7 +260,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(1);
       assertThat(userTasks.get(0).getAssignee()).isNull();
     }
@@ -282,7 +283,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(1);
       assertThat(userTasks.get(0).getAssignee()).isEqualTo(DEFAULT_USERNAME);
     }
@@ -310,7 +311,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(1);
       List<CandidateGroupOperationDto> candidateGroupOperations = userTasks.get(0).getCandidateGroupOperations();
       assertThat(candidateGroupOperations.get(0).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
@@ -343,7 +344,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(1);
       assertThat(userTasks.get(0).getAssignee()).isNull();
       assertThat(userTasks.get(0).getCandidateGroups()).isEmpty();
@@ -372,7 +373,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
+      List<FlowNodeInstanceDto> userTasks = processInstanceDto.getUserTasks();
       assertThat(userTasks).hasSize(1);
       assertThat(userTasks.get(0).getAssignee()).isEqualTo("secondUser");
     }
@@ -419,18 +420,21 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     assertThat(storedInstance.getUserTasks()).hasSize(1);
 
     // when duplicate user tasks and tasks with same ID have been stored
-    final UserTaskInstanceDto userTaskInstanceDto = storedInstance.getUserTasks().get(0);
+    final FlowNodeInstanceDto userTaskInstanceDto = storedInstance.getUserTasks().get(0);
 
-    final UserTaskInstanceDto sameIdTaskInstanceDto = new UserTaskInstanceDto();
-    sameIdTaskInstanceDto.setId(userTaskInstanceDto.getId());
-    sameIdTaskInstanceDto.setProcessInstanceId(userTaskInstanceDto.getProcessInstanceId());
-    sameIdTaskInstanceDto.setEngine(userTaskInstanceDto.getEngine());
-    final List<UserTaskInstanceDto> duplicateTaskList = Arrays.asList(
+    final FlowNodeInstanceDto sameIdTaskInstanceDto = FlowNodeInstanceDto.builder()
+      .flowNodeInstanceId(userTaskInstanceDto.getFlowNodeInstanceId())
+      .userTaskInstanceId(userTaskInstanceDto.getUserTaskInstanceId())
+      .processInstanceId(userTaskInstanceDto.getProcessInstanceId())
+      .engine(userTaskInstanceDto.getEngine())
+      .flowNodeType(FLOW_NODE_TYPE_USER_TASK)
+      .build();
+    final List<FlowNodeInstanceDto> duplicateTaskList = Arrays.asList(
       userTaskInstanceDto,
       userTaskInstanceDto,
       sameIdTaskInstanceDto
     );
-    storedInstance.setUserTasks(duplicateTaskList);
+    storedInstance.setFlowNodeInstances(duplicateTaskList);
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
         elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),

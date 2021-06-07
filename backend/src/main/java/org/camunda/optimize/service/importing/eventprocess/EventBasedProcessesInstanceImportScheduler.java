@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.service.EventProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.eventprocess.service.PublishStateUpdateService;
@@ -66,7 +66,6 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
 
   public Future<Void> runImportRound(final boolean forceImport) {
     eventBasedProcessIndexManager.syncAvailableIndices();
-    eventBasedProcessIndexManager.cleanupIndexes();
     instanceImportMediatorManager.refreshMediators();
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
@@ -122,10 +121,10 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     return new PeriodicTrigger(0);
   }
 
-  private void doBackoff(final Collection<? extends EngineImportMediator> mediators) {
+  private void doBackoff(final Collection<? extends ImportMediator> mediators) {
     long timeToSleep = mediators
       .stream()
-      .map(EngineImportMediator::getBackoffTimeInMs)
+      .map(ImportMediator::getBackoffTimeInMs)
       .min(Long::compare)
       .orElse(5000L);
     try {

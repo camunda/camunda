@@ -14,7 +14,6 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -136,7 +135,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
       );
 
     SearchResponse camundaActvityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE), RequestOptions.DEFAULT);
+      .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE));
 
     while (camundaActvityEventsResponse.getHits().getHits().length > 0) {
       final Set<Object> processInstanceIds = Arrays.stream(camundaActvityEventsResponse.getHits().getHits())
@@ -149,8 +148,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
       assertThat(finishedProcessInstanceCount).isZero();
 
       camundaActvityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().scroll(
-        new SearchScrollRequest(camundaActvityEventsResponse.getScrollId()).scroll(SCROLL_KEEP_ALIVE),
-        RequestOptions.DEFAULT
+        new SearchScrollRequest(camundaActvityEventsResponse.getScrollId()).scroll(SCROLL_KEEP_ALIVE)
       );
     }
   }

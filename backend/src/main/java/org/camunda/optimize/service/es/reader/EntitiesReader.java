@@ -29,7 +29,6 @@ import org.elasticsearch.action.get.MultiGetRequest;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
@@ -103,7 +102,7 @@ public class EntitiesReader {
 
     SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
@@ -147,7 +146,7 @@ public class EntitiesReader {
     final SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest);
       return searchResponse.getAggregations().asList().stream()
         .map(agg -> (Filter) agg)
         .map(collectionFilterAggregation -> new AbstractMap.SimpleEntry<>(
@@ -243,7 +242,7 @@ public class EntitiesReader {
 
     MultiGetResponse multiGetItemResponses;
     try {
-      multiGetItemResponses = esClient.mget(request, RequestOptions.DEFAULT);
+      multiGetItemResponses = esClient.mget(request);
     } catch (IOException e) {
       String reason = String.format("Could not get entity names search request %s", requestDto.toString());
       log.error(reason, e);
@@ -266,7 +265,7 @@ public class EntitiesReader {
 
     SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to retrieve collection entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);

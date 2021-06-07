@@ -112,8 +112,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // then
     GetRequest getRequest = new GetRequest(COMBINED_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
 
     assertThat(getResponse.isExists()).isTrue();
     CombinedReportDefinitionRequestDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
@@ -1619,7 +1618,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(engineDto.getId(), USER_TASK_1, now.minusDays(2L));
+    engineDatabaseExtension.changeFlowNodeStartDate(engineDto.getId(), USER_TASK_1, now.minusDays(2L));
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 
@@ -1673,7 +1672,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
-    engineDatabaseExtension.changeActivityInstanceStartDate(engineDto.getId(), START_EVENT, now.minusDays(2L));
+    engineDatabaseExtension.changeFlowNodeStartDate(engineDto.getId(), START_EVENT, now.minusDays(2L));
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 

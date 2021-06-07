@@ -8,7 +8,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ColumnRearrangement from './ColumnRearrangement';
-jest.mock('./processRawData', () => jest.fn());
 
 it('should render child node only if it is disabled', () => {
   const node = shallow(

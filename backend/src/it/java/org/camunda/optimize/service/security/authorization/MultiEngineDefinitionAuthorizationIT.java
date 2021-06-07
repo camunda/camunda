@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -63,7 +64,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(SECOND_ENGINE_ALIAS));
 
   }
 
@@ -89,7 +90,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -113,7 +114,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -142,7 +143,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -168,7 +169,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(SECOND_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -193,7 +194,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(SECOND_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -215,7 +216,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -241,7 +242,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -270,7 +271,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(SECOND_ENGINE_ALIAS));
   }
 
   @ParameterizedTest
@@ -319,7 +320,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     // then
     assertThat(definitions).hasSize(1);
-    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
+    assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {

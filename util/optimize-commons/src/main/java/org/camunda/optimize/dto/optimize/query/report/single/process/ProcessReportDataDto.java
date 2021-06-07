@@ -6,7 +6,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -27,7 +27,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Varia
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,20 +40,14 @@ import static java.util.Objects.nonNull;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
+@FieldNameConstants
 @NoArgsConstructor
 @SuperBuilder
-@FieldNameConstants
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
-  protected String processDefinitionKey;
-  @Builder.Default
-  protected List<String> processDefinitionVersions = new ArrayList<>();
-  protected String processDefinitionName;
-  @Builder.Default
-  protected List<String> tenantIds = Collections.singletonList(null);
   @Builder.Default
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
@@ -63,27 +56,48 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
   protected ProcessVisualization visualization;
 
-  @JsonIgnore
-  @Override
-  public String getDefinitionKey() {
-    return processDefinitionKey;
+  public String getProcessDefinitionKey() {
+    return getDefinitionKey();
   }
 
   @JsonIgnore
-  @Override
-  public List<String> getDefinitionVersions() {
-    return processDefinitionVersions;
+  public void setProcessDefinitionKey(final String key) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setKey(key);
   }
 
   @JsonIgnore
-  @Override
-  public String getDefinitionName() {
-    return processDefinitionName;
+  public void setProcessDefinitionName(final String name) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setName(name);
+  }
+
+  public List<String> getProcessDefinitionVersions() {
+    return getDefinitionVersions();
   }
 
   @JsonIgnore
-  public void setProcessDefinitionVersion(String processDefinitionVersion) {
-    this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
+  public void setProcessDefinitionVersions(final List<String> versions) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setVersions(versions);
+  }
+
+  @JsonIgnore
+  public void setProcessDefinitionVersion(final String version) {
+    final List<ReportDataDefinitionDto> definitions = getDefinitions();
+    if (definitions.isEmpty()) {
+      definitions.add(ReportDataDefinitionDto.builder().build());
+    }
+    definitions.get(0).setVersion(version);
   }
 
   @Override
@@ -146,14 +160,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       && getConfiguration().isCombinable(that.getConfiguration());
   }
 
-  public List<String> getTenantIds() {
-    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
-  }
-
   @JsonIgnore
   public List<ProcessFilterDto<?>> getAdditionalFiltersForReportType() {
     if (isGroupByEndDateReport()) {
       return ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
+    } else if (isUserTaskReport()) {
+      return ProcessFilterBuilder.filter().userTaskFlowNodesOnly().add().buildList();
     }
     return Collections.emptyList();
   }

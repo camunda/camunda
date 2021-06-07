@@ -70,20 +70,19 @@ public class SessionService implements ConfigurationReloadable {
     return token;
   }
 
-  public boolean hasValidSession(HttpServletRequest servletRequest) {
-    return AuthCookieService.getToken(servletRequest)
+  public boolean hasValidSession(final HttpServletRequest servletRequest) {
+    final String token = AuthCookieService.getToken(servletRequest).orElse(null);
+    return isValidToken(token);
+  }
+
+  public boolean isValidToken(final String token) {
+    return Optional.ofNullable(token)
       .map(this::isValidAuthToken)
       .orElse(false);
   }
 
-  public boolean hasValidSession(ContainerRequestContext requestContext) {
-    return AuthCookieService.getToken(requestContext)
-      .map(this::isValidAuthToken)
-      .orElse(false);
-  }
-
-  public boolean isTokenPresent(ContainerRequestContext requestContext) {
-    return AuthCookieService.getToken(requestContext).isPresent();
+  public boolean isTokenPresent(final HttpServletRequest servletRequest) {
+    return AuthCookieService.getToken(servletRequest).isPresent();
   }
 
   private boolean isValidAuthToken(String token) {

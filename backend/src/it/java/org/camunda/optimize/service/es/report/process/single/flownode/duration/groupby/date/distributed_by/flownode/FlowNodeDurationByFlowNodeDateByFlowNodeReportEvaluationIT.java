@@ -50,6 +50,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -696,6 +697,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     // given
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     ProcessDefinitionEngineDto processDefinition1 = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
@@ -723,7 +725,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
-        .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+        .groupByContains(groupedByDayDateAsString(now))
           .distributedByContains(END_EVENT, 15., END_EVENT)
           .distributedByContains(START_EVENT, 15., START_EVENT)
           .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
@@ -788,20 +790,21 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String modelElementId,
                                 final Double durationInMs) {
-    engineDatabaseExtension.changeActivityDuration(
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
       processInstanceDto.getId(),
       modelElementId,
       durationInMs.longValue()
     );
+    changeUserTaskTotalDuration(processInstanceDto, modelElementId, durationInMs.longValue());
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final Double durationInMs) {
-    engineDatabaseExtension.changeAllActivityDurations(
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(
       processInstanceDto.getId(),
       durationInMs.longValue()
     );
   }
-
 }
+

@@ -17,7 +17,9 @@ import './DiagramModal.scss';
 export function DiagramModal({name, report, close, mightFail}) {
   const {
     reportType,
-    data: {decisionDefinitionKey},
+    data: {
+      definitions: [{key}],
+    },
   } = report;
 
   const [xml, setXml] = useState(null);
@@ -33,7 +35,7 @@ export function DiagramModal({name, report, close, mightFail}) {
         {!xml && <LoadingIndicator />}
 
         {reportType === 'decision' ? (
-          <DMNDiagram xml={xml} decisionDefinitionKey={decisionDefinitionKey} />
+          <DMNDiagram xml={xml} decisionDefinitionKey={key} />
         ) : (
           <BPMNDiagram xml={xml} />
         )}
@@ -51,18 +53,10 @@ export default withErrorHandling(DiagramModal);
 
 function loadXML({reportType, data}) {
   if (reportType === 'decision') {
-    const {decisionDefinitionKey, decisionDefinitionVersions, tenantIds} = data;
-    return loadDecisionDefinitionXml(
-      decisionDefinitionKey,
-      decisionDefinitionVersions[0],
-      tenantIds[0]
-    );
+    const {key, versions, tenantIds} = data.definitions[0];
+    return loadDecisionDefinitionXml(key, versions[0], tenantIds[0]);
   } else {
-    const {processDefinitionKey, processDefinitionVersions, tenantIds} = data;
-    return loadProcessDefinitionXml(
-      processDefinitionKey,
-      processDefinitionVersions[0],
-      tenantIds[0]
-    );
+    const {key, versions, tenantIds} = data.definitions[0];
+    return loadProcessDefinitionXml(key, versions[0], tenantIds[0]);
   }
 }

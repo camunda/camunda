@@ -5,7 +5,12 @@
  */
 package com.camunda.optimize.test.upgrade
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
 class OptimizeGeneratorWrapper {
+  private static final Logger log = LoggerFactory.getLogger(OptimizeGeneratorWrapper.class);
+
   String generatorVersion
   String generatorDirectory
   String generatorArtifactId
@@ -17,15 +22,15 @@ class OptimizeGeneratorWrapper {
   }
 
   def generateOptimizeData() {
-    println "Running Optimize Data Generator ${generatorVersion}..."
+    log.info("Running Optimize Data Generator ${generatorVersion}...");
     def command = ["/bin/bash", "-c", "java -cp \"./lib/\" -jar ${generatorArtifactId}-${generatorVersion}.jar"]
     def generatorProcess = command.execute(null, new File(generatorDirectory))
     generatorProcess.consumeProcessOutput(System.out, System.err)
     generatorProcess.waitFor()
     if (generatorProcess.exitValue() == 0) {
-      println "Successfully ran Optimize Data Generator ${generatorVersion}"
+      log.info("Successfully ran Optimize Data Generator ${generatorVersion}");
     } else {
-      println "Error output: ${generatorProcess.text}"
+      log.error("Error output: ${generatorProcess.text}");
       throw new Exception("Failed running Optimize Data Generator ${generatorVersion}!")
     }
   }

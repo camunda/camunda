@@ -69,6 +69,11 @@ public abstract class AbstractReportRestServiceIT extends AbstractIT {
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
+  protected String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto) {
+    return addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
+  }
+
+
   protected String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto,
                                                          final String collectionId) {
     SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();

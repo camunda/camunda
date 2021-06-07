@@ -79,13 +79,13 @@ public class CustomIndexPrefixIT extends AbstractIT {
         expectedAliasName, String.valueOf(mapping.getVersion()))
         + mapping.getIndexNameInitialSuffix();
 
-      final RestHighLevelClient highLevelClient =
-        customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-          .getHighLevelClient();
+      final OptimizeElasticsearchClient esClient =
+        customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      final RestHighLevelClient highLevelClient = esClient.getHighLevelClient();
 
-      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedAliasName), RequestOptions.DEFAULT))
+      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedAliasName), esClient.requestOptions()))
         .isTrue();
-      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedIndexName), RequestOptions.DEFAULT))
+      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedIndexName), esClient.requestOptions()))
         .isTrue();
     }
   }

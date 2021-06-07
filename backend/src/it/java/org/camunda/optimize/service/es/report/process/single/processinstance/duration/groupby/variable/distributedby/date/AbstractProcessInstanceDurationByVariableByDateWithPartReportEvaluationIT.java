@@ -97,8 +97,8 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto.getId(), referenceDate);
 
     // change start and end date of the activities used in the process part filter
-    engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_EVENT, referenceDate);
-    engineDatabaseExtension.changeFirstActivityInstanceEndDate(SERVICE_TASK_ID_1, referenceDate.plusSeconds(2));
+    engineDatabaseExtension.changeFirstFlowNodeInstanceStartDate(START_EVENT, referenceDate);
+    engineDatabaseExtension.changeFirstFlowNodeInstanceEndDate(SERVICE_TASK_ID_1, referenceDate.plusSeconds(2));
 
     importAllEngineEntitiesFromScratch();
 
@@ -174,11 +174,11 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateWithPartRep
       );
     }
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
-    engineDatabaseExtension.changeActivityInstanceStartDate(
+    engineDatabaseExtension.changeAllFlowNodeStartDates(
       processInstanceId,
       shiftedEndDate.minusSeconds(durationInSec)
     );
-    engineDatabaseExtension.changeActivityInstanceEndDate(
+    engineDatabaseExtension.changeAllFlowNodeEndDates(
       processInstanceId,
       shiftedEndDate
     );

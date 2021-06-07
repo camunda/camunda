@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -24,6 +26,11 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.NO_DATA_AVAILABLE_RESULT;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -53,14 +60,14 @@ public class ProcessPartQueryUtil {
   public static BoolQueryBuilder addProcessPartQuery(final BoolQueryBuilder boolQueryBuilder,
                                                      final String startFlowNodeId,
                                                      final String endFlowNodeId) {
-    String termPath = ProcessInstanceIndex.EVENTS + "." + ProcessInstanceIndex.ACTIVITY_ID;
+    String termPath = ProcessInstanceIndex.FLOW_NODE_INSTANCES + "." + ProcessInstanceIndex.FLOW_NODE_ID;
     boolQueryBuilder.must(nestedQuery(
-      ProcessInstanceIndex.EVENTS,
+      ProcessInstanceIndex.FLOW_NODE_INSTANCES,
       termQuery(termPath, startFlowNodeId),
       ScoreMode.None
     ));
     boolQueryBuilder.must(nestedQuery(
-      ProcessInstanceIndex.EVENTS,
+      ProcessInstanceIndex.FLOW_NODE_INSTANCES,
       termQuery(termPath, endFlowNodeId),
       ScoreMode.None
     ));
@@ -70,7 +77,10 @@ public class ProcessPartQueryUtil {
   public static AggregationBuilder createProcessPartAggregation(final String startFlowNodeId,
                                                                 final String endFlowNodeId,
                                                                 final List<AggregationType> aggregationTypes) {
-    final NestedAggregationBuilder nestedFlowNodeAggregation = nested(NESTED_AGGREGATION, ProcessInstanceIndex.EVENTS);
+    final NestedAggregationBuilder nestedFlowNodeAggregation = nested(
+      NESTED_AGGREGATION,
+      ProcessInstanceIndex.FLOW_NODE_INSTANCES
+    );
     aggregationTypes.forEach(aggregationType -> {
       final Map<String, Object> params = new HashMap<>();
       params.put("startFlowNodeId", startFlowNodeId);
@@ -104,23 +114,32 @@ public class ProcessPartQueryUtil {
   }
 
   private static Script createMapScript() {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("flowNodeProcessInstanceIdField", FLOW_NODE_INSTANCES + "." + PROCESS_INSTANCE_ID)
+        .put("flowNodeIdField", FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
+        .put("flowNodeStartDateField", FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE)
+        .put("flowNodeEndDateField", FLOW_NODE_INSTANCES + "." + FLOW_NODE_END_DATE)
+        .build()
+    );
+
     // @formatter:off
-    return new Script(
-      "def processInstanceId = doc['events.processInstanceId'].value;" +
-      "if(doc['events.activityId'].value == params.startFlowNodeId && " +
-          "doc['events.startDate'].size() != 0 && doc['events.startDate'].value != null && " +
-          "doc['events.startDate'].value.toInstant().toEpochMilli() != 0) {" +
-        "long startDateInMillis = doc['events.startDate'].value.toInstant().toEpochMilli();" +
+    return new Script(substitutor.replace(
+      "def processInstanceId = doc['${flowNodeProcessInstanceIdField}'].value;" +
+      "if(doc['${flowNodeIdField}'].value == params.startFlowNodeId && " +
+          "doc['${flowNodeStartDateField}'].size() != 0 && doc['${flowNodeStartDateField}'].value != null && " +
+          "doc['${flowNodeStartDateField}'].value.toInstant().toEpochMilli() != 0) {" +
+        "long startDateInMillis = doc['${flowNodeStartDateField}'].value.toInstant().toEpochMilli();" +
         "state.procInstIdToStartDates.putIfAbsent(processInstanceId, new ArrayList());" +
         "state.procInstIdToStartDates.get(processInstanceId).add(startDateInMillis);" +
-      "} else if(doc['events.activityId'].value == params.endFlowNodeId && " +
-          "doc['events.endDate'].size() != 0 && doc['events.endDate'].value != null && " +
-          "doc['events.endDate'].value.toInstant().toEpochMilli() != 0) {" +
-        "long endDateInMillis = doc['events.endDate'].value.toInstant().toEpochMilli();" +
+      "} else if(doc['${flowNodeIdField}'].value == params.endFlowNodeId && " +
+          "doc['${flowNodeEndDateField}'].size() != 0 && doc['${flowNodeEndDateField}'].value != null && " +
+          "doc['${flowNodeEndDateField}'].value.toInstant().toEpochMilli() != 0) {" +
+        "long endDateInMillis = doc['${flowNodeEndDateField}'].value.toInstant().toEpochMilli();" +
         "state.procInstIdToEndDates.putIfAbsent(processInstanceId, new ArrayList());" +
         "state.procInstIdToEndDates.get(processInstanceId).add(endDateInMillis);" +
       "}"
-    );
+    ));
     // @formatter:on
   }
 

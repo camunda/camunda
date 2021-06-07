@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.FLOW_NODE_NAMES;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.FLOW_NODE_DATA;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.USER_TASK_NAMES;
 
@@ -24,7 +24,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 @Slf4j
 public class ProcessDefinitionXmlWriter extends AbstractProcessDefinitionWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    FLOW_NODE_NAMES, USER_TASK_NAMES, PROCESS_DEFINITION_XML
+    FLOW_NODE_DATA, USER_TASK_NAMES, PROCESS_DEFINITION_XML
   );
 
   public ProcessDefinitionXmlWriter(final OptimizeElasticsearchClient esClient,

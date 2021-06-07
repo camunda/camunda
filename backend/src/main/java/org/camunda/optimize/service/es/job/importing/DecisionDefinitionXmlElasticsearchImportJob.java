@@ -23,6 +23,6 @@ public class DecisionDefinitionXmlElasticsearchImportJob extends ElasticsearchIm
 
   @Override
   protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
-    decisionDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
+    decisionDefinitionXmlWriter.importDecisionDefinitionXmls(newOptimizeEntities);
   }
 }

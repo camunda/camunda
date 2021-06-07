@@ -15,8 +15,12 @@ const reportTemplate = {
   combined: false,
   reportType: 'process',
   data: {
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['1'],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['1'],
+      },
+    ],
     view: {
       properties: ['foo'],
       entity: 'whatever',
@@ -40,11 +44,6 @@ it('should render DecisionReportRenderer if the report type is decision', () => 
   const report = {
     ...reportTemplate,
     reportType: 'decision',
-    data: {
-      ...reportTemplate.data,
-      decisionDefinitionKey: 'foo',
-      decisionDefinitionVersions: ['1'],
-    },
   };
   const node = shallow(<ReportRenderer report={report} />);
 
@@ -98,7 +97,12 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        processDefinitionKey: '',
+        definitions: [
+          {
+            key: '',
+            versions: null,
+          },
+        ],
       },
     };
 
@@ -112,7 +116,12 @@ describe('SetupNotice', () => {
       ...reportTemplate,
       data: {
         ...reportTemplate.data,
-        processDefinitionVersions: [],
+        definitions: [
+          {
+            key: 'aKey',
+            versions: [],
+          },
+        ],
       },
     };
 

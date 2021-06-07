@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
@@ -19,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.entities.EntityExportService;
 import org.camunda.optimize.service.export.CsvExportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -36,6 +36,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +45,6 @@ import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInst
 
 @AllArgsConstructor
 @Path("/export")
-@Secured
 @Component
 public class ExportRestService {
 
@@ -119,9 +119,13 @@ public class ExportRestService {
         .combined(false)
         .data(
           ProcessReportDataDto.builder()
-            .processDefinitionKey(request.getProcessDefinitionKey())
-            .processDefinitionVersions(request.getProcessDefinitionVersions())
-            .tenantIds(request.getTenantIds())
+            .definitions(Arrays.asList(
+              ReportDataDefinitionDto.builder()
+                .key(request.getProcessDefinitionKey())
+                .versions(request.getProcessDefinitionVersions())
+                .tenantIds(request.getTenantIds())
+                .build()
+            ))
             .filter(request.getFilter())
             .configuration(SingleReportConfigurationDto.builder()
                              .tableColumns(TableColumnDto.builder()

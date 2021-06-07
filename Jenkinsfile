@@ -5,7 +5,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-8-slim";
+MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-11-slim";
 
 static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
@@ -108,6 +108,7 @@ String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, In
   return """
   - name: cambpm
     image: ${camBpmDockerImage}
+    imagePullPolicy: Always
     tty: true
     env:
       - name: JAVA_OPTS
@@ -416,6 +417,7 @@ pipeline {
           post {
             always {
               junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.log', onlyIfSuccessful: false
             }
             failure {
               archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json', allowEmptyArchive: false
@@ -438,6 +440,7 @@ pipeline {
           post {
             always {
               junit testResults: 'qa/upgrade-tests/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.log', allowEmptyArchive: false, onlyIfSuccessful: false
             }
           }
         }
@@ -618,7 +621,7 @@ void e2eTestSteps() {
   }
   container('maven') {
     sh 'sudo apt-get update'
-    sh 'sudo apt-get install -y --no-install-recommends maven openjdk-8-jdk-headless'
+    sh 'sudo apt-get install -y --no-install-recommends maven openjdk-11-jdk'
     runMaven('test -pl client -Pclient.e2etests-chromeheadless -Dskip.yarn.build')
   }
 }

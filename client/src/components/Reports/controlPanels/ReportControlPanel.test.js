@@ -48,9 +48,13 @@ jest.mock('services', () => {
 
 const report = {
   data: {
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['aVersion'],
-    tenantIds: [],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['aVersion'],
+        tenantIds: [],
+      },
+    ],
     view: {entity: 'processInstance', properties: ['frequency']},
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
@@ -69,6 +73,10 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   setLoading: () => {},
 };
+
+beforeEach(() => {
+  loadVariables.mockClear();
+});
 
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
@@ -97,11 +105,13 @@ it('should not disable the groupBy and visualization Selects if view is selected
 it('should load the variables of the process', () => {
   shallow(<ReportControlPanel {...props} />);
 
-  expect(loadVariables).toHaveBeenCalledWith({
-    processDefinitionKey: 'aKey',
-    processDefinitionVersions: ['aVersion'],
-    tenantIds: [],
-  });
+  expect(loadVariables).toHaveBeenCalledWith([
+    {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersions: ['aVersion'],
+      tenantIds: [],
+    },
+  ]);
 });
 
 it('should include variables in the groupby options', () => {
@@ -465,7 +475,7 @@ it('should allow collapsing sections', () => {
 it('should reset columnOrder only when changing definition', async () => {
   const reportWithConfig = update(report, {
     data: {
-      processDefinitionKey: {$set: 'original'},
+      definitions: {0: {key: {$set: 'original'}}},
       configuration: {
         tableColumns: {
           columnOrder: {
@@ -491,7 +501,7 @@ it('should reset columnOrder only when changing definition', async () => {
 it('should not reset columnOrder when changing version', async () => {
   const reportWithConfig = update(report, {
     data: {
-      processDefinitionKey: {$set: 'same'},
+      definitions: {0: {key: {$set: 'same'}}},
       configuration: {
         tableColumns: {
           columnOrder: {

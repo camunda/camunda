@@ -29,6 +29,4 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX_DTO> {
    */
   void resetImportIndex();
 
-  String getEngineAlias();
-
 }

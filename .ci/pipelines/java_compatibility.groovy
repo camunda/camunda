@@ -42,7 +42,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 2
+        value: 4
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -54,6 +54,7 @@ spec:
         memory: 6Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: JAVA_OPTS
         value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
@@ -90,11 +91,11 @@ spec:
         add: ["IPC_LOCK"]
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
 """
 }
 
@@ -131,7 +132,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("8-slim"))
+          yaml plainMavenAgent(NODE_POOL(), OPENJDK_MAVEN_DOCKER_IMAGE("11-slim"))
         }
       }
       steps {
@@ -142,24 +143,6 @@ pipeline {
     stage('Java Integration Tests') {
       failFast false
       parallel {
-        stage("OpenJDK 8 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-JDK8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("8-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage("OpenJDK 11 Integration") {
           agent {
             kubernetes {
@@ -185,24 +168,6 @@ pipeline {
               label "optimize-ci-build_es-JDK13_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("13"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage("Adopt Open JDK 8 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-ADOPT8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent("adoptopenjdk/maven-openjdk8:latest", "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {

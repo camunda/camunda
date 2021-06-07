@@ -119,4 +119,12 @@ public enum ProcessReportDataType {
       .collect(Collectors.toList()
       );
   }
+
+  public static List<ProcessReportDataType> allViewUserTaskReports() {
+    return Arrays.stream(
+      ProcessReportDataType.values())
+      .filter(type -> type.name().toLowerCase().startsWith("user_task_"))
+      .collect(Collectors.toList()
+      );
+  }
 }

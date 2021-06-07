@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.importing.engine;
 
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class EngineImportSchedulerTest {
 
   @Mock
-  private EngineImportMediator mockedImportMediator;
+  private ImportMediator mockedImportMediator;
 
   private EngineImportScheduler underTest;
 
@@ -30,7 +31,7 @@ public class EngineImportSchedulerTest {
   public void before() {
     underTest = new EngineImportScheduler(
       Collections.singletonList(mockedImportMediator),
-      "camundabpm"
+      new EngineDataSourceDto("camundabpm")
     );
   }
 

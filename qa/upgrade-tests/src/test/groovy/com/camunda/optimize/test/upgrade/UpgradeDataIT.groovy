@@ -12,7 +12,12 @@ import org.slf4j.LoggerFactory
 
 class UpgradeDataIT extends BaseUpgradeIT {
   private static final Logger log = LoggerFactory.getLogger(UpgradeDataIT.class);
-  
+
+  @Override
+  def getLogFileKey() {
+    return "update-data";
+  }
+
   @Test
   void upgradeWithDataAndPerformRegressionTest() {
     // generate engine data to get some variance into the process data
@@ -26,9 +31,10 @@ class UpgradeDataIT extends BaseUpgradeIT {
     // license only needed for old Optimize as the new one would get it from elasticsearch
     oldOptimize.copyLicense(UpgradeDataIT.class.getResource("/OptimizeLicense.txt").getPath())
     def newOptimize = new OptimizeWrapper(currentVersion, buildDirectory, newElasticPort)
+
     try {
       // start old optimize and import data
-      oldOptimize.start().consumeProcessOutput()
+      oldOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
       oldOptimize.waitForImportToFinish()
       oldElasticClient.refreshAll()
 
@@ -44,9 +50,9 @@ class UpgradeDataIT extends BaseUpgradeIT {
       oldElasticClient.deleteSnapshot()
 
       // run new optimize upgrade
-      newOptimize.startUpgrade().consumeProcessOutput()
+      newOptimize.startUpgrade().consumeProcessOutputStream(upgradeOutputWriter)
       newOptimize.waitForUpgradeToFinish()
-      newOptimize.start().consumeProcessOutput()
+      newOptimize.start().consumeProcessOutputStream(newOptimizeOutputWriter)
       newOptimize.waitForImportToFinish()
 
       log.info("Running com.camunda.optimize.PostMigrationTest...")

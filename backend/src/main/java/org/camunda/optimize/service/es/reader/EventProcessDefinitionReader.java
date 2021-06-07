@@ -16,7 +16,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -58,7 +57,7 @@ public class EventProcessDefinitionReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not fetch event based process definition with key [%s].", eventProcessDefinitionKey
@@ -99,7 +98,7 @@ public class EventProcessDefinitionReader {
 
     final SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve event based processes!", e);
     }

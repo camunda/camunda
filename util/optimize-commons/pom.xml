@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>util</artifactId>
-    <version>3.4.0</version>
+    <version>3.5.0</version>
   </parent>
 
   <artifactId>optimize-commons</artifactId>
@@ -61,6 +61,13 @@
       <version>${jsonpath.version}</version>
     </dependency>
 
+    <!-- ClassGraph  -->
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+      <version>4.8.107</version>
+    </dependency>
+
     <!-- Logging -->
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -109,6 +116,12 @@
       <groupId>net.jodah</groupId>
       <artifactId>failsafe</artifactId>
       <version>2.4.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 

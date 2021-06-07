@@ -17,8 +17,8 @@ import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -46,7 +46,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
           nestedQuery(
-            EVENTS,
+            FLOW_NODE_INSTANCES,
             termQuery(nestedActivityIdFieldLabel(), value),
             ScoreMode.None
           )
@@ -56,7 +56,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
       for (String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
           nestedQuery(
-            EVENTS,
+            FLOW_NODE_INSTANCES,
             termQuery(nestedActivityIdFieldLabel(), value),
             ScoreMode.None
           )
@@ -70,6 +70,6 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
   }
 
   private String nestedActivityIdFieldLabel() {
-    return EVENTS + "." + ACTIVITY_ID;
+    return FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID;
   }
 }

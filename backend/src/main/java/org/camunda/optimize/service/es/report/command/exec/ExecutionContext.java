@@ -16,6 +16,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,6 +45,11 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   // a user has been assigned to one userTask but not another, yet we want the userId to appear
   // in all groupByResults (with 0 if they have not been assigned to said task)
   private Map<String, String> allDistributedByKeysAndLabels = new HashMap<>();
+
+  // used to ensure a complete list of variable names can be used to enrich report results that use pagination
+  // For example, we include variables for all instances in a raw data report, even if none of the instances in view
+  // have a value for that variable
+  private Set<String> allVariablesNames = new HashSet<>();
 
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final ReportEvaluationContext<RD> reportEvaluationContext) {
     this.reportData = reportEvaluationContext.getReportDefinition().getData();

@@ -5,14 +5,15 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.0</version>
+    <version>3.5.0</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.39.v20210325</jetty.version>
-    <jersey.version>2.32</jersey.version>
+    <jetty.version>9.4.41.v20210516</jetty.version>
+    <jersey.version>2.34</jersey.version>
+    <spring.security.version>5.5.0</spring.security.version>
     <it.test.excludedGroups />
     <test.forkCount />
 
@@ -50,11 +51,47 @@
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
       <version>${camunda.maven.artifacts.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.camunda.feel</groupId>
+          <artifactId>feel-engine</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
       <version>2.7.0</version>
+    </dependency>
+
+    <!-- Zeebe dependencies -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <version>${zeebe.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test</artifactId>
+      <version>${zeebe.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-broker</artifactId>
+      <version>${zeebe.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-elasticsearch-exporter</artifactId>
+      <version>${zeebe.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- Javax XML -->
@@ -76,6 +113,16 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-tx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-web</artifactId>
+      <version>${spring.security.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-config</artifactId>
+      <version>${spring.security.version}</version>
     </dependency>
 
     <!-- Jetty -->
@@ -166,7 +213,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>3.15.0</version>
+      <version>3.16.0</version>
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
@@ -216,7 +263,7 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>2.9.0</version>
+      <version>3.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -227,13 +274,6 @@
       <groupId>com.github.sisyphsu</groupId>
       <artifactId>dateparser</artifactId>
       <version>1.0.7</version>
-    </dependency>
-
-    <!-- ClassGraph  -->
-    <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-      <version>4.8.104</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -251,7 +291,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.8.0</version>
+      <version>2.9.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -269,7 +309,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.3</version>
+      <version>1.6.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -408,7 +448,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.2.19</version>
+          <version>42.2.20</version>
           <scope>test</scope>
         </dependency>
         <dependency>

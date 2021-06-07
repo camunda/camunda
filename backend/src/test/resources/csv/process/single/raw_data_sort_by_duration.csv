@@ -1,0 +1,5 @@
+"processDefinitionKey","processDefinitionId","processInstanceId","businessKey","startDate","endDate","duration","engineName","tenantId"
+"aProcess",${PD_ID_1},${PI_ID_1},"aBusinessKey",${START_DATE_1},${END_DATE_1},${DURATION_1},"camunda-bpm",
+"aProcess",${PD_ID_2},${PI_ID_2},"aBusinessKey",${START_DATE_2},${END_DATE_2},${DURATION_2},"camunda-bpm",
+"aProcess",${PD_ID_3},${PI_ID_3},"aBusinessKey",${START_DATE_3},${END_DATE_3},${DURATION_3},"camunda-bpm",
+"aProcess",${PD_ID_4},${PI_ID_4},"aBusinessKey",${START_DATE_4},${END_DATE_4},${DURATION_4},"camunda-bpm",

@@ -11,8 +11,12 @@ it('should correctly check for duration heatmap', () => {
     isDurationHeatmap({
       view: {entity: 'flowNode', properties: ['duration']},
       visualization: 'heat',
-      processDefinitionKey: 'test',
-      processDefinitionVersions: ['test'],
+      definitions: [
+        {
+          key: 'test',
+          versions: ['test'],
+        },
+      ],
     })
   ).toBeTruthy();
 });
@@ -22,8 +26,12 @@ it('should work for user task reports', () => {
     isDurationHeatmap({
       view: {entity: 'userTask', properties: ['duration']},
       visualization: 'heat',
-      processDefinitionKey: 'test',
-      processDefinitionVersions: ['test'],
+      definitions: [
+        {
+          key: 'test',
+          versions: ['test'],
+        },
+      ],
     })
   ).toBeTruthy();
 
@@ -31,8 +39,12 @@ it('should work for user task reports', () => {
     isDurationHeatmap({
       view: {entity: 'userTask', properties: ['frequency']},
       visualization: 'heat',
-      processDefinitionKey: 'test',
-      processDefinitionVersions: ['test'],
+      definitions: [
+        {
+          key: 'test',
+          versions: ['test'],
+        },
+      ],
     })
   ).toBeFalsy();
 });

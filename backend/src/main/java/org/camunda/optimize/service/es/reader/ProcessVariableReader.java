@@ -23,7 +23,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -113,7 +112,10 @@ public class ProcessVariableReader {
         new ProcessInstanceIndex(request.getProcessDefinitionKey()),
         processDefinitionReader::getLatestVersionToKey
       )));
+    return getVariableNamesForInstancesMatchingQuery(query);
+  }
 
+  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(final BoolQueryBuilder baseQuery) {
     List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
     variableNameAndTypeTerms.add(new TermsValuesSourceBuilder(NAME_AGGREGATION)
                                    .field(getNestedVariableNameField()));
@@ -125,7 +127,7 @@ public class ProcessVariableReader {
         .size(configurationService.getEsAggregationBucketLimit());
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
+      .query(baseQuery)
       .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)
@@ -182,7 +184,7 @@ public class ProcessVariableReader {
       new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest);
       final Aggregations aggregations = searchResponse.getAggregations();
 
       return extractVariableValues(aggregations, requestDto);

@@ -455,7 +455,7 @@
         "work": "Arbeitszeit",
         "total": "Summe"
       },
-      "userTaskDistributedBy": "Aufgeteilt nach",
+      "userTaskDistributedBy": "Aufteilung",
       "visibleNodes": {
         "legend": "Anzuzeigende Prozessknoten anpassen",
         "btn": "Prozessknoten auswählen....",
@@ -726,8 +726,7 @@
     "disabled": "deaktiviert",
     "and": "und",
     "off": "Aus",
-    "none": "Keiner",
-    "nothing": "Nichts",
+    "none": "Keine",
     "all": "Alle",
     "above": "über",
     "below": "unter",
@@ -747,6 +746,7 @@
     "dataSource": "Datenquelle",
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
+    "open": "Öffnen",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"

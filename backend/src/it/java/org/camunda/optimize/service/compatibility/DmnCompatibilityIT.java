@@ -9,9 +9,10 @@ import com.google.common.collect.ImmutableMap;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResponseDto;
@@ -48,7 +49,13 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionInputVariableNames(decisionDefinitionDto);
+    List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionInputVariableNames(
+      new DecisionVariableNameRequestDto(
+        decisionDefinitionDto.getKey(),
+        decisionDefinitionDto.getVersionAsString(),
+        decisionDefinitionDto.getTenantId().orElse(null)
+      )
+    );
 
     // then
     assertThat(variableResponse).hasSize(2);
@@ -71,7 +78,12 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
 
     // when
     List<DecisionVariableNameResponseDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
-      decisionDefinitionDto);
+      new DecisionVariableNameRequestDto(
+        decisionDefinitionDto.getKey(),
+        decisionDefinitionDto.getVersionAsString(),
+        decisionDefinitionDto.getTenantId().orElse(null)
+      )
+    );
 
     // then
     assertThat(variableResponse).hasSize(2);
@@ -90,7 +102,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "bronze", 200.0);
-    startDecisionInstanceWithInputs(decisionDefinitionDto, "silver",300.0);
+    startDecisionInstanceWithInputs(decisionDefinitionDto, "silver", 300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
     importAllEngineEntitiesFromScratch();
@@ -122,7 +134,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "bronze", 200.0);
-    startDecisionInstanceWithInputs(decisionDefinitionDto, "silver",300.0);
+    startDecisionInstanceWithInputs(decisionDefinitionDto, "silver", 300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
     importAllEngineEntitiesFromScratch();
@@ -211,10 +223,10 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<DefinitionWithTenantsResponseDto> definitions = embeddedOptimizeExtension
+    final List<DefinitionResponseDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsResponseDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions)
@@ -255,7 +267,8 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
                                                final String customerStatus,
                                                final double orderSum) {
     final Map<String, Object> inputs = ImmutableMap.of(INPUT_CUSTOMER_STATUS_VAR, customerStatus,
-                                                       INPUT_ORDER_SUM_VAR, orderSum);
+                                                       INPUT_ORDER_SUM_VAR, orderSum
+    );
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId(), inputs);
   }
 

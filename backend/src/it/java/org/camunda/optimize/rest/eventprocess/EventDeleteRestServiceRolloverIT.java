@@ -150,7 +150,7 @@ public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRo
                                                          final List<String> eventIds) {
     assertThat(eventInstance)
       .satisfies(storedInstance -> {
-        assertThat(storedInstance.getEvents()).extracting(FlowNodeInstanceDto::getId).containsAll(eventIds);
+        assertThat(storedInstance.getFlowNodeInstances()).extracting(FlowNodeInstanceDto::getFlowNodeInstanceId).containsAll(eventIds);
       });
   }
 
@@ -159,8 +159,8 @@ public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRo
     assertThat(eventInstances)
       .isNotEmpty()
       .allSatisfy(storedInstance -> {
-        assertThat(storedInstance.getEvents())
-          .extracting(FlowNodeInstanceDto::getId)
+        assertThat(storedInstance.getFlowNodeInstances())
+          .extracting(FlowNodeInstanceDto::getFlowNodeInstanceId)
           .doesNotContainAnyElementsOf(eventIds);
       });
   }

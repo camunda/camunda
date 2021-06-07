@@ -122,8 +122,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractEngineDataCleanu
       .indices(DECISION_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
   }
 
   @SneakyThrows

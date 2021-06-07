@@ -44,9 +44,13 @@ jest.mock('services', () => {
 
 const report = {
   data: {
-    decisionDefinitionKey: 'aKey',
-    decisionDefinitionVersions: ['aVersion'],
-    tenantIds: [null],
+    definitions: [
+      {
+        key: 'aKey',
+        versions: ['aVersion'],
+        tenantIds: [null],
+      },
+    ],
     view: {property: 'rawData'},
     groupBy: {type: 'none', unit: null},
     visualization: 'table',
@@ -63,6 +67,11 @@ const props = {
   report,
   mightFail: async (data, cb) => cb(await data),
 };
+
+beforeEach(() => {
+  loadInputVariables.mockClear();
+  loadOutputVariables.mockClear();
+});
 
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
@@ -99,11 +108,13 @@ it('should include variables in the groupby options', () => {
 it('should retrieve variable names', async () => {
   shallow(<DecisionControlPanel {...props} />);
 
-  const payload = {
-    decisionDefinitionKey: 'aKey',
-    decisionDefinitionVersions: ['aVersion'],
-    tenantIds: [null],
-  };
+  const payload = [
+    {
+      decisionDefinitionKey: 'aKey',
+      decisionDefinitionVersions: ['aVersion'],
+      tenantIds: [null],
+    },
+  ];
 
   await Promise.resolve();
 

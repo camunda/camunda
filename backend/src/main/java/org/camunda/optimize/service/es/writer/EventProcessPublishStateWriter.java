@@ -23,7 +23,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
@@ -62,7 +61,7 @@ public class EventProcessPublishStateWriter {
           XContentType.JSON
         )
         .setRefreshPolicy(IMMEDIATE);
-      indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+      indexResponse = esClient.index(request);
     } catch (IOException e) {
       final String errorMessage = String.format(
         "There was a problem while writing the event process publish state [%s].", id
@@ -98,7 +97,7 @@ public class EventProcessPublishStateWriter {
         .script(updateScript)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      updateResponse = esClient.update(request);
     } catch (IOException e) {
       final String errorMessage = String.format(
         "There was a problem updating the event process publish state [%s].",
@@ -123,7 +122,7 @@ public class EventProcessPublishStateWriter {
     }
   }
 
-  public boolean deleteAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
+  public boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
     final String updateItem = String.format(
       "event process publish state with %s [%s]",
       EventProcessPublishStateIndex.PROCESS_MAPPING_ID,
@@ -149,7 +148,7 @@ public class EventProcessPublishStateWriter {
     );
   }
 
-  public boolean deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
+  public void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
     final String eventProcessMappingId,
     final String publishStateIdToExclude) {
     final String updateItem = String.format(
@@ -173,8 +172,7 @@ public class EventProcessPublishStateWriter {
       .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
       .mustNot(termQuery(EventProcessPublishStateIndex.ID, publishStateIdToExclude));
 
-
-    return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       updateItem,
       updateScript,

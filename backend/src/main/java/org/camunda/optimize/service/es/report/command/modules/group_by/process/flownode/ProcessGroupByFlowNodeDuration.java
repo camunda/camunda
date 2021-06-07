@@ -29,9 +29,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @RequiredArgsConstructor
 @Component
@@ -90,15 +90,15 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   private MinMaxStatDto retrieveMinMaxDurationStats(final ExecutionContext<ProcessReportDataDto> context,
                                                     final QueryBuilder baseQuery) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, getIndexName(context), EVENTS, getDurationScript()
+      baseQuery, getIndexName(context), FLOW_NODE_INSTANCES, getDurationScript()
     );
   }
 
   private Script getDurationScript() {
     return DurationScriptUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      EVENTS + "." + ACTIVITY_DURATION,
-      EVENTS + "." + ACTIVITY_START_DATE
+      FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION,
+      FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE
     );
   }
 

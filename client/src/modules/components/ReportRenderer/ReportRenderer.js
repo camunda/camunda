@@ -103,7 +103,7 @@ function checkCombined(data) {
 }
 
 function checkDecisionReport(data) {
-  if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersions)) {
+  if (isEmpty(data.definitions?.[0].key) || isEmpty(data.definitions?.[0].versions)) {
     return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.decision')}} />;
   } else {
     return checkSingleReport(data);
@@ -111,7 +111,7 @@ function checkDecisionReport(data) {
 }
 
 function checkProcessReport(data) {
-  if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersions)) {
+  if (isEmpty(data.definitions?.[0].key) || isEmpty(data.definitions?.[0].versions)) {
     return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.process')}} />;
   } else {
     return checkSingleReport(data);

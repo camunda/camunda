@@ -12,6 +12,7 @@ import java.util.List;
 
 public class ReturnInvalidInputs implements DecisionInputImportAdapter {
 
+  @Override
   public List<PluginDecisionInputDto> adaptInputs(List<PluginDecisionInputDto> inputs) {
     for (PluginDecisionInputDto input : inputs) {
       input.setType(null);

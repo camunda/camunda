@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsResponseDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -104,9 +104,9 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
-  public List<DefinitionWithTenantsResponseDto> getCollectionDefinitions(final DefinitionType definitionType,
-                                                                         final String userId,
-                                                                         final String collectionId) {
+  public List<DefinitionResponseDto> getCollectionDefinitions(final DefinitionType definitionType,
+                                                              final String userId,
+                                                              final String collectionId) {
     final Map<String, List<String>> keysAndTenants =
       getAvailableKeysAndTenantsFromCollectionScope(userId, definitionType, collectionId);
 
@@ -331,6 +331,13 @@ public class CollectionScopeService {
     }
   }
 
+  public boolean hasConflictsForCollectionScopeDelete(String userId, String collectionId,
+                                                      List<String> collectionScopeIds) {
+    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+    return collectionScopeIds.stream()
+      .anyMatch(scopeEntryId -> !getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId).isEmpty());
+  }
+
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
                                                                              final CollectionDefinitionDto collectionDefinition) {
     List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
@@ -400,7 +407,7 @@ public class CollectionScopeService {
     try {
       return definitionService
         .getDefinitionWithAvailableTenants(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
-        .map(DefinitionWithTenantsResponseDto::getTenants)
+        .map(DefinitionResponseDto::getTenants)
         .orElseGet(ArrayList::new)
         .stream()
         .filter(tenantDto -> scope.getTenants().contains(tenantDto.getId()))
@@ -416,7 +423,7 @@ public class CollectionScopeService {
       scope.getDefinitionKey(),
       userId
     )
-      .map(DefinitionWithTenantsResponseDto::getName)
+      .map(DefinitionResponseDto::getName)
       .orElse(scope.getDefinitionKey());
   }
 

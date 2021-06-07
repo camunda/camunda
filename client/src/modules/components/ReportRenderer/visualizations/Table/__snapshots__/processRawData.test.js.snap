@@ -1,0 +1,232 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Decision table should only show instance table column if result data is empty 1`] = `
+Object {
+  "body": Array [],
+  "head": Array [
+    Object {
+      "id": "decisionDefinitionKey",
+      "label": "Decision Definition Key",
+      "title": "Decision Definition Key",
+    },
+    Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision Definition Id",
+      "title": "Decision Definition Id",
+    },
+    Object {
+      "id": "decisionInstanceId",
+      "label": "Decision Instance Id",
+      "title": "Decision Instance Id",
+    },
+    Object {
+      "id": "evaluationDateTime",
+      "label": "Evaluation Date",
+      "title": "Evaluation Date",
+    },
+  ],
+}
+`;
+
+exports[`Decision table should return correct table props 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "bar",
+      "foo",
+      "456",
+      "1",
+      "12",
+      "",
+      "1",
+    ],
+    Array [
+      "abc",
+      "xyz",
+      "456",
+      "1",
+      "",
+      "true",
+      "8",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision Definition Id",
+      "title": "Decision Definition Id",
+    },
+    Object {
+      "id": "decisionInstanceId",
+      "label": "Decision Instance Id",
+      "title": "Decision Instance Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "engineName",
+      "label": "Engine Name",
+      "title": "Engine Name",
+    },
+    Object {
+      "id": "inputVariable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          InputVar
+          : 
+        </span>
+        Var 1
+      </React.Fragment>,
+      "title": "Var 1",
+      "type": "inputVariables",
+    },
+    Object {
+      "id": "inputVariable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          InputVar
+          : 
+        </span>
+        Var 2
+      </React.Fragment>,
+      "title": "Var 2",
+      "type": "inputVariables",
+    },
+    Object {
+      "id": "outputVariable:result",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          OutputVar
+          : 
+        </span>
+        Result
+      </React.Fragment>,
+      "title": "Result",
+      "type": "outputVariables",
+    },
+  ],
+}
+`;
+
+exports[`Decision table should show default instances column headers for empty results 1`] = `
+Object {
+  "body": Array [],
+  "head": Array [],
+  "noData": <NoDataNotice
+    type="info"
+  >
+    You need to enable at least one table column
+  </NoDataNotice>,
+}
+`;
+
+exports[`Process table should exclude variable columns using the variable prefix 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "bar",
+      "foo",
+      "12",
+    ],
+    Array [
+      "abc",
+      "xyz",
+      "",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process Definition Id",
+      "title": "Process Definition Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "variable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var1
+      </React.Fragment>,
+      "title": "var1",
+      "type": "variables",
+    },
+  ],
+}
+`;
+
+exports[`Process table should transform data to table compatible format 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "bar",
+      "foo",
+      "12",
+      "",
+    ],
+    Array [
+      "abc",
+      "xyz",
+      "",
+      "true",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process Definition Id",
+      "title": "Process Definition Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "variable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var1
+      </React.Fragment>,
+      "title": "var1",
+      "type": "variables",
+    },
+    Object {
+      "id": "variable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var2
+      </React.Fragment>,
+      "title": "var2",
+      "type": "variables",
+    },
+  ],
+}
+`;

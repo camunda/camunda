@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
-import org.camunda.optimize.service.importing.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionXmlImportService;

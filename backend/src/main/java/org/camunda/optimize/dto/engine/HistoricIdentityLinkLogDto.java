@@ -20,7 +20,7 @@ public class HistoricIdentityLinkLogDto implements EngineDto {
   private String type;
   private String userId;
   private String groupId;
-  private String taskId;
+  private String taskId; // equivalent to FlowNodeInstanceDto.userTaskInstanceId
   private String processDefinitionId;
   private String processDefinitionKey;
   private String processInstanceId;

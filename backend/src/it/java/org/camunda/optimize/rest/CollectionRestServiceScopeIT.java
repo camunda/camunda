@@ -12,6 +12,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -562,7 +563,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .id(key)
       .key(key)
       .version("1")
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .name(name)
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
@@ -577,7 +578,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .key(key)
       .name(name)
       .version("1")
-      .engine(DEFAULT_ENGINE_ALIAS)
+      .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto

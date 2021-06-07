@@ -28,13 +28,13 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_CANCELED;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_TYPE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -43,7 +43,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FlowNodeFilterQueryUtil extends ModelElementFilterQueryUtil {
 
-  private static final String NESTED_DOC = EVENTS;
+  private static final String NESTED_DOC = FLOW_NODE_INSTANCES;
   private static final String MI_BODY = "multiInstanceBody";
 
   private static Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
@@ -75,27 +75,27 @@ public class FlowNodeFilterQueryUtil extends ModelElementFilterQueryUtil {
 
   public static QueryBuilder createRunningFlowNodesOnlyFilterQuery(final BoolQueryBuilder boolQuery) {
     return boolQuery
-      .mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY))
-      .mustNot(existsQuery(nestedFieldReference(ACTIVITY_END_DATE)));
+      .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), MI_BODY))
+      .mustNot(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
   }
 
   public static QueryBuilder createCompletedFlowNodesOnlyFilterQuery(final BoolQueryBuilder boolQuery) {
     return boolQuery
-      .mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY))
-      .must(termQuery(nestedFieldReference(ACTIVITY_CANCELED), false))
-      .must(existsQuery(nestedFieldReference(ACTIVITY_END_DATE)));
+      .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), MI_BODY))
+      .must(termQuery(nestedFieldReference(FLOW_NODE_CANCELED), false))
+      .must(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
   }
 
   public static QueryBuilder createCanceledFlowNodesOnlyFilterQuery(final BoolQueryBuilder boolQuery) {
     return boolQuery
-      .mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY))
-      .must(termQuery(nestedFieldReference(ACTIVITY_CANCELED), true));
+      .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), MI_BODY))
+      .must(termQuery(nestedFieldReference(FLOW_NODE_CANCELED), true));
   }
 
   public static QueryBuilder createCompletedOrCanceledFlowNodesOnlyFilterQuery(final BoolQueryBuilder boolQuery) {
     return boolQuery
-      .mustNot(termQuery(nestedFieldReference(ACTIVITY_TYPE), MI_BODY))
-      .must(existsQuery(nestedFieldReference(ACTIVITY_END_DATE)));
+      .mustNot(termQuery(nestedFieldReference(FLOW_NODE_TYPE), MI_BODY))
+      .must(existsQuery(nestedFieldReference(FLOW_NODE_END_DATE)));
   }
 
   public static Optional<NestedQueryBuilder> addInstanceFilterForRelevantViewLevelFilters(final List<ProcessFilterDto<?>> filters) {
@@ -134,7 +134,7 @@ public class FlowNodeFilterQueryUtil extends ModelElementFilterQueryUtil {
   }
 
   private static FlowNodeDurationFilterProperties getFlowNodeDurationProperties() {
-    return new FlowNodeDurationFilterProperties(NESTED_DOC, ACTIVITY_ID, ACTIVITY_DURATION, ACTIVITY_START_DATE);
+    return new FlowNodeDurationFilterProperties(NESTED_DOC, FLOW_NODE_ID, FLOW_NODE_TOTAL_DURATION, FLOW_NODE_START_DATE);
   }
 
 }

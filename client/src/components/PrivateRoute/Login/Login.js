@@ -7,6 +7,7 @@
 import React, {useState, useRef} from 'react';
 
 import {MessageBox, Button, Input, Labeled} from 'components';
+import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
 import {login} from './service';
@@ -14,7 +15,7 @@ import {ReactComponent as Logo} from './logo.svg';
 
 import './Login.scss';
 
-export default function Login({onLogin}) {
+export function Login({onLogin, mightFail}) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [waitingForServer, setWaitingForServer] = useState(false);
@@ -30,21 +31,21 @@ export default function Login({onLogin}) {
 
     setWaitingForServer(true);
 
-    const authResult = await login(username, password);
+    await mightFail(
+      login(username, password),
+      (token) => {
+        if (token) {
+          onLogin(token);
+        }
+      },
+      ({message}) => setError(message || t('login.error'))
+    );
 
-    if (authResult.token) {
-      onLogin(authResult.token);
-    } else {
-      const {errorCode, errorMessage} = authResult;
-      const error = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
+    setWaitingForServer(false);
 
-      setWaitingForServer(false);
-      setError(error || t('login.error'));
-
-      if (passwordField.current) {
-        passwordField.current.focus();
-        passwordField.current.select();
-      }
+    if (passwordField.current) {
+      passwordField.current.focus();
+      passwordField.current.select();
     }
   }
 
@@ -86,3 +87,5 @@ export default function Login({onLogin}) {
     </form>
   );
 }
+
+export default withErrorHandling(Login);

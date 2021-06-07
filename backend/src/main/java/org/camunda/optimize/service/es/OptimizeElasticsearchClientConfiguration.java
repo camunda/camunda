@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -24,10 +25,12 @@ public class OptimizeElasticsearchClientConfiguration {
     final ConfigurationService configurationService,
     final OptimizeIndexNameService optimizeIndexNameService,
     final ElasticSearchSchemaManager elasticSearchSchemaManager,
+    final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider,
     final BackoffCalculator backoffCalculator) throws IOException {
 
     return OptimizeElasticsearchClientFactory.create(
-      configurationService, optimizeIndexNameService, elasticSearchSchemaManager, backoffCalculator
+      configurationService, optimizeIndexNameService, elasticSearchSchemaManager,
+      elasticsearchCustomHeaderProvider, backoffCalculator
     );
 
   }

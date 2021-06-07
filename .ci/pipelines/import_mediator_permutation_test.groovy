@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
@@ -73,6 +73,7 @@ spec:
         mountPath: /cambpm-storage
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    imagePullPolicy: Always
     tty: true
     env:
       - name: JAVA_OPTS

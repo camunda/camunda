@@ -10,9 +10,9 @@ import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -23,13 +23,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final ProcessVariableUpdateWriter variableWriter;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
 
   public VariableUpdateEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                   final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                   final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                    final ConfigurationService configurationService,
                                                    final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                    final ProcessVariableUpdateWriter variableWriter,
@@ -41,7 +41,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMed
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(createVariableUpdateEngineImportMediator(engineContext));
   }
 

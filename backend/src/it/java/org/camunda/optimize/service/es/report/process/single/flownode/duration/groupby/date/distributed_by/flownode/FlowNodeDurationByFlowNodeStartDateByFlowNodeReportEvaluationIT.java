@@ -27,13 +27,13 @@ public class FlowNodeDurationByFlowNodeStartDateByFlowNodeReportEvaluationIT
 
   @Override
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.updateActivityInstanceStartDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(updates);
   }
 
   @Override
   protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance, final String flowNodeId,
                                         final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeActivityInstanceStartDate(processInstance.getId(), flowNodeId, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), flowNodeId, dateToChangeTo);
   }
 
 }

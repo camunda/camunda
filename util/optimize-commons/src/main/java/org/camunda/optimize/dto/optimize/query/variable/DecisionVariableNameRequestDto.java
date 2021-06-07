@@ -7,19 +7,37 @@ package org.camunda.optimize.dto.optimize.query.variable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Data
-public class DecisionVariableNameRequestDto {
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 
+@AllArgsConstructor
+@Data
+@NoArgsConstructor
+public class DecisionVariableNameRequestDto {
+  @NotNull
   private String decisionDefinitionKey;
   private List<String> decisionDefinitionVersions = new ArrayList<>();
-  private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
+  private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
+
+  public DecisionVariableNameRequestDto(@NotNull final String key, final String version, final String tenantId) {
+    this.decisionDefinitionKey = key;
+    this.decisionDefinitionVersions = Collections.singletonList(version);
+    this.tenantIds = Collections.singletonList(tenantId);
+  }
+
+  public DecisionVariableNameRequestDto(@NotNull final String key, final List<String> versions) {
+    this.decisionDefinitionKey = key;
+    this.decisionDefinitionVersions = versions;
+  }
 
   @JsonIgnore
   public void setDecisionDefinitionVersion(String decisionDefinitionVersion) {

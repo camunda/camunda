@@ -10,7 +10,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -33,8 +32,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
@@ -58,7 +60,7 @@ public class AssigneeAndCandidateGroupsReader {
                                         final int batchSize) {
     consumeUserTaskFieldTermsInBatches(
       termQuery(ProcessInstanceDto.Fields.engine, engineAlias),
-      UserTaskInstanceDto.Fields.assignee,
+      USER_TASK_ASSIGNEE,
       assigneeBatchConsumer,
       batchSize
     );
@@ -70,7 +72,7 @@ public class AssigneeAndCandidateGroupsReader {
 
     consumeUserTaskFieldTermsInBatches(
       termQuery(ProcessInstanceDto.Fields.engine, engineAlias),
-      UserTaskInstanceDto.Fields.candidateGroups,
+      USER_TASK_CANDIDATE_GROUPS,
       candidateGroupBatchConsumer,
       batchSize
     );
@@ -174,7 +176,7 @@ public class AssigneeAndCandidateGroupsReader {
     final CompositeAggregationBuilder assigneeCompositeAgg = new CompositeAggregationBuilder(
       COMPOSITE_AGG, ImmutableList.of(new TermsValuesSourceBuilder(TERMS_AGG).field(getUserTaskFieldPath(fieldName)))
     ).size(resolvedBatchSize);
-    final NestedAggregationBuilder userTasksAgg = nested(NESTED_USER_TASKS_AGG, ProcessInstanceDto.Fields.userTasks)
+    final NestedAggregationBuilder userTasksAgg = nested(NESTED_USER_TASKS_AGG, FLOW_NODE_INSTANCES)
       .subAggregation(assigneeCompositeAgg);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(filterQuery)
@@ -198,7 +200,7 @@ public class AssigneeAndCandidateGroupsReader {
   }
 
   private String getUserTaskFieldPath(final String fieldName) {
-    return ProcessInstanceDto.Fields.userTasks + "." + fieldName;
+    return FLOW_NODE_INSTANCES + "." + fieldName;
   }
 
 }

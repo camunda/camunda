@@ -51,7 +51,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
+import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
@@ -59,6 +59,7 @@ import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestD
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
@@ -630,7 +631,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-
   public OptimizeRequestExecutor buildDeleteRoleToCollectionRequest(final String id,
                                                                     final String roleEntryId) {
     this.path = "collection/" + id + "/role/" + roleEntryId;
@@ -869,9 +869,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesRequest(ProcessVariableNameRequestDto variableRequestDto) {
-    this.path = "variables/";
+    return buildProcessVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  }
+
+  public OptimizeRequestExecutor buildProcessVariableNamesRequest(List<ProcessVariableNameRequestDto> variableRequestDtos) {
+    this.path = "variables";
     this.method = POST;
-    this.body = getBody(variableRequestDto);
+    this.body = getBody(variableRequestDtos);
     return this;
   }
 
@@ -897,9 +901,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
+    return buildDecisionInputVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  }
+
+  public OptimizeRequestExecutor buildDecisionInputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
     this.path = "decision-variables/inputs/names";
     this.method = POST;
-    this.body = getBody(variableRequestDto);
+    this.body = getBody(variableRequestDtos);
     return this;
   }
 
@@ -911,9 +919,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(DecisionVariableNameRequestDto variableRequestDto) {
+    return buildDecisionOutputVariableNamesRequest(Collections.singletonList(variableRequestDto));
+  }
+
+  public OptimizeRequestExecutor buildDecisionOutputVariableNamesRequest(List<DecisionVariableNameRequestDto> variableRequestDtos) {
     this.path = "decision-variables/outputs/names";
     this.method = POST;
-    this.body = getBody(variableRequestDto);
+    this.body = getBody(variableRequestDtos);
     return this;
   }
 
@@ -1083,11 +1095,20 @@ public class OptimizeRequestExecutor {
     this.path = "/definition/" + type + "/" + key + "/_resolveTenantsForVersions";
     this.method = POST;
     this.body = getBody(
-      DefinitionTenantsRequest.builder()
+      DefinitionTenantsRequestDto.builder()
         .versions(versions)
         .filterByCollectionScope(filterByCollectionScope)
         .build()
     );
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(
+    final String type,
+    final MultiDefinitionTenantsRequestDto request) {
+    this.path = "/definition/" + type + "/_resolveTenantsForVersions";
+    this.method = POST;
+    this.body = getBody(request);
     return this;
   }
 
@@ -1305,6 +1326,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCheckBulkDeleteConflictsForEventProcessMappingRequest(List<String> eventBasedProcessConflictIds) {
+    this.path = "eventBasedProcess/delete-conflicts";
+    this.method = POST;
+    this.body = getBody(eventBasedProcessConflictIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId;
     this.method = DELETE;
@@ -1361,6 +1389,13 @@ public class OptimizeRequestExecutor {
                                                                        final String scopeEntryId) {
     this.path = "collection/" + collectionId + "/scope/" + scopeEntryId + "/delete-conflicts";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCheckScopeBulkDeletionConflictsRequest(final String collectionId, final List<String> collectionScopeIds) {
+    this.path = "collection/" + collectionId + "/scope/delete-conflicts";
+    this.method = POST;
+    this.body = getBody(collectionScopeIds);
     return this;
   }
 

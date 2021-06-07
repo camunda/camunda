@@ -152,8 +152,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
       .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
   }
 
   protected void assertProcessInstanceDataCompleteInEs(final String instanceId) throws IOException {

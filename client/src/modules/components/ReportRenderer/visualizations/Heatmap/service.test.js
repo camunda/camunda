@@ -37,9 +37,13 @@ it('should construct rawdata report with the target value as a filter', () => {
     getConfig(
       {
         configuration,
-        processDefinitionKey: '1',
-        processDefinitionVersions: ['1'],
-        tenantIds: ['tenantA'],
+        definitions: [
+          {
+            key: '1',
+            versions: ['1'],
+            tenantIds: ['tenantA'],
+          },
+        ],
         filter: [{type: 'test'}],
       },
       'flowNodeA'

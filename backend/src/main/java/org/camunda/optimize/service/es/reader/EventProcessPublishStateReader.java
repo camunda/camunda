@@ -16,7 +16,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -59,7 +58,7 @@ public class EventProcessPublishStateReader {
 
     final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not fetch event process publish state with id [%s].",
@@ -107,7 +106,7 @@ public class EventProcessPublishStateReader {
 
     final SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve event process publish states!", e);
     }

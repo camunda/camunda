@@ -31,7 +31,7 @@ public class UserTaskFrequencyByUserTaskIdleDurationReportEvaluationIT
   @Override
   protected void changeRunningInstanceReferenceDate(final ProcessInstanceEngineDto runningProcessInstance,
                                                     final OffsetDateTime startTime) {
-    engineDatabaseExtension.changeUserTaskStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
+    engineDatabaseExtension.changeFlowNodeStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
   }
 
   @Override

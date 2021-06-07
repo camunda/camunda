@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
@@ -28,9 +27,11 @@ import javax.ws.rs.core.Response;
  * Please note that authentication token validation/refresh is performed in request filters.
  */
 @AllArgsConstructor
-@Path("/authentication")
+@Path(AuthenticationRestService.AUTHENTICATION_PATH)
 @Component
 public class AuthenticationRestService {
+
+  public static final String AUTHENTICATION_PATH = "/authentication";
 
   private final AuthenticationService authenticationService;
   private final AuthCookieService authCookieService;
@@ -48,7 +49,8 @@ public class AuthenticationRestService {
   @Consumes("application/json")
   public Response authenticateUser(@Context ContainerRequestContext requestContext,
                                    CredentialsRequestDto credentials) {
-    String securityToken = authenticationService.authenticateUser(credentials);
+    final String securityToken = authenticationService.authenticateUser(credentials);
+
     // Return the token on the response
     return Response.ok(securityToken)
       .header(
@@ -66,7 +68,6 @@ public class AuthenticationRestService {
    *
    * @return Status code 200 (OK) if you are authenticated.
    */
-  @Secured
   @GET
   @Path("test")
   public Response testAuthentication() {
@@ -78,7 +79,6 @@ public class AuthenticationRestService {
    *
    * @return Status code 200 (OK) if the logout was successful.
    */
-  @Secured
   @GET
   @Path("logout")
   public Response logout(@Context ContainerRequestContext requestContext) {

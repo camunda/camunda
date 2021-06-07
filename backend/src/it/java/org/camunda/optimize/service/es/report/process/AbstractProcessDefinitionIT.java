@@ -128,6 +128,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     );
   }
 
+  protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessOnTenant(final String key,
+                                                                                 final String tenantId) {
+    final BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram(key);
+    return engineIntegrationExtension.deployAndStartProcess(processModel, tenantId);
+  }
+
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
     return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
   }
@@ -208,11 +214,24 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected String deployAndStartMultiTenantSimpleServiceTaskProcess(final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
-    deployedTenants.stream()
-      .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
-    deployedTenants
-      .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
+    deployedTenants.forEach(tenant -> {
+      if (tenant != null) {
+        engineIntegrationExtension.createTenant(tenant);
+      }
+      deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant);
+    });
+
+    return processKey;
+  }
+
+  protected String deployAndStartMultiTenantSimpleUserTaskTaskProcess(final List<String> deployedTenants) {
+    final String processKey = "multiTenantProcess";
+    deployedTenants.forEach(tenant -> {
+      if (tenant != null) {
+        engineIntegrationExtension.createTenant(tenant);
+      }
+      deployAndStartSimpleUserTaskProcessOnTenant(processKey, tenant);
+    });
 
     return processKey;
   }
@@ -262,7 +281,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected void changeActivityDuration(final ProcessInstanceEngineDto processInstance,
                                         final Double durationInMs) {
-    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMs.longValue());
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance.getId(), durationInMs.longValue());
   }
 
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
@@ -345,12 +364,16 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final String userTaskKey,
                                              final Number durationInMs) {
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstanceDto.getId(),
+      userTaskKey,
+      durationInMs.longValue()
+    );
   }
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final Number durationInMs) {
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
@@ -394,7 +417,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                          final OffsetDateTime now,
                                          final String userTaskId,
                                          final Number offsetDurationInMs) {
-    engineDatabaseExtension.changeUserTaskStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       processInstanceDto.getId(), userTaskId, now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
     );
   }
@@ -409,7 +432,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                          final OffsetDateTime now,
                                          final String userTaskKey,
                                          final Number offsetDurationInMs) {
-
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto -> {

@@ -4,20 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function isDurationHeatmap({
-  view,
-  visualization,
-  processDefinitionKey,
-  processDefinitionVersions,
-}) {
+export function isDurationHeatmap({view, visualization, definitions}) {
   return (
     view &&
     (view.entity === 'flowNode' || view.entity === 'userTask') &&
     view.properties[0] === 'duration' &&
     visualization === 'heat' &&
-    processDefinitionKey &&
-    processDefinitionVersions &&
-    processDefinitionVersions.length > 0
+    definitions?.[0].key &&
+    definitions?.[0].versions?.length > 0
   );
 }
 

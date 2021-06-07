@@ -21,8 +21,8 @@ import java.time.OffsetDateTime;
 @Data
 @Builder
 public class FlowNodeEventDto implements Serializable, OptimizeDto {
-  private String id;
-  private String activityId;
+  private String id; // == FlowNodeInstanceDto.flowNodeInstanceId
+  private String activityId; // == FlowNodeInstanceDto.flowNodeID
   private String activityName;
   private OffsetDateTime timestamp;
   private String processDefinitionKey;
@@ -36,5 +36,5 @@ public class FlowNodeEventDto implements Serializable, OptimizeDto {
   private String tenantId;
   private Long orderCounter;
   private Boolean canceled;
-  private String taskId;
+  private String taskId; // == FlowNodeInstanceDto.userTaskId (null if flowNode is not a userTask)
 }

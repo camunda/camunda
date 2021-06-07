@@ -492,12 +492,10 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     // We have to change the specific duration property for the test scenario
     changeDuration(processInstanceDto, USER_TASK_1, 2000.);
     changeDuration(processInstanceDto, USER_TASK_2, 1000.);
-    // We also have to change both durations as the instance level filtering applies to the activities and the
+    // We also have to change both total durations as the instance level filtering applies to the activities and the
     // view level filtering applies to the user tasks
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), USER_TASK_1, 2000.);
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), USER_TASK_1, 2000.);
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), USER_TASK_2, 1000.);
-    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), USER_TASK_2, 1000.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_1, 2000.);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstanceDto.getId(), USER_TASK_2, 1000.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -653,7 +651,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
                                          final OffsetDateTime now,
                                          final String userTaskId,
                                          final long offsetDuration) {
-    engineDatabaseExtension.changeUserTaskStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       processInstanceDto.getId(),
       userTaskId,
       now.minus(offsetDuration, ChronoUnit.MILLIS)
@@ -706,15 +704,15 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
 
   @Override
   protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
-    engineDatabaseExtension.changeUserTaskStartDates(updates);
-    engineDatabaseExtension.changeUserTaskEndDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeStartDates(updates);
+    engineDatabaseExtension.changeAllFlowNodeEndDates(updates);
   }
 
   @Override
   protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
                                         final String modelElementId,
                                         final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
-    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
+    engineDatabaseExtension.changeFlowNodeEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
   }
 }

@@ -48,7 +48,7 @@ public class UpgradeMain {
         .orElse(Version.VERSION);
 
       final UpgradePlan upgradePlan =
-        new UpgradePlanRegistry(UPGRADE_DEPENDENCIES.getEsClient())
+        new UpgradePlanRegistry(UPGRADE_DEPENDENCIES)
           .getUpgradePlanForTargetVersion(targetVersion);
 
       if (upgradePlan == null) {

@@ -24,34 +24,32 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
 
   const {data, reportType} = report;
 
+  const {key, versions, tenantIds} = data.definitions?.[0] ?? {};
+
   const instanceCount = report.result?.instanceCount;
   const totalCount = report.result?.instanceCountWithoutFilters;
   const hasFilter = data.filter?.length > 0;
 
   function loadRequiredData() {
     if (reportType === 'process') {
-      mightFail(
-        getFlowNodeNames(
-          data.processDefinitionKey,
-          data.processDefinitionVersions?.[0],
-          data.tenantIds?.[0]
-        ),
-        setFlowNodeNames,
-        showError
-      );
+      mightFail(getFlowNodeNames(key, versions?.[0], tenantIds?.[0]), setFlowNodeNames, showError);
 
-      const payload = {
-        processDefinitionKey: data.processDefinitionKey,
-        processDefinitionVersions: data.processDefinitionVersions,
-        tenantIds: data.tenantIds,
-      };
+      const payload = [
+        {
+          processDefinitionKey: key,
+          processDefinitionVersions: versions,
+          tenantIds: tenantIds,
+        },
+      ];
       mightFail(loadVariables(payload), setVariables, showError);
     } else if (reportType === 'decision') {
-      const payload = {
-        decisionDefinitionKey: data.decisionDefinitionKey,
-        decisionDefinitionVersions: data.decisionDefinitionVersions,
-        tenantIds: data.tenantIds,
-      };
+      const payload = [
+        {
+          decisionDefinitionKey: key,
+          decisionDefinitionVersions: versions,
+          tenantIds: tenantIds,
+        },
+      ];
       mightFail(
         Promise.all([loadInputVariables(payload), loadOutputVariables(payload)]),
         ([inputVariable, outputVariable]) => setVariables({inputVariable, outputVariable}),

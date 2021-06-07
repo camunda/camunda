@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.decision;
 
-import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
@@ -13,12 +12,12 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isOneOf;
 
 public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
 
@@ -27,7 +26,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    testTenantFiltering(Lists.newArrayList(null, tenantId1, tenantId2), Lists.newArrayList(tenantId1));
+    testTenantFiltering(Arrays.asList(null, tenantId1, tenantId2), Collections.singletonList(tenantId1));
   }
 
   @Test
@@ -35,7 +34,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    testTenantFiltering(Lists.newArrayList(null, tenantId1, tenantId2), Lists.newArrayList((String) null));
+    testTenantFiltering(Arrays.asList(null, tenantId1, tenantId2), Collections.singletonList(null));
   }
 
   @Test
@@ -43,7 +42,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    testTenantFiltering(Lists.newArrayList(null, tenantId1, tenantId2), Lists.newArrayList(tenantId1, tenantId2));
+    testTenantFiltering(Arrays.asList(null, tenantId1, tenantId2), Arrays.asList(tenantId1, tenantId2));
   }
 
   @Test
@@ -51,7 +50,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    testTenantFiltering(Lists.newArrayList(null, tenantId1, tenantId2), Lists.newArrayList(null, tenantId1, tenantId2));
+    testTenantFiltering(Arrays.asList(null, tenantId1, tenantId2), Arrays.asList(null, tenantId1, tenantId2));
   }
 
   @Test
@@ -60,8 +59,8 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
     testTenantFiltering(
-      Lists.newArrayList(null, tenantId1, tenantId2),
-      Lists.newArrayList()
+      Arrays.asList(null, tenantId1, tenantId2),
+      Collections.emptyList()
     );
   }
 
@@ -75,7 +74,6 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
                                    final List<String> expectedTenants) {
     // given
     final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(deployedTenants);
-
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -86,14 +84,16 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = reportClient.evaluateDecisionRawReport(reportData).getResult();
+    importAllEngineEntitiesFromScratch();
+    ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result =
+      reportClient.evaluateDecisionRawReport(reportData)
+        .getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) expectedTenants.size()));
-    result.getData().forEach(rawDataDecisionInstanceDto -> assertThat(
-      rawDataDecisionInstanceDto.getTenantId(),
-      isOneOf(expectedTenants.toArray())
-    ));
+    assertThat(result.getInstanceCount()).isEqualTo((long) expectedTenants.size());
+    assertThat(result.getData())
+      .extracting(RawDataDecisionInstanceDto::getTenantId)
+      .allSatisfy(tenantId -> assertThat(tenantId).isIn(expectedTenants));
   }
 
 }

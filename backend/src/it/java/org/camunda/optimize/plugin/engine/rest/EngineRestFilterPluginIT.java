@@ -16,10 +16,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EngineRestFilterPluginIT extends AbstractIT {
 
@@ -82,7 +81,7 @@ public class EngineRestFilterPluginIT extends AbstractIT {
   private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
       elasticsearchType);
-    assertThat(idsResp.getHits().getTotalHits().value, is(count));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(count);
   }
 
 }

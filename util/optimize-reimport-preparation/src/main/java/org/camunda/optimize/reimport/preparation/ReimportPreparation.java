@@ -6,13 +6,15 @@
 package org.camunda.optimize.reimport.preparation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
+import org.camunda.optimize.plugin.PluginJarFileLoader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
@@ -46,9 +48,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
  */
 @Slf4j
 public class ReimportPreparation {
-  private static final ConfigurationService CONFIGURATION_SERVICE =
-    ConfigurationServiceBuilder.createDefaultConfiguration();
-  private static final List<IndexMappingCreator> STATIC_INDICES_TO_DELETE = ImmutableList.of(
+
+  private static final List<IndexMappingCreator> STATIC_INDICES_TO_DELETE = List.of(
     new ImportIndexIndex(),
     new TimestampBasedImportIndex(),
     new ProcessDefinitionIndex(),
@@ -59,11 +60,11 @@ public class ReimportPreparation {
     new VariableUpdateInstanceIndex(),
     new EventProcessPublishStateIndex()
   );
-  private static final List<IndexMappingCreator> DYNAMIC_EVENT_INDICES_TO_DELETE = ImmutableList.of(
+  private static final List<IndexMappingCreator> DYNAMIC_EVENT_INDICES_TO_DELETE = List.of(
     new EventProcessInstanceIndex("*"),
     new CamundaActivityEventIndex("*")
   );
-  private static final List<IndexMappingCreator> DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE = ImmutableList.of(
+  private static final List<IndexMappingCreator> DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE = List.of(
     new EventSequenceCountIndex("*"),
     new EventTraceStateIndex("*")
   );
@@ -78,18 +79,26 @@ public class ReimportPreparation {
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
     log.info("Successfully read configuration.");
 
+    performReimport(ConfigurationServiceBuilder.createDefaultConfiguration());
+  }
+
+  public static void performReimport(final ConfigurationService configurationService) {
     log.info("Creating connection to Elasticsearch...");
     try (final RestHighLevelClient restHighLevelClient =
-           ElasticsearchHighLevelRestClientBuilder.build(CONFIGURATION_SERVICE)) {
+           ElasticsearchHighLevelRestClientBuilder.build(configurationService)) {
       log.info("Successfully created connection to Elasticsearch.");
 
+      ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
+        configurationService, new PluginJarFileLoader(configurationService));
+      customHeaderProvider.initPlugins();
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
-        new OptimizeIndexNameService(CONFIGURATION_SERVICE)
+        new OptimizeIndexNameService(configurationService),
+        new RequestOptionsProvider(customHeaderProvider.getPlugins())
       );
 
       deleteImportAndEngineDataIndices(prefixAwareClient);
-      recreateStaticIndices(prefixAwareClient);
+      recreateStaticIndices(prefixAwareClient, configurationService);
 
       log.info(
         "Optimize was successfully prepared such it can reimport the engine data. Feel free to start Optimize again!"
@@ -131,13 +140,14 @@ public class ReimportPreparation {
       + EXTERNAL_EVENTS_INDEX_SUFFIX + "*";
   }
 
-  private static void recreateStaticIndices(final OptimizeElasticsearchClient prefixAwareClient) {
+  private static void recreateStaticIndices(final OptimizeElasticsearchClient prefixAwareClient,
+                                            final ConfigurationService configurationService) {
     log.info("Recreating import indices and engine data...");
 
     final ObjectMapper objectMapper = new ObjectMapper();
     final ElasticSearchSchemaManager schemaManager = new ElasticSearchSchemaManager(
       new ElasticsearchMetadataService(objectMapper),
-      CONFIGURATION_SERVICE,
+      configurationService,
       prefixAwareClient.getIndexNameService(),
       STATIC_INDICES_TO_DELETE
     );

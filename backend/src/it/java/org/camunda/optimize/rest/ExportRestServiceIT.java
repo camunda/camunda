@@ -61,7 +61,7 @@ public class ExportRestServiceIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.TEMPORARY_REDIRECT.getStatusCode());
-    assertThat(response.getLocation().getPath()).isEqualTo("/login");
+    assertThat(response.getLocation().getPath()).isEqualTo("/");
   }
 
   @Test
@@ -112,6 +112,7 @@ public class ExportRestServiceIT extends AbstractIT {
       decisionDefinitionEngineDto.getKey(),
       String.valueOf(decisionDefinitionEngineDto.getVersion())
     );
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = embeddedOptimizeExtension

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -29,7 +30,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -71,8 +71,8 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
-import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_ENGINE;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
@@ -206,7 +206,7 @@ public class DefinitionReader {
   public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
-        .field(DEFINITION_ENGINE)
+        .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
         .size(LIST_FETCH_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(boolQuery()
@@ -222,7 +222,7 @@ public class DefinitionReader {
 
     final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Was not able to fetch engines for definition key [%s] and type [%s]", definitionKey, type
@@ -245,7 +245,7 @@ public class DefinitionReader {
     // 2.1 group by engine
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
-        .field(DEFINITION_ENGINE)
+        .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
         .size(LIST_FETCH_LIMIT);
     // 1. group by key, type and tenant (composite aggregation)
     List<CompositeValuesSourceBuilder<?>> keyAndTypeAndTenantSources = new ArrayList<>();
@@ -336,7 +336,7 @@ public class DefinitionReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format(
         "Was not able to fetch latest [%s] definition for key [%s]",
@@ -380,7 +380,7 @@ public class DefinitionReader {
       .source(searchSourceBuilder);
     final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Was not able to fetch [%s] definition versions with key [%s], tenantIds [%s]", type, key, tenantIds
@@ -412,9 +412,9 @@ public class DefinitionReader {
       .filter(termQuery(DEFINITION_KEY, key))
       .filter(termQuery(DEFINITION_DELETED, false));
 
-    if (versions != null
+    if (!CollectionUtils.isEmpty(versions) &&
       // if all is among the versions, no filtering needed
-      && versions.stream().noneMatch(ALL_VERSIONS::equalsIgnoreCase)) {
+      !DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll(versions)) {
       filterQuery.filter(termsQuery(
         DEFINITION_VERSION,
         versions.stream()
@@ -438,7 +438,7 @@ public class DefinitionReader {
       .source(searchSourceBuilder);
     final SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Was not able to fetch [%s] definition tenants with key [%s] and versions [%s].", type, key, versions
@@ -516,7 +516,7 @@ public class DefinitionReader {
 
     final SearchResponse scrollResp;
     try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
       final String errorMsg = String.format("Was not able to retrieve definitions of type %s", type);
       log.error(errorMsg, e);
@@ -565,7 +565,7 @@ public class DefinitionReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format(
         "Was not able to fetch [%s] definition with key [%s], version [%s] and tenantId [%s]",
@@ -644,7 +644,7 @@ public class DefinitionReader {
 
     SearchResponse searchResponse;
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Was not able to fetch latest [%s] definitions for key [%s]",
@@ -685,7 +685,7 @@ public class DefinitionReader {
     // 2.3 group by engine
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
-        .field(DEFINITION_ENGINE)
+        .field(DATA_SOURCE + "." + DataSourceDto.Fields.name)
         .size(LIST_FETCH_LIMIT);
     // 1. group by key and type
     List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
@@ -760,7 +760,7 @@ public class DefinitionReader {
 
     List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets = new ArrayList<>();
     try {
-      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      SearchResponse searchResponse = esClient.search(searchRequest);
       ParsedComposite keyAndTypeAggregationResult = searchResponse.getAggregations()
         .get(DEFINITION_KEY_AND_TYPE_AGGREGATION);
       while (!keyAndTypeAggregationResult.getBuckets().isEmpty()) {
@@ -773,7 +773,7 @@ public class DefinitionReader {
           .aggregation(keyAggregation);
         searchRequest = new SearchRequest(definitionIndexNames)
           .source(searchSourceBuilder);
-        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+        searchResponse = esClient.search(searchRequest);
         keyAndTypeAggregationResult = searchResponse.getAggregations()
           .get(DEFINITION_KEY_AND_TYPE_AGGREGATION);
       }

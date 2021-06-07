@@ -18,7 +18,6 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -113,11 +112,11 @@ public class CamundaActivityEventReader {
 
     try {
       String indexName = new CamundaActivityEventIndex(processDefinitionKey).getIndexName();
-      boolean indexExists = esClient.exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+      boolean indexExists = esClient.exists(new GetIndexRequest(indexName));
       if (indexExists) {
         final SearchResponse searchResponse = esClient.search(
           new SearchRequest(indexName)
-            .source(searchSourceBuilder), RequestOptions.DEFAULT);
+            .source(searchSourceBuilder));
         return ImmutablePair.of(
           extractTimestampForAggregation(searchResponse.getAggregations().get(MIN_AGG)),
           extractTimestampForAggregation(searchResponse.getAggregations().get(MAX_AGG))
@@ -134,9 +133,7 @@ public class CamundaActivityEventReader {
   public Set<String> getIndexSuffixesForCurrentActivityIndices() {
     final GetAliasesResponse aliases;
     try {
-      aliases = esClient.getAlias(
-        new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
-      );
+      aliases = esClient.getAlias(new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"));
     } catch (IOException e) {
       final String errorMessage = "Could not retrieve the definition keys for Camunda event imported definitions!";
       log.error(errorMessage, e);
@@ -181,7 +178,7 @@ public class CamundaActivityEventReader {
         .source(searchSourceBuilder);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = esClient.search(searchRequest);
       return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), CamundaActivityEventDto.class, objectMapper);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve camunda activity events!", e);

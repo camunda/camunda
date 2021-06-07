@@ -10,6 +10,7 @@ import {t} from 'translation';
 import {Button, EntityList, Deleter, Modal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
+import {formatters} from 'services';
 
 import {
   getSources,
@@ -24,7 +25,6 @@ import EditSourceModal from './modals/EditSourceModal';
 import {areTenantsAvailable} from 'config';
 
 import './SourcesList.scss';
-import {formatters} from 'services';
 const {formatTenantName} = formatters;
 
 export default withErrorHandling(
@@ -73,12 +73,11 @@ export default withErrorHandling(
             this.props.onChange();
           }
         },
-        async (error) => {
-          if (error.status === 409) {
-            const {conflictedItems} = await error.json();
+        (error) => {
+          if (error.status === 409 && error.conflictedItems) {
             this.setState({
               editLoading: false,
-              conflict: conflictedItems,
+              conflict: error.conflictedItems,
               tenants,
             });
           } else {

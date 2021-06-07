@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
@@ -66,6 +66,7 @@ static String camBpmContainerSpec(String camBpmVersion) {
   return """
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(camBpmVersion)}
+    imagePullPolicy: Always
     env:
       - name: JAVA_OPTS
         value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"

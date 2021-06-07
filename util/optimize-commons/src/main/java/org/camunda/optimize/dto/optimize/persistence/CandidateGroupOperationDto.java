@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 @NoArgsConstructor
@@ -19,7 +20,7 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants
-public class CandidateGroupOperationDto implements OptimizeDto {
+public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
 
   @EqualsAndHashCode.Include
   private String id;

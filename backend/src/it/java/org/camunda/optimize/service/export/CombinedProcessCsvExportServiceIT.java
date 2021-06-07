@@ -132,13 +132,13 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
   public void combinedDurationMapReportHasExpectedValue() {
     // given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    engineDatabaseExtension.changeAllActivityDurations(processInstance1.getId(), 0);
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance1.getId(), 0);
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
       "aProcess",
       START,
       END
     ));
-    engineDatabaseExtension.changeAllActivityDurations(processInstance2.getId(), 0);
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstance2.getId(), 0);
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);

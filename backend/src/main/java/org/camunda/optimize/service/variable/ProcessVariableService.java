@@ -40,10 +40,8 @@ public class ProcessVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;
 
-  public List<ProcessVariableNameResponseDto> getVariableNames(ProcessVariableNameRequestDto variableRequestDto) {
-    ensureNotEmpty("process definition key", variableRequestDto.getProcessDefinitionKey());
-
-    return processVariableReader.getVariableNames(variableRequestDto);
+  public List<ProcessVariableNameResponseDto> getVariableNames(List<ProcessVariableNameRequestDto> variableRequestDtos) {
+    return processVariableReader.getVariableNames(variableRequestDtos);
   }
 
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(List<String> reportIds) {

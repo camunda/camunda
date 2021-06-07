@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import com.google.common.collect.Lists;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
@@ -158,7 +159,7 @@ public class ProcessDefinitionResolverServiceTest {
         .version("2")
         .versionTag("aVersionTag")
         .name("name")
-        .engine("")
+        .dataSource(new EngineDataSourceDto(""))
         .deleted(false)
         .build()
     );
@@ -167,7 +168,7 @@ public class ProcessDefinitionResolverServiceTest {
 
   private void mockProcessDefinitionForEngineContext(final String id) {
     ProcessDefinitionOptimizeDto mockedDefinition =
-      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "1", "aVersionTag", "name", "", "engine", null, false, null, null);
+      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "1", "aVersionTag", "name", new EngineDataSourceDto(""), "engine", null, false, null, null);
     when(engineContext.fetchProcessDefinition(any())).thenReturn(mockedDefinition);
   }
 

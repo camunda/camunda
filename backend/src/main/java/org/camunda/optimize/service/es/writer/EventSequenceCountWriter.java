@@ -17,7 +17,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -45,7 +44,7 @@ public class EventSequenceCountWriter {
 
     if (bulkRequest.numberOfActions() > 0) {
       try {
-        final BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
         if (bulkResponse.hasFailures()) {
           final String errorMessage = String.format(
             "There were failures while writing event trace states. Received error message: %s",

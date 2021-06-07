@@ -6,14 +6,14 @@
 package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.importing.DefinitionXmlImportIndexHandler;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -71,7 +71,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
     try {
       // refresh to ensure we see the latest state
       esClient.refresh(new RefreshRequest(DECISION_DEFINITION_INDEX_NAME));
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       log.error("Was not able to search for decision definitions!", e);
       throw new OptimizeRuntimeException("Was not able to search for decision definitions!", e);
@@ -93,6 +93,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
   private QueryBuilder buildBasicQuery() {
     return QueryBuilders.boolQuery()
       .mustNot(existsQuery(DecisionDefinitionIndex.DECISION_DEFINITION_XML))
-      .must(termQuery(ENGINE, engineContext.getEngineAlias()));
+      .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
+      .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineContext.getEngineAlias()));
   }
 }

@@ -165,7 +165,13 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
-      .isEqualToIgnoringGivenFields(
+      .usingRecursiveComparison()
+      .ignoringFields(
+        EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.xml,
+        EventProcessPublishStateDto.Fields.mappings
+      )
+      .isEqualTo(
         EventProcessPublishStateDto.builder()
           .processMappingId(eventProcessMappingId)
           .name(EVENT_PROCESS_NAME)
@@ -188,10 +194,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
               .eventSourceConfigurations(
                 Collections.singletonList(storedEventProcessMapping.getEventSources().get(0).getConfiguration()))
               .build()))
-          .build(),
-        EventProcessPublishStateDto.Fields.id,
-        EventProcessPublishStateDto.Fields.xml,
-        EventProcessPublishStateDto.Fields.mappings
+          .build()
       );
   }
 
@@ -299,7 +302,14 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
-      .isEqualToIgnoringGivenFields(
+      .usingRecursiveComparison()
+      .ignoringFields(
+        EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.name,
+        EventProcessPublishStateDto.Fields.xml,
+        EventProcessPublishStateDto.Fields.mappings
+      )
+      .isEqualTo(
         EventProcessPublishStateDto.builder()
           .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISH_PENDING)
@@ -317,11 +327,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 .eventSourceConfigurations(
                   Collections.singletonList(storedEventProcessMapping.getEventSources().get(0).getConfiguration()))
                 .build()))
-          .build(),
-        EventProcessPublishStateDto.Fields.id,
-        EventProcessPublishStateDto.Fields.name,
-        EventProcessPublishStateDto.Fields.xml,
-        EventProcessPublishStateDto.Fields.mappings
+          .build()
       );
   }
 
@@ -354,7 +360,14 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
-      .isEqualToIgnoringGivenFields(
+      .usingRecursiveComparison()
+      .ignoringFields(
+        EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.name,
+        EventProcessPublishStateDto.Fields.xml,
+        EventProcessPublishStateDto.Fields.mappings
+      )
+      .isEqualTo(
         EventProcessPublishStateDto.builder()
           .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISHED)
@@ -372,11 +385,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 .eventSourceConfigurations(
                   Collections.singletonList(storedEventProcessMapping.getEventSources().get(0).getConfiguration()))
                 .build()))
-          .build(),
-        EventProcessPublishStateDto.Fields.id,
-        EventProcessPublishStateDto.Fields.name,
-        EventProcessPublishStateDto.Fields.xml,
-        EventProcessPublishStateDto.Fields.mappings
+          .build()
       );
   }
 
@@ -548,7 +557,14 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
-      .isEqualToIgnoringGivenFields(
+      .usingRecursiveComparison()
+      .ignoringFields(
+        EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.name,
+        EventProcessPublishStateDto.Fields.xml,
+        EventProcessPublishStateDto.Fields.mappings
+      )
+      .isEqualTo(
         EventProcessPublishStateDto.builder()
           .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISHED)
@@ -566,11 +582,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
                 .eventSourceConfigurations(
                   Collections.singletonList(storedEventProcessMapping.getEventSources().get(0).getConfiguration()))
                 .build()))
-          .build(),
-        EventProcessPublishStateDto.Fields.id,
-        EventProcessPublishStateDto.Fields.name,
-        EventProcessPublishStateDto.Fields.xml,
-        EventProcessPublishStateDto.Fields.mappings
+          .build()
       );
   }
 
@@ -754,9 +766,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       getEventProcessInstancesFromElasticsearchForProcessPublishStateId(finalPublishState.getId());
     assertThat(eventInstances)
       .singleElement()
-      .extracting(ProcessInstanceDto::getEvents)
+      .extracting(ProcessInstanceDto::getFlowNodeInstances)
       .satisfies(events -> assertThat(
-        events.stream().map(FlowNodeInstanceDto::getActivityId).collect(Collectors.toList()))
+        events.stream().map(FlowNodeInstanceDto::getFlowNodeId).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID));
   }
 
@@ -876,9 +888,9 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       getEventProcessInstancesFromElasticsearchForProcessPublishStateId(publishedMapping.getId());
     assertThat(eventInstances)
       .singleElement()
-      .extracting(ProcessInstanceDto::getEvents)
+      .extracting(ProcessInstanceDto::getFlowNodeInstances)
       .satisfies(events -> assertThat(
-        events.stream().map(FlowNodeInstanceDto::getActivityId).collect(Collectors.toList()))
+        events.stream().map(FlowNodeInstanceDto::getFlowNodeId).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID));
   }
 
@@ -889,12 +901,12 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   private void updateActivityStartEndTimestampInEngine(final String activityId,
                                                        final OffsetDateTime firstEventTimestamp,
                                                        final ProcessInstanceEngineDto processInstanceEngineDto) {
-    engineDatabaseExtension.changeActivityInstanceStartDate(
+    engineDatabaseExtension.changeFlowNodeStartDate(
       processInstanceEngineDto.getId(),
       activityId,
       firstEventTimestamp
     );
-    engineDatabaseExtension.changeActivityInstanceEndDate(
+    engineDatabaseExtension.changeFlowNodeEndDate(
       processInstanceEngineDto.getId(),
       activityId,
       firstEventTimestamp

@@ -9,9 +9,9 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
-import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ProcessInstanceResolverService;
 import org.camunda.optimize.service.importing.engine.service.UserOperationLogImportService;
@@ -24,13 +24,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class UserOperationLogEngineImportMediatorFactory extends AbstractImportMediatorFactory {
+public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ProcessInstanceResolverService processInstanceResolverService;
 
   public UserOperationLogEngineImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                      final ProcessDefinitionResolverService processDefinitionResolverService,
@@ -42,7 +42,7 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractImportM
   }
 
   @Override
-  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+  public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return ImmutableList.of(
       createUserOperationLogEngineImportMediator(engineContext)
     );

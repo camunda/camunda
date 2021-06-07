@@ -14,7 +14,6 @@ import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
@@ -78,9 +77,8 @@ public class IndexRolloverService extends AbstractScheduledService {
 
   @SneakyThrows
   private Set<String> getCamundaActivityEventsIndexAliases() {
-    final GetAliasesResponse aliases = esClient.getAlias(
-      new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
-    );
+    final GetAliasesResponse aliases =
+      esClient.getAlias(new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"));
     return aliases.getAliases()
       .values()
       .stream()

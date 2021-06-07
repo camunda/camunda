@@ -16,9 +16,11 @@ const {createDurationFormattingOptions, duration} = formatters;
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
-    data: {visualization, view, groupBy, configuration, decisionDefinitionKey},
+    data: {visualization, view, groupBy, configuration, definitions},
     result,
   } = report;
+
+  const decisionDefinitionKey = definitions?.[0].key;
 
   const isDark = theme === 'dark';
   const isDuration = isDurationReport(report);

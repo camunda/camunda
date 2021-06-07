@@ -356,10 +356,7 @@ public class IndexRolloverIT extends AbstractIT {
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
     Map<String, Set<AliasMetadata>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
-      .getHighLevelClient()
-      .indices()
-      .getAlias(aliasesRequest, RequestOptions.DEFAULT)
-      .getAliases();
+      .getAlias(aliasesRequest).getAliases();
 
     return aliasMap.keySet()
       .stream()

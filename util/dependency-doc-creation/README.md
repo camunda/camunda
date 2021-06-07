@@ -6,7 +6,7 @@ This projects creates enables you to automatically create a third party dependen
 * node (check [here](https://github.com/camunda/camunda-optimize/blob/master/client/README.md) for the version)
 * maven 3+
 * bash
-* java 8
+* java 11
 
 # How to
 

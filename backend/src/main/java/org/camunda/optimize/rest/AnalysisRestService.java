@@ -6,15 +6,14 @@
 package org.camunda.optimize.rest;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierParametersRequestDto;
 import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierVariableParametersRequestDto;
 import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRequestDto;
-import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.BranchAnalysisService;
 import org.camunda.optimize.service.OutlierAnalysisService;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -39,7 +38,6 @@ import java.util.Map;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @RequiredArgsConstructor
-@Secured
 @Component
 @Path("/analysis")
 public class AnalysisRestService {

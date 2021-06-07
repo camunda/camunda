@@ -110,8 +110,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
           Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)
         );
       });
-    assertThat(processInstances.get(0).getEvents())
-      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+    assertThat(processInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
         Tuple.tuple(BPMN_START_EVENT_ID, false),
         Tuple.tuple(USER_TASK_ID_ONE, true)
@@ -689,7 +689,7 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
       new DeleteRequest(BUSINESS_KEY_INDEX_NAME)
         .id(processInstanceId)
         .setRefreshPolicy(IMMEDIATE);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request, RequestOptions.DEFAULT);
+    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request);
   }
 
   private ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {

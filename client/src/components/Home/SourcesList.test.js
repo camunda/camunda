@@ -137,7 +137,7 @@ it('should pass conflict to confirmation modal if update failed', async () => {
   const conflictedItems = [{id: 'reportId', type: 'report', name: 'Report Name'}];
   const mightFail = (promise, cb, err) => {
     if (err) {
-      err({status: 409, json: () => ({conflictedItems})});
+      err({status: 409, conflictedItems});
     }
   };
 
@@ -148,6 +148,7 @@ it('should pass conflict to confirmation modal if update failed', async () => {
   node.find(EditSourceModal).prop('onConfirm')(updatedTenants);
 
   await node.update();
+  await flushPromises();
   expect(node.find(Modal.Content)).toMatchSnapshot();
 
   node.setProps({mightFail: props.mightFail});
