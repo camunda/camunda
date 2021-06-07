@@ -1,22 +1,48 @@
 name: Backport labeled merged pull requests
 on:
   pull_request:
-    types: [ closed ]
+    types: [closed]
   issue_comment:
-    types: [ created ]
+    types: [created]
 jobs:
   build:
     name: Create backport PRs
-    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/backport')) }}
     runs-on: ubuntu-latest
+    # Only run when pull request is merged
+    # or when a comment containing `/backport` is created
+    if: >
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.merged
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/backport')
+      )
     steps:
       - uses: actions/checkout@v2
         with:
-          # required to find all branches
+          # Required to find all branches
           fetch-depth: 0
       - name: Create backport PRs
-        uses: zeebe-io/backport-action@master
+        # Should be kept in sync with `version`
+        uses: zeebe-io/backport-action@0.0.4
         with:
+          # Required
+          # Version of the backport-action
+          # Must equal the version in `uses`
+          # Recommended: latest tag or `master`
+          version: 0.0.4
+
+          # Required
+          # Token to authenticate requests to GitHub
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Required
+          # Working directory for the backport script
           github_workspace: ${{ github.workspace }}
-          version: master
+
+          # Optional
+          # Regex pattern to match github labels
+          # Must contain a capture group for target branchname
+          # label_pattern: ^backport ([^ ]+)$
