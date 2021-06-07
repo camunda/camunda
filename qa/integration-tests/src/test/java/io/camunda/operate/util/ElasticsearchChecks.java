@@ -216,6 +216,35 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "flowNodesAreActiveCheck")
+  public Predicate<Object[]> getFlowNodesAreActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(3);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      assertThat(objects[2]).isInstanceOf(Integer.class);
+      Long processInstanceKey = (Long) objects[0];
+      String flowNodeId = (String) objects[1];
+      Integer instancesCount = (Integer) objects[2];
+      try {
+        List<FlowNodeInstanceEntity> flowNodeInstances = getAllFlowNodeInstances(
+            processInstanceKey);
+        final List<FlowNodeInstanceEntity> flowNodes = flowNodeInstances.stream()
+            .filter(a -> a.getFlowNodeId().equals(flowNodeId))
+            .collect(Collectors.toList());
+        if (flowNodes.size() == 0) {
+          return false;
+        } else {
+          return
+              flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.ACTIVE)).count()
+                  >= instancesCount;
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery = termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)

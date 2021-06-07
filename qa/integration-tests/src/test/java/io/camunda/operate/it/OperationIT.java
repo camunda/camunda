@@ -102,7 +102,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
-    deployProcess("demoProcess_v_2.bpmn");
+    tester.deployProcess("demoProcess_v_2.bpmn");
   }
 
   @After
@@ -428,6 +428,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testAddVariableOnTask() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
+    tester.waitUntil().variableExists("foo");
     final Long taskAId = getFlowNodeInstanceId(processInstanceKey, "taskA");
 
     //TC1 we call UPDATE_VARIABLE operation on instance
@@ -890,6 +891,14 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final String expectedErrorMsg = String
       .format("Too many process instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
     assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
+  }
+
+  private long startDemoProcessInstance() {
+    String processId = "demoProcess";
+    return tester.startProcessInstance(processId, "{\"a\": \"b\"}")
+        .waitUntil()
+        .flowNodeIsActive("taskA")
+        .getProcessInstanceKey();
   }
 
   private long startDemoProcessInstanceWithIncidents() {

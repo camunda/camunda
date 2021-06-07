@@ -91,7 +91,7 @@ public class FlowNodeInstanceIT extends OperateZeebeIntegrationTest {
         .startProcessInstance(zeebeClient, processId, "{\"items\": [0, 1]}");
     ZeebeTestUtil.completeTask(zeebeClient, "taskA", getWorkerName(), null, 3);
     elasticsearchTestRule
-        .processAllRecordsAndWait(flowNodeIsCompletedCheck, processInstanceKey, taskId);
+        .processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, taskId, 3);
 
     //find out subprocess instance ids
     final String processInstanceId = String.valueOf(processInstanceKey);

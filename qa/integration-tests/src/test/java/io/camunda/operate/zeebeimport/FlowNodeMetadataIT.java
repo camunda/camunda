@@ -235,7 +235,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .deployProcess(testProcess, "testProcess.bpmn")
         .startProcessInstance(processId)
         .and().waitUntil()
-        .flowNodeIsActive(taskId)
+        .flowNodesAreActive(taskId, 2)
         .getProcessInstanceKey();
 
     //when 1.3 - instance count by flowNodeId
@@ -281,7 +281,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .deployProcess(testProcess, "testProcess.bpmn")
         .startProcessInstance(processId)
         .and().waitUntil()
-        .flowNodeIsActive(taskId)
+        .flowNodesAreActive(taskId, 2)
         .getProcessInstanceKey();
     final List<FlowNodeInstanceDto> flowNodeInstances = tester.getFlowNodeInstanceOneListFromRest(
         String.valueOf(processInstanceKey));

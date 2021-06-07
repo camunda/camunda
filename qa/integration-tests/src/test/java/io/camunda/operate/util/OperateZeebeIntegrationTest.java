@@ -303,14 +303,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected long startDemoProcessInstance() {
-    String processId = "demoProcess";
-    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(getClient(), processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
-    //elasticsearchTestRule.refreshIndexesInElasticsearch();
-    return processInstanceKey;
-  }
-
   protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
     return postBatchOperationWithOKResponse(query, operationType, null);
   }
