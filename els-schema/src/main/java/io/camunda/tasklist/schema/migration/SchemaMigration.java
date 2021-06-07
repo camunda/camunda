@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Profile;
     basePackages = {
       "io.camunda.tasklist.property",
       "io.camunda.tasklist.es",
-      "io.camunda.tasklist.es.schema"
+      "io.camunda.tasklist.schema"
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import(JacksonConfig.class)
@@ -43,6 +43,10 @@ public class SchemaMigration implements CommandLineRunner {
   public static void main(String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    // Workaround for https://github.com/spring-projects/spring-boot/issues/26627
+    System.setProperty(
+        "spring.config.location",
+        "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     final SpringApplication springApplication = new SpringApplication(SchemaMigration.class);
     springApplication.setWebApplicationType(WebApplicationType.NONE);
     springApplication.setAddCommandLineProperties(true);
