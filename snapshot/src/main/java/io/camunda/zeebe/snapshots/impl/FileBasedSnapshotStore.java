@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore {
+
   // first is the metadata and the second the the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
 
@@ -496,6 +498,10 @@ public final class FileBasedSnapshotStore extends Actor
     } catch (final AtomicMoveNotSupportedException e) {
       LOGGER.warn("Atomic move not supported. Moving the snapshot files non-atomically.");
       Files.move(directory, destination);
+    }
+
+    try (var channel = FileChannel.open(destination)) {
+      channel.force(true);
     }
   }
 
