@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.5.0-alpha2-SNAPSHOT</version>
+  <version>3.5.0-alpha2</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -547,7 +547,7 @@
     <url>https://github.com/camunda/camunda-optimize</url>
     <connection>scm:git:git@github.com:camunda/camunda-optimize.git</connection>
     <developerConnection>scm:git:git@github.com:camunda/camunda-optimize.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>3.5.0-alpha2</tag>
   </scm>
 
   <issueManagement>
