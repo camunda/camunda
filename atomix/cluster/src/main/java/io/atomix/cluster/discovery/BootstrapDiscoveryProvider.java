@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * heartbeat all newly discovered peers before triggering a {@link
  * io.atomix.cluster.ClusterMembershipEvent.Type#MEMBER_REMOVED} event.
  */
-public class BootstrapDiscoveryProvider
+public final class BootstrapDiscoveryProvider
     extends AbstractListenerManager<NodeDiscoveryEvent, NodeDiscoveryEventListener>
     implements NodeDiscoveryProvider {
 
@@ -95,13 +95,13 @@ public class BootstrapDiscoveryProvider
 
   @Override
   public CompletableFuture<Void> join(final BootstrapService bootstrap, final Node localNode) {
-    LOGGER.info("Joined");
+    LOGGER.info("Local node {} joined the bootstrap service", localNode);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public CompletableFuture<Void> leave(final Node localNode) {
-    LOGGER.info("Left");
+    LOGGER.info("Local node {} left the bootstrap servide", localNode);
     return CompletableFuture.completedFuture(null);
   }
 

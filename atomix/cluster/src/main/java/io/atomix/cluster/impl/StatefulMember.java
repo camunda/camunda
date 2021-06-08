@@ -17,59 +17,47 @@
 package io.atomix.cluster.impl;
 
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
 import io.atomix.utils.Version;
-import io.atomix.utils.net.Address;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Objects;
 
 /** Default cluster node. */
-public class StatefulMember extends Member {
+public final class StatefulMember extends Member {
   private final Version version;
-  private final AtomicLong timestamp = new AtomicLong();
   private volatile boolean active;
   private volatile boolean reachable;
 
-  public StatefulMember(final MemberId id, final Address address) {
-    super(id, address);
-    version = null;
-    timestamp.set(0);
-  }
-
-  public StatefulMember(
-      final MemberId id,
-      final Address address,
-      final String zone,
-      final String rack,
-      final String host,
-      final Properties properties,
-      final Version version) {
-    super(id, address, zone, rack, host, properties);
+  public StatefulMember(final Member member, final Version version) {
+    super(
+        member.id(),
+        member.address(),
+        member.zone(),
+        member.rack(),
+        member.host(),
+        member.properties());
     this.version = version;
-    timestamp.set(1);
   }
 
-  /**
-   * Returns the member logical timestamp.
-   *
-   * @return the member logical timestamp
-   */
-  public long getTimestamp() {
-    return timestamp.get();
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), version);
   }
 
-  /**
-   * Sets the member's logical timestamp.
-   *
-   * @param timestamp the member's logical timestamp
-   */
-  void setTimestamp(final long timestamp) {
-    this.timestamp.accumulateAndGet(timestamp, Math::max);
-  }
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
 
-  /** Increments the member's timestamp. */
-  void incrementTimestamp() {
-    timestamp.incrementAndGet();
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final StatefulMember that = (StatefulMember) o;
+    return version.equals(that.version);
   }
 
   @Override
