@@ -95,11 +95,6 @@ public final class TestGroupMembershipProtocol implements GroupMembershipProtoco
     }
 
     @Override
-    public Config newConfig() {
-      return new Config();
-    }
-
-    @Override
     public String name() {
       return getClass().getCanonicalName();
     }
