@@ -17,4 +17,8 @@ public class MigrationRepositoryIndex extends AbstractIndexDescriptor{
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "1.1.0";
+  }
 }

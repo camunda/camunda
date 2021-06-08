@@ -10,18 +10,17 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
- * A step implemented as elasticsearch ingest processor.<br> 
- * 
+ * A step implemented as elasticsearch ingest processor.<br>
+ *
  * For comparing the steps it will be considered: indexName, version, order and content ,not dates and applied marker.
  */
 @JsonTypeName("processorStep")
 public class ProcessorStep implements Step {
 
   private String content;
-  
+
   private String description;
   private OffsetDateTime createdDate;
-  @JsonIgnore //OPE-1310
   private OffsetDateTime appliedDate;
   private String indexName;
   private boolean isApplied = false;
@@ -32,7 +31,7 @@ public class ProcessorStep implements Step {
   public boolean isApplied() {
     return isApplied;
   }
-  
+
   @Override
   public Step setApplied(final boolean isApplied) {
     this.isApplied = isApplied;
@@ -48,7 +47,7 @@ public class ProcessorStep implements Step {
   public String getContent() {
     return content;
   }
-  
+
   @Override
   public String getDescription() {
     return description;
@@ -58,12 +57,12 @@ public class ProcessorStep implements Step {
   public String getVersion() {
     return version;
   }
-  
+
   @Override
   public Integer getOrder() {
     return order;
   }
-  
+
   @Override
   public OffsetDateTime getCreatedDate() {
      if( createdDate == null) {
@@ -138,5 +137,5 @@ public class ProcessorStep implements Step {
         + indexName + ", isApplied=" + isApplied + ", version=" + version + ", order=" + order
         + ", createdDate=" + getCreatedDate() + "]";
   }
-  
+
 }

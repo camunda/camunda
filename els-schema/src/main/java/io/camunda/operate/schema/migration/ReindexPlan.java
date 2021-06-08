@@ -31,19 +31,19 @@ public class ReindexPlan implements Plan {
 
   private static final String DEFAULT_SCRIPT = "ctx._index = params.dstIndex+'_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))";
 
-  private List<Step> steps;
+  private List<Step> steps = List.of();
   private Script script;
   private String srcIndex;
   private String dstIndex;
 
-  private int reindexBatchSize;
+  private int reindexBatchSize = 1_000; // 10_000 maximum
   private int slices;
 
   public Script getScript() {
     return script;
   }
 
-  public ReindexPlan setScript(Script script) {
+  public ReindexPlan buildScript(Script script) {
     this.script = script;
     return this;
   }
@@ -66,7 +66,7 @@ public class ReindexPlan implements Plan {
     return this;
   }
 
-  public ReindexPlan setScript(final String scriptContent, final Map<String,Object> params) {
+  public ReindexPlan buildScript(final String scriptContent, final Map<String,Object> params) {
     script = new Script(ScriptType.INLINE, "painless", scriptContent, params);
     return this;
   }
@@ -83,7 +83,6 @@ public class ReindexPlan implements Plan {
 
   @Override
   public void executeOn(final RetryElasticsearchClient retryElasticsearchClient) throws MigrationException {
-    int batchSize = 10_000; // Maximum
     final ReindexRequest reindexRequest = new ReindexRequest()
           .setSourceIndices(srcIndex + "_*")
           .setDestIndex(dstIndex + "_")
@@ -93,11 +92,10 @@ public class ReindexPlan implements Plan {
     final Optional<String> pipelineName = createPipelineFromSteps(retryElasticsearchClient);
 
     pipelineName.ifPresent(reindexRequest::setDestPipeline);
-    if (script != null) {
-      reindexRequest.setScript(script);
-    } else {
-      setScript(DEFAULT_SCRIPT, Map.of("dstIndex", dstIndex));
+    if (script == null) {
+      buildScript(DEFAULT_SCRIPT, Map.of("dstIndex", dstIndex));
     }
+    reindexRequest.setScript(script);
 
     try {
       retryElasticsearchClient.reindex(reindexRequest);

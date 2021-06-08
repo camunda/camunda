@@ -33,6 +33,7 @@ public class ElasticsearchContainerUtil {
     logger.info("************ Starting Elasticsearch ************");
     elsContainer = new ElasticsearchContainer(String.format("%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, ElasticsearchClient.class.getPackage().getImplementationVersion()))
         .withNetwork(getNetwork())
+        .withEnv("xpack.security.enabled","false")
         .withNetworkAliases(ELS_NETWORK_ALIAS)
         .withExposedPorts(ELS_PORT);
     elsContainer

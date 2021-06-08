@@ -27,6 +27,9 @@
       "createdDate": {
         "type": "date"
       },
+      "appliedDate": {
+        "type": "date"
+      },
       "description": {
         "type": "text",
         "fields": {

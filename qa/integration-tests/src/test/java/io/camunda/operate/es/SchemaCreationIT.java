@@ -5,8 +5,13 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
+import static io.camunda.operate.util.CollectionUtil.filter;
+
+import io.camunda.operate.schema.migration.ProcessorStep;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import io.camunda.operate.management.ElsIndicesCheck;
 import io.camunda.operate.schema.ElasticsearchSchemaManager;
@@ -17,10 +22,9 @@ import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateIntegrationTest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.client.indices.GetIndexTemplatesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,16 +63,31 @@ public class SchemaCreationIT extends OperateIntegrationTest {
     assertThat(elsIndicesCheck.indicesArePresent()).isTrue();
   }
 
-  private void assertTemplateOrder(String templateName, int templateOrder) throws IOException {
-    final GetIndexTemplatesResponse getIndexTemplatesResponse =
-      esClient.indices()
-        .getIndexTemplate(new GetIndexTemplatesRequest(templateName), RequestOptions.DEFAULT);
-
-    assertThat(getIndexTemplatesResponse.getIndexTemplates()).hasSize(1);
-    assertThat(getIndexTemplatesResponse.getIndexTemplates().iterator().next().order()).isEqualTo(templateOrder);
+  @Test //OPE-1310
+  public void testMigrationStepsRepositoryFields() throws IOException {
+    IndexDescriptor migrationStepsIndexDescriptor = getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
+    assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
+    assertThat(getFieldDescriptions(migrationStepsIndexDescriptor).keySet())
+        .containsExactlyInAnyOrder(
+        ProcessorStep.VERSION, "@type", "description",
+        ProcessorStep.APPLIED, ProcessorStep.APPLIED_DATE,
+        ProcessorStep.CREATED_DATE, ProcessorStep.CONTENT,
+        ProcessorStep.INDEX_NAME, ProcessorStep.ORDER);
   }
 
-  private void assertIndexAndAlias(String indexName, String aliasName) throws InterruptedException, ExecutionException, IOException {
+  private Map<String,Object> getFieldDescriptions(IndexDescriptor indexDescriptor) throws IOException {
+    Map<String, MappingMetadata> mappings = esClient.indices().get(
+        new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
+        .getMappings();
+    Map<String, Object> source = mappings.get(indexDescriptor.getFullQualifiedName()).getSourceAsMap();
+    return (Map<String,Object>) source.get("properties");
+  }
+
+  private IndexDescriptor getIndexDescriptorBy(String name) {
+    return filter(indexDescriptors, indexDescriptor -> indexDescriptor.getIndexName().equals(name)).get(0);
+  }
+
+  private void assertIndexAndAlias(String indexName, String aliasName) throws IOException {
     final GetIndexResponse getIndexResponse =
       esClient.indices()
         .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT);

@@ -14,6 +14,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexSchemaValidator;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import java.util.HashMap;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -34,8 +34,11 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import static io.camunda.operate.es.RetryElasticsearchClient.NO_REFRESH;
+import static io.camunda.operate.es.RetryElasticsearchClient.NO_REPLICA;
+import static io.camunda.operate.es.RetryElasticsearchClient.REFRESH_INTERVAL;
+import static io.camunda.operate.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static io.camunda.operate.util.CollectionUtil.filter;
-
 /**
  * Migrates an operate schema from one version to another.
  * Requires an already created destination schema  provided by a schema manager.
@@ -48,9 +51,6 @@ import static io.camunda.operate.util.CollectionUtil.filter;
 public class Migrator{
 
   private static final Logger logger = LoggerFactory.getLogger(Migrator.class);
-
-  private static final String REFRESH_INTERVAL = "index.refresh_interval";
-  private static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
 
   @Autowired
   private List<IndexDescriptor> indexDescriptors;
@@ -147,13 +147,17 @@ public class Migrator{
     }
   }
 
-  private void migrateIndex(final IndexDescriptor indexDescriptor, final Plan plan) throws IOException, MigrationException {
+  public void migrateIndex(final IndexDescriptor indexDescriptor, final Plan plan) throws IOException, MigrationException {
+    final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+
     logger.debug("Save current settings for {}", indexDescriptor.getFullQualifiedName());
-    final Map<String, String> indexSettings = retryElasticsearchClient.getIndexSettingsFor(indexDescriptor.getFullQualifiedName(),
-        NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+    final Map<String, String> indexSettings = getIndexSettingsOrDefaultsFor(indexDescriptor, elsConfig);
+
     logger.debug("Set reindex settings for {}", indexDescriptor.getDerivedIndexNamePattern());
     retryElasticsearchClient.setIndexSettingsFor(
-        Settings.builder().put(NUMBERS_OF_REPLICA, "0").put(REFRESH_INTERVAL, "-1").build(),
+        Settings.builder()
+            .put(NUMBERS_OF_REPLICA, NO_REPLICA)
+            .put(REFRESH_INTERVAL, NO_REFRESH).build(),
         indexDescriptor.getDerivedIndexNamePattern());
 
     logger.info("Execute plan: {} ", plan);
@@ -166,16 +170,23 @@ public class Migrator{
     }
 
     logger.debug("Restore settings for {}", indexDescriptor.getDerivedIndexNamePattern());
-    final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    String numberOfReplicas = indexSettings.getOrDefault(NUMBERS_OF_REPLICA, "" + elsConfig.getNumberOfReplicas());
-    String refreshInterval = indexSettings.getOrDefault(REFRESH_INTERVAL, elsConfig.getRefreshInterval());
     retryElasticsearchClient
         .setIndexSettingsFor(Settings.builder()
-            .put(NUMBERS_OF_REPLICA, numberOfReplicas)
-            .put(REFRESH_INTERVAL, refreshInterval).build(), indexDescriptor.getDerivedIndexNamePattern());
+            .put(NUMBERS_OF_REPLICA, indexSettings.get(NUMBERS_OF_REPLICA))
+            .put(REFRESH_INTERVAL, indexSettings.get(REFRESH_INTERVAL)).build(),
+            indexDescriptor.getDerivedIndexNamePattern());
 
     logger.info("Refresh index {}", indexDescriptor.getDerivedIndexNamePattern());
     retryElasticsearchClient.refresh(indexDescriptor.getDerivedIndexNamePattern());
+  }
+
+  private Map<String, String> getIndexSettingsOrDefaultsFor(final IndexDescriptor indexDescriptor, OperateElasticsearchProperties elsConfig) {
+    Map<String,String> settings = new HashMap<>();
+    settings.put(REFRESH_INTERVAL, retryElasticsearchClient.getOrDefaultRefreshInterval(
+        indexDescriptor.getFullQualifiedName(), elsConfig.getRefreshInterval()));
+    settings.put(NUMBERS_OF_REPLICA, retryElasticsearchClient.getOrDefaultNumbersOfReplica(
+        indexDescriptor.getFullQualifiedName(), "" + elsConfig.getNumberOfReplicas()));
+    return settings;
   }
 
   protected Plan createPlanFor(final String indexName, final String srcVersion, final String dstVersion, final List<Step> steps) {

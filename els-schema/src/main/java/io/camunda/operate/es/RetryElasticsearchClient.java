@@ -5,10 +5,13 @@
  */
 package io.camunda.operate.es;
 
+import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.CollectionUtil.map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.property.OperateElasticsearchProperties;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -70,6 +73,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class RetryElasticsearchClient {
 
+  public static final String REFRESH_INTERVAL = "index.refresh_interval";
+  public static final String NO_REFRESH = "-1";
+  public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
+  public static final String NO_REPLICA = "0";
   private static final Logger logger = LoggerFactory.getLogger(RetryElasticsearchClient.class);
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES = 30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
@@ -79,6 +86,8 @@ public class RetryElasticsearchClient {
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
+
+
 
   public int getNumberOfRetries() {
     return numberOfRetries;
@@ -226,7 +235,7 @@ public class RetryElasticsearchClient {
       return true;
     });
   }
-  public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
+  protected Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
     return executeWithRetries("GetIndexSettings " + indexName, () -> {
       Map<String, String> settings = new HashMap<>();
       GetSettingsResponse response = esClient.indices().getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
@@ -236,6 +245,25 @@ public class RetryElasticsearchClient {
       return settings;
     });
   }
+
+  public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
+    Map<String,String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
+    if (refreshInterval.trim().equals(NO_REFRESH)) {
+      refreshInterval = defaultValue;
+    }
+    return refreshInterval;
+  }
+
+  public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
+    Map<String,String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
+      numbersOfReplica = defaultValue;
+    }
+    return numbersOfReplica;
+  }
+
   public boolean setIndexSettingsFor(Settings settings, String indexPattern) {
     return executeWithRetries("SetIndexSettings " + indexPattern, () ->
      esClient.indices()

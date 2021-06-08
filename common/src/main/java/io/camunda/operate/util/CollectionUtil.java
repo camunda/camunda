@@ -25,6 +25,11 @@ import java.util.stream.Stream;
 
 public abstract class CollectionUtil {
 
+  public static <K,V> V getOrDefaultForNullValue(Map<K,V> map, K key, V defaultValue) {
+    V value = map.get(key);
+    return value==null?defaultValue:value;
+  }
+
   @SafeVarargs
   public static <T> List<T> throwAwayNullElements(T... array) {
     List<T> listOfNotNulls = new ArrayList<>();
@@ -35,12 +40,12 @@ public abstract class CollectionUtil {
     }
     return listOfNotNulls;
   }
-  
+
   public static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
     Set<Object> seen = ConcurrentHashMap.newKeySet();
     return t -> seen.add(keyExtractor.apply(t));
   }
-  
+
   public static <T> List<T> emptyListWhenNull(List<T> aList){
     return aList == null ? Collections.emptyList() : aList;
   }
@@ -57,7 +62,7 @@ public abstract class CollectionUtil {
     map.computeIfAbsent(key, k -> new ArrayList<S>()).add(value);
     return map;
   }
- 
+
   public static Map<String, Object> asMap(Object ...keyValuePairs){
     if(keyValuePairs == null || keyValuePairs.length % 2 != 0) {
       throw new OperateRuntimeException("keyValuePairs should not be null and has a even length.");
@@ -72,39 +77,39 @@ public abstract class CollectionUtil {
   public static <S,T> List<T> map(Collection<S> sourceList,Function<S,T> mapper){
     return map(sourceList.stream(),mapper);
   }
-  
+
   public static <S,T> List<T> map(S[] sourceArray, Function<S, T> mapper) {
     return map(Arrays.stream(sourceArray).parallel(), mapper);
   }
-  
+
   public static <S,T> List<T> map(Stream<S> sequenceStream, Function<S, T> mapper) {
     return sequenceStream.map(mapper).collect(Collectors.toList());
   }
- 
+
   public static <T> List<T> filter(Collection<T> collection, Predicate<T> predicate){
     return filter(collection.stream(),predicate);
   }
-  
+
   public static <T> List<T> filter(Stream<T> filterStream, Predicate<T> predicate){
     return filterStream.filter(predicate).collect(Collectors.toList());
   }
-  
+
   public static List<String> toSafeListOfStrings(Collection<?> aCollection){
       return map(withoutNulls(aCollection),obj -> obj.toString());
   }
-  
+
   public static String[] toSafeArrayOfStrings(Collection<?> aCollection){
     return toSafeListOfStrings(aCollection).toArray(new String[]{});
   }
-   
+
   public static List<String> toSafeListOfStrings(Object... objects){
     return toSafeListOfStrings(Arrays.asList(objects));
   }
-  
+
   public static List<Long> toSafeListOfLongs(Collection<String> aCollection){
     return map(withoutNulls(aCollection),stringToLong);
   }
-  
+
   public static <T> void addNotNull(Collection<T> collection, T object) {
     if (collection!= null && object != null) {
       collection.add(object);
