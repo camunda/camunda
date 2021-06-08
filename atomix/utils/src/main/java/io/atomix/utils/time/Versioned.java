@@ -113,17 +113,6 @@ public class Versioned<V> {
     return versioned == null ? defaultValue : versioned.value();
   }
 
-  /**
-   * Returns the value of the specified Versioned object if non-null or else returns null.
-   *
-   * @param versioned versioned object
-   * @param <U> type of the versioned value
-   * @return versioned value or null if versioned object is null
-   */
-  public static <U> U valueOrNull(final Versioned<U> versioned) {
-    return valueOrElse(versioned, null);
-  }
-
   @Override
   public int hashCode() {
     return Objects.hashCode(value, version, creationTime);

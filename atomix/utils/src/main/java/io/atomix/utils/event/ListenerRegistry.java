@@ -68,21 +68,6 @@ public class ListenerRegistry<E extends Event, L extends EventListener<E>>
     }
   }
 
-  @Override
-  public void onProcessLimit() {
-    if (lastStart > 0) {
-      final long duration = System.currentTimeMillis() - lastStart;
-      if (duration > LIMIT) {
-        log.error(
-            "Listener {} exceeded execution time limit: {} ms; ejected",
-            lastListener.getClass().getName(),
-            duration);
-        removeListener(lastListener);
-      }
-      lastStart = 0;
-    }
-  }
-
   /**
    * Reports a problem encountered while processing an event.
    *
