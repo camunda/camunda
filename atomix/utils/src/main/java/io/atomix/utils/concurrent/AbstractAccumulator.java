@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractAccumulator<T> implements Accumulator<T> {
 
-  private Logger log = LoggerFactory.getLogger(AbstractAccumulator.class);
+  private final Logger log = LoggerFactory.getLogger(AbstractAccumulator.class);
 
   private final Timer timer;
   private final int maxItems;
@@ -174,35 +174,6 @@ public abstract class AbstractAccumulator<T> implements Accumulator<T> {
    */
   public Timer timer() {
     return timer;
-  }
-
-  /**
-   * Returns the maximum number of items allowed to accumulate before processing is triggered.
-   *
-   * @return max number of items
-   */
-  public int maxItems() {
-    return maxItems;
-  }
-
-  /**
-   * Returns the maximum number of millis allowed to expire since the first item before processing
-   * is triggered.
-   *
-   * @return max number of millis a batch is allowed to last
-   */
-  public int maxBatchMillis() {
-    return maxBatchMillis;
-  }
-
-  /**
-   * Returns the maximum number of millis allowed to expire since the last item arrival before
-   * processing is triggered.
-   *
-   * @return max number of millis since the last item
-   */
-  public int maxIdleMillis() {
-    return maxIdleMillis;
   }
 
   // Task for triggering processing of accumulated items

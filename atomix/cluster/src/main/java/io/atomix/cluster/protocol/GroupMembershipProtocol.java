@@ -20,7 +20,7 @@ import io.atomix.cluster.BootstrapService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.NodeDiscoveryService;
-import io.atomix.utils.ConfiguredType;
+import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.event.ListenerService;
 import java.util.Set;
@@ -66,7 +66,7 @@ public interface GroupMembershipProtocol
   CompletableFuture<Void> leave(Member localMember);
 
   /** Group membership protocol type. */
-  interface Type<C extends GroupMembershipProtocolConfig> extends ConfiguredType<C> {
+  interface Type<C extends GroupMembershipProtocolConfig> extends NamedType {
 
     /**
      * Creates a new instance of the protocol.

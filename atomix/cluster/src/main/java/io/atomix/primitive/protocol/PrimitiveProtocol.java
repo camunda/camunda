@@ -16,7 +16,7 @@
  */
 package io.atomix.primitive.protocol;
 
-import io.atomix.utils.ConfiguredType;
+import io.atomix.utils.NamedType;
 
 /** Primitive protocol. */
 public interface PrimitiveProtocol {
@@ -29,16 +29,7 @@ public interface PrimitiveProtocol {
   Type type();
 
   /** Distributed primitive protocol type. */
-  interface Type<C extends PrimitiveProtocolConfig<C>>
-      extends ConfiguredType<C>, Comparable<Type<C>> {
-
-    /**
-     * Creates a new protocol instance.
-     *
-     * @param config the protocol configuration
-     * @return the protocol instance
-     */
-    PrimitiveProtocol newProtocol(C config);
+  interface Type<C extends PrimitiveProtocolConfig<C>> extends NamedType, Comparable<Type<C>> {
 
     @Override
     default int compareTo(final Type<C> o) {

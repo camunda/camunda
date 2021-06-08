@@ -32,7 +32,7 @@ public class VectorClock<T extends Identifier> implements Clock<VectorTimestamp<
   private final Map<T, VectorTimestamp<T>> vector = new HashMap<>();
 
   public VectorClock(final T localIdentifier) {
-    this(new VectorTimestamp<T>(localIdentifier, 0));
+    this(new VectorTimestamp<>(localIdentifier, 0));
   }
 
   public VectorClock(final VectorTimestamp<T> localTimestamp) {
@@ -51,15 +51,6 @@ public class VectorClock<T extends Identifier> implements Clock<VectorTimestamp<
   @Override
   public VectorTimestamp<T> getTime() {
     return vector.get(localIdentifier);
-  }
-
-  /**
-   * Returns the local logical timestamp.
-   *
-   * @return the logical timestamp for the local identifier
-   */
-  public LogicalTimestamp getLocalTimestamp() {
-    return getTime();
   }
 
   /**

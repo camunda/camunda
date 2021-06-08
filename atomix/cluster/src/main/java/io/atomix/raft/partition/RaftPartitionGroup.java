@@ -127,7 +127,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public Collection<Partition> getPartitions() {
     return (Collection) partitions.values();
   }
@@ -278,11 +277,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     @Override
     public ManagedPartitionGroup newPartitionGroup(final RaftPartitionGroupConfig config) {
       return new RaftPartitionGroup(config);
-    }
-
-    @Override
-    public RaftPartitionGroupConfig newConfig() {
-      return new RaftPartitionGroupConfig();
     }
   }
 

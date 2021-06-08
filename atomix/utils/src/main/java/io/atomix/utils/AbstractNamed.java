@@ -18,11 +18,7 @@ package io.atomix.utils;
 
 /** Abstract named object. */
 public abstract class AbstractNamed implements Named {
-  private String name;
-
-  protected AbstractNamed() {
-    this(null);
-  }
+  private final String name;
 
   protected AbstractNamed(final String name) {
     this.name = name;

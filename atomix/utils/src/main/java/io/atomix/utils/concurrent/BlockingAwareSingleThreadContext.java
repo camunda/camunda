@@ -16,19 +16,12 @@
  */
 package io.atomix.utils.concurrent;
 
-import static io.atomix.utils.concurrent.Threads.namedThreads;
-
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /** Blocking aware single thread context. */
 public class BlockingAwareSingleThreadContext extends SingleThreadContext {
   private final Executor threadPoolExecutor;
-
-  public BlockingAwareSingleThreadContext(
-      final String nameFormat, final Executor threadPoolExecutor) {
-    this(namedThreads(nameFormat, LOGGER), threadPoolExecutor);
-  }
 
   public BlockingAwareSingleThreadContext(
       final ThreadFactory factory, final Executor threadPoolExecutor) {

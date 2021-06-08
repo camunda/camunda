@@ -57,20 +57,6 @@ public class LogicalClock implements Clock<LogicalTimestamp> {
     return currentTimestamp;
   }
 
-  /**
-   * Increments the clock and updates it using the given timestamp.
-   *
-   * @param timestamp the timestamp with which to update the clock
-   * @return the updated clock time
-   */
-  public LogicalTimestamp incrementAndUpdate(final LogicalTimestamp timestamp) {
-    final long nextValue = currentTimestamp.value() + 1;
-    if (timestamp.value() > nextValue) {
-      return update(timestamp);
-    }
-    return increment();
-  }
-
   @Override
   public String toString() {
     return toStringHelper(this).add("time", getTime()).toString();
