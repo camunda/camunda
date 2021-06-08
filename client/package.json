@@ -11,7 +11,7 @@
     "final-form": "^4.20.1",
     "final-form-arrays": "^3.0.2",
     "graphql": "^15.5.0",
-    "mobx": "^6.3.1",
+    "mobx": "^6.3.2",
     "mobx-react-lite": "^3.2.0",
     "polished": "^4.1.3",
     "react": "^17.0.1",
