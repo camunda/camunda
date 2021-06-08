@@ -55,6 +55,7 @@ public class ListViewZeebeRecordProcessor {
   private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES = new HashSet<>();
+  protected static final int ABSENT_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
     AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
@@ -151,6 +152,13 @@ public class ListViewZeebeRecordProcessor {
       wiEntity.setState(ProcessInstanceState.ACTIVE);
     } else {
       wiEntity.setState(ProcessInstanceState.ACTIVE);
+    }
+    //call activity related fields
+    if (recordValue.getParentProcessInstanceKey() != ABSENT_PARENT_PROCESS_INSTANCE_ID) {
+      wiEntity
+          .setParentProcessInstanceId(String.valueOf(recordValue.getParentProcessInstanceKey()));
+      wiEntity
+          .setParentFlowNodeInstanceId(String.valueOf(recordValue.getParentElementInstanceKey()));
     }
     return wiEntity;
   }

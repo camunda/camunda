@@ -7,10 +7,12 @@ package io.camunda.operate.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import java.util.Objects;
 
 public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<ProcessInstanceForListViewEntity> {
 
@@ -25,6 +27,10 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
   private ProcessInstanceState state;
 
   private List<String> batchOperationIds;
+
+  private String parentProcessInstanceId;
+
+  private String parentFlowNodeInstanceId;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 
@@ -103,6 +109,26 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     this.bpmnProcessId = bpmnProcessId;
   }
 
+  public String getParentProcessInstanceId() {
+    return parentProcessInstanceId;
+  }
+
+  public ProcessInstanceForListViewEntity setParentProcessInstanceId(
+      final String parentProcessInstanceId) {
+    this.parentProcessInstanceId = parentProcessInstanceId;
+    return this;
+  }
+
+  public String getParentFlowNodeInstanceId() {
+    return parentFlowNodeInstanceId;
+  }
+
+  public ProcessInstanceForListViewEntity setParentFlowNodeInstanceId(
+      final String parentFlowNodeInstanceId) {
+    this.parentFlowNodeInstanceId = parentFlowNodeInstanceId;
+    return this;
+  }
+
   public ListViewJoinRelation getJoinRelation() {
     return joinRelation;
   }
@@ -120,48 +146,38 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-    if (!super.equals(o))
+    }
+    if (!super.equals(o)) {
       return false;
-
-    ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
-
-    if (processDefinitionKey != null ? !processDefinitionKey.equals(that.processDefinitionKey) : that.processDefinitionKey != null)
-      return false;
-    if (processName != null ? !processName.equals(that.processName) : that.processName != null)
-      return false;
-    if (processVersion != null ? !processVersion.equals(that.processVersion) : that.processVersion != null)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
-      return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
-    if (state != that.state)
-      return false;
-    if (batchOperationIds != null ? !batchOperationIds.equals(that.batchOperationIds) : that.batchOperationIds != null)
-      return false;
-    return joinRelation != null ? joinRelation.equals(that.joinRelation) : that.joinRelation == null;
-
+    }
+    final ProcessInstanceForListViewEntity that = (ProcessInstanceForListViewEntity) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
+        Objects.equals(processName, that.processName) &&
+        Objects.equals(processVersion, that.processVersion) &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
+        Objects.equals(startDate, that.startDate) &&
+        Objects.equals(endDate, that.endDate) &&
+        state == that.state &&
+        Objects.equals(batchOperationIds, that.batchOperationIds) &&
+        Objects.equals(parentProcessInstanceId, that.parentProcessInstanceId) &&
+        Objects.equals(parentFlowNodeInstanceId, that.parentFlowNodeInstanceId) &&
+        Objects.equals(joinRelation, that.joinRelation) &&
+        Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (processDefinitionKey != null ? processDefinitionKey.hashCode() : 0);
-    result = 31 * result + (processName != null ? processName.hashCode() : 0);
-    result = 31 * result + (processVersion != null ? processVersion.hashCode() : 0);
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
-    result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
-    result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (batchOperationIds != null ? batchOperationIds.hashCode() : 0);
-    result = 31 * result + (joinRelation != null ? joinRelation.hashCode() : 0);
+    int result = Objects
+        .hash(super.hashCode(), processDefinitionKey, processName, processVersion, bpmnProcessId,
+            startDate, endDate, state, batchOperationIds, parentProcessInstanceId,
+            parentFlowNodeInstanceId, joinRelation);
+    result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 }

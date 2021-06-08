@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_09r3sdo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_09r3sdo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.8.1">
   <bpmn:process id="call-activity-process" name="Call Activity Process" isExecutable="true">
     <bpmn:startEvent id="start" name="Start">
       <bpmn:outgoing>SequenceFlow_102lguy</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_102lguy" sourceRef="start" targetRef="call-activity" />
     <bpmn:endEvent id="end" name="End">
-      <bpmn:incoming>SequenceFlow_08b0ypc</bpmn:incoming>
+      <bpmn:incoming>Flow_000k7wo</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_08b0ypc" sourceRef="call-activity" targetRef="end" />
+    <bpmn:sequenceFlow id="SequenceFlow_08b0ypc" sourceRef="call-activity" targetRef="Activity_187v5g1" />
     <bpmn:callActivity id="call-activity" name="Call Activity">
       <bpmn:extensionElements>
         <zeebe:calledElement processId="called-process" />
@@ -16,31 +16,46 @@
       <bpmn:incoming>SequenceFlow_102lguy</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_08b0ypc</bpmn:outgoing>
     </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_000k7wo" sourceRef="Activity_187v5g1" targetRef="end" />
+    <bpmn:serviceTask id="Activity_187v5g1" name="Task after call activity">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="taskAfterCallActivity" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_08b0ypc</bpmn:incoming>
+      <bpmn:outgoing>Flow_000k7wo</bpmn:outgoing>
+    </bpmn:serviceTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="call-activity-process">
+      <bpmndi:BPMNEdge id="SequenceFlow_08b0ypc_di" bpmnElement="SequenceFlow_08b0ypc">
+        <di:waypoint x="400" y="117" />
+        <di:waypoint x="470" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_102lguy_di" bpmnElement="SequenceFlow_102lguy">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="300" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_000k7wo_di" bpmnElement="Flow_000k7wo">
+        <di:waypoint x="570" y="117" />
+        <di:waypoint x="642" y="117" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start">
         <dc:Bounds x="179" y="99" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="186" y="142" width="24" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_102lguy_di" bpmnElement="SequenceFlow_102lguy">
-        <di:waypoint x="215" y="117" />
-        <di:waypoint x="300" y="117" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_1p3c1tb_di" bpmnElement="end">
-        <dc:Bounds x="472" y="99" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="480" y="142" width="20" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_08b0ypc_di" bpmnElement="SequenceFlow_08b0ypc">
-        <di:waypoint x="400" y="117" />
-        <di:waypoint x="472" y="117" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="CallActivity_1sbi3ss_di" bpmnElement="call-activity">
         <dc:Bounds x="300" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1p3c1tb_di" bpmnElement="end">
+        <dc:Bounds x="642" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="650" y="142" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_06od0qn_di" bpmnElement="Activity_187v5g1">
+        <dc:Bounds x="470" y="77" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
