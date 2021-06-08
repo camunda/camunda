@@ -26,13 +26,13 @@ jobs:
           fetch-depth: 0
       - name: Create backport PRs
         # Should be kept in sync with `version`
-        uses: zeebe-io/backport-action@0.0.4
+        uses: zeebe-io/backport-action@v0.0.4
         with:
           # Required
           # Version of the backport-action
           # Must equal the version in `uses`
           # Recommended: latest tag or `master`
-          version: 0.0.4
+          version: v0.0.4
 
           # Required
           # Token to authenticate requests to GitHub
