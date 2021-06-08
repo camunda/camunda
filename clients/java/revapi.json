@@ -12,5 +12,19 @@
         ]
       }
     }
+  },
+  {
+    "extension": "revapi.filter",
+    "configuration": {
+      "justification": "The model API is already checked in the module itself.",
+      "elements": {
+        "exclude": [
+          {
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.model.bpmn"
+          }
+        ]
+      }
+    }
   }
 ]
