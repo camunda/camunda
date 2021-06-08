@@ -33,7 +33,7 @@ public class TestContainerUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(TestContainerUtil.class);
 
-  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME = "docker.elastic.co/elasticsearch/elasticsearch-oss";
+  private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME = "docker.elastic.co/elasticsearch/elasticsearch";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String ZEEBE_CFG_YAML_FILE = "/severalversions/application.yaml";
@@ -77,11 +77,10 @@ public class TestContainerUtil {
   }
 
   public String[] getOperateProperties() {
+    final String elsUrl = String.format("http://%s:%s", elsHost, elsPort);
     return new String[] {
-        PROPERTIES_PREFIX + "elasticsearch.host=" + elsHost,
-        PROPERTIES_PREFIX + "elasticsearch.port=" + elsPort,
-        PROPERTIES_PREFIX + "zeebeElasticsearch.host=" + elsHost,
-        PROPERTIES_PREFIX + "zeebeElasticsearch.port=" + elsPort,
+        PROPERTIES_PREFIX + "elasticsearch.url=" + elsUrl,
+        PROPERTIES_PREFIX + "zeebeElasticsearch.url=" + elsUrl,
         PROPERTIES_PREFIX + "zeebeElasticsearch.prefix=" + ImportSeveralVersionsInitializer.ZEEBE_PREFIX,
         PROPERTIES_PREFIX + "zeebe.gatewayAddress=" + gatewayAddress,
         PROPERTIES_PREFIX + "importer.startLoadingDataOnStartup=false"

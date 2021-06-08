@@ -39,7 +39,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ImportSeveralVersionsInitializer.class)
-@Ignore("Unignore after v.1.0.0 is out")
 public class ImportSeveralVersionsTest extends OperateIntegrationTest {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportSeveralVersionsTest.class);
@@ -71,12 +70,11 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
   @Value("${test.incidentCount}")
   private int incidentCount;
 
-  // TODO: change this back to the previous version after 1.0
   @SpyBean
   private io.camunda.operate.zeebeimport.v1_0.processors.ElasticsearchBulkProcessor importerv1;
 
   @SpyBean
-  private io.camunda.operate.zeebeimport.v1_0.processors.ElasticsearchBulkProcessor importerv2;
+  private io.camunda.operate.zeebeimport.v1_1.processors.ElasticsearchBulkProcessor importerv2;
 
   public TestContainerUtil testContainerUtil = new TestContainerUtil();
 

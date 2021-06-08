@@ -103,8 +103,6 @@ pipeline {
           }
         }
         stage('Backend - Tests (old Zeebe)') {
-          // TODO(menski): re-enable after 1.0
-          when { expression { return false } }
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {

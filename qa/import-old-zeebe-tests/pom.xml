@@ -96,7 +96,11 @@
       <exclusions>
         <exclusion>
           <groupId>org.elasticsearch.client</groupId>
-          <artifactId>elasticsearch-rest-high-level-client</artifactId>
+          <artifactId>elasticsearch-rest-client</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.elasticsearch</groupId>
+          <artifactId>elasticsearch-x-content</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -192,9 +196,9 @@
           </includes>
           <excludes>
             <exclude>**/ImportSeveralVersionsTest.java</exclude>
-            <exclude>**/FlowNodeInstanceIT.java</exclude>
+            <!-- <exclude>**/FlowNodeInstanceIT.java</exclude>
             <exclude>**/FlowNodeMetadataIT.java</exclude>
-            <exclude>**/ZeebeImport*.java</exclude>
+            <exclude>**/ZeebeImport*.java</exclude> -->
           </excludes>
           <systemPropertyVariables>
             <spring.profiles.active>test,old-zeebe</spring.profiles.active>
