@@ -27,7 +27,7 @@
 
     <camunda.engine.version>7.15.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.15.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.0.0</zeebe.version>
+    <zeebe.version>1.0.1</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
