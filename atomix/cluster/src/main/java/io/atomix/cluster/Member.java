@@ -26,8 +26,8 @@ import java.util.Properties;
 
 /** Represents a node as a member in a cluster. */
 public class Member extends Node {
+  private static final int UNKNOWN_TIMESTAMP = 0;
 
-  public static final int UNKNOWN_TIMESTAMP = 0;
   private final MemberId id;
   private final String zone;
   private final String rack;
@@ -163,7 +163,7 @@ public class Member extends Node {
       return true;
     }
 
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof Member)) {
       return false;
     }
 
