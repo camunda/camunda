@@ -33,6 +33,7 @@ export function DefinitionEditor({
   tenantInfo,
   onChange,
   onRemove,
+  onCopy,
 }) {
   const [availableVersions, setAvailableVersions] = useState([]);
   const [selectedSpecificVersions, setSelectedSpecificVersions] = useState(
@@ -158,6 +159,10 @@ export function DefinitionEditor({
         </Button>
       </div>
       <div className="actionBar">
+        <Button small onClick={onCopy}>
+          <Icon type="copy-small" />
+          {t('common.addACopy')}
+        </Button>
         <Button small onClick={onRemove}>
           <Icon type="close-small" />
           {t('common.removeEntity', {entity: t(`common.${type}.label`)})}

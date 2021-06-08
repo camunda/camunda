@@ -716,6 +716,7 @@
     "close": "Close",
     "add": "Add",
     "copy": "Copy",
+    "addACopy": "Add a copy",
     "export": "Export",
     "importJSON": "Import JSON",
     "change": "Change",

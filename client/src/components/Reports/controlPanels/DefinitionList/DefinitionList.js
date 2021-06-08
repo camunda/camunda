@@ -21,7 +21,15 @@ import DefinitionEditor from './DefinitionEditor';
 
 import './DefinitionList.scss';
 
-export function DefinitionList({mightFail, location, definitions = [], type, onChange, onRemove}) {
+export function DefinitionList({
+  mightFail,
+  location,
+  definitions = [],
+  type,
+  onChange,
+  onRemove,
+  onCopy,
+}) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
 
@@ -63,6 +71,9 @@ export function DefinitionList({mightFail, location, definitions = [], type, onC
               </div>
             )}
             <div className="actions">
+              <Button icon onClick={() => onCopy(idx)}>
+                <Icon type="copy-small" size="14px" />
+              </Button>
               <Popover
                 renderInPortal="DefinitionList"
                 onOpen={() => setOpenPopover(idx)}
@@ -78,6 +89,10 @@ export function DefinitionList({mightFail, location, definitions = [], type, onC
                   onRemove={() => {
                     onRemove(idx);
                     setOpenPopover();
+                  }}
+                  onCopy={() => {
+                    onCopy(idx);
+                    document.body.click(); // closes the popover
                   }}
                   type={type}
                 />

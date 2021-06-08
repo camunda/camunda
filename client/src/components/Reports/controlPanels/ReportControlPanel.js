@@ -134,6 +134,23 @@ export default withErrorHandling(
       }
     };
 
+    copyDefinition = async (idx) => {
+      const definitionToCopy = this.props.report.data.definitions[idx];
+
+      const newDefinition = {
+        ...definitionToCopy,
+        tenantIds: [...definitionToCopy.tenantIds],
+        versions: [...definitionToCopy.versions],
+        displayName: definitionToCopy.displayName + ` (${t('common.copyLabel')})`,
+      };
+
+      let change = {definitions: {$splice: [[idx, 0, newDefinition]]}};
+
+      this.props.setLoading(true);
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
     addDefinition = async (newDefinitions) => {
       let change = {definitions: {$push: newDefinitions}};
 
@@ -297,6 +314,7 @@ export default withErrorHandling(
               <DefinitionList
                 type="process"
                 definitions={data.definitions}
+                onCopy={this.copyDefinition}
                 onChange={this.changeDefinition}
                 onRemove={this.removeDefinition}
               />
