@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
 public class DiskSpaceRecoveryITTest {
   private static final Logger LOG = LoggerFactory.getLogger(DiskSpaceRecoveryITTest.class);
@@ -144,12 +145,13 @@ public class DiskSpaceRecoveryITTest {
   }
 
   private ElasticsearchContainer createElastic() {
-    final String image =
-        "docker.elastic.co/elasticsearch/elasticsearch:"
-            + RestClient.class.getPackage().getImplementationVersion();
+    final var version = RestClient.class.getPackage().getImplementationVersion();
+    final var image =
+        DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag(version);
 
     return new ElasticsearchContainer(image)
         .withEnv("discovery.type", "single-node")
+        .withEnv("ES_JAVA_OPTS", "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1073741824")
         .withNetworkAliases(ELASTIC_HOSTNAME);
   }
 }
