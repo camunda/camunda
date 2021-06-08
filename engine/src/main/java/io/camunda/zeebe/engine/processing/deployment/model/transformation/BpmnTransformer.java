@@ -20,16 +20,18 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.Exclusive
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.FlowElementInstantiationTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.FlowNodeTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.IntermediateCatchEventTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MessageTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MultiInstanceActivityTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ReceiveTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.SequenceFlowTransformer;
-import io.camunda.zeebe.engine.processing.deployment.model.transformer.ServiceTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.StartEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.SubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.UserTaskTransformer;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import java.util.List;
 
@@ -74,7 +76,8 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new EndEventTransformer());
     step2Visitor.registerHandler(new FlowNodeTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
-    step2Visitor.registerHandler(new ServiceTaskTransformer());
+    step2Visitor.registerHandler(new JobWorkerTaskTransformer<>(ServiceTask.class));
+    step2Visitor.registerHandler(new JobWorkerTaskTransformer<>(BusinessRuleTask.class));
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
     step2Visitor.registerHandler(new UserTaskTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());

@@ -18,13 +18,10 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 
 /** @author Sebastian Menski */
 public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBuilder<B>>
-    extends AbstractTaskBuilder<B, ServiceTask> {
+    extends AbstractJobWorkerTaskBuilder<B, ServiceTask> {
 
   protected AbstractServiceTaskBuilder(
       final BpmnModelInstance modelInstance, final ServiceTask element, final Class<?> selfType) {
@@ -39,37 +36,6 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
    */
   public B implementation(final String implementation) {
     element.setImplementation(implementation);
-    return myself;
-  }
-
-  public B zeebeJobType(final String type) {
-    final ZeebeTaskDefinition taskDefinition =
-        getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
-    taskDefinition.setType(type);
-    return myself;
-  }
-
-  public B zeebeJobTypeExpression(final String expression) {
-    return zeebeJobType(asZeebeExpression(expression));
-  }
-
-  public B zeebeJobRetries(final String retries) {
-    final ZeebeTaskDefinition taskDefinition =
-        getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
-    taskDefinition.setRetries(retries);
-    return myself;
-  }
-
-  public B zeebeJobRetriesExpression(final String expression) {
-    return zeebeJobRetries(asZeebeExpression(expression));
-  }
-
-  public B zeebeTaskHeader(final String key, final String value) {
-    final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
-    final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);
-    header.setKey(key);
-    header.setValue(value);
-
     return myself;
   }
 }

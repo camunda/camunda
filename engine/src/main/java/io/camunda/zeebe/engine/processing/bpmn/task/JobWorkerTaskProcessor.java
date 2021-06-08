@@ -18,11 +18,15 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 
-public final class ServiceTaskProcessor implements BpmnElementProcessor<ExecutableServiceTask> {
+/**
+ * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
+ * example, service tasks.
+ */
+public final class JobWorkerTaskProcessor implements BpmnElementProcessor<ExecutableJobWorkerTask> {
 
   private final ExpressionProcessor expressionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
@@ -32,7 +36,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnJobBehavior jobBehavior;
 
-  public ServiceTaskProcessor(final BpmnBehaviors behaviors) {
+  public JobWorkerTaskProcessor(final BpmnBehaviors behaviors) {
     eventSubscriptionBehavior = behaviors.eventSubscriptionBehavior();
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
@@ -43,12 +47,12 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public Class<ExecutableServiceTask> getType() {
-    return ExecutableServiceTask.class;
+  public Class<ExecutableJobWorkerTask> getType() {
+    return ExecutableJobWorkerTask.class;
   }
 
   @Override
-  public void onActivate(final ExecutableServiceTask element, final BpmnElementContext context) {
+  public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
@@ -66,7 +70,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onComplete(final ExecutableServiceTask element, final BpmnElementContext context) {
+  public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
@@ -80,7 +84,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onTerminate(final ExecutableServiceTask element, final BpmnElementContext context) {
+  public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
     final long jobKey = elementInstance.getJobKey();
@@ -110,7 +114,7 @@ public final class ServiceTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   private Either<Failure, Tuple<String, Long>> evaluateJobExpressions(
-      final ExecutableServiceTask element, final BpmnElementContext context) {
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
 
     return expressionBehavior

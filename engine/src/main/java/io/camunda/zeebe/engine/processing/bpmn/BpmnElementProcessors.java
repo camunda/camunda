@@ -20,8 +20,8 @@ import io.camunda.zeebe.engine.processing.bpmn.event.StartEventProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.EventBasedGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ExclusiveGatewayProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.gateway.ParallelGatewayProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.task.JobWorkerTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
-import io.camunda.zeebe.engine.processing.bpmn.task.ServiceTaskProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.EnumMap;
@@ -34,9 +34,10 @@ public final class BpmnElementProcessors {
 
   public BpmnElementProcessors(final BpmnBehaviors bpmnBehaviors) {
     // tasks
-    processors.put(BpmnElementType.SERVICE_TASK, new ServiceTaskProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.SERVICE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.BUSINESS_RULE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.USER_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.RECEIVE_TASK, new ReceiveTaskProcessor(bpmnBehaviors));
-    processors.put(BpmnElementType.USER_TASK, new ServiceTaskProcessor(bpmnBehaviors));
 
     // gateways
     processors.put(BpmnElementType.EXCLUSIVE_GATEWAY, new ExclusiveGatewayProcessor(bpmnBehaviors));

@@ -202,6 +202,21 @@ public final class BpmnElementTypeTest {
               ENGINE.job().ofInstance(processInstanceKey).withType(taskType()).complete();
             }
           },
+          new BpmnElementTypeScenario("Business Rule Task", BpmnElementType.BUSINESS_RULE_TASK) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .businessRuleTask(elementId(), b -> b.zeebeJobType(taskType()))
+                  .done();
+            }
+
+            @Override
+            void test() {
+              final long processInstanceKey = super.executeInstance();
+              ENGINE.job().ofInstance(processInstanceKey).withType(taskType()).complete();
+            }
+          },
           new BpmnElementTypeScenario("User Task", BpmnElementType.USER_TASK) {
             @Override
             BpmnModelInstance modelInstance() {

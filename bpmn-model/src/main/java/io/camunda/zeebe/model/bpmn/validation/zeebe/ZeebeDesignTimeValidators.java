@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
@@ -36,6 +37,10 @@ public final class ZeebeDesignTimeValidators {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
     validators.add(new BoundaryEventValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(BusinessRuleTask.class)
+            .hasSingleExtensionElement(
+                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     validators.add(
         ExtensionElementsValidator.verifyThat(CallActivity.class)
             .hasSingleExtensionElement(

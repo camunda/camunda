@@ -11,46 +11,59 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.JobWorkerTaskBuilder;
+import io.camunda.zeebe.engine.util.JobWorkerTaskBuilderProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collection;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class ServiceTaskIncidentTest {
+@RunWith(Parameterized.class)
+public class JobWorkerTaskIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
-  private static final String SERVICE_TASK_ID = "task";
+  private static final String TASK_ELEMENT_ID = "task";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance createBPMNModel(final Consumer<ServiceTaskBuilder> consumer) {
-    final var builder =
-        Bpmn.createExecutableProcess(PROCESS_ID).startEvent().serviceTask(SERVICE_TASK_ID);
+  @Parameter public JobWorkerTaskBuilder taskBuilder;
 
-    builder.zeebeJobType("test"); // default job type, can be overridden by consumer
+  @Parameters(name = "{0}")
+  public static Collection<Object[]> parameters() {
+    return JobWorkerTaskBuilderProvider.buildersAsParameters();
+  }
 
-    consumer.accept(builder);
+  private BpmnModelInstance process(
+      final Consumer<AbstractJobWorkerTaskBuilder<?, ?>> taskModifier) {
+    final var processBuilder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent();
 
-    return builder.endEvent().done();
+    // default job type, can be overridden by taskModifier
+    final var jobWorkerTaskBuilder =
+        taskBuilder.build(processBuilder).id("task").zeebeJobType("test");
+    taskModifier.accept(jobWorkerTaskBuilder);
+
+    return jobWorkerTaskBuilder.endEvent().done();
   }
 
   // ----- JobType related tests
@@ -59,35 +72,27 @@ public class ServiceTaskIncidentTest {
   @Test
   public void shouldCreateIncidentIfJobTypeExpressionEvaluationFailed() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            createBPMNModel(
-                t ->
-                    t.zeebeJobTypeExpression(
-                        "lorem.ipsum"))) // invalid expression, will fail at runtime
-        .deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("x"))).deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+    final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementType(taskBuilder.getTaskType())
             .getFirst();
 
     // then
-    final Record<IncidentRecordValue> incidentRecord =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incidentRecord.getValue())
+    Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage(
-            "failed to evaluate expression 'lorem.ipsum': no variable found for name 'lorem'")
-        .hasElementId(SERVICE_TASK_ID)
+        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
@@ -96,33 +101,28 @@ public class ServiceTaskIncidentTest {
   @Test
   public void shouldCreateIncidentIfJobTypeExpressionOfInvalidType() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            createBPMNModel(
-                t -> t.zeebeJobTypeExpression("false"))) // boolean expression, has wrong type
-        .deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("false"))).deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+    final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementType(taskBuilder.getTaskType())
             .getFirst();
 
     // then
-    final Record<IncidentRecordValue> incidentRecord =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incidentRecord.getValue())
+    Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression 'false' to be 'STRING', but was 'BOOLEAN'.")
-        .hasElementId(SERVICE_TASK_ID)
+        .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
@@ -131,16 +131,11 @@ public class ServiceTaskIncidentTest {
   @Test
   public void shouldResolveIncidentAfterJobTypeExpressionEvaluationFailed() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            createBPMNModel(
-                t -> t.zeebeJobTypeExpression("lorem"))) // invalid expression, will fail at runtime
-        .deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("x"))).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<IncidentRecordValue> incidentRecord =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
@@ -150,23 +145,27 @@ public class ServiceTaskIncidentTest {
     // ... update state to resolve issue
     ENGINE
         .variables()
-        .ofScope(incidentRecord.getValue().getElementInstanceKey())
-        .withDocument(Maps.of(entry("lorem", "order123")))
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("x", "test")))
         .update();
 
     // ... resolve incident
-    final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
 
     // then
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId(SERVICE_TASK_ID)
+                .withElementId(TASK_ELEMENT_ID)
                 .exists())
         .isTrue();
 
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentRecord.getKey());
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
   }
 
   // ----- JobRetries related tests
@@ -175,35 +174,27 @@ public class ServiceTaskIncidentTest {
   @Test
   public void shouldCreateIncidentIfJobRetriesExpressionEvaluationFailed() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            createBPMNModel(
-                t ->
-                    t.zeebeJobRetriesExpression(
-                        "lorem.ipsum"))) // invalid expression, will fail at runtime
-        .deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobRetriesExpression("x"))).deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+    final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementType(taskBuilder.getTaskType())
             .getFirst();
 
     // then
-    final Record<IncidentRecordValue> incidentRecord =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incidentRecord.getValue())
+    Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage(
-            "failed to evaluate expression 'lorem.ipsum': no variable found for name 'lorem'")
-        .hasElementId(SERVICE_TASK_ID)
+        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
+        .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
@@ -214,31 +205,29 @@ public class ServiceTaskIncidentTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(
-            createBPMNModel(
-                t -> t.zeebeJobRetriesExpression("false"))) // boolean expression, has wrong type
+        .withXmlResource(process(t -> t.zeebeJobRetriesExpression("false")))
         .deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<ProcessInstanceRecordValue> recordThatLeadsToIncident =
+    final var recordThatLeadsToIncident =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
+            .withElementType(taskBuilder.getTaskType())
             .getFirst();
 
     // then
-    final Record<IncidentRecordValue> incidentRecord =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incidentRecord.getValue())
+    Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression 'false' to be 'NUMBER', but was 'BOOLEAN'.")
-        .hasElementId(SERVICE_TASK_ID)
+        .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
@@ -247,18 +236,11 @@ public class ServiceTaskIncidentTest {
   @Test
   public void shouldResolveIncidentAfterJobRetriesExpressionEvaluationFailed() {
     // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            createBPMNModel(
-                t ->
-                    t.zeebeJobRetriesExpression(
-                        "lorem"))) // invalid expression, will fail at runtime
-        .deploy();
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobRetriesExpression("x"))).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<IncidentRecordValue> incidentRecord =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
@@ -268,23 +250,27 @@ public class ServiceTaskIncidentTest {
     // ... update state to resolve issue
     ENGINE
         .variables()
-        .ofScope(incidentRecord.getValue().getElementInstanceKey())
-        .withDocument(Maps.of(entry("lorem", 3)))
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("x", 3)))
         .update();
 
     // ... resolve incident
-    final Record<IncidentRecordValue> incidentResolvedEvent =
-        ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
 
     // then
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId(SERVICE_TASK_ID)
+                .withElementId(TASK_ELEMENT_ID)
                 .exists())
         .isTrue();
 
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentRecord.getKey());
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
   }
 
   @Test
@@ -292,33 +278,26 @@ public class ServiceTaskIncidentTest {
     // given a deployed process with a service task with an input expression
     ENGINE
         .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process-incident-on-leaving-task")
-                .startEvent()
-                .serviceTask(
-                    "task",
-                    b -> b.zeebeJobType("task").zeebeInputExpression("unknown_var", "input"))
-                .done())
+        .withXmlResource(process(t -> t.zeebeInputExpression("unknown_var", "input")))
         .deploy();
 
     // and an instance of that process is created without a variable for the input expression
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process-incident-on-leaving-task").create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // and an incident created
-    final var incident =
+    final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when we try to resolve the incident
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
 
     // then
     assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withRecordKey(incident.getKey())
+                .withRecordKey(incidentCreated.getKey())
                 .exists())
         .describedAs("original incident is resolved")
         .isTrue();
@@ -326,9 +305,34 @@ public class ServiceTaskIncidentTest {
     assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .filter(i -> i.getKey() != incident.getKey())
+                .filter(i -> i.getKey() != incidentCreated.getKey())
                 .exists())
         .describedAs("a new incident is created")
         .isTrue();
+  }
+
+  @Test
+  public void shouldResolveIncidentIfTaskIsTerminated() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("x"))).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .incidentRecords()
+                .withRecordKey(incidentCreated.getKey()))
+        .extracting(Record::getIntent)
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
 }

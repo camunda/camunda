@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.DataObject;
 import io.camunda.zeebe.model.bpmn.instance.DataObjectReference;
@@ -45,6 +46,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
 
   static {
     SUPPORTED_ELEMENT_TYPES.add(BoundaryEvent.class);
+    SUPPORTED_ELEMENT_TYPES.add(BusinessRuleTask.class);
     SUPPORTED_ELEMENT_TYPES.add(EndEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(EventBasedGateway.class);
     SUPPORTED_ELEMENT_TYPES.add(ExclusiveGateway.class);

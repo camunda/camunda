@@ -12,11 +12,11 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
-import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -29,7 +29,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public final class ServiceTaskTransformer implements ModelElementTransformer<ServiceTask> {
+public final class JobWorkerTaskTransformer<T extends Task> implements ModelElementTransformer<T> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
@@ -37,17 +37,23 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
 
   private final MsgPackWriter msgPackWriter = new MsgPackWriter();
 
-  @Override
-  public Class<ServiceTask> getType() {
-    return ServiceTask.class;
+  private final Class<T> type;
+
+  public JobWorkerTaskTransformer(final Class<T> type) {
+    this.type = type;
   }
 
   @Override
-  public void transform(final ServiceTask element, final TransformContext context) {
+  public Class<T> getType() {
+    return type;
+  }
+
+  @Override
+  public void transform(final T element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
-    final ExecutableServiceTask serviceTask =
-        process.getElementById(element.getId(), ExecutableServiceTask.class);
+    final ExecutableJobWorkerTask serviceTask =
+        process.getElementById(element.getId(), ExecutableJobWorkerTask.class);
 
     transformTaskDefinition(element, serviceTask, context);
 
@@ -55,9 +61,7 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
   }
 
   private void transformTaskDefinition(
-      final ServiceTask element,
-      final ExecutableServiceTask serviceTask,
-      final TransformContext context) {
+      final T element, final ExecutableJobWorkerTask serviceTask, final TransformContext context) {
     final ZeebeTaskDefinition taskDefinition =
         element.getSingleExtensionElement(ZeebeTaskDefinition.class);
 
@@ -73,8 +77,7 @@ public final class ServiceTaskTransformer implements ModelElementTransformer<Ser
     serviceTask.setRetries(retriesExpression);
   }
 
-  private void transformTaskHeaders(
-      final ServiceTask element, final ExecutableServiceTask serviceTask) {
+  private void transformTaskHeaders(final T element, final ExecutableJobWorkerTask serviceTask) {
     final ZeebeTaskHeaders taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
 
     if (taskHeaders != null) {
