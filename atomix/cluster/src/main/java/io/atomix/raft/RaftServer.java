@@ -488,17 +488,6 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the factory that creates a {@link Random}. Raft uses it to randomize election timeouts.
-     * This factory is useful in testing, when we want to control the execution.
-     *
-     * @return The Raft server builder.
-     */
-    public Builder withRandomFactory(final Supplier<Random> randomFactory) {
-      this.randomFactory = checkNotNull(randomFactory, "randomFactory cannot be null");
-      return this;
-    }
-
-    /**
      * Sets the Raft election timeout, returning the Raft configuration for method chaining.
      *
      * @param electionTimeout The Raft election timeout duration.

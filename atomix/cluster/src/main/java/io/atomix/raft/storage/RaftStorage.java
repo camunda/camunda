@@ -137,11 +137,6 @@ public final class RaftStorage {
     }
   }
 
-  /** Unlocks the storage directory. */
-  public void unlock() {
-    deleteFiles(f -> f.getName().equals(String.format(".%s.lock", prefix)));
-  }
-
   /** Deletes file in the storage directory that match the given predicate. */
   private void deleteFiles(final Predicate<File> predicate) {
     directory.mkdirs();
@@ -172,31 +167,12 @@ public final class RaftStorage {
   }
 
   /**
-   * Deletes a {@link MetaStore} from disk.
-   *
-   * <p>The meta store will be deleted by simply reading {@code meta} file names from disk and
-   * deleting metadata files directly. Deleting the meta store does not involve reading any metadata
-   * files into memory.
-   */
-  public void deleteMetaStore() {
-    deleteFiles(
-        f ->
-            f.getName().equals(String.format("%s.meta", prefix))
-                || f.getName().equals(String.format("%s.conf", prefix)));
-  }
-
-  /**
    * Returns the {@link PersistedSnapshotStore}.
    *
    * @return The snapshot store.
    */
   public ReceivableSnapshotStore getPersistedSnapshotStore() {
     return persistedSnapshotStore;
-  }
-
-  /** Deletes a {@link PersistedSnapshotStore} from disk. */
-  public void deleteSnapshotStore() {
-    persistedSnapshotStore.delete();
   }
 
   /**

@@ -37,17 +37,6 @@ public final class OperationResult {
   }
 
   /**
-   * Returns a no-op operation result.
-   *
-   * @param index the result index
-   * @param eventIndex the session's last event index
-   * @return the operation result
-   */
-  public static OperationResult noop(final long index, final long eventIndex) {
-    return new OperationResult(index, eventIndex, null, null);
-  }
-
-  /**
    * Returns a successful operation result.
    *
    * @param index the result index

@@ -35,8 +35,6 @@ public final class StatefulMember extends Member {
         member.host(),
         member.properties());
     this.version = version;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), version);
@@ -51,7 +49,6 @@ public final class StatefulMember extends Member {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     if (!super.equals(o)) {
       return false;
     }

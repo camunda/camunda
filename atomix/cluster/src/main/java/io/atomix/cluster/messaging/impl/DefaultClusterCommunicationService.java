@@ -81,20 +81,6 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> void broadcastIncludeSelf(
-      final String subject,
-      final M message,
-      final Function<M, byte[]> encoder,
-      final boolean reliable) {
-    multicast(
-        subject,
-        message,
-        encoder,
-        membershipService.getMembers().stream().map(Member::id).collect(Collectors.toSet()),
-        reliable);
-  }
-
-  @Override
   public <M> CompletableFuture<Void> unicast(
       final String subject,
       final M message,
@@ -144,7 +130,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       final Executor executor) {
     messagingService.registerHandler(
         subject,
-        new InternalMessageResponder<M, R>(
+        new InternalMessageResponder<>(
             decoder,
             encoder,
             m -> {

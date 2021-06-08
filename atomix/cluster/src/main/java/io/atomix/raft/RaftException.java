@@ -95,31 +95,10 @@ public abstract class RaftException extends RuntimeException {
     }
   }
 
-  public static class CommandFailure extends OperationFailure {
-
-    public CommandFailure(final String message, final Object... args) {
-      super(RaftError.Type.COMMAND_FAILURE, message, args);
-    }
-  }
-
   public static class QueryFailure extends OperationFailure {
 
     public QueryFailure(final String message, final Object... args) {
       super(RaftError.Type.QUERY_FAILURE, message, args);
-    }
-  }
-
-  public static class UnknownClient extends RaftException {
-
-    public UnknownClient(final String message, final Object... args) {
-      super(RaftError.Type.UNKNOWN_CLIENT, message, args);
-    }
-  }
-
-  public static class UnknownService extends RaftException {
-
-    public UnknownService(final String message, final Object... args) {
-      super(RaftError.Type.UNKNOWN_SERVICE, message, args);
     }
   }
 
@@ -131,10 +110,6 @@ public abstract class RaftException extends RuntimeException {
   }
 
   public static class ConfigurationException extends RaftException {
-
-    public ConfigurationException(final String message, final Object... args) {
-      super(RaftError.Type.CONFIGURATION_ERROR, message, args);
-    }
 
     public ConfigurationException(
         final Throwable throwable, final String message, final Object... args) {

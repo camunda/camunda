@@ -40,11 +40,6 @@ public class RaftServiceMetrics extends RaftMetrics {
     super(partitionName);
   }
 
-  public void snapshotTime(final long latencyms) {
-    // Historgram class expect seconds not milliseconds, for that we need to divied by 1000
-    SNAPSHOTING_TIME.labels(partitionGroupName, partition).observe(latencyms / 1000f);
-  }
-
   public void compactionTime(final long latencyms) {
     COMPACTION_TIME.labels(partitionGroupName, partition).observe(latencyms / 1000f);
   }
