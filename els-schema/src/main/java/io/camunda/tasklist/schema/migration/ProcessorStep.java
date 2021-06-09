@@ -5,6 +5,7 @@
  */
 package io.camunda.tasklist.schema.migration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.time.OffsetDateTime;
 
@@ -20,6 +21,7 @@ public class ProcessorStep implements Step {
 
   private String description;
   private OffsetDateTime createdDate;
+  @JsonIgnore // https://github.com/camunda-cloud/tasklist/issues/1007
   private OffsetDateTime appliedDate;
   private String indexName;
   private boolean isApplied = false;

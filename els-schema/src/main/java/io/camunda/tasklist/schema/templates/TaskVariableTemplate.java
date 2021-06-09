@@ -54,4 +54,9 @@ public class TaskVariableTemplate extends AbstractTemplateDescriptor {
         .flatMap(Optional::stream)
         .collect(Collectors.toSet());
   }
+
+  @Override
+  public String getVersion() {
+    return "1.1.0";
+  }
 }

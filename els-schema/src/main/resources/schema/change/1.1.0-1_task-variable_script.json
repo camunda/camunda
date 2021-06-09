@@ -1,0 +1,8 @@
+{
+  "description": "Create variables with preview",
+  "@type": "processorStep",
+  "indexName": "task-variable",
+  "version": "1.1.0",
+  "order": 1,
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.fullValue = ctx.value; ctx.isPreview = ctx.value.length()>8191; if (ctx.isPreview) { ctx.value = ctx.value.substring(0,8191); }\"}}"
+}
