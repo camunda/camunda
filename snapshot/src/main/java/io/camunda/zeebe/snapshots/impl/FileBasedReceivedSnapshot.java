@@ -16,6 +16,8 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -30,6 +32,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedReceivedSnapshot.class);
   private static final boolean FAILED = false;
   private static final boolean SUCCESS = true;
+  private static final int BLOCK_SIZE = 512 * 1024;
 
   private final Path directory;
   private final ActorControl actor;
@@ -170,12 +173,23 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private boolean writeReceivedSnapshotChunk(
-      final SnapshotChunk snapshotChunk, final Path snapshotFile) throws IOException {
-    Files.write(
-        snapshotFile,
-        snapshotChunk.getContent(),
-        StandardOpenOption.CREATE_NEW,
-        StandardOpenOption.WRITE);
+      final SnapshotChunk snapshotChunk, final Path snapshotFile) {
+    try (var channel =
+        FileChannel.open(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+      final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
+
+      while (buffer.hasRemaining()) {
+        final int newLimit = Math.min(buffer.capacity(), buffer.position() + BLOCK_SIZE);
+        channel.write(buffer.limit(newLimit));
+        buffer.limit(buffer.capacity());
+      }
+
+      channel.force(true);
+    } catch (IOException e) {
+      LOGGER.warn("Failed to write snapshot chunk {}", snapshotChunk, e);
+      return FAILED;
+    }
+
     LOGGER.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
     return SUCCESS;
   }
