@@ -596,22 +596,22 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       Arguments.of(
         FilterOperator.IN,
         new String[]{SECOND_USER},
-        Map.of(USER_TASK_2, 10000.)
+        Map.of(USER_TASK_2, 3000.)
       ),
       Arguments.of(
         FilterOperator.IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER, null},
-        Map.of(START_EVENT, 0., USER_TASK_1, 5000., USER_TASK_2, 10000., END_EVENT, 0.)
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_USER},
-        Map.of(START_EVENT, 0., USER_TASK_1, 5000., END_EVENT, 0.)
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Map.of(START_EVENT, 0., END_EVENT, 0.)
+        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
       )
     );
   }
@@ -635,8 +635,10 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
     );
 
-    changeDuration(processInstanceDto, USER_TASK_1, 5000.);
-    changeDuration(processInstanceDto, USER_TASK_2, 10000.);
+    changeDuration(processInstanceDto, START_EVENT, 1000.);
+    changeDuration(processInstanceDto, USER_TASK_1, 2000.);
+    changeDuration(processInstanceDto, USER_TASK_2, 3000.);
+    changeDuration(processInstanceDto, END_EVENT, 4000.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -675,22 +677,22 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       Arguments.of(
         FilterOperator.IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Map.of(USER_TASK_2, 10000.)
+        Map.of(USER_TASK_2, 3000.)
       ),
       Arguments.of(
         FilterOperator.IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
-        Map.of(START_EVENT, 0., USER_TASK_1, 5000., USER_TASK_2, 10000., END_EVENT, 0.)
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 0., USER_TASK_1, 5000., END_EVENT, 0.)
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
       ),
       Arguments.of(
         NOT_IN,
         new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
-        Map.of(START_EVENT, 0., END_EVENT, 0.)
+        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
       )
     );
   }
@@ -712,8 +714,10 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    changeDuration(processInstanceDto, USER_TASK_1, 5000.);
-    changeDuration(processInstanceDto, USER_TASK_2, 10000.);
+    changeDuration(processInstanceDto, START_EVENT, 1000.);
+    changeDuration(processInstanceDto, USER_TASK_1, 2000.);
+    changeDuration(processInstanceDto, USER_TASK_2, 3000.);
+    changeDuration(processInstanceDto, END_EVENT, 4000.);
 
     importAllEngineEntitiesFromScratch();
 
