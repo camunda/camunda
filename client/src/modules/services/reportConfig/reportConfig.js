@@ -53,6 +53,10 @@ export default function reportConfig({view, groupBy, visualization, combinations
     const groupGroup = getGroupFor(groupBy, targetGroupBy);
     const visualizationGroup = getGroupFor(visualization, targetVisualization);
 
+    if (report.data.definitions?.length > 1 && targetVisualization === 'heat') {
+      return false;
+    }
+
     if (report.data.distributedBy.type !== 'none') {
       if (['pie', 'heat'].includes(targetVisualization)) {
         // pie charts and heatmaps generally do not support distributed reports

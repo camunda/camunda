@@ -162,6 +162,11 @@ export default withErrorHandling(
         const newFirstDefinition = update(data, change).definitions[0];
 
         change = {...change, ...(await this.processDefinitionUpdate(newFirstDefinition))};
+      } else if (data.definitions.length === 1) {
+        // if we add the second definition, we need to make sure that it's not a heatmap report
+        if (data.visualization === 'heat') {
+          change.visualization = {$set: 'table'};
+        }
       }
 
       await this.props.updateReport(change, true);
