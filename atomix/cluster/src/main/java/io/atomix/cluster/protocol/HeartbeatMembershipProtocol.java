@@ -359,11 +359,6 @@ public class HeartbeatMembershipProtocol
     }
 
     @Override
-    public HeartbeatMembershipProtocolConfig newConfig() {
-      return new HeartbeatMembershipProtocolConfig();
-    }
-
-    @Override
     public GroupMembershipProtocol newProtocol(final HeartbeatMembershipProtocolConfig config) {
       return new HeartbeatMembershipProtocol(config);
     }

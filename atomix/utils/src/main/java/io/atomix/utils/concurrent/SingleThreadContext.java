@@ -75,20 +75,6 @@ public class SingleThreadContext extends AbstractThreadContext {
   /**
    * Creates a new single thread context.
    *
-   * <p>The provided context name will be passed to {@link AtomixThreadFactory} and used when
-   * instantiating the context thread.
-   *
-   * @param nameFormat The context nameFormat which will be formatted with a thread number.
-   * @param uncaughtExceptionObserver A consumer to observe exceptions thrown by submitted tasks
-   */
-  public SingleThreadContext(
-      final String nameFormat, final Consumer<Throwable> uncaughtExceptionObserver) {
-    this(namedThreads(nameFormat, LOGGER), uncaughtExceptionObserver);
-  }
-
-  /**
-   * Creates a new single thread context.
-   *
    * @param factory The thread factory.
    */
   public SingleThreadContext(final ThreadFactory factory) {

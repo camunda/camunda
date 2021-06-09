@@ -33,7 +33,6 @@ public class ClusterConfig implements Config {
   private MemberConfig nodeConfig = new MemberConfig();
   private NodeDiscoveryConfig discoveryConfig;
   private GroupMembershipProtocolConfig protocolConfig = new SwimMembershipProtocolConfig();
-  private final MembershipConfig membershipConfig = new MembershipConfig();
   private MessagingConfig messagingConfig = new MessagingConfig();
 
   /**

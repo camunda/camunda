@@ -258,10 +258,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return future;
   }
 
-  public MemberId localMemberId() {
-    return membershipService.getLocalMember().id();
-  }
-
   public int getMaxAppendBatchSize() {
     return maxAppendBatchSize;
   }
@@ -537,11 +533,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /** Adds a failure listener which will be invoked when an uncaught exception occurs */
+  @Override
   public void addFailureListener(final FailureListener listener) {
     failureListeners.add(listener);
   }
 
   /** Remove a failure listener */
+  @Override
   public void removeFailureListener(final FailureListener listener) {
     failureListeners.remove(listener);
   }

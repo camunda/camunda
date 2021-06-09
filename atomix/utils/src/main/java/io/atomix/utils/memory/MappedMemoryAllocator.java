@@ -107,13 +107,6 @@ public class MappedMemoryAllocator implements MemoryAllocator<MappedMemory> {
     }
   }
 
-  @Override
-  public MappedMemory reallocate(final MappedMemory memory, final int size) {
-    final MappedMemory newMemory = allocate(size);
-    memory.free();
-    return newMemory;
-  }
-
   public void close() {
     try {
       file.close();

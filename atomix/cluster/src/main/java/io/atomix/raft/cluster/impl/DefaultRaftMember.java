@@ -68,11 +68,6 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
   }
 
   @Override
-  public void removeTypeChangeListener(final Consumer<Type> listener) {
-    typeChangeListeners.remove(listener);
-  }
-
-  @Override
   public CompletableFuture<Void> promote() {
     if (Type.values().length > type.ordinal() + 1) {
       return configure(Type.values()[type.ordinal() + 1]);

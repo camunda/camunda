@@ -47,20 +47,6 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
    * @return The storage builder.
    * @throws NullPointerException If the {@code directory} is {@code null}
    */
-  public RaftLogBuilder withDirectory(final String directory) {
-    journalBuilder.withDirectory(directory);
-    return this;
-  }
-
-  /**
-   * Sets the log directory, returning the builder for method chaining.
-   *
-   * <p>The log will write segment files into the provided directory.
-   *
-   * @param directory The log directory.
-   * @return The storage builder.
-   * @throws NullPointerException If the {@code directory} is {@code null}
-   */
   public RaftLogBuilder withDirectory(final File directory) {
     journalBuilder.withDirectory(directory);
     return this;

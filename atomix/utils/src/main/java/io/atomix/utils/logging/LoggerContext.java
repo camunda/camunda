@@ -58,7 +58,7 @@ public class LoggerContext {
   public static class Builder implements io.atomix.utils.Builder<LoggerContext> {
     private final MoreObjects.ToStringHelper identityStringHelper;
     private MoreObjects.ToStringHelper argsStringHelper;
-    private boolean omitNullValues = false;
+    private final boolean omitNullValues = false;
 
     public Builder(final String name) {
       identityStringHelper = MoreObjects.toStringHelper(name);
@@ -72,20 +72,8 @@ public class LoggerContext {
     }
 
     /**
-     * Configures the {@link MoreObjects.ToStringHelper} so {@link #toString()} will ignore
-     * properties with null value. The order of calling this method, relative to the {@code
-     * add()}/{@code addValue()} methods, is not significant.
-     */
-    @CanIgnoreReturnValue
-    public Builder omitNullValues() {
-      omitNullValues = true;
-      return this;
-    }
-
-    /**
      * Adds a name/value pair to the formatted output in {@code name=value} format. If {@code value}
-     * is {@code null}, the string {@code "null"} is used, unless {@link #omitNullValues()} is
-     * called, in which case this name/value pair will not be added.
+     * is {@code null}, the string {@code "null"} is used.
      */
     @CanIgnoreReturnValue
     public Builder add(final String name, final Object value) {

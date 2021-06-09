@@ -48,16 +48,6 @@ public class Versioned<V> {
   }
 
   /**
-   * Constructs a new versioned value.
-   *
-   * @param value value
-   * @param version version
-   */
-  public Versioned(final V value, final long version) {
-    this(value, version, System.currentTimeMillis());
-  }
-
-  /**
    * Returns the value.
    *
    * @return value.
@@ -98,30 +88,6 @@ public class Versioned<V> {
    */
   public synchronized <U> Versioned<U> map(final Function<V, U> transformer) {
     return new Versioned<>(value != null ? transformer.apply(value) : null, version, creationTime);
-  }
-
-  /**
-   * Returns the value of the specified Versioned object if non-null or else returns a default
-   * value.
-   *
-   * @param versioned versioned object
-   * @param defaultValue default value to return if versioned object is null
-   * @param <U> type of the versioned value
-   * @return versioned value or default value if versioned object is null
-   */
-  public static <U> U valueOrElse(final Versioned<U> versioned, final U defaultValue) {
-    return versioned == null ? defaultValue : versioned.value();
-  }
-
-  /**
-   * Returns the value of the specified Versioned object if non-null or else returns null.
-   *
-   * @param versioned versioned object
-   * @param <U> type of the versioned value
-   * @return versioned value or null if versioned object is null
-   */
-  public static <U> U valueOrNull(final Versioned<U> versioned) {
-    return valueOrElse(versioned, null);
   }
 
   @Override

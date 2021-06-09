@@ -51,7 +51,6 @@ public final class StatefulMember extends Member {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     if (!super.equals(o)) {
       return false;
     }

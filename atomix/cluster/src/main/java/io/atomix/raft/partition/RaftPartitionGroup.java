@@ -127,7 +127,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public Collection<Partition> getPartitions() {
     return (Collection) partitions.values();
   }
@@ -279,11 +278,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     public ManagedPartitionGroup newPartitionGroup(final RaftPartitionGroupConfig config) {
       return new RaftPartitionGroup(config);
     }
-
-    @Override
-    public RaftPartitionGroupConfig newConfig() {
-      return new RaftPartitionGroupConfig();
-    }
   }
 
   /** Raft partition group builder. */
@@ -338,28 +332,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withPartitionSize(final int partitionSize) {
       config.setPartitionSize(partitionSize);
-      return this;
-    }
-
-    /**
-     * Sets the leader election timeout.
-     *
-     * @param electionTimeout the leader election timeout
-     * @return the Raft partition group configuration
-     */
-    public Builder withElectionTimeout(final Duration electionTimeout) {
-      config.setElectionTimeout(electionTimeout);
-      return this;
-    }
-
-    /**
-     * Sets the heartbeat interval.
-     *
-     * @param heartbeatInterval the heartbeat interval
-     * @return the Raft partition group configuration
-     */
-    public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
-      config.setHeartbeatInterval(heartbeatInterval);
       return this;
     }
 

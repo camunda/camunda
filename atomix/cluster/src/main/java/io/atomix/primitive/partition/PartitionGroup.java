@@ -17,7 +17,7 @@
 package io.atomix.primitive.partition;
 
 import com.google.common.hash.Hashing;
-import io.atomix.utils.ConfiguredType;
+import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.serializer.Namespace;
 import java.nio.charset.StandardCharsets;
@@ -79,7 +79,7 @@ public interface PartitionGroup extends Configured<PartitionGroupConfig> {
   }
 
   /** Partition group type. */
-  interface Type<C extends PartitionGroupConfig<C>> extends ConfiguredType<C> {
+  interface Type<C extends PartitionGroupConfig<C>> extends NamedType {
 
     /**
      * Returns the partition group namespace.

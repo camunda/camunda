@@ -115,11 +115,6 @@ public final class BootstrapDiscoveryProvider
     }
 
     @Override
-    public BootstrapDiscoveryConfig newConfig() {
-      return new BootstrapDiscoveryConfig();
-    }
-
-    @Override
     public NodeDiscoveryProvider newProvider(final BootstrapDiscoveryConfig config) {
       return new BootstrapDiscoveryProvider(config);
     }

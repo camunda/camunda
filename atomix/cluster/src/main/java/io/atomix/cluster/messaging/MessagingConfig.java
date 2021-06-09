@@ -17,7 +17,6 @@
 package io.atomix.cluster.messaging;
 
 import io.atomix.utils.config.Config;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,8 +24,7 @@ import java.util.List;
 public class MessagingConfig implements Config {
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
-  private int connectionPoolSize = 8;
-  private Duration connectTimeout = Duration.ofSeconds(10);
+  private final int connectionPoolSize = 8;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -75,36 +73,5 @@ public class MessagingConfig implements Config {
    */
   public int getConnectionPoolSize() {
     return connectionPoolSize;
-  }
-
-  /**
-   * Sets the connection pool size.
-   *
-   * @param connectionPoolSize the connection pool size
-   * @return the messaging configuration
-   */
-  public MessagingConfig setConnectionPoolSize(final int connectionPoolSize) {
-    this.connectionPoolSize = connectionPoolSize;
-    return this;
-  }
-
-  /**
-   * Returns the Netty connection timeout.
-   *
-   * @return the Netty connection timeout
-   */
-  public Duration getConnectTimeout() {
-    return connectTimeout;
-  }
-
-  /**
-   * Sets the Netty connection timeout.
-   *
-   * @param connectTimeout the Netty connection timeout
-   * @return the messaging configuration
-   */
-  public MessagingConfig setConnectTimeout(final Duration connectTimeout) {
-    this.connectTimeout = connectTimeout;
-    return this;
   }
 }

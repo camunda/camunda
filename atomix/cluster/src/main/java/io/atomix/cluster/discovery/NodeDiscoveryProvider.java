@@ -20,7 +20,7 @@ import io.atomix.cluster.BootstrapService;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.Node;
-import io.atomix.utils.ConfiguredType;
+import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.event.ListenerService;
 import io.atomix.utils.net.Address;
@@ -68,7 +68,7 @@ public interface NodeDiscoveryProvider
   CompletableFuture<Void> leave(Node localNode);
 
   /** Membership provider type. */
-  interface Type<C extends NodeDiscoveryConfig> extends ConfiguredType<C> {
+  interface Type<C extends NodeDiscoveryConfig> extends NamedType {
 
     /**
      * Creates a new instance of the provider.

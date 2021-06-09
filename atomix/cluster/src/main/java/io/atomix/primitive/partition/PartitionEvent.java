@@ -38,15 +38,6 @@ public class PartitionEvent extends AbstractEvent<PartitionEvent.Type, Partition
       final PartitionId partition,
       final Collection<MemberId> members,
       final MemberId primary,
-      final Collection<MemberId> backups) {
-    this(type, partition, members, primary, backups, System.currentTimeMillis());
-  }
-
-  public PartitionEvent(
-      final Type type,
-      final PartitionId partition,
-      final Collection<MemberId> members,
-      final MemberId primary,
       final Collection<MemberId> backups,
       final long time) {
     super(type, partition, time);
