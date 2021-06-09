@@ -59,12 +59,6 @@ public class RaftStorageTest {
   }
 
   @Test
-  public void testCustomConfiguration2() throws Exception {
-    final RaftStorage storage = RaftStorage.builder().withFlushExplicitly(true).build();
-    assertEquals(new File(PATH.toFile(), "baz"), storage.directory());
-  }
-
-  @Test
   public void testStorageLock() throws Exception {
     final RaftStorage storage1 =
         RaftStorage.builder().withDirectory(PATH.toFile()).withPrefix("test").build();
