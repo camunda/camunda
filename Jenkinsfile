@@ -10,7 +10,7 @@ def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def latestStableBranchName = 'stable/0.26'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
-def generationVersion = 'Zeebe 0.26.1'
+def generationVersion = 'Zeebe 0.26.4'
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
