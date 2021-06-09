@@ -48,7 +48,12 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
     >
       <Icon type="plus" />
       {t('common.add')}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} className="AddDefinition__Modal">
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        className="AddDefinition__Modal"
+        noAutoFocus
+      >
         <Modal.Header>
           {t('report.definition.add', {type: t('report.definition.' + type)})}
         </Modal.Header>

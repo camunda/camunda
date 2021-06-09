@@ -28,7 +28,10 @@ jest.mock('./service', () => ({
   ]),
   loadTenants: jest.fn().mockReturnValue([
     {
-      tenants: [{id: null, name: 'Not Defined'}],
+      tenants: [
+        {id: null, name: 'Not Defined'},
+        {id: 'a', name: 'Tenant A'},
+      ],
     },
   ]),
 }));
@@ -43,7 +46,10 @@ const props = {
     versions: ['latest'],
     tenantIds: [null],
   },
-  tenantInfo: [{id: null, name: 'Not Defined'}],
+  tenantInfo: [
+    {id: null, name: 'Not Defined'},
+    {id: 'a', name: 'Tenant A'},
+  ],
 };
 
 it('should show available versions for the given definition', () => {
@@ -64,7 +70,7 @@ it('should allow users to set a display name', () => {
   const node = shallow(<DefinitionEditor {...props} onChange={spy} />);
 
   node.find(Input).simulate('change', {target: {value: 'new display name'}});
-  node.find(Input).simulate('blur');
+  node.find(Input).simulate('blur', {relatedTarget: {}});
 
   expect(spy.mock.calls[0][0].displayName).toBe('new display name');
 });

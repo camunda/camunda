@@ -13,6 +13,8 @@
   .controlSections {
     flex: 1;
     @include scrollable;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .sectionTitle {
@@ -67,6 +69,10 @@
       > :not(.sectionTitle) {
         display: none;
       }
+
+      &:last-child {
+        border-bottom: 1px solid var(--silver-darken-87);
+      }
     }
   }
 
@@ -115,7 +121,6 @@
 
       &.addMeasure {
         margin-top: 5px;
-        width: 200px;
         margin-left: 79px;
 
         font-size: 12px;

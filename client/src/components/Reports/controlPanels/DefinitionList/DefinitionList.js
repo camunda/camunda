@@ -57,9 +57,11 @@ export function DefinitionList({mightFail, location, definitions = [], type, onC
               {t('common.definitionSelection.version.label')}:{' '}
               {getVersionString(definition.versions)}
             </div>
-            <div className="info">
-              {t('common.tenant.label')}: {tenants.join(', ') || t('common.none')}
-            </div>
+            {tenantInfo?.length > 1 && (
+              <div className="info">
+                {t('common.tenant.label')}: {tenants.join(', ') || t('common.none')}
+              </div>
+            )}
             <div className="actions">
               <Popover
                 renderInPortal="DefinitionList"

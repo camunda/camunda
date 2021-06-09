@@ -163,6 +163,15 @@ export default withErrorHandling(
         const newFirstDefinition = update(data, change).definitions[0];
 
         change = {...change, ...(await this.processDefinitionUpdate(newFirstDefinition))};
+      } else {
+        // removing the last definition will reset view and groupby options
+        change = {
+          ...change,
+          view: {$set: null},
+          groupBy: {$set: null},
+          visualization: {$set: null},
+          distributedBy: {$set: {type: 'none', value: null}},
+        };
       }
 
       await this.props.updateReport(change, true);
@@ -367,7 +376,7 @@ export default withErrorHandling(
                     />
                   </li>
                 )}
-                {isProcessInstanceDuration(data) && (
+                {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
                   <li>
                     <ProcessPart
                       flowNodeNames={flowNodeNames}
