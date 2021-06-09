@@ -90,19 +90,6 @@ public class Versioned<V> {
     return new Versioned<>(value != null ? transformer.apply(value) : null, version, creationTime);
   }
 
-  /**
-   * Returns the value of the specified Versioned object if non-null or else returns a default
-   * value.
-   *
-   * @param versioned versioned object
-   * @param defaultValue default value to return if versioned object is null
-   * @param <U> type of the versioned value
-   * @return versioned value or default value if versioned object is null
-   */
-  public static <U> U valueOrElse(final Versioned<U> versioned, final U defaultValue) {
-    return versioned == null ? defaultValue : versioned.value();
-  }
-
   @Override
   public int hashCode() {
     return Objects.hashCode(value, version, creationTime);

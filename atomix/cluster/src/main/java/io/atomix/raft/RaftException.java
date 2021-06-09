@@ -70,38 +70,6 @@ public abstract class RaftException extends RuntimeException {
     }
   }
 
-  public static class IllegalMemberState extends RaftException {
-
-    public IllegalMemberState(final String message, final Object... args) {
-      super(RaftError.Type.ILLEGAL_MEMBER_STATE, message, args);
-    }
-  }
-
-  public static class ApplicationException extends RaftException {
-
-    public ApplicationException(final String message, final Object... args) {
-      super(RaftError.Type.APPLICATION_ERROR, message, args);
-    }
-
-    public ApplicationException(final Throwable cause) {
-      super(RaftError.Type.APPLICATION_ERROR, cause);
-    }
-  }
-
-  public abstract static class OperationFailure extends RaftException {
-
-    public OperationFailure(final RaftError.Type type, final String message, final Object... args) {
-      super(type, message, args);
-    }
-  }
-
-  public static class QueryFailure extends OperationFailure {
-
-    public QueryFailure(final String message, final Object... args) {
-      super(RaftError.Type.QUERY_FAILURE, message, args);
-    }
-  }
-
   public static class ProtocolException extends RaftException {
 
     public ProtocolException(final String message, final Object... args) {
@@ -114,17 +82,6 @@ public abstract class RaftException extends RuntimeException {
     public ConfigurationException(
         final Throwable throwable, final String message, final Object... args) {
       super(RaftError.Type.CONFIGURATION_ERROR, throwable, message, args);
-    }
-  }
-
-  public static class Unavailable extends RaftException {
-
-    public Unavailable(final String message, final Object... args) {
-      super(RaftError.Type.UNAVAILABLE, message, args);
-    }
-
-    public Unavailable(final Throwable cause) {
-      super(RaftError.Type.UNAVAILABLE, cause);
     }
   }
 }

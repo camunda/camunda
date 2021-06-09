@@ -16,25 +16,10 @@
  */
 package io.atomix.utils.concurrent;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 /** Retry utilities. */
 public final class Retries {
 
   private Retries() {}
-
-  /**
-   * Suspends the current thread for a random number of millis between 0 and the indicated limit.
-   *
-   * @param ms max number of millis
-   */
-  public static void randomDelay(final int ms) {
-    try {
-      Thread.sleep(ThreadLocalRandom.current().nextInt(ms));
-    } catch (final InterruptedException e) {
-      throw new RuntimeException("Interrupted", e);
-    }
-  }
 
   /**
    * Suspends the current thread for a specified number of millis and nanos.
