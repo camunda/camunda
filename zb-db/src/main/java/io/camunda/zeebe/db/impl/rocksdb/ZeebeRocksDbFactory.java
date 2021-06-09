@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -60,7 +61,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   @Override
   public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
     final ZeebeTransactionDb<ColumnFamilyType> db;
-    final List<AutoCloseable> closeables = new ArrayList<>();
+    final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
       // column family options have to be closed as last
       final var columnFamilyOptions = createColumnFamilyOptions(closeables);
