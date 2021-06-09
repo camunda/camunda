@@ -700,6 +700,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   static class FlowNodeStatusTestValues {
     List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedFrequencyValues;
+    long expectedInstanceCount;
   }
 
   private static Map<String, Double> getExpectedResultsMap(Double userTask1Results, Double userTask2Results) {
@@ -713,15 +714,18 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     return Stream.of(
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(2., 1.)
+        getExpectedResultsMap(2., 1.),
+        2L
       ),
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., null)
+        getExpectedResultsMap(1., null),
+        1L
       ),
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., null)
+        getExpectedResultsMap(1., null),
+        1L
       )
     );
   }
@@ -764,7 +768,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
         flowNodeStatusTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP_ID));
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SECOND_CANDIDATE_GROUP_ID).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(flowNodeStatusTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP_ID));
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.getExpectedInstanceCount());
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
   @Test

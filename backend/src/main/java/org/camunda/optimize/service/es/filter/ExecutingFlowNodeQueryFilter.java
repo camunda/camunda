@@ -28,7 +28,7 @@ public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNo
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<ExecutingFlowNodeFilterDataDto> flowNodeFilter,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     List<QueryBuilder> filters = query.filter();
     flowNodeFilter.forEach(filter -> filters.add(createFilterQueryBuilder(filter)));
   }

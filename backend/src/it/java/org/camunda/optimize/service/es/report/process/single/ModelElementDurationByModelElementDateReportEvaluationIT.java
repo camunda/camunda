@@ -198,7 +198,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
   }
 
   @Test
-  public void filterWorks() {
+  public void flowNodeStatusFilterWorks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     final ProcessInstanceEngineDto processInstance =

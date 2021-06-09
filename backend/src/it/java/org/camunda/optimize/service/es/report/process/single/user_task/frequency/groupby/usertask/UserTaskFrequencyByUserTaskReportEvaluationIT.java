@@ -444,6 +444,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedFrequencyValues;
     Integer expectedDataSize;
+    long expectedInstanceCount;
   }
 
   private static Map<String, Double> getExpectedResultsMap(Double userTask1Results, Double userTask2Results) {
@@ -457,15 +458,15 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     return Stream.of(
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., 1.), 2
+        getExpectedResultsMap(1., 1.), 2,2L
       ),
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., null), 1
+        getExpectedResultsMap(1., null), 1, 1L
       ),
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., null), 1
+        getExpectedResultsMap(1., null), 1, 1L
       )
     );
   }
@@ -499,7 +500,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     Optional.ofNullable(flowNodeStatusTestValues.getExpectedFrequencyValues().get(USER_TASK_2))
       .ifPresent(expectedValue -> assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2))
         .isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(expectedValue));
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.getExpectedInstanceCount());
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
   @Test

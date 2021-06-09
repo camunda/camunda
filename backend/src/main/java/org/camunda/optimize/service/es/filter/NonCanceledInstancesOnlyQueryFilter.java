@@ -23,7 +23,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class NonCanceledInstancesOnlyQueryFilter implements QueryFilter<NonCanceledInstancesOnlyFilterDataDto> {
   @Override
   public void addFilters(BoolQueryBuilder query, List<NonCanceledInstancesOnlyFilterDataDto>
-    nonCanceledInstancesOnlyFilters, final ZoneId timezone) {
+    nonCanceledInstancesOnlyFilters, final ZoneId timezone, final boolean isUserTaskReport) {
     if (nonCanceledInstancesOnlyFilters != null && !nonCanceledInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

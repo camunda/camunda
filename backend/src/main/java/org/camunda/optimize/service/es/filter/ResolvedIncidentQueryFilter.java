@@ -25,7 +25,7 @@ public class ResolvedIncidentQueryFilter implements QueryFilter<ResolvedIncident
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<ResolvedIncidentFilterDataDto> resolvedIncident,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (!CollectionUtils.isEmpty(resolvedIncident)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(INCIDENTS, createResolvedIncidentTermQuery(), ScoreMode.None));

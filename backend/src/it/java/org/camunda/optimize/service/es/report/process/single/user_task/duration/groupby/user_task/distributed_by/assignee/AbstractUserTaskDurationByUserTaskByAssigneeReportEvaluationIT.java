@@ -1128,16 +1128,17 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
   private static Stream<Arguments> flowNodeStatusFilter() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 2),
-      Arguments.of(ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 1),
-      Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1)
+      Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 2, 2L),
+      Arguments.of(ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(), 1, 1L),
+      Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1, 1L)
     );
   }
 
   @ParameterizedTest
   @MethodSource("flowNodeStatusFilter")
   public void evaluateReportWithFlowNodeStatusFilter(final List<ProcessFilterDto<?>> processFilter,
-                                                     final Integer expectedDataSize) {
+                                                     final Integer expectedDataSize,
+                                                     final long expectedInstanceCount) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -1179,11 +1180,12 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
 
     // then
     assertThat(actualResult.getFirstMeasureData()).hasSize(expectedDataSize);
-    assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter);
+    assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter, expectedInstanceCount);
   }
 
   protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
-                                                                       final List<ProcessFilterDto<?>> filter);
+                                                                       final List<ProcessFilterDto<?>> filter,
+                                                                       final long expectedInstanceCount);
 
   protected abstract UserTaskDurationTime getUserTaskDurationTime();
 

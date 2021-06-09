@@ -8,12 +8,12 @@ package org.camunda.optimize.service.es.filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -57,7 +57,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   abstract String getVariablePath();
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variableFilters, final ZoneId timezone) {
+  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variableFilters,
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (variableFilters != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDataDto<?> variable : variableFilters) {

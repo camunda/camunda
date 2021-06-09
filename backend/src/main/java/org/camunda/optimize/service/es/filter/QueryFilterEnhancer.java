@@ -11,5 +11,5 @@ import java.time.ZoneId;
 import java.util.List;
 
 public interface QueryFilterEnhancer<T> {
-  void addFilterToQuery(BoolQueryBuilder query, List<T> filter, final ZoneId timezone);
+  void addFilterToQuery(BoolQueryBuilder query, List<T> filter, final ZoneId timezone, final boolean isUserTaskReport);
 }

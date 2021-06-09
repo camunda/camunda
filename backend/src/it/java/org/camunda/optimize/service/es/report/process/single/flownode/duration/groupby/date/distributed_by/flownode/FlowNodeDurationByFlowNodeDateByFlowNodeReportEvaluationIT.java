@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -34,6 +35,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
@@ -46,12 +48,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
@@ -507,7 +513,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
   }
 
   @Test
-  public void filterWorks() {
+  public void flowNodeStatusFilterWorks() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
@@ -581,6 +587,162 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
           .distributedByContains(END_EVENT, null, END_EVENT)
           .distributedByContains(START_EVENT, null, START_EVENT)
           .distributedByContains(USER_TASK_1, 5000., USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_USER},
+        Map.of(USER_TASK_2, 10000.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        Map.of(START_EVENT, 0., USER_TASK_1, 5000., USER_TASK_2, 10000., END_EVENT, 0.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        Map.of(START_EVENT, 0., USER_TASK_1, 5000., END_EVENT, 0.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Map.of(START_EVENT, 0., END_EVENT, 0.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                         final String[] filterValues,
+                                                                         final Map<String, Double> expectedResults) {
+    // given
+    final OffsetDateTime referenceDate = LocalDateUtil.getCurrentDateTime();
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+
+    changeDuration(processInstanceDto, USER_TASK_1, 5000.);
+    changeDuration(processInstanceDto, USER_TASK_2, 10000.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .assignee()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    // set sorting to allow asserting in the same order for all scenarios
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupByContains(groupedByDayDateAsString(referenceDate))
+          .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null), END_EVENT)
+          .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null), START_EVENT)
+          .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null), USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null), USER_TASK_2_NAME)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Map.of(USER_TASK_2, 10000.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        Map.of(START_EVENT, 0., USER_TASK_1, 5000., USER_TASK_2, 10000., END_EVENT, 0.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 0., USER_TASK_1, 5000., END_EVENT, 0.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 0., END_EVENT, 0.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                               final String[] filterValues,
+                                                                               final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
+    final OffsetDateTime referenceDate = LocalDateUtil.getCurrentDateTime();
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    changeDuration(processInstanceDto, USER_TASK_1, 5000.);
+    changeDuration(processInstanceDto, USER_TASK_2, 10000.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .candidateGroups()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    // set sorting to allow asserting in the same order for all scenarios
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .groupByContains(groupedByDayDateAsString(referenceDate))
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null), END_EVENT)
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null), START_EVENT)
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null), USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null), USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }

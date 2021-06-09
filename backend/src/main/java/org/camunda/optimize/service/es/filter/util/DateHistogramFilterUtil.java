@@ -68,7 +68,8 @@ public class DateHistogramFilterUtil {
     final BoolQueryBuilder limitFilterQuery = createFilterBoolQueryBuilder(
       evaluationDateFilter,
       queryFilterEnhancer.getEvaluationDateQueryFilter(),
-      context.getTimezone()
+      context.getTimezone(),
+      context.isUserTaskReport()
     );
 
     if (!evaluationDateFilter.isEmpty()) {
@@ -119,7 +120,8 @@ public class DateHistogramFilterUtil {
       limitFilterQuery = createFilterBoolQueryBuilder(
         endDateFilters,
         queryFilterEnhancer.getEndDateQueryFilter(),
-        context.getTimezone()
+        context.getTimezone(),
+        context.isUserTaskReport()
       );
     } else {
       if (!startDateFilters.isEmpty()) {
@@ -131,7 +133,8 @@ public class DateHistogramFilterUtil {
       limitFilterQuery = createFilterBoolQueryBuilder(
         startDateFilters,
         queryFilterEnhancer.getStartDateQueryFilter(),
-        context.getTimezone()
+        context.getTimezone(),
+        context.isUserTaskReport()
       );
     }
     return limitFilterQuery;
@@ -157,7 +160,8 @@ public class DateHistogramFilterUtil {
       limitFilterQuery = createFilterBoolQueryBuilder(
         startDateFilters,
         queryFilterEnhancer.getStartDateQueryFilter(),
-        context.getTimezone()
+        context.getTimezone(),
+        context.isUserTaskReport()
       );
     } else {
       if (!endDateFilters.isEmpty()) {
@@ -171,7 +175,8 @@ public class DateHistogramFilterUtil {
       limitFilterQuery = createFilterBoolQueryBuilder(
         endDateFilters,
         queryFilterEnhancer.getEndDateQueryFilter(),
-        context.getTimezone()
+        context.getTimezone(),
+        context.isUserTaskReport()
       );
     }
 
@@ -180,9 +185,9 @@ public class DateHistogramFilterUtil {
 
   public static BoolQueryBuilder createFilterBoolQueryBuilder(final List<DateFilterDataDto<?>> filters,
                                                               final QueryFilter<DateFilterDataDto<?>> queryFilter,
-                                                              final ZoneId timezone) {
+                                                              final ZoneId timezone, final boolean isUserTaskReport) {
     final BoolQueryBuilder limitFilterQuery = boolQuery();
-    queryFilter.addFilters(limitFilterQuery, filters, timezone);
+    queryFilter.addFilters(limitFilterQuery, filters, timezone, isUserTaskReport);
     return limitFilterQuery;
   }
 

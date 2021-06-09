@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -45,7 +46,10 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -105,7 +109,8 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       "doubleVar",
       VariableType.DOUBLE
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
@@ -152,7 +157,9 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getFirstMeasureData();
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData)
+      .getResult()
+      .getFirstMeasureData();
 
     // then
     assertThat(resultData).isNotNull().hasSize(3);
@@ -194,7 +201,8 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
@@ -241,17 +249,23 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(result.getFirstMeasureData()).isNotNull()
+      .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // the bucket span covers the earliest and the latest date variable value
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData().get(0).getKey()));
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData()
+                                                                                    .get(0)
+                                                                                    .getKey()));
     final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(result.getFirstMeasureData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+      .from(formatter.parse(result.getFirstMeasureData()
+                              .get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1)
+                              .getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue =
       dateVarValue.plusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVarValue.truncatedTo(ChronoUnit.MILLIS);
@@ -305,7 +319,8 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       "testVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then the instance withValue has a duration of 10 and the 4 missing instances each have a duration of 20
     assertThat(result.getFirstMeasureData()).isNotNull().hasSize(2);
@@ -340,7 +355,8 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then the result takes into account both processes (average duration both processes = 70)
     assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
@@ -373,7 +389,8 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then the result takes into account first and last processes (average duration both processes = 70)
     assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
@@ -406,7 +423,8 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
     // when
     final ProcessReportDataDto reportData =
       createReport(testMIProcess, "1", "stringVar", VariableType.STRING);
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then the result counts 7 flownodes
     assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
@@ -455,11 +473,170 @@ public class FlowNodeDurationByVariableReportEvaluationIT extends AbstractProces
         .filterLevel(filterApplicationLevel)
         .add()
         .buildList());
-    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00"))
+      .isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(expectedResult);
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_USER},
+        3000.
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        3250.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        3333.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        4000.
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                         final String[] filterValues,
+                                                                         final Double expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+      "doubleVar",
+      1.0
+    ));
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
+    );
+
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 7000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .assignee()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
+    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
+    assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00"))
+      .isPresent()
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(expectedResult);
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        3000.
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        3250.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        3333.
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        4000.
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                               final String[] filterValues,
+                                                                               final Double expectedResult) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
+    final ProcessInstanceEngineDto processInstance = deployAndStartTwoUserTasksDefinition(Collections.singletonMap(
+      "doubleVar",
+      1.0
+    ));
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 7000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .candidateGroups()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1L);
     assertThat(result.getFirstMeasureData()).isNotNull().hasSize(1);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), "1.00"))
       .isPresent()

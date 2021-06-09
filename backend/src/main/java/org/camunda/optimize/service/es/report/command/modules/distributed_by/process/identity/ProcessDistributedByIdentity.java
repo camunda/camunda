@@ -38,7 +38,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createFlowNodeIdFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
@@ -65,8 +65,14 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     viewPart.createAggregations(context).forEach(identityTermsAggregation::subAggregation);
     return Collections.singletonList(
       AggregationBuilders.filter(
+        // it's possible to do report evaluations over several definitions versions. However, only the most recent
+        // one is used to decide which user tasks should be taken into account. To make sure that we only fetch
+        // assignees related to this definition version we filter for userTasks that only occur in the latest version.
         FILTERED_USER_TASKS_AGGREGATION,
-        createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+        createFlowNodeIdFilter(
+          context.getReportData(),
+          getUserTaskIds(context.getReportData())
+        )
       ).subAggregation(identityTermsAggregation)
     );
   }

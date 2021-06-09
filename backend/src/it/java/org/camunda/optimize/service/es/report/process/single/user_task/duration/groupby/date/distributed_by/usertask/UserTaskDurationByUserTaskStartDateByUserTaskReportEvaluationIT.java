@@ -58,7 +58,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     completedStateValues.expectedIdleDurationValue = 100.;
     completedStateValues.expectedWorkDurationValue = 100.;
     completedStateValues.expectedTotalDurationValue = 100.;
-    completedStateValues.expectedInstanceCount = 2L;
+    completedStateValues.expectedInstanceCount = 1L;
 
     FlowNodeStatusTestValues completedOrCanceled = new FlowNodeStatusTestValues();
     completedOrCanceled.processFilter = ProcessFilterBuilder.filter()
@@ -66,7 +66,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByUserTaskReportEvaluat
     completedOrCanceled.expectedIdleDurationValue = 100.;
     completedOrCanceled.expectedWorkDurationValue = 100.;
     completedOrCanceled.expectedTotalDurationValue = 100.;
-    completedOrCanceled.expectedInstanceCount = 2L;
+    completedOrCanceled.expectedInstanceCount = 1L;
 
     return Stream.of(runningStateValues, completedStateValues, completedOrCanceled);
   }

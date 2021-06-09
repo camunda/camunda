@@ -96,6 +96,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
       .processGroupByType(getGroupByType().getType())
       .processFilters(context.getReportData().getFilter())
       .processQueryFilterEnhancer(queryFilterEnhancer)
+      .isUserTaskReport(context.getReportData().isUserTaskReport())
       .build();
 
     return dateAggregationService.createProcessInstanceDateAggregation(dateAggContext)

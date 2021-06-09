@@ -16,7 +16,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createFlowNodeAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -33,7 +33,7 @@ public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
       .subAggregation(
         filter(
           FILTERED_FLOW_NODES_AGGREGATION,
-          createFlowNodeAggregationFilter(context.getReportData())
+          createModelElementAggregationFilter(context.getReportData())
         ).subAggregation(subAggregation)
       );
   }

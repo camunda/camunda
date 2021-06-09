@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.camunda.optimize.es.aggregations.NumberHistogramAggregationUtil.generateHistogramFromScript;
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;

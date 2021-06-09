@@ -12,8 +12,8 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.elasticsearch.index.query.QueryBuilder;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 @Slf4j
@@ -26,7 +26,7 @@ public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByM
 
   @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
-    return createUserTaskAggregationFilter(context.getReportData());
+    return createModelElementAggregationFilter(context.getReportData());
   }
 
   protected QueryBuilder getModelElementTypeFilterQuery() {

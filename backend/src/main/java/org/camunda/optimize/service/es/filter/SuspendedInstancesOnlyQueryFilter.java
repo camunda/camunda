@@ -23,7 +23,7 @@ public class SuspendedInstancesOnlyQueryFilter implements QueryFilter<SuspendedI
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<SuspendedInstancesOnlyFilterDataDto> suspendedInstancesOnlyFilters,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (suspendedInstancesOnlyFilters != null && !suspendedInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

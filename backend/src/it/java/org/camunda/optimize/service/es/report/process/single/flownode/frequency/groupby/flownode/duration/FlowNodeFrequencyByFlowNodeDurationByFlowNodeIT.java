@@ -10,6 +10,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -18,6 +19,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -27,17 +30,28 @@ import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 
-public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
+public class FlowNodeFrequencyByFlowNodeDurationByFlowNodeIT
   extends ModelElementFrequencyByModelElementDurationByModelElementIT {
 
   private static final ImmutableList<String> FLOW_NODES = ImmutableList.of(END_EVENT, START_EVENT, USER_TASK_1);
@@ -177,6 +191,153 @@ public class FlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT
           .contains(Tuple.tuple(START_EVENT, null), Tuple.tuple(USER_TASK_1, null), Tuple.tuple(END_EVENT, null));
       }
     });
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_USER},
+        Map.of(USER_TASK_2, 1.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Map.of(START_EVENT, 1., END_EVENT, 1.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                           final String[] filterValues,
+                                                                           final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), 10.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition.getKey(), ALL_VERSIONS);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add().buildList();
+    reportData.setFilter(assigneeFilter);
+    // set sorting to allow asserting in the same order for all scenarios
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupByContains("10.0")
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+      .doAssert(result);
+    // @formatter:on
+  }
+
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Map.of(USER_TASK_2, 1.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        Map.of(START_EVENT, 1., USER_TASK_1, 1., USER_TASK_2, 1., END_EVENT, 1.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 1., USER_TASK_1, 1., END_EVENT, 1.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 1., END_EVENT, 1.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                                 final String[] filterValues,
+                                                                                 final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeAllFlowNodeTotalDurations(processInstanceDto.getId(), 10.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition.getKey(), ALL_VERSIONS);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add().buildList();
+    reportData.setFilter(assigneeFilter);
+    // set sorting to allow asserting in the same order for all scenarios
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.FREQUENCY)
+      .groupByContains("10.0")
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+      .doAssert(result);
+    // @formatter:on
   }
 
 }

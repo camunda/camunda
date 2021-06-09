@@ -68,6 +68,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
   @ParameterizedTest
   @MethodSource("getFlowNodeStatusExpectedValues")
   public void evaluateReportWithFlowNodeStatusFilters(final List<ProcessFilterDto<?>> processFilters,
+                                                      final long expectedInstanceCount,
                                                       final FlowNodeStatusTestValues candidateGroup1Count,
                                                       final FlowNodeStatusTestValues candidateGroup2Count) {
     // given
@@ -117,7 +118,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
 
     // then
     final HyperMapAsserter.GroupByAdder groupByAsserter = HyperMapAsserter.asserter()
-      .processInstanceCount(2L)
+      .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(2L)
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
@@ -147,21 +148,25 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     return Stream.of(
       Arguments.of(
         ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
+        2L,
         new FlowNodeStatusTestValues(200., 500., 700.),
         new FlowNodeStatusTestValues(200., 500., 700.)
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
+        1L,
         new FlowNodeStatusTestValues(100., 100., 100.),
         null
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
+        1L,
         new FlowNodeStatusTestValues(100., 100., 100.),
         null
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(),
+        2L,
         new FlowNodeStatusTestValues(100., 100., 100.),
         new FlowNodeStatusTestValues(100., 100., 100.)
       )

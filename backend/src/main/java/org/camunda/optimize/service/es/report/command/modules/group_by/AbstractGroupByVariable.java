@@ -43,7 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
-import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createFlowNodeAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_VARIABLES_AGGREGATION;
@@ -161,12 +161,12 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       // Nest the distributed by part to ensure the aggregation is on flownode level
       final FilterAggregationBuilder filterAggregationBuilder = filter(
         FILTERED_FLOW_NODE_AGGREGATION,
-        createFlowNodeAggregationFilter((ProcessReportDataDto) context.getReportData())
+        createModelElementAggregationFilter((ProcessReportDataDto) context.getReportData())
       );
       distributedByPart.createAggregations(context).forEach(filterAggregationBuilder::subAggregation);
       return Collections.singletonList(
         nested(NESTED_FLOWNODE_AGGREGATION, FLOW_NODE_INSTANCES)
-        .subAggregation(filterAggregationBuilder)
+          .subAggregation(filterAggregationBuilder)
       );
     }
     return distributedByPart.createAggregations(context);

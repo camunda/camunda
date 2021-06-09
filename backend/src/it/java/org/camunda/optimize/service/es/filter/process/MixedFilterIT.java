@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.filter.process;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -29,7 +28,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
@@ -61,10 +59,7 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 
 public class MixedFilterIT extends AbstractFilterIT {
 
-  private static final String SECOND_USER = "otherUser";
-  private static final String SECOND_USER_PW = "otherPassword";
   private static final String CANDIDATE_GROUP_1 = "werewolves";
-  private static final String CANDIDATE_GROUP_2 = "villagers";
 
   @Test
   public void applyCombinationOfFiltersForFinishedInstance() throws Exception {
@@ -124,9 +119,10 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataReportResultDto = createAndEvaluateReportWithFilter(
-      processDefinition, filterList
-    );
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataReportResultDto =
+      createAndEvaluateReportWithFilter(
+        processDefinition, filterList
+      );
 
     // then
     assertThat(rawDataReportResultDto.getData()).hasSize(1);
@@ -253,37 +249,27 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertReportWithIncompatibleFilters(reportType, result);
   }
 
-  private static Stream<Arguments> reportTypesWithFilterOperators() {
-    return reportTypesToEvaluate()
-      .flatMap(reportType -> Stream.of(IN, NOT_IN).map(operator -> Arguments.of(reportType, operator)));
-  }
-
   @ParameterizedTest
-  @MethodSource("reportTypesWithFilterOperators")
-  public void testIncompatibleCombinationOfViewLevelAssigneeFilters(final ProcessReportDataType reportType,
-                                                                    final FilterOperator operator) {
+  @MethodSource("reportTypesToEvaluate")
+  public void testIncompatibleCombinationOfViewLevelAssigneeFilters(final ProcessReportDataType reportType) {
     // given
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_PW);
-    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getDoubleUserTaskDiagram());
     ProcessInstanceEngineDto instance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, instance.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USER_PW, instance.getId());
     importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .assignee()
-      .operator(operator)
+      .operator(IN)
       .id(DEFAULT_USERNAME)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .assignee()
-      .operator(operator)
-      .id(SECOND_USER)
+      .operator(NOT_IN)
+      .id(DEFAULT_USERNAME)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
@@ -294,19 +280,15 @@ public class MixedFilterIT extends AbstractFilterIT {
   }
 
   @ParameterizedTest
-  @MethodSource("reportTypesWithFilterOperators")
-  public void testIncompatibleCombinationOfViewLevelCandidateGroupFilters(final ProcessReportDataType reportType,
-                                                                          final FilterOperator operator) {
+  @MethodSource("reportTypesToEvaluate")
+  public void testIncompatibleCombinationOfViewLevelCandidateGroupFilters(final ProcessReportDataType reportType) {
     // given
     engineIntegrationExtension.createGroup(CANDIDATE_GROUP_1);
-    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_2);
 
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getDoubleUserTaskDiagram());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP_1);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP_2);
     engineIntegrationExtension.finishAllRunningUserTasks();
     importAllEngineEntitiesFromScratch();
 
@@ -314,13 +296,13 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .candidateGroups()
-      .operator(operator)
+      .operator(IN)
       .id(CANDIDATE_GROUP_1)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .candidateGroups()
-      .id(CANDIDATE_GROUP_2)
-      .operator(operator)
+      .id(CANDIDATE_GROUP_1)
+      .operator(NOT_IN)
       .filterLevel(FilterApplicationLevel.VIEW)
       .add()
       .buildList();
@@ -565,9 +547,9 @@ public class MixedFilterIT extends AbstractFilterIT {
   }
 
   private ReportResultResponseDto<? extends Object> evaluateReport(final ProcessReportDataType reportType,
-                                                final String definitionKey,
-                                                final String definitionVersion,
-                                                final List<ProcessFilterDto<?>> filter) {
+                                                                   final String definitionKey,
+                                                                   final String definitionVersion,
+                                                                   final List<ProcessFilterDto<?>> filter) {
     final TemplatedProcessReportDataBuilder dataBuilder = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)

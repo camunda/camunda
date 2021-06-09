@@ -26,7 +26,7 @@ public class NoIncidentQueryFilter implements QueryFilter<NoIncidentFilterDataDt
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<NoIncidentFilterDataDto> noIncidentFilterData,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (!CollectionUtils.isEmpty(noIncidentFilterData)) {
       List<QueryBuilder> filters = query.filter();
       final BoolQueryBuilder instancesWithNoIncidentFilter = boolQuery().mustNot(

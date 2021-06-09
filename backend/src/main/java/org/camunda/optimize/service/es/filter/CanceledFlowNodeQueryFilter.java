@@ -29,7 +29,7 @@ public class CanceledFlowNodeQueryFilter implements QueryFilter<CanceledFlowNode
 
   @Override
   public void addFilters(BoolQueryBuilder query, List<CanceledFlowNodeFilterDataDto> flowNodeFilter,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     List<QueryBuilder> filters = query.filter();
     for (CanceledFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));

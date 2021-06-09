@@ -44,8 +44,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createFlowNodeIdFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -80,8 +80,15 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
         filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
           .subAggregation(
             filter(
+              // it's possible to do report evaluations over several definitions versions. However, only the most recent
+              // one is used to decide which user tasks should be taken into account. To make sure that we only fetch
+              // assignees related to this definition version we filter for userTasks that only occur in the latest
+              // version.
               FILTERED_USER_TASKS_AGGREGATION,
-              createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+              createFlowNodeIdFilter(
+                context.getReportData(),
+                getUserTaskIds(context.getReportData())
+              )
             ).subAggregation(identityTermsAggregation)));
 
     return Collections.singletonList(groupByIdentityAggregation);

@@ -24,7 +24,7 @@ public class CanceledInstancesOnlyQueryFilter implements QueryFilter<CanceledIns
 
   public void addFilters(BoolQueryBuilder query,
                          List<CanceledInstancesOnlyFilterDataDto> canceledInstancesOnlyFilters,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (canceledInstancesOnlyFilters != null && !canceledInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
       BoolQueryBuilder onlyRunningInstances =

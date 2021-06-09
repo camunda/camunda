@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createFlowNodeDurationFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createFlowNodeDurationFilterQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
@@ -24,7 +24,7 @@ public class FlowNodeDurationQueryFilter implements QueryFilter<FlowNodeDuration
 
   public void addFilters(final BoolQueryBuilder query,
                          final List<FlowNodeDurationFiltersDataDto> durationFilters,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (CollectionUtils.isNotEmpty(durationFilters)) {
       final List<QueryBuilder> filters = query.filter();
       durationFilters.forEach(filter -> filters.add(nestedQuery(

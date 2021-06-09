@@ -59,11 +59,12 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
 
   @Override
   protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
-                                                              final List<ProcessFilterDto<?>> filter) {
+                                                              final List<ProcessFilterDto<?>> filter,
+                                                              final long expectedInstanceCount) {
     if (isSingleFilterOfType(filter, RunningFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
@@ -75,7 +76,7 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
     } else if (isSingleFilterOfType(filter, CompletedFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
@@ -85,7 +86,7 @@ public class UserTaskIdleDurationByUserTaskByAssigneeReportEvaluationIT
     } else if (isSingleFilterOfType(filter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)

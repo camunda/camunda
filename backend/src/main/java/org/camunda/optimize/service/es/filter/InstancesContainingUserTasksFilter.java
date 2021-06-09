@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 
@@ -24,7 +24,7 @@ public class InstancesContainingUserTasksFilter implements QueryFilter<Instances
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<InstancesContainingUserTasksFilterDataDto> instancesContainingUserTasksFilters,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (!CollectionUtils.isEmpty(instancesContainingUserTasksFilters)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(FLOW_NODE_INSTANCES, createUserTaskFlowNodeTypeFilter(), ScoreMode.None));

@@ -57,6 +57,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
@@ -147,6 +148,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoUserTasksDefinition(final Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(getDoubleUserTaskDiagram(), variables);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

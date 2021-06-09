@@ -720,13 +720,13 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
     assertThat(latestDefinition.getVersion()).isEqualTo(3);
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
-                                                                                                           .getId());
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto1);
     changeDuration(processInstanceDto1, 20.);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
-      latestDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
     finishUserTask1AWithFirstAndTaskB2WithSecondGroup(processInstanceDto2);
     changeDuration(processInstanceDto2, 40.);
 
@@ -1018,16 +1018,17 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
   private static Stream<Arguments> flowNodeStatusProcessFilters() {
     return Stream.of(
-      Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 2),
-      Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1),
-      Arguments.of(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(), 2)
+      Arguments.of(ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(), 2, 2L),
+      Arguments.of(ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(), 1, 1L),
+      Arguments.of(ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(), 2, 2L)
     );
   }
 
   @ParameterizedTest
   @MethodSource("flowNodeStatusProcessFilters")
   public void evaluateReportWithFlowNodeStatus(final List<ProcessFilterDto<?>> processFilter,
-                                               final Integer expectedDataSize) {
+                                               final Integer expectedDataSize,
+                                               final long expectedInstanceCount) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -1072,11 +1073,12 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
     // then
     assertThat(actualResult.getFirstMeasureData()).hasSize(expectedDataSize);
-    assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter);
+    assertEvaluateReportWithFlowNodeStatusFilter(actualResult, processFilter, expectedInstanceCount);
   }
 
   protected abstract void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
-                                                                       final List<ProcessFilterDto<?>> executionState);
+                                                                       final List<ProcessFilterDto<?>> executionState,
+                                                                       final long expectedInstanceCount);
 
   @Test
   public void processDefinitionContainsMultiInstanceBody() {

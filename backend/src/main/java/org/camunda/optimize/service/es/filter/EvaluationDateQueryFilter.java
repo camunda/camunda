@@ -21,7 +21,7 @@ public class EvaluationDateQueryFilter implements QueryFilter<DateFilterDataDto<
   private final DateFilterQueryService dateFilterQueryService;
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto<?>> filter, final ZoneId timezone) {
+  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto<?>> filter, final ZoneId timezone, final boolean isUserTaskReport) {
     dateFilterQueryService.addFilters(query, filter, EVALUATION_DATE_TIME, timezone);
   }
 }

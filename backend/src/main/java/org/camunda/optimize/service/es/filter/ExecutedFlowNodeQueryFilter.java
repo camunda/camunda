@@ -33,7 +33,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
 
   @Override
   public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     List<QueryBuilder> filters = query.filter();
     for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
@@ -64,7 +64,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
       }
     } else {
       log.error("Could not filter for flow nodes. " +
-        "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
+                  "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
     }
     return boolQueryBuilder;
   }

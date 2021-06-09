@@ -54,7 +54,8 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
     queryFilterEnhancer.addFilterToQuery(
       boolQueryBuilder,
       getAllFilters(context.getReportData()),
-      context.getTimezone()
+      context.getTimezone(),
+      context.getReportData().isUserTaskReport()
     );
 
     return boolQueryBuilder;

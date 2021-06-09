@@ -58,6 +58,8 @@ public class DateAggregationContext {
   private final DistributedByType distributedByType;
   private final List<ProcessFilterDto<?>> processFilters;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  @Builder.Default
+  private final boolean isUserTaskReport = false;
 
   public ZonedDateTime getEarliestDate() {
     return ZonedDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), timezone);

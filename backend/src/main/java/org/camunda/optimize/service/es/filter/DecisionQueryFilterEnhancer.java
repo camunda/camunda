@@ -28,18 +28,23 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
   private final DecisionInputVariableQueryFilter decisionInputVariableQueryFilter;
   private final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter;
 
-  @Override
   public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto<?>> filter,
                                final ZoneId timezone) {
+    addFilterToQuery(query, filter, timezone, false);
+  }
+
+  @Override
+  public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto<?>> filter,
+                               final ZoneId timezone, final boolean isUserTaskReport) {
     if (filter != null) {
       evaluationDateQueryFilter.addFilters(
-        query, extractFilters(filter, EvaluationDateFilterDto.class), timezone
+        query, extractFilters(filter, EvaluationDateFilterDto.class), timezone, isUserTaskReport
       );
       decisionInputVariableQueryFilter.addFilters(
-        query, extractFilters(filter, InputVariableFilterDto.class), timezone
+        query, extractFilters(filter, InputVariableFilterDto.class), timezone, isUserTaskReport
       );
       decisionOutputVariableQueryFilter.addFilters(
-        query, extractFilters(filter, OutputVariableFilterDto.class), timezone
+        query, extractFilters(filter, OutputVariableFilterDto.class), timezone, isUserTaskReport
       );
     }
   }

@@ -23,7 +23,7 @@ public class StartDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<DateFilterDataDto<?>> filter,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     dateFilterQueryService.addFilters(query, filter, START_DATE, timezone);
   }
 }

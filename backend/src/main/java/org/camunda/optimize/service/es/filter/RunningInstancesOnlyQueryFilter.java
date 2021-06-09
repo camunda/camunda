@@ -22,7 +22,7 @@ public class RunningInstancesOnlyQueryFilter implements QueryFilter<RunningInsta
 
   public void addFilters(final BoolQueryBuilder query,
                          final List<RunningInstancesOnlyFilterDataDto> runningOnly,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (runningOnly != null && !runningOnly.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

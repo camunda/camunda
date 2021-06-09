@@ -11,8 +11,11 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -31,6 +34,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
@@ -43,10 +47,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.CALL_ACTIVITY;
@@ -655,6 +663,168 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
         .groupByContains("aStringValue")
           .distributedByContains(END_EVENT, 15., END_EVENT)
           .distributedByContains(START_EVENT, 15., START_EVENT)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME},
+        Map.of(USER_TASK_1, 2000.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                         final String[] filterValues,
+                                                                         final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessInstanceEngineDto processInstance =
+      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
+    );
+
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 4000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .assignee()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .groupByContains("1.00")
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID},
+        Map.of(USER_TASK_1, 2000.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                               final String[] filterValues,
+                                                                               final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
+    final ProcessInstanceEngineDto processInstance =
+      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 4000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .candidateGroups()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .groupByContains("1.00")
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
       .doAssert(result);
     // @formatter:on
   }

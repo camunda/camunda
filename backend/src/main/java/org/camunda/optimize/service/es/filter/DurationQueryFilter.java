@@ -23,7 +23,8 @@ import static org.camunda.optimize.service.es.report.command.util.DurationScript
 @Component
 public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
 
-  public void addFilters(BoolQueryBuilder query, List<DurationFilterDataDto> durations, final ZoneId timezone) {
+  public void addFilters(BoolQueryBuilder query, List<DurationFilterDataDto> durations, final ZoneId timezone,
+                         final boolean isUserTaskReport) {
     if (durations != null && !durations.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

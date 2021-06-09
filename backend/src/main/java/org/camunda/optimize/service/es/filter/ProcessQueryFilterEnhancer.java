@@ -35,9 +35,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Star
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil;
 import org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil;
-import org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil;
+import org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -79,47 +78,107 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CompletedOrCanceledFlowNodesOnlyQueryFilter completedOrCanceledFlowNodesOnlyQueryFilter;
   private final InstancesContainingUserTasksFilter instancesContainingUserTasksFilter;
 
-  @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
+    addFilterToQuery(query, filters, timezone, false);
+  }
+
+  @Override
+  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone,
+                               final boolean isUserTaskReport) {
     if (!CollectionUtils.isEmpty(filters)) {
-      startDateQueryFilter.addFilters(query, extractFilters(filters, StartDateFilterDto.class), timezone);
-      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class), timezone);
-      variableQueryFilter.addFilters(query, extractFilters(filters, VariableFilterDto.class), timezone);
-      executedFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutedFlowNodeFilterDto.class), timezone);
+      startDateQueryFilter.addFilters(
+        query,
+        extractFilters(filters, StartDateFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class), timezone, isUserTaskReport);
+      variableQueryFilter.addFilters(
+        query,
+        extractFilters(filters, VariableFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      executedFlowNodeQueryFilter.addFilters(
+        query,
+        extractFilters(filters, ExecutedFlowNodeFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
       executingFlowNodeQueryFilter.addFilters(
-        query, extractFilters(filters, ExecutingFlowNodeFilterDto.class), timezone);
-      canceledFlowNodeQueryFilter.addFilters(query, extractFilters(filters, CanceledFlowNodeFilterDto.class), timezone);
-      durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class), timezone);
+        query, extractFilters(filters, ExecutingFlowNodeFilterDto.class), timezone, isUserTaskReport);
+      canceledFlowNodeQueryFilter.addFilters(
+        query,
+        extractFilters(filters, CanceledFlowNodeFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      durationQueryFilter.addFilters(
+        query,
+        extractFilters(filters, DurationFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
       runningInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, RunningInstancesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, RunningInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
       completedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
       canceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CanceledInstancesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, CanceledInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
       nonCanceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
       suspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
       nonSuspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class), timezone);
-      flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class), timezone);
-      assigneeQueryFilter.addFilters(query, extractFilters(filters, AssigneeFilterDto.class), timezone);
-      candidateGroupQueryFilter.addFilters(query, extractFilters(filters, CandidateGroupFilterDto.class), timezone);
-      openIncidentQueryFilter.addFilters(query, extractFilters(filters, OpenIncidentFilterDto.class), timezone);
-      resolvedIncidentQueryFilter.addFilters(query, extractFilters(filters, ResolvedIncidentFilterDto.class), timezone);
-      noIncidentQueryFilter.addFilters(query, extractFilters(filters, NoIncidentFilterDto.class), timezone);
+        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+      flowNodeDurationQueryFilter.addFilters(
+        query,
+        extractFilters(filters, FlowNodeDurationFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      assigneeQueryFilter.addFilters(
+        query,
+        extractFilters(filters, AssigneeFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      candidateGroupQueryFilter.addFilters(
+        query,
+        extractFilters(filters, CandidateGroupFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      openIncidentQueryFilter.addFilters(
+        query,
+        extractFilters(filters, OpenIncidentFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      resolvedIncidentQueryFilter.addFilters(
+        query,
+        extractFilters(filters, ResolvedIncidentFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
+      noIncidentQueryFilter.addFilters(
+        query,
+        extractFilters(filters, NoIncidentFilterDto.class),
+        timezone,
+        isUserTaskReport
+      );
       runningFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, RunningFlowNodesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, RunningFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
       completedFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedFlowNodesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, CompletedFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
       canceledFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CanceledFlowNodesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, CanceledFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
       completedOrCanceledFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
       instancesContainingUserTasksFilter.addFilters(
-        query, extractFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), timezone);
+        query, extractFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
     }
-    addInstanceFilterForViewLevelMatching(query, filters);
+    addInstanceFilterForViewLevelMatching(query, filters, isUserTaskReport);
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -133,9 +192,10 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   }
 
   private void addInstanceFilterForViewLevelMatching(final BoolQueryBuilder query,
-                                                     final List<ProcessFilterDto<?>> filters) {
-    UserTaskFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
-    FlowNodeFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
+                                                     final List<ProcessFilterDto<?>> filters,
+                                                     final boolean isUserTaskReport) {
+    ModelElementFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters, isUserTaskReport)
+      .ifPresent(query::filter);
     IncidentFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
   }
 

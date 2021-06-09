@@ -22,7 +22,7 @@ public class CompletedInstancesOnlyQueryFilter implements QueryFilter<CompletedI
 
   public void addFilters(final BoolQueryBuilder query,
                          final List<CompletedInstancesOnlyFilterDataDto> runningOnly,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (runningOnly != null && !runningOnly.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

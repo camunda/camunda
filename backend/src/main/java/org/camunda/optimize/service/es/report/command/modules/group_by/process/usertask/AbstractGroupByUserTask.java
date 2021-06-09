@@ -20,8 +20,8 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createModelElementAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -37,7 +37,7 @@ public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
     final FilterAggregationBuilder filteredUserTaskAggregation =
       filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
         .subAggregation(
-          filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
+          filter(FILTERED_USER_TASKS_AGGREGATION, createModelElementAggregationFilter(context.getReportData()))
             .subAggregation(subAggregation)
         );
 

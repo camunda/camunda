@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil.createCompletedFlowNodesOnlyFilterQuery;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createCompletedFlowNodesOnlyFilterQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -26,7 +26,7 @@ public class CompletedFlowNodesOnlyQueryFilter implements QueryFilter<CompletedF
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<CompletedFlowNodesOnlyFilterDataDto> completedFlowNodesFilterData,
-                         final ZoneId timezone) {
+                         final ZoneId timezone, final boolean isUserTaskReport) {
     if (!CollectionUtils.isEmpty(completedFlowNodesFilterData)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(FLOW_NODE_INSTANCES, createCompletedFlowNodesOnlyFilterQuery(boolQuery()), ScoreMode.None));
