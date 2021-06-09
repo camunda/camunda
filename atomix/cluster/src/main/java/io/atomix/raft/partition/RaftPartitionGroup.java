@@ -336,28 +336,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Sets the leader election timeout.
-     *
-     * @param electionTimeout the leader election timeout
-     * @return the Raft partition group configuration
-     */
-    public Builder withElectionTimeout(final Duration electionTimeout) {
-      config.setElectionTimeout(electionTimeout);
-      return this;
-    }
-
-    /**
-     * Sets the heartbeat interval.
-     *
-     * @param heartbeatInterval the heartbeat interval
-     * @return the Raft partition group configuration
-     */
-    public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
-      config.setHeartbeatInterval(heartbeatInterval);
-      return this;
-    }
-
-    /**
      * Sets the maximum append requests which are sent per follower at once. Default is 2.
      *
      * @param maxAppendsPerFollower the maximum appends send per follower

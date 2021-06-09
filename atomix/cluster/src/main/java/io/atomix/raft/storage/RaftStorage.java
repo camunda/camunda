@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.function.Predicate;
 import org.agrona.IoUtil;
 
 /**
@@ -96,27 +95,6 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns the maximum log segment size.
-   *
-   * <p>The maximum segment size dictates the maximum size any segment in a {@link RaftLog} may
-   * consume in bytes.
-   *
-   * @return The maximum segment size in bytes.
-   */
-  public int maxLogSegmentSize() {
-    return maxSegmentSize;
-  }
-
-  /**
-   * Returns the amount of disk space that must be available before log compaction is forced.
-   *
-   * @return the amount of disk space that must be available before log compaction is forced
-   */
-  public long freeDiskSpace() {
-    return freeDiskSpace;
-  }
-
-  /**
    * Attempts to acquire a lock on the storage directory.
    *
    * @param id the ID with which to lock the directory
@@ -134,20 +112,6 @@ public final class RaftStorage {
       }
     } catch (final IOException e) {
       throw new StorageException("Failed to acquire storage lock");
-    }
-  }
-
-  /** Deletes file in the storage directory that match the given predicate. */
-  private void deleteFiles(final Predicate<File> predicate) {
-    directory.mkdirs();
-
-    // Iterate through all files in the storage directory.
-    for (final File file : directory.listFiles(f -> f.isFile() && predicate.test(f))) {
-      try {
-        Files.delete(file.toPath());
-      } catch (final IOException e) {
-        // Ignore the exception.
-      }
     }
   }
 
@@ -224,15 +188,6 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns whether to flush buffers to disk when entries are committed.
-   *
-   * @return Whether to flush buffers to disk when entries are committed.
-   */
-  public boolean isFlushExplicitly() {
-    return flushExplicitly;
-  }
-
-  /**
    * Builds a {@link RaftStorage} configuration.
    *
    * <p>The storage builder provides simplifies building more complex {@link RaftStorage}
@@ -277,21 +232,6 @@ public final class RaftStorage {
     public Builder withPrefix(final String prefix) {
       this.prefix = checkNotNull(prefix, "prefix cannot be null");
       return this;
-    }
-
-    /**
-     * Sets the log directory, returning the builder for method chaining.
-     *
-     * <p>The log will write segment files into the provided directory. If multiple {@link
-     * RaftStorage} objects are located on the same machine, they write logs to different
-     * directories.
-     *
-     * @param directory The log directory.
-     * @return The storage builder.
-     * @throws NullPointerException If the {@code directory} is {@code null}
-     */
-    public Builder withDirectory(final String directory) {
-      return withDirectory(new File(checkNotNull(directory, "directory")));
     }
 
     /**

@@ -48,16 +48,6 @@ public class Versioned<V> {
   }
 
   /**
-   * Constructs a new versioned value.
-   *
-   * @param value value
-   * @param version version
-   */
-  public Versioned(final V value, final long version) {
-    this(value, version, System.currentTimeMillis());
-  }
-
-  /**
    * Returns the value.
    *
    * @return value.

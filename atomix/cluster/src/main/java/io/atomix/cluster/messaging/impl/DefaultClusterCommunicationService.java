@@ -81,20 +81,6 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> CompletableFuture<Void> unicast(
-      final String subject,
-      final M message,
-      final Function<M, byte[]> encoder,
-      final MemberId toMemberId,
-      final boolean reliable) {
-    try {
-      return doUnicast(subject, encoder.apply(message), toMemberId, reliable);
-    } catch (final Exception e) {
-      return Futures.exceptionalFuture(e);
-    }
-  }
-
-  @Override
   public <M> void multicast(
       final String subject,
       final M message,

@@ -26,8 +26,8 @@ public class HeartbeatMembershipProtocolConfig extends GroupMembershipProtocolCo
   private static final int DEFAULT_FAILURE_TIMEOUT = 10000;
   private static final int DEFAULT_PHI_FAILURE_THRESHOLD = 10;
 
-  private Duration heartbeatInterval = Duration.ofMillis(DEFAULT_HEARTBEAT_INTERVAL);
-  private int phiFailureThreshold = DEFAULT_PHI_FAILURE_THRESHOLD;
+  private final Duration heartbeatInterval = Duration.ofMillis(DEFAULT_HEARTBEAT_INTERVAL);
+  private final int phiFailureThreshold = DEFAULT_PHI_FAILURE_THRESHOLD;
   private Duration failureTimeout = Duration.ofMillis(DEFAULT_FAILURE_TIMEOUT);
 
   @Override
@@ -45,34 +45,12 @@ public class HeartbeatMembershipProtocolConfig extends GroupMembershipProtocolCo
   }
 
   /**
-   * Sets the heartbeat interval.
-   *
-   * @param heartbeatInterval the heartbeat interval
-   * @return the group membership configuration
-   */
-  public HeartbeatMembershipProtocolConfig setHeartbeatInterval(final Duration heartbeatInterval) {
-    this.heartbeatInterval = checkNotNull(heartbeatInterval);
-    return this;
-  }
-
-  /**
    * Returns the failure detector threshold.
    *
    * @return the failure detector threshold
    */
   public int getPhiFailureThreshold() {
     return phiFailureThreshold;
-  }
-
-  /**
-   * Sets the failure detector threshold.
-   *
-   * @param phiFailureThreshold the failure detector threshold
-   * @return the group membership configuration
-   */
-  public HeartbeatMembershipProtocolConfig setPhiFailureThreshold(final int phiFailureThreshold) {
-    this.phiFailureThreshold = phiFailureThreshold;
-    return this;
   }
 
   /**

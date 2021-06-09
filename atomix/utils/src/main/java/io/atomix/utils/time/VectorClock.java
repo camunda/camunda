@@ -21,7 +21,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import com.google.common.annotations.Beta;
 import io.atomix.utils.Identifier;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,14 +29,6 @@ import java.util.Map;
 public class VectorClock<T extends Identifier> implements Clock<VectorTimestamp<T>> {
   private final T localIdentifier;
   private final Map<T, VectorTimestamp<T>> vector = new HashMap<>();
-
-  public VectorClock(final T localIdentifier) {
-    this(new VectorTimestamp<>(localIdentifier, 0));
-  }
-
-  public VectorClock(final VectorTimestamp<T> localTimestamp) {
-    this(localTimestamp, Collections.emptyList());
-  }
 
   public VectorClock(
       final VectorTimestamp<T> localTimestamp, final Collection<VectorTimestamp<T>> vector) {

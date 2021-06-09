@@ -14,7 +14,9 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <artifactId>zeebe-atomix-utils</artifactId>
 
   <dependencies>
@@ -45,18 +47,8 @@
     </dependency>
 
     <dependency>
-      <artifactId>hamcrest</artifactId>
-      <groupId>org.hamcrest</groupId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <artifactId>junit</artifactId>
       <groupId>junit</groupId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <artifactId>guava-testlib</artifactId>
-      <groupId>com.google.guava</groupId>
       <scope>test</scope>
     </dependency>
     <dependency>
