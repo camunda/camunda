@@ -217,6 +217,21 @@ public final class BpmnElementTypeTest {
               ENGINE.job().ofInstance(processInstanceKey).withType(taskType()).complete();
             }
           },
+          new BpmnElementTypeScenario("Script Task", BpmnElementType.SCRIPT_TASK) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .scriptTask(elementId(), b -> b.zeebeJobType(taskType()))
+                  .done();
+            }
+
+            @Override
+            void test() {
+              final long processInstanceKey = super.executeInstance();
+              ENGINE.job().ofInstance(processInstanceKey).withType(taskType()).complete();
+            }
+          },
           new BpmnElementTypeScenario("User Task", BpmnElementType.USER_TASK) {
             @Override
             BpmnModelInstance modelInstance() {

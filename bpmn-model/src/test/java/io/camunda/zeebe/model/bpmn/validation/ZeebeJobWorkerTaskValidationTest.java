@@ -88,6 +88,36 @@ public class ZeebeJobWorkerTaskValidationTest extends AbstractZeebeValidationTes
         valid()
       },
       {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task")
+            .zeebeJobType("DMN")
+            .zeebeJobRetries("1")
+            .endEvent()
+            .done(),
+        valid()
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task")
+            .zeebeJobTypeExpression("dmnType")
+            .zeebeJobRetriesExpression("jobRetries")
+            .endEvent()
+            .done(),
+        valid()
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task")
+            .zeebeJobType("DMN")
+            .zeebeTaskHeader("decisionRef", "approveInvoice")
+            .endEvent()
+            .done(),
+        valid()
+      },
+      {
         Bpmn.createExecutableProcess("process").startEvent().serviceTask("task").endEvent().done(),
         singletonList(
             expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"))
@@ -114,6 +144,20 @@ public class ZeebeJobWorkerTaskValidationTest extends AbstractZeebeValidationTes
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .businessRuleTask("task")
+            .zeebeJobType("")
+            .endEvent()
+            .done(),
+        singletonList(expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process").startEvent().scriptTask("task").endEvent().done(),
+        singletonList(
+            expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .scriptTask("task")
             .zeebeJobType("")
             .endEvent()
             .done(),
