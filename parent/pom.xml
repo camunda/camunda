@@ -136,6 +136,16 @@
     <!-- version against which backwards compatibility is checked -->
     <backwards.compat.version>1.0.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
+
+    <!--
+      you can use the following to disable some or all tests:
+        - skipTests will skip all tests
+        - skipITs will skip integration tests
+        - skipUTs will skip unit tests
+      -->
+    <skipTests>false</skipTests>
+    <skipUTs>${skipTests}</skipUTs>
+    <skipITs>${skipTests}</skipITs>
   </properties>
 
   <dependencyManagement>
@@ -928,7 +938,7 @@
           </executions>
         </plugin>
 
-        <!-- MAVEN SUREFIRE -->
+        <!-- Unit tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -952,6 +962,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
+            <skip>${skipUTs}</skip>
           </configuration>
         </plugin>
 
@@ -977,6 +988,20 @@
                 <value>io.camunda.zeebe.ZeebeTestListener</value>
               </property>
             </properties>
+            <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
+            <!--
+              ensure junit5 display names are properly reported; see the documentation for more
+              https://maven.apache.org/surefire/maven-failsafe-plugin/examples/junit-platform.html
+              -->
+            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+              <disable>false</disable>
+              <version>3.0</version>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+            </statelessTestsetReporter>
+            <skip>${skipITs}</skip>
           </configuration>
         </plugin>
 
