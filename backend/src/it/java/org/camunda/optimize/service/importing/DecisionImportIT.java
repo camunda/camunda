@@ -22,7 +22,6 @@ import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImp
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeEach;

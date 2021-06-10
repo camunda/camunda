@@ -375,6 +375,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildBulkDeleteAlertsRequest(List<String> alertIds) {
+    this.path = ALERT + "/delete";
+    this.method = POST;
+    this.body = getBody(alertIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildUpdateSingleReportRequest(String id,
                                                                 ReportDefinitionDto entity) {
     switch (entity.getReportType()) {
@@ -1399,7 +1406,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckScopeBulkDeletionConflictsRequest(final String collectionId, final List<String> collectionScopeIds) {
+  public OptimizeRequestExecutor buildCheckScopeBulkDeletionConflictsRequest(final String collectionId,
+                                                                             final List<String> collectionScopeIds) {
     this.path = "collection/" + collectionId + "/scope/delete-conflicts";
     this.method = POST;
     this.body = getBody(collectionScopeIds);

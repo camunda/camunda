@@ -27,11 +27,14 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.util.List;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 
 @AllArgsConstructor
@@ -135,6 +138,17 @@ public class AlertWriter {
       log.error(message);
       throw new NotFoundException(message);
     }
+  }
+
+  public void deleteAlerts(List<String> alertIds) {
+    log.debug("Deleting alerts with ids: {}", alertIds);
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+      esClient,
+      boolQuery().must(termsQuery(AlertIndex.ID, alertIds)),
+      "alerts with Ids" + alertIds,
+      true,
+      ALERT_INDEX_NAME
+    );
   }
 
   public void writeAlertStatus(boolean alertStatus, String alertId) {

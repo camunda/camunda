@@ -318,7 +318,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
+      definitionKey));
   }
 
   private SingleProcessReportDefinitionRequestDto getDurationReportDefinitionDto(String collectionId,

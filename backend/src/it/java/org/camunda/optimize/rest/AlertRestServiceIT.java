@@ -5,23 +5,35 @@
  */
 package org.camunda.optimize.rest;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.service.alert.AlertService;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class AlertRestServiceIT extends AbstractAlertIT {
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().forLevel(Level.DEBUG).captureForType(AlertService.class);
 
   private static final String TEST = "test";
 
@@ -218,7 +230,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .buildUpdateAlertRequest(id, alert)
       .execute();
 
-    // then the status code is okay
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
@@ -311,9 +323,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .buildDeleteAlertRequest(id)
       .execute();
 
-    // then the status code is okay
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(alertClient.getAllAlerts().size()).isZero();
+    assertThat(alertClient.getAllAlerts()).isEmpty();
   }
 
   @Test
@@ -326,6 +338,96 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteAlertsNoAuthentication() {
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildBulkDeleteAlertsRequest(Collections.emptyList())
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void bulkDeleteAlertsNoUserAuthorization(final DefinitionType definitionType) {
+    //given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
+    String alertId1 = alertClient.createAlertForReport(reportId);
+    String alertId2 = alertClient.createAlertForReport(reportId);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildBulkDeleteAlertsRequest(Arrays.asList(alertId1, alertId2))
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteEmptyListOfAlerts() {
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildBulkDeleteAlertsRequest(Collections.emptyList())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteNullListOfAlerts() {
+    // when
+    Response response = alertClient.bulkDeleteAlerts(null);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void bulkDeleteAlerts(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
+    String alertId1 = alertClient.createAlertForReport(reportId);
+    String alertId2 = alertClient.createAlertForReport(reportId);
+
+    // when
+    Response response = alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, alertId2));
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(alertClient.getAllAlerts()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void bulkDeleteAlertsOnlyDeletesAlertsThatExistInBulk(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
+    String alertId1 = alertClient.createAlertForReport(reportId);
+    String alertId2 = alertClient.createAlertForReport(reportId);
+
+    // when
+    Response response = alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, "doesntExist", alertId2));
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(alertClient.getAllAlerts()).isEmpty();
+    logCapturer.assertContains("Cannot find alert with id [doesntExist], it may have been deleted already");
   }
 
 }
