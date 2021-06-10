@@ -660,6 +660,13 @@ public class OptimizeRequestExecutor {
     return buildGetCollectionEntitiesRequest(id, null);
   }
 
+  public OptimizeRequestExecutor bulkDeleteEventProcessMappingsRequest(List<String> eventProcessIds) {
+    this.path = "eventBasedProcess/delete";
+    this.body = getBody(eventProcessIds);
+    this.method = POST;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id, EntitySorter sorter) {
     this.path = "collection/" + id + "/entities";
     this.method = GET;

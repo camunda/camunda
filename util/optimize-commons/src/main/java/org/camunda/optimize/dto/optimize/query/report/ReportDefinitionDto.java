@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -21,6 +22,7 @@ import java.time.OffsetDateTime;
 @Data
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
+@FieldNameConstants
 public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
 
   protected String id;

@@ -218,9 +218,18 @@ public class EventBasedProcessRestService {
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
   public boolean checkEventBasedProcessesHaveConflicts(@Context ContainerRequestContext requestContext,
-                                                       @RequestBody List<String> eventBasedProcessIds) {
+                                                       @NotNull @RequestBody List<String> eventBasedProcessIds) {
     validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     return eventProcessService.hasDeleteConflicts(eventBasedProcessIds);
+  }
+
+  @POST
+  @Path("/delete")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void bulkDeleteEventProcessMappings(@Context ContainerRequestContext requestContext,
+                                             @NotNull @RequestBody List<String> eventBasedProcessIds) {
+    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    eventProcessService.bulkDeleteEventProcessMappings(eventBasedProcessIds);
   }
 
   private EventProcessRoleRequestDto<IdentityDto> resolveToEventProcessRoleDto(final String userId,

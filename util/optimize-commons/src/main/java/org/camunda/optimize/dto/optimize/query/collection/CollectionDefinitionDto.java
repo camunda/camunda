@@ -23,7 +23,7 @@ import static java.util.stream.Collectors.groupingBy;
 
 @NoArgsConstructor
 public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
-  
+
   public CollectionDefinitionDto(CollectionDataDto data, OffsetDateTime created, String id, String name,
                                  OffsetDateTime lastModified, String lastModifier, String owner) {
     super();

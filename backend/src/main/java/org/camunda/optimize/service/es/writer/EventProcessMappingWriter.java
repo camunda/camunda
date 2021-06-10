@@ -31,10 +31,13 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -102,6 +105,25 @@ public class EventProcessMappingWriter {
     }
 
     return deleteResponse.getResult().equals(DeleteResponse.Result.DELETED);
+  }
+
+  public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
+    log.debug("Deleting event process mapping ids: " + eventProcessMappingIds);
+
+    try {
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient,
+        boolQuery().must(termsQuery(EventProcessMappingIndex.ID, eventProcessMappingIds)),
+        "event process mapping ids" + eventProcessMappingIds,
+        false,
+        EVENT_PROCESS_MAPPING_INDEX_NAME
+      );
+    } catch (OptimizeRuntimeException e) {
+      String reason =
+        "Could not delete event process mappings due to an unexpected error.";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
   }
 
   private void updateOfEventProcessMappingWithScript(final EventProcessMappingDto eventProcessMappingDto,

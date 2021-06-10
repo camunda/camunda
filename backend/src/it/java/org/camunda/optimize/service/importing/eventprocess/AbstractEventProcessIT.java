@@ -37,8 +37,10 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishSt
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.util.BpmnModels;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -881,6 +883,31 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
           .configuration(ExternalEventSourceConfigDto.builder().includeAllGroups(true).group("groupName").build())
           .build())
     );
+  }
+
+  protected boolean eventInstanceIndexForPublishStateExists(final EventProcessPublishStateDto publishState) {
+    Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
+    try {
+      currentIndices = getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
+    } catch (ElasticsearchStatusException ex) {
+      if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
+        return false;
+      }
+    }
+    return currentIndices.containsKey(
+      embeddedOptimizeExtension.getIndexNameService()
+        .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(publishState.getId())));
+  }
+
+  protected void publishMappingAndExecuteImport(final String eventProcessId) {
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    // we execute the import cycle so the event instance index gets created
+    executeImportCycle();
+  }
+
+  protected EventProcessPublishStateDto getEventProcessPublishStateDto(final String processMappingId) {
+    return getEventProcessPublishStateDtoFromElasticsearch(processMappingId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fetch publish state for process mapping"));
   }
 
 }

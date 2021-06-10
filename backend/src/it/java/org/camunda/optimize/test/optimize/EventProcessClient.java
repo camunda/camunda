@@ -163,6 +163,10 @@ public class EventProcessClient {
     return getRequestExecutor().buildDeleteEventProcessMappingRequest(eventProcessMappingId);
   }
 
+  public OptimizeRequestExecutor createBulkDeleteEventProcessMappingsRequest(final List<String> eventProcessMappingIds) {
+    return getRequestExecutor().bulkDeleteEventProcessMappingsRequest(eventProcessMappingIds);
+  }
+
   public ConflictResponseDto getDeleteConflictsForEventProcessMapping(String eventProcessMappingId) {
     return createGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId)
       .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
@@ -320,16 +324,16 @@ public class EventProcessClient {
       .variables(Collections.emptyList())
       .incidents(Collections.emptyList())
       .flowNodeInstances(eventsToInclude.stream()
-                .map(ingestedEvent -> FlowNodeInstanceDto.builder()
-                  .flowNodeInstanceId(ingestedEvent.getId())
-                  .flowNodeId(IdGenerator.getNextId())
-                  .processInstanceId(ingestedEvent.getTraceid())
-                  .startDate(LocalDateUtil.getCurrentDateTime().minusSeconds(30L))
-                  .endDate(LocalDateUtil.getCurrentDateTime().minusSeconds(10L))
-                  .totalDurationInMs(0L)
-                  .flowNodeType("startEvent")
-                  .build()
-                ).collect(Collectors.toList()))
+                           .map(ingestedEvent -> FlowNodeInstanceDto.builder()
+                             .flowNodeInstanceId(ingestedEvent.getId())
+                             .flowNodeId(IdGenerator.getNextId())
+                             .processInstanceId(ingestedEvent.getTraceid())
+                             .startDate(LocalDateUtil.getCurrentDateTime().minusSeconds(30L))
+                             .endDate(LocalDateUtil.getCurrentDateTime().minusSeconds(10L))
+                             .totalDurationInMs(0L)
+                             .flowNodeType("startEvent")
+                             .build()
+                           ).collect(Collectors.toList()))
       .build();
   }
 
@@ -345,4 +349,5 @@ public class EventProcessClient {
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }
+
 }
