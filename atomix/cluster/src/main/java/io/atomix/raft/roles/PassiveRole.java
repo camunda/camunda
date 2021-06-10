@@ -43,7 +43,6 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -238,24 +237,15 @@ public class PassiveRole extends InactiveRole {
       }
     }
 
-    boolean snapshotChunkConsumptionFailed = true;
     try {
-      snapshotChunkConsumptionFailed = !pendingSnapshot.apply(snapshotChunk).join();
-    } catch (final IOException e) {
+      pendingSnapshot.apply(snapshotChunk).join();
+    } catch (final Exception e) {
       log.warn(
           "Failed to write pending snapshot chunk {}, rolling back snapshot {}",
           snapshotChunk,
           pendingSnapshot,
           e);
-    } catch (final Exception e) {
-      log.error(
-          "Failed to write pending snapshot chunk {}, rolling back snapshot {}",
-          snapshotChunk,
-          pendingSnapshot,
-          e);
-    }
 
-    if (snapshotChunkConsumptionFailed) {
       abortPendingSnapshots();
       return CompletableFuture.completedFuture(
           logResponse(

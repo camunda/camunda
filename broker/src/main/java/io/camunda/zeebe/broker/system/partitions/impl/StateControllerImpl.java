@@ -22,7 +22,6 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -228,12 +227,9 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     }
 
     try {
-      if (context.apply(snapshotChunk)) {
-        validateWhenReceivedAllChunks(snapshotChunk, context);
-      } else {
-        markSnapshotAsInvalid(context, snapshotChunk);
-      }
-    } catch (final IOException e) {
+      context.apply(snapshotChunk);
+      validateWhenReceivedAllChunks(snapshotChunk, context);
+    } catch (final Exception e) {
       LOG.warn(
           "Unexpected error on writing the received snapshot chunk {}, marking snapshot {} as invalid",
           snapshotChunk,
@@ -348,8 +344,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       }
     }
 
-    public boolean apply(final SnapshotChunk snapshotChunk) throws IOException {
-      return receivedSnapshot.apply(snapshotChunk).join();
+    public void apply(final SnapshotChunk snapshotChunk) {
+      receivedSnapshot.apply(snapshotChunk).join();
     }
   }
 }
