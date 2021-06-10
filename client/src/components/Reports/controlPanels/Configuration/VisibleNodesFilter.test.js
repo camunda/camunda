@@ -31,6 +31,7 @@ const report = {
       value: '',
     },
     view: {},
+    definitions: [{}],
   },
   targetValue: false,
   combined: false,
@@ -44,6 +45,14 @@ it('should render nothing if report is not grouped/distributed by flowNodes', ()
   );
 
   expect(node).toMatchSnapshot();
+});
+
+it('should render nothing if the report contains multiple definitions', () => {
+  const node = shallow(
+    <VisibleNodesFilter report={{...report, data: {...report.data, definitions: [{}, {}]}}} />
+  );
+
+  expect(node).toEqual({});
 });
 
 it('should render component', () => {

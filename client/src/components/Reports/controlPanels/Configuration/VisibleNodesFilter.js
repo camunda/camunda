@@ -32,13 +32,14 @@ export default class VisibleNodesFilter extends React.Component {
         distributedBy,
         configuration: {hiddenNodes},
         groupBy,
+        definitions,
       },
     } = this.props.report;
 
     const groupByFlowNode = ['flowNodes', 'userTasks'].includes(groupBy?.type);
     const distributedByFlowNode = ['flowNode', 'userTask'].includes(distributedBy?.type);
 
-    if (!combined && (groupByFlowNode || distributedByFlowNode)) {
+    if (!combined && definitions.length === 1 && (groupByFlowNode || distributedByFlowNode)) {
       return (
         <div className="VisibleNodesFilter">
           <fieldset>

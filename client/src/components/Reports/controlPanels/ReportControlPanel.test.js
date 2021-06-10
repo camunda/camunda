@@ -327,7 +327,7 @@ it('should reset distributed by variable report when changing to a definition th
 });
 
 it('should not reset variable report when changing to a definition that has the same variable', async () => {
-  loadVariables.mockReturnValueOnce([{name: 'doubleVar'}]);
+  loadVariables.mockReturnValue([{name: 'doubleVar'}]);
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -544,7 +544,7 @@ it('should not reset columnOrder when changing version', async () => {
 });
 
 it('should add new variables to includedColumns when switching definition/version', async () => {
-  loadVariables.mockReturnValueOnce([{name: 'existingVariable'}, {name: 'newVariable'}]);
+  loadVariables.mockReturnValue([{name: 'existingVariable'}, {name: 'newVariable'}]);
   const reportWithConfig = update(report, {
     data: {
       configuration: {

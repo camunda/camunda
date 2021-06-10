@@ -7,6 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 import update from 'immutability-helper';
+import deepEqual from 'fast-deep-equal';
 
 import {Icon, Button} from 'components';
 import {Filter} from 'filter';
@@ -47,7 +48,7 @@ export default withErrorHandling(
       const data = this.props.report.data;
 
       if (data?.definitions?.length) {
-        this.loadVariables(data.definitions[0]);
+        this.loadVariables(data.definitions);
         this.loadFlowNodeNames(data.definitions[0]);
       }
     }
@@ -64,22 +65,20 @@ export default withErrorHandling(
       }
     };
 
-    loadVariables = ({key, versions, tenantIds}) => {
-      if (key && versions && tenantIds) {
-        return new Promise((resolve, reject) => {
-          this.props.mightFail(
-            loadVariables([
-              {
-                processDefinitionKey: key,
-                processDefinitionVersions: versions,
-                tenantIds,
-              },
-            ]),
-            (variables) => this.setState({variables}, resolve),
-            (error) => reject(showError(error))
-          );
-        });
-      }
+    loadVariables = (definitions) => {
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          loadVariables(
+            definitions.map(({key, versions, tenantIds}) => ({
+              processDefinitionKey: key,
+              processDefinitionVersions: versions,
+              tenantIds,
+            }))
+          ),
+          (variables) => this.setState({variables}, resolve),
+          (error) => reject(showError(error))
+        );
+      });
     };
 
     loadXml = ({key, versions, tenantIds}) => {
@@ -144,7 +143,10 @@ export default withErrorHandling(
         displayName: definitionToCopy.displayName + ` (${t('common.copyLabel')})`,
       };
 
-      const change = {definitions: {$splice: [[idx, 0, newDefinition]]}};
+      const change = {
+        definitions: {$splice: [[idx, 0, newDefinition]]},
+        configuration: {hiddenNodes: {$set: {active: false, keys: []}}},
+      };
       if (this.props.report.data.visualization === 'heat') {
         change.visualization = {$set: 'table'};
       }
@@ -160,12 +162,16 @@ export default withErrorHandling(
       this.props.setLoading(true);
       const data = this.props.report.data;
 
-      if (data.definitions.length === 0) {
-        // if we add the first definition, we need to also process the definition update to update the xml
-        const newFirstDefinition = update(data, change).definitions[0];
-
-        change = {...change, ...(await this.processDefinitionUpdate(newFirstDefinition))};
-      } else if (data.definitions.length === 1) {
+      const {definitions} = update(data, change);
+      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+      change.configuration = change.configuration || {};
+      change.configuration.hiddenNodes = {
+        $set: {
+          active: false,
+          keys: [],
+        },
+      };
+      if (data.definitions.length === 1) {
         // if we add the second definition, we need to make sure that it's not a heatmap report
         if (data.visualization === 'heat') {
           change.visualization = {$set: 'table'};
@@ -184,11 +190,10 @@ export default withErrorHandling(
       this.props.setLoading(true);
       const data = this.props.report.data;
 
-      if (data.definitions.length > 1) {
-        const newFirstDefinition = update(data, change).definitions[0];
+      const {definitions} = update(data, change);
+      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
 
-        change = {...change, ...(await this.processDefinitionUpdate(newFirstDefinition))};
-      } else {
+      if (data.definitions.length === 1) {
         // removing the last definition will reset view and groupby options
         change = {
           ...change,
@@ -206,18 +211,24 @@ export default withErrorHandling(
     changeDefinition = async (changedDefinition, idx) => {
       this.props.setLoading(true);
 
-      const change = {
+      let change = {
         definitions: {
           [idx]: {$set: changedDefinition},
         },
-        ...(idx === 0 && (await this.processDefinitionUpdate(changedDefinition))),
       };
+
+      const {definitions} = update(this.props.report.data, change);
+      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
 
       await this.props.updateReport(change, true);
       this.props.setLoading(false);
     };
 
-    processDefinitionUpdate = async (newDefinition) => {
+    processDefinitionUpdate = async (newDefinitions) => {
+      if (!newDefinitions?.length) {
+        return {};
+      }
+
       const {
         configuration: {
           tableColumns: {columnOrder, includedColumns, excludedColumns},
@@ -227,14 +238,13 @@ export default withErrorHandling(
         definitions,
       } = this.props.report.data;
 
-      const definitionKey = definitions[0]?.key;
       const targetFlowNodes = Object.keys(values);
       const change = {};
 
       const [xml] = await Promise.all([
-        this.loadXml(newDefinition),
-        this.loadVariables(newDefinition),
-        this.loadFlowNodeNames(newDefinition),
+        this.loadXml(newDefinitions[0]),
+        this.loadVariables(newDefinitions),
+        this.loadFlowNodeNames(newDefinitions[0]),
       ]);
 
       change.configuration = {xml: {$set: xml}};
@@ -244,8 +254,13 @@ export default withErrorHandling(
         variableConfig.reset(change);
       }
 
-      if (columnOrder.length && newDefinition.key !== definitionKey) {
-        change.configuration.tableColumns = {columnOrder: {$set: []}};
+      if (columnOrder.length) {
+        const previousDefinitionKeys = definitions.map(({key}) => key);
+        const newDefinitionKeys = newDefinitions.map(({key}) => key);
+
+        if (!deepEqual(previousDefinitionKeys, newDefinitionKeys)) {
+          change.configuration.tableColumns = {columnOrder: {$set: []}};
+        }
       }
 
       if (includedColumns.length) {
