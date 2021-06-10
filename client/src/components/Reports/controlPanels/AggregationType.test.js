@@ -111,26 +111,3 @@ it('should hide median aggregation if processpart is defined', () => {
 
   expect(node.find({label: 'Median'})).not.toExist();
 });
-
-it('should reset the visualization to table if the report is distributed', () => {
-  const spy = jest.fn();
-
-  const node = shallow(
-    <AggregationType
-      report={{
-        view: {properties: ['duration']},
-        distributedBy: {type: 'assignee'},
-        configuration: {aggregationTypes: ['avg']},
-        visualization: 'bar',
-      }}
-      onChange={spy}
-    />
-  );
-
-  node
-    .find('Switch')
-    .last()
-    .simulate('change', {target: {checked: true}});
-
-  expect(spy.mock.calls[0][0].visualization).toEqual({$set: 'table'});
-});

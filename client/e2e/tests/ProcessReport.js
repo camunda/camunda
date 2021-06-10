@@ -972,6 +972,10 @@ test('distributed multi-measure reports', async (t) => {
 
   await t.click(e.addMeasureButton);
 
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectVisualization(t, 'Table');
+
   await t.expect(e.reportRenderer.textContent).contains('Count');
   await t.expect(e.reportRenderer.textContent).contains('Duration');
   await t.expect(e.reportRenderer.textContent).contains('Misc');

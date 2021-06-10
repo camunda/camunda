@@ -17,7 +17,7 @@ const orders = {
 };
 
 export default function AggregationType({report, onChange}) {
-  const {configuration, distributedBy} = report;
+  const {configuration} = report;
   const {aggregationTypes} = report.configuration;
 
   const isDurationReport = report?.view?.properties.includes('duration');
@@ -45,10 +45,6 @@ export default function AggregationType({report, onChange}) {
         targetValue: {active: {$set: false}},
       },
     };
-
-    if (distributedBy.type !== 'none') {
-      changes.visualization = {$set: 'table'};
-    }
 
     return onChange(changes, true);
   }

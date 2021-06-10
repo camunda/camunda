@@ -10,7 +10,7 @@ import createCombinedChartData from './createCombinedChartData';
 jest.mock('../defaultChart/createDefaultChartOptions', () => ({createDatasetOptions: jest.fn()}));
 jest.mock('./service', () => ({getCombinedChartProps: jest.fn()}));
 
-const createReport = ({reportA, reportB, groupByType}) => {
+const createReport = ({reportA, reportB, groupByType}, measures) => {
   getCombinedChartProps.mockReturnValue({
     reportsNames: ['report A', 'report B'],
     resultArr: [reportA.data, reportB.data],
@@ -33,6 +33,7 @@ const createReport = ({reportA, reportB, groupByType}) => {
           },
         },
       },
+      measures,
     },
     data: {
       groupBy: {
@@ -93,4 +94,47 @@ it('should return correct chart data object for a combined report with correct d
   });
 
   expect(chartData).toMatchSnapshot();
+});
+
+it('should return a dataset for each measure value in multi measure reports', () => {
+  const reportA = {
+    data: [{key: 'flowNode1', value: 123, label: 'Dec 2017'}],
+    color: 'blue',
+  };
+
+  const reportB = {
+    data: [{key: 'flowNode2', value: 5, label: 'Mar 2017'}],
+    color: 'yellow',
+  };
+
+  const measures = [
+    {
+      property: 'frequency',
+      data: [{key: 'flowNode1', value: [{key: 'assignee1', value: 123}]}],
+    },
+    {
+      property: 'duration',
+      data: [{key: 'flowNode1', value: [{key: 'assignee1', value: 5536205036}]}],
+    },
+  ];
+
+  const chartData = createCombinedChartData({
+    report: createReport({reportA, reportB}, measures),
+    targetValue: false,
+    theme: 'light',
+  });
+
+  expect(chartData.datasets.length).toBe(4);
+  expect(chartData.datasets[0]).toEqual({
+    yAxisID: 'axis-0',
+    label: 'report A - Count',
+    data: [123, null],
+    formatter: expect.any(Function),
+  });
+  expect(chartData.datasets[2]).toEqual({
+    yAxisID: 'axis-1',
+    label: 'report A - Duration',
+    data: [123, null],
+    formatter: expect.any(Function),
+  });
 });

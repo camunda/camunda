@@ -4,8 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getColorFor} from './colorsUtils';
 import {getTooltipText} from 'services';
+import {t} from 'translation';
+
+import {getColorFor} from './colorsUtils';
 
 export function formatTooltip(
   {index, datasetIndex},
@@ -90,4 +92,22 @@ export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {
     );
   }
   return true;
+}
+
+export function getLabel({property, aggregationType, userTaskDurationTime}) {
+  return (
+    (userTaskDurationTime
+      ? `${t('report.config.userTaskDuration.' + userTaskDurationTime)} `
+      : '') +
+    t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
+    (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '')
+  );
+}
+
+export function getAxisIdx(measures, measureIdx) {
+  if (measures.every(({property}) => property === measures[0].property)) {
+    // if every measure has the same prop, there is only one axis
+    return 0;
+  }
+  return measures[measureIdx].property === 'frequency' ? 0 : 1;
 }

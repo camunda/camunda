@@ -10,13 +10,13 @@ import {generateLegendLabels} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
 
-export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
+export default function createCombinedChartOptions({report, targetValue, theme}) {
   const {
     data: {visualization, configuration},
     result,
   } = report;
 
-  const {groupBy} = Object.values(result.data)[0].data;
+  const {view, groupBy} = Object.values(result.data)[0].data;
 
   const isDark = theme === 'dark';
   const isNumber = visualization === 'number';
@@ -31,6 +31,8 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
 
   const tooltipCallbacks = {
     label: (tooltipItem, data) => {
+      const {formatter} = data.datasets[tooltipItem.datasetIndex];
+
       return formatTooltip(
         tooltipItem,
         data,
@@ -61,6 +63,8 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       maxDuration,
       isDark,
       isPersistedTooltips,
+      measures: result.measures,
+      entity: view.entity,
       autoSkip: canBeInterpolated(groupBy),
       groupedByDurationMaxValue,
     }),
@@ -89,15 +93,27 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
 }
 
 function findMaxDurationAcrossReports(result, durationKey = 'value') {
-  const reportsMaxDurations = Object.values(result.data).map((report) => {
-    if (typeof report.result.data === 'number') {
-      return report.result.data;
-    }
-    if (report.result.data === null) {
-      return 0;
-    }
-    return Math.max(...Object.values(report.result.data).map((entry) => entry[durationKey]));
-  });
+  let maxDurations;
+  if (result.measures.length > 1) {
+    const measuresDurationValues = result.measures
+      .filter(({property}) => property === 'duration')
+      .map((measure) => measure.data.map(({value}) => value))
+      .flat();
 
-  return Math.max(...reportsMaxDurations);
+    maxDurations = measuresDurationValues.map((valueArr) =>
+      Math.max(...valueArr.map((entry) => entry[durationKey]))
+    );
+  } else {
+    maxDurations = Object.values(result.data).map((report) => {
+      if (typeof report.result.data === 'number') {
+        return report.result.data;
+      }
+      if (report.result.data === null) {
+        return 0;
+      }
+      return Math.max(...Object.values(report.result.data).map((entry) => entry[durationKey]));
+    });
+  }
+
+  return Math.max(...maxDurations);
 }

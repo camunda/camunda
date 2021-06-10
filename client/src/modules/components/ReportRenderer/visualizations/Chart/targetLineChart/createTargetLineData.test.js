@@ -42,18 +42,30 @@ it('should create two datasets with the same data for line chart with target val
 });
 
 it('should create two datasets for each report in combined line charts with target values', () => {
+  const data = [
+    {key: 'foo', value: 123},
+    {key: 'bar', value: 5},
+    {key: 'dar', value: 5},
+  ];
   const result = {
-    data: [
-      {key: 'foo', value: 123},
-      {key: 'bar', value: 5},
-      {key: 'dar', value: 5},
+    data,
+    measures: [
+      {
+        data: [
+          {
+            value: data,
+          },
+        ],
+      },
     ],
   };
   const name = 'test1';
   const targetValue = {target: 10};
   const chartData = createTargetLineData({
     report: {
-      result: {data: {reportA: {name, result}, reportB: {name, result}}},
+      result: {
+        data: {reportA: {name, result}, reportB: {name, result}},
+      },
       data: {
         reports: [
           {id: 'reportA', color: 'blue'},
