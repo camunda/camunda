@@ -1,15 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Update Tests</name>
-  <artifactId>zeebe-update-tests</artifactId>
+  <name>Zeebe QA Update Tests</name>
+  <artifactId>zeebe-qa-update-tests</artifactId>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>zeebe-qa</artifactId>
     <version>1.0.2-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <dependencies>
@@ -103,30 +103,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
-
-  <profiles>
-    <profile>
-      <id>skip-it</id>
-      <activation>
-        <property>
-          <name>zeebe.it.skip</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <properties>
-        <maven.test.skip>true</maven.test.skip>
-      </properties>
-    </profile>
-  </profiles>
 </project>
 
 
