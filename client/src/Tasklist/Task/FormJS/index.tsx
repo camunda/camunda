@@ -45,7 +45,7 @@ function extractVariablesFromFormSchema(
 
     return Array.isArray(parsedSchema.components)
       ? parsedSchema.components
-          .filter(({type}: any) => type === 'textfield')
+          .filter(({type}: any) => type !== 'button')
           .map(({key}: any) => key)
       : [];
   } catch {
