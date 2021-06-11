@@ -144,7 +144,10 @@ export default withErrorHandling(
         displayName: definitionToCopy.displayName + ` (${t('common.copyLabel')})`,
       };
 
-      let change = {definitions: {$splice: [[idx, 0, newDefinition]]}};
+      const change = {definitions: {$splice: [[idx, 0, newDefinition]]}};
+      if (this.props.report.data.visualization === 'heat') {
+        change.visualization = {$set: 'table'};
+      }
 
       this.props.setLoading(true);
       await this.props.updateReport(change, true);

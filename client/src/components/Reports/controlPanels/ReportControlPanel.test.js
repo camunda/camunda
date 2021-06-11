@@ -419,6 +419,22 @@ it('should not reset heatmap target value on definition change if flow nodes exi
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).not.toBeDefined();
 });
 
+it('should reset heatmap visualization when copying a definition', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={update(report, {data: {visualization: {$set: 'heat'}}})}
+      updateReport={spy}
+    />
+  );
+
+  node.find(DefinitionList).prop('onCopy')(0);
+
+  expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: 'table'});
+});
+
 it('should not reset process part on definition change if flow nodes exist', async () => {
   const reportWithConfig = update(report, {
     data: {
