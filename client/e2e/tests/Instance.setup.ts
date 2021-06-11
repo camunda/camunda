@@ -15,11 +15,12 @@ import {wait} from './utils/wait';
 export async function setup() {
   await deploy([
     './e2e/tests/resources/processWithAnIncident.bpmn',
+    './e2e/tests/resources/processWithMultiIncidents.bpmn',
     './e2e/tests/resources/withoutIncidentsProcess_v_1.bpmn',
     './e2e/tests/resources/processWithMultipleTokens.bpmn',
   ]);
 
-  const instances = await createInstances('processWithAnIncident', 1, 4);
+  const instances = await createInstances('processWithAnIncident', 1, 2);
   const instanceWithoutAnIncident = await createSingleInstance(
     'withoutIncidentsProcess',
     1
@@ -28,6 +29,18 @@ export async function setup() {
     'processWithMultipleTokens',
     1
   );
+  const instanceWithIncidentForIncidentsBar = await createSingleInstance(
+    'processWithMultiIncidents',
+    1,
+    {goUp: 3}
+  );
+
+  const instanceWithIncidentToResolve = await createSingleInstance(
+    'processWithMultiIncidents',
+    1,
+    {goUp: 3}
+  );
+
   completeTask('processWithMultipleTokensTaskA', false, {
     shouldContinue: true,
   });
@@ -40,8 +53,8 @@ export async function setup() {
   return {
     instanceWithIncident: instances[0],
     instanceWithIncidentToCancel: instances[1],
-    instanceWithIncidentToResolve: instances[2],
-    instanceWithIncidentForIncidentsBar: instances[3],
+    instanceWithIncidentToResolve,
+    instanceWithIncidentForIncidentsBar,
     instanceWithoutAnIncident,
     processWithMultipleTokens,
   };

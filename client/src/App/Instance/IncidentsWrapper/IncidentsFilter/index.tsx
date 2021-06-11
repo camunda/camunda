@@ -38,7 +38,7 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
 
   return (
     <Styled.FiltersWrapper>
-      <Styled.Content>
+      <Styled.Content data-testid="incidents-filter">
         <Styled.PillsWrapper>
           <Styled.FilterRow>
             <Styled.Label>Incident type:</Styled.Label>
