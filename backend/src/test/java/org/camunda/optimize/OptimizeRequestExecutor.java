@@ -739,6 +739,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildDeleteCollectionRolesRequest(List<String> roleIds, String collectionId) {
+    this.path = "collection/" + collectionId + "/roles/delete";
+    this.method = POST;
+    this.body = getBody(roleIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildFindShareForReportRequest(String id) {
     this.path = "share/report/" + id;
     this.method = GET;

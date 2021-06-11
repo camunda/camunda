@@ -6,34 +6,42 @@
 package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
+import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
 @Component
 @AllArgsConstructor
+@Slf4j
 public class CollectionRoleService {
   private final AuthorizedCollectionService authorizedCollectionService;
   private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionWriter collectionWriter;
+  private final CollectionReader collectionReader;
   private final IdentityService identityService;
 
   public void addRolesToCollection(final String userId,
@@ -91,6 +99,32 @@ public class CollectionRoleService {
 
   public void removeRoleFromCollectionUnlessIsLastManager(String userId, String collectionId, String roleEntryId) {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
+  }
+
+  public void removeRolesFromCollection(String userId, String collectionId, List<String> roleEntryIds) {
+    verifyCollectionExists(collectionId);
+    roleEntryIds.forEach(roleEntryId -> authorizedCollectionService.verifyUserAuthorizedToEditCollectionRole(
+      userId,
+      collectionId,
+      roleEntryId
+    ));
+    for (String roleId : roleEntryIds) {
+      try {
+        collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleId, userId);
+      } catch (NotFoundException e) {
+        log.debug("Could not delete role with id {}. The role is already deleted.", roleId);
+      } catch (OptimizeCollectionConflictException e) {
+        log.debug("Could not delete role with id {}, because the user with that id is a manager.", roleId);
+      }
+    }
+  }
+
+  public void verifyCollectionExists(String collectionId){
+    final Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
+    if (!collectionDefinition.isPresent()) {
+      log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
+      throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
+    }
   }
 
   public List<CollectionRoleResponseDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
