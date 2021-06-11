@@ -23,6 +23,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -568,7 +569,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         return new PromotableRole(this);
       case FOLLOWER:
         raftRoleMetrics.becomingFollower();
-        return new FollowerRole(this);
+        return new FollowerRole(this, this::createElectionTimer);
       case CANDIDATE:
         raftRoleMetrics.becomingCandidate();
         return new CandidateRole(this);
@@ -578,6 +579,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       default:
         throw new AssertionError();
     }
+  }
+
+  private ElectionTimer createElectionTimer(final Runnable triggerElection, final Logger log) {
+    return new RandomizedElectionTimer(
+        electionTimeout, threadContext, random, triggerElection, log);
   }
 
   /** Transitions the server to the base state for the given member type. */
