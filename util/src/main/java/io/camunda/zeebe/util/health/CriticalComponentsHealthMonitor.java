@@ -175,7 +175,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
         return;
       }
 
-      log.error("{} failed, marking it as unhealthy", componentName);
+      log.warn("{} failed, marking it as unhealthy", componentName);
       componentHealth.put(componentName, HealthStatus.UNHEALTHY);
       calculateHealth();
     }
