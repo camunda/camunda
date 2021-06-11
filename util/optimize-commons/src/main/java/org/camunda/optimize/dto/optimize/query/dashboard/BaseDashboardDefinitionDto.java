@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

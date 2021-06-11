@@ -14,11 +14,12 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -352,9 +353,13 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     dashboard.setOwner("owner");
     dashboard.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     dashboard.setLastModified(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    DashboardStartDateFilterDto startDateFilter = new DashboardStartDateFilterDto();
+    startDateFilter.setData(new DashboardDateFilterDataDto(null));
+    DashboardEndDateFilterDto endDateFilter = new DashboardEndDateFilterDto();
+    endDateFilter.setData(new DashboardDateFilterDataDto(null));
     dashboard.setAvailableFilters(Arrays.asList(
-      new DashboardStartDateFilterDto(),
-      new DashboardEndDateFilterDto()
+      startDateFilter,
+      endDateFilter
     ));
 
     return dashboard;
@@ -427,8 +432,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     return new DashboardDefinitionExportDto(reportDefToImport);
   }
 
-  protected static DashboardDefinitionExportDto createDashboardExportDtoWithResources(
-    final List<String> resourceIds) {
+  protected static DashboardDefinitionExportDto createDashboardExportDtoWithResources(final List<String> resourceIds) {
     final DashboardDefinitionRestDto dashboard = createDashboardDefinition(resourceIds);
     return new DashboardDefinitionExportDto(dashboard);
   }

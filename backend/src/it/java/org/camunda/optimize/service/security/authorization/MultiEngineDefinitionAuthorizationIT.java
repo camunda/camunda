@@ -65,7 +65,6 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     // then
     assertThat(definitions).hasSize(1);
     assertThat(definitions.get(0).getDataSource()).isEqualTo(new EngineDataSourceDto(SECOND_ENGINE_ALIAS));
-
   }
 
   @ParameterizedTest

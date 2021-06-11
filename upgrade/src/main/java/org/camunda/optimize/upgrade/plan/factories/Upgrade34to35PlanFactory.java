@@ -12,8 +12,11 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -27,6 +30,7 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -69,6 +73,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .addUpgradeSteps(migrateDefinitions(dependencies))
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDecisionReports())
+      .addUpgradeStep(migrateDashboardFilters())
       .addUpgradeSteps(migrateProcessInstances(dependencies, true))
       .addUpgradeSteps(migrateProcessInstances(dependencies, false))
       .build();
@@ -144,6 +149,26 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
   private static String getDataSourceMigrationScript(final boolean eventBased) {
     return eventBased ? getUpdateImportSourceScript(DataImportSourceType.EVENTS.getId())
       : getUpdateImportSourceScript(DataImportSourceType.ENGINE.getId());
+  }
+
+  private static UpgradeStep migrateDashboardFilters() {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("stateFilterData", new DashboardStateFilterDataDto(null));
+    params.put("dateFilterData", new DashboardDateFilterDataDto(null));
+
+    final String updateScript = "" +
+      "if(ctx._source.availableFilters != null) {\n" +
+      " for(filter in ctx._source.availableFilters) {\n" +
+      "   if(\"state\".equalsIgnoreCase(filter.type)) {\n" +
+      "     filter.data = params.stateFilterData;" +
+      "   } else if(\"startDate\".equalsIgnoreCase(filter.type) || \"endDate\".equalsIgnoreCase(filter.type)) {" +
+      "     filter.data = params.dateFilterData;" +
+      "   } else {\n" +
+      "     filter.data.defaultValues = null;" +
+      "   }\n  " +
+      " }\n" +
+      "}";
+    return new UpdateDataStep(new DashboardIndex(), matchAllQuery(), updateScript, params);
   }
 
   private static String getMergeUserTaskFlowNodeMappingScript() {

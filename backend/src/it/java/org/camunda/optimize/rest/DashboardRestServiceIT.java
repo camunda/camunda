@@ -11,23 +11,40 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardAssigneeFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardCandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardBooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDoubleVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIdentityFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIntegerVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardLongVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardShortVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardIdentityFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -640,15 +657,15 @@ public class DashboardRestServiceIT extends AbstractIT {
     return Stream.of(
       null,
       Collections.emptyList(),
-      Collections.singletonList(new DashboardStartDateFilterDto()),
+      Collections.singletonList(createDashboardStartDateFilterWithDefaultValues(null)),
       Arrays.asList(
-        new DashboardStartDateFilterDto(),
-        new DashboardEndDateFilterDto()
+        createDashboardStartDateFilterWithDefaultValues(null),
+        createDashboardEndDateFilterWithDefaultValues(null)
       ),
       Arrays.asList(
-        new DashboardStartDateFilterDto(),
-        new DashboardEndDateFilterDto(),
-        new DashboardStateFilterDto()
+        createDashboardStartDateFilterWithDefaultValues(null),
+        createDashboardEndDateFilterWithDefaultValues(null),
+        createDashboardStateFilterWithDefaultValues(null)
       ),
       Collections.singletonList(createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar")),
       Collections.singletonList(createDashboardVariableFilter(VariableType.DATE, "dateVar")),
@@ -690,7 +707,9 @@ public class DashboardRestServiceIT extends AbstractIT {
         createDashboardVariableFilter(VariableType.DATE, "dateVar"),
         createDashboardVariableFilter(VariableType.LONG, "longVar", IN, Arrays.asList("1", "2"), false),
         createDashboardVariableFilter(VariableType.DOUBLE, "doubleVar", IN, Arrays.asList("1.0", "2.0"), false),
-        createDashboardVariableFilter(VariableType.STRING, "stringVar", IN, Arrays.asList("StringA", "StringB"), false),
+        createDashboardVariableFilter(VariableType.STRING, "stringVar", IN, Arrays.asList("StringA", "StringB"),
+                                      false
+        ),
         createDashboardVariableFilter(
           VariableType.STRING,
           "stringVar",
@@ -707,9 +726,9 @@ public class DashboardRestServiceIT extends AbstractIT {
         ),
         createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, false),
         createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), IN, false),
-        new DashboardStartDateFilterDto(),
-        new DashboardEndDateFilterDto(),
-        new DashboardStateFilterDto()
+        createDashboardStartDateFilterWithDefaultValues(null),
+        createDashboardEndDateFilterWithDefaultValues(null),
+        createDashboardStateFilterWithDefaultValues(null)
       ),
       Arrays.asList(
         createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar"),
@@ -733,9 +752,67 @@ public class DashboardRestServiceIT extends AbstractIT {
         ),
         createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, true),
         createDashboardCandidateGroupFilter(Arrays.asList("Cybermen", "Daleks"), IN, true),
-        new DashboardStartDateFilterDto(),
-        new DashboardEndDateFilterDto(),
-        new DashboardStateFilterDto()
+        createDashboardStartDateFilterWithDefaultValues(null),
+        createDashboardEndDateFilterWithDefaultValues(null),
+        createDashboardStateFilterWithDefaultValues(null)
+      ),
+      Arrays.asList(
+        createDashboardDateVariableFilterWithDefaultValues(
+          new FixedDateFilterDataDto(
+            OffsetDateTime.parse("2021-06-07T18:00:00+02:00"),
+            OffsetDateTime.parse("2021-06-08T18:00:00+02:00")
+          )
+        ),
+        createDashboardDateVariableFilterWithDefaultValues(
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(1L, DateFilterUnit.YEARS))
+        ),
+        createDashboardDateVariableFilterWithDefaultValues(
+          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(2L, DateFilterUnit.MINUTES))
+        ),
+        createDashboardBooleanVariableFilterWithDefaultValues(),
+        createDashboardStringVariableFilterWithDefaultValues(),
+        createDashboardShortVariableFilterWithDefaultValues(),
+        createDashboardLongVariableFilterWithDefaultValues(),
+        createDashboardDoubleVariableFilterWithDefaultValues(),
+        createDashboardIntegerVariableFilterWithDefaultValues(),
+        createDashboardStateFilterWithDefaultValues(Collections.singletonList("canceledInstancesOnly")),
+        createDashboardStartDateFilterWithDefaultValues(
+          new FixedDateFilterDataDto(
+            OffsetDateTime.parse("2021-06-07T18:00:00+02:00"),
+            OffsetDateTime.parse("2021-06-08T18:00:00+02:00")
+          )),
+        createDashboardEndDateFilterWithDefaultValues(
+          new FixedDateFilterDataDto(
+            OffsetDateTime.parse("2021-06-05T18:00:00+02:00"),
+            OffsetDateTime.parse("2021-06-06T18:00:00+02:00")
+          )),
+        createDashboardAssigneeFilter(Arrays.asList("Rose", "Martha"), IN, true, Collections.singletonList("Martha")),
+        createDashboardCandidateGroupFilter(
+          Arrays.asList("Cybermen", "Daleks"),
+          NOT_IN,
+          true,
+          Arrays.asList("Cybermen", "Daleks")
+        )
+      ),
+      Collections.singletonList(
+        createDashboardEndDateFilterWithDefaultValues(
+          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(1L, DateFilterUnit.MINUTES))
+        )
+      ),
+      Collections.singletonList(
+        createDashboardEndDateFilterWithDefaultValues(
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(2L, DateFilterUnit.YEARS))
+        )
+      ),
+      Collections.singletonList(
+        createDashboardStartDateFilterWithDefaultValues(
+          new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(3L, DateFilterUnit.SECONDS))
+        )
+      ),
+      Collections.singletonList(
+        createDashboardStartDateFilterWithDefaultValues(
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS))
+        )
       )
     );
   }
@@ -816,38 +893,182 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   private static DashboardFilterDto<?> createDashboardVariableFilter(final VariableType type,
-                                                                  final String variableName) {
+                                                                     final String variableName) {
     return createDashboardVariableFilter(type, variableName, null);
   }
 
   private static DashboardFilterDto<?> createDashboardVariableFilter(final VariableType type,
-                                                                  final String variableName,
-                                                                  final FilterOperator operator,
-                                                                  final List<String> values,
-                                                                  final boolean allowCustomValues) {
+                                                                     final String variableName,
+                                                                     final FilterOperator operator,
+                                                                     final List<String> values,
+                                                                     final boolean allowCustomValues) {
+    switch (type) {
+      case LONG:
+      case SHORT:
+      case DOUBLE:
+      case STRING:
+      case INTEGER:
+        return createDashboardVariableFilter(
+          type,
+          variableName,
+          new DashboardVariableFilterSubDataDto(operator, values, allowCustomValues)
+        );
+      case DATE:
+      case BOOLEAN:
+        return createDashboardVariableFilter(type, variableName, null);
+      default:
+        throw new OptimizeIntegrationTestException("Unknown variable type: " + type);
+    }
+  }
+
+  private static DashboardFilterDto<?> createDashboardVariableFilter(final VariableType type,
+                                                                     final String variableName,
+                                                                     final DashboardVariableFilterSubDataDto subData) {
     final DashboardVariableFilterDto variableFilter = new DashboardVariableFilterDto();
-    final DashboardVariableFilterDataDto filterData = new DashboardVariableFilterDataDto(
-      type, variableName, new DashboardVariableFilterSubDataDto(operator, values, allowCustomValues));
+    DashboardVariableFilterDataDto filterData;
+    switch (type) {
+      case DATE:
+        filterData = new DashboardDateVariableFilterDataDto(variableName);
+        break;
+      case LONG:
+        filterData = new DashboardLongVariableFilterDataDto(variableName, subData);
+        break;
+      case SHORT:
+        filterData = new DashboardShortVariableFilterDataDto(variableName, subData);
+        break;
+      case DOUBLE:
+        filterData = new DashboardDoubleVariableFilterDataDto(variableName, subData);
+        break;
+      case STRING:
+        filterData = new DashboardStringVariableFilterDataDto(variableName, subData);
+        break;
+      case BOOLEAN:
+        filterData = new DashboardBooleanVariableFilterDataDto(variableName);
+        break;
+      case INTEGER:
+        filterData = new DashboardIntegerVariableFilterDataDto(variableName, subData);
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unknown variable type: " + type);
+    }
     variableFilter.setData(filterData);
     return variableFilter;
   }
 
-  private static DashboardFilterDto<?> createDashboardVariableFilter(final VariableType type,
-                                                                  final String variableName,
-                                                                  final DashboardVariableFilterSubDataDto dataDto) {
-    final DashboardVariableFilterDto variableFilter = new DashboardVariableFilterDto();
-    variableFilter.setData(new DashboardVariableFilterDataDto(type, variableName, dataDto));
-    return variableFilter;
+  private static DashboardFilterDto<?> createDashboardDateVariableFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(VariableType.DATE, "dateVar", null);
+    ((DashboardDateVariableFilterDataDto) filterDto.getData()).setDefaultValues(defaultValues);
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardBooleanVariableFilterWithDefaultValues() {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(VariableType.BOOLEAN, "boolVar", null);
+    ((DashboardBooleanVariableFilterDataDto) filterDto.getData()).setDefaultValues(Collections.singletonList(true));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardStringVariableFilterWithDefaultValues() {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(
+        VariableType.STRING,
+        "stringVar",
+        IN,
+        List.of("aStringValue", "anotherStringValue"),
+        false
+      );
+    ((DashboardStringVariableFilterDataDto) filterDto.getData()).setDefaultValues(Collections.singletonList(
+      "aStringValue"));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardIntegerVariableFilterWithDefaultValues() {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(
+        VariableType.INTEGER,
+        "integerVar",
+        NOT_IN,
+        List.of("7", "8"),
+        false
+      );
+    ((DashboardIntegerVariableFilterDataDto) filterDto.getData()).setDefaultValues(Collections.singletonList("8"));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardShortVariableFilterWithDefaultValues() {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(
+        VariableType.SHORT,
+        "shortVar",
+        IN,
+        List.of("1", "2"),
+        false
+      );
+    ((DashboardShortVariableFilterDataDto) filterDto.getData()).setDefaultValues(Collections.singletonList("1"));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardLongVariableFilterWithDefaultValues() {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(
+        VariableType.LONG,
+        "longVar",
+        IN,
+        List.of("3", "4"),
+        false
+      );
+    ((DashboardLongVariableFilterDataDto) filterDto.getData()).setDefaultValues(Collections.singletonList("4"));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardDoubleVariableFilterWithDefaultValues() {
+    DashboardVariableFilterDto filterDto =
+      (DashboardVariableFilterDto) createDashboardVariableFilter(
+        VariableType.DOUBLE,
+        "doubleVar",
+        NOT_IN,
+        List.of("5.0", "6.0"),
+        false
+      );
+    ((DashboardDoubleVariableFilterDataDto) filterDto.getData()).setDefaultValues(Collections.singletonList("5.0"));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardStartDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+    DashboardStartDateFilterDto filterDto = new DashboardStartDateFilterDto();
+    filterDto.setData(new DashboardDateFilterDataDto(defaultValues));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardEndDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+    DashboardEndDateFilterDto filterDto = new DashboardEndDateFilterDto();
+    filterDto.setData(new DashboardDateFilterDataDto(defaultValues));
+    return filterDto;
+  }
+
+  private static DashboardFilterDto<?> createDashboardStateFilterWithDefaultValues(final List<String> defaultValues) {
+    DashboardStateFilterDto filterDto = new DashboardStateFilterDto();
+    filterDto.setData(new DashboardStateFilterDataDto(defaultValues));
+    return filterDto;
   }
 
   private static DashboardFilterDto<?> createDashboardAssigneeFilter(final List<String> assigneeNames,
-                                                                  final FilterOperator filterOperator,
-                                                                  final boolean allowCustomValues) {
+                                                                     final FilterOperator filterOperator,
+                                                                     final boolean allowCustomValues) {
+    return createDashboardAssigneeFilter(assigneeNames, filterOperator, allowCustomValues, null);
+  }
+
+  private static DashboardFilterDto<?> createDashboardAssigneeFilter(final List<String> assigneeNames,
+                                                                     final FilterOperator filterOperator,
+                                                                     final boolean allowCustomValues,
+                                                                     final List<String> defaultValues) {
     final DashboardAssigneeFilterDto assigneeFilter = new DashboardAssigneeFilterDto();
     assigneeFilter.setData(new DashboardIdentityFilterDataDto(
       filterOperator,
       assigneeNames,
-      allowCustomValues
+      allowCustomValues,
+      defaultValues
     ));
     return assigneeFilter;
   }
@@ -855,18 +1076,26 @@ public class DashboardRestServiceIT extends AbstractIT {
   private static DashboardFilterDto<?> createDashboardCandidateGroupFilter(final List<String> candidateGroupNames,
                                                                            final FilterOperator filterOperator,
                                                                            final boolean allowCustomValues) {
+    return createDashboardCandidateGroupFilter(candidateGroupNames, filterOperator, allowCustomValues, null);
+  }
+
+  private static DashboardFilterDto<?> createDashboardCandidateGroupFilter(final List<String> candidateGroupNames,
+                                                                           final FilterOperator filterOperator,
+                                                                           final boolean allowCustomValues,
+                                                                           final List<String> defaultValues) {
     final DashboardCandidateGroupFilterDto candidateGroupFilter = new DashboardCandidateGroupFilterDto();
     candidateGroupFilter.setData(new DashboardIdentityFilterDataDto(
       filterOperator,
       candidateGroupNames,
-      allowCustomValues
+      allowCustomValues,
+      defaultValues
     ));
     return candidateGroupFilter;
   }
 
   private static List<DashboardFilterDto<?>> variableFilter() {
     final DashboardVariableFilterDto variableFilter = new DashboardVariableFilterDto();
-    variableFilter.setData(new DashboardVariableFilterDataDto(VariableType.DATE, "dateVar", null));
+    variableFilter.setData(new DashboardDateVariableFilterDataDto("dateVar"));
     return Collections.singletonList(variableFilter);
   }
 }

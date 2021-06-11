@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;

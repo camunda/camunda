@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
+import lombok.EqualsAndHashCode;
+
+@EqualsAndHashCode
 public class RelativeDateFilterDataDto extends DateFilterDataDto<RelativeDateFilterStartDto> {
   public RelativeDateFilterDataDto() {
     this(null);

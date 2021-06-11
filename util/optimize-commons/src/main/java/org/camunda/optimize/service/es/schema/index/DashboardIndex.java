@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
