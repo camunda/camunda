@@ -257,6 +257,15 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public AuthorizedDashboardDefinitionResponseDto getDashboardDefinition(final String dashboardId,
                                                                          final String userId) {
     final DashboardDefinitionRestDto dashboard = getDashboardDefinitionAsService(dashboardId);
+    RoleType currentUserRole = getUserRoleType(userId, dashboard);
+    return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
+  }
+
+  public void verifyUserHasAccessToDashboardCollection(String userId, DashboardDefinitionRestDto dashboard) {
+    getUserRoleType(userId, dashboard);
+  }
+
+  private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
     if (dashboard.getCollectionId() != null) {
       currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())
@@ -269,11 +278,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
     if (currentUserRole == null) {
       throw new ForbiddenException(String.format(
-        "User [%s] is not authorized to access dashboard [%s].", userId, dashboardId
+        "User [%s] is not authorized to access dashboard [%s].", userId, dashboard.getId()
       ));
     }
-
-    return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
+    return currentUserRole;
   }
 
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {

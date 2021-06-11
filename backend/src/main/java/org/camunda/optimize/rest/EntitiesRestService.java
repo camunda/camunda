@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.entity.EntityConflictRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -14,9 +15,14 @@ import org.camunda.optimize.rest.mapper.EntityRestMapper;
 import org.camunda.optimize.service.entities.EntitiesService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -51,4 +57,14 @@ public class EntitiesRestService {
   public EntityNameResponseDto getEntityNames(@BeanParam EntityNameRequestDto requestDto) {
     return entitiesService.getEntityNames(requestDto);
   }
+
+  @POST
+  @Path("/delete-conflicts")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public boolean entitiesHaveDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                             @Valid @NotNull @RequestBody final EntityConflictRequestDto entities) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return entitiesService.entitiesHaveConflicts(entities, userId);
+  }
+
 }

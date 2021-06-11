@@ -422,6 +422,11 @@ public class ReportService implements CollectionReferencingService {
       ));
   }
 
+  public Set<ConflictedItemDto> getConflictedItemsFromReportDefinition(String userId, String reportId) {
+    ReportDefinitionDto reportDefinitionDto = getReportDefinition(reportId, userId).getDefinitionDto();
+    return getConflictedItemsForDeleteReport(reportDefinitionDto);
+  }
+
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionRequestDto> combinedReportDtos) {
     return combinedReportDtos.stream()
       .map(combinedReportDto -> new ConflictedItemDto(
@@ -523,7 +528,6 @@ public class ReportService implements CollectionReferencingService {
 
     return reportWriter.createNewCombinedReport(userId, newCombinedReportData, newName, newCollectionId);
   }
-
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();

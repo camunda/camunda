@@ -287,5 +287,4 @@ public class ReportRestService {
     reportService.deleteReport(userId, reportId, force);
   }
 
-
 }

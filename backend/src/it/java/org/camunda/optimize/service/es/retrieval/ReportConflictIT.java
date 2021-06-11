@@ -419,7 +419,6 @@ public class ReportConflictIT extends AbstractIT {
     checkDashboardsStillContainReport(expectedConflictedItemIds, reportId);
   }
 
-
   private void checkDashboardsStillContainReport(String[] dashboardIds, String reportId) {
     Arrays.stream(dashboardIds)
       .forEach(dashboardId -> {
