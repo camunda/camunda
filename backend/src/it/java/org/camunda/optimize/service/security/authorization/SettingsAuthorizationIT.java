@@ -26,11 +26,11 @@ public class SettingsAuthorizationIT extends AbstractIT {
     // given
     final SettingsResponseDto newSettings = SettingsResponseDto.builder().metadataTelemetryEnabled(true).build();
     if (superUserType == SuperUserType.USER) {
-      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
     } else {
       authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
       authorizationClient.createGroupAndAddUser(GROUP_ID,DEFAULT_USERNAME);
-      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
     }
 
     // when

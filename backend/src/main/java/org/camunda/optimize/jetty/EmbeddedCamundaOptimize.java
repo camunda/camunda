@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.security.ResponseHeadersConfiguration;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
@@ -117,17 +118,17 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   private RewriteHandler createSecurityHeaderHandlers(final ConfigurationService configurationService) {
     final RewriteHandler rewriteHandler = new RewriteHandler();
     HeaderPatternRule xssProtection =
-      new HeaderPatternRule("*", X_XSS_PROTECTION, configurationService.getXXSSProtection());
+      new HeaderPatternRule("*", X_XSS_PROTECTION, getResponseHeadersConfiguration(configurationService).getXsssProtection());
     rewriteHandler.addRule(xssProtection);
 
-    if (Boolean.TRUE.equals(configurationService.getXContentTypeOptions())) {
+    if (Boolean.TRUE.equals(getResponseHeadersConfiguration(configurationService).getXContentTypeOptions())) {
       final HeaderPatternRule xContentTypeOptions =
         new HeaderPatternRule("*", X_CONTENT_TYPE_OPTIONS, "nosniff");
       rewriteHandler.addRule(xContentTypeOptions);
     }
 
     final HeaderPatternRule contentSecurityPolicy =
-      new HeaderPatternRule("*", CONTENT_SECURITY_POLICY, configurationService.getContentSecurityPolicy());
+      new HeaderPatternRule("*", CONTENT_SECURITY_POLICY, getResponseHeadersConfiguration(configurationService).getContentSecurityPolicy());
     rewriteHandler.addRule(contentSecurityPolicy);
 
     return rewriteHandler;
@@ -171,8 +172,8 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer(
       true,
-      configurationService.getHTTPStrictTransportSecurityMaxAge(),
-      configurationService.getHTTPStrictTransportSecurityIncludeSubdomains()
+      getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityMaxAge(),
+      getResponseHeadersConfiguration(configurationService).getHttpStrictTransportSecurityIncludeSubdomains()
     ));
     https.setSecureScheme("https");
     SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -257,5 +258,9 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   private ImportSchedulerManagerService getImportSchedulerManager() {
     return getOptimizeApplicationContext().getBean(ImportSchedulerManagerService.class);
+  }
+
+  private ResponseHeadersConfiguration getResponseHeadersConfiguration(final ConfigurationService configurationService) {
+    return configurationService.getSecurityConfiguration().getResponseHeaders();
   }
 }

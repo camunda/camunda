@@ -95,7 +95,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   public void superUserAllEntitiesAvailable() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String combinedReportId = reportClient.createEmptyCombinedReport(null);
@@ -121,7 +121,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String combinedReportId = reportClient.createEmptyCombinedReport(null);
@@ -146,7 +146,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   public void superUserEntitiesNotAuthorizedForDefinitionAreHidden() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     ProcessDefinitionEngineDto unauthorizedProcess = deploySimpleServiceTaskProcess("unauthorizedProcess");
     DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");
@@ -166,7 +166,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     ProcessDefinitionEngineDto unauthorizedProcess = deploySimpleServiceTaskProcess("unauthorizedProcess");
     DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");

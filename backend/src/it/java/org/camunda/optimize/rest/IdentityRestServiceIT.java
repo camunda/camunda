@@ -497,10 +497,10 @@ public class IdentityRestServiceIT extends AbstractIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     if (superUserType == SuperUserType.USER) {
-      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
     } else {
       authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
     }
     embeddedOptimizeExtension.reloadConfiguration();
 

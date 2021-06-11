@@ -49,7 +49,7 @@ public class SecurityCookiesInResponseIT extends AbstractIT {
   @ValueSource(booleans = {true, false})
   public void canDisableSameSiteCookieFlag(final boolean useHttps) {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setSameSiteCookieFlagEnabled(false);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSameSiteCookieFlagEnabled(false);
 
     // when
     final Response authResponse = authWithDefaultCredentials(useHttps);
@@ -60,7 +60,7 @@ public class SecurityCookiesInResponseIT extends AbstractIT {
 
     // cleanup
     assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    embeddedOptimizeExtension.getConfigurationService().setSameSiteCookieFlagEnabled(true);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSameSiteCookieFlagEnabled(true);
   }
 
   @ParameterizedTest

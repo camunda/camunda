@@ -399,7 +399,7 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
 
       authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
       authorizationClient.addKermitUserWithoutAuthorizations();
-      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
 
       userIdentityCacheService.synchronizeIdentities();
 

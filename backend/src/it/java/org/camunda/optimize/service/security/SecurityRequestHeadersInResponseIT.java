@@ -54,14 +54,20 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
   private void defaultSecurityHeadersAreSet(final Response authResponse) {
     assertThat(authResponse.getHeaderString(X_XSS_PROTECTION))
       .isNotNull()
-      .isEqualTo(embeddedOptimizeExtension.getConfigurationService().getXXSSProtection());
+      .isEqualTo(
+        embeddedOptimizeExtension.getConfigurationService()
+          .getSecurityConfiguration().getResponseHeaders().getXsssProtection()
+      );
 
     assertThat(authResponse.getHeaderString(X_CONTENT_TYPE_OPTIONS))
       .isEqualTo("nosniff");
 
     assertThat(authResponse.getHeaderString(CONTENT_SECURITY_POLICY))
       .isNotNull()
-      .isEqualTo(embeddedOptimizeExtension.getConfigurationService().getContentSecurityPolicy());
+      .isEqualTo(
+        embeddedOptimizeExtension.getConfigurationService()
+          .getSecurityConfiguration().getResponseHeaders().getContentSecurityPolicy()
+      );
   }
 
 

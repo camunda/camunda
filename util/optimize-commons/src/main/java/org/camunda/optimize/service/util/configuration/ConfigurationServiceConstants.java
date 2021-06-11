@@ -10,18 +10,7 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationServiceConstants {
-  public static final String TOKEN_LIFE_TIME = "$.security.auth.token.lifeMin";
-  public static final String TOKEN_SECRET = "$.security.auth.token.secret";
-  public static final String SAME_SITE_COOKIE_FLAG_ENABLED = "$.security.auth.cookie.same-site.enabled";
-  public static final String SUPER_USER_IDS = "$.security.auth.superUserIds";
-  public static final String SUPER_GROUP_IDS = "$.security.auth.superGroupIds";
-
-  public static final String RESPONSE_HEADER_HSTS_MAX_AGE = "$.security.responseHeaders.HSTS.max-age";
-  public static final String RESPONSE_HEADER_HSTS_INCLUDE_SUBDOMAINS = "$.security.responseHeaders.HSTS.includeSubDomains";
-  public static final String RESPONSE_HEADER_X_XSS_PROTECTION = "$.security.responseHeaders.X-XSS-Protection";
-  public static final String RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS = "$.security.responseHeaders.X-Content-Type-Options";
-  public static final String RESPONSE_HEADER_CONTENT_SECURITY_POLICY = "$.security.responseHeaders.Content-Security-Policy";
-
+  public static final String SECURITY = "$.security";
   public static final String CONFIGURED_ENGINES = "$.engines";
   public static final String CONFIGURED_ZEEBE = "$.zeebe";
 

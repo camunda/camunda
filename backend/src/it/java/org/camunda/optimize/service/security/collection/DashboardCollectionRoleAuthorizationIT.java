@@ -87,7 +87,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -103,7 +103,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -252,7 +252,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -272,7 +272,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
@@ -314,7 +314,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -331,7 +331,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -382,7 +382,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -395,7 +395,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -427,7 +427,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -444,7 +444,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -495,7 +495,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -511,7 +511,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -565,7 +565,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -582,7 +582,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -630,7 +630,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -646,7 +646,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -700,7 +700,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
@@ -717,7 +717,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);

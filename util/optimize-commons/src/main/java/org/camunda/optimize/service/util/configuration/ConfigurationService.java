@@ -22,6 +22,8 @@ import org.camunda.optimize.service.util.configuration.engine.EngineConfiguratio
 import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
+import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
+import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 
 import java.io.InputStream;
@@ -44,7 +46,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
@@ -64,20 +65,10 @@ public class ConfigurationService {
 
   private ReadContext configJsonContext;
 
+  private SecurityConfiguration securityConfiguration;
+
   private Map<String, EngineConfiguration> configuredEngines;
   private ZeebeConfiguration configuredZeebe;
-  private Integer tokenLifeTime;
-  private String tokenSecret;
-  private Boolean sameSiteCookieFlagEnabled;
-  private List<String> superUserIds;
-  private List<String> superGroupIds;
-
-  // http response security header configurations
-  private Long HTTPStrictTransportSecurityMaxAge;
-  private Boolean HTTPStrictTransportSecurityIncludeSubdomains;
-  private String XXSSProtection;
-  private Boolean XContentTypeOptions;
-  private String contentSecurityPolicy;
 
   private String engineDateFormat;
   private Long initialBackoff;
@@ -236,83 +227,16 @@ public class ConfigurationService {
     return configuredZeebe;
   }
 
-  public Optional<String> getTokenSecret() {
-    if (tokenSecret == null) {
-      tokenSecret = configJsonContext.read(ConfigurationServiceConstants.TOKEN_SECRET);
+  public SecurityConfiguration getSecurityConfiguration() {
+    if (securityConfiguration == null) {
+      securityConfiguration = configJsonContext.read(ConfigurationServiceConstants.SECURITY, SecurityConfiguration.class);
     }
-    return Optional.ofNullable(tokenSecret);
+    return securityConfiguration;
   }
 
   @JsonIgnore
-  public Integer getTokenLifeTimeMinutes() {
-    if (tokenLifeTime == null) {
-      tokenLifeTime = configJsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME, Integer.class);
-    }
-    return tokenLifeTime;
-  }
-
-  public Boolean getSameSiteCookieFlagEnabled() {
-    if (sameSiteCookieFlagEnabled == null) {
-      sameSiteCookieFlagEnabled =
-        configJsonContext.read(ConfigurationServiceConstants.SAME_SITE_COOKIE_FLAG_ENABLED, Boolean.class);
-    }
-    return sameSiteCookieFlagEnabled;
-  }
-
-  public List<String> getSuperUserIds() {
-    if (superUserIds == null) {
-      superUserIds = configJsonContext.read(ConfigurationServiceConstants.SUPER_USER_IDS, LIST_OF_STRINGS_TYPE_REF);
-    }
-    return superUserIds;
-  }
-
-  public List<String> getSuperGroupIds() {
-    if (superGroupIds == null) {
-      superGroupIds = configJsonContext.read(ConfigurationServiceConstants.SUPER_GROUP_IDS, LIST_OF_STRINGS_TYPE_REF);
-    }
-    return superGroupIds;
-  }
-
-  public Long getHTTPStrictTransportSecurityMaxAge() {
-    if (HTTPStrictTransportSecurityMaxAge == null) {
-      HTTPStrictTransportSecurityMaxAge =
-        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_HSTS_MAX_AGE, Long.class);
-    }
-    return HTTPStrictTransportSecurityMaxAge;
-  }
-
-  public Boolean getHTTPStrictTransportSecurityIncludeSubdomains() {
-    if (HTTPStrictTransportSecurityIncludeSubdomains == null) {
-      HTTPStrictTransportSecurityIncludeSubdomains =
-        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_HSTS_INCLUDE_SUBDOMAINS, Boolean.class);
-    }
-    return HTTPStrictTransportSecurityIncludeSubdomains;
-  }
-
-  public String getXXSSProtection() {
-    if (XXSSProtection == null) {
-      XXSSProtection = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_X_XSS_PROTECTION)
-      );
-    }
-    return XXSSProtection;
-  }
-
-  public Boolean getXContentTypeOptions() {
-    if (XContentTypeOptions == null) {
-      XContentTypeOptions =
-        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_X_CONTENT_TYPE_OPTIONS, Boolean.class);
-    }
-    return XContentTypeOptions;
-  }
-
-  public String getContentSecurityPolicy() {
-    if (contentSecurityPolicy == null) {
-      contentSecurityPolicy = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.RESPONSE_HEADER_CONTENT_SECURITY_POLICY)
-      );
-    }
-    return contentSecurityPolicy;
+  public AuthConfiguration getAuthConfiguration() {
+    return getSecurityConfiguration().getAuth();
   }
 
   public List<ElasticsearchConnectionNodeConfiguration> getElasticsearchConnectionNodes() {

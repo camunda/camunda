@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.rest.constants.RestConstants;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -61,7 +62,7 @@ public class AuthCookieService {
       -1,
       getTokenIssuedAt(securityToken)
         .map(Date::toInstant)
-        .map(issuedAt -> issuedAt.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
+        .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
         .map(Date::from)
         .orElse(null),
       RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme),
@@ -69,10 +70,14 @@ public class AuthCookieService {
     );
 
     String newCookieAsString = newCookie.toString();
-    if (configurationService.getSameSiteCookieFlagEnabled()) {
+    if (getAuthConfiguration().getSameSiteCookieFlagEnabled()) {
       newCookieAsString = addSameSiteCookieFlag(newCookieAsString);
     }
     return newCookieAsString;
+  }
+
+  private AuthConfiguration getAuthConfiguration() {
+    return configurationService.getAuthConfiguration();
   }
 
   private String addSameSiteCookieFlag(String newCookieAsString) {

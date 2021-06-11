@@ -127,7 +127,10 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(authorizedAlertId));
+    assertThat(
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      contains(authorizedAlertId)
+    );
   }
 
   @Test
@@ -149,7 +152,10 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), contains(authorizedAlertId));
+    assertThat(
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      contains(authorizedAlertId)
+    );
   }
 
   @Test
@@ -187,7 +193,10 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAuthorizedAlerts = alertClient.getAllAlerts(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()), containsInAnyOrder(alertId));
+    assertThat(
+      allAuthorizedAlerts.stream().map(AlertDefinitionDto::getId).collect(toList()),
+      containsInAnyOrder(alertId)
+    );
   }
 
   @Test
@@ -218,7 +227,9 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   private void createSuperUserAuthorization() {
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.singletonList(KERMIT_USER));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperUserIds(Collections.singletonList(KERMIT_USER));
   }
 
   @Test
@@ -308,7 +319,9 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     engineIntegrationExtension.createGroup(GROUP_ID);
     engineIntegrationExtension.addUserToGroup(KERMIT_USER, GROUP_ID);
     engineIntegrationExtension.grantGroupOptimizeAccess(GROUP_ID);
-    embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+    embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .setSuperGroupIds(Collections.singletonList(GROUP_ID));
   }
 
 }

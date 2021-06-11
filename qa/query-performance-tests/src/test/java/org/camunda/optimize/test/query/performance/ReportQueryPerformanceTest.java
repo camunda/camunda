@@ -70,7 +70,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     importEngineData();
     elasticSearchIntegrationTestExtension.disableCleanup();
     // We set a higher token limit to avoid a time out because the extension is initialized in beforeAll mode
-    embeddedOptimizeExtension.getConfigurationService().setTokenLifeTime(120);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setTokenLifeTime(120);
   }
 
   @ParameterizedTest

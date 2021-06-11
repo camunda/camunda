@@ -42,7 +42,7 @@ public class SessionServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(
-      embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes(),
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getTokenLifeTimeMinutes(),
       ChronoUnit.MINUTES
     ));
     getTerminatedSessionService().cleanup();
@@ -123,7 +123,8 @@ public class SessionServiceIT extends AbstractIT {
   @Test
   public void logoutInvalidatesAllTokensOfASession() {
     // given
-    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration().getTokenLifeTimeMinutes();
     engineIntegrationExtension.addUser("genzo", "genzo");
     engineIntegrationExtension.grantUserOptimizeAccess("genzo");
 
@@ -166,7 +167,8 @@ public class SessionServiceIT extends AbstractIT {
   @Test
   public void tokenShouldExpireAfterConfiguredTime() {
     // given
-    int expiryTime = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    int expiryTime = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration().getTokenLifeTimeMinutes();
     engineIntegrationExtension.addUser("genzo", "genzo");
     engineIntegrationExtension.grantUserOptimizeAccess("genzo");
     String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
@@ -193,7 +195,8 @@ public class SessionServiceIT extends AbstractIT {
   @Test
   public void authCookieIsExtendedByRequestInLastThirdOfLifeTime() {
     // given
-    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration().getTokenLifeTimeMinutes();
     engineIntegrationExtension.addUser("genzo", "genzo");
     engineIntegrationExtension.grantUserOptimizeAccess("genzo");
     String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");

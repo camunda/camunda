@@ -95,7 +95,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   @BeforeEach
   public void setUp() {
     // only superusers are authorized to export reports
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
   }
 
   @SuppressWarnings(UNUSED)
@@ -511,12 +511,12 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   }
 
   protected void setAuthorizedSuperGroup() {
-    embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperUserIds(Collections.emptyList());
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_DECISION_DEFINITION);
-    embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
   }
 }

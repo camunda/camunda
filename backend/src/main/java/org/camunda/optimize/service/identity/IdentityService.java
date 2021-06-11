@@ -69,12 +69,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public boolean isSuperUserIdentity(final String userId) {
-    return configurationService.getSuperUserIds().contains(userId)||
+    return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId)||
       isInSuperUserGroup(userId);
   }
 
   private boolean isInSuperUserGroup(final String userId) {
-    final List<String> authorizedGroupIds = configurationService.getSuperGroupIds();
+    final List<String> authorizedGroupIds =
+      configurationService.getAuthConfiguration().getSuperGroupIds();
     return getAllGroupsOfUser(userId)
       .stream()
       .map(IdentityDto::getId)
@@ -229,7 +230,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   private void initUserGroupCache() {
     userGroupsCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
-      .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
+      .expireAfterAccess(
+        configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(), TimeUnit.MINUTES
+      )
       .build(this::fetchUserGroups);
   }
 

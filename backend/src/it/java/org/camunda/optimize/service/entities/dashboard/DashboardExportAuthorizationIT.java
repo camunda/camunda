@@ -34,7 +34,7 @@ public class DashboardExportAuthorizationIT extends AbstractExportImportIT {
     } else {
       authorizationClient.addKermitUserAndGrantAccessToOptimize();
       authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
       response = exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId, "my_file.json");
     }
 
@@ -60,7 +60,7 @@ public class DashboardExportAuthorizationIT extends AbstractExportImportIT {
   public void exportDashboardAsJson_withoutReportDefinitionAuth() {
     // given a dashboard with a report that Kermit is not authorized to access
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
     final String defKey =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram()).getKey();
     final String reportId = reportClient.createSingleReport(
