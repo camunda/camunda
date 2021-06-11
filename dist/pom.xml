@@ -156,6 +156,7 @@
           <extraJvmArguments>
             -Xms128m
             --illegal-access=deny
+            -XX:+ExitOnOutOfMemoryError
           </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
