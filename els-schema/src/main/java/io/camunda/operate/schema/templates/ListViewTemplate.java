@@ -22,8 +22,8 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String STATE = "state";
-  public static final String PARENT_PROCESS_INSTANCE_ID = "parentProcessInstanceId";
-  public static final String PARENT_FLOW_NODE_INSTANCE_KEY = "parentFlowNodeInstanceId";
+  public static final String PARENT_PROCESS_INSTANCE_KEY = "parentProcessInstanceKey";
+  public static final String PARENT_FLOW_NODE_INSTANCE_KEY = "parentFlowNodeInstanceKey";
 
   public static final String ACTIVITY_ID = "activityId";
   public static final String ACTIVITY_STATE = "activityState";

@@ -84,11 +84,11 @@
 			"batchOperationIds": {
 				"type": "keyword"
 			},
-			"parentProcessInstanceId": {
-				"type": "keyword"
+			"parentProcessInstanceKey": {
+				"type": "long"
 			},
-			"parentFlowNodeInstanceId": {
-				"type": "keyword"
+			"parentFlowNodeInstanceKey": {
+				"type": "long"
 			},
 			"startDate": {
 				"format": "date_time || epoch_millis",

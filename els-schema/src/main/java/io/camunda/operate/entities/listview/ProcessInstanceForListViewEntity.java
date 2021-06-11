@@ -28,9 +28,9 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
 
   private List<String> batchOperationIds;
 
-  private String parentProcessInstanceId;
+  private Long parentProcessInstanceKey;
 
-  private String parentFlowNodeInstanceId;
+  private Long parentFlowNodeInstanceKey;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
 
@@ -109,23 +109,23 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public String getParentProcessInstanceId() {
-    return parentProcessInstanceId;
+  public Long getParentProcessInstanceKey() {
+    return parentProcessInstanceKey;
   }
 
-  public ProcessInstanceForListViewEntity setParentProcessInstanceId(
-      final String parentProcessInstanceId) {
-    this.parentProcessInstanceId = parentProcessInstanceId;
+  public ProcessInstanceForListViewEntity setParentProcessInstanceKey(
+      final Long parentProcessInstanceKey) {
+    this.parentProcessInstanceKey = parentProcessInstanceKey;
     return this;
   }
 
-  public String getParentFlowNodeInstanceId() {
-    return parentFlowNodeInstanceId;
+  public Long getParentFlowNodeInstanceKey() {
+    return parentFlowNodeInstanceKey;
   }
 
-  public ProcessInstanceForListViewEntity setParentFlowNodeInstanceId(
-      final String parentFlowNodeInstanceId) {
-    this.parentFlowNodeInstanceId = parentFlowNodeInstanceId;
+  public ProcessInstanceForListViewEntity setParentFlowNodeInstanceKey(
+      final Long parentFlowNodeInstanceKey) {
+    this.parentFlowNodeInstanceKey = parentFlowNodeInstanceKey;
     return this;
   }
 
@@ -165,8 +165,8 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
         Objects.equals(endDate, that.endDate) &&
         state == that.state &&
         Objects.equals(batchOperationIds, that.batchOperationIds) &&
-        Objects.equals(parentProcessInstanceId, that.parentProcessInstanceId) &&
-        Objects.equals(parentFlowNodeInstanceId, that.parentFlowNodeInstanceId) &&
+        Objects.equals(parentProcessInstanceKey, that.parentProcessInstanceKey) &&
+        Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey) &&
         Objects.equals(joinRelation, that.joinRelation) &&
         Arrays.equals(sortValues, that.sortValues);
   }
@@ -175,8 +175,8 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
   public int hashCode() {
     int result = Objects
         .hash(super.hashCode(), processDefinitionKey, processName, processVersion, bpmnProcessId,
-            startDate, endDate, state, batchOperationIds, parentProcessInstanceId,
-            parentFlowNodeInstanceId, joinRelation);
+            startDate, endDate, state, batchOperationIds, parentProcessInstanceKey,
+            parentFlowNodeInstanceKey, joinRelation);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

@@ -156,9 +156,9 @@ public class ListViewZeebeRecordProcessor {
     //call activity related fields
     if (recordValue.getParentProcessInstanceKey() != ABSENT_PARENT_PROCESS_INSTANCE_ID) {
       wiEntity
-          .setParentProcessInstanceId(String.valueOf(recordValue.getParentProcessInstanceKey()));
+          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey());
       wiEntity
-          .setParentFlowNodeInstanceId(String.valueOf(recordValue.getParentElementInstanceKey()));
+          .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
     }
     return wiEntity;
   }
