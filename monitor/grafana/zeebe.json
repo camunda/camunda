@@ -89,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1622104691851,
+  "iteration": 1623398951904,
   "links": [],
   "panels": [
     {
@@ -6593,6 +6593,7 @@
           },
           "hiddenSeries": false,
           "id": 95,
+          "interval": "1s",
           "legend": {
             "alignAsTable": true,
             "avg": false,
@@ -6885,7 +6886,7 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1622104691826,
+          "repeatIteration": 1623398951903,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -6970,7 +6971,7 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1622104691826,
+          "repeatIteration": 1623398951903,
           "repeatPanelId": 205,
           "scopedVars": {
             "partition": {
@@ -7138,7 +7139,7 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1622104691826,
+          "repeatIteration": 1623398951903,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -7223,7 +7224,7 @@
           "pluginVersion": "6.7.1",
           "repeat": null,
           "repeatDirection": "h",
-          "repeatIteration": 1622104691826,
+          "repeatIteration": 1623398951903,
           "repeatPanelId": 209,
           "scopedVars": {
             "partition": {
@@ -9990,5 +9991,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 10
+  "version": 12
 }
