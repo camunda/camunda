@@ -225,6 +225,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(ScriptTask.class, id);
   }
 
+  public ScriptTaskBuilder scriptTask(final String id, final Consumer<ScriptTaskBuilder> consumer) {
+    final ScriptTaskBuilder builder = createTargetBuilder(ScriptTask.class, id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public ReceiveTaskBuilder receiveTask() {
     return createTargetBuilder(ReceiveTask.class);
   }

@@ -16,109 +16,126 @@
 package io.camunda.zeebe.model.bpmn.validation;
 
 import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
-import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
-import org.junit.runners.Parameterized.Parameters;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public class ZeebeJobWorkerTaskValidationTest extends AbstractZeebeValidationTest {
+public class ZeebeJobWorkerTaskValidationTest {
 
-  @Parameters(name = "{index}: {1}")
-  public static Object[][] parameters() {
-    return new Object[][] {
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("service")
-            .zeebeJobRetries("5")
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobTypeExpression("serviceType")
-            .zeebeJobRetriesExpression("jobRetries")
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("service")
-            .zeebeTaskHeader("priority", "high")
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .businessRuleTask("task")
-            .zeebeJobType("DMN")
-            .zeebeJobRetries("1")
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .businessRuleTask("task")
-            .zeebeJobTypeExpression("dmnType")
-            .zeebeJobRetriesExpression("jobRetries")
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .businessRuleTask("task")
-            .zeebeJobType("DMN")
-            .zeebeTaskHeader("decisionRef", "approveInvoice")
-            .endEvent()
-            .done(),
-        valid()
-      },
-      {
-        Bpmn.createExecutableProcess("process").startEvent().serviceTask("task").endEvent().done(),
-        singletonList(
-            expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("")
-            .endEvent()
-            .done(),
-        singletonList(expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .businessRuleTask("task")
-            .endEvent()
-            .done(),
-        singletonList(
-            expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .businessRuleTask("task")
-            .zeebeJobType("")
-            .endEvent()
-            .done(),
-        singletonList(expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"))
-      }
-    };
+  @ParameterizedTest
+  @MethodSource("jobWorkerTaskBuilderProvider")
+  @DisplayName("task with static job type and retries")
+  void validStaticJobTypeAndRetries(final JobWorkerTaskBuilder taskBuilder) {
+
+    final BpmnModelInstance process =
+        processWithTask(taskBuilder, task -> task.zeebeJobType("service").zeebeJobRetries("5"));
+
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @ParameterizedTest
+  @MethodSource("jobWorkerTaskBuilderProvider")
+  @DisplayName("task with job type and retries expression")
+  void validJobTypeAndRetriesExpression(final JobWorkerTaskBuilder taskBuilder) {
+
+    final BpmnModelInstance process =
+        processWithTask(
+            taskBuilder,
+            task ->
+                task.zeebeJobTypeExpression("serviceType").zeebeJobRetriesExpression("jobRetries"));
+
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @ParameterizedTest
+  @MethodSource("jobWorkerTaskBuilderProvider")
+  @DisplayName("task with custom header")
+  void validCustomHeader(final JobWorkerTaskBuilder taskBuilder) {
+
+    final BpmnModelInstance process =
+        processWithTask(
+            taskBuilder, task -> task.zeebeJobType("service").zeebeTaskHeader("priority", "high"));
+
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @ParameterizedTest
+  @MethodSource("jobWorkerTaskBuilderProvider")
+  @DisplayName("task without job type")
+  void missingJobType(final JobWorkerTaskBuilder taskBuilder) {
+
+    final BpmnModelInstance process = processWithTask(taskBuilder, task -> task.id("task"));
+
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("jobWorkerTaskBuilderProvider")
+  @DisplayName("task with empty job type")
+  void emptyJobType(final JobWorkerTaskBuilder taskBuilder) {
+
+    final BpmnModelInstance process = processWithTask(taskBuilder, task -> task.zeebeJobType(""));
+
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"));
+  }
+
+  private BpmnModelInstance processWithTask(
+      final JobWorkerTaskBuilder taskBuilder,
+      final Consumer<AbstractJobWorkerTaskBuilder<?, ?>> taskModifier) {
+
+    final StartEventBuilder processBuilder = Bpmn.createExecutableProcess("process").startEvent();
+    final AbstractJobWorkerTaskBuilder<?, ?> jobWorkerTaskBuilder =
+        taskBuilder.build(processBuilder);
+    taskModifier.accept(jobWorkerTaskBuilder);
+    return jobWorkerTaskBuilder.endEvent().done();
+  }
+
+  private static Stream<JobWorkerTaskBuilder> jobWorkerTaskBuilderProvider() {
+    return Stream.of(
+        JobWorkerTaskBuilder.of("serviceTask", AbstractFlowNodeBuilder::serviceTask),
+        JobWorkerTaskBuilder.of("businessRuleTask", AbstractFlowNodeBuilder::businessRuleTask),
+        JobWorkerTaskBuilder.of("scriptTask", AbstractFlowNodeBuilder::scriptTask));
+  }
+
+  private static final class JobWorkerTaskBuilder {
+
+    private final String taskType;
+    private final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
+        builder;
+
+    private JobWorkerTaskBuilder(
+        final String taskType,
+        final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>> builder) {
+      this.taskType = taskType;
+      this.builder = builder;
+    }
+
+    public AbstractJobWorkerTaskBuilder<?, ?> build(
+        final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      return builder.apply(processBuilder);
+    }
+
+    private static JobWorkerTaskBuilder of(
+        final String taskType,
+        final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>> builder) {
+      return new JobWorkerTaskBuilder(taskType, builder);
+    }
+
+    @Override
+    public String toString() {
+      return taskType;
+    }
   }
 }

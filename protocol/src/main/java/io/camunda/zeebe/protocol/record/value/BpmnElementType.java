@@ -49,7 +49,8 @@ public enum BpmnElementType {
   // TODO (saig0): remove element type for testing - #6202
   TESTING_ONLY,
 
-  BUSINESS_RULE_TASK;
+  BUSINESS_RULE_TASK,
+  SCRIPT_TASK;
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
     switch (elementTypeName) {
@@ -83,6 +84,8 @@ public enum BpmnElementType {
         return BpmnElementType.USER_TASK;
       case "businessRuleTask":
         return BpmnElementType.BUSINESS_RULE_TASK;
+      case "scriptTask":
+        return BpmnElementType.SCRIPT_TASK;
       default:
         throw new RuntimeException("Unsupported BPMN element of type " + elementTypeName);
     }

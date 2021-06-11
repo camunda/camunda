@@ -35,6 +35,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
@@ -62,12 +63,13 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
+    ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
+    ELEMENT_FACTORIES.put(ScriptTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableJobWorkerTask::new);
-    ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
-    ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
+    ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
   }
 
   @Override
