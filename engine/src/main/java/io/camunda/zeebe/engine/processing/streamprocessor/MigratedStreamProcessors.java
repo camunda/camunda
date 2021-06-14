@@ -53,6 +53,7 @@ public final class MigratedStreamProcessors {
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.SEQUENCE_FLOW);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.BUSINESS_RULE_TASK);
     MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.SCRIPT_TASK);
+    MIGRATED_BPMN_PROCESSORS.add(BpmnElementType.SEND_TASK);
 
     MIGRATED_VALUE_TYPES.put(ValueType.JOB, MIGRATED);
     MIGRATED_VALUE_TYPES.put(ValueType.JOB_BATCH, MIGRATED);

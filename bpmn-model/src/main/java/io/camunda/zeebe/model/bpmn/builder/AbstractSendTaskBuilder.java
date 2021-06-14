@@ -23,7 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.SendTask;
 
 /** @author Sebastian Menski */
 public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<B>>
-    extends AbstractTaskBuilder<B, SendTask> {
+    extends AbstractJobWorkerTaskBuilder<B, SendTask> {
 
   protected AbstractSendTaskBuilder(
       final BpmnModelInstance modelInstance, final SendTask element, final Class<?> selfType) {
