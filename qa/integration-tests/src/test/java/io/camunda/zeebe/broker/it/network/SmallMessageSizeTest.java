@@ -9,11 +9,9 @@ package io.camunda.zeebe.broker.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.broker.it.util.GrpcClientRule;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -21,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.springframework.util.unit.DataSize;
@@ -44,22 +41,18 @@ public class SmallMessageSizeTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
   private long processInstanceKey;
-
-  private static BpmnModelInstance process(final String jobType) {
-    return Bpmn.createExecutableProcess("process")
-        .startEvent()
-        .serviceTask("task", t -> t.zeebeJobType(jobType))
-        .endEvent()
-        .done();
-  }
 
   @Before
   public void givenProcessWithLargeVariables() {
-    // given a process
-    final var processDefinitionKey = CLIENT_RULE.deployProcess(process(JOB_TYPE));
+    // given a process with a job
+    final var processDefinitionKey =
+        CLIENT_RULE.deployProcess(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done());
 
     processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
     RecordingExporter.jobRecords(JobIntent.CREATED)
