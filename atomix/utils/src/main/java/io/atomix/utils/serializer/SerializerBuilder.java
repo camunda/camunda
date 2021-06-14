@@ -20,32 +20,11 @@ import io.atomix.utils.Builder;
 
 /** Serializer builder. */
 public class SerializerBuilder implements Builder<Serializer> {
-  private final String name;
   private final Namespace.Builder namespaceBuilder =
       new Namespace.Builder().register(Namespaces.BASIC).nextId(Namespaces.BEGIN_USER_CUSTOM_ID);
 
-  public SerializerBuilder() {
-    this(null);
-  }
-
-  public SerializerBuilder(final String name) {
-    this.name = name;
-  }
-
-  /**
-   * Adds a namespace to the serializer.
-   *
-   * @param namespace the namespace to add
-   * @return the serializer builder
-   */
-  public SerializerBuilder withNamespace(final Namespace namespace) {
-    namespaceBuilder.register(namespace);
-    return this;
-  }
-
   @Override
   public Serializer build() {
-    return Serializer.using(
-        name != null ? namespaceBuilder.name(name).build() : namespaceBuilder.build());
+    return Serializer.using(namespaceBuilder.build());
   }
 }

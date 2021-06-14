@@ -21,7 +21,7 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResultType;
 
-public class ExpectedValidationResult {
+public final class ExpectedValidationResult {
   private String expectedElementId;
   private Class<? extends BpmnModelElementInstance> expectedElementType;
   private String expectedMessage;
@@ -64,7 +64,7 @@ public class ExpectedValidationResult {
       match = false;
     }
 
-    if (!expectedMessage.equals(result.getMessage())) {
+    if (!result.getMessage().startsWith(expectedMessage)) {
       match = false;
     }
 

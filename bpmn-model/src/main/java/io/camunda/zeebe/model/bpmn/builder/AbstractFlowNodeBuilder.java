@@ -210,12 +210,25 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(BusinessRuleTask.class, id);
   }
 
+  public BusinessRuleTaskBuilder businessRuleTask(
+      final String id, final Consumer<BusinessRuleTaskBuilder> consumer) {
+    final BusinessRuleTaskBuilder builder = createTargetBuilder(BusinessRuleTask.class, id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public ScriptTaskBuilder scriptTask() {
     return createTargetBuilder(ScriptTask.class);
   }
 
   public ScriptTaskBuilder scriptTask(final String id) {
     return createTargetBuilder(ScriptTask.class, id);
+  }
+
+  public ScriptTaskBuilder scriptTask(final String id, final Consumer<ScriptTaskBuilder> consumer) {
+    final ScriptTaskBuilder builder = createTargetBuilder(ScriptTask.class, id);
+    consumer.accept(builder);
+    return builder;
   }
 
   public ReceiveTaskBuilder receiveTask() {

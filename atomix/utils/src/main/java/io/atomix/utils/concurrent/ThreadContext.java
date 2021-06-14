@@ -47,13 +47,6 @@ public interface ThreadContext extends AutoCloseable, Executor, Scheduler {
     return thread instanceof AtomixThread ? ((AtomixThread) thread).getContext() : null;
   }
 
-  /** @throws IllegalStateException if the current thread is not a catalyst thread */
-  static ThreadContext currentContextOrThrow() {
-    final ThreadContext context = currentContext();
-    checkState(context != null, "not on a Catalyst thread");
-    return context;
-  }
-
   /**
    * Returns a boolean indicating whether the current thread is in this context.
    *

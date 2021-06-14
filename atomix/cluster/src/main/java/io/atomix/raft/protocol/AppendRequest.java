@@ -230,21 +230,8 @@ public class AppendRequest extends AbstractRaftRequest {
      * @return The append request builder.
      * @throws NullPointerException if {@code entries} is null
      */
-    @SuppressWarnings("unchecked")
     public Builder withEntries(final List<PersistedRaftRecord> entries) {
       this.entries = checkNotNull(entries, NULL_ENTRIES_ERR);
-      return this;
-    }
-
-    /**
-     * Adds an entry to the request.
-     *
-     * @param entry The entry to add.
-     * @return The request builder.
-     * @throws NullPointerException if {@code entry} is {@code null}
-     */
-    public Builder addEntry(final PersistedRaftRecord entry) {
-      entries.add(checkNotNull(entry, NULL_ENTRIES_ERR));
       return this;
     }
 

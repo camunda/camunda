@@ -41,7 +41,7 @@ chmod 700 get_helm.sh
 ## add zeebe as helm repo
 helm version
 helm repo add zeebe https://helm.camunda.io
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo add stable https://charts.helm.sh/stable
 helm repo update
 
 ## install kubens

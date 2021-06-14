@@ -14,5 +14,21 @@
         }
       ]
     }
+  },
+  {
+    "extension": "revapi.differences",
+    "configuration": {
+      "justification": "The abstract builders are usually not used outside of this project; a caller uses the concrete builder that inherits from the abstract builder.",
+      "ignore": true,
+      "differences": [
+        {
+          "code": "java.class.nonFinalClassInheritsFromNewClass",
+          "new": {
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.model.bpmn.builder"
+          }
+        }
+      ]
+    }
   }
 ]

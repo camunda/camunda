@@ -72,33 +72,6 @@ public final class Version implements Comparable<Version> {
   }
 
   /**
-   * Returns the major version number.
-   *
-   * @return the major version number
-   */
-  public int major() {
-    return major;
-  }
-
-  /**
-   * Returns the minor version number.
-   *
-   * @return the minor version number
-   */
-  public int minor() {
-    return minor;
-  }
-
-  /**
-   * Returns the patch version number.
-   *
-   * @return the patch version number
-   */
-  public int patch() {
-    return patch;
-  }
-
-  /**
    * Returns the build version number.
    *
    * @return the build version number

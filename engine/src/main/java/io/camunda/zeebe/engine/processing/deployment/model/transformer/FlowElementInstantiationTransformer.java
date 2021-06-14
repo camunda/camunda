@@ -17,15 +17,16 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEve
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.EventBasedGateway;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
@@ -53,6 +55,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES = new HashMap<>();
 
     ELEMENT_FACTORIES.put(Activity.class, ExecutableActivity::new);
+    ELEMENT_FACTORIES.put(BusinessRuleTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(BoundaryEvent.class, ExecutableBoundaryEvent::new);
     ELEMENT_FACTORIES.put(CallActivity.class, ExecutableCallActivity::new);
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
@@ -60,12 +63,13 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
-    ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
-    ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
-    ELEMENT_FACTORIES.put(UserTask.class, ExecutableServiceTask::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
+    ELEMENT_FACTORIES.put(ScriptTask.class, ExecutableJobWorkerTask::new);
+    ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
+    ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
+    ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
   }
 
   @Override

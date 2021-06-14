@@ -20,7 +20,6 @@ package io.atomix.primitive;
 import io.atomix.utils.AtomixRuntimeException;
 
 /** Top level exception for Store failures. */
-@SuppressWarnings("serial")
 public class PrimitiveException extends AtomixRuntimeException {
   public PrimitiveException() {}
 
@@ -43,9 +42,6 @@ public class PrimitiveException extends AtomixRuntimeException {
 
   /** Store operation timeout. */
   public static class Timeout extends PrimitiveException {}
-
-  /** Store operation interrupted. */
-  public static class Interrupted extends PrimitiveException {}
 
   /** Primitive service exception. */
   public static class ServiceException extends PrimitiveException {

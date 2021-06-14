@@ -46,16 +46,6 @@ public class PhiAccrualFailureDetector {
    *
    * @param minSamples the minimum number of samples required to compute phi
    * @param phiFactor the phi factor
-   */
-  public PhiAccrualFailureDetector(final int minSamples, final double phiFactor) {
-    this(minSamples, phiFactor, DEFAULT_WINDOW_SIZE);
-  }
-
-  /**
-   * Creates a new failure detector.
-   *
-   * @param minSamples the minimum number of samples required to compute phi
-   * @param phiFactor the phi factor
    * @param windowSize the phi accrual window size
    */
   public PhiAccrualFailureDetector(

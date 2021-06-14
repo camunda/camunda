@@ -23,7 +23,7 @@ import java.time.Duration;
 /** DNS discovery configuration. */
 public class DnsDiscoveryConfig extends NodeDiscoveryConfig {
   private String service;
-  private Duration resolutionInterval = Duration.ofSeconds(15);
+  private final Duration resolutionInterval = Duration.ofSeconds(15);
 
   @Override
   public NodeDiscoveryProvider.Type getType() {
@@ -57,16 +57,5 @@ public class DnsDiscoveryConfig extends NodeDiscoveryConfig {
    */
   public Duration getResolutionInterval() {
     return resolutionInterval;
-  }
-
-  /**
-   * Sets the DNS resolution interval.
-   *
-   * @param resolutionInterval the DNS resolution interval
-   * @return the DNS configuration
-   */
-  public DnsDiscoveryConfig setResolutionInterval(final Duration resolutionInterval) {
-    this.resolutionInterval = checkNotNull(resolutionInterval, "resolutionInterval cannot be null");
-    return this;
   }
 }

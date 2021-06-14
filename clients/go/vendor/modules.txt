@@ -89,7 +89,7 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 github.com/golang/groupcache/lru
-# github.com/golang/mock v1.5.0
+# github.com/golang/mock v1.6.0
 ## explicit
 github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.5.0
@@ -155,7 +155,7 @@ go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-# golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+# golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -172,7 +172,7 @@ golang.org/x/net/trace
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20210324051608-47abb6519492
+# golang.org/x/sys v0.0.0-20210510120138-977fb7262007
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix

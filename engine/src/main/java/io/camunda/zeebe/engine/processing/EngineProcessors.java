@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -55,6 +56,9 @@ public final class EngineProcessors {
     final var writers = processingContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
+
+    // register listener that handles migrations immediately, so it is the first to be called
+    typedRecordProcessors.withListener(new DbMigrationController());
 
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();

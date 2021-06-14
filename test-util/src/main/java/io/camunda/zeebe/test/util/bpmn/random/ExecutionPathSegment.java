@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.test.util.bpmn.random;
 
+import static io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep.VIRTUALLY_NO_TIME;
+
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -183,9 +185,19 @@ public final class ExecutionPathSegment {
    * the right. The related ScheduledSteps which are before and come immediately after are updated.
    *
    * @param random used to pseudo-randomly chose where the step should be inserted
-   * @param executionStep the step which should be inserted
+   * @param executionStep the step which should be inserted. Must be a time that takes almost no
+   *     time. Otherwise, the scheduling information for steps behind the insertion point will be
+   *     inaccurate
    */
   public void insertExecutionStep(final Random random, final AbstractExecutionStep executionStep) {
+    if (executionStep.getDeltaTime().toMillis() > VIRTUALLY_NO_TIME.toMillis()) {
+      throw new RuntimeException(
+          "Not yet implemented. This insert logic only works if the step that is inserted takes almost no time.");
+      /* For a step that takes time, one needs to recalculate the scheduled times
+       * for all steps after the insertion point
+       */
+    }
+
     final var index = findCutOffPoint(random);
 
     final var successor = scheduledSteps.remove(index);
@@ -198,7 +210,10 @@ public final class ExecutionPathSegment {
     }
 
     // add at index will move all elements to the right, including the object on the given index
-    scheduledSteps.add(index, new ScheduledExecutionStep(newStep, newStep, successor.getStep()));
+    scheduledSteps.add(
+        index,
+        new ScheduledExecutionStep(
+            successor.getLogicalPredecessor(), newStep, successor.getStep()));
     scheduledSteps.add(index, newStep);
   }
 

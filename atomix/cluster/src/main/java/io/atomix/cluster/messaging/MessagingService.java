@@ -154,25 +154,6 @@ public interface MessagingService {
    * @param address address to send the message to.
    * @param type type of message.
    * @param payload message payload.
-   * @param timeout response timeout
-   * @param executor executor over which any follow up actions after completion will be executed.
-   * @return a response future
-   */
-  default CompletableFuture<byte[]> sendAndReceive(
-      final Address address,
-      final String type,
-      final byte[] payload,
-      final Duration timeout,
-      final Executor executor) {
-    return sendAndReceive(address, type, payload, true, timeout, executor);
-  }
-
-  /**
-   * Sends a message synchronously and expects a response.
-   *
-   * @param address address to send the message to.
-   * @param type type of message.
-   * @param payload message payload.
    * @param keepAlive whether to keep the connection alive after usage
    * @param timeout response timeout
    * @param executor executor over which any follow up actions after completion will be executed.

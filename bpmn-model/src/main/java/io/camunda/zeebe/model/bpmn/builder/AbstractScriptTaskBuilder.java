@@ -22,7 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 
 /** @author Sebastian Menski */
 public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuilder<B>>
-    extends AbstractTaskBuilder<B, ScriptTask> {
+    extends AbstractJobWorkerTaskBuilder<B, ScriptTask> {
 
   protected AbstractScriptTaskBuilder(
       final BpmnModelInstance modelInstance, final ScriptTask element, final Class<?> selfType) {

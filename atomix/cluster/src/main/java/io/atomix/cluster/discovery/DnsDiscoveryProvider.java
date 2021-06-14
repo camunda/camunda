@@ -157,11 +157,6 @@ public class DnsDiscoveryProvider
     }
 
     @Override
-    public DnsDiscoveryConfig newConfig() {
-      return new DnsDiscoveryConfig();
-    }
-
-    @Override
     public NodeDiscoveryProvider newProvider(final DnsDiscoveryConfig config) {
       return new DnsDiscoveryProvider(config);
     }
