@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,6 +43,8 @@ public class SmallMessageSizeTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
+  private long processInstanceKey;
+
   private static BpmnModelInstance process(final String jobType) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()
@@ -50,12 +53,12 @@ public class SmallMessageSizeTest {
         .done();
   }
 
-  @Test
-  public void shouldSkipJobsThatExceedMessageSize() {
+  @Before
+  public void givenProcessWithLargeVariables() {
     // given a process
     final var processDefinitionKey = CLIENT_RULE.deployProcess(process(JOB_TYPE));
 
-    final var processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     // with variables that are greater than the message size
     for (int i = 0; i < VARIABLE_COUNT; i++) {
@@ -66,7 +69,10 @@ public class SmallMessageSizeTest {
           .send()
           .join();
     }
+  }
 
+  @Test
+  public void shouldSkipJobsThatExceedMessageSize() {
     // when (we activate jobs)
     final var response =
         CLIENT_RULE
@@ -83,21 +89,6 @@ public class SmallMessageSizeTest {
 
   @Test
   public void shouldActivateJobIfRequestVariablesFitIntoMessageSize() {
-    // given (processes with variables too big to fit into a message)
-    final var processDefinitionKey = CLIENT_RULE.deployProcess(process(JOB_TYPE));
-
-    // process with variables that are greater than the message size
-    final var processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
-
-    for (int i = 0; i < VARIABLE_COUNT; i++) {
-      CLIENT_RULE
-          .getClient()
-          .newSetVariablesCommand(processInstanceKey)
-          .variables(Map.of(String.valueOf(i), LARGE_TEXT))
-          .send()
-          .join();
-    }
-
     // when (we activate job, but select only a subset of the variables - a subset that fits into
     // the message size)
     final var response =
