@@ -30,7 +30,11 @@ public class SmallMessageSizeTest {
   private static final String JOB_TYPE = "acme";
 
   private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+      new EmbeddedBrokerRule(
+          b -> {
+            b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
+            b.getGateway().getLongPolling().setEnabled(false);
+          });
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule
@@ -48,23 +52,20 @@ public class SmallMessageSizeTest {
 
   @Test
   public void shouldSkipJobsThatExceedMessageSize() {
-    // given (two processes, the first has variables too big to fit into a message, the second fits
-    // into a message)
+    // given a process
     final var processDefinitionKey = CLIENT_RULE.deployProcess(process(JOB_TYPE));
 
-    // process with variables that are greater than the message size
-    final var processInstanceKey1 = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    final var processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
+    // with variables that are greater than the message size
     for (int i = 0; i < VARIABLE_COUNT; i++) {
       CLIENT_RULE
           .getClient()
-          .newSetVariablesCommand(processInstanceKey1)
+          .newSetVariablesCommand(processInstanceKey)
           .variables(Map.of(String.valueOf(i), LARGE_TEXT))
           .send()
           .join();
     }
-
-    final var processInstanceKey2 = CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
     // when (we activate jobs)
     final var response =
@@ -72,14 +73,12 @@ public class SmallMessageSizeTest {
             .getClient()
             .newActivateJobsCommand()
             .jobType(JOB_TYPE)
-            .maxJobsToActivate(2)
+            .maxJobsToActivate(1)
             .send()
             .join(10, TimeUnit.SECONDS);
 
-    // then (the job of the process which is too big for the message is ignored, but the other
-    // process's job is activated)
-    assertThat(response.getJobs()).hasSize(1);
-    assertThat(response.getJobs().get(0).getProcessInstanceKey()).isEqualTo(processInstanceKey2);
+    // then the job of the process which is too big for the message is ignored
+    assertThat(response.getJobs()).isEmpty();
   }
 
   @Test
