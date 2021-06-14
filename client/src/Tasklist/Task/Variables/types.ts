@@ -9,7 +9,7 @@ import {Variable} from 'modules/types';
 type FormValues = {
   [key: string]: string;
 } & {
-  newVariables?: Variable[];
+  newVariables?: Pick<Variable, 'name' | 'value'>[];
 };
 
 export type {FormValues};

@@ -154,6 +154,11 @@ const Form = styled.form<FormProps>`
   overflow-y: hidden;
 `;
 
+const ValueContainer = styled.div`
+  max-height: 100px;
+  overflow-y: auto;
+`;
+
 export {
   Container,
   Body,
@@ -174,4 +179,5 @@ export {
   IconButton,
   IconContainer,
   Form,
+  ValueContainer,
 };

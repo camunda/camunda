@@ -84,7 +84,9 @@ const Task: React.FC = () => {
   const notifications = useNotifications();
   const {formKey, processDefinitionId} = data?.task ?? {};
 
-  async function handleSubmission(variables: Variable[]) {
+  async function handleSubmission(
+    variables: Pick<Variable, 'name' | 'value'>[],
+  ) {
     try {
       await completeTask({
         variables: {

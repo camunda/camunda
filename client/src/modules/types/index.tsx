@@ -12,8 +12,11 @@ type User = Readonly<{
 }>;
 
 type Variable = Readonly<{
+  id: string;
   name: string;
   value: string;
+  previewValue: string;
+  isValueTruncated: boolean;
 }>;
 
 type TaskState = 'CREATED' | 'COMPLETED';

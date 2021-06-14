@@ -28,7 +28,7 @@ const validateNonEmpty = (value?: string) => {
 };
 
 function validateDuplicateVariableName(
-  variable: Variable,
+  variable: Pick<Variable, 'value' | 'name'>,
   values: FormValues,
   variableIndex: number,
 ): string | void {

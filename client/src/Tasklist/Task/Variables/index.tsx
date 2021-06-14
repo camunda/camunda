@@ -32,6 +32,7 @@ import {
   IconButton,
   RowTH,
   Form as StyledForm,
+  ValueContainer,
 } from './styled';
 import {
   validateJSON,
@@ -55,14 +56,18 @@ import {PanelHeader} from 'modules/components/PanelHeader';
 import {useTaskVariables} from 'modules/queries/get-task-variables';
 
 type Props = {
-  onSubmit: (variables: Variable[]) => Promise<void>;
+  onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
   task: GetTask['task'];
 };
 
 const Variables: React.FC<Props> = ({onSubmit, task}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
   const {data: userData, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-  const {variables, loading: areVariablesLoading} = useTaskVariables(task.id);
+  const {
+    variables,
+    loading: areVariablesLoading,
+    queryFullVariable,
+  } = useTaskVariables(task.id);
 
   if (loading || areVariablesLoading) {
     return null;
@@ -108,16 +113,14 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
       onSubmit={async (values, form) => {
         const {dirtyFields, initialValues = []} = form.getState();
 
-        const existingVariables: ReadonlyArray<Variable> = intersection(
+        const existingVariables = intersection(
           Object.keys(initialValues),
           Object.keys(dirtyFields),
         ).map((name) => ({
           name,
           value: values[name],
         }));
-
-        const newVariables: ReadonlyArray<Variable> =
-          get(values, 'newVariables') || [];
+        const newVariables = get(values, 'newVariables') || [];
 
         await onSubmit([
           ...existingVariables.map((variable) => ({
@@ -153,6 +156,13 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
 
         return {};
       }}
+      initialValues={variables.reduce(
+        (values, variable) => ({
+          ...values,
+          [createVariableFieldName(variable.name)]: variable.value,
+        }),
+        {},
+      )}
     >
       {({form, handleSubmit, values}) => (
         <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
@@ -205,14 +215,22 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                     name={createVariableFieldName(
                                       variable.name,
                                     )}
-                                    initialValue={variable.value}
-                                    validate={validateJSON}
+                                    validate={(value) =>
+                                      variable.isValueTruncated
+                                        ? undefined
+                                        : validateJSON(value)
+                                    }
                                   >
                                     {({input, meta}) => (
                                       <EditTextarea
                                         {...input}
                                         id={variable.name}
                                         aria-invalid={meta.error !== undefined}
+                                        onFocus={() => {
+                                          if (variable.isValueTruncated) {
+                                            queryFullVariable(variable.id);
+                                          }
+                                        }}
                                       />
                                     )}
                                   </Field>
@@ -237,7 +255,13 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                             ) : (
                               <>
                                 <RowTH>{variable.name}</RowTH>
-                                <TD>{variable.value}</TD>
+                                <TD>
+                                  <ValueContainer>
+                                    {`${variable.value}${
+                                      variable.isValueTruncated ? '...' : ''
+                                    }`}
+                                  </ValueContainer>
+                                </TD>
                               </>
                             )}
                           </TR>

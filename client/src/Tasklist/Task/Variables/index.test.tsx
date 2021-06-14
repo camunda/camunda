@@ -11,19 +11,35 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {
   mockGetTaskVariables,
   mockGetTaskEmptyVariables,
+  mockGetTaskVariablesTruncatedValues,
+  mockGetFullVariableValue,
 } from 'modules/queries/get-task-variables';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
 import userEvent from '@testing-library/user-event';
 import {MockedResponse} from '@apollo/client/testing';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {mockServer} from 'modules/mockServer';
+import {graphql} from 'msw';
 
 function createWrapper(mocks: MockedResponse[] = []) {
-  const Wrapper: React.FC = ({children}) => (
-    <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </MockedApolloProvider>
-  );
+  const Wrapper: React.FC = ({children}) => {
+    if (mocks.length > 0) {
+      return (
+        <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
+          <MockThemeProvider>{children}</MockThemeProvider>
+        </MockedApolloProvider>
+      );
+    } else {
+      return (
+        <ApolloProvider client={client}>
+          <MockThemeProvider>{children}</MockThemeProvider>
+        </ApolloProvider>
+      );
+    }
+  };
 
   return Wrapper;
 }
@@ -531,5 +547,48 @@ describe('<Variables />', () => {
         name: /complete task/i,
       }),
     ).toBeDisabled();
+  });
+
+  it('should complete a task with a truncated variable', async () => {
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(
+          ctx.data(mockGetTaskVariablesTruncatedValues().result.data),
+        );
+      }),
+      graphql.query('GetFullVariableValue', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetFullVariableValue().result.data));
+      }),
+    );
+    const mockOnSubmit = jest.fn();
+    render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();
+
+    userEvent.click(screen.getByDisplayValue('"000'));
+
+    expect(await screen.findByDisplayValue('"0001"')).toBeInTheDocument();
+
+    userEvent.clear(screen.getByDisplayValue('"0001"'));
+    userEvent.type(screen.getByLabelText('myVar'), '"newVariableValue"');
+    userEvent.click(
+      screen.getByRole('button', {
+        name: /complete task/i,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenCalledWith([
+        {
+          name: 'myVar',
+          value: '"newVariableValue"',
+        },
+      ]),
+    );
   });
 });

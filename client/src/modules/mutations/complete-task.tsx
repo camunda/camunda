@@ -10,7 +10,7 @@ import gql from 'graphql-tag';
 import {Task, Variable} from 'modules/types';
 import {completedTask} from 'modules/mock-schema/mocks/task';
 
-type Variables = ReadonlyArray<Variable>;
+type Variables = Pick<Variable, 'name' | 'value'>[];
 
 interface CompleteTask {
   id: Task['id'];

@@ -38,8 +38,20 @@ const tasks: ReadonlyArray<Task> = [
       __typename: 'User',
     },
     variables: [
-      {name: 'myVar', value: '"0001"'},
-      {name: 'isCool', value: '"yes"'},
+      {
+        id: '0-myVar',
+        name: 'myVar',
+        value: '"0001"',
+        previewValue: '"0001"',
+        isValueTruncated: false,
+      },
+      {
+        id: '0-isCool',
+        name: 'isCool',
+        value: '"yes"',
+        previewValue: '"yes"',
+        isValueTruncated: false,
+      },
     ],
     taskState: TaskStates.Created,
     sortValues: ['1', '2'],
