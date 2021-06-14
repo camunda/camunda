@@ -230,8 +230,7 @@ public class MigrateDashboardFilterIT extends AbstractUpgrade34IT {
     assigneeFilter.setData(new DashboardIdentityFilterDataDto(
       filterOperator,
       assigneeNames,
-      allowCustomValues,
-      null
+      allowCustomValues
     ));
     return assigneeFilter;
   }
@@ -244,8 +243,7 @@ public class MigrateDashboardFilterIT extends AbstractUpgrade34IT {
     candidateGroupFilter.setData(new DashboardIdentityFilterDataDto(
       filterOperator,
       candidateGroupNames,
-      allowCustomValues,
-      null
+      allowCustomValues
     ));
     return candidateGroupFilter;
   }
