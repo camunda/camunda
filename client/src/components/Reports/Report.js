@@ -82,10 +82,14 @@ export class Report extends React.Component {
         });
       },
       async (serverError) => {
-        this.setState({
-          report: serverError.reportDefinition,
-          serverError,
-        });
+        if (serverError.reportDefinition) {
+          this.setState({
+            report: serverError.reportDefinition,
+            serverError,
+          });
+        } else {
+          this.setState({serverError});
+        }
       }
     );
 

@@ -26,6 +26,7 @@ export default function Table({
   disablePagination,
   noHighlight,
   noData = <NoDataNotice type="info" />,
+  error,
   onScroll,
   fetchData = () => {},
   defaultPageSize = 20,
@@ -36,11 +37,10 @@ export default function Table({
   const columnWidths = useRef({});
   const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
-  const initialSorting = React.useMemo(() => formatSorting(sorting, resultType, columns), [
-    columns,
-    resultType,
-    sorting,
-  ]);
+  const initialSorting = React.useMemo(
+    () => formatSorting(sorting, resultType, columns),
+    [columns, resultType, sorting]
+  );
 
   const {
     getTableProps,
@@ -183,29 +183,31 @@ export default function Table({
           ))}
         </thead>
         <tbody {...getTableBodyProps()} onScroll={onScroll} ref={tbody}>
-          {page.map((row) => {
-            prepareRow(row);
-            return (
-              <tr {...row.getRowProps(row.original.__props)}>
-                {row.cells.map((cell) => {
-                  const props = cell.getCellProps();
-                  return (
-                    <td
-                      {...props}
-                      className={classnames(props.className, {
-                        noOverflow: cell.value?.type === Select,
-                      })}
-                    >
-                      {cell.render('Cell')}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
+          {!error &&
+            page.map((row) => {
+              prepareRow(row);
+              return (
+                <tr {...row.getRowProps(row.original.__props)}>
+                  {row.cells.map((cell) => {
+                    const props = cell.getCellProps();
+                    return (
+                      <td
+                        {...props}
+                        className={classnames(props.className, {
+                          noOverflow: cell.value?.type === Select,
+                        })}
+                      >
+                        {cell.render('Cell')}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
         </tbody>
       </table>
       {loading && <LoadingIndicator />}
+      {error && <div>{error}</div>}
       {empty && <div className="noData">{noData}</div>}
       {!disablePagination && !empty && (totalRows > defaultPageSize || totalEntries) && (
         <div className="tableFooter">

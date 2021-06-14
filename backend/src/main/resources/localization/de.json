@@ -419,7 +419,8 @@
         "variable": "Var",
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar"
-      }
+      },
+      "pageError": "Nur die ersten 10.000 Instanzen können angezeigt werden"
     },
     "progressBar": {
       "invalid": "Ungültige Konfiguration",
