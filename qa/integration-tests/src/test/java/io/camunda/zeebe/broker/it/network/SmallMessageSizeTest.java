@@ -14,6 +14,9 @@ import io.camunda.zeebe.broker.it.util.GrpcClientRule;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -59,16 +62,25 @@ public class SmallMessageSizeTest {
     final var processDefinitionKey = CLIENT_RULE.deployProcess(process(JOB_TYPE));
 
     processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .exists();
 
     // with variables that are greater than the message size
     for (int i = 0; i < VARIABLE_COUNT; i++) {
       CLIENT_RULE
           .getClient()
           .newSetVariablesCommand(processInstanceKey)
-          .variables(Map.of(String.valueOf(i), LARGE_TEXT))
+          .variables(Map.of(String.format("large-%d", i), LARGE_TEXT))
           .send()
           .join();
     }
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(v -> v.getValue().getName().startsWith("large"))
+                .limit(4))
+        .hasSize(4);
   }
 
   @Test
