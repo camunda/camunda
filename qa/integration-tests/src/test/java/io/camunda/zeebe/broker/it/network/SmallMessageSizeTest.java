@@ -27,11 +27,11 @@ public class SmallMessageSizeTest {
   private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(12);
   private static final String LARGE_TEXT =
       "x".repeat((int) (MAX_MESSAGE_SIZE.toBytes() / VARIABLE_COUNT));
+  private static final String JOB_TYPE = "acme";
 
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
-  private static final String JOB_TYPE = "acme";
 
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
