@@ -110,7 +110,7 @@
     <plugin.version.compiler>3.8.1</plugin.version.compiler>
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M5</plugin.version.failsafe>
-    <plugin.version.fmt>2.10</plugin.version.fmt>
+    <plugin.version.fmt>2.11</plugin.version.fmt>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.proto-backwards-compatibility>1.0.6
@@ -122,7 +122,7 @@
     <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
     <plugin.version.versions>2.8.1</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
-    <plugin.version.dependency>3.1.2</plugin.version.dependency>
+    <plugin.version.dependency>3.2.0</plugin.version.dependency>
     <plugin.version.spotbugs>4.2.3</plugin.version.spotbugs>
     <plugin.version.sonar>3.9.0.2155</plugin.version.sonar>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
