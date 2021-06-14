@@ -10,13 +10,11 @@ package io.camunda.zeebe.engine.state.message;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState.ProcessMessageSubscriptionVisitor;
 import io.camunda.zeebe.engine.state.message.TransientSubscriptionCommandState.CommandEntry;
-import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 
-final class TransientProcessMessageSubscriptionState
-    implements MutableTransientProcessMessageSubscriptionState {
+final class TransientProcessMessageSubscriptionState {
 
   private final TransientSubscriptionCommandState transientState =
       new TransientSubscriptionCommandState();
@@ -27,8 +25,7 @@ final class TransientProcessMessageSubscriptionState
     this.persistentState = persistentState;
   }
 
-  @Override
-  public void visitSubscriptionBefore(
+  final void visitSubscriptionBefore(
       final long deadline, final ProcessMessageSubscriptionVisitor visitor) {
 
     for (final CommandEntry commandEntry : transientState.getEntriesBefore(deadline)) {
@@ -41,11 +38,10 @@ final class TransientProcessMessageSubscriptionState
     }
   }
 
-  @Override
-  public final void updateSentTime(
-      final ProcessMessageSubscription subscription, final long commandSentTime) {
+  final void updateSentTime(
+      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
 
-    final var updatedEntry = buildCommandEntry(subscription.getRecord(), commandSentTime);
+    final var updatedEntry = buildCommandEntry(record, commandSentTime);
 
     transientState.updateCommandSentTime(updatedEntry);
   }
