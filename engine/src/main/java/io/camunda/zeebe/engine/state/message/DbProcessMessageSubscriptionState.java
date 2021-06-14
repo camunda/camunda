@@ -62,8 +62,17 @@ public final class DbProcessMessageSubscriptionState
   public void put(final long key, final ProcessMessageSubscriptionRecord record) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
+    final ProcessMessageSubscriptionRecord recordToSet;
+    if (processMessageSubscription.getRecord() == record) {
+      // clone record before calling reset on subscription
+      recordToSet = new ProcessMessageSubscriptionRecord();
+      recordToSet.wrap(record);
+    } else {
+      recordToSet = record;
+    }
+
     processMessageSubscription.reset();
-    processMessageSubscription.setKey(key).setRecord(record);
+    processMessageSubscription.setKey(key).setRecord(recordToSet);
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
 
