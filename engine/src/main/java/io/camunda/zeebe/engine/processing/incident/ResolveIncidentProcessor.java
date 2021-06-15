@@ -143,8 +143,13 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
               sideEffect.accept(sideEffects);
             },
-            failure ->
-                rejectResolveCommand(command, responseWriter, failure, RejectionType.NOT_FOUND));
+            failure -> {
+              final var message =
+                  String.format(
+                      "Expected to continue processing after incident %d resolved, but failed command not found",
+                      command.getKey());
+              throw new IllegalStateException(message, new IllegalStateException(failure));
+            });
   }
 
   private Either<String, TypedRecord<ProcessInstanceRecord>> getFailedCommand(
@@ -154,7 +159,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     if (elementInstance == null) {
       return Either.left(
           String.format(
-              "Expected to resolve incident with element instance %d, but element instance not found",
+              "Expected to find failed command for element instance %d, but element instance not found",
               elementInstanceKey));
     }
     return getFailedCommandIntent(elementInstance)
