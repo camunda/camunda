@@ -90,8 +90,11 @@ describe('Filters', () => {
   });
 
   it('should load the process and version fields', async () => {
+    const MOCK_HISTORY = createMemoryHistory({
+      initialEntries: ['/'],
+    });
     render(<Filters />, {
-      wrapper: getWrapper(),
+      wrapper: getWrapper(MOCK_HISTORY),
     });
 
     await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
@@ -102,6 +105,12 @@ describe('Filters', () => {
 
     expect(screen.getByLabelText('Process Version')).toBeEnabled();
     expect(screen.getByDisplayValue('Version 1')).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(MOCK_HISTORY.location.search).toBe(
+        '?process=bigVarProcess&version=1'
+      )
+    );
   });
 
   it('should load values from the URL', async () => {
@@ -135,6 +144,8 @@ describe('Filters', () => {
     expect(
       await screen.findByDisplayValue('Big variable process')
     ).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
+
     expect(await screen.findByDisplayValue('Version 1')).toBeInTheDocument();
     expect(
       await screen.findByDisplayValue(MOCK_PARAMS.flowNodeId)
@@ -213,28 +224,31 @@ describe('Filters', () => {
     userEvent.selectOptions(screen.getByLabelText('Process'), [
       'Big variable process',
     ]);
-    userEvent.type(
+    userEvent.paste(
       screen.getByLabelText('Instance Id(s) separated by space or comma'),
       MOCK_VALUES.ids
     );
-    userEvent.type(
+    userEvent.paste(
       screen.getByLabelText('Error Message'),
       MOCK_VALUES.errorMessage
     );
-    userEvent.type(
+    userEvent.paste(
       screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
       MOCK_VALUES.startDate
     );
-    userEvent.type(
+    userEvent.paste(
       screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
       MOCK_VALUES.endDate
     );
     userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
       MOCK_VALUES.flowNodeId,
     ]);
-    userEvent.type(screen.getByLabelText('Variable'), MOCK_VALUES.variableName);
-    userEvent.type(screen.getByLabelText('Value'), MOCK_VALUES.variableValue);
-    userEvent.type(
+    userEvent.paste(
+      screen.getByLabelText('Variable'),
+      MOCK_VALUES.variableName
+    );
+    userEvent.paste(screen.getByLabelText('Value'), MOCK_VALUES.variableValue);
+    userEvent.paste(
       screen.getByLabelText('Operation Id'),
       MOCK_VALUES.operationId
     );
@@ -243,118 +257,245 @@ describe('Filters', () => {
     userEvent.click(screen.getByLabelText('Completed'));
     userEvent.click(screen.getByLabelText('Canceled'));
 
-    expect(
-      Object.fromEntries(
-        new URLSearchParams(MOCK_HISTORY.location.search).entries()
-      )
-    ).toEqual(expect.objectContaining(MOCK_VALUES));
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(MOCK_HISTORY.location.search).entries()
+        )
+      ).toEqual(expect.objectContaining(MOCK_VALUES))
+    );
   });
 
-  it('should validate fields', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/'],
+  describe('Validations', () => {
+    it('should validate instance ids', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      expect(MOCK_HISTORY.location.search).toBe('');
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        'a'
+      );
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.clear(
+        screen.getByLabelText('Instance Id(s) separated by space or comma')
+      );
+
+      expect(
+        screen.queryByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).not.toBeInTheDocument();
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.clear(
+        screen.getByLabelText('Instance Id(s) separated by space or comma')
+      );
+
+      expect(
+        screen.queryByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).not.toBeInTheDocument();
     });
 
-    render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+    it('should validate start date', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.type(
+        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
+        'a'
+      );
+
+      expect(
+        screen.getByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
+
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.clear(screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'));
+
+      expect(
+        screen.queryByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).not.toBeInTheDocument();
+
+      userEvent.type(
+        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
+        '2021-05'
+      );
+
+      expect(
+        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
     });
 
-    expect(MOCK_HISTORY.location.search).toBe('');
+    it('should validate end date', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
 
-    userEvent.type(
-      screen.getByLabelText('Instance Id(s) separated by space or comma'),
-      'a'
-    );
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
 
-    expect(
-      await screen.findByTitle(
-        'Id has to be 16 to 19 digit numbers, separated by space or comma'
-      )
-    ).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    userEvent.clear(
-      screen.getByLabelText('Instance Id(s) separated by space or comma')
-    );
+      userEvent.type(
+        screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
+        'a'
+      );
 
-    expect(
-      screen.queryByTitle(
-        'Id has to be 16 to 19 digit numbers, separated by space or comma'
-      )
-    ).not.toBeInTheDocument();
+      expect(
+        screen.getByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
 
-    userEvent.type(
-      screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
-      'a'
-    );
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    expect(
-      await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+      userEvent.clear(screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'));
 
-    userEvent.clear(screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'));
+      expect(
+        screen.queryByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).not.toBeInTheDocument();
 
-    expect(
-      screen.queryByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).not.toBeInTheDocument();
+      userEvent.type(
+        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
+        '2021-05'
+      );
 
-    userEvent.type(screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'), 'a');
+      expect(
+        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
+    });
 
-    expect(
-      await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+    it('should validate variable name', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
 
-    userEvent.clear(screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'));
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    expect(
-      screen.queryByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
-    ).not.toBeInTheDocument();
+      userEvent.type(screen.getByLabelText('Value'), '"someValidValue"');
 
-    userEvent.type(screen.getByLabelText('Variable'), 'aRandomVariable');
+      expect(
+        await screen.findByTitle('Variable has to be filled')
+      ).toBeInTheDocument();
 
-    expect(
-      await screen.findByTitle('Value has to be JSON')
-    ).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    userEvent.clear(screen.getByLabelText('Variable'));
+      userEvent.clear(screen.getByLabelText('Value'));
+      userEvent.type(screen.getByLabelText('Value'), 'somethingInvalid');
 
-    expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTitle(
+          'Variable has to be filled and Value has to be JSON'
+        )
+      ).toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText('Value'), 'a');
+      expect(MOCK_HISTORY.location.search).toBe('');
+    });
 
-    expect(
-      await screen.findByTitle('Value has to be JSON')
-    ).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+    it('should validate variable value', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
 
-    userEvent.clear(screen.getByLabelText('Value'));
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
+      userEvent.type(screen.getByLabelText('Variable'), 'aRandomVariable');
 
-    userEvent.type(screen.getByLabelText('Value'), 'true');
+      expect(
+        await screen.findByTitle('Value has to be JSON')
+      ).toBeInTheDocument();
 
-    expect(
-      await screen.findByTitle('Variable has to be filled')
-    ).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    userEvent.clear(screen.getByLabelText('Value'));
+      userEvent.clear(screen.getByLabelText('Variable'));
 
-    expect(
-      screen.queryByTitle('Variable has to be filled')
-    ).not.toBeInTheDocument();
+      expect(
+        screen.queryByTitle('Value has to be JSON')
+      ).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByLabelText('Operation Id'), 'a');
+      userEvent.type(screen.getByLabelText('Value'), 'invalidValue');
 
-    expect(await screen.findByTitle('Id has to be a UUID')).toBeInTheDocument();
-    expect(MOCK_HISTORY.location.search).toBe('');
+      expect(
+        await screen.findByTitle(
+          'Variable has to be filled and Value has to be JSON'
+        )
+      ).toBeInTheDocument();
+      expect(MOCK_HISTORY.location.search).toBe('');
 
-    userEvent.clear(screen.getByLabelText('Operation Id'));
+      userEvent.type(screen.getByLabelText('Variable'), 'aRandomVariable');
 
-    expect(screen.queryByTitle('Id has to be a UUID')).not.toBeInTheDocument();
+      expect(
+        await screen.findByTitle('Value has to be JSON')
+      ).toBeInTheDocument();
+
+      expect(MOCK_HISTORY.location.search).toBe('');
+    });
+
+    it('should validate operation id', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.type(screen.getByLabelText('Operation Id'), 'g');
+
+      expect(screen.getByTitle('Id has to be a UUID')).toBeInTheDocument();
+
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.clear(screen.getByLabelText('Operation Id'));
+
+      expect(
+        screen.queryByTitle('Id has to be a UUID')
+      ).not.toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('Operation Id'), 'a');
+
+      expect(
+        await screen.findByTitle('Id has to be a UUID')
+      ).toBeInTheDocument();
+    });
   });
 
   it('should enable the reset button', async () => {
@@ -373,6 +514,10 @@ describe('Filters', () => {
 
     userEvent.click(screen.getByLabelText('Incidents'));
 
+    await waitFor(() =>
+      expect(MOCK_HISTORY.location.search).toBe('?active=true')
+    );
+
     expect(
       screen.getByRole('button', {
         name: 'Reset Filters',
@@ -380,54 +525,392 @@ describe('Filters', () => {
     ).toBeEnabled();
   });
 
-  it('should submit without delay', async () => {
-    const MOCK_HISTORY = createMemoryHistory({
-      initialEntries: ['/'],
-    });
-    render(<Filters />, {
-      wrapper: getWrapper(MOCK_HISTORY),
+  describe('Interaction with other fields during validation', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
     });
 
-    await waitFor(() => expect(screen.getByLabelText('Process')).toBeEnabled());
-    await waitFor(() =>
-      expect(screen.getByLabelText('Flow Node')).toBeEnabled()
-    );
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    });
 
-    userEvent.click(screen.getByLabelText('Active'));
-    expect(MOCK_HISTORY.location.search).toBe('?active=true');
+    it('validation for Instance IDs field should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
 
-    userEvent.click(screen.getByLabelText('Incidents'));
-    expect(MOCK_HISTORY.location.search).toBe('?active=true&incidents=true');
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
 
-    userEvent.click(screen.getByLabelText('Completed'));
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true'
-    );
+      userEvent.type(screen.getByLabelText('Operation Id'), 'a');
 
-    userEvent.click(screen.getByLabelText('Canceled'));
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true'
-    );
+      expect(
+        await screen.findByTitle('Id has to be a UUID')
+      ).toBeInTheDocument();
 
-    userEvent.selectOptions(screen.getByLabelText('Process'), [
-      'complexProcess',
-    ]);
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true&process=complexProcess&version=3'
-    );
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
 
-    userEvent.selectOptions(screen.getByLabelText('Process Version'), [
-      'Version 1',
-    ]);
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true&process=complexProcess&version=1'
-    );
+      expect(screen.getByTitle('Id has to be a UUID')).toBeInTheDocument();
 
-    userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
-      'ServiceTask_0kt6c5i',
-    ]);
-    expect(MOCK_HISTORY.location.search).toBe(
-      '?active=true&incidents=true&completed=true&canceled=true&process=complexProcess&version=1&flowNodeId=ServiceTask_0kt6c5i'
-    );
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      expect(screen.getByTitle('Id has to be a UUID')).toBeInTheDocument();
+    });
+
+    it('validation for Operation ID field should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('Operation Id'), 'a');
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByTitle('Id has to be a UUID')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('validation for Start Date field should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.type(
+        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
+        '2021'
+      );
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('validation for End Date field should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.type(
+        screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
+        'a'
+      );
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('validation for Variable Value field should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('Value'), 'a');
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByTitle(
+          'Variable has to be filled and Value has to be JSON'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('validation for Variable Name field should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('Variable'), 'a');
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        await screen.findByTitle('Value has to be JSON')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('validation for Process, Version and Flow Node fields should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.selectOptions(screen.getByLabelText('Process'), [
+        'complexProcess',
+      ]);
+
+      expect(screen.getByLabelText('Process Version')).toBeEnabled();
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.selectOptions(screen.getByLabelText('Process Version'), [
+        'Version 2',
+      ]);
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.selectOptions(screen.getByLabelText('Flow Node'), [
+        'ServiceTask_0kt6c5i',
+      ]);
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('clicking checkboxes should not affect other fields validation errors', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Instance Id(s) separated by space or comma'),
+        '1'
+      );
+
+      expect(
+        await screen.findByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByLabelText('Active'));
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByLabelText('Incidents'));
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByLabelText('Completed'));
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByLabelText('Canceled'));
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByLabelText('Running Instances'));
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+
+      userEvent.click(screen.getByLabelText('Finished Instances'));
+
+      expect(
+        screen.getByTitle(
+          'Id has to be 16 to 19 digit numbers, separated by space or comma'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('should continue validation on blur', async () => {
+      render(<Filters />, {
+        wrapper: getWrapper(),
+      });
+
+      userEvent.type(
+        screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss'),
+        '2021'
+      );
+
+      userEvent.type(
+        screen.getByLabelText('End Date YYYY-MM-DD hh:mm:ss'),
+        '2021'
+      );
+
+      await waitFor(() =>
+        expect(
+          screen.queryAllByTitle('Date has to be in format YYYY-MM-DD hh:mm:ss')
+        ).toHaveLength(2)
+      );
+    });
   });
 });

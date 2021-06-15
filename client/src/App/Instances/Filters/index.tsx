@@ -22,16 +22,20 @@ import Textarea from 'modules/components/Textarea';
 import {Input} from 'modules/components/Input';
 import {CheckboxGroup} from './CheckboxGroup';
 import Button from 'modules/components/Button';
+import {InjectAriaInvalid} from './InjectAriaInvalid';
 import {AutoSubmit} from './AutoSubmit';
-import {isFieldValid} from 'modules/utils/isFieldValid';
 import {Error, VariableError} from './Error';
 import {
-  submissionValidator,
-  handleIdsFieldValidation,
-  handleStartDateFieldValidation,
-  handleEndDateFieldValidation,
-  handleVariableValueFieldValidation,
-  handleOperationIdFieldValidation,
+  validateDateCharacters,
+  validateDateComplete,
+  validateOperationIdCharacters,
+  validateOperationIdComplete,
+  validateVariableNameComplete,
+  validateVariableValueComplete,
+  mergeValidators,
+  validateIdsCharacters,
+  validateIdsNotTooLong,
+  validatesIdsComplete,
 } from './validators';
 import {
   getFilters,
@@ -65,12 +69,6 @@ const Filters: React.FC = () => {
     <FiltersPanel>
       <Form<FiltersType>
         onSubmit={(values) => {
-          const errors = submissionValidator(values);
-
-          if (errors !== null) {
-            return errors;
-          }
-
           setFiltersToURL(values);
         }}
         initialValues={getFilters(history.location.search)}
@@ -96,47 +94,69 @@ const Filters: React.FC = () => {
                 <ProcessVersionField />
               </Row>
               <Row>
-                <Field name="ids" validate={handleIdsFieldValidation}>
-                  {({input, meta}) => (
-                    <Textarea
-                      {...input}
-                      aria-invalid={!isFieldValid(meta)}
-                      placeholder="Instance Id(s) separated by space or comma"
-                    />
+                <Field
+                  name="ids"
+                  validate={mergeValidators(
+                    validateIdsCharacters,
+                    validateIdsNotTooLong,
+                    validatesIdsComplete
+                  )}
+                >
+                  {({input}) => (
+                    <InjectAriaInvalid name={input.name}>
+                      <Textarea
+                        {...input}
+                        placeholder="Instance Id(s) separated by space or comma"
+                      />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
                 <Error name="ids" />
               </Row>
+
               <Row>
                 <Field name="errorMessage">
                   {({input}) => (
-                    <Input {...input} placeholder="Error Message" />
+                    <InjectAriaInvalid name={input.name}>
+                      <Input {...input} placeholder="Error Message" />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
               </Row>
               <Row>
                 <Field
                   name="startDate"
-                  validate={handleStartDateFieldValidation}
+                  validate={mergeValidators(
+                    validateDateCharacters,
+                    validateDateComplete
+                  )}
                 >
-                  {({input, meta}) => (
-                    <Input
-                      {...input}
-                      aria-invalid={!isFieldValid(meta)}
-                      placeholder="Start Date YYYY-MM-DD hh:mm:ss"
-                    />
+                  {({input}) => (
+                    <InjectAriaInvalid name={input.name}>
+                      <Input
+                        {...input}
+                        placeholder="Start Date YYYY-MM-DD hh:mm:ss"
+                      />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
                 <Error name="startDate" />
               </Row>
               <Row>
-                <Field name="endDate" validate={handleEndDateFieldValidation}>
-                  {({input, meta}) => (
-                    <Input
-                      {...input}
-                      aria-invalid={!isFieldValid(meta)}
-                      placeholder="End Date YYYY-MM-DD hh:mm:ss"
-                    />
+                <Field
+                  name="endDate"
+                  validate={mergeValidators(
+                    validateDateCharacters,
+                    validateDateComplete
+                  )}
+                >
+                  {({input}) => (
+                    <InjectAriaInvalid name={input.name}>
+                      <Input
+                        {...input}
+                        placeholder="End Date YYYY-MM-DD hh:mm:ss"
+                      />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
                 <Error name="endDate" />
@@ -145,43 +165,48 @@ const Filters: React.FC = () => {
                 <FlowNodeField />
               </Row>
               <VariableRow>
-                <Field name="variableName">
-                  {({input, meta}) => (
-                    <Input
-                      {...input}
-                      onChange={(
-                        event: React.ChangeEvent<HTMLInputElement>
-                      ) => {
-                        input.onChange(event);
+                <Field
+                  name="variableName"
+                  validate={validateVariableNameComplete}
+                >
+                  {({input}) => (
+                    <InjectAriaInvalid name={input.name}>
+                      <Input
+                        {...input}
+                        onChange={(
+                          event: React.ChangeEvent<HTMLInputElement>
+                        ) => {
+                          input.onChange(event);
 
-                        if (event.target.value === '') {
-                          form.submit();
-                        }
-                      }}
-                      aria-invalid={!isFieldValid(meta)}
-                      placeholder="Variable"
-                    />
+                          if (event.target.value === '') {
+                            form.submit();
+                          }
+                        }}
+                        placeholder="Variable"
+                      />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
                 <Field
                   name="variableValue"
-                  validate={handleVariableValueFieldValidation}
+                  validate={validateVariableValueComplete}
                 >
-                  {({input, meta}) => (
-                    <Input
-                      {...input}
-                      onChange={(
-                        event: React.ChangeEvent<HTMLInputElement>
-                      ) => {
-                        input.onChange(event);
+                  {({input}) => (
+                    <InjectAriaInvalid name={input.name}>
+                      <Input
+                        {...input}
+                        onChange={(
+                          event: React.ChangeEvent<HTMLInputElement>
+                        ) => {
+                          input.onChange(event);
 
-                        if (event.target.value === '') {
-                          form.submit();
-                        }
-                      }}
-                      aria-invalid={!isFieldValid(meta)}
-                      placeholder="Value"
-                    />
+                          if (event.target.value === '') {
+                            form.submit();
+                          }
+                        }}
+                        placeholder="Value"
+                      />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
                 <VariableError names={['variableName', 'variableValue']} />
@@ -189,14 +214,15 @@ const Filters: React.FC = () => {
               <Row>
                 <Field
                   name="operationId"
-                  validate={handleOperationIdFieldValidation}
+                  validate={mergeValidators(
+                    validateOperationIdCharacters,
+                    validateOperationIdComplete
+                  )}
                 >
-                  {({input, meta}) => (
-                    <Input
-                      {...input}
-                      aria-invalid={!isFieldValid(meta)}
-                      placeholder="Operation Id"
-                    />
+                  {({input}) => (
+                    <InjectAriaInvalid name={input.name}>
+                      <Input {...input} placeholder="Operation Id" />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
                 <Error name="operationId" />

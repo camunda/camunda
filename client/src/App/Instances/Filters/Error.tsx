@@ -4,9 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useField} from 'react-final-form';
-
-import {isFieldValid} from 'modules/utils/isFieldValid';
+import {useFieldError} from 'modules/hooks/useFieldError';
 import {Container, WarningIcon} from './Error.styled';
 
 type ErrorProps = {
@@ -14,11 +12,11 @@ type ErrorProps = {
 };
 
 const Error: React.FC<ErrorProps> = ({name}) => {
-  const {meta} = useField(name);
+  const error = useFieldError(name);
 
-  return isFieldValid(meta) ? null : (
+  return error === undefined ? null : (
     <Container>
-      <WarningIcon title={meta.submitError ?? meta.error} />
+      <WarningIcon title={error} />
     </Container>
   );
 };
@@ -29,20 +27,13 @@ type VariableErrorProps = {
 
 const VariableError: React.FC<VariableErrorProps> = ({names}) => {
   const [firstName, secondName] = names;
-  const firstField = useField(firstName);
-  const secondField = useField(secondName);
+  const firstFieldError = useFieldError(firstName);
+  const secondFieldError = useFieldError(secondName);
 
-  return isFieldValid(firstField.meta) &&
-    isFieldValid(secondField.meta) ? null : (
+  return firstFieldError === undefined &&
+    secondFieldError === undefined ? null : (
     <Container>
-      <WarningIcon
-        title={
-          firstField.meta.submitError ??
-          secondField.meta.submitError ??
-          firstField.meta.error ??
-          secondField.meta.error
-        }
-      />
+      <WarningIcon title={firstFieldError ?? secondFieldError} />
     </Container>
   );
 };

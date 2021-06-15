@@ -6,14 +6,12 @@
 
 import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-import {Errors, VariablePair} from './types';
 import {parseIds, parseFilterDate, FiltersType} from 'modules/utils/filter';
 import {isValid} from 'date-fns';
 
 const ERRORS = {
   ids: 'Id has to be 16 to 19 digit numbers, separated by space or comma',
-  startDate: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
-  endDate: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
+  date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
   operationId: 'Id has to be a UUID',
   variables: {
     nameUnfilled: 'Variable has to be filled',
@@ -22,148 +20,179 @@ const ERRORS = {
   },
 } as const;
 
-function submissionValidator(filters: FiltersType): Errors | null {
-  const {ids, startDate, endDate, operationId, variableName, variableValue} =
-    filters;
-  const errors: Errors = Object.fromEntries(
-    Object.entries({
-      ids: validateIds(ids),
-      startDate: validateStartDate(startDate),
-      endDate: validateEndDate(endDate),
-      operationId: validateOperation(operationId),
-      variableName: validateVariableName({
-        variableName,
-        variableValue,
-      }),
-      variableValue: validateVariableValue({
-        variableName,
-        variableValue,
-      }),
-    }).filter(([, value]) => value !== undefined)
-  );
+const VALIDATION_TIMEOUT = 750;
 
-  return Object.keys(errors).length === 0 ? null : errors;
-}
-
-function validateIds(value: FiltersType['ids'] = '') {
-  const ID_PATTERN = /^[0-9]{16,19}$/;
-  const isValid =
-    value === '' || parseIds(value).every((id) => ID_PATTERN.test(id));
-
-  return isValid ? undefined : ERRORS.ids;
-}
-
-function validateStartDate(value: FiltersType['startDate'] = '') {
-  return value === '' || isDateComplete(value.trim())
-    ? undefined
-    : ERRORS.startDate;
-}
-
-function validateEndDate(value: FiltersType['endDate'] = '') {
-  return value === '' || isDateComplete(value.trim())
-    ? undefined
-    : ERRORS.endDate;
-}
-
-function isDateComplete(date: string) {
-  return isValid(parseFilterDate(date));
-}
-
-function validateOperation(value: FiltersType['operationId'] = '') {
-  const UUID_PATTERN =
-    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/;
-
-  return value === '' || UUID_PATTERN.test(value)
-    ? undefined
-    : ERRORS.operationId;
-}
-
-function validateVariableName(
-  {variableName = '', variableValue = ''}: VariablePair = {
-    variableName: '',
-    variableValue: '',
-  }
+function promisifyValidator(
+  validator: FieldValidator<string | undefined>,
+  debounceTimeout: number
 ) {
-  if (variableName === '' && variableValue === '') {
-    return undefined;
-  }
+  return (...params: Parameters<FieldValidator<string | undefined>>) => {
+    const errorMessage = validator(...params);
+    if (errorMessage === undefined) {
+      return undefined;
+    }
 
-  if (isValidJSON(variableValue)) {
-    return variableName === '' ? ERRORS.variables.nameUnfilled : undefined;
-  }
-
-  return variableName === '' ? ERRORS.variables.bothInvalid : undefined;
-}
-
-function validateVariableValue(
-  {variableName = '', variableValue = ''}: VariablePair = {
-    variableName: '',
-    variableValue: '',
-  }
-) {
-  if (variableName === '' && variableValue === '') {
-    return undefined;
-  }
-
-  if (variableName === '') {
-    return variableValue === '' || isValidJSON(variableValue)
-      ? undefined
-      : ERRORS.variables.bothInvalid;
-  }
-
-  return isValidJSON(variableValue) ? undefined : ERRORS.variables.valueInvalid;
-}
-
-const handleIdsFieldValidation: FieldValidator<FiltersType['ids']> = (
-  value = ''
-) => {
-  const isValid =
-    value === '' ||
-    /^[0-9]+$/g.test(value.replace(/,/g, '').replace(/\s/g, ''));
-
-  return isValid ? undefined : ERRORS.ids;
-};
-
-function removeValidDateCharacters(value: string) {
-  return value.replace(/[0-9]|\s|:|-/g, '');
-}
-
-const handleStartDateFieldValidation: FieldValidator<FiltersType['startDate']> =
-  (value = '') => {
-    return removeValidDateCharacters(value) === ''
-      ? undefined
-      : ERRORS.startDate;
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(errorMessage);
+      }, debounceTimeout);
+    });
   };
+}
 
-const handleEndDateFieldValidation: FieldValidator<FiltersType['endDate']> = (
+const isPromise = (value: any) => {
+  return Boolean(value && typeof value.then === 'function');
+};
+function mergeValidators(
+  ...validators: Array<FieldValidator<string | undefined>>
+) {
+  return (
+    ...validateParams: Parameters<FieldValidator<string | undefined>>
+  ) => {
+    const executedValidators = validators.map((validator) =>
+      validator(...validateParams)
+    );
+    const syncValidators = executedValidators.filter(
+      (validator) => !isPromise(validator)
+    );
+    const asyncValidators = executedValidators.filter((validator) =>
+      isPromise(validator)
+    );
+
+    const immediateError = syncValidators.reduce(
+      (error, result) => error ?? result,
+      undefined
+    );
+
+    if (immediateError !== undefined) {
+      return immediateError;
+    }
+
+    if (asyncValidators.length === 0) {
+      return undefined;
+    }
+
+    return new Promise((resolve) => {
+      asyncValidators.forEach((result) => resolve(result));
+    });
+  };
+}
+
+const validateIdsCharacters: FieldValidator<FiltersType['ids']> = (
   value = ''
 ) => {
-  return removeValidDateCharacters(value) === '' ? undefined : ERRORS.endDate;
+  if (
+    value !== '' &&
+    !/^[0-9]+$/g.test(value.replace(/,/g, '').replace(/\s/g, ''))
+  ) {
+    return ERRORS.ids;
+  }
 };
 
-const handleVariableValueFieldValidation: FieldValidator<
-  FiltersType['variableValue']
+const validateIdsNotTooLong: FieldValidator<FiltersType['ids']> = (
+  value = ''
+) => {
+  const hasTooLongIds = parseIds(value).some((item) => item.length > 19);
+  if (hasTooLongIds) {
+    return ERRORS.ids;
+  }
+};
+
+const validatesIdsComplete: FieldValidator<FiltersType['ids']> =
+  promisifyValidator((value = '') => {
+    if (
+      value !== '' &&
+      !parseIds(value).every((id) => /^[0-9]{16,19}$/.test(id))
+    ) {
+      return ERRORS.ids;
+    }
+  }, VALIDATION_TIMEOUT);
+
+const validateDateComplete: FieldValidator<
+  FiltersType['startDate'] | FiltersType['endDate']
+> = promisifyValidator((value = '') => {
+  if (value !== '' && !isValid(parseFilterDate(value.trim()))) {
+    return ERRORS.date;
+  }
+}, VALIDATION_TIMEOUT);
+
+const validateDateCharacters: FieldValidator<
+  FiltersType['startDate'] | FiltersType['endDate']
 > = (value = '') => {
-  return value === '' || isValidJSON(value)
-    ? undefined
-    : 'Value has to be JSON';
+  if (value !== '' && value.replace(/[0-9]|\s|:|-/g, '') !== '') {
+    return ERRORS.date;
+  }
 };
 
-const handleOperationIdFieldValidation: FieldValidator<
+const validateVariableNameComplete: FieldValidator<
+  FiltersType['variableName']
+> = promisifyValidator(
+  (variableName = '', allValues: {variableValue?: string}) => {
+    const variableValue = allValues.variableValue ?? '';
+
+    if ((variableName === '' && variableValue === '') || variableName !== '') {
+      return undefined;
+    }
+
+    return isValidJSON(variableValue)
+      ? `${ERRORS.variables.nameUnfilled}`
+      : `${ERRORS.variables.bothInvalid}`;
+  },
+  VALIDATION_TIMEOUT
+);
+
+const validateVariableValueComplete: FieldValidator<
+  FiltersType['variableValue']
+> = promisifyValidator(
+  (variableValue = '', allValues: {variableName?: string}) => {
+    const variableName = allValues.variableName ?? '';
+
+    if (variableName === '' && variableValue === '') {
+      return undefined;
+    }
+
+    if (variableName !== '' && isValidJSON(variableValue)) {
+      return undefined;
+    }
+
+    if (!isValidJSON(variableValue)) {
+      return variableName === ''
+        ? `${ERRORS.variables.bothInvalid}`
+        : `${ERRORS.variables.valueInvalid}`;
+    }
+  },
+  VALIDATION_TIMEOUT
+);
+
+const validateOperationIdCharacters: FieldValidator<
   FiltersType['operationId']
 > = (value = '') => {
-  const UUID_PATTERN = /^[a-f0-9-]{1,36}/;
-
-  return value === '' || UUID_PATTERN.test(value)
-    ? undefined
-    : ERRORS.operationId;
+  if (value !== '' && !/^[a-f0-9-]{1,36}/.test(value)) {
+    return ERRORS.operationId;
+  }
 };
 
+const validateOperationIdComplete: FieldValidator<FiltersType['operationId']> =
+  promisifyValidator((value = '') => {
+    if (
+      value !== '' &&
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$/.test(
+        value
+      )
+    ) {
+      return ERRORS.operationId;
+    }
+  }, VALIDATION_TIMEOUT);
+
 export {
-  submissionValidator,
-  handleIdsFieldValidation,
-  handleStartDateFieldValidation,
-  handleEndDateFieldValidation,
-  handleVariableValueFieldValidation,
-  handleOperationIdFieldValidation,
+  validateIdsCharacters,
+  validateIdsNotTooLong,
+  validatesIdsComplete,
+  validateDateCharacters,
+  validateDateComplete,
+  validateOperationIdCharacters,
+  validateOperationIdComplete,
+  validateVariableNameComplete,
+  validateVariableValueComplete,
+  mergeValidators,
 };
