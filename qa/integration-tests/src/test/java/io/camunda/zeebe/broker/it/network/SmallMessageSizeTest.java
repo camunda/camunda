@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -29,7 +30,6 @@ public class SmallMessageSizeTest {
   private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(12);
   private static final String LARGE_TEXT =
       "x".repeat((int) (MAX_MESSAGE_SIZE.toBytes() / VARIABLE_COUNT));
-  private static final String JOB_TYPE = "acme";
 
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
@@ -43,15 +43,17 @@ public class SmallMessageSizeTest {
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
   private long processInstanceKey;
+  private String jobType;
 
   @Before
   public void givenProcessWithLargeVariables() {
     // given a process with a job
+    jobType = UUID.randomUUID().toString();
     final var processDefinitionKey =
         CLIENT_RULE.deployProcess(
-            Bpmn.createExecutableProcess("process")
+            Bpmn.createExecutableProcess("PROCESS_" + jobType)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
                 .endEvent()
                 .done());
 
@@ -61,6 +63,7 @@ public class SmallMessageSizeTest {
             () ->
                 RecordingExporter.jobRecords(JobIntent.CREATED)
                     .withProcessInstanceKey(processInstanceKey)
+                    .withType(jobType)
                     .exists());
 
     // with variables that are greater than the message size
@@ -90,7 +93,7 @@ public class SmallMessageSizeTest {
         CLIENT_RULE
             .getClient()
             .newActivateJobsCommand()
-            .jobType(JOB_TYPE)
+            .jobType(jobType)
             .maxJobsToActivate(1)
             .send()
             .join(10, TimeUnit.SECONDS);
@@ -107,7 +110,7 @@ public class SmallMessageSizeTest {
         CLIENT_RULE
             .getClient()
             .newActivateJobsCommand()
-            .jobType(JOB_TYPE)
+            .jobType(jobType)
             .maxJobsToActivate(1)
             .fetchVariables("0")
             .send()
