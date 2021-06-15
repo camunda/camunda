@@ -5249,10 +5249,10 @@ chownr@^2.0.0:
   resolved "https://registry.yarnpkg.com/chownr/-/chownr-2.0.0.tgz#15bfbe53d2eab4cf70f18a8cd68ebe5b3cb1dece"
   integrity sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ==
 
-chromatic@^5.8.3:
-  version "5.8.3"
-  resolved "https://registry.yarnpkg.com/chromatic/-/chromatic-5.8.3.tgz#9dcce827be5e87760afb7574bc4e7b388db4ae91"
-  integrity sha512-zTLQGhlGO/bz7LNbEv2qXtarE93aG7vz5CnYNPukhyE1LK2LZaPdzTgaWU5Ah+7ZFPQGFMMAmJ6I6fU4WCUnYA==
+chromatic@^5.9.1:
+  version "5.9.1"
+  resolved "https://registry.yarnpkg.com/chromatic/-/chromatic-5.9.1.tgz#6f61053f9926bf1d084fef8f6e18aa401463ac7d"
+  integrity sha512-NsNQRTJKwNTs3e+76d0AurOuOmBZ367w+Ht3Y/x7bYCvZMV20TiM/uYcy3rAW3uvGXMoPQatk/odtT2+vmE1gw==
   dependencies:
     "@actions/core" "^1.2.4"
     "@actions/github" "^4.0.0"
@@ -5268,6 +5268,7 @@ chromatic@^5.8.3:
     execa "^5.0.0"
     fake-tag "^2.0.0"
     fs-extra "^9.1.0"
+    https-proxy-agent "^5.0.0"
     jsonfile "^6.0.1"
     junit-report-builder "2.1.0"
     listr "0.14.3"
