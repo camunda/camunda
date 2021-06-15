@@ -74,21 +74,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    final long incidentKey = command.getKey();
+    final long key = command.getKey();
 
-    final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
-    if (incidentRecord == null) {
-      final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, incidentKey);
+    final var incident = incidentState.getIncidentRecord(key);
+    if (incident == null) {
+      final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
       rejectResolveCommand(command, responseWriter, errorMessage, RejectionType.NOT_FOUND);
       return;
     }
 
-    stateWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
-    responseWriter.writeEventOnCommand(
-        incidentKey, IncidentIntent.RESOLVED, incidentRecord, command);
+    stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
+    responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
     // if it fails, a new incident is raised
-    attemptToResolveIncident(command, responseWriter, streamWriter, sideEffect, incidentRecord);
+    attemptToContinueProcessProcessing(command, responseWriter, streamWriter, sideEffect, incident);
   }
 
   private void rejectResolveCommand(
@@ -101,31 +100,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
   }
 
-  private void attemptToResolveIncident(
+  private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect,
-      final IncidentRecord incidentRecord) {
-    final long jobKey = incidentRecord.getJobKey();
+      final IncidentRecord incident) {
+    final long jobKey = incident.getJobKey();
     final boolean isJobIncident = jobKey > 0;
 
     if (isJobIncident) {
       return;
     }
 
-    attemptToContinueProcessProcessing(
-        command, responseWriter, streamWriter, sideEffect, incidentRecord);
-  }
-
-  private void attemptToContinueProcessProcessing(
-      final TypedRecord<IncidentRecord> command,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect,
-      final IncidentRecord incidentRecord) {
-
-    getFailedCommand(incidentRecord)
+    getFailedCommand(incident)
         .ifRightOrLeft(
             failedCommand -> {
               sideEffects.clear();
