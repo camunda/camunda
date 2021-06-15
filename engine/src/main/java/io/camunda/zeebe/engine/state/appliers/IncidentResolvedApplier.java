@@ -12,10 +12,14 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import java.util.EnumSet;
+import java.util.Set;
 
 final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
+
+  private static final Set<State> RESOLVABLE_JOB_STATES =
+      EnumSet.of(State.FAILED, State.ERROR_THROWN);
 
   private final MutableIncidentState incidentState;
   private final MutableJobState jobState;
@@ -31,9 +35,9 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
     final var jobKey = value.getJobKey();
     if (jobKey > 0) {
       // incident belonged to job
-      final State stateOfJob = jobState.getState(jobKey);
-      if (stateOfJob == State.FAILED) {
-        final JobRecord job = jobState.getJob(jobKey);
+      final var stateOfJob = jobState.getState(jobKey);
+      if (RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
+        final var job = jobState.getJob(jobKey);
         jobState.resolve(jobKey, job);
       }
     }
