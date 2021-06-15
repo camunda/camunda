@@ -21,7 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.Lists;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
 import io.atomix.utils.Builder;
 import io.atomix.utils.net.Address;
 import java.util.Collection;
@@ -193,12 +192,10 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
    * Sets the cluster membership protocol.
    *
    * <p>The membership protocol is responsible for determining the active set of members in the
-   * cluster, replicating member metadata, and detecting failures. The default is {@link
-   * HeartbeatMembershipProtocol}.
+   * cluster, replicating member metadata, and detecting failures.
    *
    * @param protocol the cluster membership protocol
    * @return the cluster builder
-   * @see HeartbeatMembershipProtocol
    * @see io.atomix.cluster.protocol.SwimMembershipProtocol
    */
   public AtomixClusterBuilder withMembershipProtocol(final GroupMembershipProtocol protocol) {

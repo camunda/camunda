@@ -34,8 +34,7 @@ import io.atomix.cluster.impl.DefaultNodeDiscoveryService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.ManagedClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
-import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
-import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
+import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
@@ -104,7 +103,7 @@ public class DefaultClusterEventServiceTest {
             new DefaultNodeDiscoveryService(
                 bootstrapService1, localMember, new BootstrapDiscoveryProvider(bootstrapLocations)),
             bootstrapService1,
-            new HeartbeatMembershipProtocol(new HeartbeatMembershipProtocolConfig()));
+            SwimMembershipProtocol.builder().build());
     managedMemberShipServices.put(memberId, managedClusterMembershipService);
     managedClusterMembershipService.addListener(event -> membersDiscovered.countDown());
     final ClusterMembershipService clusterMembershipService =
