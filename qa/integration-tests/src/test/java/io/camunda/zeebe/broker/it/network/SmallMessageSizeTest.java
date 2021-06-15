@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -55,9 +56,12 @@ public class SmallMessageSizeTest {
                 .done());
 
     processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .exists();
+    Awaitility.await("job CREATED")
+        .until(
+            () ->
+                RecordingExporter.jobRecords(JobIntent.CREATED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .exists());
 
     // with variables that are greater than the message size
     for (int i = 0; i < VARIABLE_COUNT; i++) {
@@ -68,12 +72,15 @@ public class SmallMessageSizeTest {
           .send()
           .join();
     }
-    assertThat(
-            RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .filter(v -> v.getValue().getName().startsWith("large"))
-                .limit(4))
-        .hasSize(4);
+    Awaitility.await("large variables CREATED")
+        .until(
+            () ->
+                RecordingExporter.variableRecords(VariableIntent.CREATED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .filter(v -> v.getValue().getName().startsWith("large"))
+                    .limit(4)
+                    .count(),
+            n -> n == 4);
   }
 
   @Test
