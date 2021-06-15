@@ -868,14 +868,49 @@
         "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
         "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
       },
+      "state": {
+        "modalPretext": {
+          "instanceState": "Nur Instanzen mit diesem Status anzeigen:",
+          "incidentInstances": "Nur Instanzen anzeigen mit…",
+          "incident": "Nur Daten von Prozessknotenanzeigen mit…",
+          "flowNodeStatus": "Nur Prozessknoten mit diesem Status anzeigen:"
+        },
+        "instancesOnly": "Nur <b>{type}</b> Instanzen",
+        "flowNodesOnly": "Nur <b>{type}</b> Prozessknoten",
+        "incidents": "<b>{type}</b> Zwischenfälle",
+        "previewLabels": {
+          "runningInstancesOnly": "laufende",
+          "completedInstancesOnly": "abgeschlossene",
+          "canceledInstancesOnly": "abgebrochene",
+          "nonCanceledInstancesOnly": "nicht abgebrochene",
+          "suspendedInstancesOnly": "suspendierte",
+          "nonSuspendedInstancesOnly": "nicht suspendierte",
+          "runningFlowNodesOnly": "laufende",
+          "completedFlowNodesOnly": "abgeschlossene",
+          "canceledFlowNodesOnly": "abgebrochene",
+          "completedOrCanceledFlowNodesOnly": "abgeschlossene oder abgebrochene",
+          "includesOpenIncident": "Offene",
+          "includesResolvedIncident": "Gelöste",
+          "doesNotIncludeIncident": "Keine"
+        },
+        "modalLabels": {
+          "runningInstancesOnly": "Laufend",
+          "completedInstancesOnly": "Abgeschlossen",
+          "canceledInstancesOnly": "Abgebrochen",
+          "nonCanceledInstancesOnly": "Nicht Abgebrochen",
+          "suspendedInstancesOnly": "Suspendiert",
+          "nonSuspendedInstancesOnly": "Nicht Suspendiert",
+          "runningFlowNodesOnly": "Laufend",
+          "completedFlowNodesOnly": "Abgeschlossen",
+          "canceledFlowNodesOnly": "Abgebrochen",
+          "completedOrCanceledFlowNodesOnly": "Abgeschlossen oder Abgebrochen",
+          "includesOpenIncident": "Offenen Zwischenfällen",
+          "includesResolvedIncident": "Gelösten Zwischenfällen",
+          "doesNotIncludeIncident": "Keinen Zwischenfällen"
+        }
+      },
       "types": {
         "instanceState": "Instanzstatus",
-        "runningInstancesOnly": "Nur laufende Instanzen",
-        "completedInstancesOnly": "Nur abgeschlossene Instanzen",
-        "canceledInstancesOnly": "Nur abgebrochene Instanzen",
-        "nonCanceledInstancesOnly": "Nur nicht abgebrochene Instanzen",
-        "suspendedInstancesOnly": "Nur suspendierte Instanzen",
-        "nonSuspendedInstancesOnly": "Nur nicht suspendierte Instanzen",
         "date": "Datum",
         "assignee": "Bearbeiter",
         "candidateGroup": "Potenzielle Gruppe",
@@ -891,16 +926,11 @@
         "inputVariable": "Eingangsvariable",
         "outputVariable": "Ausgabevariable",
         "incident": "Zwischenfälle",
-        "includesOpenIncident": "mit offenen Zwischenfällen",
-        "includesResolvedIncident": "mit gelösten Zwischenfällen",
-        "openIncident": "Offene Zwischenfälle",
-        "resolvedIncident": "Gelöste Zwischenfälle",
-        "doesNotIncludeIncident": "ohne Zwischenfälle",
-        "flowNodeStatus": "Prozessknoten-Status",
-        "runningFlowNodesOnly": "Nur laufende Prozessknoten",
-        "completedFlowNodesOnly": "Nur abgeschlossene Prozessknoten",
-        "canceledFlowNodesOnly": "Nur abgebrochene Prozessknoten",
-        "completedOrCanceledFlowNodesOnly": "Nur abgeschlossene oder abgebrochene Prozessknoten"
+        "processIncident": "Prozessinstanzzwischenfall",
+        "viewIncident": "Prozessknotenzwischenfälle",
+        "openIncident": "mit offenen Zwischenfällen",
+        "resolvedIncident": "mit gelösten Zwischenfällen",
+        "flowNodeStatus": "Prozessknoten-Status"
       },
       "list": {
         "operators": {

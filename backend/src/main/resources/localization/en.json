@@ -868,14 +868,49 @@
         "instance": "Process instance Filters return data from process instances matching the filter requirement. If the filter is based on a Flow Node, the returned data will show all instances where this Flow Node was triggered.",
         "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views."
       },
+      "state": {
+        "modalPretext": {
+          "instanceState": "Only display instances which are…",
+          "incidentInstances": "Only display instances with…",
+          "incident": "Only display data from Flow Nodes with…",
+          "flowNodeStatus": "Only display data from Flow Nodes which are…"
+        },
+        "instancesOnly": "<b>{type}</b> Instances only",
+        "flowNodesOnly": "<b>{type}</b> Flow Nodes only",
+        "incidents": "<b>{type}</b> Incidents",
+        "previewLabels": {
+          "runningInstancesOnly": "Running",
+          "completedInstancesOnly": "Completed",
+          "canceledInstancesOnly": "Canceled",
+          "nonCanceledInstancesOnly": "Non Canceled",
+          "suspendedInstancesOnly": "Suspended",
+          "nonSuspendedInstancesOnly": "Non Suspended",
+          "runningFlowNodesOnly": "Running",
+          "completedFlowNodesOnly": "Completed",
+          "canceledFlowNodesOnly": "Canceled",
+          "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
+          "includesOpenIncident": "Open",
+          "includesResolvedIncident": "Resolved",
+          "doesNotIncludeIncident": "No"
+        },
+        "modalLabels": {
+          "runningInstancesOnly": "Running",
+          "completedInstancesOnly": "Completed",
+          "canceledInstancesOnly": "Canceled",
+          "nonCanceledInstancesOnly": "Non Canceled",
+          "suspendedInstancesOnly": "Suspended",
+          "nonSuspendedInstancesOnly": "Non Suspended",
+          "runningFlowNodesOnly": "Running",
+          "completedFlowNodesOnly": "Completed",
+          "canceledFlowNodesOnly": "Canceled",
+          "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
+          "includesOpenIncident": "Open Incidents",
+          "includesResolvedIncident": "Resolved Incidents",
+          "doesNotIncludeIncident": "Without Incidents"
+        }
+      },
       "types": {
-        "instanceState": "Instance state",
-        "runningInstancesOnly": "Running Instances Only",
-        "completedInstancesOnly": "Completed Instances Only",
-        "canceledInstancesOnly": "Canceled Instances Only",
-        "nonCanceledInstancesOnly": "Non Canceled Instances Only",
-        "suspendedInstancesOnly": "Suspended Instances Only",
-        "nonSuspendedInstancesOnly": "Non Suspended Instances Only",
+        "instanceState": "Process Instance State",
         "date": "Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
@@ -891,16 +926,11 @@
         "inputVariable": "Input Variable",
         "outputVariable": "Output Variable",
         "incident": "Incident",
-        "includesOpenIncident": "With Open Incidents",
-        "includesResolvedIncident": "With Resolved Incidents",
+        "processIncident": "Process Instance Incident",
+        "viewIncident": "Flow Node Incidents",
         "openIncident": "Open Incidents",
         "resolvedIncident": "Resolved Incidents",
-        "doesNotIncludeIncident": "Without Incidents",
-        "flowNodeStatus": "Flow Node Status",
-        "runningFlowNodesOnly": "Running Flow Nodes Only",
-        "completedFlowNodesOnly": "Completed Flow Nodes Only",
-        "canceledFlowNodesOnly": "Canceled Flow Nodes Only",
-        "completedOrCanceledFlowNodesOnly": "Completed or Canceled Flow Nodes Only"
+        "flowNodeStatus": "Flow Node State"
       },
       "list": {
         "operators": {

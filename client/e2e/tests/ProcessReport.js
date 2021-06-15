@@ -496,8 +496,9 @@ test('aggregators', async (t) => {
 
   await t.click(e.sectionToggle('Filters'));
   await t.click(e.filterButton);
-  await t.click(e.filterOption('Instance state'));
-  await t.click(e.subFilterOption('Completed Instances Only'));
+  await t.click(e.filterOption('Process Instance State'));
+  await t.click(e.modalOption('Completed'));
+  await t.click(e.primaryModalButton);
 
   const avg = await e.reportNumber.textContent;
 

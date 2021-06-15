@@ -14,21 +14,29 @@ import AssigneeFilterPreview from './AssigneeFilterPreview';
 
 import './FilterList.scss';
 
-const stateFilters = [
+const instanceStateFilters = [
   'runningInstancesOnly',
   'completedInstancesOnly',
   'canceledInstancesOnly',
   'nonCanceledInstancesOnly',
   'suspendedInstancesOnly',
   'nonSuspendedInstancesOnly',
-  'includesOpenIncident',
-  'includesResolvedIncident',
-  'doesNotIncludeIncident',
+];
+
+const flowNodeStateFilters = [
   'runningFlowNodesOnly',
   'completedFlowNodesOnly',
   'canceledFlowNodesOnly',
   'completedOrCanceledFlowNodesOnly',
 ];
+
+const incidentFilters = [
+  'includesOpenIncident',
+  'includesResolvedIncident',
+  'doesNotIncludeIncident',
+];
+
+const stateFilters = [...instanceStateFilters, ...flowNodeStateFilters, ...incidentFilters];
 
 export default class FilterList extends React.Component {
   createOperator = (name) => <span> {name} </span>;
@@ -196,7 +204,11 @@ export default class FilterList extends React.Component {
                   this.props.deleteFilter(filter);
                 }}
               >
-                <span className="parameterName">{t('common.filter.types.' + filter.type)}</span>
+                <span className="parameterName">{getStateFilterParameterName(filter)}</span>
+                <span
+                  className="filterText"
+                  dangerouslySetInnerHTML={{__html: getStateFilterFilterText(filter)}}
+                />
               </ActionItem>
             </li>
           );
@@ -262,4 +274,37 @@ function getFilterLevelText(filterLevel) {
   }
 
   return t('common.filter.flowNodeFilter');
+}
+
+function getStateFilterParameterName({type, filterLevel}) {
+  if (instanceStateFilters.includes(type)) {
+    return t('common.filter.types.instanceState');
+  }
+  if (flowNodeStateFilters.includes(type)) {
+    return t('common.filter.types.flowNodeStatus');
+  }
+  if (incidentFilters.includes(type)) {
+    if (filterLevel === 'instance') {
+      return t('common.filter.types.processIncident');
+    }
+    return t('common.filter.types.viewIncident');
+  }
+}
+
+function getStateFilterFilterText({type}) {
+  if (instanceStateFilters.includes(type)) {
+    return t('common.filter.state.instancesOnly', {
+      type: t('common.filter.state.previewLabels.' + type),
+    });
+  }
+  if (flowNodeStateFilters.includes(type)) {
+    return t('common.filter.state.flowNodesOnly', {
+      type: t('common.filter.state.previewLabels.' + type),
+    });
+  }
+  if (incidentFilters.includes(type)) {
+    return t('common.filter.state.incidents', {
+      type: t('common.filter.state.previewLabels.' + type),
+    });
+  }
 }

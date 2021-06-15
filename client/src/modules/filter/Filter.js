@@ -17,6 +17,7 @@ import {
   NodeFilter,
   DurationFilter,
   NodeDuration,
+  StateFilter,
 } from './modals';
 import FilterList from './FilterList';
 import {loadValues, filterSameTypeExistingFilters} from './service';
@@ -46,6 +47,11 @@ export default class Filter extends React.Component {
 
   getFilterModal = (type) => {
     switch (type) {
+      case 'instanceState':
+      case 'incident':
+      case 'incidentInstances':
+      case 'flowNodeStatus':
+        return StateFilter;
       case 'startDate':
       case 'endDate':
         return DateFilter;
@@ -132,14 +138,6 @@ export default class Filter extends React.Component {
     );
   };
 
-  filterByTypeOnly = (filterLevel) => (type) => () => {
-    this.addFilter({
-      type,
-      data: null,
-      filterLevel,
-    });
-  };
-
   render() {
     const FilterModal = this.getFilterModal(this.state.newFilterType);
     const EditFilterModal = this.getFilterModal(
@@ -172,7 +170,6 @@ export default class Filter extends React.Component {
             <InstanceFilters
               processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
               openNewFilterModal={this.openNewFilterModal('instance')}
-              filterByTypeOnly={this.filterByTypeOnly('instance')}
             />
           </div>
         )}
@@ -192,7 +189,6 @@ export default class Filter extends React.Component {
             <ViewFilters
               processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
               openNewFilterModal={this.openNewFilterModal('view')}
-              filterByTypeOnly={this.filterByTypeOnly('view')}
             />
           </div>
         )}

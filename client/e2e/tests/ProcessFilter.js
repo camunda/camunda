@@ -134,32 +134,38 @@ test('instance state filters', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Running Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Running'));
+  await t.click(Report.primaryModalButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Completed Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Completed'));
+  await t.click(Report.primaryModalButton);
   await t.expect(Report.warningMessage.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Canceled Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Canceled'));
+  await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Non Canceled Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Non Canceled'));
+  await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Suspended Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Suspended'));
+  await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Non Suspended Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Non Suspended'));
+  await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
@@ -350,8 +356,9 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.primaryModalButton);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance state'));
-  await t.click(Report.subFilterOption('Running Instances Only'));
+  await t.click(Report.filterOption('Process Instance State'));
+  await t.click(Report.modalOption('Running'));
+  await t.click(Report.primaryModalButton);
 
   await t.resizeWindow(1300, 900);
 
@@ -371,7 +378,8 @@ test('add an incident filter', async (t) => {
   await t.click(Report.filterButton);
 
   await t.click(Report.filterOption('Incident'));
-  await t.click(Report.subFilterOption('With Open Incidents'));
+  await t.click(Report.modalOption('Open Incidents'));
+  await t.click(Report.primaryModalButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
@@ -379,7 +387,8 @@ test('add an incident filter', async (t) => {
   await t.click(Report.flowNodeFilterButton);
 
   await t.click(Report.filterOption('Incident'));
-  await t.click(Report.subFilterOption('Resolved Incidents'));
+  await t.click(Report.modalOption('Resolved Incidents'));
+  await t.click(Report.primaryModalButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -392,15 +401,17 @@ test('add flow node status filter', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.flowNodeFilterButton);
 
-  await t.click(Report.filterOption('Flow Node Status'));
-  await t.click(Report.subFilterOption('Running Flow Nodes Only'));
+  await t.click(Report.filterOption('Flow Node State'));
+  await t.click(Report.modalOption('Running'));
+  await t.click(Report.primaryModalButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.flowNodeFilterButton);
 
-  await t.click(Report.filterOption('Flow Node Status'));
-  await t.click(Report.subFilterOption('Completed or Canceled Flow Nodes Only'));
+  await t.click(Report.filterOption('Flow Node State'));
+  await t.click(Report.modalOption('Completed or Canceled'));
+  await t.click(Report.primaryModalButton);
 
   await t.expect(Report.reportRenderer.visible).ok();
 });

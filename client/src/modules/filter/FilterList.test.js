@@ -269,9 +269,11 @@ it('should display a running instances only filter', () => {
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
+  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Running Instances Only');
+  expect(node.find('.filterText').prop('dangerouslySetInnerHTML').__html).toBe(
+    '<b>Running</b> Instances only'
+  );
 });
 
 it('should display a completed instances only filter', () => {
@@ -282,7 +284,9 @@ it('should display a completed instances only filter', () => {
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
+  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Completed Instances Only');
+  expect(node.find('.filterText').prop('dangerouslySetInnerHTML').__html).toBe(
+    '<b>Completed</b> Instances only'
+  );
 });

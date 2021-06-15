@@ -75,6 +75,8 @@ export const filterOption = (text) =>
   Selector('.Filter__dropdown.is-open .DropdownOption').withText(text);
 export const subFilterOption = (text) =>
   Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
+export const modalOption = (text) =>
+  Selector('.Modal__content label').withText(text).find('.Input');
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>

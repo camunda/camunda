@@ -31,8 +31,9 @@ async function createReport(
   if (completed) {
     await t.click(Report.sectionToggle('Filters'));
     await t.click(Report.filterButton);
-    await t.click(Report.filterOption('Instance state'));
-    await t.click(Report.subFilterOption('Completed Instances Only'));
+    await t.click(Report.filterOption('Process Instance State'));
+    await t.click(Report.modalOption('Completed'));
+    await t.click(Report.primaryModalButton);
   }
 
   await t.typeText(Report.nameEditField, name, {replace: true});
