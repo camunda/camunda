@@ -62,7 +62,7 @@
     "@types/react-dom": "^17.0.7",
     "@types/react-router-dom": "^5.1.7",
     "@types/react-transition-group": "^4.4.1",
-    "@types/styled-components": "^5.1.9",
+    "@types/styled-components": "^5.1.10",
     "enzyme": "^3.11.0",
     "enzyme-adapter-react-16": "^1.15.6",
     "eslint-plugin-camunda-licensed": "^0.4.3",
