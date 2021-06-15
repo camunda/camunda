@@ -106,7 +106,8 @@ public class ZeebeJobWorkerTaskValidationTest {
     return Stream.of(
         JobWorkerTaskBuilder.of("serviceTask", AbstractFlowNodeBuilder::serviceTask),
         JobWorkerTaskBuilder.of("businessRuleTask", AbstractFlowNodeBuilder::businessRuleTask),
-        JobWorkerTaskBuilder.of("scriptTask", AbstractFlowNodeBuilder::scriptTask));
+        JobWorkerTaskBuilder.of("scriptTask", AbstractFlowNodeBuilder::scriptTask),
+        JobWorkerTaskBuilder.of("sendTask", AbstractFlowNodeBuilder::sendTask));
   }
 
   private static final class JobWorkerTaskBuilder {

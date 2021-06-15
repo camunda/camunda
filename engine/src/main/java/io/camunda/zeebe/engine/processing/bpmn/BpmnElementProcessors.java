@@ -37,6 +37,7 @@ public final class BpmnElementProcessors {
     processors.put(BpmnElementType.SERVICE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.BUSINESS_RULE_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.SCRIPT_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
+    processors.put(BpmnElementType.SEND_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.USER_TASK, new JobWorkerTaskProcessor(bpmnBehaviors));
     processors.put(BpmnElementType.RECEIVE_TASK, new ReceiveTaskProcessor(bpmnBehaviors));
 

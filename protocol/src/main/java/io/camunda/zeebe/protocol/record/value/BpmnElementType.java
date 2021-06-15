@@ -50,7 +50,8 @@ public enum BpmnElementType {
   TESTING_ONLY,
 
   BUSINESS_RULE_TASK,
-  SCRIPT_TASK;
+  SCRIPT_TASK,
+  SEND_TASK;
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
     switch (elementTypeName) {
@@ -86,6 +87,8 @@ public enum BpmnElementType {
         return BpmnElementType.BUSINESS_RULE_TASK;
       case "scriptTask":
         return BpmnElementType.SCRIPT_TASK;
+      case "sendTask":
+        return BpmnElementType.SEND_TASK;
       default:
         throw new RuntimeException("Unsupported BPMN element of type " + elementTypeName);
     }

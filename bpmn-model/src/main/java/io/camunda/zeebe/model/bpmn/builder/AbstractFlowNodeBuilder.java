@@ -194,6 +194,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTargetBuilder(SendTask.class, id);
   }
 
+  public SendTaskBuilder sendTask(final String id, final Consumer<SendTaskBuilder> consumer) {
+    final SendTaskBuilder builder = createTargetBuilder(SendTask.class, id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public UserTaskBuilder userTask() {
     return createTargetBuilder(UserTask.class);
   }

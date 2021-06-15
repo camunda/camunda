@@ -34,7 +34,8 @@ public final class JobWorkerTaskBuilderProvider implements ArgumentsProvider {
         JobWorkerTaskBuilder.of(BpmnElementType.SERVICE_TASK, AbstractFlowNodeBuilder::serviceTask),
         JobWorkerTaskBuilder.of(
             BpmnElementType.BUSINESS_RULE_TASK, AbstractFlowNodeBuilder::businessRuleTask),
-        JobWorkerTaskBuilder.of(BpmnElementType.SCRIPT_TASK, AbstractFlowNodeBuilder::scriptTask));
+        JobWorkerTaskBuilder.of(BpmnElementType.SCRIPT_TASK, AbstractFlowNodeBuilder::scriptTask),
+        JobWorkerTaskBuilder.of(BpmnElementType.SEND_TASK, AbstractFlowNodeBuilder::sendTask));
   }
 
   public static Collection<Object[]> buildersAsParameters() {
