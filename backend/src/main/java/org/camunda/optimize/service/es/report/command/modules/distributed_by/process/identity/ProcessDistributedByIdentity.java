@@ -29,7 +29,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -78,17 +77,16 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   }
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return reportData.getDefinitions().stream()
-      .map(definitionDto -> definitionService.getDefinition(
-        DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
-      ))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .map(ProcessDefinitionOptimizeDto.class::cast)
-      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
-      .map(Map::keySet)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toSet());
+    return definitionService.extractUserTaskIdAndNames(
+      reportData.getDefinitions().stream()
+        .map(definitionDto -> definitionService.getDefinition(
+          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    ).keySet();
   }
 
   protected abstract String getIdentityField();

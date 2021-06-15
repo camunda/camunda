@@ -14,6 +14,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
@@ -24,6 +25,7 @@ import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -361,6 +364,25 @@ public class DefinitionService implements ConfigurationReloadable {
                 ? Comparator.nullsLast(Comparator.naturalOrder())
                 : Comparator.nullsFirst(Comparator.naturalOrder()))
       .collect(toList());
+  }
+
+  public Map<String, String> extractFlowNodeIdAndNames(final List<ProcessDefinitionOptimizeDto> definitions) {
+    return definitions.stream()
+      .map(ProcessDefinitionOptimizeDto::getFlowNodeData)
+      .map(BpmnModelUtil::extractFlowNodeNames)
+      .map(Map::entrySet)
+      .flatMap(Collection::stream)
+      // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
+      .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+  }
+
+  public Map<String, String> extractUserTaskIdAndNames(final List<ProcessDefinitionOptimizeDto> definitions) {
+    return definitions.stream()
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .map(Map::entrySet)
+      .flatMap(Collection::stream)
+      // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
+      .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
   }
 
   private Map<String, DefinitionOptimizeResponseDto> fetchLatestProcessDefinition(final String definitionKey) {

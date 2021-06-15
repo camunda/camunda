@@ -36,8 +36,10 @@ public class BpmnModels {
   public static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   public static final String DEFAULT_TOPIC = "MyTopic";
 
-  public static final String END_EVENT_1 = "endEvent1";
-  public static final String END_EVENT_2 = "endEvent2";
+  public static final String END_EVENT_ID_1 = "endEvent1";
+  public static final String END_EVENT_NAME_1 = "endEvent1Name";
+  public static final String END_EVENT_ID_2 = "endEvent2";
+  public static final String END_EVENT_NAME_2 = "endEvent2Name";
 
   public static final String START_LOOP = "mergeExclusiveGateway";
   public static final String END_LOOP = "splittingGateway";
@@ -221,10 +223,14 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getExternalTaskProcess() {
+    return getExternalTaskProcess(DEFAULT_PROCESS_ID);
+  }
+
+  public static BpmnModelInstance getExternalTaskProcess(final String key) {
     // @formatter:off
-    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+    return Bpmn.createExecutableProcess(key)
       .camundaVersionTag(VERSION_TAG)
-      .name(DEFAULT_PROCESS_ID)
+      .name(key)
       .startEvent(START_EVENT)
         .name(START_EVENT_NAME)
       .serviceTask(SERVICE_TASK_ID_1)
@@ -237,10 +243,14 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getTwoExternalTaskProcess() {
+    return getTwoExternalTaskProcess(DEFAULT_PROCESS_ID);
+  }
+
+  public static BpmnModelInstance getTwoExternalTaskProcess(final String key) {
     // @formatter:off
-    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+    return Bpmn.createExecutableProcess(key)
       .camundaVersionTag(VERSION_TAG)
-      .name(DEFAULT_PROCESS_ID)
+      .name(key)
       .startEvent(START_EVENT)
         .name(START_EVENT_NAME)
       .serviceTask(SERVICE_TASK_ID_1)
@@ -256,19 +266,28 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getTwoParallelExternalTaskProcess() {
+    return getTwoParallelExternalTaskProcess(DEFAULT_PROCESS_ID);
+  }
+
+  public static BpmnModelInstance getTwoParallelExternalTaskProcess(final String key) {
     // @formatter:off
-    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+    return Bpmn.createExecutableProcess(key)
       .camundaVersionTag(VERSION_TAG)
-      .name(DEFAULT_PROCESS_ID)
+      .name(key)
       .startEvent(START_EVENT)
+       .name(START_EVENT_NAME)
       .parallelGateway(SPLITTING_GATEWAY_ID)
         .serviceTask(SERVICE_TASK_ID_1)
+          .name(SERVICE_TASK_NAME_1)
           .camundaExternalTask(DEFAULT_TOPIC)
-        .endEvent(END_EVENT_1)
+        .endEvent(END_EVENT_ID_1)
+          .name(END_EVENT_NAME_1)
       .moveToNode(SPLITTING_GATEWAY_ID)
         .serviceTask(SERVICE_TASK_ID_2)
+          .name(SERVICE_TASK_NAME_2)
           .camundaExternalTask(DEFAULT_TOPIC)
-        .endEvent(END_EVENT_2)
+        .endEvent(END_EVENT_ID_2)
+          .name(END_EVENT_NAME_2)
       .done();
     // @formatter:on
   }

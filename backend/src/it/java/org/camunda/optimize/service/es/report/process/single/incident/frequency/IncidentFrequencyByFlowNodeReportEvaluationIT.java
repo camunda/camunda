@@ -46,14 +46,17 @@ import static org.camunda.optimize.service.es.report.process.single.incident.dur
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT_1;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT_2;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_1;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_2;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_NAME;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT_NAME_1;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT_NAME_2;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_NAME_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_NAME_2;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_NAME;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -101,18 +104,18 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.FLOW_NODES);
 
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .measure(ViewProperty.FREQUENCY)
-        .groupedByContains(END_EVENT_1, null)
-        .groupedByContains(END_EVENT_2, null)
-        .groupedByContains(SERVICE_TASK_ID_1, 1.)
-        .groupedByContains(SERVICE_TASK_ID_2, 1.)
+        .groupedByContains(END_EVENT_ID_1, null, END_EVENT_NAME_1)
+        .groupedByContains(END_EVENT_ID_2, null, END_EVENT_NAME_2)
+        .groupedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_NAME_1)
+        .groupedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_NAME_2)
         .groupedByContains(SPLITTING_GATEWAY_ID, null)
-        .groupedByContains(START_EVENT, null)
+        .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -131,10 +134,11 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -142,7 +146,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -161,16 +165,63 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
-      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
-      .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
-      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+        .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+        .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
+        .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
+    // @formatter:on
+  }
+
+  @Test
+  public void incidentsForMultipleProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(key1)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+      .withResolvedIncident()
+      .executeDeployment();
+
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .key(key2)
+      .deployProcess(TWO_PARALLEL_TASKS)
+      .startProcessInstance()
+      .withOpenIncident()
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(key1, ALL_VERSIONS);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto =
+      reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .measure(ViewProperty.FREQUENCY)
+        .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+        .groupedByContains(END_EVENT_ID_1, null, END_EVENT_NAME_1)
+        .groupedByContains(END_EVENT_ID_2, null, END_EVENT_NAME_2)
+        .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
+        .groupedByContains(SERVICE_TASK_ID_2, 1., SERVICE_TASK_NAME_2)
+        .groupedByContains(SPLITTING_GATEWAY_ID, null, SPLITTING_GATEWAY_ID)
+        .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+      .doAssert(resultDto);
+    // @formatter:on
   }
 
   @Test
@@ -193,10 +244,11 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
 
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(4L)
       .measure(ViewProperty.FREQUENCY)
@@ -204,7 +256,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 3., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -219,10 +271,11 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .measure(ViewProperty.FREQUENCY)
@@ -230,7 +283,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -249,7 +302,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -257,7 +310,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -282,7 +335,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -291,7 +344,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_2, null, SERVICE_TASK_NAME_2)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -316,7 +369,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -325,7 +378,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_2, null, SERVICE_TASK_NAME_2)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -350,7 +403,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -358,7 +411,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -383,7 +436,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -391,7 +444,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -419,7 +472,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .measure(ViewProperty.FREQUENCY)
@@ -427,7 +480,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, (double) selectedTenants.size(), SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -469,7 +522,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
@@ -478,7 +531,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, 1., SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   private Stream<Arguments> instanceLevelIncidentFilter() {
@@ -513,7 +566,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(3L)
@@ -522,7 +575,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(SERVICE_TASK_ID_1, expectedIncidentCount, SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   private Stream<Arguments> viewLevelIncidentFilter() {
@@ -564,9 +617,13 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
       .processInstanceCount(expectedInstanceCount)
       .processInstanceCountWithoutFilters(3L);
     Optional.ofNullable(firstExpectedResult)
-      .ifPresent(result -> asserter.measure(ViewProperty.FREQUENCY).groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1).add());
+      .ifPresent(result -> asserter.measure(ViewProperty.FREQUENCY)
+        .groupedByContains(SERVICE_TASK_ID_1, result, SERVICE_TASK_NAME_1)
+        .add());
     Optional.ofNullable(secondExpectedResult)
-      .ifPresent(result -> asserter.measure(ViewProperty.FREQUENCY).groupedByContains(SERVICE_TASK_ID_2, result, SERVICE_TASK_NAME_2).add());
+      .ifPresent(result -> asserter.measure(ViewProperty.FREQUENCY)
+        .groupedByContains(SERVICE_TASK_ID_2, result, SERVICE_TASK_NAME_2)
+        .add());
     asserter.doAssert(resultDto);
   }
 
@@ -587,21 +644,22 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
-        .groupedByContains(START_EVENT, null)
+        .groupedByContains(START_EVENT_ID, null, START_EVENT_NAME)
         .groupedByContains(SPLITTING_GATEWAY_ID, null)
-        .groupedByContains(SERVICE_TASK_ID_2, 2.)
-        .groupedByContains(SERVICE_TASK_ID_1, 2.)
-        .groupedByContains(END_EVENT_2, null)
-        .groupedByContains(END_EVENT_1, null)
+        .groupedByContains(SERVICE_TASK_ID_2, 2., SERVICE_TASK_NAME_2)
+        .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
+        .groupedByContains(END_EVENT_ID_2, null, END_EVENT_NAME_2)
+        .groupedByContains(END_EVENT_ID_1, null, END_EVENT_NAME_1)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   @Test
@@ -621,10 +679,11 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
     // when
     ProcessReportDataDto reportData = createReport(PROCESS_DEFINITION_KEY, "1");
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = reportClient.evaluateMapReport(reportData)
+      .getResult();
 
     // then
-    // formatter:off
+    // @formatter:off
     MapResultAsserter.asserter()
       .processInstanceCount(2L)
       .measure(ViewProperty.FREQUENCY)
@@ -633,7 +692,7 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
-    // formatter:on
+    // @formatter:on
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String... processDefinitionVersions) {

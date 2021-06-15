@@ -340,8 +340,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .getId();
   }
 
-  protected ReportDataDefinitionDto createReportDataDefinitionDto(final String currentKey) {
-    return new ReportDataDefinitionDto(currentKey, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS);
+  protected ReportDataDefinitionDto createReportDataDefinitionDto(final String key) {
+    return new ReportDataDefinitionDto(key, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS);
   }
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,

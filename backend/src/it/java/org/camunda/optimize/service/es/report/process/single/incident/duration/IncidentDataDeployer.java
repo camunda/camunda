@@ -46,10 +46,17 @@ public class IncidentDataDeployer {
   }
 
 
-  @AllArgsConstructor
+  @RequiredArgsConstructor
   public static class AddProcessBuilder {
 
     final IncidentDataDeployer incidentDataDeployer;
+
+    private String key = IncidentDataDeployer.PROCESS_DEFINITION_KEY;
+
+    public AddProcessBuilder key(final String key) {
+      this.key = key;
+      return this;
+    }
 
     public InstanceStarterBuilder deployProcess(final IncidentProcessType processType) {
       incidentDataDeployer.process = processTypeToModelInstance(processType);
@@ -60,13 +67,13 @@ public class IncidentDataDeployer {
       BpmnModelInstance process;
       switch (incidentProcessType) {
         case ONE_TASK:
-          process = getExternalTaskProcess();
+          process = getExternalTaskProcess(key);
           break;
         case TWO_SEQUENTIAL_TASKS:
-          process = getTwoExternalTaskProcess();
+          process = getTwoExternalTaskProcess(key);
           break;
         case TWO_PARALLEL_TASKS:
-          process = getTwoParallelExternalTaskProcess();
+          process = getTwoParallelExternalTaskProcess(key);
           break;
         default:
           throw new OptimizeIntegrationTestException("Unknown incident process type!");

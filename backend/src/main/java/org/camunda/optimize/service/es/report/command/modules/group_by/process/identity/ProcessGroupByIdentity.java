@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -116,17 +115,16 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
   protected abstract IdentityType getIdentityType();
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return reportData.getDefinitions().stream()
-      .map(definitionDto -> definitionService.getDefinition(
-        DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
-      ))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .map(ProcessDefinitionOptimizeDto.class::cast)
-      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
-      .map(Map::keySet)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toSet());
+    return definitionService.extractUserTaskIdAndNames(
+      reportData.getDefinitions().stream()
+        .map(definitionDto -> definitionService.getDefinition(
+          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    ).keySet();
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,
