@@ -5,7 +5,6 @@
  */
 package io.camunda.tasklist.schema.migration;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.time.OffsetDateTime;
 
@@ -21,12 +20,46 @@ public class ProcessorStep implements Step {
 
   private String description;
   private OffsetDateTime createdDate;
-  @JsonIgnore // https://github.com/camunda-cloud/tasklist/issues/1007
   private OffsetDateTime appliedDate;
   private String indexName;
   private boolean isApplied = false;
   private String version;
   private Integer order = 0;
+
+  @Override
+  public OffsetDateTime getCreatedDate() {
+    if (createdDate == null) {
+      createdDate = OffsetDateTime.now();
+    }
+    return createdDate;
+  }
+
+  @Override
+  public Step setCreatedDate(final OffsetDateTime createDate) {
+    this.createdDate = createDate;
+    return this;
+  }
+
+  @Override
+  public OffsetDateTime getAppliedDate() {
+    return appliedDate;
+  }
+
+  @Override
+  public Step setAppliedDate(final OffsetDateTime appliedDate) {
+    this.appliedDate = appliedDate;
+    return this;
+  }
+
+  @Override
+  public String getVersion() {
+    return version;
+  }
+
+  @Override
+  public Integer getOrder() {
+    return order;
+  }
 
   @Override
   public boolean isApplied() {
@@ -52,41 +85,6 @@ public class ProcessorStep implements Step {
   @Override
   public String getDescription() {
     return description;
-  }
-
-  @Override
-  public String getVersion() {
-    return version;
-  }
-
-  @Override
-  public Integer getOrder() {
-    return order;
-  }
-
-  @Override
-  public OffsetDateTime getCreatedDate() {
-    if (createdDate == null) {
-      createdDate = OffsetDateTime.now();
-    }
-    return createdDate;
-  }
-
-  @Override
-  public Step setCreatedDate(final OffsetDateTime createDate) {
-    this.createdDate = createDate;
-    return this;
-  }
-
-  @Override
-  public OffsetDateTime getAppliedDate() {
-    return appliedDate;
-  }
-
-  @Override
-  public Step setAppliedDate(final OffsetDateTime appliedDate) {
-    this.appliedDate = appliedDate;
-    return this;
   }
 
   @Override

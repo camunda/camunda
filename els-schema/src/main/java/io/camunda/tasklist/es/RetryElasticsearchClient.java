@@ -5,6 +5,8 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -73,6 +75,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class RetryElasticsearchClient {
 
+  public static final String REFRESH_INTERVAL = "index.refresh_interval";
+  public static final String NO_REFRESH = "-1";
+  public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
+  public static final String NO_REPLICA = "0";
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
@@ -258,7 +264,7 @@ public class RetryElasticsearchClient {
         });
   }
 
-  public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
+  protected Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
     return executeWithRetries(
         "GetIndexSettings " + indexName,
         () -> {
@@ -272,6 +278,24 @@ public class RetryElasticsearchClient {
           }
           return settings;
         });
+  }
+
+  public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
+    final Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
+    if (refreshInterval.trim().equals(NO_REFRESH)) {
+      refreshInterval = defaultValue;
+    }
+    return refreshInterval;
+  }
+
+  public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
+    final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
+      numbersOfReplica = defaultValue;
+    }
+    return numbersOfReplica;
   }
 
   public boolean setIndexSettingsFor(Settings settings, String indexPattern) {

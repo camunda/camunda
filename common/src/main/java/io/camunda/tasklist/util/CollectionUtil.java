@@ -23,6 +23,11 @@ import java.util.stream.Stream;
 
 public abstract class CollectionUtil {
 
+  public static <K, V> V getOrDefaultForNullValue(Map<K, V> map, K key, V defaultValue) {
+    final V value = map.get(key);
+    return value == null ? defaultValue : value;
+  }
+
   @SafeVarargs
   public static <T> List<T> throwAwayNullElements(T... array) {
     final List<T> listOfNotNulls = new ArrayList<>();

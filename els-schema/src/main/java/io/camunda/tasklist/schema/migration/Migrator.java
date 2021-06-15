@@ -5,6 +5,10 @@
  */
 package io.camunda.tasklist.schema.migration;
 
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REFRESH;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
+import static io.camunda.tasklist.es.RetryElasticsearchClient.REFRESH_INTERVAL;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
@@ -19,6 +23,7 @@ import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,9 +50,6 @@ import org.springframework.stereotype.Component;
 public class Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Migrator.class);
-
-  private static final String REFRESH_INTERVAL = "index.refresh_interval";
-  private static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
 
   @Autowired private List<IndexDescriptor> indexDescriptors;
 
@@ -156,13 +158,18 @@ public class Migrator {
 
   private void migrateIndex(final IndexDescriptor indexDescriptor, final Plan plan)
       throws IOException, MigrationException {
+    final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
+
     LOGGER.debug("Save current settings for {}", indexDescriptor.getFullQualifiedName());
     final Map<String, String> indexSettings =
-        retryElasticsearchClient.getIndexSettingsFor(
-            indexDescriptor.getFullQualifiedName(), NUMBERS_OF_REPLICA, REFRESH_INTERVAL);
+        getIndexSettingsOrDefaultsFor(indexDescriptor, elsConfig);
+
     LOGGER.debug("Set reindex settings for {}", indexDescriptor.getDerivedIndexNamePattern());
     retryElasticsearchClient.setIndexSettingsFor(
-        Settings.builder().put(NUMBERS_OF_REPLICA, "0").put(REFRESH_INTERVAL, "-1").build(),
+        Settings.builder()
+            .put(NUMBERS_OF_REPLICA, NO_REPLICA)
+            .put(REFRESH_INTERVAL, NO_REFRESH)
+            .build(),
         indexDescriptor.getDerivedIndexNamePattern());
 
     LOGGER.info("Execute plan: {} ", plan);
@@ -175,20 +182,29 @@ public class Migrator {
     }
 
     LOGGER.debug("Restore settings for {}", indexDescriptor.getDerivedIndexNamePattern());
-    final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    final String numberOfReplicas =
-        indexSettings.getOrDefault(NUMBERS_OF_REPLICA, "" + elsConfig.getNumberOfReplicas());
-    final String refreshInterval =
-        indexSettings.getOrDefault(REFRESH_INTERVAL, elsConfig.getRefreshInterval());
     retryElasticsearchClient.setIndexSettingsFor(
         Settings.builder()
-            .put(NUMBERS_OF_REPLICA, numberOfReplicas)
-            .put(REFRESH_INTERVAL, refreshInterval)
+            .put(NUMBERS_OF_REPLICA, indexSettings.get(NUMBERS_OF_REPLICA))
+            .put(REFRESH_INTERVAL, indexSettings.get(REFRESH_INTERVAL))
             .build(),
         indexDescriptor.getDerivedIndexNamePattern());
 
     LOGGER.info("Refresh index {}", indexDescriptor.getDerivedIndexNamePattern());
     retryElasticsearchClient.refresh(indexDescriptor.getDerivedIndexNamePattern());
+  }
+
+  private Map<String, String> getIndexSettingsOrDefaultsFor(
+      final IndexDescriptor indexDescriptor, TasklistElasticsearchProperties elsConfig) {
+    final Map<String, String> settings = new HashMap<>();
+    settings.put(
+        REFRESH_INTERVAL,
+        retryElasticsearchClient.getOrDefaultRefreshInterval(
+            indexDescriptor.getFullQualifiedName(), elsConfig.getRefreshInterval()));
+    settings.put(
+        NUMBERS_OF_REPLICA,
+        retryElasticsearchClient.getOrDefaultNumbersOfReplica(
+            indexDescriptor.getFullQualifiedName(), "" + elsConfig.getNumberOfReplicas()));
+    return settings;
   }
 
   protected Plan createPlanFor(
