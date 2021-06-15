@@ -138,10 +138,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
           this.handlePollSuccess(await response.json());
         }
       } else {
-        this.handleFetchFailure();
+        this.handlePollFailure();
       }
     } catch (error) {
-      this.handleFetchFailure(error);
+      this.handlePollFailure(error);
     }
   };
 
@@ -298,7 +298,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 
   handleFetchFailure = (error?: Error) => {
     this.state.status = 'error';
-    logger.error('Failed to fetch Instances activity');
+    logger.error('Failed to fetch flow node instances');
     if (error !== undefined) {
       logger.error(error);
     }
@@ -327,6 +327,13 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         }
       }
     );
+  };
+
+  handlePollFailure = (error?: Error) => {
+    logger.error('Failed to poll flow node instances');
+    if (error !== undefined) {
+      logger.error(error);
+    }
   };
 
   startPolling = () => {

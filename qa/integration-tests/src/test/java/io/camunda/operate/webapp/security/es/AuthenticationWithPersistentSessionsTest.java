@@ -5,9 +5,9 @@
  */
 package io.camunda.operate.webapp.security.es;
 
+import static io.camunda.operate.webapp.security.OperateURIs.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static io.camunda.operate.webapp.security.OperateURIs.*;
 
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.es.RetryElasticsearchClient;
@@ -20,7 +20,6 @@ import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -55,16 +54,17 @@ import org.springframework.test.context.junit4.SpringRunner;
       DefaultUserService.class,
       AuthenticationRestService.class,
       ElasticSearchUserDetailsService.class,
-      RetryElasticsearchClient.class
+      RetryElasticsearchClient.class,ElasticsearchSessionRepository.class, OperateWebSessionIndex.class
   },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
+      "camunda.operate.persistentSessionsEnabled = true",
       "management.endpoints.web.exposure.include = info,prometheus,loggers",
       "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID
   }
 )
 @ActiveProfiles({ AUTH_PROFILE, "test"})
-public class AuthenticationTest implements AuthenticationTestable {
+public class AuthenticationWithPersistentSessionsTest implements AuthenticationTestable {
 
   private static final String USERNAME = "demo";
   private static final String PASSWORD = "demo";

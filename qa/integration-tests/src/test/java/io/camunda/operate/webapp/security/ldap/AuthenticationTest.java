@@ -99,7 +99,7 @@ public class AuthenticationTest implements AuthenticationTestable {
     ResponseEntity<?> logoutResponse = logout(response);
     // Then
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreDeleted(logoutResponse, operateProperties.isCsrfPreventionEnabled());
+    assertThatCookiesAreDeleted(logoutResponse);
   }
 
   @Test

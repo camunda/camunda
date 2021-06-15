@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.webapp.security;
 
+import java.util.stream.Collectors;
 import org.assertj.core.util.Lists;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -47,7 +48,7 @@ public interface AuthenticationTestable {
   default HttpEntity<Map<String, String>> prepareRequestWithCookies(ResponseEntity<?> response) {
     HttpHeaders headers = getHeaderWithCSRF(response.getHeaders());
     headers.setContentType(APPLICATION_JSON);
-    headers.add("Cookie", getCookie(response).orElse(""));
+    headers.add("Cookie", getSessionCookies(response).stream().findFirst().orElse(""));
 
     Map<String, String> body = new HashMap<>();
     return new HttpEntity<>(body, headers);
@@ -57,36 +58,42 @@ public interface AuthenticationTestable {
     return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
   }
 
-  default Optional<String> getCookie(ResponseEntity<?> response) {
-    return getCookies(response).stream().filter(key -> key.contains(COOKIE_JSESSIONID)).findFirst();
+  default List<String> getSessionCookies(ResponseEntity<?> response) {
+    return getCookies(response).stream().filter(key -> key.contains(COOKIE_JSESSIONID))
+        .collect(Collectors.toList());
   }
 
-  default List<String> getCSRFTokens(ResponseEntity<?> response) {
-    return Optional.ofNullable(response.getHeaders().get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
+  default List<String> getCSRFCookies(ResponseEntity<?> response) {
+    return getCookies(response).stream().filter(key -> key.contains(X_CSRF_TOKEN))
+        .collect(Collectors.toList());
   }
 
   default void assertThatCookiesAreSet(ResponseEntity<?> response,boolean csrfEnabled) {
-    Optional<String> cookie = getCookie(response);
-    assertThat(cookie).isPresent();
-    assertThat(cookie.get()).contains(COOKIE_JSESSIONID);
-    assertThat(cookie.get().split(";")[0]).matches(COOKIE_PATTERN);
+    List<String> cookies = getSessionCookies(response);
+    assertThat(cookies).isNotEmpty();
+    String lastSetCookie = cookies.get(cookies.size()-1);
+    assertThat(lastSetCookie).contains(COOKIE_JSESSIONID);
+    assertThat(lastSetCookie.split(";")[0]).matches(COOKIE_PATTERN);
     if(csrfEnabled) {
-      List<String> csrfTokens = getCSRFTokens(response);
+      List<String> csrfTokens = getCSRFCookies(response);
       assertThat(csrfTokens).isNotEmpty();
-      assertThat(csrfTokens.get(0)).isNotEmpty();
+      String lastSetCRSFCookie = csrfTokens.get(csrfTokens.size()-1);
+      assertThat(lastSetCRSFCookie).contains(X_CSRF_TOKEN);
+      assertThat(lastSetCRSFCookie.split(";")[0]).isNotEmpty();
     }
   }
 
-  default void assertThatCookiesAreDeleted(ResponseEntity<?> response, boolean csrfEnabled) {
+  default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
     final String emptyValue = "=;";
-    Optional<String> cookie = getCookie(response);
-    cookie.ifPresent(s -> assertThat(s).contains(COOKIE_JSESSIONID + emptyValue));
-    if (csrfEnabled) {
-      List<String> crsfTokens = getCSRFTokens(response);
-      if(!crsfTokens.isEmpty()) {
-        // The same cookie will be set sometimes 2 times: the second (last) one should be empty
-        assertThat(crsfTokens.get(crsfTokens.size() - 1)).contains(X_CSRF_TOKEN + emptyValue);
-      }
+    List<String> sessionCookies = getSessionCookies(response);
+    if(!sessionCookies.isEmpty()){
+      String lastSetCookie = sessionCookies.get(sessionCookies.size()-1);
+      assertThat(lastSetCookie).contains(COOKIE_JSESSIONID + emptyValue);
+    }
+    List<String> csrfCookies = getCSRFCookies(response);
+    if(!csrfCookies.isEmpty()){
+      String lastSetCSRFCookie = csrfCookies.get(csrfCookies.size()-1);
+      assertThat(lastSetCSRFCookie).contains(X_CSRF_TOKEN + emptyValue);
     }
   }
 

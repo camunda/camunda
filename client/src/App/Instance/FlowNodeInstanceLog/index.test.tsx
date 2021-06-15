@@ -8,6 +8,7 @@ import React from 'react';
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 
@@ -129,6 +130,58 @@ describe('FlowNodeInstanceLog', () => {
     expect(
       await screen.findByText('Instance History could not be fetched')
     ).toBeInTheDocument();
+  });
+
+  it('should continue polling after poll failure', async () => {
+    mockServer.use(
+      // initial fetch
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(processInstancesMock.level1))
+      ),
+      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      )
+    );
+    render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
+
+    jest.useFakeTimers();
+    flowNodeInstanceStore.init();
+    singleInstanceDiagramStore.fetchProcessXml('1');
+
+    expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
+    expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
+
+    mockServer.use(
+      // currentInstanceStore poll
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res(ctx.json({id: '1', state: 'ACTIVE', processName: 'processName'}))
+      ),
+      // first poll
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.text(''))
+      )
+    );
+    jest.runOnlyPendingTimers();
+
+    mockServer.use(
+      // second poll
+      rest.post('/api/flow-node-instances', (_, res, ctx) =>
+        res.once(ctx.json(processInstancesMock.level1Poll))
+      )
+    );
+    jest.runOnlyPendingTimers();
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('INCIDENT-icon')).not.toBeInTheDocument();
+      expect(screen.getAllByTestId('COMPLETED-icon')).toHaveLength(2);
+    });
+
+    expect(
+      screen.queryByText('Instance History could not be fetched')
+    ).not.toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should render flow node instances tree', async () => {

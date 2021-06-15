@@ -5,9 +5,24 @@
  */
 package io.camunda.operate.webapp.security;
 
+import static io.camunda.operate.schema.indices.OperateWebSessionIndex.ATTRIBUTES;
+import static io.camunda.operate.schema.indices.OperateWebSessionIndex.CREATION_TIME;
+import static io.camunda.operate.schema.indices.OperateWebSessionIndex.ID;
+import static io.camunda.operate.schema.indices.OperateWebSessionIndex.LAST_ACCESSED_TIME;
+import static io.camunda.operate.schema.indices.OperateWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
+
 import io.camunda.operate.es.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.util.SoftHashMap;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import org.elasticsearch.action.search.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +35,6 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.serializer.support.DeserializingConverter;
 import org.springframework.core.serializer.support.SerializingConverter;
-
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.session.ExpiringSession;
 import org.springframework.session.MapSession;
@@ -29,13 +43,6 @@ import org.springframework.session.config.annotation.web.http.EnableSpringHttpSe
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
-import java.util.*;
-
-import static io.camunda.operate.schema.indices.OperateWebSessionIndex.*;
 
 @Configuration
 @ConditionalOnProperty(
@@ -64,6 +71,8 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Autowired
   @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
+
+  private Map<String, ElasticsearchSession> cache = new SoftHashMap<>();
 
   @PostConstruct
   private void setUp() {
@@ -127,10 +136,19 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public void save(ElasticsearchSession session) {
     logger.debug("Save session {}", session);
+    if (session.isExpired()) {
+      delete(session.getId());
+      return;
+    }
+    cache.put(session.getId(), session);
     if (session.isChanged()) {
       logger.debug("Session {} changed, save in Elasticsearch.", session);
       executeAsyncElasticsearchRequest(() ->
-          retryElasticsearchClient.createOrUpdateDocument(operateWebSessionIndex.getFullQualifiedName(), session.getId(), sessionToDocument(session))
+          retryElasticsearchClient.createOrUpdateDocument(
+            operateWebSessionIndex.getFullQualifiedName(),
+            session.getId(),
+            sessionToDocument(session)
+          )
       );
       session.clearChangeFlag();
     }
@@ -139,15 +157,18 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public ElasticsearchSession getSession(final String id) {
     logger.debug("Retrieve session {} from Elasticsearch", id);
-    ElasticsearchSession session = null;
-    retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
-    Map<String, Object> document = retryElasticsearchClient.getDocument(operateWebSessionIndex.getFullQualifiedName(), id);
-    if (document != null) {
+    ElasticsearchSession session = cache.get(id);
+    if (session == null) {
+      retryElasticsearchClient.refresh(operateWebSessionIndex.getFullQualifiedName());
+      Map<String, Object> document = retryElasticsearchClient
+          .getDocument(operateWebSessionIndex.getFullQualifiedName(), id);
+      if (document != null) {
         session = documentToSession(document);
-    }
-    if (session != null && session.isExpired()) {
-      delete(session.getId());
-      return null;
+      }
+      if (session != null && session.isExpired()) {
+        delete(session.getId());
+        return null;
+      }
     }
     return session;
   }
@@ -155,6 +176,7 @@ public class ElasticsearchSessionRepository implements SessionRepository<Elastic
   @Override
   public void delete(String id) {
     logger.debug("Delete session {}", id);
+    cache.remove(id);
     executeAsyncElasticsearchRequest(() -> retryElasticsearchClient.deleteDocument(operateWebSessionIndex.getFullQualifiedName(), id));
   }
 
