@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.writer.usertask;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
@@ -52,7 +53,7 @@ public abstract class AbstractUserTaskWriter extends AbstractProcessInstanceData
       .orElseThrow(() -> new OptimizeRuntimeException("No user tasks to import provided"));
     final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
       .processInstanceId(processInstanceId)
-      .engine(firstUserTaskInstance.getEngine())
+      .dataSource(new EngineDataSourceDto(firstUserTaskInstance.getEngine()))
       .flowNodeInstances(userTasks)
       .build();
     String newEntryIfAbsent;

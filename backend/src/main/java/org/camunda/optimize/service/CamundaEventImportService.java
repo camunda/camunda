@@ -75,7 +75,7 @@ public class CamundaEventImportService {
 
   public List<ImportRequestDto> generateRunningProcessInstanceImports(
     List<ProcessInstanceDto> runningProcessInstances) {
-    final String engineAlias = runningProcessInstances.get(0).getEngine();
+    final String engineAlias = runningProcessInstances.get(0).getDataSource().getName();
     if (shouldImport(engineAlias)) {
       final List<ImportRequestDto> imports =
         generateCamundaActivityEventsImports(
@@ -89,7 +89,7 @@ public class CamundaEventImportService {
   }
 
   public List<ImportRequestDto> generateCompletedProcessInstanceImports(List<ProcessInstanceDto> completedProcessInstances) {
-    final String engineAlias = completedProcessInstances.get(0).getEngine();
+    final String engineAlias = completedProcessInstances.get(0).getDataSource().getName();
     if (shouldImport(engineAlias)) {
       final List<ImportRequestDto> imports =
         generateCamundaActivityEventsImports(
@@ -291,7 +291,7 @@ public class CamundaEventImportService {
       .processInstanceId(processInstanceDto.getProcessInstanceId())
       .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .processDefinitionName(processDefinitionName)
-      .engine(processInstanceDto.getEngine())
+      .engine(processInstanceDto.getDataSource().getName())
       .tenantId(processInstanceDto.getTenantId())
       .timestamp(startDate)
       // process instance start/end events should not have an order counter

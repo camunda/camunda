@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -25,7 +24,7 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
@@ -41,10 +40,10 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @Component
 @Slf4j
 public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter {
-  private static final Set<String> PRIMITIVE_UPDATABLE_FIELDS = ImmutableSet.of(
+  private static final Set<String> UPDATABLE_FIELDS = Set.of(
     PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_VERSION, PROCESS_DEFINITION_ID,
     BUSINESS_KEY, START_DATE, STATE,
-    ENGINE, TENANT_ID
+    DATA_SOURCE, TENANT_ID
   );
   private static final String IMPORT_ITEM_NAME = "running process instances";
 
@@ -62,7 +61,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
       .map(instance -> ImportRequestDto.builder()
         .importName(IMPORT_ITEM_NAME)
         .esClient(esClient)
-        .request(createImportRequestForProcessInstance(instance, PRIMITIVE_UPDATABLE_FIELDS))
+        .request(createImportRequestForProcessInstance(instance, UPDATABLE_FIELDS))
         .build())
       .collect(toList());
   }

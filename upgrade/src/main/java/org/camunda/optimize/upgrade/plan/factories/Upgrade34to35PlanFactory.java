@@ -70,8 +70,8 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .addUpgradeSteps(migrateDefinitions(dependencies))
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDecisionReports())
-      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
-      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
+      .addUpgradeSteps(migrateProcessInstances(dependencies, true))
+      .addUpgradeSteps(migrateProcessInstances(dependencies, false))
       .build();
   }
 
@@ -123,8 +123,8 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     //@formatter:on
   }
 
-  private static List<UpgradeStep> mergeUserTaskAndFlowNodeData(final UpgradeExecutionDependencies dependencies,
-                                                                final boolean eventBased) {
+  private static List<UpgradeStep> migrateProcessInstances(final UpgradeExecutionDependencies dependencies,
+                                                           final boolean eventBased) {
     final List<String> indexIdentifiers = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
       dependencies.getEsClient(),
       eventBased
@@ -138,9 +138,15 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .map(indexIdentifier ->
              new UpdateIndexStep(
                eventBased ? new EventProcessInstanceIndex(indexIdentifier) : new ProcessInstanceIndex(indexIdentifier),
-               getMergeUserTaskFlowNodeMappingScript()
+               getMergeUserTaskFlowNodeMappingScript() + getDataSourceMigrationScript(eventBased)
              ))
       .collect(toList());
+  }
+
+  @NotNull
+  private static String getDataSourceMigrationScript(final boolean eventBased) {
+    return eventBased ? getUpdateImportSourceScript(DataImportSourceType.EVENTS.getId())
+      : getUpdateImportSourceScript(DataImportSourceType.ENGINE.getId());
   }
 
   private static String getMergeUserTaskFlowNodeMappingScript() {

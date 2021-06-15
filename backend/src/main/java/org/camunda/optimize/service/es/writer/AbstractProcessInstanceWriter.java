@@ -33,11 +33,12 @@ public abstract class AbstractProcessInstanceWriter extends AbstractProcessInsta
 
   protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
                                                  ProcessInstanceDto processInstanceDto,
-                                                 Set<String> primitiveUpdatableFields,
+                                                 Set<String> updatableFields,
                                                  ObjectMapper objectMapper) {
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
-      primitiveUpdatableFields,
-      processInstanceDto
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+      updatableFields,
+      processInstanceDto,
+      objectMapper
     );
     addImportProcessInstanceRequest(bulkRequest, processInstanceDto, updateScript, objectMapper);
   }
@@ -51,10 +52,11 @@ public abstract class AbstractProcessInstanceWriter extends AbstractProcessInsta
   }
 
   protected UpdateRequest createImportRequestForProcessInstance(final ProcessInstanceDto processInstanceDto,
-                                                                final Set<String> primitiveUpdateableFields) {
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
-      primitiveUpdateableFields,
-      processInstanceDto
+                                                                final Set<String> updatableFields) {
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+      updatableFields,
+      processInstanceDto,
+      objectMapper
     );
     return createUpdateRequest(processInstanceDto, updateScript, objectMapper);
   }

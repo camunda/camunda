@@ -46,7 +46,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
   @Builder.Default
   private List<IncidentDto> incidents = new ArrayList<>();
-  private String engine;
+  private DataSourceDto dataSource;
   private String tenantId;
 
   @JsonIgnore

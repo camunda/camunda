@@ -7,6 +7,8 @@ package org.camunda.optimize.upgrade.migrate34To35;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.EventsDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
@@ -151,6 +153,14 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
     assertNonUserTaskFlowNodeContent(instancesAfterUpgrade);
     assertProcessInstanceIdInFlowNodeData(instancesAfterUpgrade);
     assertIncompleteUserTaskLog(0);
+
+    // and data source has been upgraded
+    assertThat(instancesAfterUpgrade)
+      .extracting(ProcessInstanceDto::getDataSource)
+      .hasSize(2)
+      .allSatisfy(dataSourceDto -> assertThat(dataSourceDto).isEqualTo(new EventsDataSourceDto()));
+    assertThat(getAllDocumentsOfIndex(EVENT_PROCESS_INSTANCE_INDEX_1.getIndexName()))
+      .allSatisfy(hit -> assertThat(hit.getSourceAsMap()).doesNotContainKey("engine"));
   }
 
   @SneakyThrows
@@ -173,6 +183,14 @@ public class MigrateUserTaskAndFlowNodeDataInProcessInstanceIndicesIT extends Ab
     assertUserTaskContent(instancesAfterUpgradeIndex);
     assertProcessInstanceIdInFlowNodeData(instancesAfterUpgradeIndex);
     assertIncompleteUserTaskLog(0);
+
+    // and data source has been upgraded
+    assertThat(instancesAfterUpgradeIndex)
+      .extracting(ProcessInstanceDto::getDataSource)
+      .hasSize(2)
+      .containsExactlyInAnyOrder(new EngineDataSourceDto("camunda-bpm"), new EngineDataSourceDto("some-other-engine"));
+    assertThat(getAllDocumentsOfIndex(EVENT_PROCESS_INSTANCE_INDEX_1.getIndexName()))
+      .allSatisfy(hit -> assertThat(hit.getSourceAsMap()).doesNotContainKey("engine"));
   }
 
   @SneakyThrows

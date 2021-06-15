@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer.incident;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -89,7 +90,7 @@ public abstract class AbstractIncidentWriter extends AbstractProcessInstanceData
 
       final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
         .processInstanceId(processInstanceId)
-        .engine(incidents.get(0).getEngineAlias())
+        .dataSource(new EngineDataSourceDto(incidents.get(0).getEngineAlias()))
         .incidents(incidents)
         .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);

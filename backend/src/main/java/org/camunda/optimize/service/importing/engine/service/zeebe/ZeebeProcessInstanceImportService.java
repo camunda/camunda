@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
@@ -49,9 +50,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ZeebeProcessInstanceWriter processInstanceWriter;
   private final String zeebeName;
-  // TODO https://jira.camunda.com/browse/OPT-5312
   private final int partitionId;
-
 
   @Override
   public void executeImport(final List<ZeebeProcessInstanceRecordDto> zeebeProcessInstanceRecords,
@@ -102,8 +101,7 @@ public class ZeebeProcessInstanceImportService implements ImportService<ZeebePro
     processInstanceDto.setProcessDefinitionId(String.valueOf(firstRecordValue.getProcessDefinitionKey()));
     processInstanceDto.setProcessDefinitionKey(firstRecordValue.getBpmnProcessId());
     processInstanceDto.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
-    // TODO https://jira.camunda.com/browse/OPT-5312
-    processInstanceDto.setEngine(zeebeName);
+    processInstanceDto.setDataSource(new ZeebeDataSourceDto(zeebeName, partitionId));
     // We don't currently store variables or incidents for zeebe process instances
     processInstanceDto.setIncidents(Collections.emptyList());
     processInstanceDto.setVariables(Collections.emptyList());

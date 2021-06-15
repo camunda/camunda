@@ -116,9 +116,8 @@ public class ZeebeProcessInstanceWriter extends AbstractProcessInstanceDataWrite
       "if (newInstance.state != null) {\n" +
       "  existingInstance.state = newInstance.state;\n" +
       "}\n" +
-      // TODO https://jira.camunda.com/browse/OPT-5312
-      "if (newInstance.engine != null) {\n" +
-      "  existingInstance.engine = newInstance.engine;\n" +
+      "if (newInstance.dataSource != null) {\n" +
+      "  existingInstance.dataSource = newInstance.dataSource;\n" +
       "}\n" +
 
       // Update the flow node instances

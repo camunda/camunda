@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -56,7 +57,7 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
       .endDate(engineEntity.getEndTime())
       .duration(engineEntity.getStartTime().until(engineEntity.getEndTime(), ChronoUnit.MILLIS))
       .state(engineEntity.getState())
-      .engine(engineContext.getEngineAlias())
+      .dataSource(new EngineDataSourceDto(engineContext.getEngineAlias()))
       .tenantId(engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)))
       .build();
   }

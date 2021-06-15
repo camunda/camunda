@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ENGINE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_VERSION;
@@ -35,10 +35,10 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 @Component
 @Slf4j
 public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWriter {
-  private static final Set<String> PRIMITIVE_UPDATABLE_FIELDS = Set.of(
+  private static final Set<String> UPDATABLE_FIELDS = Set.of(
     PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_VERSION, PROCESS_DEFINITION_ID,
     BUSINESS_KEY, START_DATE, END_DATE, DURATION, STATE,
-    ENGINE, TENANT_ID
+    DATA_SOURCE, TENANT_ID
   );
 
   public CompletedProcessInstanceWriter(final OptimizeElasticsearchClient esClient,
@@ -86,6 +86,6 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
     if (processInstanceDto.getEndDate() == null) {
       log.warn("End date should not be null for completed process instances!");
     }
-    return createImportRequestForProcessInstance(processInstanceDto, PRIMITIVE_UPDATABLE_FIELDS);
+    return createImportRequestForProcessInstance(processInstanceDto, UPDATABLE_FIELDS);
   }
 }

@@ -81,7 +81,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getEngine()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -204,7 +204,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getEngine()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -282,7 +282,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getEngine()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
@@ -359,7 +359,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
         assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
-        assertThat(savedInstance.getEngine()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
         assertThat(savedInstance.getTenantId()).isNull();
         assertThat(savedInstance.getBusinessKey()).isNull();
