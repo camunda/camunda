@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.assertj.core.api.Condition;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
@@ -21,16 +22,23 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
+import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
+import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,7 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -51,12 +61,18 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
   public static final String DEFAULT_DEFINITION_KEY = "_KEY_";
 
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().forLevel(Level.DEBUG).captureForType(CollectionScopeService.class);
+
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
     // given
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry(DEFAULT_DEFINITION_KEY));
-    final List<CollectionScopeEntryResponseDto> expectedCollectionScope = collectionClient.getCollectionScope(collectionId);
+    final List<CollectionScopeEntryResponseDto> expectedCollectionScope =
+      collectionClient.getCollectionScope(collectionId);
 
     // when
     final PartialCollectionDefinitionRequestDto collectionRenameDto = new PartialCollectionDefinitionRequestDto("Test");
@@ -557,6 +573,205 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(Response.Status.NOT_FOUND.getStatusCode());
   }
 
+  @Test
+  public void bulkDeleteScopesFromCollectionUnauthenticatedUser() {
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList("doesntMatter", "doesntMatter"), "doesntMatter")
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteScopesFromCollectionUserNotAuthorizedToAccessCollection() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteScopeEntriesFromCollectionRequest(Collections.emptyList(), collectionId)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteScopesFromCollectionEmptyCollectionScopeList() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+
+    // when
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+      Collections.emptyList(),
+      collectionId
+    );
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteScopesFromCollectionNullScopeList() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+
+    // when
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(null, collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteScopesFromCollectionCollectionNotFound() {
+    // given
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final CollectionScopeEntryDto scopeEntry2 =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+
+    // when
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
+      scopeEntry1.getId(),
+      scopeEntry2.getId()
+    ), "doesNotExist");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteScopesFromCollectionSkipsEntryIfScopeDoesNotExist() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final CollectionScopeEntryDto scopeEntry2 =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    // when
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
+      scopeEntry1.getId(),
+      "process:someKey",
+      scopeEntry2.getId()
+    ), collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void bulkDeleteScopesFromCollection(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    reportClient.createSingleReport(
+      collectionId,
+      definitionType,
+      DEFAULT_DEFINITION_KEY,
+      DEFAULT_TENANTS
+    );
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    // when
+    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
+      scopeEntry1.getId(),
+      scopeEntry2.getId()
+    ), collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope()).isEmpty();
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void bulkDeleteScopesFromCollectionScopesHaveTheSameId(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry1 =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    reportClient.createSingleReport(
+      collectionId,
+      definitionType,
+      DEFAULT_DEFINITION_KEY,
+      DEFAULT_TENANTS
+    );
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    // when
+    Response response = buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(Arrays.asList(
+      scopeEntry1.getId(),
+      scopeEntry1.getId(),
+      scopeEntry2.getId()
+    ), collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope()).isEmpty();
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
+  }
+
+  @Test
+  public void bulkDeleteOfScopesSkipsEntryIfEsFailsToRemoveAssociatedReports() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    CollectionScopeEntryDto scopeEntry1 = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(
+      Arrays.asList(
+        scopeEntry1.getId(),
+        scopeEntry2.getId()
+      ),
+      collectionId
+    );
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope()).hasSize(1)
+      .extracting(CollectionScopeEntryDto::getId)
+      .containsExactly(scopeEntry1.getId());
+    String message = String.format(
+      "There was an error while deleting reports associated to collection scope with id %s. The scope cannot be " +
+        "deleted.",
+      scopeEntry1.getId()
+    );
+    logCapturer.assertContains(message);
+  }
+
   private void addDecisionDefinitionToElasticsearch(final String key,
                                                     final String name) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
@@ -599,5 +814,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
     embeddedOptimizeExtension.reloadTenantCache();
+  }
+
+  private Response buildAndExecuteBulkDeleteScopeEntriesFromCollectionRequest(List<String> collectionScopeIds,
+                                                                              String collectionId) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteScopeEntriesFromCollectionRequest(collectionScopeIds, collectionId)
+      .execute();
   }
 }

@@ -1405,6 +1405,14 @@ public class OptimizeRequestExecutor {
     return buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntryId, false);
   }
 
+  public OptimizeRequestExecutor buildBulkDeleteScopeEntriesFromCollectionRequest(List<String> collectionScopeIds,
+                                                                                  String collectionId) {
+    this.path = "collection/" + collectionId + "/scope/delete";
+    this.method = POST;
+    this.body = getBody(collectionScopeIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
                                                                             String scopeEntryId,
                                                                             Boolean force) {

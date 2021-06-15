@@ -304,4 +304,14 @@ public class CollectionRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionRoleService.removeRolesFromCollection(userId, collectionId, roleEntryIds);
   }
+
+  @POST
+  @Path("/{id}/scope/delete")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void bulkDeleteCollectionScopes(@Context ContainerRequestContext requestContext,
+                                         @PathParam("id") String collectionId,
+                                         @NotNull @RequestBody List<String> collectionScopeIds) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionScopeService.bulkDeleteCollectionScopes(userId, collectionId, collectionScopeIds);
+  }
 }

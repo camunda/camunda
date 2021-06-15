@@ -28,6 +28,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.report.ReportService;
@@ -336,6 +337,22 @@ public class CollectionScopeService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     return collectionScopeIds.stream()
       .anyMatch(scopeEntryId -> !getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId).isEmpty());
+  }
+
+  public void bulkDeleteCollectionScopes(String userId, String collectionId, List<String> collectionScopeIds) {
+    List<String> collectionScopesToDelete = new ArrayList<>();
+    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+    for (String collectionScopeId : collectionScopeIds) {
+      final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+        getAllReportsAffectedByScopeDeletion(collectionId, collectionScopeId);
+      try {
+        deleteReports(userId, reportsAffectedByScopeDeletion);
+        collectionScopesToDelete.add(collectionScopeId);
+      } catch(OptimizeRuntimeException e) {
+        log.debug("There was an error while deleting reports associated to collection scope with id {}. The scope cannot be deleted.", collectionScopeId);
+      }
+    }
+    collectionWriter.removeScopeEntries(collectionId, collectionScopesToDelete, userId);
   }
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
