@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedReceivedSnapshot.class);
-  private static final boolean FAILED = false;
-  private static final boolean SUCCESS = true;
   private static final int BLOCK_SIZE = 512 * 1024;
 
   private final Path directory;
@@ -60,33 +58,30 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public ActorFuture<Boolean> apply(final SnapshotChunk snapshotChunk) throws IOException {
-    return actor.call(() -> applyInternal(snapshotChunk));
+  public ActorFuture<Void> apply(final SnapshotChunk snapshotChunk) {
+    return actor.call(
+        () -> {
+          applyInternal(snapshotChunk);
+          return null;
+        });
   }
 
   private boolean containsChunk(final String chunkId) {
     return Files.exists(directory.resolve(chunkId));
   }
 
-  private boolean applyInternal(final SnapshotChunk snapshotChunk) throws IOException {
+  private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
     if (containsChunk(snapshotChunk.getChunkName())) {
-      return true;
+      return;
     }
 
-    final var currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
+    checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
 
-    if (isSnapshotIdInvalid(snapshotChunk.getSnapshotId())) {
-      return FAILED;
-    }
-
-    if (isSnapshotChecksumInvalid(currentSnapshotChecksum)) {
-      return FAILED;
-    }
+    final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
+    checkSnapshotChecksumIsValid(currentSnapshotChecksum);
 
     final var currentTotalCount = snapshotChunk.getTotalCount();
-    if (isTotalCountInvalid(currentTotalCount)) {
-      return FAILED;
-    }
+    checkTotalCountIsValid(currentTotalCount);
 
     final String snapshotId = snapshotChunk.getSnapshotId();
     final String chunkName = snapshotChunk.getChunkName();
@@ -96,83 +91,89 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
           "Ignore snapshot snapshotChunk {}, because snapshot {} already exists.",
           chunkName,
           snapshotId);
-      return SUCCESS;
+      return;
     }
 
-    if (isChunkChecksumInvalid(snapshotChunk, snapshotId, chunkName)) {
-      return FAILED;
-    }
+    checkChunkChecksumIsValid(snapshotChunk, snapshotId, chunkName);
 
     final var tmpSnapshotDirectory = directory;
-    FileUtil.ensureDirectoryExists(tmpSnapshotDirectory);
+    try {
+      FileUtil.ensureDirectoryExists(tmpSnapshotDirectory);
+    } catch (IOException e) {
+      throw new SnapshotWriteException(
+          String.format("Failed to ensure that directory %s exists.", tmpSnapshotDirectory), e);
+    }
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
     if (Files.exists(snapshotFile)) {
-      LOGGER.debug("Received a snapshot snapshotChunk which already exist '{}'.", snapshotFile);
-      return FAILED;
+      throw new SnapshotWriteException(
+          String.format(
+              "Received a snapshot snapshotChunk which already exist '%s'.", snapshotFile));
     }
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
-    return writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
+    writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
   }
 
-  private boolean isChunkChecksumInvalid(
-      final SnapshotChunk snapshotChunk, final String snapshotId, final String chunkName) {
+  private void checkChunkChecksumIsValid(
+      final SnapshotChunk snapshotChunk, final String snapshotId, final String chunkName)
+      throws SnapshotWriteException {
     final long expectedChecksum = snapshotChunk.getChecksum();
     final long actualChecksum = SnapshotChunkUtil.createChecksum(snapshotChunk.getContent());
 
     if (expectedChecksum != actualChecksum) {
-      LOGGER.warn(
-          "Expected to have checksum {} for snapshot chunk {} ({}), but calculated {}",
-          expectedChecksum,
-          chunkName,
-          snapshotId,
-          actualChecksum);
-      return true;
+      throw new SnapshotWriteException(
+          String.format(
+              "Expected to have checksum %d for snapshot chunk %s (%s), but calculated %d",
+              expectedChecksum, chunkName, snapshotId, actualChecksum));
     }
-    return false;
   }
 
-  private boolean isSnapshotChecksumInvalid(final long currentSnapshotChecksum) {
+  private void checkSnapshotChecksumIsValid(final long currentSnapshotChecksum)
+      throws SnapshotWriteException {
     if (expectedSnapshotChecksum == Long.MIN_VALUE) {
       expectedSnapshotChecksum = currentSnapshotChecksum;
     }
 
     if (expectedSnapshotChecksum != currentSnapshotChecksum) {
-      LOGGER.warn(
-          "Expected snapshot chunk with equal snapshot checksum {}, but got chunk with snapshot checksum {}.",
-          expectedSnapshotChecksum,
-          currentSnapshotChecksum);
-      return true;
+      throw new SnapshotWriteException(
+          String.format(
+              "Expected snapshot chunk with equal snapshot checksum %d, but got chunk with snapshot checksum %d.",
+              expectedSnapshotChecksum, currentSnapshotChecksum));
     }
-    return false;
   }
 
-  private boolean isTotalCountInvalid(final int currentTotalCount) {
+  private void checkTotalCountIsValid(final int currentTotalCount) throws SnapshotWriteException {
     if (expectedTotalCount == Integer.MIN_VALUE) {
       expectedTotalCount = currentTotalCount;
     }
 
     if (expectedTotalCount != currentTotalCount) {
-      LOGGER.warn(
-          "Expected snapshot chunk with equal snapshot total count {}, but got chunk with total count {}.",
-          expectedTotalCount,
-          currentTotalCount);
-      return true;
+      throw new SnapshotWriteException(
+          String.format(
+              "Expected snapshot chunk with equal snapshot total count %d, but got chunk with total count %d.",
+              expectedTotalCount, currentTotalCount));
     }
-    return false;
   }
 
-  private boolean isSnapshotIdInvalid(final String snapshotId) {
+  private void checkSnapshotIdIsValid(final String snapshotId) throws SnapshotWriteException {
     final var receivedSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshotId);
     if (receivedSnapshotId.isEmpty()) {
-      return true;
+      throw new SnapshotWriteException(
+          String.format("Snapshot file name '%s' has unexpected format", snapshotId));
     }
-    return metadata.compareTo(receivedSnapshotId.get()) != 0;
+
+    final FileBasedSnapshotMetadata chunkMetadata = receivedSnapshotId.get();
+    if (metadata.compareTo(chunkMetadata) != 0) {
+      throw new SnapshotWriteException(
+          String.format(
+              "Expected snapshot chunk metadata to match metadata '%s' but was '%s' instead",
+              metadata, chunkMetadata));
+    }
   }
 
-  private boolean writeReceivedSnapshotChunk(
-      final SnapshotChunk snapshotChunk, final Path snapshotFile) {
+  private void writeReceivedSnapshotChunk(
+      final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
     try (var channel =
         FileChannel.open(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
@@ -185,12 +186,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
       channel.force(true);
     } catch (IOException e) {
-      LOGGER.warn("Failed to write snapshot chunk {}", snapshotChunk, e);
-      return FAILED;
+      throw new SnapshotWriteException(
+          String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
     }
 
     LOGGER.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
-    return SUCCESS;
   }
 
   @Override

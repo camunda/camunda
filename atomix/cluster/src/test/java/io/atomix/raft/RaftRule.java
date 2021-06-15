@@ -457,8 +457,7 @@ public final class RaftRule extends ExternalResource {
     return createStorage(memberId, Function.identity());
   }
 
-  public void copySnapshotOffline(final String sourceNode, final String targetNode)
-      throws Exception {
+  public void copySnapshotOffline(final String sourceNode, final String targetNode) {
     final var snapshotOnNode = getSnapshotOnNode(sourceNode);
     final var targetSnapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(sourceNode));
     final var receivedSnapshot = targetSnapshotStore.newReceivedSnapshot(snapshotOnNode.getId());
