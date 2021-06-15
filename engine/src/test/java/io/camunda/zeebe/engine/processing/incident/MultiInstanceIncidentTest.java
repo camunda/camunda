@@ -33,7 +33,9 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -293,20 +295,24 @@ public final class MultiInstanceIncidentTest {
             .create();
 
     // when
-    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .limit(3)
-        .map(Record::getKey)
+    final List<Long> incidents =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("y", 1)).update();
+    incidents.stream()
         .map(key -> ENGINE.incident().ofInstance(processInstanceKey).withKey(key))
         .forEach(ResolveIncidentClient::resolve);
 
     // then
     final var variableNames = Set.of("item", "loopCounter");
     assertThat(
-            RecordingExporter.variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .filter(v -> variableNames.contains(v.getValue().getName()))
-                .limit(12))
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .filter(v -> variableNames.contains(v.getValue().getName())))
         .extracting(v -> tuple(v.getIntent(), v.getValue().getName(), v.getValue().getValue()))
         .containsExactly(
             tuple(VariableIntent.CREATED, "item", "1"),
@@ -314,13 +320,7 @@ public final class MultiInstanceIncidentTest {
             tuple(VariableIntent.CREATED, "item", "2"),
             tuple(VariableIntent.CREATED, "loopCounter", "2"),
             tuple(VariableIntent.CREATED, "item", "3"),
-            tuple(VariableIntent.CREATED, "loopCounter", "3"),
-            tuple(VariableIntent.UPDATED, "item", "1"),
-            tuple(VariableIntent.UPDATED, "loopCounter", "1"),
-            tuple(VariableIntent.UPDATED, "item", "2"),
-            tuple(VariableIntent.UPDATED, "loopCounter", "2"),
-            tuple(VariableIntent.UPDATED, "item", "3"),
-            tuple(VariableIntent.UPDATED, "loopCounter", "3"));
+            tuple(VariableIntent.CREATED, "loopCounter", "3"));
   }
 
   @Test
