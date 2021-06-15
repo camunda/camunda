@@ -312,9 +312,11 @@ public final class ProcessInstanceVariableTest {
 
     // then
     assertThat(
-            RecordingExporter.variableRecords(VariableIntent.UPDATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withIntent(VariableIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
         .hasSize(2)
