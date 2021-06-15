@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -36,8 +35,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
-  private static final String RESOLVE_UNHANDLED_ERROR_INCIDENT_MESSAGE =
-      "Expected to resolve incident of unhandled error for job %d, but such incidents cannot be resolved. See issue #6000";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
       "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
 
@@ -51,7 +48,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
-  private final JobState jobState;
   private final KeyGenerator keyGenerator;
 
   public ResolveIncidentProcessor(
@@ -64,7 +60,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     rejectionWriter = writers.rejection();
     incidentState = zeebeState.getIncidentState();
     elementInstanceState = zeebeState.getElementInstanceState();
-    jobState = zeebeState.getJobState();
     this.keyGenerator = keyGenerator;
   }
 
