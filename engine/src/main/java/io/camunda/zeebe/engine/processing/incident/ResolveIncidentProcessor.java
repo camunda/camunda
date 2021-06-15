@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -88,7 +87,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     responseWriter.writeEventOnCommand(
         incidentKey, IncidentIntent.RESOLVED, incidentRecord, command);
 
-    // process / job is already cleared if canceled, then we simply delete without resolving
+    // if it fails, a new incident is raised
     attemptToResolveIncident(command, responseWriter, streamWriter, sideEffect, incidentRecord);
   }
 
@@ -112,17 +111,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final boolean isJobIncident = jobKey > 0;
 
     if (isJobIncident) {
-      final State stateOfJob = jobState.getState(jobKey);
-      if (stateOfJob == State.ERROR_THROWN) {
-        // todo (#6000): resolve incident for UNHANDLED_ERROR_EVENT
-        // at time of writing the process cannot be fixed, so just recreate the incident
-        stateWriter.appendFollowUpEvent(
-            keyGenerator.nextKey(), IncidentIntent.CREATED, incidentRecord);
-      }
-    } else {
-      attemptToContinueProcessProcessing(
-          command, responseWriter, streamWriter, sideEffect, incidentRecord);
+      return;
     }
+
+    attemptToContinueProcessProcessing(
+        command, responseWriter, streamWriter, sideEffect, incidentRecord);
   }
 
   private void attemptToContinueProcessProcessing(
