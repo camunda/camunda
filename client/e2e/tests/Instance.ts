@@ -249,6 +249,14 @@ test('Instance with an incident - resolve incidents', async (t) => {
     .typeText(screen.queryByRole('textbox', {name: /value/i}), 'true', {
       paste: true,
     })
+    .expect(
+      screen
+        .queryByRole('button', {name: 'Save variable'})
+        .hasAttribute('disabled')
+    )
+    .notOk();
+
+  await t
     .click(screen.queryByRole('button', {name: 'Save variable'}))
     .expect(screen.queryByTestId('edit-variable-spinner').exists)
     .ok()

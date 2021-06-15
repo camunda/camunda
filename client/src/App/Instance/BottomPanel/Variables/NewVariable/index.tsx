@@ -4,58 +4,65 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import React from 'react';
 import {TextInput, AddTextarea} from '../styled';
 import {Container, Fields, Name, Value, EditButtonsContainer} from './styled';
 
-import {Field, useFormState} from 'react-final-form';
+import {Field} from 'react-final-form';
 
 import {EditButtons} from '../EditButtons';
-import {isFieldValid} from 'modules/utils/isFieldValid';
 import {
-  handleVariableNameFieldValidation,
-  handleVariableValueFieldValidation,
-} from '../validations';
+  validateNameCharacters,
+  validateNameComplete,
+  validateValueComplete,
+} from '../validators';
+
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
+import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
 
 const NewVariable: React.FC = () => {
-  const formState = useFormState();
-
   return (
     <Container data-testid="add-key-row">
       <Fields>
         <Name>
           <Field
             name="name"
-            validate={handleVariableNameFieldValidation}
+            validate={mergeValidators(
+              validateNameCharacters,
+              validateNameComplete
+            )}
             allowNull={false}
           >
-            {({input, meta}) => (
-              <TextInput
-                {...input}
-                autoFocus
-                type="text"
-                placeholder="Name"
-                $hasError={!isFieldValid(meta, formState.submitErrors?.name)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  input.onChange(e);
-                }}
-              />
+            {({input}) => (
+              <InjectAriaInvalid name={input.name}>
+                <TextInput
+                  {...input}
+                  autoFocus
+                  type="text"
+                  placeholder="Name"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    input.onChange(e);
+                  }}
+                />
+              </InjectAriaInvalid>
             )}
           </Field>
         </Name>
         <Value>
-          <Field name="value" validate={handleVariableValueFieldValidation}>
-            {({input, meta}) => (
-              <AddTextarea
-                {...input}
-                placeholder="Value"
-                hasAutoSize
-                minRows={1}
-                maxRows={4}
-                $hasError={!isFieldValid(meta, formState.submitErrors?.value)}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                  input.onChange(e);
-                }}
-              />
+          <Field name="value" validate={validateValueComplete}>
+            {({input}) => (
+              <InjectAriaInvalid name={input.name}>
+                <AddTextarea
+                  {...input}
+                  placeholder="Value"
+                  hasAutoSize
+                  minRows={1}
+                  maxRows={4}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                    input.onChange(e);
+                  }}
+                />
+              </InjectAriaInvalid>
             )}
           </Field>
         </Value>

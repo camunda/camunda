@@ -275,10 +275,15 @@ describe('Variables', () => {
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
-      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+      expect(
+        screen.queryByTitle('Value has to be JSON')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByTitle('Value has to be JSON')
+      ).toBeInTheDocument();
     });
 
-    it('should not allow empty variable name', async () => {
+    it('should not allow empty characters in variable name', async () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -306,7 +311,12 @@ describe('Variables', () => {
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
-      expect(screen.getByTitle('Name has to be filled')).toBeInTheDocument();
+      expect(
+        screen.queryByTitle('Name has to be filled')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByTitle('Name has to be filled')
+      ).toBeInTheDocument();
 
       userEvent.clear(screen.getByRole('textbox', {name: /value/i}));
       userEvent.type(screen.getByRole('textbox', {name: /value/i}), 'test');
@@ -315,11 +325,21 @@ describe('Variables', () => {
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
       expect(
-        screen.getByTitle('Name has to be filled and Value has to be JSON')
+        screen.queryByTitle('Name has to be filled and Value has to be JSON')
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByTitle(
+          'Name has to be filled and Value has to be JSON'
+        )
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: /name/i}));
       userEvent.type(screen.getByRole('textbox', {name: /name/i}), '   ');
+
+      expect(
+        screen.getByTitle('Name is invalid and Value has to be JSON')
+      ).toBeInTheDocument();
+
+      userEvent.type(screen.getByRole('textbox', {name: /name/i}), ' test');
 
       expect(
         screen.getByTitle('Name is invalid and Value has to be JSON')
@@ -367,19 +387,12 @@ describe('Variables', () => {
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
       expect(
-        screen.getByTitle('Name should be unique and Value has to be JSON')
-      ).toBeInTheDocument();
-
-      userEvent.type(
-        screen.getByRole('textbox', {name: /value/i}),
-        'invalid json'
-      );
-
+        screen.queryByTitle('Name should be unique and Value has to be JSON')
+      ).not.toBeInTheDocument();
       expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      expect(
-        screen.getByTitle('Name should be unique and Value has to be JSON')
+        await screen.findByTitle(
+          'Name should be unique and Value has to be JSON'
+        )
       ).toBeInTheDocument();
 
       userEvent.clear(screen.getByRole('textbox', {name: /value/i}));
@@ -395,10 +408,16 @@ describe('Variables', () => {
         screen.getByRole('textbox', {name: /name/i}),
         'someOtherName'
       );
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', {name: 'Save variable'})
+        ).toBeEnabled()
+      );
     });
 
     it('should not allow to add variable with invalid name', async () => {
+      jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -423,39 +442,36 @@ describe('Variables', () => {
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
       userEvent.type(screen.getByRole('textbox', {name: /name/i}), '"invalid"');
-
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      expect(
-        screen.getByTitle('Name is invalid and Value has to be JSON')
-      ).toBeInTheDocument();
-
-      userEvent.type(
-        screen.getByRole('textbox', {name: /value/i}),
-        'invalid json'
-      );
-
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      expect(
-        screen.getByTitle('Name is invalid and Value has to be JSON')
-      ).toBeInTheDocument();
-
-      userEvent.clear(screen.getByRole('textbox', {name: /value/i}));
       userEvent.type(screen.getByRole('textbox', {name: /value/i}), '123');
+
       expect(
         screen.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
-      expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
+
+      expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
+
+      jest.runOnlyPendingTimers();
+
+      expect(await screen.findByTitle('Name is invalid')).toBeInTheDocument();
 
       userEvent.clear(screen.getByRole('textbox', {name: /name/i}));
       userEvent.type(
         screen.getByRole('textbox', {name: /name/i}),
         'someOtherName'
       );
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
+
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', {name: 'Save variable'})
+        ).toBeEnabled()
+      );
+
+      expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     });
 
     it('clicking edit variables while add mode is open, should not display a validation error', async () => {
@@ -582,13 +598,15 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('textbox', {name: 'Value'})
+      ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
       );
       expect(
-        withinFirstVariable.queryByTestId('edit-value')
+        withinFirstVariable.queryByRole('textbox', {name: 'Value'})
       ).not.toBeInTheDocument();
       expect(
         withinFirstVariable.queryByRole('button', {name: 'Exit edit mode'})
@@ -599,7 +617,9 @@ describe('Variables', () => {
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
-      expect(withinFirstVariable.getByTestId('edit-value')).toBeInTheDocument();
+      expect(
+        withinFirstVariable.getByRole('textbox', {name: 'Value'})
+      ).toBeInTheDocument();
       expect(
         withinFirstVariable.getByRole('button', {name: 'Exit edit mode'})
       ).toBeInTheDocument();
@@ -626,7 +646,9 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('textbox', {name: 'Value'})
+      ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -640,6 +662,8 @@ describe('Variables', () => {
     });
 
     it('should validate when editing variables', async () => {
+      jest.useFakeTimers();
+
       const originalConsoleError = global.console.error;
       global.console.error = jest.fn();
 
@@ -660,7 +684,9 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.queryByTestId('edit-value')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('textbox', {name: 'Value'})
+      ).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -668,35 +694,35 @@ describe('Variables', () => {
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
-      const emptyValue = '';
-
-      userEvent.clear(screen.getByTestId('edit-value'));
-      userEvent.type(screen.getByTestId('edit-value'), emptyValue);
-
-      expect(
-        withinFirstVariable.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
-
-      userEvent.clear(screen.getByTestId('edit-value'));
-      userEvent.type(screen.getByTestId('edit-value'), '   ');
-
-      expect(
-        withinFirstVariable.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
-
       const invalidJSONObject = "{invalidKey: 'value'}";
 
-      userEvent.clear(screen.getByTestId('edit-value'));
-      userEvent.type(screen.getByTestId('edit-value'), invalidJSONObject);
+      userEvent.clear(screen.getByRole('textbox', {name: 'Value'}));
+      userEvent.type(
+        screen.getByRole('textbox', {name: 'Value'}),
+        invalidJSONObject
+      );
 
       expect(
         withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
-      expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
+
+      expect(
+        screen.queryByTitle('Value has to be JSON')
+      ).not.toBeInTheDocument();
+
+      jest.runOnlyPendingTimers();
+      expect(
+        await screen.findByTitle('Value has to be JSON')
+      ).toBeInTheDocument();
+
+      userEvent.clear(screen.getByRole('textbox', {name: 'Value'}));
+      userEvent.type(screen.getByRole('textbox', {name: 'Value'}), '123');
+
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
 
       global.console.error = originalConsoleError;
+      jest.clearAllTimers();
+      jest.useRealTimers();
     });
 
     it('should get variable details on edit button click if the variables value was a preview', async () => {

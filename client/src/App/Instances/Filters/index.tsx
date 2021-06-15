@@ -32,11 +32,11 @@ import {
   validateOperationIdComplete,
   validateVariableNameComplete,
   validateVariableValueComplete,
-  mergeValidators,
   validateIdsCharacters,
   validateIdsNotTooLong,
   validatesIdsComplete,
 } from './validators';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
   getFilters,
   updateFiltersSearchString,

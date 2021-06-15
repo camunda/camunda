@@ -11,12 +11,13 @@ import {
   EditTextarea,
   EditButtonsTD,
 } from './styled';
-import {Field, useFormState} from 'react-final-form';
+import {Field} from 'react-final-form';
 import {useRef} from 'react';
 
 import {EditButtons} from './EditButtons';
-import {isFieldValid} from 'modules/utils/isFieldValid';
-import {handleVariableValueFieldValidation} from './validations';
+
+import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
+import {validateValueComplete} from './validators';
 
 type Props = {
   variableName: string;
@@ -29,8 +30,6 @@ const ExistingVariable: React.FC<Props> = ({
   variableValue,
   onHeightChange,
 }) => {
-  const formState = useFormState();
-
   const editInputTDRef = useRef<HTMLTableDataCellElement>(null);
 
   return (
@@ -49,26 +48,26 @@ const ExistingVariable: React.FC<Props> = ({
         <Field
           name="value"
           initialValue={variableValue}
-          validate={handleVariableValueFieldValidation}
+          validate={validateValueComplete}
         >
-          {({input, meta}) => {
+          {({input}) => {
             return (
-              <EditTextarea
-                {...input}
-                autoFocus
-                hasAutoSize
-                minRows={1}
-                maxRows={4}
-                data-testid="edit-value"
-                placeholder="Value"
-                $hasError={!isFieldValid(meta, formState.submitErrors?.value)}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                  input.onChange(e);
-                }}
-                onHeightChange={() => {
-                  onHeightChange(editInputTDRef);
-                }}
-              />
+              <InjectAriaInvalid name={input.name}>
+                <EditTextarea
+                  {...input}
+                  autoFocus
+                  hasAutoSize
+                  minRows={1}
+                  maxRows={4}
+                  placeholder="Value"
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                    input.onChange(e);
+                  }}
+                  onHeightChange={() => {
+                    onHeightChange(editInputTDRef);
+                  }}
+                />
+              </InjectAriaInvalid>
             );
           }}
         </Field>

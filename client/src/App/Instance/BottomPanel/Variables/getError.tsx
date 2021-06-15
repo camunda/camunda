@@ -4,15 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ValidationErrors, SubmissionErrors} from 'final-form';
-
 const getError = (
-  errors: ValidationErrors,
-  submitErrors: SubmissionErrors
-): string | void => {
-  const nameFieldError = errors?.name ?? submitErrors?.name;
-  const valueFieldError = errors?.value ?? submitErrors?.value;
-
+  nameFieldError?: string,
+  valueFieldError?: string
+): string | undefined => {
   if (nameFieldError === undefined && valueFieldError === undefined) {
     return;
   }

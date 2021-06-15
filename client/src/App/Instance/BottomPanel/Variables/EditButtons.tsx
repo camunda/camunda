@@ -15,14 +15,18 @@ import {useForm, useFormState} from 'react-final-form';
 import {getError} from './getError';
 import {Warning as WarningIcon} from 'modules/components/Warning';
 
+import {useFieldError} from 'modules/hooks/useFieldError';
+
 const EditButtons: React.FC = () => {
   const form = useForm();
-  const {values, initialValues, errors, submitErrors, dirtySinceLastSubmit} =
+  const {values, initialValues, validating, hasValidationErrors} =
     useFormState();
 
+  const nameError = useFieldError('name');
+  const valueError = useFieldError('value');
   const errorMessage = getError(
-    errors,
-    dirtySinceLastSubmit ? [] : submitErrors
+    initialValues.name === '' ? nameError : undefined,
+    valueError
   );
 
   return (
@@ -44,7 +48,10 @@ const EditButtons: React.FC = () => {
         type="button"
         title="Save variable"
         disabled={
-          initialValues.value === values.value || errorMessage !== undefined
+          initialValues.value === values.value ||
+          validating ||
+          hasValidationErrors ||
+          errorMessage !== undefined
         }
         onClick={() => form.submit()}
         size="large"

@@ -177,9 +177,12 @@ test('Edit variables', async (t) => {
 
   // delete the value of the variable and add something else. see that save variable button is enabled, and no spinner is displayed.
   await t
-    .selectText(screen.queryByTestId('edit-value'))
+    .selectText(screen.queryByRole('textbox', {name: 'Value'}))
     .pressKey('delete')
-    .typeText(screen.queryByTestId('edit-value'), '"editedTestValue"')
+    .typeText(
+      screen.queryByRole('textbox', {name: 'Value'}),
+      '"editedTestValue"'
+    )
     .expect(
       screen
         .queryByRole('button', {name: 'Save variable'})

@@ -7,6 +7,7 @@
 import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
 import {parseIds, parseFilterDate, FiltersType} from 'modules/utils/filter';
+import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 
 const ERRORS = {
@@ -21,62 +22,6 @@ const ERRORS = {
 } as const;
 
 const VALIDATION_TIMEOUT = 750;
-
-function promisifyValidator(
-  validator: FieldValidator<string | undefined>,
-  debounceTimeout: number
-) {
-  return (...params: Parameters<FieldValidator<string | undefined>>) => {
-    const errorMessage = validator(...params);
-    if (errorMessage === undefined) {
-      return undefined;
-    }
-
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(errorMessage);
-      }, debounceTimeout);
-    });
-  };
-}
-
-const isPromise = (value: any) => {
-  return Boolean(value && typeof value.then === 'function');
-};
-function mergeValidators(
-  ...validators: Array<FieldValidator<string | undefined>>
-) {
-  return (
-    ...validateParams: Parameters<FieldValidator<string | undefined>>
-  ) => {
-    const executedValidators = validators.map((validator) =>
-      validator(...validateParams)
-    );
-    const syncValidators = executedValidators.filter(
-      (validator) => !isPromise(validator)
-    );
-    const asyncValidators = executedValidators.filter((validator) =>
-      isPromise(validator)
-    );
-
-    const immediateError = syncValidators.reduce(
-      (error, result) => error ?? result,
-      undefined
-    );
-
-    if (immediateError !== undefined) {
-      return immediateError;
-    }
-
-    if (asyncValidators.length === 0) {
-      return undefined;
-    }
-
-    return new Promise((resolve) => {
-      asyncValidators.forEach((result) => resolve(result));
-    });
-  };
-}
 
 const validateIdsCharacters: FieldValidator<FiltersType['ids']> = (
   value = ''
@@ -194,5 +139,4 @@ export {
   validateOperationIdComplete,
   validateVariableNameComplete,
   validateVariableValueComplete,
-  mergeValidators,
 };

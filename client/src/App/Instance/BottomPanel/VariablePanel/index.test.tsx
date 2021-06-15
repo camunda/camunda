@@ -63,10 +63,7 @@ describe('VariablePanel', () => {
               },
             ])
           )
-      )
-    );
-
-    mockServer.use(
+      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(null))
@@ -190,6 +187,34 @@ describe('VariablePanel', () => {
     userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
 
     mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(null))
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+    );
+
+    mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(
           ctx.json({
@@ -235,7 +260,6 @@ describe('VariablePanel', () => {
         }
       })
     );
-
     userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
     expect(
       screen.queryByRole('button', {name: 'Add variable'})
@@ -310,6 +334,9 @@ describe('VariablePanel', () => {
       )
     );
 
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+    );
     userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
     expect(
       screen.queryByRole('button', {name: 'Add variable'})
@@ -354,6 +381,9 @@ describe('VariablePanel', () => {
       )
     );
 
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+    );
     userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
 
     await waitForElementToBeRemoved(
@@ -399,6 +429,10 @@ describe('VariablePanel', () => {
       )
     );
 
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+    );
+
     userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
 
     await waitForElementToBeRemoved(
@@ -429,6 +463,34 @@ describe('VariablePanel', () => {
 
     userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
     userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(null))
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+    );
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>

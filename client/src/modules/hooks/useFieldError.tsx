@@ -10,11 +10,12 @@ import {useEffect, useState} from 'react';
 const useFieldError = (name: string) => {
   const {
     input: {value},
-    meta: {active},
+    meta: {active, dirtySinceLastSubmit},
   } = useField(name);
 
-  const {validating, errors} = useFormState();
+  const {validating, errors, submitErrors} = useFormState();
   const error = errors?.[name];
+  const submitError = dirtySinceLastSubmit ? undefined : submitErrors?.[name];
 
   const [computedError, setComputedError] = useState<string | undefined>();
 
@@ -23,8 +24,8 @@ const useFieldError = (name: string) => {
       return;
     }
 
-    setComputedError(error);
-  }, [validating, active, error, setComputedError, value]);
+    setComputedError(error ?? submitError);
+  }, [validating, active, error, submitError, setComputedError, value]);
 
   return computedError;
 };

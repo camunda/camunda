@@ -4,7 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const VARIABLE_MODE = {
-  EDIT: 'edit',
-  ADD: 'add',
-};
+const VALIDATION_DELAY = 750;
+const ERRORS = {
+  EMPTY_NAME: 'Name has to be filled',
+  INVALID_NAME: 'Name is invalid',
+  DUPLICATE_NAME: 'Name should be unique',
+  INVALID_VALUE: 'Value has to be JSON',
+} as const;
+
+export {VALIDATION_DELAY, ERRORS};
