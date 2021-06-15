@@ -194,6 +194,38 @@ final class VariableBehaviorTest {
   }
 
   @Test
+  void shouldMergeDocumentWithoutUpdatingUnmodifiedVariable() {
+    // given
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long parentScopeKey = 2;
+    final long childScopeKey = 3;
+    final Map<String, Object> document = Map.of("foo", "bar", "buz", "baz");
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(parentScopeKey, rootScopeKey);
+    state.createScope(childScopeKey, parentScopeKey);
+    setVariable(4, rootScopeKey, processDefinitionKey, "foo", "bar");
+
+    // when
+    behavior.mergeDocument(
+        childScopeKey, processDefinitionKey, rootScopeKey, MsgPackUtil.asMsgPack(document));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events)
+        .satisfiesExactlyInAnyOrder(
+            event -> {
+              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+              VariableRecordValueAssert.assertThat(event.value)
+                  .hasName("buz")
+                  .hasValue("\"baz\"")
+                  .hasScopeKey(rootScopeKey)
+                  .hasProcessDefinitionKey(processDefinitionKey)
+                  .hasProcessInstanceKey(rootScopeKey);
+            });
+  }
+
+  @Test
   void shouldMergeDocumentWithoutPropagatingExistingVariables() {
     // given
     final long processDefinitionKey = 1;
@@ -320,6 +352,34 @@ final class VariableBehaviorTest {
                   .hasProcessDefinitionKey(processDefinitionKey)
                   .hasProcessInstanceKey(parentScopeKey);
             });
+  }
+
+  @Test
+  void shouldOnlyUpdateModifiedVariables() {
+    // given
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long parentFooKey = 3;
+    final DirectBuffer variableName = BufferUtil.wrapString("foo");
+    final DirectBuffer variableValue = packString("bar");
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+    setVariable(parentFooKey, parentScopeKey, processDefinitionKey, "foo", "bar");
+
+    // when
+    behavior.setLocalVariable(
+        parentScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        variableName,
+        variableValue,
+        0,
+        variableValue.capacity());
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).isEmpty();
   }
 
   @SuppressWarnings("unchecked")
