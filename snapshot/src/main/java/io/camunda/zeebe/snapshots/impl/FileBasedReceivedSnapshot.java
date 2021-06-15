@@ -158,9 +158,17 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void checkSnapshotIdIsValid(final String snapshotId) throws SnapshotWriteException {
     final var receivedSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshotId);
-    if (receivedSnapshotId.isEmpty() || metadata.compareTo(receivedSnapshotId.get()) != 0) {
+    if (receivedSnapshotId.isEmpty()) {
       throw new SnapshotWriteException(
           String.format("Snapshot file name '%s' has unexpected format", snapshotId));
+    }
+
+    final FileBasedSnapshotMetadata chunkMetadata = receivedSnapshotId.get();
+    if (metadata.compareTo(chunkMetadata) != 0) {
+      throw new SnapshotWriteException(
+          String.format(
+              "Expected snapshot chunk metadata to match metadata '%s' but was '%s' instead",
+              metadata, chunkMetadata));
     }
   }
 
