@@ -58,7 +58,7 @@
 
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
-    <plugin.version.fmt>2.10</plugin.version.fmt>
+    <plugin.version.fmt>2.11</plugin.version.fmt>
     <license.header>${project.baseUri}/../license/license-header</license.header>
   </properties>
 
