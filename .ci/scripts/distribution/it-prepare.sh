@@ -5,6 +5,7 @@ LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
 MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
 MAVEN_PROPERTIES=(
   -DskipUTs
+  -DskipChecks
 )
 
 # make sure to specify the profiles used in the verify goal when running preparing to go offline, as
