@@ -1,0 +1,16 @@
+[
+  {
+    "extension": "revapi.filter",
+    "configuration": {
+      "justification": "We expose certain external types on purpose, and for these, we can relax the compatibility guarantees.",
+      "elements": {
+        "exclude": [
+          {
+            "matcher": "java-package",
+            "match": "/org\\.assertj(\\..*)?/"
+          }
+        ]
+      }
+    }
+  }
+]
