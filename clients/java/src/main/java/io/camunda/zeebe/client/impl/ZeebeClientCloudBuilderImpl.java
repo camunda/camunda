@@ -95,6 +95,7 @@ public class ZeebeClientCloudBuilderImpl
     if (properties.containsKey(ClientProperties.CLOUD_CLIENT_SECRET)) {
       withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET));
     }
+    innerBuilder.withProperties(properties);
     return this;
   }
 
