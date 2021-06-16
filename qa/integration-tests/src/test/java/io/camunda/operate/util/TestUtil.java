@@ -58,6 +58,11 @@ public abstract class TestUtil {
   }
 
   public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId) {
+    return createProcessInstance(state, processId, null);
+  }
+
+  public static ProcessInstanceForListViewEntity createProcessInstance(ProcessInstanceState state, Long processId,
+      Long parentInstanceKey) {
     ProcessInstanceForListViewEntity processInstance = createProcessInstanceEntityWithIds();
 
     processInstance.setStartDate(DateUtil.getRandomStartDate());
@@ -82,6 +87,7 @@ public abstract class TestUtil {
       processInstance.setProcessName(processInstance.getBpmnProcessId());
     }
     processInstance.setPartitionId(1);
+    processInstance.setParentProcessInstanceKey(parentInstanceKey);
     return processInstance;
   }
 

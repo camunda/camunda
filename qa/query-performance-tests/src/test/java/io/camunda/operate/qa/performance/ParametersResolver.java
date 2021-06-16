@@ -106,10 +106,10 @@ public class ParametersResolver {
       if (hits.getHits().length == 0) {
         throw new RuntimeException("Error occurred when reading startDate from Elasticsearch: no records found");
       }
-      final ProcessInstanceForListViewEntity wi = ElasticsearchUtil
+      final ProcessInstanceForListViewEntity pi = ElasticsearchUtil
           .fromSearchHit(hits.getHits()[0].getSourceAsString(), objectMapper, ProcessInstanceForListViewEntity.class);
-      startDateAfter = wi.getStartDate().format(df);
-      startDateBefore = wi.getStartDate().plus(1, ChronoUnit.MINUTES).format(df);
+      startDateAfter = pi.getStartDate().format(df);
+      startDateBefore = pi.getStartDate().plus(1, ChronoUnit.MINUTES).format(df);
     } catch (IOException ex) {
       throw new RuntimeException("Error occurred when reading processInstanceIds from Elasticsearch", ex);
     }

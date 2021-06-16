@@ -97,8 +97,8 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     }, processInstanceKey);
 
     //then internally previous index will also be refreshed and full data will be loaded
-    ProcessInstanceForListViewEntity wi = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
+    ProcessInstanceForListViewEntity pi = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester

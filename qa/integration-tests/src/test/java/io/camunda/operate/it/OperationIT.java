@@ -145,7 +145,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     ListViewResponseDto response = getProcessInstances(allRunningQuery);
     assertThat(response.getProcessInstances()).hasSize(instanceCount);
-    assertThat(response.getProcessInstances()).allMatch(wi -> wi.isHasActiveOperation() == true);
+    assertThat(response.getProcessInstances()).allMatch(pi -> pi.isHasActiveOperation() == true);
     assertThat(response.getProcessInstances()).flatExtracting("operations").extracting(OperationTemplate.TYPE).containsOnly(OperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(response.getProcessInstances()).flatExtracting("operations").extracting(OperationTemplate.STATE).containsOnly(
       OperationState.SCHEDULED);

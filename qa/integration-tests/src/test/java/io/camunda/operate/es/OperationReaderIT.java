@@ -66,7 +66,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testWorfklowInstanceQuery() throws Exception {
+  public void testProcessInstanceQuery() throws Exception {
     when(userService.getCurrentUsername()).thenReturn(USER_1);
 
     ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllRunningRequest();
@@ -76,14 +76,14 @@ public class OperationReaderIT extends OperateIntegrationTest {
     List<ListViewProcessInstanceDto> processInstances = response.getProcessInstances();
     assertThat(processInstances).hasSize(3);
     assertThat(processInstances).filteredOn("id", PROCESS_INSTANCE_ID_1)
-        .allMatch(wi -> wi.isHasActiveOperation() == true &&
-            wi.getOperations().size() == 2);
+        .allMatch(pi -> pi.isHasActiveOperation() == true &&
+            pi.getOperations().size() == 2);
     assertThat(processInstances).filteredOn("id", PROCESS_INSTANCE_ID_2)
-        .allMatch(wi -> wi.isHasActiveOperation() == true &&
-            wi.getOperations().size() == 1);
+        .allMatch(pi -> pi.isHasActiveOperation() == true &&
+            pi.getOperations().size() == 1);
     assertThat(processInstances).filteredOn("id", PROCESS_INSTANCE_ID_3)
-        .allMatch(wi -> wi.isHasActiveOperation() == false &&
-            wi.getOperations().size() == 0);
+        .allMatch(pi -> pi.isHasActiveOperation() == false &&
+            pi.getOperations().size() == 0);
   }
 
   @Test

@@ -94,7 +94,7 @@ public class ListViewZeebeRecordProcessor {
       ImportBatch importBatch) throws PersistenceException {
 
     for (Map.Entry<Long, List<RecordImpl<ProcessInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
-      ProcessInstanceForListViewEntity wiEntity = null;
+      ProcessInstanceForListViewEntity piEntity = null;
       Map<Long, FlowNodeInstanceForListViewEntity> actEntities = new HashMap<Long, FlowNodeInstanceForListViewEntity>();
       Long processInstanceKey = null;
       for (RecordImpl record: wiRecordsEntry.getValue()) {
@@ -107,13 +107,13 @@ public class ListViewZeebeRecordProcessor {
             //resolve corresponding operation
             elasticsearchManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, bulkRequest);
           }
-          wiEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, wiEntity);
+          piEntity = updateProcessInstance(importBatch, record, intentStr, recordValue, piEntity);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
           updateFlowNodeInstance(record, intentStr, recordValue, actEntities);
         }
       }
-      if (wiEntity != null) {
-        bulkRequest.add(getWorfklowInstanceQuery(wiEntity));
+      if (piEntity != null) {
+        bulkRequest.add(getProcessInstanceQuery(piEntity));
       }
       for (FlowNodeInstanceForListViewEntity actEntity: actEntities.values()) {
         bulkRequest.add(getFlowNodeInstanceQuery(actEntity, processInstanceKey));
@@ -124,43 +124,43 @@ public class ListViewZeebeRecordProcessor {
 
   private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch, Record record, String intentStr,
                                                                    ProcessInstanceRecordValueImpl recordValue,
-                                                                   ProcessInstanceForListViewEntity wiEntity) {
-    if (wiEntity == null) {
-      wiEntity = new ProcessInstanceForListViewEntity();
+                                                                   ProcessInstanceForListViewEntity piEntity) {
+    if (piEntity == null) {
+      piEntity = new ProcessInstanceForListViewEntity();
     }
-    wiEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()));
-    wiEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    wiEntity.setKey(recordValue.getProcessInstanceKey());
+    piEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()));
+    piEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    piEntity.setKey(recordValue.getProcessInstanceKey());
 
-    wiEntity.setPartitionId(record.getPartitionId());
-    wiEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    wiEntity.setProcessVersion(recordValue.getVersion());
+    piEntity.setPartitionId(record.getPartitionId());
+    piEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    piEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    piEntity.setProcessVersion(recordValue.getVersion());
 
-    wiEntity.setProcessName(processCache.getProcessNameOrDefaultValue(wiEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
+    piEntity.setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
 
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       importBatch.incrementFinishedWiCount();
-      wiEntity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      piEntity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        wiEntity.setState(ProcessInstanceState.CANCELED);
+        piEntity.setState(ProcessInstanceState.CANCELED);
       } else {
-        wiEntity.setState(ProcessInstanceState.COMPLETED);
+        piEntity.setState(ProcessInstanceState.COMPLETED);
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      wiEntity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      wiEntity.setState(ProcessInstanceState.ACTIVE);
+      piEntity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      piEntity.setState(ProcessInstanceState.ACTIVE);
     } else {
-      wiEntity.setState(ProcessInstanceState.ACTIVE);
+      piEntity.setState(ProcessInstanceState.ACTIVE);
     }
     //call activity related fields
     if (recordValue.getParentProcessInstanceKey() != ABSENT_PARENT_PROCESS_INSTANCE_ID) {
-      wiEntity
+      piEntity
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey());
-      wiEntity
+      piEntity
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
     }
-    return wiEntity;
+    return piEntity;
   }
 
   private void updateFlowNodeInstance(Record record, String intentStr, ProcessInstanceRecordValueImpl recordValue, Map<Long, FlowNodeInstanceForListViewEntity> entities) {
@@ -294,32 +294,32 @@ public class ListViewZeebeRecordProcessor {
     }
   }
 
-  private UpdateRequest getWorfklowInstanceQuery(ProcessInstanceForListViewEntity wiEntity) throws PersistenceException {
+  private UpdateRequest getProcessInstanceQuery(ProcessInstanceForListViewEntity piEntity) throws PersistenceException {
     try {
-      logger.debug("Process instance for list view: id {}", wiEntity.getId());
+      logger.debug("Process instance for list view: id {}", piEntity.getId());
       Map<String, Object> updateFields = new HashMap<>();
-      if (wiEntity.getStartDate() != null) {
-        updateFields.put(ListViewTemplate.START_DATE, wiEntity.getStartDate());
+      if (piEntity.getStartDate() != null) {
+        updateFields.put(ListViewTemplate.START_DATE, piEntity.getStartDate());
       }
-      if (wiEntity.getEndDate() != null) {
-        updateFields.put(ListViewTemplate.END_DATE, wiEntity.getEndDate());
+      if (piEntity.getEndDate() != null) {
+        updateFields.put(ListViewTemplate.END_DATE, piEntity.getEndDate());
       }
-      updateFields.put(ListViewTemplate.PROCESS_NAME, wiEntity.getProcessName());
-      updateFields.put(ListViewTemplate.PROCESS_VERSION, wiEntity.getProcessVersion());
-      if (wiEntity.getState() != null) {
-        updateFields.put(ListViewTemplate.STATE, wiEntity.getState());
+      updateFields.put(ListViewTemplate.PROCESS_NAME, piEntity.getProcessName());
+      updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
+      if (piEntity.getState() != null) {
+        updateFields.put(ListViewTemplate.STATE, piEntity.getState());
       }
 
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(wiEntity.getId())
-        .upsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
+      return new UpdateRequest().index(listViewTemplate.getFullQualifiedName()).id(piEntity.getId())
+        .upsert(objectMapper.writeValueAsString(piEntity), XContentType.JSON)
         .doc(jsonMap)
         .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert process instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert process instance [%s]  for list view", wiEntity.getId()), e);
+      throw new PersistenceException(String.format("Error preparing the query to upsert process instance [%s]  for list view", piEntity.getId()), e);
     }
   }
 

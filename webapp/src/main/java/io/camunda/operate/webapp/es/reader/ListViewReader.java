@@ -118,9 +118,9 @@ public class ListViewReader {
         .map(processInstanceEntities, processInstanceEntity -> Long.valueOf(processInstanceEntity.getId()));
     final Set<Long> instancesWithIncidentsIds = findInstancesWithIncidents(processInstanceKeys);
 
-    final Map<Long, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
+    final Map<Long, List<OperationEntity>> operationsPerProcessInstance = operationReader.getOperationsPerProcessInstanceKey(processInstanceKeys);
 
-    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance);
+    final List<ListViewProcessInstanceDto> processInstanceDtoList = ListViewProcessInstanceDto.createFrom(processInstanceEntities, instancesWithIncidentsIds, operationsPerProcessInstance);
     result.setProcessInstances(processInstanceDtoList);
     return result;
   }
@@ -166,23 +166,17 @@ public class ListViewReader {
 
   private void applySorting(SearchSourceBuilder searchSourceBuilder, ListViewRequestDto request) {
 
-    //we sort by id as numbers, not as strings
-    if (request.getSorting() != null) {
-      String sortBy = request.getSorting().getSortBy();
-      if (sortBy.equals(ListViewTemplate.ID)) {
-        request.getSorting().setSortBy(ListViewTemplate.KEY);
-      }
-    }
+    String sortBy = getSortBy(request);
 
     final boolean directSorting = request.getSearchAfter() != null || request.getSearchBefore() == null;
     if (request.getSorting() != null) {
       SortBuilder sort1;
       SortOrder sort1DirectOrder = SortOrder.fromString(request.getSorting().getSortOrder());
       if (directSorting) {
-        sort1 = SortBuilders.fieldSort(request.getSorting().getSortBy()).order(sort1DirectOrder)
+        sort1 = SortBuilders.fieldSort(sortBy).order(sort1DirectOrder)
             .missing("_last");
       } else {
-        sort1 = SortBuilders.fieldSort(request.getSorting().getSortBy())
+        sort1 = SortBuilders.fieldSort(sortBy)
             .order(reverseOrder(sort1DirectOrder)).missing("_first");
       }
       searchSourceBuilder.sort(sort1);
@@ -205,6 +199,20 @@ public class ListViewReader {
     if (querySearchAfter != null) {
       searchSourceBuilder.searchAfter(querySearchAfter);
     }
+  }
+
+  private String getSortBy(final ListViewRequestDto request) {
+    if (request.getSorting() != null) {
+      String sortBy = request.getSorting().getSortBy();
+      if (sortBy.equals(ListViewRequestDto.SORT_BY_PARENT_INSTANCE_ID)) {
+        sortBy = ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+      } else if (sortBy.equals(ListViewTemplate.ID)) {
+        //we sort by id as numbers, not as strings
+        sortBy = ListViewTemplate.KEY;
+      }
+      return sortBy;
+    }
+    return null;
   }
 
   private SortOrder reverseOrder(final SortOrder sortOrder) {
@@ -257,13 +265,21 @@ public class ListViewReader {
         createBpmnProcessIdQuery(query),
         createExcludeIdsQuery(query),
         createVariablesQuery(query),
-        createBatchOperatioIdQuery(query)
+        createBatchOperatioIdQuery(query),
+        createParentInstanceIdQuery(query)
     );
   }
 
   private QueryBuilder createBatchOperatioIdQuery(ListViewQueryDto query) {
     if (query.getBatchOperationId() != null) {
       return termQuery(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId());
+    }
+    return null;
+  }
+
+  private QueryBuilder createParentInstanceIdQuery(ListViewQueryDto query) {
+    if (query.getParentInstanceId() != null) {
+      return termQuery(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY, query.getParentInstanceId());
     }
     return null;
   }

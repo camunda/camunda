@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
@@ -31,6 +32,8 @@ public class ListViewProcessInstanceDto {
   private ProcessInstanceStateDto state;
 
   private String bpmnProcessId;
+
+  private Long parentInstanceId;
 
   private boolean hasActiveOperation = false;
 
@@ -114,6 +117,15 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
+  public Long getParentInstanceId() {
+    return parentInstanceId;
+  }
+
+  public ListViewProcessInstanceDto setParentInstanceId(final Long parentInstanceId) {
+    this.parentInstanceId = parentInstanceId;
+    return this;
+  }
+
   public boolean isHasActiveOperation() {
     return hasActiveOperation;
   }
@@ -160,6 +172,7 @@ public class ListViewProcessInstanceDto {
       .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
       .setProcessName(processInstanceEntity.getProcessName())
       .setProcessVersion(processInstanceEntity.getProcessVersion())
+      .setParentInstanceId(processInstanceEntity.getParentProcessInstanceKey())
       .setOperations(OperationDto.createFrom(operations));
     if (operations != null) {
       processInstance.setHasActiveOperation(operations.stream().anyMatch(
@@ -178,13 +191,13 @@ public class ListViewProcessInstanceDto {
   }
 
   public static List<ListViewProcessInstanceDto> createFrom(List<ProcessInstanceForListViewEntity> processInstanceEntities,
-    Set<Long> instancesWithIncidents, Map<Long, List<OperationEntity>> operationsPerWorfklowInstance) {
+    Set<Long> instancesWithIncidents, Map<Long, List<OperationEntity>> operationsPerProcessInstance) {
     List<ListViewProcessInstanceDto> result = new ArrayList<>();
     if (processInstanceEntities != null) {
       for (ProcessInstanceForListViewEntity processInstanceEntity: processInstanceEntities) {
         if (processInstanceEntity != null) {
           final ListViewProcessInstanceDto instanceDto = createFrom(processInstanceEntity, instancesWithIncidents.contains(processInstanceEntity.getProcessInstanceKey()),
-            operationsPerWorfklowInstance.get(processInstanceEntity.getProcessInstanceKey()));
+            operationsPerProcessInstance.get(processInstanceEntity.getProcessInstanceKey()));
           result.add(instanceDto);
         }
       }
@@ -193,44 +206,34 @@ public class ListViewProcessInstanceDto {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o)
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
-
-    ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
-
-    if (id != null ? !id.equals(that.id) : that.id != null)
-      return false;
-    if (processId != null ? !processId.equals(that.processId) : that.processId != null)
-      return false;
-    if (processName != null ? !processName.equals(that.processName) : that.processName != null)
-      return false;
-    if (processVersion != null ? !processVersion.equals(that.processVersion) : that.processVersion != null)
-      return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
-      return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
-    if (state != that.state)
-      return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    return operations != null ? operations.equals(that.operations) : that.operations == null;
+    }
+    final ListViewProcessInstanceDto that = (ListViewProcessInstanceDto) o;
+    return hasActiveOperation == that.hasActiveOperation &&
+        Objects.equals(id, that.id) &&
+        Objects.equals(processId, that.processId) &&
+        Objects.equals(processName, that.processName) &&
+        Objects.equals(processVersion, that.processVersion) &&
+        Objects.equals(startDate, that.startDate) &&
+        Objects.equals(endDate, that.endDate) &&
+        state == that.state &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
+        Objects.equals(parentInstanceId, that.parentInstanceId) &&
+        Objects.equals(operations, that.operations) &&
+        Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (processId != null ? processId.hashCode() : 0);
-    result = 31 * result + (processName != null ? processName.hashCode() : 0);
-    result = 31 * result + (processVersion != null ? processVersion.hashCode() : 0);
-    result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
-    result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
-    result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (operations != null ? operations.hashCode() : 0);
+    int result = Objects
+        .hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
+            parentInstanceId, hasActiveOperation, operations);
+    result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 

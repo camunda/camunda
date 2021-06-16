@@ -54,6 +54,8 @@ public class ListViewQueryDto {
 
   private String batchOperationId;
 
+  private Long parentInstanceId;
+
   public ListViewQueryDto() {
   }
 
@@ -227,6 +229,14 @@ public class ListViewQueryDto {
     this.batchOperationId = batchOperationId;
   }
 
+  public Long getParentInstanceId() {
+    return parentInstanceId;
+  }
+
+  public ListViewQueryDto setParentInstanceId(final Long parentInstanceId) {
+    this.parentInstanceId = parentInstanceId;
+    return this;
+  }
 
   @Override
   public boolean equals(final Object o) {
@@ -255,7 +265,8 @@ public class ListViewQueryDto {
         Objects.equals(processVersion, that.processVersion) &&
         Objects.equals(excludeIds, that.excludeIds) &&
         Objects.equals(variable, that.variable) &&
-        Objects.equals(batchOperationId, that.batchOperationId);
+        Objects.equals(batchOperationId, that.batchOperationId) &&
+        Objects.equals(parentInstanceId, that.parentInstanceId);
   }
 
   @Override
@@ -263,6 +274,7 @@ public class ListViewQueryDto {
     return Objects
         .hash(running, active, incidents, finished, completed, canceled, ids, errorMessage,
             activityId, startDateAfter, startDateBefore, endDateAfter, endDateBefore, processIds,
-            bpmnProcessId, processVersion, excludeIds, variable, batchOperationId);
+            bpmnProcessId, processVersion, excludeIds, variable, batchOperationId,
+            parentInstanceId);
   }
 }

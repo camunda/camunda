@@ -79,15 +79,15 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getProcessId()).isEqualTo(ConversionUtils.toStringOrNull(processDefinitionKey));
-    assertThat(wi.getProcessName()).isEqualTo("Demo process");
-    assertThat(wi.getProcessVersion()).isEqualTo(1);
-    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
-    assertThat(wi.getEndDate()).isNull();
-    assertThat(wi.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(wi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getProcessId()).isEqualTo(ConversionUtils.toStringOrNull(processDefinitionKey));
+    assertThat(pi.getProcessName()).isEqualTo("Demo process");
+    assertThat(pi.getProcessVersion()).isEqualTo(1);
+    assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
+    assertThat(pi.getEndDate()).isNull();
+    assertThat(pi.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(pi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -125,11 +125,11 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   private void assertVariableExists(Long processInstanceKey, String name, String value) {
-    ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView(
+    ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView(
       TestUtil.createGetAllProcessInstancesRequest(q -> {
         q.setVariable(new VariablesQueryDto(name, value));
       }));
-    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
   }
 
   private void assertVariableDoesNotExist(Long processInstanceKey, String name, String value) {
@@ -178,8 +178,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getState()).isEqualTo(ProcessInstanceState.COMPLETED);
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.COMPLETED);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -216,8 +216,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getStartDate()).isEqualTo(startDate);
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getStartDate()).isEqualTo(startDate);
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getStartDate()).isEqualTo(startDate);
 
   }
 
@@ -244,8 +244,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.ACTIVE);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -282,8 +282,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -331,8 +331,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.INCIDENT);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -404,8 +404,8 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(0);
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -509,12 +509,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
-    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
-    assertThat(wi.getEndDate()).isNotNull();
-    assertThat(wi.getEndDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(wi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
+    assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(pi.getEndDate()).isNotNull();
+    assertThat(pi.getEndDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(pi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
@@ -552,12 +552,12 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(processInstanceEntity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
     //assert list view data
-    final ListViewProcessInstanceDto wi = getSingleProcessInstanceForListView();
-    assertThat(wi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
-    assertThat(wi.getId()).isEqualTo(processInstanceKey.toString());
-    assertThat(wi.getEndDate()).isNotNull();
-    assertThat(wi.getEndDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(wi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
+    assertThat(pi.getState()).isEqualTo(ProcessInstanceStateDto.CANCELED);
+    assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
+    assertThat(pi.getEndDate()).isNotNull();
+    assertThat(pi.getEndDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(pi.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
     //assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
