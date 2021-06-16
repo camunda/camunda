@@ -23,7 +23,6 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebeimport.ElasticsearchManager;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.cache.ProcessCache;

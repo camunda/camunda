@@ -163,6 +163,10 @@ public class OperateTester {
     return processInstanceKey;
   }
 
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
   public OperateTester createAndDeploySimpleProcess(String processId,String activityId) {
     BpmnModelInstance process = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
@@ -386,6 +390,11 @@ public class OperateTester {
 
   public OperateTester variableExists(String name) {
     elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, name);
+    return this;
+  }
+
+  public OperateTester conditionIsMet(Predicate<Object[]> elsCheck, Object... arguments) {
+    elasticsearchTestRule.processAllRecordsAndWait(elsCheck, arguments);
     return this;
   }
 

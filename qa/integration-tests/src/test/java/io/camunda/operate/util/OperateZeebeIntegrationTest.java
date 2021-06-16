@@ -144,6 +144,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected Predicate<Object[]> operationsByProcessInstanceAreCompleted;
 
   @Autowired
+  @Qualifier("processInstancesAreStartedByProcessIdCheck")
+  protected Predicate<Object[]> processInstancesAreStartedByProcessId;
+
+  @Autowired
   protected OperateProperties operateProperties;
 
   private String workerName;

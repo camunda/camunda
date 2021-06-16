@@ -24,6 +24,7 @@ public class FlowNodeInstanceMetadataDto {
   private FlowNodeType flowNodeType;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
+  private String calledProcessInstanceId;
 
   private String eventId;
   /**
@@ -85,6 +86,16 @@ public class FlowNodeInstanceMetadataDto {
 
   public FlowNodeInstanceMetadataDto setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
+  }
+
+  public String getCalledProcessInstanceId() {
+    return calledProcessInstanceId;
+  }
+
+  public FlowNodeInstanceMetadataDto setCalledProcessInstanceId(
+      final String calledProcessInstanceId) {
+    this.calledProcessInstanceId = calledProcessInstanceId;
     return this;
   }
 
@@ -162,7 +173,7 @@ public class FlowNodeInstanceMetadataDto {
   }
 
   public static FlowNodeInstanceMetadataDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
-      EventEntity eventEntity) {
+      EventEntity eventEntity, String calledProcessInstanceId) {
     FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto();
     //flow node instance data
     metadataDto.setFlowNodeInstanceId(flowNodeInstance.getId());
@@ -170,6 +181,7 @@ public class FlowNodeInstanceMetadataDto {
     metadataDto.setFlowNodeType(flowNodeInstance.getType());
     metadataDto.setStartDate(flowNodeInstance.getStartDate());
     metadataDto.setEndDate(flowNodeInstance.getEndDate());
+    metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
 
     //last event data
     metadataDto.setEventId(eventEntity.getId());
@@ -196,6 +208,7 @@ public class FlowNodeInstanceMetadataDto {
         ", flowNodeType=" + flowNodeType +
         ", startDate=" + startDate +
         ", endDate=" + endDate +
+        ", calledProcessInstanceId='" + calledProcessInstanceId + '\'' +
         ", eventId='" + eventId + '\'' +
         ", jobType='" + jobType + '\'' +
         ", jobRetries=" + jobRetries +

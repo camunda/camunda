@@ -464,6 +464,30 @@ public class ElasticsearchChecks {
   }
 
   /**
+   * Checks whether given amount (argument #2) of processInstances with given processDefinitionId (argument #1) are started
+   * @return
+   */
+  @Bean(name = "processInstancesAreStartedByProcessIdCheck")
+  public Predicate<Object[]> getProcessInstancesAreStartedByProcessIdCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      Long processDefinitionId = (Long)objects[0];
+      Integer count = (Integer)objects[1];
+      final ListViewRequestDto getActiveRequest =
+          TestUtil.createProcessInstanceRequest(q -> {
+            q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionId));
+            q.setRunning(true);
+            q.setActive(true);
+          });
+      getActiveRequest.setPageSize(count);
+      final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getActiveRequest);
+      return responseDto.getTotalCount() == count;
+    };
+  }
+
+  /**
    * Checks whether all processInstances from given processInstanceKeys (List<Long>) are started
    * @return
    */

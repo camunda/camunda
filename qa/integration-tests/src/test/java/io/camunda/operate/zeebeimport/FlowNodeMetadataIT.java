@@ -5,12 +5,15 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.entities.FlowNodeType.CALL_ACTIVITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.entities.FlowNodeType.MULTI_INSTANCE_BODY;
 import static io.camunda.operate.entities.FlowNodeType.SERVICE_TASK;
 import static io.camunda.operate.entities.FlowNodeType.SUB_PROCESS;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
@@ -19,7 +22,6 @@ import java.util.stream.Collectors;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -29,7 +31,6 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -38,6 +39,9 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;
+
+  @Autowired
+  private ProcessInstanceReader processInstanceReader;
 
   @Before
   public void before() {
@@ -143,7 +147,7 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
         MULTI_INSTANCE_BODY, flowNodeInstanceId1, false);
 
-    //when 2.2 (is multi-instance body itseld)
+    //when 2.2 (is multi-instance body itself)
     flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(processInstanceKey), null, null, flowNodeInstanceId1);
 
@@ -211,6 +215,106 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertFlowNodeInstanceData(flowNodeMetadata.getInstanceMetadata(), subprocessId,
         SUB_PROCESS, subprocessInstanceId2, false);
+  }
+
+  /**
+   * Multi-instance call activity.
+   */
+  @Test
+  public void shouldReturnCalledProcessInstanceIdForMultiInstanceCallActivity() throws Exception {
+    //having process with sequential multi-instance call activity
+    final String parentProcessId = "parentProcess";
+    final String calledProcessId = "process";
+    final String callActivityId = "callActivity";
+    final BpmnModelInstance testProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(callActivityId,
+                ca -> ca.multiInstance(m -> m.zeebeInputCollectionExpression("items").sequential()))
+            .zeebeProcessId(calledProcessId)
+        .done();
+    final long calledProcessDefinitionKey = tester
+        .deployProcess("single-task.bpmn")
+        .getProcessDefinitionKey();
+
+    final long processInstanceKey = tester.deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(parentProcessId, "{\"items\": [0, 1]}")
+        .and().waitUntil()
+        .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
+        .getProcessInstanceKey();
+
+    //when 3.1
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(processInstanceKey), callActivityId, CALL_ACTIVITY, null);
+
+    //then
+    assertThat(flowNodeMetadata.getInstanceCount()).isNull();
+    final String flowNodeInstanceId1 = flowNodeMetadata.getFlowNodeInstanceId();
+    assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
+    assertThat(flowNodeMetadata.getInstanceMetadata().getFlowNodeType()).isEqualTo(CALL_ACTIVITY);
+    final String calledProcessInstanceId1 = flowNodeMetadata.getInstanceMetadata()
+        .getCalledProcessInstanceId();
+    assertThat(calledProcessInstanceId1).isNotNull();
+    //check that calledProcessInstanceId is the right one
+    final ProcessInstanceForListViewEntity calledProcessInstance = processInstanceReader
+        .getProcessInstanceByKey(Long.valueOf(calledProcessInstanceId1));
+    assertThat(calledProcessInstance.getProcessDefinitionKey()).isEqualTo(calledProcessDefinitionKey);
+
+    //when 2.2 (is included in multi-instance)
+    flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(processInstanceKey), null, null, flowNodeInstanceId1);
+
+    //then
+    assertThat(flowNodeMetadata.getInstanceCount()).isNull();
+    final String flowNodeInstanceId2 = flowNodeMetadata.getFlowNodeInstanceId();
+    final String calledProcessInstanceId2 = flowNodeMetadata.getInstanceMetadata()
+        .getCalledProcessInstanceId();
+    assertThat(calledProcessInstanceId2).isNotNull();
+    assertThat(calledProcessInstanceId2).isEqualTo(calledProcessInstanceId2);
+    assertThat(flowNodeInstanceId2).isNotNull();
+    assertThat(flowNodeInstanceId2).isEqualTo(flowNodeInstanceId1);
+  }
+
+  /**
+   * Call activity.
+   */
+  @Test
+  public void shouldReturnCalledProcessInstanceIdForCallActivity() throws Exception {
+    //having process with call activity
+    final String parentProcessId = "parentProcess";
+    final String calledProcessId = "process";
+    final String callActivityId = "callActivity";
+    final BpmnModelInstance testProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(callActivityId)
+            .zeebeProcessId(calledProcessId)
+        .done();
+    final long calledProcessDefinitionKey = tester
+        .deployProcess("single-task.bpmn")
+        .getProcessDefinitionKey();
+
+    final long processInstanceKey = tester.deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(parentProcessId, null)
+        .and().waitUntil()
+        .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
+        .getProcessInstanceKey();
+
+    //when 1.1
+    FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
+        String.valueOf(processInstanceKey), callActivityId, null, null);
+
+    //then
+    assertThat(flowNodeMetadata.getInstanceCount()).isNull();
+    assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
+    assertThat(flowNodeMetadata.getInstanceMetadata().getFlowNodeType()).isEqualTo(CALL_ACTIVITY);
+    final String calledProcessInstanceId1 = flowNodeMetadata.getInstanceMetadata()
+        .getCalledProcessInstanceId();
+    assertThat(calledProcessInstanceId1).isNotNull();
+    //check that calledProcessInstanceId is the right one
+    final ProcessInstanceForListViewEntity calledProcessInstance = processInstanceReader
+        .getProcessInstanceByKey(Long.valueOf(calledProcessInstanceId1));
+    assertThat(calledProcessInstance.getProcessDefinitionKey()).isEqualTo(calledProcessDefinitionKey);
   }
 
   /**
