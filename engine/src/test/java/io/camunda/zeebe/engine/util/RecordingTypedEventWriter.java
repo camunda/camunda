@@ -42,5 +42,10 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
       this.intent = intent;
       this.value = (T) Records.cloneValue(value);
     }
+
+    @Override
+    public String toString() {
+      return "RecordedEvent{" + "key=" + key + ", intent=" + intent + ", value=" + value + '}';
+    }
   }
 }
