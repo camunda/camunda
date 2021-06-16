@@ -9,6 +9,7 @@ SUREFIRE_FORK_COUNT=${SUREFIRE_FORK_COUNT:-}
 JUNIT_THREAD_COUNT=${JUNIT_THREAD_COUNT:-}
 MAVEN_PROPERTIES=(
   -DskipUTs
+  -DskipChecks
   -DtestMavenId=2
   -Dsurefire.rerunFailingTestsCount=7
 )
