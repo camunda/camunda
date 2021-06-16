@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
 
-import {Deleter, ReportRenderer, InstanceCount} from 'components';
+import {Deleter, ReportRenderer, InstanceCount, DownloadButton} from 'components';
 import {checkDeleteConflict} from 'services';
 
 jest.mock('services', () => {
@@ -96,9 +96,9 @@ it('should render a sharing popover', () => {
 
 it('should show a download csv button with the correct link', () => {
   const node = shallow(<ReportView report={report} />);
-  expect(node.find('.Report__csv-download-button')).toExist();
+  expect(node.find(DownloadButton)).toExist();
 
-  const href = node.find('.Report__csv-download-button').props().href;
+  const href = node.find(DownloadButton).props().href;
 
   expect(href).toContain(report.id);
   expect(href).toContain(report.name);
@@ -106,14 +106,14 @@ it('should show a download csv button with the correct link', () => {
 
 it('should show a download csv button even if the result is 0', () => {
   const node = shallow(<ReportView report={{...report, result: {measures: [{data: 0}]}}} />);
-  expect(node.find('.Report__csv-download-button')).toExist();
+  expect(node.find(DownloadButton)).toExist();
 });
 
 it('should not show a download csv button for multi-measure reports', () => {
   const node = shallow(
     <ReportView report={{...report, result: {measures: [{data: 0}, {data: 12}]}}} />
   );
-  expect(node.find('.Report__csv-download-button')).not.toExist();
+  expect(node.find(DownloadButton)).not.toExist();
 });
 
 it('should provide conflict check method to Deleter', () => {

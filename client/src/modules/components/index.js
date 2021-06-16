@@ -53,3 +53,4 @@ export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {Checklist} from './Checklist';
 export {Tooltip} from './Tooltip';
 export {SelectionPreview} from './SelectionPreview';
+export {DownloadButton} from './DownloadButton';

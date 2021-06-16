@@ -17,6 +17,7 @@ import {
   EntityName,
   InstanceCount,
   ReportDetails,
+  DownloadButton,
 } from 'components';
 import {isSharingEnabled} from 'config';
 import {formatters, checkDeleteConflict} from 'services';
@@ -103,15 +104,10 @@ export default class ReportView extends React.Component {
                 />
               </Popover>
               {this.shouldShowCSVDownload() && (
-                <a
-                  className="Report__tool-button Report__csv-download-button"
-                  href={this.constructCSVDownloadLink()}
-                >
-                  <Button main>
-                    <Icon type="save" />
-                    {t('report.downloadCSV')}
-                  </Button>
-                </a>
+                <DownloadButton main href={this.constructCSVDownloadLink()}>
+                  <Icon type="save" />
+                  {t('report.downloadCSV')}
+                </DownloadButton>
               )}
             </div>
           </div>
