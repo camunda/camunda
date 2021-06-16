@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
@@ -24,7 +24,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender commandSender;
-  private final MutableTransientProcessMessageSubscriptionState transientMessageSubscriptionState;
+  private final MutablePendingProcessMessageSubscriptionState transientMessageSubscriptionState;
   private final long subscriptionTimeoutInMillis;
 
   private ActorControl actor;
@@ -32,7 +32,7 @@ public final class PendingProcessMessageSubscriptionChecker
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutableTransientProcessMessageSubscriptionState transientMessageSubscriptionState) {
+      final MutablePendingProcessMessageSubscriptionState transientMessageSubscriptionState) {
     this.commandSender = commandSender;
     this.transientMessageSubscriptionState = transientMessageSubscriptionState;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();

@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import java.util.ArrayList;
@@ -21,17 +21,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class TransientProcessMessageSubscriptionStateTest {
+public final class PendingProcessMessageSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MutableProcessMessageSubscriptionState persistentState;
-  private MutableTransientProcessMessageSubscriptionState transientState;
+  private MutablePendingProcessMessageSubscriptionState transientState;
 
   @Before
   public void setUp() {
     persistentState = stateRule.getZeebeState().getProcessMessageSubscriptionState();
-    transientState = stateRule.getZeebeState().getTransientProcessMessageSubscriptionState();
+    transientState = stateRule.getZeebeState().getPendingProcessMessageSubscriptionState();
   }
 
   @Test
@@ -203,29 +203,6 @@ public final class TransientProcessMessageSubscriptionStateTest {
         2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
 
     assertThat(keys).hasSize(1).contains(1L);
-  }
-
-  @Test
-  public void shouldRemoveSubscription() {
-    // given
-    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    persistentState.put(1L, record);
-    transientState.updateSentTime(record, 1_000L);
-
-    // when
-    persistentState.remove(1L, record.getMessageNameBuffer());
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    transientState.visitSubscriptionBefore(
-        2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).isEmpty();
-
-    // and
-    assertThat(
-            persistentState.existSubscriptionForElementInstance(1L, record.getMessageNameBuffer()))
-        .isFalse();
   }
 
   private ProcessMessageSubscriptionRecord subscriptionRecordWithElementInstanceKey(

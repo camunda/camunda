@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
  * during opening or closing of a process message subscription. This state is not persisted to disk
  * and needs to be recovered after restart
  */
-public interface MutableTransientProcessMessageSubscriptionState {
+public interface MutablePendingProcessMessageSubscriptionState {
 
   void visitSubscriptionBefore(long deadline, ProcessMessageSubscriptionVisitor visitor);
 

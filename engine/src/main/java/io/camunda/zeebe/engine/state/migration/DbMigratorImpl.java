@@ -22,7 +22,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   // add new migration tasks here, migrations are executed in the order they appear in the list
   private static final List<MigrationTask> MIGRATION_TASKS =
-      List.of(new ProcessSubscriptionSentTimeMigration());
+      List.of(new ProcessMessageSubscriptionSentTimeMigration());
   // Be mindful of https://github.com/camunda-cloud/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 

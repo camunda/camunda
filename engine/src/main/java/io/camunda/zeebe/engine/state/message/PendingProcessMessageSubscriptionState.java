@@ -14,14 +14,14 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 
-final class TransientProcessMessageSubscriptionState {
+final class PendingProcessMessageSubscriptionState {
 
   private final TransientSubscriptionCommandState transientState =
       new TransientSubscriptionCommandState();
 
   private final ProcessMessageSubscriptionState persistentState;
 
-  TransientProcessMessageSubscriptionState(final ProcessMessageSubscriptionState persistentState) {
+  PendingProcessMessageSubscriptionState(final ProcessMessageSubscriptionState persistentState) {
     this.persistentState = persistentState;
   }
 

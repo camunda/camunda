@@ -14,15 +14,15 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableTransientProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DbProcessMessageSubscriptionState
     implements MutableProcessMessageSubscriptionState,
-        MutableTransientProcessMessageSubscriptionState {
+        MutablePendingProcessMessageSubscriptionState {
 
   // (elementInstanceKey, messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
@@ -32,8 +32,8 @@ public final class DbProcessMessageSubscriptionState
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, ProcessMessageSubscription>
       subscriptionColumnFamily;
 
-  private final TransientProcessMessageSubscriptionState transientState =
-      new TransientProcessMessageSubscriptionState(this);
+  private final PendingProcessMessageSubscriptionState transientState =
+      new PendingProcessMessageSubscriptionState(this);
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -49,12 +49,11 @@ public final class DbProcessMessageSubscriptionState
             elementKeyAndMessageName,
             processMessageSubscription);
 
-    subscriptionColumnFamily.whileTrue(
-        (compositeKey, subscription) -> {
+    subscriptionColumnFamily.forEach(
+        subscription -> {
           if (subscription.isOpening() || subscription.isClosing()) {
             transientState.add(subscription.getRecord());
           }
-          return true;
         });
   }
 
@@ -62,17 +61,8 @@ public final class DbProcessMessageSubscriptionState
   public void put(final long key, final ProcessMessageSubscriptionRecord record) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
-    final ProcessMessageSubscriptionRecord recordToSet;
-    if (processMessageSubscription.getRecord() == record) {
-      // clone record before calling reset on subscription
-      recordToSet = new ProcessMessageSubscriptionRecord();
-      recordToSet.wrap(record);
-    } else {
-      recordToSet = record;
-    }
-
     processMessageSubscription.reset();
-    processMessageSubscription.setKey(key).setRecord(recordToSet);
+    processMessageSubscription.setKey(key).setRecord(record);
 
     subscriptionColumnFamily.put(elementKeyAndMessageName, processMessageSubscription);
 

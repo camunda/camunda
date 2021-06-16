@@ -12,14 +12,15 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 
 /**
- * Reads out the sent time for message subscriptions and sets the corresponding fields in {@code
- * ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_KEY}
+ * Migrates pending process message subscriptions by adding them to {@code
+ * PendingProcessMessageSubscriptionState} and removing them from {@code
+ * ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME}.
  */
-public class ProcessSubscriptionSentTimeMigration implements MigrationTask {
+public class ProcessMessageSubscriptionSentTimeMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {
-    return ProcessSubscriptionSentTimeMigration.class.getSimpleName();
+    return ProcessMessageSubscriptionSentTimeMigration.class.getSimpleName();
   }
 
   @Override
@@ -33,6 +34,6 @@ public class ProcessSubscriptionSentTimeMigration implements MigrationTask {
         .getMigrationState()
         .migrateProcessMessageSubscriptionSentTime(
             zeebeState.getProcessMessageSubscriptionState(),
-            zeebeState.getTransientProcessMessageSubscriptionState());
+            zeebeState.getPendingProcessMessageSubscriptionState());
   }
 }

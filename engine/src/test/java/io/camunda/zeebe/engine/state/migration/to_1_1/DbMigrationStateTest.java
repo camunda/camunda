@@ -68,7 +68,7 @@ public class DbMigrationStateTest {
     final var migrationState = zeebeState.getMigrationState();
     migrationState.migrateProcessMessageSubscriptionSentTime(
         zeebeState.getProcessMessageSubscriptionState(),
-        zeebeState.getTransientProcessMessageSubscriptionState());
+        zeebeState.getPendingProcessMessageSubscriptionState());
 
     // then
     // the sent time column family is empty
@@ -114,7 +114,7 @@ public class DbMigrationStateTest {
 
   private void assertThatRecordsArePresentInTransientState(
       final ProcessMessageSubscriptionRecord... subscriptionRecords) {
-    final var transientSubscriptionState = zeebeState.getTransientProcessMessageSubscriptionState();
+    final var transientSubscriptionState = zeebeState.getPendingProcessMessageSubscriptionState();
 
     final var correlatingSubscriptions = new ArrayList<ProcessMessageSubscriptionRecord>();
 

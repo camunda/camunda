@@ -128,6 +128,22 @@ public final class ProcessMessageSubscriptionStateTest {
             new Tuple<>(1L, wrapString("message1")), new Tuple<>(1L, wrapString("message2")));
   }
 
+  @Test
+  public void shouldRemoveSubscription() {
+    // given
+    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
+    state.put(1L, record);
+
+    // when
+    state.remove(1L, record.getMessageNameBuffer());
+
+    final var subscription =
+        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
+
+    // then
+    assertThat(subscription).isNull();
+  }
+
   private ProcessMessageSubscriptionRecord subscriptionRecordWithElementInstanceKey(
       final long elementInstanceKey) {
     return subscriptionRecord("handler", "messageName", "correlationKey", elementInstanceKey);

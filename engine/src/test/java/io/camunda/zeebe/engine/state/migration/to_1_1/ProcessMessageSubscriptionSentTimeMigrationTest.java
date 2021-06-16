@@ -18,7 +18,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
-import io.camunda.zeebe.engine.state.migration.ProcessSubscriptionSentTimeMigration;
+import io.camunda.zeebe.engine.state.migration.ProcessMessageSubscriptionSentTimeMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +28,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 public class ProcessMessageSubscriptionSentTimeMigrationTest {
 
-  final ProcessSubscriptionSentTimeMigration sutMigration =
-      new ProcessSubscriptionSentTimeMigration();
+  final ProcessMessageSubscriptionSentTimeMigration sutMigration =
+      new ProcessMessageSubscriptionSentTimeMigration();
 
   @Nested
   public class MockBasedTests {
@@ -73,7 +73,7 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       verify(mockZeebeState.getMigrationState())
           .migrateProcessMessageSubscriptionSentTime(
               mockZeebeState.getProcessMessageSubscriptionState(),
-              mockZeebeState.getTransientProcessMessageSubscriptionState());
+              mockZeebeState.getPendingProcessMessageSubscriptionState());
 
       verifyNoMoreInteractions(mockZeebeState.getMigrationState());
     }

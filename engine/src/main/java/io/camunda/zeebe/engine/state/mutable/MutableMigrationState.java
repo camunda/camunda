@@ -11,5 +11,5 @@ public interface MutableMigrationState {
 
   void migrateProcessMessageSubscriptionSentTime(
       MutableProcessMessageSubscriptionState persistentSate,
-      final MutableTransientProcessMessageSubscriptionState transientState);
+      final MutablePendingProcessMessageSubscriptionState transientState);
 }

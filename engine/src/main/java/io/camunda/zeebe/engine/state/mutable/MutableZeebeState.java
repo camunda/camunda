@@ -53,7 +53,7 @@ public interface MutableZeebeState extends ZeebeState {
 
   MutableMigrationState getMigrationState();
 
-  MutableTransientProcessMessageSubscriptionState getTransientProcessMessageSubscriptionState();
+  MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
 
   KeyGenerator getKeyGenerator();
 }
