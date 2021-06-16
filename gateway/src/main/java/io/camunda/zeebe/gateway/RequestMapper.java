@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway;
 
+import static org.agrona.LangUtil.rethrowUnchecked;
+
+import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
@@ -150,11 +153,30 @@ public final class RequestMapper {
     return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
   }
 
-  private static DirectBuffer ensureJsonSet(final String value) {
+  static DirectBuffer ensureJsonSet(final String value) {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {
-      return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+      try {
+        return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+      } catch (final RuntimeException e) {
+        final var cause = e.getCause();
+        if (cause instanceof JsonParseException) {
+          final var parseException = (JsonParseException) cause;
+
+          final var descriptiveException =
+              new JsonParseException(
+                  parseException.getProcessor(),
+                  "Invalid JSON value: " + value,
+                  parseException.getLocation(),
+                  cause);
+
+          rethrowUnchecked(descriptiveException);
+          return DocumentValue.EMPTY_DOCUMENT; // bogus return statement
+        } else {
+          throw e;
+        }
+      }
     }
   }
 }
