@@ -355,7 +355,7 @@ final class VariableBehaviorTest {
   }
 
   @Test
-  void shouldOnlyUpdateModifiedVariables() {
+  void shouldNotUpdateUnmodifiedVariables() {
     // given
     final long processDefinitionKey = 1;
     final long parentScopeKey = 1;
