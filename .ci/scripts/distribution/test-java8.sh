@@ -19,7 +19,7 @@ if [ ! -z "$SUREFIRE_FORK_COUNT" ]; then
   export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS} -XX:MaxRAMPercentage=$((100 / ($MAVEN_PARALLELISM * $SUREFIRE_FORK_COUNT)))"
 fi
 
-mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} verify -pl clients/java "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
+mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} test -pl clients/java "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
 status=${PIPESTATUS[0]}
 
 # delay checking the maven status after we've analysed flaky tests
