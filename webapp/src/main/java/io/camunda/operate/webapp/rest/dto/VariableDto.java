@@ -102,7 +102,11 @@ public class VariableDto {
     variable.setName(variableEntity.getName());
 
     if (fullValue) {
-      variable.setValue(variableEntity.getFullValue());
+      if (variableEntity.getFullValue() != null) {
+        variable.setValue(variableEntity.getFullValue());
+      } else {
+        variable.setValue(variableEntity.getValue());
+      }
       variable.setIsPreview(false);
     } else {
       variable.setValue(variableEntity.getValue());

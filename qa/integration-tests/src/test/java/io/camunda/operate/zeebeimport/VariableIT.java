@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
@@ -22,8 +23,10 @@ import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
+import java.util.Optional;
 import java.util.Random;
 import org.assertj.core.api.Condition;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -32,6 +35,15 @@ public class VariableIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private FlowNodeInstanceReader flowNodeInstanceReader;
+
+  @Autowired
+  private UpdateVariableHandler updateVariableHandler;
+
+  @Before
+  public void before() {
+    super.before();
+    updateVariableHandler.setZeebeClient(super.getClient());
+  }
 
   protected String getVariablesURL(Long processInstanceKey) {
     return String.format(PROCESS_INSTANCE_URL + "/%s/variables-new", processInstanceKey);
@@ -324,6 +336,49 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //then
     assertThat(variable.getValue()).contains(varSuffix);
     assertThat(variable.getIsPreview()).isFalse();
+  }
+
+  @Test
+  public void testUpdateBigVariableWithSmallValue() throws Exception {
+    // given
+    final int size = operateProperties.getImporter().getVariableSizeThreshold();
+    final String varSuffix = "9999999999";
+    final String bpmnProcessId = "testProcess";
+    String vars = createBigVarsWithSuffix(size, varSuffix);
+    final String flowNodeId = "taskA";
+    final Long processInstanceKey =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeId)
+            .startProcessInstance(bpmnProcessId, vars)
+            .waitUntil()
+            .flowNodeIsActive(flowNodeId)
+            .getProcessInstanceKey();
+
+    //we call UPDATE_VARIABLE operation on instance
+    final String varName = "var1";
+    final String newVarValue = "\"aaa\"";
+    postUpdateVariableOperation(processInstanceKey, varName, newVarValue);
+    elasticsearchTestRule.refreshOperateESIndices();
+    //execute the operation
+    executeOneBatch();
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByProcessInstanceAreCompleted, processInstanceKey);
+
+    //when one variables is requested
+    VariableDto variable = getOneVariable(String.format("%d-%s", processInstanceKey, varName));
+
+    //then variable with new small value is returned
+    assertThat(variable.getValue()).isEqualTo(newVarValue);
+    assertThat(variable.getIsPreview()).isFalse();
+
+    //when get list of variables
+    List<VariableDto> variables = getVariables(processInstanceKey);
+
+    //then new value is returned
+    final Optional<VariableDto> var = variables.stream().filter(v -> v.getName().equals(varName))
+        .findFirst();
+    assertThat(var).isNotEmpty();
+    assertThat(var.get().getValue()).isEqualTo(newVarValue);
+    assertThat(var.get().getIsPreview()).isEqualTo(false);
   }
 
   private String createBigVarsWithSuffix(final int size, final String varSuffix) {

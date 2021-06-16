@@ -75,6 +75,8 @@ public class VariableZeebeRecordProcessor {
       entity.setIsPreview(true);
     } else {
       entity.setValue(recordValue.getValue());
+      entity.setFullValue(null);
+      entity.setIsPreview(false);
     }
     return getVariableQuery(entity);
   }
@@ -84,6 +86,8 @@ public class VariableZeebeRecordProcessor {
       logger.debug("Variable instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());
+      updateFields.put(VariableTemplate.FULL_VALUE, entity.getFullValue());
+      updateFields.put(VariableTemplate.IS_PREVIEW, entity.getIsPreview());
 
       return new UpdateRequest().index(variableTemplate.getFullQualifiedName()).id(entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
