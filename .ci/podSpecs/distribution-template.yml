@@ -21,15 +21,13 @@ spec:
         - name: JAVA_TOOL_OPTIONS
           value: |
             -XX:+UseContainerSupport
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 12
-          memory: 50Gi
+          cpu: 20
+          memory: 92Gi
         requests:
-          cpu: 12
-          memory: 50Gi
+          cpu: 20
+          memory: 92Gi
       securityContext:
         privileged: true
     - name: maven-jdk8
@@ -69,14 +67,13 @@ spec:
           value: tcp://localhost:2375
       securityContext:
         privileged: true
+    # the dind sibling is meant to be used only for the go integration tests; java integration tests
+    # use a different agent which has its own dind container. see integration-test-template.yml
     - name: docker
       image: docker:20.10.5-dind
       args:
         - --storage-driver
         - overlay2
-        - --ipv6
-        - --fixed-cidr-v6
-        - "2001:db8:1::/64"
       env:
         # The new dind versions expect secure access using cert
         # Setting DOCKER_TLS_CERTDIR to empty string will disable the secure access
@@ -91,11 +88,11 @@ spec:
           name: docker-storage
       resources:
         limits:
-          cpu: 12
-          memory: 50Gi
+          cpu: 4
+          memory: 8Gi
         requests:
-          cpu: 12
-          memory: 50Gi
+          cpu: 4
+          memory: 8Gi
   volumes:
     - name: docker-storage
       emptyDir: { }
