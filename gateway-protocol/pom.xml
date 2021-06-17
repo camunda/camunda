@@ -21,7 +21,9 @@
         </includes>
       </resource>
     </resources>
+
     <plugins>
+      <!-- enforce backwards compatibility -->
       <plugin>
         <groupId>com.salesforce.servicelibs</groupId>
         <artifactId>proto-backwards-compatibility</artifactId>
