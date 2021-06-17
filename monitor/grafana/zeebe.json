@@ -89,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1623398951904,
+  "iteration": 1623851067247,
   "links": [],
   "panels": [
     {
@@ -4553,146 +4553,6 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
-          "description": "Shows the time (latency) between writing the command on the dispatcher and processing it.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 0,
-            "y": 30
-          },
-          "heatmap": {},
-          "hideZeroBuckets": true,
-          "highlightCards": true,
-          "id": 28,
-          "legend": {
-            "show": false
-          },
-          "links": [],
-          "reverseYBuckets": false,
-          "targets": [
-            {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\",recordType=\"COMMAND\"}[30s])) by (le)",
-              "format": "heatmap",
-              "interval": "30s",
-              "intervalFactor": 1,
-              "legendFormat": "{{le}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Processing Latency (Command)",
-          "tooltip": {
-            "show": true,
-            "showHistogram": false
-          },
-          "type": "heatmap",
-          "xAxis": {
-            "show": true
-          },
-          "xBucketNumber": null,
-          "xBucketSize": null,
-          "yAxis": {
-            "decimals": null,
-            "format": "dtdurations",
-            "logBase": 1,
-            "max": null,
-            "min": null,
-            "show": true,
-            "splitFactor": null
-          },
-          "yBucketBound": "auto",
-          "yBucketNumber": null,
-          "yBucketSize": null
-        },
-        {
-          "cards": {
-            "cardPadding": null,
-            "cardRound": null
-          },
-          "color": {
-            "cardColor": "#ef843c",
-            "colorScale": "sqrt",
-            "colorScheme": "interpolateSpectral",
-            "exponent": 0.5,
-            "mode": "spectrum"
-          },
-          "dataFormat": "tsbuckets",
-          "datasource": "$DS_PROMETHEUS",
-          "description": "Shows the time (latency) between writing the event on the dispatcher and processing it.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 12,
-            "x": 12,
-            "y": 30
-          },
-          "heatmap": {},
-          "hideZeroBuckets": true,
-          "highlightCards": true,
-          "id": 29,
-          "legend": {
-            "show": false
-          },
-          "links": [],
-          "reverseYBuckets": false,
-          "targets": [
-            {
-              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", recordType=\"EVENT\"}[30s])) by (le)",
-              "format": "heatmap",
-              "interval": "30s",
-              "intervalFactor": 1,
-              "legendFormat": "{{le}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Processing Latency (Event)",
-          "tooltip": {
-            "show": true,
-            "showHistogram": false
-          },
-          "type": "heatmap",
-          "xAxis": {
-            "show": true
-          },
-          "xBucketNumber": null,
-          "xBucketSize": null,
-          "yAxis": {
-            "decimals": null,
-            "format": "dtdurations",
-            "logBase": 1,
-            "max": null,
-            "min": null,
-            "show": true,
-            "splitFactor": null
-          },
-          "yBucketBound": "auto",
-          "yBucketNumber": null,
-          "yBucketSize": null
-        },
-        {
-          "cards": {
-            "cardPadding": null,
-            "cardRound": null
-          },
-          "color": {
-            "cardColor": "#ef843c",
-            "colorScale": "sqrt",
-            "colorScheme": "interpolateSpectral",
-            "exponent": 0.5,
-            "mode": "spectrum"
-          },
-          "dataFormat": "tsbuckets",
-          "datasource": "$DS_PROMETHEUS",
           "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
           "fieldConfig": {
             "defaults": {
@@ -4702,9 +4562,9 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 37
+            "y": 7
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4725,7 +4585,7 @@
               "refId": "A"
             }
           ],
-          "title": "Processing Execution Time",
+          "title": "Process Instance Execution Time",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -4766,9 +4626,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 45
+            "w": 12,
+            "x": 12,
+            "y": 7
           },
           "hiddenSeries": false,
           "id": 222,
@@ -4816,7 +4676,7 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Processing Execution Time (avg)",
+          "title": "Process Instance Execution Time (avg)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -4880,7 +4740,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 53
+            "y": 15
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4950,7 +4810,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 53
+            "y": 15
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5020,7 +4880,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 61
+            "y": 23
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5041,7 +4901,7 @@
               "refId": "A"
             }
           ],
-          "title": "Processing Duration",
+          "title": "Record Processing Duration",
           "tooltip": {
             "show": true,
             "showHistogram": false
@@ -5090,7 +4950,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 23
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5160,7 +5020,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 68
+            "y": 30
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5204,9 +5064,79 @@
           "yBucketBound": "auto",
           "yBucketNumber": null,
           "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between writing the command to the dispatcher and processing the record.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 30
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 28,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_stream_processor_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\",recordType=\"COMMAND\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Overall Processing Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
         }
       ],
-      "title": "Processing Latency",
+      "title": "Latency",
       "type": "row"
     },
     {
@@ -9991,5 +9921,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 12
+  "version": 13
 }
