@@ -7,7 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityConflictRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -50,9 +50,9 @@ public class EntitiesClient {
       .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public boolean entitiesHaveDeleteConflicts(EntityConflictRequestDto entityConflictRequestDto) {
+  public boolean entitiesHaveDeleteConflicts(EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
     return getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .execute(Boolean.class, Response.Status.OK.getStatusCode());
   }
 

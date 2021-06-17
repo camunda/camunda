@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.entity.EntityConflictRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -62,9 +62,18 @@ public class EntitiesRestService {
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
   public boolean entitiesHaveDeleteConflicts(@Context ContainerRequestContext requestContext,
-                                             @Valid @NotNull @RequestBody final EntityConflictRequestDto entities) {
+                                             @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return entitiesService.entitiesHaveConflicts(entities, userId);
+  }
+
+  @POST
+  @Path("/delete")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public void bulkDeleteEntities(@Context ContainerRequestContext requestContext,
+                                 @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    entitiesService.bulkDeleteEntities(entities, userId);
   }
 
 }

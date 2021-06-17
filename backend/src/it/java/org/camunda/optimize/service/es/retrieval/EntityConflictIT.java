@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.entity.EntityConflictRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -23,7 +23,7 @@ public class EntityConflictIT extends AbstractIT {
   public void checkBulkDeleteConflicts_failsWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(new EntityConflictRequestDto())
+      .buildCheckEntityDeleteConflictsRequest(new EntitiesDeleteRequestDto())
       .withoutAuthentication()
       .execute();
 
@@ -46,14 +46,14 @@ public class EntityConflictIT extends AbstractIT {
       )
     );
 
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Arrays.asList(reportId2, reportId3),
       Collections.emptyList(),
       Collections.emptyList()
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isTrue();
@@ -66,14 +66,14 @@ public class EntityConflictIT extends AbstractIT {
     String reportId2 = reportClient.createEmptySingleProcessReport();
     createNewDashboardAndAddReport(reportId1);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Arrays.asList(reportId1, reportId2),
       Collections.emptyList(),
       Collections.emptyList()
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isTrue();
@@ -88,14 +88,14 @@ public class EntityConflictIT extends AbstractIT {
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.singletonList(reportId),
       Collections.emptyList(),
       Arrays.asList(dashboardId1, dashboardId2)
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isFalse();
@@ -116,14 +116,14 @@ public class EntityConflictIT extends AbstractIT {
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Arrays.asList(reportId1, combinedReport),
       Collections.emptyList(),
       Collections.emptyList()
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isFalse();
@@ -138,14 +138,14 @@ public class EntityConflictIT extends AbstractIT {
     alertClient.createAlertForReport(reportId);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.singletonList(reportId),
       Arrays.asList(collectionId1, collectionId2),
       Collections.emptyList()
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isTrue();
@@ -162,14 +162,14 @@ public class EntityConflictIT extends AbstractIT {
     String reportId = reportClient.createEmptySingleDecisionReportInCollection(collectionId3);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.singletonList(reportId),
       Arrays.asList(collectionId1, collectionId2),
       Arrays.asList(dashboardId1, dashboardId2)
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isFalse();
@@ -179,14 +179,14 @@ public class EntityConflictIT extends AbstractIT {
   public void checkBulkDeleteConflicts_hasNoConflictsWhenEntityListsAreEmpty() {
     // given
     List<String> entities = Collections.emptyList();
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       entities,
       entities,
       entities
     );
 
     // when
-    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entityConflictRequestDto);
+    boolean response = entitiesClient.entitiesHaveDeleteConflicts(entitiesDeleteRequestDto);
 
     // then
     assertThat(response).isFalse();
@@ -209,7 +209,7 @@ public class EntityConflictIT extends AbstractIT {
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String reportId1 = reportClient.createEmptySingleDecisionReportInCollection(collectionId);
     String reportId2 = reportClient.createEmptySingleProcessReport();
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Arrays.asList(reportId1, reportId2),
       Collections.emptyList(),
       Collections.emptyList()
@@ -218,7 +218,7 @@ public class EntityConflictIT extends AbstractIT {
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
@@ -231,7 +231,7 @@ public class EntityConflictIT extends AbstractIT {
     // given
     String collectionId1 = collectionClient.createNewCollectionWithDefaultProcessScope();
     String collectionId2 = collectionClient.createNewCollectionWithDefaultProcessScope();
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.emptyList(),
       Arrays.asList(collectionId1, collectionId2),
       Collections.emptyList()
@@ -240,7 +240,7 @@ public class EntityConflictIT extends AbstractIT {
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
@@ -254,7 +254,7 @@ public class EntityConflictIT extends AbstractIT {
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String dashboardId1 = dashboardClient.createEmptyDashboard(collectionId);
     String dashboardId2 = dashboardClient.createEmptyDashboard(collectionId);
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.emptyList(),
       Collections.emptyList(),
       Arrays.asList(dashboardId1, dashboardId2)
@@ -263,7 +263,7 @@ public class EntityConflictIT extends AbstractIT {
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
@@ -272,11 +272,11 @@ public class EntityConflictIT extends AbstractIT {
   }
 
   @Test
-  public void checkBulkDeleteConflicts_userIsNotAuthorizedToAccessConflictsForDashboardOutsideOfCollection() {
+  public void checkBulkDeleteConflicts_userIsAuthorizedToAccessConflictsForDashboardOutsideOfCollection() {
     // given
     String dashboardId1 = dashboardClient.createEmptyDashboard(null);
     String dashboardId2 = dashboardClient.createEmptyDashboard(null);
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.emptyList(),
       Collections.emptyList(),
       Arrays.asList(dashboardId1, dashboardId2)
@@ -285,7 +285,7 @@ public class EntityConflictIT extends AbstractIT {
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     boolean response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute(Boolean.class, Response.Status.OK.getStatusCode());
 
@@ -296,7 +296,7 @@ public class EntityConflictIT extends AbstractIT {
   @Test
   public void checkBulkDeleteConflicts_verifyNullEntitiesReturnBadRequest() {
     // given
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       null,
       null,
       null
@@ -305,7 +305,7 @@ public class EntityConflictIT extends AbstractIT {
     // when
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .execute();
 
     // then
@@ -315,16 +315,15 @@ public class EntityConflictIT extends AbstractIT {
   @Test
   public void checkBulkDeleteConflicts_verifyNullDashboardListReturnsBadRequest() {
     // given
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.emptyList(),
       Collections.emptyList(),
       null
     );
 
     // when
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .execute();
 
     // then
@@ -334,16 +333,15 @@ public class EntityConflictIT extends AbstractIT {
   @Test
   public void checkBulkDeleteConflicts_verifyNullCollectionsListReturnsBadRequest() {
     // given
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.emptyList(),
       null,
       Collections.emptyList()
     );
 
     // when
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .execute();
 
     // then
@@ -353,16 +351,15 @@ public class EntityConflictIT extends AbstractIT {
   @Test
   public void checkBulkDeleteConflicts_verifyNullReportsListReturnsBadRequest() {
     // given
-    EntityConflictRequestDto entityConflictRequestDto = new EntityConflictRequestDto(
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       null,
       Collections.emptyList(),
       Collections.emptyList()
     );
 
     // when
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckEntityDeleteConflictsRequest(entityConflictRequestDto)
+      .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
       .execute();
 
     // then

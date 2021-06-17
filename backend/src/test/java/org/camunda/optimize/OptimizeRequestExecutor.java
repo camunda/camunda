@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityConflictRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
@@ -477,8 +477,15 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckEntityDeleteConflictsRequest(EntityConflictRequestDto entities) {
+  public OptimizeRequestExecutor buildCheckEntityDeleteConflictsRequest(EntitiesDeleteRequestDto entities) {
     this.path = "entities/delete-conflicts";
+    this.method = POST;
+    this.body = getBody(entities);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
+    this.path = "entities/delete";
     this.method = POST;
     this.body = getBody(entities);
     return this;

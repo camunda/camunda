@@ -12,7 +12,10 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -22,12 +25,22 @@ import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
+import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
+import static javax.ws.rs.HttpMethod.DELETE;
+import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.name;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
@@ -37,6 +50,10 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
 
 public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
@@ -495,6 +512,324 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
+  @Test
+  public void bulkDeleteEntities_notPossibleForUnauthenticatedUser() {
+    // given
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Arrays.asList("doesntMatter", "doesntMatter"),
+      Arrays.asList("doesntMatter", "doesntMatter"),
+      Arrays.asList("doesntMatter", "doesntMatter")
+    );
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteEntitiesRequest(entitiesDeleteRequestDto)
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteEntities_forbiddenToDeleteReportsForUnauthorizedUser() {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    String reportId1 = reportClient.createEmptySingleDecisionReportInCollection(collectionId);
+    String reportId2 = reportClient.createEmptySingleProcessReport();
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Arrays.asList(reportId1, reportId2),
+      Collections.emptyList(),
+      Collections.emptyList()
+    );
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteEntitiesRequest(entitiesDeleteRequestDto)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteEntities_forbiddenToDeleteDashboardsForUnauthorizedUser() {
+    // given
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    String dashboardId1 = dashboardClient.createEmptyDashboard(collectionId);
+    String dashboardId2 = dashboardClient.createEmptyDashboard(collectionId);
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Collections.emptyList(),
+      Arrays.asList(dashboardId1, dashboardId2)
+    );
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteEntitiesRequest(entitiesDeleteRequestDto)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteEntities_forbiddenToDeleteCollectionsForUnauthorizedUser() {
+    // given
+    String collectionId1 = collectionClient.createNewCollectionWithDefaultProcessScope();
+    String collectionId2 = collectionClient.createNewCollectionWithDefaultProcessScope();
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Arrays.asList(collectionId1, collectionId2),
+      Collections.emptyList()
+    );
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteEntitiesRequest(entitiesDeleteRequestDto)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteEntities_entityListIsEmpty() {
+    // given
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Collections.emptyList(),
+      Collections.emptyList()
+    );
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("getEntitiesRequestBody")
+  public void bulkDeleteEntities_returnsBadRequestWhenEntityListsAreNull(EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteEntities_deleteEntitiesIsSuccessful() {
+    // given
+    String collectionId1 = collectionClient.createNewCollection();
+    String collectionId2 = collectionClient.createNewCollection();
+    String reportId1 = reportClient.createEmptySingleProcessReport();
+    String reportId2 = reportClient.createEmptySingleProcessReport();
+    String dashBoardId1 = dashboardClient.createDashboard(collectionId1, Collections.singletonList(reportId1));
+    String dashBoardId2 = dashboardClient.createEmptyDashboard(null);
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Arrays.asList(reportId1, reportId2),
+      Arrays.asList(collectionId1, collectionId2),
+      Arrays.asList(dashBoardId1, dashBoardId2)
+    );
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
+    assertThat(getAllCollections()).isEmpty();
+    assertThat(getAllDashboards()).isEmpty();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsDashboardsThatCannotBeFound() {
+    // given
+    String dashBoardId1 = dashboardClient.createEmptyDashboard(null);
+    String dashBoardId2 = dashboardClient.createEmptyDashboard(null);
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Collections.emptyList(),
+      Arrays.asList(dashBoardId1, "doesntExist", dashBoardId2)
+    );
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getAllDashboards()).isEmpty();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsReportsThatCannotBeFound() {
+    // given
+    String reportId1 = reportClient.createEmptySingleProcessReport();
+    String reportId2 = reportClient.createEmptySingleProcessReport();
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Arrays.asList(reportId1, "doesntExist", reportId2),
+      Collections.emptyList(),
+      Collections.emptyList()
+    );
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsCollectionsThatCannotBeFound() {
+    // given
+    String collectionId1 = collectionClient.createNewCollection();
+    String collectionId2 = collectionClient.createNewCollection();
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Arrays.asList(collectionId1, "doesntExist", collectionId2),
+      Collections.emptyList()
+    );
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getAllCollections()).isEmpty();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsEntryWhenEntityIdIsDuplicate() {
+    // given
+    String collectionId1 = collectionClient.createNewCollection();
+    String collectionId2 = collectionClient.createNewCollection();
+    String reportId1 = reportClient.createEmptySingleProcessReport();
+    String reportId2 = reportClient.createEmptySingleProcessReport();
+    String dashboardId1 = dashboardClient.createDashboard(collectionId1, Collections.singletonList(reportId1));
+    String dashboardId2 = dashboardClient.createDashboard(collectionId2, Collections.singletonList(reportId2));
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Arrays.asList(reportId1, reportId1, reportId2),
+      Arrays.asList(collectionId1, collectionId1, collectionId2),
+      Arrays.asList(dashboardId1, dashboardId1, dashboardId2)
+    );
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
+    assertThat(getAllDashboards()).isEmpty();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteReport() {
+    // given
+    String reportId1 = reportClient.createEmptySingleProcessReport();
+    String reportId2 = reportClient.createEmptySingleProcessReport();
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Arrays.asList(reportId1, reportId2),
+      Collections.emptyList(),
+      Collections.emptyList()
+    );
+
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
+      .withMethod(POST);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(reportClient.getAllReportsAsUser()).hasSize(1);
+    assertThat(reportClient.getReportById(reportId1)).isNotNull();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteCollection() {
+    // given
+    String collectionId1 = collectionClient.createNewCollection();
+    String collectionId2 = collectionClient.createNewCollection();
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Arrays.asList(collectionId1, collectionId2),
+      Collections.emptyList()
+    );
+
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + COLLECTION_INDEX_NAME + ".*")
+      .withMethod(DELETE);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(
+      COLLECTION_INDEX_NAME
+    )).isEqualTo(1);
+    assertThat(collectionClient.getCollectionById(collectionId1)).isNotNull();
+  }
+
+  @Test
+  public void bulkDeleteEntities_skipsEntryWhenESfailsToDeleteDashboard() {
+    // given
+    String dashboardId1 = dashboardClient.createEmptyDashboard(null);
+    String dashboardId2 = dashboardClient.createEmptyDashboard(null);
+
+    EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
+      Collections.emptyList(),
+      Collections.emptyList(),
+      Arrays.asList(dashboardId1, dashboardId2)
+    );
+
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*" + DASHBOARD_INDEX_NAME + ".*")
+      .withMethod(DELETE);
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
+
+    // then
+    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(
+      DASHBOARD_INDEX_NAME
+    )).isEqualTo(1);
+    assertThat(dashboardClient.getDashboard(dashboardId1)).isNotNull();
+  }
+
   private void addRoleToCollection(final String collectionId,
                                    final String identityId,
                                    final IdentityType identityType) {
@@ -506,6 +841,35 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       RoleType.EDITOR
     );
     collectionClient.addRolesToCollection(collectionId, roleDto);
+  }
+
+  private Response buildAndExecuteBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildBulkDeleteEntitiesRequest(entitiesDeleteRequestDto)
+      .execute();
+  }
+
+  private List<CollectionDefinitionDto> getAllCollections() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      COLLECTION_INDEX_NAME,
+      CollectionDefinitionDto.class
+    );
+  }
+
+  private List<DashboardDefinitionRestDto> getAllDashboards() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      DASHBOARD_INDEX_NAME,
+      DashboardDefinitionRestDto.class
+    );
+  }
+
+  private static Stream<EntitiesDeleteRequestDto> getEntitiesRequestBody() {
+    return Stream.of(
+      new EntitiesDeleteRequestDto(null, Collections.emptyList(), Collections.emptyList()),
+      new EntitiesDeleteRequestDto(Collections.emptyList(), null, Collections.emptyList()),
+      new EntitiesDeleteRequestDto(Collections.emptyList(), Collections.emptyList(), null),
+      null
+    );
   }
 
 }

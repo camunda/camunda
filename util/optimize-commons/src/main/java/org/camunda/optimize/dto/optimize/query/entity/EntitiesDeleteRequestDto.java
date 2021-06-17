@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EntityConflictRequestDto {
+public class EntitiesDeleteRequestDto {
 
   @NotNull
   List<String> reports;

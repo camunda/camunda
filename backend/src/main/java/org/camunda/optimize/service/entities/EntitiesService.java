@@ -6,8 +6,9 @@
 package org.camunda.optimize.service.entities;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityConflictRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
@@ -34,6 +36,7 @@ import java.util.stream.Stream;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 public class EntitiesService {
 
   private final CollectionService collectionService;
@@ -77,7 +80,7 @@ public class EntitiesService {
   }
 
   // For dashboards and collections, we only check for authorization. For reports, we also check for conflicts
-  public boolean entitiesHaveConflicts(EntityConflictRequestDto entities, String userId) {
+  public boolean entitiesHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
     entities.getDashboards().forEach(dashboardId -> {
       DashboardDefinitionRestDto dashboardDefinitionRestDto = dashboardService.getDashboardDefinitionAsService(
         dashboardId);
@@ -96,9 +99,35 @@ public class EntitiesService {
     return reportsHaveConflicts(entities, userId);
   }
 
+  public void bulkDeleteEntities(EntitiesDeleteRequestDto entities, String userId) {
+    for (String reportId : entities.getReports()) {
+      try {
+        reportService.deleteReport(userId, reportId, true);
+      } catch (NotFoundException | OptimizeRuntimeException e) {
+        log.debug("The report with id {} could not be deleted: {}", reportId, e);
+      }
+    }
+
+    for (String dashboardId : entities.getDashboards()) {
+      try {
+        dashboardService.deleteDashboard(dashboardId, userId);
+      } catch (NotFoundException | OptimizeRuntimeException e) {
+        log.debug("The dashboard with id {} could not be deleted: {}", dashboardId, e);
+      }
+    }
+
+    for (String collectionId : entities.getCollections()) {
+      try {
+        collectionService.deleteCollection(userId, collectionId, true);
+      } catch (NotFoundException | OptimizeRuntimeException e) {
+        log.debug("The collection with id {} could not be deleted: {}", collectionId, e);
+      }
+    }
+  }
+
   private boolean conflictingItemIsUndeletedDashboard(ConflictedItemDto item,
-                                                      EntityConflictRequestDto entityConflictRequestDto) {
-    return item.getType().equals(ConflictedItemType.DASHBOARD) && !entityConflictRequestDto.getDashboards()
+                                                      EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+    return item.getType().equals(ConflictedItemType.DASHBOARD) && !entitiesDeleteRequestDto.getDashboards()
       .contains(item.getId());
   }
 
@@ -108,7 +137,7 @@ public class EntitiesService {
       item.getId());
   }
 
-  private boolean reportsHaveConflicts(EntityConflictRequestDto entities, String userId) {
+  private boolean reportsHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
     List<String> reportIds = entities.getReports();
     return reportIds.stream().anyMatch(entry -> {
       Set<ConflictedItemDto> conflictedItemDtos =
