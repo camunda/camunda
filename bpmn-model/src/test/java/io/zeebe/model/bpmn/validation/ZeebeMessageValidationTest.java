@@ -125,7 +125,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .subProcessDone()
             .endEvent()
             .done(),
-        Arrays.asList(expect("subProcess", "Start events in subprocesses must be of type none"))
+        singletonList(expect("subProcess", "Start events in subprocesses must be of type none"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -185,7 +185,31 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
       },
+      { // motivated by https://github.com/camunda-cloud/zeebe/issues/7131
+        getEventSubProcessWithEmbeddedSubProcessWithBoundaryEventWithoutCorrelationKey(),
+        singletonList(
+            expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
+      }
     };
+  }
+
+  private static BpmnModelInstance
+      getEventSubProcessWithEmbeddedSubProcessWithBoundaryEventWithoutCorrelationKey() {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess("process");
+    builder
+        .eventSubProcess("event_sub_proc")
+        .startEvent("event_sub_start", s -> s.timerWithDuration("PT1S"))
+        .subProcess(
+            "embedded",
+            s ->
+                s.boundaryEvent(
+                    "boundary-msg", msg -> msg.message("bndr").endEvent("boundary-end")))
+        .embeddedSubProcess()
+        .startEvent("embedded_sub_start")
+        .endEvent("embedded_sub_end")
+        .moveToNode("embedded")
+        .endEvent("event_sub_end");
+    return builder.startEvent("start").endEvent("end").done();
   }
 
   private static BpmnModelInstance getProcessWithMultipleStartEventsWithSameMessage() {

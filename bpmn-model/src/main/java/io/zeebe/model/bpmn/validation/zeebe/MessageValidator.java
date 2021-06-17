@@ -26,8 +26,12 @@ import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
+import org.camunda.bpm.model.xml.impl.util.ModelUtil;
+import org.camunda.bpm.model.xml.instance.DomElement;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -134,7 +138,27 @@ public class MessageValidator implements ModelElementValidator<Message> {
   private <T extends ModelElementInstance> Collection<T> getAllElementsByType(
       final Message element, final Class<T> type) {
     return element.getParentElement().getChildElementsByType(Process.class).stream()
-        .flatMap(p -> p.getChildElementsByType(type).stream())
+        .flatMap(p -> getAllElementsByTypeRecursive(p, type).stream())
         .collect(Collectors.toList());
+  }
+
+  private <T extends ModelElementInstance> Collection<T> getAllElementsByTypeRecursive(
+      final ModelElementInstance element, final Class<T> type) {
+
+    // look for immediate children
+    final Collection<T> result = element.getChildElementsByType(type);
+
+    // look for children in subtree
+    final List<DomElement> childDomElements = element.getDomElement().getChildElements();
+    final Collection<ModelElementInstance> childModelElements =
+        ModelUtil.getModelElementCollection(
+            childDomElements, (ModelInstanceImpl) element.getModelInstance());
+
+    result.addAll(
+        childModelElements.stream()
+            .flatMap(child -> getAllElementsByTypeRecursive(child, type).stream())
+            .collect(Collectors.toList()));
+
+    return result;
   }
 }
