@@ -1555,6 +1555,11 @@
           <version>1.1</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.revapi</groupId>
+          <artifactId>revapi-java</artifactId>
+          <version>${version.revapi}</version>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -1569,6 +1574,18 @@
                   <goal>resolve-plugins</goal>
                   <goal>go-offline</goal>
                 </goals>
+              </execution>
+              <execution>
+                <id>analyze-dependencies</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>analyze-only</goal>
+                </goals>
+                <configuration>
+                  <ignoredUnusedDeclaredDependencies combine.children="append">
+                    <dep>org.revapi:revapi-java</dep>
+                  </ignoredUnusedDeclaredDependencies>
+                </configuration>
               </execution>
             </executions>
           </plugin>
