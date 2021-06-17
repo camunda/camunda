@@ -14,8 +14,4 @@ public class HeaderCustomization {
   private String backgroundColor;
   private String pathToLogoIcon;
 
-  public void setPathToLogoIcon(final String pathToLogoIcon) {
-    this.pathToLogoIcon = pathToLogoIcon;
-  }
-
 }

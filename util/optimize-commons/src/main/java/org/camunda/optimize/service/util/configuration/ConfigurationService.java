@@ -57,8 +57,7 @@ public class ConfigurationService {
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
 
   // @formatter:off
-  private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
-    new TypeRef<HashMap<String, EngineConfiguration>>() {};
+  private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF = new TypeRef<>() {};
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
   private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF = new TypeRef<>() {};
   // @formatter:on

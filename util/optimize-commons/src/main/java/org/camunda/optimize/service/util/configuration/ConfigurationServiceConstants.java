@@ -111,4 +111,8 @@ public class ConfigurationServiceConstants {
   public static final String TELEMETRY_CONFIGURATION = "$.telemetry";
 
   public static final String CACHES_CONFIGURATION = "$.caches";
+
+  //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
+  public static final String CLOUD_PROFILE = "cloud";
+
 }
