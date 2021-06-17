@@ -60,6 +60,7 @@
   <build>
 
     <plugins>
+      <!-- fetch remote protocol definition -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -79,6 +80,7 @@
         </executions>
       </plugin>
 
+      <!-- generate Java protobuf code -->
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
