@@ -68,9 +68,8 @@ describe('stores/variables', () => {
       rest.get('/api/process-instances/:instanceId', (_, res, ctx) =>
         res.once(ctx.json({id: '123', state: 'ACTIVE'}))
       ),
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json(mockVariables))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(mockVariableOperation))
@@ -141,22 +140,20 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              ...mockVariables,
-              {
-                id: '2251799813686374-clientNo',
-                name: 'clientNo',
-                value: '"CNT-1211132-02"',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            ...mockVariables,
+            {
+              id: '2251799813686374-clientNo',
+              name: 'clientNo',
+              value: '"CNT-1211132-02"',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
     jest.runOnlyPendingTimers();
@@ -175,30 +172,28 @@ describe('stores/variables', () => {
     );
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              ...mockVariables,
-              {
-                id: '2251799813686374-clientNo',
-                name: 'clientNo',
-                value: '"CNT-1211132-02"',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-              {
-                id: '2251799813686374-orderNo',
-                name: 'orderNo',
-                value: '"CMD0001-01"',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            ...mockVariables,
+            {
+              id: '2251799813686374-clientNo',
+              name: 'clientNo',
+              value: '"CNT-1211132-02"',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+            {
+              id: '2251799813686374-orderNo',
+              name: 'orderNo',
+              value: '"CMD0001-01"',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
     jest.runOnlyPendingTimers();
@@ -567,9 +562,8 @@ describe('stores/variables', () => {
 
   it('should get hasNoVariables', async () => {
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json([]))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
       )
     );
 
@@ -587,9 +581,8 @@ describe('stores/variables', () => {
     expect(variablesStore.hasNoVariables).toBe(true);
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json([]))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
       )
     );
 
@@ -611,9 +604,8 @@ describe('stores/variables', () => {
     });
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json(mockVariables))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables))
       )
     );
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -661,9 +653,8 @@ describe('stores/variables', () => {
 
   it('should not update state if store is reset when there are ongoing requests', async () => {
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.status(500), ctx.json(mockVariables))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.status(500), ctx.json(mockVariables))
       )
     );
 
@@ -703,9 +694,8 @@ describe('stores/variables', () => {
     ];
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json(newMockVariables))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(newMockVariables))
       )
     );
 
@@ -739,40 +729,38 @@ describe('stores/variables', () => {
     expect(variablesStore.shouldFetchNextVariables()).toBe(true);
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '2251799813686374-test1',
-                name: 'test1',
-                value: '1',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-                isFirst: false,
-              },
-              {
-                id: '2251799813686374-test2',
-                name: 'test2',
-                value: '2',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-                isFirst: false,
-              },
-              {
-                id: '2251799813686374-test3',
-                name: 'test3',
-                value: '3',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-                isFirst: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '2251799813686374-test1',
+              name: 'test1',
+              value: '1',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+              isFirst: false,
+            },
+            {
+              id: '2251799813686374-test2',
+              name: 'test2',
+              value: '2',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+              isFirst: false,
+            },
+            {
+              id: '2251799813686374-test3',
+              name: 'test3',
+              value: '3',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+              isFirst: false,
+            },
+          ])
+        )
       )
     );
 
@@ -791,31 +779,29 @@ describe('stores/variables', () => {
     expect(variablesStore.shouldFetchNextVariables()).toBe(true);
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '2251799813686374-test4',
-                name: 'test4',
-                value: '4',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-                isFirst: false,
-              },
-              {
-                id: '2251799813686374-test5',
-                name: 'test5',
-                value: '5',
-                scopeId: '2251799813686374',
-                processInstanceId: '2251799813686374',
-                hasActiveOperation: false,
-                isFirst: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '2251799813686374-test4',
+              name: 'test4',
+              value: '4',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+              isFirst: false,
+            },
+            {
+              id: '2251799813686374-test5',
+              name: 'test5',
+              value: '5',
+              scopeId: '2251799813686374',
+              processInstanceId: '2251799813686374',
+              hasActiveOperation: false,
+              isFirst: false,
+            },
+          ])
+        )
       )
     );
 
@@ -835,9 +821,8 @@ describe('stores/variables', () => {
     expect(variablesStore.shouldFetchNextVariables()).toBe(false);
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json(mockVariables))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables))
       )
     );
 

@@ -123,7 +123,7 @@ async function fetchVariables(
   instanceId: ProcessInstanceEntity['id'],
   payload: VariablePayload
 ) {
-  return post(`${URL}/${instanceId}/variables-new`, payload);
+  return post(`${URL}/${instanceId}/variables`, payload);
 }
 
 async function fetchVariable(id: VariableEntity['id']) {

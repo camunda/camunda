@@ -154,9 +154,8 @@ describe('InstanceHeader', () => {
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
       ),
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json([mockVariable]))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([mockVariable]))
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(null))

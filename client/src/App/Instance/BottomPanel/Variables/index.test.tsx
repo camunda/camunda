@@ -74,7 +74,7 @@ describe('Variables', () => {
     it('should display empty content if there are no variables', async () => {
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );
@@ -94,7 +94,7 @@ describe('Variables', () => {
     it('should display skeleton on initial load', async () => {
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -113,7 +113,7 @@ describe('Variables', () => {
     it('should display spinner on second variable fetch', async () => {
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -128,7 +128,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -150,7 +150,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -180,7 +180,7 @@ describe('Variables', () => {
       currentInstanceStore.setCurrentInstance(instanceMock);
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -222,7 +222,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -247,7 +247,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -288,7 +288,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -359,7 +359,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -422,7 +422,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -479,7 +479,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -504,7 +504,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -544,7 +544,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -585,7 +585,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -633,7 +633,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -671,7 +671,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -730,7 +730,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) =>
             res.once(
               ctx.json([
@@ -811,7 +811,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) =>
             res.once(
               ctx.json([
@@ -866,7 +866,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) =>
             res.once(
               ctx.json([
@@ -911,7 +911,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -936,7 +936,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -958,7 +958,7 @@ describe('Variables', () => {
 
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json(mockVariables))
         )
       );
@@ -987,7 +987,7 @@ describe('Variables', () => {
     it('should disable add variable button when selected flow node is not running', async () => {
       mockServer.use(
         rest.post(
-          '/api/process-instances/:instanceId/variables-new',
+          '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
         )
       );

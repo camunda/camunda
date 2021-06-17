@@ -46,7 +46,7 @@ public class VariableIT extends OperateZeebeIntegrationTest {
   }
 
   protected String getVariablesURL(Long processInstanceKey) {
-    return String.format(PROCESS_INSTANCE_URL + "/%s/variables-new", processInstanceKey);
+    return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceKey);
   }
 
   protected String getVariableURL(String variableId) {

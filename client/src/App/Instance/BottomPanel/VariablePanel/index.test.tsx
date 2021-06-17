@@ -48,21 +48,19 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('VariablePanel', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -125,7 +123,7 @@ describe('VariablePanel', () => {
 
     mockServer.use(
       rest.post(
-        '/api/process-instances/invalid_instance/variables-new',
+        '/api/process-instances/invalid_instance/variables',
         (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
       )
     );
@@ -147,9 +145,8 @@ describe('VariablePanel', () => {
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/invalid_instance/variables-new',
-        (_, res) => res.networkError('A network error')
+      rest.post('/api/process-instances/invalid_instance/variables', (_, res) =>
+        res.networkError('A network error')
       )
     );
 
@@ -187,21 +184,19 @@ describe('VariablePanel', () => {
     userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -222,29 +217,27 @@ describe('VariablePanel', () => {
           })
         )
       ),
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-              {
-                id: '9007199254742796-foo',
-                name: 'foo',
-                value: '"bar"',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+            {
+              id: '9007199254742796-foo',
+              name: 'foo',
+              value: '"bar"',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.get('/api/operations', (req, res, ctx) => {
         if (
@@ -328,9 +321,8 @@ describe('VariablePanel', () => {
           })
         )
       ),
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) => res.once(ctx.json([]))
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([]))
       )
     );
 
@@ -465,21 +457,19 @@ describe('VariablePanel', () => {
     userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -500,21 +490,19 @@ describe('VariablePanel', () => {
           })
         )
       ),
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.get('/api/operations', (req, res, ctx) => {
         if (

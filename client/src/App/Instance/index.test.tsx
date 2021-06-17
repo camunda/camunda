@@ -88,21 +88,19 @@ describe('Instance', () => {
           })
         )
       ),
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res(
-            ctx.json([
-              {
-                id: '2251799813686037-mwst',
-                name: 'newVariable',
-                value: '1234',
-                scopeId: '2251799813686037',
-                processInstanceId: '2251799813686037',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res(
+          ctx.json([
+            {
+              id: '2251799813686037-mwst',
+              name: 'newVariable',
+              value: '1234',
+              scopeId: '2251799813686037',
+              processInstanceId: '2251799813686037',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       )
     );
   });

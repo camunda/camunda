@@ -5,6 +5,7 @@
  */
 package io.camunda.operate.es;
 
+import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import java.util.ArrayList;
 import java.util.List;
 import io.camunda.operate.entities.IncidentState;
@@ -32,6 +33,9 @@ import static io.camunda.operate.util.TestUtil.createVariable;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Tests retrieval of operation taking into account current user name.
@@ -110,7 +114,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
   public void testGetVariables() throws Exception {
     when(userService.getCurrentUsername()).thenReturn(USER_3);
 
-    MvcResult mvcResult = getRequest(queryVariables(PROCESS_INSTANCE_ID_2));
+    MvcResult mvcResult = getVariables(PROCESS_INSTANCE_ID_2);
     List<VariableDto> variables = mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
 
     assertThat(variables).hasSize(3);
@@ -143,8 +147,21 @@ public class OperationReaderIT extends OperateIntegrationTest {
     return String.format("%s/%s/incidents", PROCESS_INSTANCE_URL, processInstanceId);
   }
 
-  private String queryVariables(String processInstanceId) {
-    return String.format("%s/%s/variables?scopeId=%s", PROCESS_INSTANCE_URL, processInstanceId, processInstanceId);
+  private MvcResult getVariables(String processInstanceId)
+      throws Exception {
+    final VariableRequestDto request = new VariableRequestDto()
+        .setScopeId(String.valueOf(processInstanceId));
+    return mockMvc
+        .perform(post(getVariablesURL(processInstanceId))
+            .content(mockMvcTestRule.json(request))
+            .contentType(mockMvcTestRule.getContentType()))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+        .andReturn();
+  }
+
+  private String getVariablesURL(String processInstanceId) {
+    return String.format(PROCESS_INSTANCE_URL + "/%s/variables", processInstanceId);
   }
 
   private String queryProcessInstanceById(String processInstanceId) {

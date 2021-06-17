@@ -291,24 +291,4 @@ public class VariableReader extends AbstractReader {
     }
   }
 
-  @Deprecated
-  public List<VariableDto> getVariablesOld(Long processInstanceKey, Long scopeKey) {
-    final TermQueryBuilder processInstanceKeyQuery = termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
-    final TermQueryBuilder scopeKeyQuery = termQuery(VariableTemplate.SCOPE_KEY, scopeKey);
-
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(processInstanceKeyQuery, scopeKeyQuery));
-
-    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-        .source(new SearchSourceBuilder()
-            .query(query)
-            .sort(VariableTemplate.NAME, SortOrder.ASC));
-    try {
-      final List<VariableEntity> variableEntities = scroll(searchRequest, VariableEntity.class);
-      final Map<String, List<OperationEntity>> operations = operationReader.getUpdateOperationsPerVariableName(processInstanceKey, scopeKey);
-      return VariableDto.createFromOld(variableEntities, operations);
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
-  }
 }

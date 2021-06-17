@@ -169,58 +169,6 @@ public class VariableDto {
     return result;
   }
 
-  @Deprecated
-  public static VariableDto createFromOld(VariableEntity variableEntity, List<OperationEntity> operations,
-      boolean fullValue) {
-    if (variableEntity == null) {
-      return null;
-    }
-    VariableDto variable = new VariableDto();
-    variable.setId(variableEntity.getId());
-    variable.setName(variableEntity.getName());
-    variable.setValue(variableEntity.getValue());
-
-    if (operations != null && operations.size() > 0) {
-      List <OperationEntity> activeOperations = CollectionUtil.filter(operations,(o ->
-          o.getState().equals(OperationState.SCHEDULED)
-              || o.getState().equals(OperationState.LOCKED)
-              || o.getState().equals(OperationState.SENT)));
-      if (!activeOperations.isEmpty()) {
-        variable.setHasActiveOperation(true);
-        variable.setValue(activeOperations.get(activeOperations.size() - 1).getVariableValue());
-      }
-    }
-    if (fullValue) {
-      variable.setValue(variableEntity.getFullValue());
-      variable.setIsPreview(false);
-    } else {
-      variable.setValue(variableEntity.getValue());
-      variable.setIsPreview(variableEntity.getIsPreview());
-    }
-
-    //convert to String[]
-    if (variableEntity.getSortValues() != null) {
-      variable.setSortValues(Arrays.stream(variableEntity.getSortValues())
-          .map(String::valueOf)
-          .toArray(String[]::new));
-    }
-    return variable;
-  }
-
-  @Deprecated
-  public static List<VariableDto> createFromOld(List<VariableEntity> variableEntities,
-      Map<String, List<OperationEntity>> operations) {
-    List<VariableDto> result = new ArrayList<>();
-    if (variableEntities != null) {
-      for (VariableEntity variableEntity: variableEntities) {
-        if (variableEntity != null) {
-          result.add(createFromOld(variableEntity, operations.get(variableEntity.getName()), false));
-        }
-      }
-    }
-    return result;
-  }
-
   private static VariableDto createFrom(List<OperationEntity> operations) {
     for (OperationEntity operation: operations) {
       if (operation.getState().equals(OperationState.SCHEDULED)

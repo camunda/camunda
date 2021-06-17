@@ -53,7 +53,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Api(tags = {"Process instances"})
@@ -187,14 +186,7 @@ public class ProcessInstanceRestService {
   }
 
   @ApiOperation("Get variables by process instance id and scope id")
-  @GetMapping("/{processInstanceId}/variables")
-  @Deprecated
-  public List<VariableDto> getVariables(@PathVariable String processInstanceId, @RequestParam String scopeId) {
-    return variableReader.getVariablesOld(Long.valueOf(processInstanceId), Long.valueOf(scopeId));
-  }
-
-  @ApiOperation("Get variables by process instance id and scope id")
-  @PostMapping("/{processInstanceId}/variables-new")
+  @PostMapping("/{processInstanceId}/variables")
   public List<VariableDto> getVariables(
       @PathVariable String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
     validateRequest(variableRequest);
