@@ -40,7 +40,7 @@
     <version.mockito>3.11.1</version.mockito>
     <version.assertj-core>3.19.0</version.assertj-core>
     <version.jackson>2.12.3</version.jackson>
-    <version.auth0>1.4.0</version.auth0>
+    <version.auth0>1.7.0</version.auth0>
     <version.auth0.jwt>3.16.0</version.auth0.jwt>
 
     <version.node>v14.15.0</version.node>
