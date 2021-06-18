@@ -18,63 +18,65 @@ type TokensType = {
   session?: string;
 };
 
-const getCredentials = memoize(async (): Promise<
-  | {
-      Cookie: string;
-    }
-  | {
-      Cookie: string;
-      'OPERATE-X-CSRF-TOKEN': string;
-    }
-> => {
-  const {username, password} = config.agentUser;
-  const {headers} = await fetch(ENDPOINTS.login(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams([
-      ['username', username],
-      ['password', password],
-    ]).toString(),
-  });
-  const setCookie = headers.get('set-cookie');
-
-  if (setCookie === null) {
-    throw new Error('Credentials not present in the response');
-  }
-
-  const tokens: TokensType = setCookie
-    .split(', ')
-    .reduce((accumulator, cookie) => {
-      const [cookieValue] = cookie.split(';');
-
-      if (sessionToken.test(cookieValue)) {
-        return {...accumulator, session: cookieValue};
+const getCredentials = memoize(
+  async (): Promise<
+    | {
+        Cookie: string;
       }
-
-      if (csrfToken.test(cookieValue)) {
-        return {...accumulator, csrf: cookieValue};
+    | {
+        Cookie: string;
+        'OPERATE-X-CSRF-TOKEN': string;
       }
+  > => {
+    const {username, password} = config.agentUser;
+    const {headers} = await fetch(ENDPOINTS.login(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams([
+        ['username', username],
+        ['password', password],
+      ]).toString(),
+    });
+    const setCookie = headers.get('set-cookie');
 
-      return accumulator;
-    }, {});
+    if (setCookie === null) {
+      throw new Error('Credentials not present in the response');
+    }
 
-  if (!tokens.hasOwnProperty('session')) {
-    throw new Error('Missing credential');
-  }
+    const tokens: TokensType = setCookie
+      .split(', ')
+      .reduce((accumulator, cookie) => {
+        const [cookieValue] = cookie.split(';');
 
-  if (!tokens.hasOwnProperty('csrf')) {
+        if (sessionToken.test(cookieValue)) {
+          return {...accumulator, session: cookieValue};
+        }
+
+        if (csrfToken.test(cookieValue)) {
+          return {...accumulator, csrf: cookieValue};
+        }
+
+        return accumulator;
+      }, {});
+
+    if (!tokens.hasOwnProperty('session')) {
+      throw new Error('Missing credential');
+    }
+
+    if (!tokens.hasOwnProperty('csrf')) {
+      return {
+        Cookie: `${tokens.session}`,
+      };
+    }
+
     return {
-      Cookie: `${tokens.session}`,
+      'OPERATE-X-CSRF-TOKEN':
+        tokens.csrf === undefined ? '' : tokens.csrf.split('=')[1],
+      Cookie: `${tokens.session}; ${tokens.csrf}`,
     };
   }
-
-  return {
-    'OPERATE-X-CSRF-TOKEN':
-      tokens.csrf === undefined ? '' : tokens.csrf.split('=')[1],
-    Cookie: `${tokens.session}; ${tokens.csrf}`,
-  };
-});
+);
 
 export {getCredentials};
