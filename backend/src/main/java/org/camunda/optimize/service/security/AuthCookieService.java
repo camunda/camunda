@@ -9,7 +9,6 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.rest.constants.RestConstants;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.springframework.stereotype.Component;
@@ -45,7 +44,7 @@ public class AuthCookieService {
       null,
       "delete cookie",
       0,
-      RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme),
+      configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme),
       true
     );
   }
@@ -65,12 +64,12 @@ public class AuthCookieService {
         .map(issuedAt -> issuedAt.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
         .map(Date::from)
         .orElse(null),
-      RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme),
+      configurationService.getAuthConfiguration().getCookieConfiguration().resolveSecureFlagValue(requestScheme),
       true
     );
 
     String newCookieAsString = newCookie.toString();
-    if (getAuthConfiguration().getSameSiteCookieFlagEnabled()) {
+    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
       newCookieAsString = addSameSiteCookieFlag(newCookieAsString);
     }
     return newCookieAsString;

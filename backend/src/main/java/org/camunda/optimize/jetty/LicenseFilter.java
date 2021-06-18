@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.jetty;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.camunda.optimize.service.exceptions.license.OptimizeLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -25,7 +24,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-
 public class LicenseFilter implements Filter {
 
   private static final Logger logger = LoggerFactory.getLogger(LicenseFilter.class);
@@ -36,17 +34,17 @@ public class LicenseFilter implements Filter {
 
   private static final Set<String> EXCLUDED_EXTENSIONS = Sets.newHashSet("css", "html", "js", "ico");
 
-  private static final List<String> EXCLUDED_API_CALLS =
-    Lists.newArrayList(
-      "authentication",
-      "localization",
-      "ui-configuration",
-      "license/validate-and-store",
-      "license/validate",
-      "status",
-      "readyz"
-    );
+  private static final List<String> EXCLUDED_API_CALLS = List.of(
+    "authentication",
+    "localization",
+    "ui-configuration",
+    "license/validate-and-store",
+    "license/validate",
+    "status",
+    "readyz"
+  );
 
+  private static final List<String> SSO_PATHS = List.of("sso/auth0", "sso-callback");
 
   public LicenseFilter(SpringAwareServletConfiguration awareDelegate) {
     this.awareDelegate = awareDelegate;
@@ -95,14 +93,20 @@ public class LicenseFilter implements Filter {
     }
   }
 
-  private static boolean isLicenseCheckNeeded(HttpServletRequest servletRequest) {
+  private boolean isLicenseCheckNeeded(HttpServletRequest servletRequest) {
     String requestPath = servletRequest.getServletPath().toLowerCase();
     String pathInfo = servletRequest.getPathInfo();
 
     return !isStaticResource(requestPath)
       && !isRootRequest(requestPath)
+      && !isSsoPath(requestPath)
       && !isExcludedApiPath(pathInfo)
       && !isStatusRequest(requestPath);
+  }
+
+  // TODO to be removed with disabling this filter in cloud environments, see OPT-5317
+  private boolean isSsoPath(final String requestPath) {
+    return requestPath != null && SSO_PATHS.stream().anyMatch(requestPath::contains);
   }
 
   private static boolean isStatusRequest(String requestPath) {

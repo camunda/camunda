@@ -6,6 +6,7 @@
 package org.camunda.optimize.jetty;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
@@ -15,6 +16,7 @@ import org.camunda.optimize.service.util.configuration.security.ResponseHeadersC
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
+import org.eclipse.jetty.rewrite.handler.RedirectPatternRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -53,7 +55,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   public static final String EXTERNAL_SUB_PATH = "/external";
   private static final String PROTOCOL = "http/1.1";
-  private static final String EXTERNAL_SUB_PATH_PATTERN = "^" + EXTERNAL_SUB_PATH + "(/.*)$";
+  private static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
 
   static {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
@@ -93,7 +95,19 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
     final HandlerCollection handlerCollection = new HandlerCollection();
     handlerCollection.addHandler(createSecurityHeaderHandlers(configurationService));
-    handlerCollection.addHandler(wrapWithExternalPathRewriteHandler(appServletContextHandler));
+
+    // If running in cloud environment an additional rewrite handler is added to handle requests containing the
+    // clusterId as sub-path and effectively stripping of this path element to handle the request as if
+    // it was received without that sub-path.
+    final String clusterId = configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId();
+    if (StringUtils.isNotBlank(clusterId)) {
+      handlerCollection.addHandler(createAlternativeApplicationRootPathRewriteHandler(
+        appServletContextHandler, "/" + clusterId
+      ));
+    }
+    handlerCollection.addHandler(createAlternativeApplicationRootPathRewriteHandler(
+      appServletContextHandler, EXTERNAL_SUB_PATH
+    ));
     newJettyServer.setHandler(handlerCollection);
 
     initWebSockets(appServletContextHandler);
@@ -105,12 +119,23 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return newJettyServer;
   }
 
-  private RewriteHandler wrapWithExternalPathRewriteHandler(final Handler handler) {
-    RewriteHandler rewriteHandler = new RewriteHandler();
+  private RewriteHandler createAlternativeApplicationRootPathRewriteHandler(final Handler handler,
+                                                                            final String absoluteSubPath) {
+    final RewriteHandler rewriteHandler = new RewriteHandler();
     rewriteHandler.setRewriteRequestURI(true);
     rewriteHandler.setRewritePathInfo(true);
-    RewriteRegexRule shareUrlRewriteRule = new RewriteRegexRule(EXTERNAL_SUB_PATH_PATTERN, "$1");
-    rewriteHandler.addRule(shareUrlRewriteRule);
+    // frontend resources rely on relative paths on the root, thus we need to make sure that alternative app root
+    // locations are always followed by a slash
+    final RedirectPatternRule trailingSlashRedirectPatternRule = new RedirectPatternRule(
+      absoluteSubPath, absoluteSubPath + "/"
+    );
+    rewriteHandler.addRule(trailingSlashRedirectPatternRule);
+    // for resources "below" the alternative root we need to remove the sub-path to route the request to the actual
+    // application context being based on "/"
+    final RewriteRegexRule alternativeRootPathEraserRegexRule = new RewriteRegexRule(
+      String.format(SUB_PATH_PATTERN_TEMPLATE, absoluteSubPath), "/$2"
+    );
+    rewriteHandler.addRule(alternativeRootPathEraserRegexRule);
     rewriteHandler.setHandler(handler);
     return rewriteHandler;
   }
@@ -118,7 +143,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   private RewriteHandler createSecurityHeaderHandlers(final ConfigurationService configurationService) {
     final RewriteHandler rewriteHandler = new RewriteHandler();
     HeaderPatternRule xssProtection =
-      new HeaderPatternRule("*", X_XSS_PROTECTION, getResponseHeadersConfiguration(configurationService).getXsssProtection());
+      new HeaderPatternRule(
+        "*",
+        X_XSS_PROTECTION,
+        getResponseHeadersConfiguration(configurationService).getXsssProtection()
+      );
     rewriteHandler.addRule(xssProtection);
 
     if (Boolean.TRUE.equals(getResponseHeadersConfiguration(configurationService).getXContentTypeOptions())) {
@@ -128,7 +157,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     }
 
     final HeaderPatternRule contentSecurityPolicy =
-      new HeaderPatternRule("*", CONTENT_SECURITY_POLICY, getResponseHeadersConfiguration(configurationService).getContentSecurityPolicy());
+      new HeaderPatternRule(
+        "*",
+        CONTENT_SECURITY_POLICY,
+        getResponseHeadersConfiguration(configurationService).getContentSecurityPolicy()
+      );
     rewriteHandler.addRule(contentSecurityPolicy);
 
     return rewriteHandler;

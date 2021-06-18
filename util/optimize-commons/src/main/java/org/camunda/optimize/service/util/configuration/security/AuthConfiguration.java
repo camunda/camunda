@@ -16,12 +16,14 @@ import java.util.Optional;
 
 @Data
 public class AuthConfiguration {
+  @JsonProperty("cloud")
+  private CloudAuthConfiguration cloudAuthConfiguration;
   @JsonProperty("token.lifeMin")
   private Integer tokenLifeTime;
   @JsonProperty("token.secret")
   private String tokenSecret;
-  @JsonProperty("cookie.same-site.enabled")
-  private Boolean sameSiteCookieFlagEnabled;
+  @JsonProperty("cookie")
+  private CookieConfiguration cookieConfiguration;
   @JsonProperty("superUserIds")
   private List<String> superUserIds;
   @JsonProperty("superGroupIds")
@@ -37,15 +39,11 @@ public class AuthConfiguration {
   }
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
-  @JsonProperty("cookie")
-  private void unpackCookie(final Map<String, Map<String, Boolean>> cookie) {
-    this.sameSiteCookieFlagEnabled = cookie.get("same-site").get("enabled");
-  }
-
-  @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("token")
   private void unpackToken(final Map<String, String> token) {
     this.tokenLifeTime = Integer.valueOf(token.get("lifeMin"));
     this.tokenSecret = token.get("secret");
   }
+
+
 }

@@ -2,10 +2,20 @@
 security:
   # everything that's related to authentication
   auth:
+    cloud:
+      clientId: ${CAMUNDA_OPTIMIZE_AUTH0_CLIENTID:}
+      clientSecret: ${CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET:}
+      domain: ${CAMUNDA_OPTIMIZE_AUTH0_BACKENDDOMAIN:}
+      customDomain: ${CAMUNDA_OPTIMIZE_AUTH0_DOMAIN:}
+      userIdAttributeName: 'name'
+      organizationClaimName: 'https://camunda.com/organizations'
+      organizationId: ${CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION:}
+      clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:}
     cookie:
       same-site:
         # decides if the optimize auth cookie has the same site cookie flag set
         enabled: true
+      secure: auto
     token:
       # Optimize uses token-based authentication to keep track of which users are
       # logged in. Define when a token is supposed to expire.

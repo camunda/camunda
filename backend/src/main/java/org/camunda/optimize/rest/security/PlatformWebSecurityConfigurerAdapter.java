@@ -9,7 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.util.configuration.security.CamundaPlatformCondition;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -55,7 +57,8 @@ import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 @Configuration
 @AllArgsConstructor
 @EnableWebSecurity
-public class OptimizeWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
+@Conditional(CamundaPlatformCondition.class)
+public class PlatformWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
 
   private static final String CSV_SUFFIX = ".csv";
   private static final String SUB_PATH_ANY = "/*";
