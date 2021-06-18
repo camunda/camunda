@@ -132,7 +132,6 @@ pipeline {
             when { not { expression { params.SKIP_VERIFY } } }
             parallel {
                 stage('Analyse') {
-                    when { expression { return false } } // disable SonarCloud until new artifact id is linked to project
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
