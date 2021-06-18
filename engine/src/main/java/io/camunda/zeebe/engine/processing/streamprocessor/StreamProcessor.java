@@ -120,7 +120,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
           new ProcessingStateMachine(processingContext, this::shouldProcessNext);
 
       healthCheckTick();
-      openFuture.complete(null);
 
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
@@ -302,6 +301,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
     }
+
+    openFuture.complete(null);
   }
 
   private void onFailure(final Throwable throwable) {
