@@ -27,7 +27,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     configuredZeebe.setName(zeebeExtension.getZeebeRecordPrefix());
   }
 
-  protected void importAllZeebeEntitiesFromScratch() {
+  protected void importAllZeebeEntities() {
     embeddedOptimizeExtension.importAllZeebeEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

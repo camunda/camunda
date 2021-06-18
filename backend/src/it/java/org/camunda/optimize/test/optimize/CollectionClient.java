@@ -219,7 +219,7 @@ public class CollectionClient {
   public List<CollectionScopeEntryResponseDto> getCollectionScope(final String collectionId) {
     return getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
+      .execute(new TypeReference<>() {
       });
   }
 
@@ -227,7 +227,7 @@ public class CollectionClient {
     return getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<List<CollectionScopeEntryResponseDto>>() {
+      .execute(new TypeReference<>() {
       });
   }
 

@@ -25,6 +25,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -46,7 +47,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
   protected abstract String getRecordDescription();
 
-  protected abstract List<Intent> getIntentsForRecordType();
+  protected abstract Set<Intent> getIntentsForRecordType();
 
   protected abstract Class<T> getRecordDtoClass();
 

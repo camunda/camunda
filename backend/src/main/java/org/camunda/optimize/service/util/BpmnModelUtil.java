@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +35,48 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.*;
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_PROCESS;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BpmnModelUtil {
+
+  public static String getFlowNodeTypeForBpmnElementType(final BpmnElementType bpmnElementType) {
+    switch (bpmnElementType) {
+      case PROCESS:
+        return BPMN_ELEMENT_PROCESS;
+      case SUB_PROCESS:
+        return BPMN_ELEMENT_SUB_PROCESS;
+      case START_EVENT:
+        return BPMN_ELEMENT_START_EVENT;
+      case INTERMEDIATE_CATCH_EVENT:
+        return BPMN_ELEMENT_INTERMEDIATE_CATCH_EVENT;
+      case BOUNDARY_EVENT:
+        return BPMN_ELEMENT_BOUNDARY_EVENT;
+      case END_EVENT:
+        return BPMN_ELEMENT_END_EVENT;
+      case SERVICE_TASK:
+        return BPMN_ELEMENT_SERVICE_TASK;
+      case RECEIVE_TASK:
+        return BPMN_ELEMENT_RECEIVE_TASK;
+      case EXCLUSIVE_GATEWAY:
+        return BPMN_ELEMENT_EXCLUSIVE_GATEWAY;
+      case EVENT_BASED_GATEWAY:
+        return BPMN_ELEMENT_EVENT_BASED_GATEWAY;
+      case PARALLEL_GATEWAY:
+        return BPMN_ELEMENT_PARALLEL_GATEWAY;
+      case SEQUENCE_FLOW:
+        return BPMN_ELEMENT_SEQUENCE_FLOW;
+      case CALL_ACTIVITY:
+        return BPMN_ELEMENT_CALL_ACTIVITY;
+      case USER_TASK:
+        return BPMN_ELEMENT_USER_TASK;
+      default:
+        throw new OptimizeRuntimeException("Unsupported BPMN element of type " + bpmnElementType);
+    }
+  }
 
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {
@@ -115,7 +154,11 @@ public class BpmnModelUtil {
   public static List<FlowNodeDataDto> extractFlowNodeData(final BpmnModelInstance model) {
     final List<FlowNodeDataDto> result = new ArrayList<>();
     for (FlowNode node : model.getModelElementsByType(FlowNode.class)) {
-      FlowNodeDataDto flowNode = new FlowNodeDataDto(node.getId(), node.getName(), node.getElementType().getTypeName());
+      FlowNodeDataDto flowNode = new FlowNodeDataDto(
+        node.getId(),
+        node.getName(),
+        node.getElementType().getTypeName()
+      );
       result.add(flowNode);
     }
     return result;

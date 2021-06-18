@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.dto.zeebe.definition;
 
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 @Data
-public class ZeebeProcessDefinitionDataDto implements RecordValue {
+public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
 
   private byte[] resource;
-  private String processDefinitionKey;
-  private long version;
-  private String checksum;
+  private long processDefinitionKey;
+  private int version;
+  private byte[] checksum;
   private String resourceName;
   private String bpmnProcessId;
 

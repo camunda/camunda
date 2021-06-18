@@ -17,6 +17,7 @@ engines:
       enabled: true
 zeebe:
   enabled: true
+  partitionCount: 2
 import:
   data:
     process-definition-xml:

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -36,7 +35,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 @Component
 @Slf4j
 public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWriter {
-  private static final Set<String> PRIMITIVE_UPDATABLE_FIELDS = ImmutableSet.of(
+  private static final Set<String> PRIMITIVE_UPDATABLE_FIELDS = Set.of(
     PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_VERSION, PROCESS_DEFINITION_ID,
     BUSINESS_KEY, START_DATE, END_DATE, DURATION, STATE,
     ENGINE, TENANT_ID

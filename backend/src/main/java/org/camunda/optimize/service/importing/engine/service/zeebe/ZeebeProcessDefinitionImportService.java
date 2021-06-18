@@ -77,8 +77,8 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
     final ZeebeProcessDefinitionDataDto recordData = zeebeProcessDefinitionRecord.getValue();
     String bpmn = new String(recordData.getResource(), StandardCharsets.UTF_8);
     return ProcessDefinitionOptimizeDto.builder()
-      .id(recordData.getProcessDefinitionKey())
-      .key(recordData.getProcessDefinitionKey())
+      .id(String.valueOf(recordData.getProcessDefinitionKey()))
+      .key(String.valueOf(recordData.getProcessDefinitionKey()))
       .version(String.valueOf(recordData.getVersion()))
       .versionTag(null)
       .name(BpmnModelUtil.extractProcessDefinitionName(String.valueOf(recordData.getBpmnProcessId()), bpmn)
