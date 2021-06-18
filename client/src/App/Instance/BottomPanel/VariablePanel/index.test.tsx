@@ -556,21 +556,19 @@ describe('VariablePanel', () => {
     userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
@@ -594,29 +592,27 @@ describe('VariablePanel', () => {
     expect(screen.getByTestId('edit-variable-spinner')).toBeInTheDocument();
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/variables-new',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                id: '9007199254742796-test',
-                name: 'test',
-                value: '123',
-                scopeId: '9007199254742796',
-                processInstanceId: '9007199254742796',
-                hasActiveOperation: false,
-              },
-              {
-                id: 'instance_id-foo',
-                name: 'foo',
-                value: '"bar"',
-                scopeId: 'instance_id',
-                processInstanceId: 'instance_id',
-                hasActiveOperation: false,
-              },
-            ])
-          )
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(
+          ctx.json([
+            {
+              id: '9007199254742796-test',
+              name: 'test',
+              value: '123',
+              scopeId: '9007199254742796',
+              processInstanceId: '9007199254742796',
+              hasActiveOperation: false,
+            },
+            {
+              id: 'instance_id-foo',
+              name: 'foo',
+              value: '"bar"',
+              scopeId: 'instance_id',
+              processInstanceId: 'instance_id',
+              hasActiveOperation: false,
+            },
+          ])
+        )
       ),
       rest.get('/api/operations', (_, res, ctx) =>
         res.once(ctx.json([{state: 'SENT'}]))
