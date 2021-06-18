@@ -540,4 +540,97 @@ describe('VariablePanel', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
+    jest.useFakeTimers();
+
+    render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+
+    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+
+    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      ),
+      rest.post(
+        '/api/process-instances/:instanceId/flow-node-metadata',
+        (_, res, ctx) => res.once(ctx.json(null))
+      ),
+      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
+        res.once(ctx.json({id: '1234'}))
+      )
+    );
+
+    jest.runOnlyPendingTimers();
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+    );
+
+    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+    expect(
+      screen.queryByRole('button', {name: 'Add variable'})
+    ).not.toBeInTheDocument();
+
+    expect(screen.getByTestId('edit-variable-spinner')).toBeInTheDocument();
+
+    mockServer.use(
+      rest.post(
+        '/api/process-instances/:instanceId/variables-new',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json([
+              {
+                id: '9007199254742796-test',
+                name: 'test',
+                value: '123',
+                scopeId: '9007199254742796',
+                processInstanceId: '9007199254742796',
+                hasActiveOperation: false,
+              },
+              {
+                id: 'instance_id-foo',
+                name: 'foo',
+                value: '"bar"',
+                scopeId: 'instance_id',
+                processInstanceId: 'instance_id',
+                hasActiveOperation: false,
+              },
+            ])
+          )
+      ),
+      rest.get('/api/operations', (_, res, ctx) =>
+        res.once(ctx.json([{state: 'SENT'}]))
+      )
+    );
+    jest.runOnlyPendingTimers();
+    await waitForElementToBeRemoved(
+      screen.getByTestId('edit-variable-spinner')
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('cell', {name: 'foo'})).toBeInTheDocument()
+    );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 });

@@ -338,7 +338,18 @@ class Variables extends NetworkReconnectionHandler {
       }
 
       if (this.intervalId !== null && response.ok) {
-        this.setItems(await response.json());
+        const variables: VariableEntity[] = await response.json();
+
+        const {pendingItem} = this.state;
+
+        if (
+          pendingItem !== null &&
+          variables.some(({name}) => name === pendingItem.name)
+        ) {
+          this.setPendingItem(null);
+        }
+
+        this.setItems(variables);
       }
 
       if (!response.ok) {
