@@ -267,49 +267,45 @@ public final class ErrorEventIncidentTest {
             newIncident -> assertThat(newIncident.getValue()).isEqualTo(incident.getValue()));
   }
 
-  /** regression test for https://github.com/camunda-cloud/zeebe/issues/7160 */
   @Test
-  public void shouldNotResolveIncidentForJob() {
+  public void shouldResolveIncidentForJob() {
     ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(JOB_TYPE)
-        .withErrorCode("other-error")
-        .throwError();
+    // given an unhandled error event incident is raised for a job
+    final var job =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(JOB_TYPE)
+            .withErrorCode("other-error")
+            .throwError();
 
-    // given an unhandled error event incident
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
             .getFirst();
 
-    // when problem is not fixed, but incident is resolved
+    // when that incident is resolved
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    // then
     assertThat(
             RecordingExporter.incidentRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .onlyEvents()
-                .limit(3))
+                .limit(2))
         .extracting(Record::getIntent)
-        .describedAs("incident is created, resolved and recreated")
-        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED, IncidentIntent.CREATED);
+        .describedAs("incident is created and resolved")
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
 
-    assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .onlyEvents()
-                .filter(r -> r.getKey() != incident.getKey())
-                .findFirst())
-        .describedAs("incident is recreated as new incident")
-        .isPresent()
-        .hasValueSatisfying(
-            newIncident -> assertThat(newIncident.getValue()).isEqualTo(incident.getValue()));
+    // then the job can now be completed again
+    ENGINE.job().withKey(job.getKey()).complete();
+
+    assertThat(RecordingExporter.jobRecords().withRecordKey(job.getKey()).onlyEvents().limit(3))
+        .extracting(Record::getIntent)
+        .describedAs("job that had error_thrown is completed")
+        .containsExactly(JobIntent.CREATED, JobIntent.ERROR_THROWN, JobIntent.COMPLETED);
   }
 }

@@ -48,7 +48,7 @@
     <version.docker-java-api>3.2.8</version.docker-java-api>
     <version.elasticsearch>7.13.2</version.elasticsearch>
     <version.error-prone>2.7.1</version.error-prone>
-    <version.grpc>1.38.0</version.grpc>
+    <version.grpc>1.38.1</version.grpc>
     <version.gson>2.8.7</version.gson>
     <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -99,7 +99,7 @@
     <version.jqwik>1.5.1</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.11.2</version.byte-buddy>
+    <version.byte-buddy>1.11.3</version.byte-buddy>
     <version.revapi>0.24.2</version.revapi>
 
     <!-- maven plugins -->
