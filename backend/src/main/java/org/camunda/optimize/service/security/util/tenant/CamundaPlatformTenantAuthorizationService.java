@@ -3,15 +3,19 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.security;
+package org.camunda.optimize.service.security.util.tenant;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.security.AbstractCachingAuthorizationService;
+import org.camunda.optimize.service.security.ApplicationAuthorizationService;
+import org.camunda.optimize.service.security.ResolvedResourceTypeAuthorizations;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -26,58 +30,51 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHOR
 import static org.camunda.optimize.service.util.importing.EngineConstants.READ_PERMISSION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 
+@Conditional(CamundaPlatformCondition.class)
 @Component
-public class TenantAuthorizationService
-  extends AbstractCachingAuthorizationService<Map<String, ResolvedResourceTypeAuthorizations>> {
-  private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_PERMISSION);
+public class CamundaPlatformTenantAuthorizationService
+  extends AbstractCachingAuthorizationService<Map<String, ResolvedResourceTypeAuthorizations>>
+  implements DataSourceTenantAuthorizationService {
+
+  private static final List<String> RELEVANT_PERMISSIONS = List.of(ALL_PERMISSION, READ_PERMISSION);
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
 
   private Map<String, String> defaultTenantIdByEngine;
 
-  public TenantAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
-                                    final EngineContextFactory engineContextFactory,
-                                    final ConfigurationService configurationService) {
+  public CamundaPlatformTenantAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
+                                                   final EngineContextFactory engineContextFactory,
+                                                   final ConfigurationService configurationService) {
     super(engineContextFactory, configurationService);
     this.applicationAuthorizationService = applicationAuthorizationService;
   }
 
+  @Override
   public boolean isAuthorizedToSeeAllTenants(final String identityId,
                                              final IdentityType identityType,
                                              final List<String> tenantIds) {
-    return isAuthorizedToSeeAllTenants(identityId, identityType, tenantIds, null);
+    return tenantIds.stream()
+      .allMatch(tenantId -> isAuthorizedToSeeTenant(identityId, identityType, tenantId));
   }
 
-  public boolean isAuthorizedToSeeAllTenants(final String identityId,
-                                             final IdentityType identityType,
-                                             final List<String> tenantIds,
-                                             final String engineAlias) {
-    boolean isAuthorized = true;
-    for (String tenantId : tenantIds) {
-      isAuthorized = isAuthorizedToSeeTenant(identityId, identityType, tenantId, engineAlias);
-      if (!isAuthorized) {
-        break;
-      }
-    }
-    return isAuthorized;
-  }
-
+  @Override
   public boolean isAuthorizedToSeeTenant(final String identityId,
                                          final IdentityType identityType,
                                          final String tenantId) {
     return isAuthorizedToSeeTenant(identityId, identityType, tenantId, null);
   }
 
+  @Override
   public boolean isAuthorizedToSeeTenant(final String identityId,
                                          final IdentityType identityType,
                                          final String tenantId,
-                                         final String engineAlias) {
+                                         final String dataSourceName) {
     if (tenantId == null || tenantId.isEmpty()) {
       return true;
     } else {
       final Stream<ResolvedResourceTypeAuthorizations> relevantEngineAuthorizations = Optional
         .ofNullable(getCachedAuthorizationsForId(identityId, identityType))
-        .map(authorizationsByEngine -> Optional.ofNullable(engineAlias)
+        .map(authorizationsByEngine -> Optional.ofNullable(dataSourceName)
           .flatMap(alias -> Optional.ofNullable(authorizationsByEngine.get(alias)))
           .map(Stream::of)
           .orElseGet(() -> authorizationsByEngine.values().stream())

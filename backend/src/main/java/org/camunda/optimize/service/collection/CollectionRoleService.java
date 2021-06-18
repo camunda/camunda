@@ -23,7 +23,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;

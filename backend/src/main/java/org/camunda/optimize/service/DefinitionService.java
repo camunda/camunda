@@ -24,7 +24,7 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsR
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -60,14 +60,14 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Slf4j
 public class DefinitionService implements ConfigurationReloadable {
   private final DefinitionReader definitionReader;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestProcessDefinitionCache;
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestDecisionDefinitionCache;
 
   public DefinitionService(final DefinitionReader definitionReader,
-                           final DefinitionAuthorizationService definitionAuthorizationService,
+                           final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
                            final TenantService tenantService,
                            final CamundaActivityEventReader camundaActivityEventReader,
                            final ConfigurationService configurationService) {
@@ -459,23 +459,32 @@ public class DefinitionService implements ConfigurationReloadable {
     final Set<String> authorizedTenantIds) {
     final TenantIdWithDefinitionsDto notDefinedTenantEntry = definitionsGroupedByTenant.get(TENANT_NOT_DEFINED.getId());
     if (notDefinedTenantEntry != null) {
-      authorizedTenantIds.forEach(authorizedTenantId ->
-        // definitions of the not defined tenant need to be added to all other tenant entries
-        // as technically there can be data on shared definitions for any of them
-        definitionsGroupedByTenant.compute(authorizedTenantId, (tenantId, tenantIdWithDefinitionsDto) -> {
-          if (tenantIdWithDefinitionsDto == null) {
-            tenantIdWithDefinitionsDto = new TenantIdWithDefinitionsDto(tenantId, new ArrayList<>());
-          }
+      authorizedTenantIds.forEach(
+        authorizedTenantId ->
+          // definitions of the not defined tenant need to be added to all other tenant
+          // entries
+          // as technically there can be data on shared definitions for any of them
+          definitionsGroupedByTenant.compute(
+            authorizedTenantId,
+            (tenantId, tenantIdWithDefinitionsDto) -> {
+              if (tenantIdWithDefinitionsDto == null) {
+                tenantIdWithDefinitionsDto = new TenantIdWithDefinitionsDto(
+                  tenantId,
+                  new ArrayList<>()
+                );
+              }
 
-          final List<SimpleDefinitionDto> mergedDefinitionList = mergeTwoCollectionsWithDistinctValues(
-            tenantIdWithDefinitionsDto.getDefinitions(),
-            notDefinedTenantEntry.getDefinitions()
-          );
+              final List<SimpleDefinitionDto> mergedDefinitionList =
+                mergeTwoCollectionsWithDistinctValues(
+                  tenantIdWithDefinitionsDto.getDefinitions(),
+                  notDefinedTenantEntry.getDefinitions()
+                );
 
-          tenantIdWithDefinitionsDto.setDefinitions(mergedDefinitionList);
+              tenantIdWithDefinitionsDto.setDefinitions(mergedDefinitionList);
 
-          return tenantIdWithDefinitionsDto;
-        })
+              return tenantIdWithDefinitionsDto;
+            }
+          )
       );
     }
   }

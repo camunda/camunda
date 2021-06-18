@@ -7,6 +7,7 @@ package org.camunda.optimize.util;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -21,7 +22,15 @@ public class ZeebeBpmnModels {
   public static final String DIVERGING_GATEWAY = "diverging_gateway";
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
-    return Bpmn.createExecutableProcess(processName)
+    return createStartEndProcess(processName, null);
+  }
+
+  public static BpmnModelInstance createStartEndProcess(final String processName, final String processId) {
+    ProcessBuilder executableProcess = Bpmn.createExecutableProcess();
+    if (processId != null) {
+      executableProcess = executableProcess.id(processId);
+    }
+    return executableProcess
       .name(processName)
       .startEvent(START_EVENT).name(START_EVENT)
       .endEvent(END_EVENT).name(null)
@@ -29,7 +38,7 @@ public class ZeebeBpmnModels {
   }
 
   public static BpmnModelInstance createSimpleServiceTaskProcess(final String processName) {
-    return Bpmn.createExecutableProcess(processName)
+    return Bpmn.createExecutableProcess()
       .name(processName)
       .startEvent(START_EVENT).name(START_EVENT)
       .serviceTask(SERVICE_TASK).zeebeJobType(SERVICE_TASK).name(SERVICE_TASK)
@@ -38,7 +47,7 @@ public class ZeebeBpmnModels {
   }
 
   public static BpmnModelInstance createSimpleUserTaskProcess(final String processName) {
-    return Bpmn.createExecutableProcess(processName)
+    return Bpmn.createExecutableProcess()
       .name(processName)
       .startEvent(START_EVENT).name(START_EVENT)
       .userTask(USER_TASK).id(USER_TASK).name(USER_TASK)
@@ -47,7 +56,8 @@ public class ZeebeBpmnModels {
   }
 
   public static BpmnModelInstance createLoopingProcess(final String processName) {
-    return Bpmn.createExecutableProcess(processName)
+    return Bpmn.createExecutableProcess()
+      .name(processName)
       .startEvent(START_EVENT)
       .exclusiveGateway(CONVERGING_GATEWAY)
       .serviceTask(SERVICE_TASK).zeebeJobType(SERVICE_TASK)

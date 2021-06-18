@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequ
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
 import org.camunda.optimize.service.es.reader.ProcessVariableReader;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 public class ProcessVariableService {
 
   private final ProcessVariableReader processVariableReader;
-  private final TenantAuthorizationService tenantAuthorizationService;
+  private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;
 
   public List<ProcessVariableNameResponseDto> getVariableNames(List<ProcessVariableNameRequestDto> variableRequestDtos) {

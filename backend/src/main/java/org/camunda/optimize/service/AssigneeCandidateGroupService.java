@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -53,7 +53,7 @@ public class AssigneeCandidateGroupService {
   private static final IdentityType[] CANDIDATE_GROUP_IDENTITY_TYPES = {IdentityType.GROUP};
   private static final String PROCESS_DEFINITION_KEY = "process definition key";
 
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
   private final UserTaskIdentityCacheService identityCacheService;
   private final ReportService reportService;

@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.security.CamundaPlatformCondition;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;

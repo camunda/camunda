@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequ
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
-import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 public class DecisionVariableService {
 
   private final DecisionVariableReader decisionVariableReader;
-  private final TenantAuthorizationService tenantAuthorizationService;
+  private final DataSourceTenantAuthorizationService tenantAuthorizationService;
 
 
   public List<DecisionVariableNameResponseDto> getInputVariableNames(List<DecisionVariableNameRequestDto> variableRequestDtos) {

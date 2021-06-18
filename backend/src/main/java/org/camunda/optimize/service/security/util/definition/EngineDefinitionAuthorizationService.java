@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.security;
+package org.camunda.optimize.service.security.util.definition;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -17,6 +17,12 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.AbstractCachingAuthorizationService;
+import org.camunda.optimize.service.security.ApplicationAuthorizationService;
+import org.camunda.optimize.service.security.EngineAuthorizations;
+import org.camunda.optimize.service.security.util.tenant.CamundaPlatformTenantAuthorizationService;
+import org.camunda.optimize.service.security.ResolvedResourceTypeAuthorizations;
+import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -44,17 +50,17 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 @Component
 public class EngineDefinitionAuthorizationService
   extends AbstractCachingAuthorizationService<Map<String, EngineAuthorizations>> {
-  private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
+  private static final List<String> RELEVANT_PERMISSIONS = List.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
   private static final List<String> SINGLETON_LIST_NOT_DEFINED_TENANT =
     Collections.singletonList(TENANT_NOT_DEFINED.getId());
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
-  private final TenantAuthorizationService tenantAuthorizationService;
+  private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final TenantService tenantService;
   private final LoadingCache<DefinitionTypeAndKey, Set<String>> definitionEnginesReadCache;
 
   public EngineDefinitionAuthorizationService(final ApplicationAuthorizationService applicationAuthorizationService,
-                                              final TenantAuthorizationService tenantAuthorizationService,
+                                              final DataSourceTenantAuthorizationService tenantAuthorizationService,
                                               final EngineContextFactory engineContextFactory,
                                               final ConfigurationService configurationService,
                                               final DefinitionReader definitionReader,
@@ -138,27 +144,6 @@ public class EngineDefinitionAuthorizationService
     );
   }
 
-  public boolean isAuthorizedToSeeDefinition(final String identityId,
-                                             final IdentityType identityType,
-                                             final String definitionKey,
-                                             final DefinitionType definitionType,
-                                             final List<String> tenantIds,
-                                             final Set<String> engines) {
-    if (definitionKey == null || definitionKey.isEmpty() || definitionType == null) {
-      // null key or type provided is considered authorized
-      return true;
-    }
-
-    // empty tenant list or null should be replaced with the actual not defined tenant singleton list
-    // as a lacking tenant entry defaults to the not defined tenant
-    final List<String> nullSafeTenants = Optional.ofNullable(tenantIds).orElse(new ArrayList<>());
-    final List<String> expectedTenants = nullSafeTenants.isEmpty() ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
-    // user needs to be authorized for all considered tenants to get access
-    return filterAuthorizedTenantsForDefinition(
-      identityId, identityType, definitionKey, definitionType, expectedTenants, engines
-    ).size() == expectedTenants.size();
-  }
-
   public boolean isAuthorizedToSeeProcessDefinition(final String identityId,
                                                     final IdentityType identityType,
                                                     final String definitionKey,
@@ -172,21 +157,13 @@ public class EngineDefinitionAuthorizationService
     );
   }
 
-  public boolean isAuthorizedToSeeProcessDefinition(final String identityId,
-                                                    final IdentityType identityType,
-                                                    final String processDefinitionKey,
-                                                    final String tenantId,
-                                                    final String engineAlias) {
-    return isAuthorizedToSeeFullyQualifiedDefinition(
-      identityId, identityType, processDefinitionKey, DefinitionType.PROCESS, tenantId, engineAlias
-    );
-  }
-
   public boolean isUserAuthorizedToSeeProcessDefinition(final String userId,
                                                         final String processDefinitionKey,
                                                         final String tenantId,
                                                         final String engineAlias) {
-    return isAuthorizedToSeeProcessDefinition(userId, IdentityType.USER, processDefinitionKey, tenantId, engineAlias);
+    return isAuthorizedToSeeFullyQualifiedDefinition(
+      userId, IdentityType.USER, processDefinitionKey, DefinitionType.PROCESS, tenantId, engineAlias
+    );
   }
 
   public boolean isUserAuthorizedToSeeDecisionDefinition(final String identityId,
@@ -235,6 +212,27 @@ public class EngineDefinitionAuthorizationService
       }
     }
     return new ArrayList<>(authorizedTenants);
+  }
+
+  private boolean isAuthorizedToSeeDefinition(final String identityId,
+                                              final IdentityType identityType,
+                                              final String definitionKey,
+                                              final DefinitionType definitionType,
+                                              final List<String> tenantIds,
+                                              final Set<String> engines) {
+    if (definitionKey == null || definitionKey.isEmpty() || definitionType == null) {
+      // null key or type provided is considered authorized
+      return true;
+    }
+
+    // empty tenant list or null should be replaced with the actual not defined tenant singleton list
+    // as a lacking tenant entry defaults to the not defined tenant
+    final List<String> nullSafeTenants = Optional.ofNullable(tenantIds).orElse(new ArrayList<>());
+    final List<String> expectedTenants = nullSafeTenants.isEmpty() ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
+    // user needs to be authorized for all considered tenants to get access
+    return filterAuthorizedTenantsForDefinition(
+      identityId, identityType, definitionKey, definitionType, expectedTenants, engines
+    ).size() == expectedTenants.size();
   }
 
   private Set<String> getDefinitionEngines(final String definitionKey, final DefinitionType definitionType) {

@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
-import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
 

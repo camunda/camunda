@@ -56,7 +56,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

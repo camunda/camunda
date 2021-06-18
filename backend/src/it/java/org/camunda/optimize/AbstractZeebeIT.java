@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize;
 
+import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.service.util.configuration.ZeebeConfiguration;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +33,11 @@ public abstract class AbstractZeebeIT extends AbstractIT {
   protected void importAllZeebeEntities() {
     embeddedOptimizeExtension.importAllZeebeEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  protected ProcessInstanceEvent deployAndStartInstanceForProcess(final BpmnModelInstance process) {
+    final Process deployedProcess = zeebeExtension.deployProcess(process);
+    return zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
   }
 
 }

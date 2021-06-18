@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParamet
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.service.es.reader.DurationOutliersReader;
-import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;

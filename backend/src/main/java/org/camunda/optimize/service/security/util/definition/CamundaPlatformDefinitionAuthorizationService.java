@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.security;
+package org.camunda.optimize.service.security.util.definition;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -16,6 +16,9 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.TenantService;
+import org.camunda.optimize.service.security.EventProcessAuthorizationService;
+import org.camunda.optimize.service.util.configuration.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -34,12 +37,14 @@ import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
 @RequiredArgsConstructor
+@Conditional(CamundaPlatformCondition.class)
 @Component
-public class DefinitionAuthorizationService {
+public class CamundaPlatformDefinitionAuthorizationService implements DataSourceDefinitionAuthorizationService {
   private final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService;
   private final EventProcessAuthorizationService eventProcessAuthorizationService;
   private final TenantService tenantService;
 
+  @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
                                                             final SimpleDefinitionDto definitionDto,
                                                             final List<String> tenantIds,
@@ -73,6 +78,7 @@ public class DefinitionAuthorizationService {
     }
   }
 
+  @Override
   public boolean isAuthorizedToAccessDefinition(final String userId,
                                                 final DefinitionType type,
                                                 final String definitionKey,
@@ -96,6 +102,7 @@ public class DefinitionAuthorizationService {
     }
   }
 
+  @Override
   public boolean isAuthorizedToAccessDefinition(final String userId,
                                                 final String tenantId,
                                                 final SimpleDefinitionDto definition) {
@@ -108,6 +115,7 @@ public class DefinitionAuthorizationService {
     }
   }
 
+  @Override
   public <T extends DefinitionOptimizeResponseDto> boolean isAuthorizedToAccessDefinition(final String userId,
                                                                                           final T definition) {
     switch (definition.getType()) {

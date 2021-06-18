@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.es.reader.TenantReader;
-import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -30,14 +30,14 @@ public class TenantService implements ConfigurationReloadable {
   public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;
-  private final TenantAuthorizationService tenantAuthorizationService;
+  private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
   private final LoadingCache<String, List<TenantDto>> tenantsReadCache;
 
   private List<TenantDto> configuredDefaultTenants;
 
   public TenantService(final TenantReader tenantReader,
-                       final TenantAuthorizationService tenantAuthorizationService,
+                       final DataSourceTenantAuthorizationService tenantAuthorizationService,
                        final ConfigurationService configurationService) {
     this.tenantReader = tenantReader;
     this.tenantAuthorizationService = tenantAuthorizationService;

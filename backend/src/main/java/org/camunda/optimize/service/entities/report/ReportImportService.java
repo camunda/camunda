@@ -36,7 +36,7 @@ import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionSco
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.util.set.Sets;
 import org.springframework.stereotype.Component;
@@ -62,7 +62,7 @@ public class ReportImportService {
   private final ReportService reportService;
   private final ReportWriter reportWriter;
   private final DefinitionService definitionService;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionService;
   private final OptimizeIndexNameService optimizeIndexNameService;
 

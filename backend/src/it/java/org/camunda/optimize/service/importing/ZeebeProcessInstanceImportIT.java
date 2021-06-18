@@ -63,9 +63,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importCompletedZeebeProcessInstanceDataInOneBatch_allDataSavedToOptimizeProcessInstance() {
     // given
     final String processName = "someProcess";
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(processName));
-    final ProcessInstanceEvent deployedInstance =
-      zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+    final ProcessInstanceEvent deployedInstance = deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
     // when
     waitUntilProcessInstanceEventsExported();
@@ -79,7 +77,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
+        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
@@ -87,9 +85,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
-        assertThat(savedInstance.getStartDate()).isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(processName)));
-        assertThat(savedInstance.getEndDate()).isEqualTo(getExpectedEndDateForEvents(exportedEvents.get(processName)));
-        assertThat(savedInstance.getDuration()).isEqualTo(getExpectedDurationForEvents(exportedEvents.get(processName)));
+        assertThat(savedInstance.getStartDate())
+          .isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
+        assertThat(savedInstance.getEndDate())
+          .isEqualTo(getExpectedEndDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
+        assertThat(savedInstance.getDuration())
+          .isEqualTo(getExpectedDurationForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
@@ -137,8 +138,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importCompletedZeebeProcessInstanceDataInMultipleBatches_allDataSavedToOptimizeProcessInstance() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
-    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess("someProcess"));
-    zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+    deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
     waitUntilProcessInstanceEventsExported();
@@ -186,9 +186,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importRunningZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
     // given
     final String processName = "someProcess";
-    final Process deployedProcess = zeebeExtension.deployProcess(createSimpleUserTaskProcess(processName));
     final ProcessInstanceEvent deployedInstance =
-      zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+      deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
 
     // when
     waitUntilProcessInstanceEventsExported();
@@ -202,7 +201,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
+        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
@@ -210,7 +209,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
-        assertThat(savedInstance.getStartDate()).isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(processName)));
+        assertThat(savedInstance.getStartDate())
+          .isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
         assertThat(savedInstance.getEndDate()).isNull();
         assertThat(savedInstance.getDuration()).isNull();
         assertThat(savedInstance.getFlowNodeInstances())
@@ -260,9 +260,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importCanceledZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
     // given
     final String processName = "someProcess";
-    final Process deployedProcess = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(processName));
     final ProcessInstanceEvent deployedInstance =
-      zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+      deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
+
     // We wait for the service task to be exported before cancelling the process
     // (1 * process event, 2 * "start_event" events). Then again for the import of cancellation events (2 cancel events)
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
@@ -280,7 +280,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
+        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE);
@@ -288,9 +288,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
-        assertThat(savedInstance.getStartDate()).isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(processName)));
-        assertThat(savedInstance.getEndDate()).isEqualTo(getExpectedEndDateForEvents(exportedEvents.get(processName)));
-        assertThat(savedInstance.getDuration()).isEqualTo(getExpectedDurationForEvents(exportedEvents.get(processName)));
+        assertThat(savedInstance.getStartDate())
+          .isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
+        assertThat(savedInstance.getEndDate())
+          .isEqualTo(getExpectedEndDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
+        assertThat(savedInstance.getDuration()).isEqualTo(getExpectedDurationForEvents(exportedEvents.get(
+          deployedInstance.getBpmnProcessId())));
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(2)
           .containsExactlyInAnyOrder(
@@ -338,9 +341,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importZeebeProcessInstanceDataFromMultipleDays_allDataSavedToOptimizeProcessInstance() {
     // given
     final String processName = "someProcess";
-    final Process deployedProcess = zeebeExtension.deployProcess(createSimpleServiceTaskProcess(processName));
     final ProcessInstanceEvent deployedInstance =
-      zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+      deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
 
     // when
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
@@ -357,7 +359,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
         assertThat(savedInstance.getProcessDefinitionId()).isEqualTo(String.valueOf(deployedInstance.getProcessDefinitionKey()));
-        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(String.valueOf(deployedInstance.getBpmnProcessId()));
+        assertThat(savedInstance.getProcessDefinitionKey()).isEqualTo(deployedInstance.getBpmnProcessId());
         assertThat(savedInstance.getProcessDefinitionVersion()).isEqualTo(String.valueOf(deployedInstance.getVersion()));
         assertThat(savedInstance.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
@@ -365,9 +367,12 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         assertThat(savedInstance.getBusinessKey()).isNull();
         assertThat(savedInstance.getIncidents()).isEmpty();
         assertThat(savedInstance.getVariables()).isEmpty();
-        assertThat(savedInstance.getStartDate()).isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(processName)));
-        assertThat(savedInstance.getEndDate()).isEqualTo(getExpectedEndDateForEvents(exportedEvents.get(processName)));
-        assertThat(savedInstance.getDuration()).isEqualTo(getExpectedDurationForEvents(exportedEvents.get(processName)));
+        assertThat(savedInstance.getStartDate())
+          .isEqualTo(getExpectedStartDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
+        assertThat(savedInstance.getEndDate())
+          .isEqualTo(getExpectedEndDateForEvents(exportedEvents.get(deployedInstance.getBpmnProcessId())));
+        assertThat(savedInstance.getDuration()).isEqualTo(getExpectedDurationForEvents(exportedEvents.get(
+          deployedInstance.getBpmnProcessId())));
         assertThat(savedInstance.getFlowNodeInstances())
           .hasSize(3)
           .containsExactlyInAnyOrder(
@@ -483,12 +488,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importZeebeProcessInstanceData_instancesWithDifferentVersionsOfSameProcess() {
     // given
     final String processName = "someProcess";
-    final Process deployedProcessV1 = zeebeExtension.deployProcess(createStartEndProcess(processName));
     final ProcessInstanceEvent v1Instance =
-      zeebeExtension.startProcessInstanceForProcess(deployedProcessV1.getBpmnProcessId());
-    final Process deployedProcessV2 = zeebeExtension.deployProcess(createStartEndProcess(processName));
+      deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
     final ProcessInstanceEvent v2Instance =
-      zeebeExtension.startProcessInstanceForProcess(deployedProcessV2.getBpmnProcessId());
+      deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
 
     // when
     waitUntilProcessInstanceEventsExported();
@@ -509,8 +512,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   public void importZeebeProcessInstanceData_processContainsLoop() {
     // given
     final String processName = "someProcess";
-    final Process deployedProcess = zeebeExtension.deployProcess(createLoopingProcess(processName));
-    zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+    deployAndStartInstanceForProcess(createLoopingProcess(processName));
 
     // when
     waitUntilProcessInstanceEventsExported();
