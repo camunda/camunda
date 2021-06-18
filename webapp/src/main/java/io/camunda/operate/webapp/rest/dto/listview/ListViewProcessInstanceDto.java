@@ -33,11 +33,11 @@ public class ListViewProcessInstanceDto {
 
   private String bpmnProcessId;
 
-  private Long parentInstanceId;
-
   private boolean hasActiveOperation = false;
 
   private List<OperationDto> operations = new ArrayList<>();
+
+  private String parentInstanceId;
 
   /**
    * Sort values, define the position of process instance in the list and may be used to search
@@ -117,15 +117,6 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
-  public Long getParentInstanceId() {
-    return parentInstanceId;
-  }
-
-  public ListViewProcessInstanceDto setParentInstanceId(final Long parentInstanceId) {
-    this.parentInstanceId = parentInstanceId;
-    return this;
-  }
-
   public boolean isHasActiveOperation() {
     return hasActiveOperation;
   }
@@ -141,6 +132,15 @@ public class ListViewProcessInstanceDto {
 
   public ListViewProcessInstanceDto setOperations(List<OperationDto> operations) {
     this.operations = operations;
+    return this;
+  }
+
+  public String getParentInstanceId() {
+    return parentInstanceId;
+  }
+
+  public ListViewProcessInstanceDto setParentInstanceId(final String parentInstanceId) {
+    this.parentInstanceId = parentInstanceId;
     return this;
   }
 
@@ -172,7 +172,6 @@ public class ListViewProcessInstanceDto {
       .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
       .setProcessName(processInstanceEntity.getProcessName())
       .setProcessVersion(processInstanceEntity.getProcessVersion())
-      .setParentInstanceId(processInstanceEntity.getParentProcessInstanceKey())
       .setOperations(OperationDto.createFrom(operations));
     if (operations != null) {
       processInstance.setHasActiveOperation(operations.stream().anyMatch(
@@ -180,6 +179,10 @@ public class ListViewProcessInstanceDto {
           o.getState().equals(OperationState.SCHEDULED)
           || o.getState().equals(OperationState.LOCKED)
           || o.getState().equals(OperationState.SENT)));
+    }
+    if (processInstanceEntity.getParentProcessInstanceKey() != null) {
+      processInstance
+          .setParentInstanceId(String.valueOf(processInstanceEntity.getParentProcessInstanceKey()));
     }
     //convert to String[]
     if (processInstanceEntity.getSortValues() != null) {
@@ -223,8 +226,8 @@ public class ListViewProcessInstanceDto {
         Objects.equals(endDate, that.endDate) &&
         state == that.state &&
         Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
-        Objects.equals(parentInstanceId, that.parentInstanceId) &&
         Objects.equals(operations, that.operations) &&
+        Objects.equals(parentInstanceId, that.parentInstanceId) &&
         Arrays.equals(sortValues, that.sortValues);
   }
 
@@ -232,7 +235,7 @@ public class ListViewProcessInstanceDto {
   public int hashCode() {
     int result = Objects
         .hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
-            parentInstanceId, hasActiveOperation, operations);
+            hasActiveOperation, operations, parentInstanceId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

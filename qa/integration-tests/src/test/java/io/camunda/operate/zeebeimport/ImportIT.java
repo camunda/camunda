@@ -7,6 +7,7 @@ package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -35,9 +37,9 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MvcResult;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -640,6 +642,52 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     final ProcessInstanceForListViewEntity processInstanceById = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
     assertThat(processInstanceById).isNotNull();
     assertThat(processInstanceById.getState()).isEqualTo(ProcessInstanceState.INCIDENT);
+  }
+
+  @Test
+  public void testProcessInstanceCalledFromCallActivityById() throws Exception {
+    //having process with call activity
+    final String parentProcessId = "parentProcess";
+    final String calledProcessId = "process";
+    final String callActivityId = "callActivity";
+    final BpmnModelInstance testProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(callActivityId)
+            .zeebeProcessId(calledProcessId)
+            .done();
+    final long calledProcessDefinitionKey = tester
+        .deployProcess("single-task.bpmn")
+        .getProcessDefinitionKey();
+
+    final long parentProcessInstanceKey = tester.deployProcess(testProcess, "testProcess.bpmn")
+        .startProcessInstance(parentProcessId, null)
+        .and().waitUntil()
+        .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 1)
+        .getProcessInstanceKey();
+
+    //find called process instance key
+    final ListViewResponseDto response = listViewReader
+        .queryProcessInstances(TestUtil.createGetAllProcessInstancesRequest(q ->
+            q.setBpmnProcessId(calledProcessId).setProcessVersion(1)));
+    assertThat(response.getProcessInstances().size()).isEqualTo(1);
+    final String calledProcessInstanceId = response.getProcessInstances().get(0).getId();
+
+    //when
+    ListViewProcessInstanceDto processInstance = getProcessInstanceById(calledProcessInstanceId);
+
+    //then
+    assertThat(processInstance).isNotNull();
+    assertThat(processInstance.getParentInstanceId())
+        .isEqualTo(String.valueOf(parentProcessInstanceKey));
+  }
+
+  private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
+      throws Exception {
+    String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
+    final MvcResult result = getRequest(url);
+    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {
+    });
   }
 
   @Test
