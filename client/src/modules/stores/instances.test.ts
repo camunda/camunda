@@ -23,6 +23,7 @@ const instance: ProcessInstanceEntity = {
   hasActiveOperation: false,
   operations: [],
   sortValues: ['', ''],
+  parentInstanceId: null,
 };
 
 const instanceWithActiveOperation: ProcessInstanceEntity = {
@@ -37,6 +38,7 @@ const instanceWithActiveOperation: ProcessInstanceEntity = {
   hasActiveOperation: true,
   operations: [],
   sortValues: ['', ''],
+  parentInstanceId: null,
 };
 
 const mockInstances = [instance, instanceWithActiveOperation];

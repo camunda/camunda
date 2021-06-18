@@ -15,6 +15,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processesStore} from 'modules/stores/processes';
 import {instancesDiagramStore} from 'modules/stores/instancesDiagram';
 import {mockProcessXML} from 'modules/testUtils';
+import {HAS_PARENT_INSTANCE_ID} from 'modules/feature-flags';
 
 const GROUPED_PROCESSES = [
   {
@@ -114,10 +115,13 @@ describe('Filters', () => {
   });
 
   it('should load values from the URL', async () => {
+    // TODO: add to MOCK_PARAMS when removing feature flag
+    const parentInstanceId = '1954699813693756';
     const MOCK_PARAMS = {
       process: 'bigVarProcess',
       version: '1',
       ids: '2251799813685467',
+      // parentInstanceId: '1954699813693756',
       errorMessage: 'a random error',
       startDate: '2021-02-21 18:17:18',
       endDate: '2021-02-23 18:17:18',
@@ -135,7 +139,13 @@ describe('Filters', () => {
       wrapper: getWrapper(
         createMemoryHistory({
           initialEntries: [
-            `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`,
+            `/?${new URLSearchParams(
+              Object.entries(
+                HAS_PARENT_INSTANCE_ID
+                  ? {...MOCK_PARAMS, parentInstanceId}
+                  : MOCK_PARAMS
+              )
+            ).toString()}`,
           ],
         })
       ),
@@ -151,6 +161,12 @@ describe('Filters', () => {
       await screen.findByDisplayValue(MOCK_PARAMS.flowNodeId)
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
+
+    if (HAS_PARENT_INSTANCE_ID) {
+      // TODO: change to MOCK_PARAMS when removing feature flag
+      // expect(screen.getByDisplayValue(MOCK_PARAMS.parentInstanceId)).toBeInTheDocument();
+      expect(screen.getByDisplayValue(parentInstanceId)).toBeInTheDocument();
+    }
     expect(
       screen.getByDisplayValue(MOCK_PARAMS.errorMessage)
     ).toBeInTheDocument();
@@ -175,10 +191,14 @@ describe('Filters', () => {
     const MOCK_HISTORY = createMemoryHistory({
       initialEntries: ['/'],
     });
+
+    // TODO: add to MOCK_PARAMS when removing feature flag
+    const parentInstanceId = '1954699813693756';
     const MOCK_VALUES = {
       process: 'bigVarProcess',
       version: '1',
       ids: '2251799813685462',
+      // parentInstanceId: '1954699813693756',
       errorMessage: 'an error',
       startDate: '2021-02-24 13:57:29',
       endDate: '2021-02-26 13:57:29',
@@ -205,6 +225,11 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Instance Id(s) separated by space or comma')
     ).toHaveValue('');
+    if (HAS_PARENT_INSTANCE_ID) {
+      expect(screen.getByLabelText('Parent Process Instance Id')).toHaveValue(
+        ''
+      );
+    }
     expect(screen.getByLabelText('Error Message')).toHaveValue('');
     expect(screen.getByLabelText('Start Date YYYY-MM-DD hh:mm:ss')).toHaveValue(
       ''
@@ -228,6 +253,14 @@ describe('Filters', () => {
       screen.getByLabelText('Instance Id(s) separated by space or comma'),
       MOCK_VALUES.ids
     );
+    if (HAS_PARENT_INSTANCE_ID) {
+      userEvent.paste(
+        screen.getByLabelText('Parent Process Instance Id'),
+        // TODO: change to MOCK_VALUES when removing feature flag
+        // MOCK_VALUES.parentInstanceID
+        parentInstanceId
+      );
+    }
     userEvent.paste(
       screen.getByLabelText('Error Message'),
       MOCK_VALUES.errorMessage
@@ -262,7 +295,11 @@ describe('Filters', () => {
         Object.fromEntries(
           new URLSearchParams(MOCK_HISTORY.location.search).entries()
         )
-      ).toEqual(expect.objectContaining(MOCK_VALUES))
+      ).toEqual(
+        HAS_PARENT_INSTANCE_ID
+          ? expect.objectContaining({...MOCK_VALUES, parentInstanceId})
+          : expect.objectContaining(MOCK_VALUES)
+      )
     );
   });
 

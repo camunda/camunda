@@ -25,6 +25,7 @@ const instanceMock: ProcessInstanceEntity = {
   processName: '',
   processVersion: 1,
   sortValues: ['', 'instance_1'],
+  parentInstanceId: null,
 };
 
 describe('Operations', () => {

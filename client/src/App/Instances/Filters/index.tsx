@@ -44,6 +44,7 @@ import {
 } from 'modules/utils/filter';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
+import {HAS_PARENT_INSTANCE_ID} from 'modules/feature-flags';
 
 const Filters: React.FC = () => {
   const history = useHistory();
@@ -113,7 +114,15 @@ const Filters: React.FC = () => {
                 </Field>
                 <Error name="ids" />
               </Row>
-
+              {HAS_PARENT_INSTANCE_ID && (
+                <Row>
+                  <Field name="parentInstanceId">
+                    {({input}) => (
+                      <Input {...input} placeholder="Parent Instance Id" />
+                    )}
+                  </Field>
+                </Row>
+              )}
               <Row>
                 <Field name="errorMessage">
                   {({input}) => (

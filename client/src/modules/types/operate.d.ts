@@ -58,4 +58,5 @@ interface ProcessInstanceEntity {
   hasActiveOperation: boolean;
   operations: ReadonlyArray<InstanceOperationEntity>;
   sortValues: ReadonlyArray<string>;
+  parentInstanceId: null | string;
 }

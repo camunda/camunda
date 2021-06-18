@@ -19,6 +19,7 @@ import {
 } from './styled';
 import ColumnHeader from '../ColumnHeader';
 import Checkbox from 'modules/components/Checkbox';
+import {HAS_PARENT_INSTANCE_ID} from 'modules/feature-flags';
 
 const Header = observer(function (props: any) {
   const {
@@ -88,6 +89,15 @@ const Header = observer(function (props: any) {
             sortKey="endDate"
           />
         </TH>
+        {HAS_PARENT_INSTANCE_ID && (
+          <TH>
+            <ColumnHeader
+              disabled={isListEmpty}
+              label="Parent Instance Id"
+              sortKey="parentInstanceId"
+            />
+          </TH>
+        )}
         <OperationsTH>
           <ColumnHeader disabled={isListEmpty} label="Operations" />
         </OperationsTH>

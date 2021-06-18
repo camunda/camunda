@@ -13,6 +13,7 @@ type FilterFieldsType =
   | 'process'
   | 'version'
   | 'ids'
+  | 'parentInstanceId'
   | 'errorMessage'
   | 'startDate'
   | 'endDate'
@@ -29,6 +30,7 @@ type FiltersType = {
   process?: string;
   version?: string;
   ids?: string;
+  parentInstanceId?: string;
   errorMessage?: string;
   startDate?: string;
   endDate?: string;
@@ -55,6 +57,7 @@ type RequestFilters = {
   endDateBefore?: string;
   errorMessage?: string;
   ids?: string[];
+  parentInstanceId?: string;
   startDateAfter?: string;
   startDateBefore?: string;
   variable?: {
@@ -68,6 +71,7 @@ const FILTER_FIELDS: FilterFieldsType[] = [
   'process',
   'version',
   'ids',
+  'parentInstanceId',
   'errorMessage',
   'startDate',
   'endDate',
@@ -258,6 +262,10 @@ function getRequestFilters(): RequestFilters {
             ...accumulator,
             ids: parseIds(value),
           };
+        }
+
+        if (key === 'parentInstanceId') {
+          return {...accumulator, parentInstanceId: value};
         }
 
         if (

@@ -179,6 +179,7 @@ export const createInstance = (options = {}) => {
     hasActiveOperation: false,
     operations: [createOperation()],
     sortValues: [],
+    parentInstanceId: null,
     ...options,
   } as const;
 };
@@ -483,6 +484,7 @@ export const mockProcessInstances = {
     {
       id: '2251799813685594',
       processId: '2251799813685592',
+      parentInstanceId: '1183299813610247',
       processName: 'Without Incidents Process',
       processVersion: 1,
       startDate: '2020-09-03T15:42:25.107+0000',
@@ -495,6 +497,7 @@ export const mockProcessInstances = {
     {
       id: '2251799813685596',
       processId: '2251799813685592',
+      parentInstanceId: null,
       processName: 'Without Incidents Process',
       processVersion: 1,
       startDate: '2020-09-03T15:42:25.200+0000',
