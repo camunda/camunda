@@ -218,6 +218,50 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     }
   }
 
+
+  @Test
+  public void testSecondPageWithActiveOperationOnFirstPage() throws Exception {
+    //given
+    final String bpmnProcessId = "testProcess";
+    StringBuffer vars = new StringBuffer("{");
+    for (int i = 0; i < 10; i++) {
+      if (vars.length() > 1) {
+        vars.append(",\n");
+      }
+      vars.append("\"var").append(i).append("\": \"value_").append(i).append("\"");
+    }
+    vars.append("}");
+    final String flowNodeId = "taskA";
+    final Long processInstanceKey = tester
+        .createAndDeploySimpleProcess(bpmnProcessId, flowNodeId)
+        .startProcessInstance(bpmnProcessId, vars.toString())
+        .waitUntil()
+        .flowNodeIsActive(flowNodeId)
+        .getProcessInstanceKey();
+
+    //request page 1
+    List<VariableDto> variables = getVariables(processInstanceKey, new VariableRequestDto()
+        .setScopeId(String.valueOf(processInstanceKey))
+        .setPageSize(3));
+    String[] sortValues = variables.get(2).getSortValues();
+    //we call UPDATE_VARIABLE operation for the 1st variable (page 1)
+    final String varName = "var1";
+    postUpdateVariableOperation(processInstanceKey, varName, "value");
+    elasticsearchTestRule.refreshOperateESIndices();
+
+    //when requesting page 2
+    variables = getVariables(processInstanceKey, new VariableRequestDto()
+        .setScopeId(String.valueOf(processInstanceKey))
+        .setSearchAfter(sortValues)
+        .setPageSize(3));
+    assertThat(variables).hasSize(3);
+    assertThat(variables.get(0).getIsFirst()).isFalse();
+    for (int i = 3; i < 6; i++) {
+      assertVariable(variables, "var" + i, "\"value_" + i + "\"");
+    }
+  }
+
+
   @Test
   public void testVariablesPagesWithAfterBeforeOrEqual() throws Exception {
     //given
@@ -417,7 +461,9 @@ public class VariableIT extends OperateZeebeIntegrationTest {
     //we call UPDATE_VARIABLE operation on instance
     final String varName = "var1";
     final String newVarValue = createBigVariable(size);
+    final String newVarName = "newVar";
     postUpdateVariableOperation(processInstanceKey, varName, newVarValue + varSuffix);
+    postAddVariableOperation(processInstanceKey, newVarName, newVarValue + varSuffix);
     elasticsearchTestRule.refreshOperateESIndices();
 
     //then variable with new value is returned
@@ -428,6 +474,10 @@ public class VariableIT extends OperateZeebeIntegrationTest {
         .filteredOn(v -> v.getName().equals(varName))
         .extracting(VariableDto::getValue)
         .containsOnly(newVarValue);
+    //new variable should not be returned in this endpoint
+    assertThat(variables)
+        .filteredOn(v -> v.getName().equals(newVarName))
+        .isEmpty();
   }
 
   private String createBigVariable(int size) {

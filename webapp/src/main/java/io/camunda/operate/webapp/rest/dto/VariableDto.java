@@ -5,16 +5,15 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.OperationState;
+import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.util.CollectionUtil;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.util.CollectionUtil;
 
 public class VariableDto {
 
@@ -147,40 +146,16 @@ public class VariableDto {
       Map<String, List<OperationEntity>> operations, int variableSizeThreshold) {
     List<VariableDto> result = new ArrayList<>();
     if (variableEntities != null) {
-      for (VariableEntity variableEntity: CollectionUtil.withoutNulls(variableEntities)) {
+      for (VariableEntity variableEntity : CollectionUtil.withoutNulls(variableEntities)) {
         result.add(
             createFrom(
                 variableEntity,
                 operations.get(variableEntity.getName()),
                 false,
                 variableSizeThreshold));
+      }
     }
-    }
-    //find new variables
-    final Set<String> operationVarNames = operations.keySet();
-    if(variableEntities!=null) {
-      variableEntities.forEach(ve -> {
-        operationVarNames.remove(ve.getName());
-      });
-    }
-    operationVarNames.forEach(varName -> {
-      CollectionUtil.addNotNull(result, createFrom(operations.get(varName)));
-    });
     return result;
   }
 
-  private static VariableDto createFrom(List<OperationEntity> operations) {
-    for (OperationEntity operation: operations) {
-      if (operation.getState().equals(OperationState.SCHEDULED)
-        || operation.getState().equals(OperationState.LOCKED)
-        || operation.getState().equals(OperationState.SENT)) {
-        VariableDto variable = new VariableDto();
-        variable.setName(operation.getVariableName());
-        variable.setValue(operation.getVariableValue());
-        variable.setHasActiveOperation(true);
-        return variable;
-      }
-    }
-    return null;
-  }
 }
