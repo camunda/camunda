@@ -10,7 +10,7 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.1.0-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <licenses>

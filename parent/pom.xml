@@ -12,7 +12,7 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
     <version>1.1.0-SNAPSHOT</version>
-    <relativePath>../bom</relativePath>
+    <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
   <licenses>
@@ -136,6 +136,31 @@
     <!-- version against which backwards compatibility is checked -->
     <backwards.compat.version>1.0.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
+
+    <!--
+      you can use the following to disable some or all goals:
+        - skipTests will skip all tests
+        - skipITs will skip integration tests
+        - skipUTs will skip unit tests
+        - skipChecks will non-test checks, such as licensing, checkstyle, backwards compat, etc.
+      -->
+    <skipTests>false</skipTests>
+    <skipUTs>${skipTests}</skipUTs>
+    <skipITs>${skipTests}</skipITs>
+
+    <!--
+      you can use the following to disable specific checks. the approach taken is to use a single
+      new property, skipChecks, which is the default value for pre-defined properties such as
+      checkstyle.skip. that way, you can use skipChecks, but you can also still use checkstyle.skip
+      if you only want to disable checkstyle
+      -->
+    <skipChecks>false</skipChecks>
+    <checkstyle.skip>${skipChecks}</checkstyle.skip>
+    <revapi.skip>${skipChecks}</revapi.skip>
+    <license.skip>${skipChecks}</license.skip>
+    <enforcer.skip>${skipChecks}</enforcer.skip>
+    <mdep.analyze.skip>${skipChecks}</mdep.analyze.skip>
+    <fmt.skip>${skipChecks}</fmt.skip>
   </properties>
 
   <dependencyManagement>
@@ -825,9 +850,11 @@
               different branches which need to compare to different versions
               -->
             <oldVersion>${backwards.compat.version}</oldVersion>
+            <skip>${skipChecks}</skip>
           </configuration>
         </plugin>
 
+        <!-- javadoc generation -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -928,7 +955,7 @@
           </executions>
         </plugin>
 
-        <!-- MAVEN SUREFIRE -->
+        <!-- Unit tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -952,9 +979,11 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
+            <skip>${skipUTs}</skip>
           </configuration>
         </plugin>
 
+        <!-- Integration tests -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
@@ -977,6 +1006,20 @@
                 <value>io.camunda.zeebe.ZeebeTestListener</value>
               </property>
             </properties>
+            <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
+            <!--
+              ensure junit5 display names are properly reported; see the documentation for more
+              https://maven.apache.org/surefire/maven-failsafe-plugin/examples/junit-platform.html
+              -->
+            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+              <disable>false</disable>
+              <version>3.0</version>
+              <usePhrasedFileName>false</usePhrasedFileName>
+              <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
+              <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
+              <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+            </statelessTestsetReporter>
+            <skip>${skipITs}</skip>
           </configuration>
         </plugin>
 
@@ -1120,6 +1163,7 @@
           </executions>
         </plugin>
 
+        <!-- protobuf generation -->
         <plugin>
           <groupId>org.xolstice.maven.plugins</groupId>
           <artifactId>protobuf-maven-plugin</artifactId>
@@ -1143,6 +1187,7 @@
           </executions>
         </plugin>
 
+        <!-- protobuf backwards compatibility check; not skippable unfortunately -->
         <plugin>
           <groupId>com.salesforce.servicelibs</groupId>
           <artifactId>proto-backwards-compatibility</artifactId>
@@ -1283,9 +1328,7 @@
             </execution>
           </executions>
         </plugin>
-
       </plugins>
-
     </pluginManagement>
 
     <plugins>
@@ -1340,36 +1383,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>skip-unstable-tests</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludedGroups>io.camunda.zeebe.UnstableTest</excludedGroups>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>skip-unstable-ci</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <excludedGroups>io.camunda.zeebe.UnstableCI</excludedGroups>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
     <profile>
       <id>skip-random-tests</id>
       <build>
@@ -1542,6 +1555,11 @@
           <version>1.1</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.revapi</groupId>
+          <artifactId>revapi-java</artifactId>
+          <version>${version.revapi}</version>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -1556,6 +1574,18 @@
                   <goal>resolve-plugins</goal>
                   <goal>go-offline</goal>
                 </goals>
+              </execution>
+              <execution>
+                <id>analyze-dependencies</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>analyze-only</goal>
+                </goals>
+                <configuration>
+                  <ignoredUnusedDeclaredDependencies combine.children="append">
+                    <dep>org.revapi:revapi-java</dep>
+                  </ignoredUnusedDeclaredDependencies>
+                </configuration>
               </execution>
             </executions>
           </plugin>
