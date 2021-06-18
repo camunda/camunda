@@ -135,6 +135,16 @@ public class IndexSchemaValidatorTest {
     // 1 older version for index
     whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, "0.9.0")));
     indexSchemaValidator.validate();
+
+    // two indices with one name substring of another name
+    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName("process", "0.8.0"),
+        getFullQualifiedIndexName("process-instance", "0.9.0")));
+    indexSchemaValidator.validate();
+
+    // two indices with one name substring of another name
+    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName("operation", "0.8.0"),
+        getFullQualifiedIndexName("batch-operation", "0.9.0")));
+    indexSchemaValidator.validate();
   }
 
   @Test
@@ -166,7 +176,11 @@ public class IndexSchemaValidatorTest {
 
   // See AbstractIndexDescriptor::getFullQualifiedIndexName
   private String getFullQualifiedIndexName(IndexDescriptor index, String version) {
-    return String.format("%s-%s-%s_", operatePrefix, index.getIndexName(), version);
+    return getFullQualifiedIndexName(index.getIndexName(), version);
+  }
+
+  private String getFullQualifiedIndexName(String indexNamePart, String version) {
+    return String.format("%s-%s-%s_", operatePrefix, indexNamePart, version);
   }
 
 }
