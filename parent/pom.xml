@@ -1570,7 +1570,7 @@
         <!-- sonarscanner integration -->
         <!-- sonar.login token must be passed at runtime to avoid sharing token -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.organization>zeebe-io</sonar.organization>
+        <sonar.organization>camunda-cloud</sonar.organization>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
         <sonar.links.issue>${project.scm.url}/issues</sonar.links.issue>
         <sonar.cpd.exclusions>
