@@ -35,10 +35,7 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
       return null;
     }
     final DataLoader<String, UserDTO> dataloader =
-        ((GraphQLContext) dfe.getContext())
-            .getDataLoaderRegistry()
-            .get()
-            .getDataLoader(USER_DATA_LOADER);
+        ((GraphQLContext) dfe.getContext()).getDataLoaderRegistry().getDataLoader(USER_DATA_LOADER);
 
     return dataloader.load(task.getAssigneeUsername());
   }
@@ -48,7 +45,6 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
     final DataLoader<GetVariablesRequest, List<VariableDTO>> dataloader =
         ((GraphQLContext) dfe.getContext())
             .getDataLoaderRegistry()
-            .get()
             .getDataLoader(VARIABLE_DATA_LOADER);
     return dataloader.load(GetVariablesRequest.createFrom(task, getFieldNames(dfe)));
   }

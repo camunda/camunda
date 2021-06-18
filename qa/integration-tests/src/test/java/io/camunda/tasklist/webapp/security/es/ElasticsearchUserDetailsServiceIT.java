@@ -7,11 +7,16 @@ package io.camunda.tasklist.webapp.security.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.tasklist.es.RetryElasticsearchClient;
+import io.camunda.tasklist.management.ElsIndicesHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.webapp.security.WebSecurityConfig;
+import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +39,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * by UserDetailsService
  */
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {
+      TestElasticsearchSchemaManager.class,
+      TestApplication.class,
+      ElsIndicesHealthIndicator.class,
+      WebSecurityConfig.class,
+      OAuth2WebConfigurer.class,
+      RetryElasticsearchClient.class,
+    },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + ".username = user1",
       TasklistProperties.PREFIX + ".password = psw1",
       "graphql.servlet.websocket.enabled=false"
-    })
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ElasticsearchUserDetailsServiceIT extends TasklistIntegrationTest {
 
   private static final String TEST_USERNAME = "user1";

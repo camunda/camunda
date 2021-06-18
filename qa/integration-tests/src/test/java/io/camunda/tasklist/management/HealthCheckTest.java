@@ -15,8 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.Application;
+import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
+import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +41,19 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@SpringBootTest(classes = {TestApplicationWithNoBeans.class, ElsIndicesHealthIndicator.class})
-@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 @RunWith(SpringRunner.class)
+@SpringBootTest(
+    classes = {
+      TasklistProperties.class,
+      TestApplicationWithNoBeans.class,
+      ElsIndicesHealthIndicator.class,
+      WebSecurityConfig.class,
+      ElasticsearchSessionRepository.class,
+      RetryElasticsearchClient.class,
+      TasklistProperties.class
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 public class HealthCheckTest {
 
   @Autowired private WebApplicationContext context;

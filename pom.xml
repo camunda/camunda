@@ -41,7 +41,7 @@
     <version.mockito>3.11.1</version.mockito>
     <version.assertj-core>3.19.0</version.assertj-core>
     <version.jackson>2.12.3</version.jackson>
-    <version.graphql>8.0.0</version.graphql>
+    <version.graphql>11.1.0</version.graphql>
     <version.graphql.tools>6.3.0</version.graphql.tools>
     <version.failsafe>2.4.0</version.failsafe>
 
