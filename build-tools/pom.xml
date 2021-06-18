@@ -10,7 +10,7 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
     <version>1.0.2-SNAPSHOT</version>
-    <relativePath>../bom</relativePath>
+    <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
   <properties>
