@@ -147,6 +147,7 @@
     <skipTests>false</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
       you can use the following to disable specific checks. the approach taken is to use a single
