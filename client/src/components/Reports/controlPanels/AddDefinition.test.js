@@ -23,6 +23,7 @@ const props = {
   mightFail: (data, cb) => cb(data),
   location: {pathname: ''},
   type: 'process',
+  definitions: [],
 };
 
 it('should open a modal on button click', () => {
@@ -89,4 +90,14 @@ it('should call back with definitions to add', () => {
       tenantIds: [null],
     },
   ]);
+});
+
+it('should show a warning if limit of 10 definitions is reached', () => {
+  const node = shallow(<AddDefinition {...props} definitions={Array(9).fill({})} />);
+
+  expect(node.find('MessageBox')).not.toExist();
+
+  node.find('Checklist').simulate('change', [{}]);
+
+  expect(node.find('MessageBox')).toExist();
 });

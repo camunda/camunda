@@ -1063,6 +1063,7 @@
       "latest": "Neueste",
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",
+      "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
       "select": {
         "process": "Prozess auswählen",
         "decision": "Entscheidung auswählen"

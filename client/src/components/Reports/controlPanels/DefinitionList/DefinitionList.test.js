@@ -7,6 +7,8 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
+import {Button} from 'components';
+
 import DefinitionEditor from './DefinitionEditor';
 import {DefinitionList} from './DefinitionList';
 
@@ -51,4 +53,35 @@ it('should display names of tenants', () => {
   runLastEffect();
 
   expect(node.find('.info').at(1).text()).toBe('Tenant: Tenant A, Tenant B');
+});
+
+it('should allow copying definitions', () => {
+  const spy = jest.fn();
+  const node = shallow(<DefinitionList {...props} onCopy={spy} />);
+
+  node.find(Button).first().simulate('click');
+  expect(spy).toHaveBeenCalled();
+
+  spy.mockClear();
+
+  node.find(DefinitionEditor).first().simulate('copy');
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should not allow copy if limit of 10 definitions is reached', () => {
+  const node = shallow(
+    <DefinitionList
+      {...props}
+      definitions={Array(10).fill({
+        key: 'definitionA',
+        name: 'Definition A',
+        displayName: 'Definition A',
+        versions: ['latest'],
+        tenantIds: ['a', 'b'],
+      })}
+    />
+  );
+
+  expect(node.find({type: 'copy-small'})).not.toExist();
+  expect(node.find(DefinitionEditor).first().prop('onCopy')).toBe(false);
 });

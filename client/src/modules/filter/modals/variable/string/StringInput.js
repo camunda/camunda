@@ -236,8 +236,8 @@ export default class StringInput extends React.Component {
           />
         ) : (
           <div className="valueSelection">
-            <span className="title">{t('common.filter.variableModal.multiSelect.header')}</span>
             <Checklist
+              customHeader={t('common.filter.variableModal.multiSelect.header')}
               selectedItems={values}
               allItems={availableValues}
               onSearch={this.setValueFilter}

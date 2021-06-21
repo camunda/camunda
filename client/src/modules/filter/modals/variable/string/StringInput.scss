@@ -3,18 +3,8 @@
     width: 100%;
     position: relative;
 
-    .title {
-      position: absolute;
-      font-size: 0.875em;
-      top: 10px;
-    }
-
     .Checklist {
       border-bottom: 1px solid var(--silver-darken-87);
-
-      .header .selectAll {
-        display: none;
-      }
     }
   }
 

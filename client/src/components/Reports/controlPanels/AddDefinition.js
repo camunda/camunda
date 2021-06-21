@@ -7,7 +7,7 @@
 import {useState, useEffect} from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {Button, Icon, Modal, Checklist} from 'components';
+import {Button, Icon, Modal, Checklist, MessageBox} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection} from 'services';
 import {t} from 'translation';
@@ -23,6 +23,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
   const [selectedDefinitions, setSelectedDefinitions] = useState([]);
 
   const collection = getCollection(location.pathname);
+  const isDefinitionLimitReached = selectedDefinitions.length + definitions.length >= 10;
 
   useEffect(() => {
     mightFail(
@@ -58,11 +59,14 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
           {t('report.definition.add', {type: t('report.definition.' + type)})}
         </Modal.Header>
         <Modal.Content>
-          <span className="title">{t(`report.definition.${type}-plural`)}</span>
+          {isDefinitionLimitReached && (
+            <MessageBox type="warning">{t('common.definitionSelection.limitReached')}</MessageBox>
+          )}
           <Checklist
             allItems={availableDefinitions}
             selectedItems={selectedDefinitions}
             onChange={setSelectedDefinitions}
+            customHeader={t(`report.definition.${type}-plural`)}
             formatter={() =>
               availableDefinitions.map(({key, name}) => {
                 const hasDefinition = (definition) => definition.key === key;
@@ -71,7 +75,9 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                   label: isNameUnique(name) ? name : `${name} (${key})`,
                   checked:
                     selectedDefinitions.some(hasDefinition) || definitions.some(hasDefinition),
-                  disabled: definitions.some(hasDefinition),
+                  disabled:
+                    definitions.some(hasDefinition) ||
+                    (isDefinitionLimitReached && !selectedDefinitions.some(hasDefinition)),
                 };
               })
             }

@@ -37,6 +37,7 @@ export function DefinitionList({
 
   const collection = getCollection(location.pathname);
   const definitionKeysAndVersions = definitions.map(({key, versions}) => ({key, versions}));
+  const isDefinitionLimitReached = definitions.length >= 10;
 
   useDeepCompareEffect(() => {
     mightFail(loadTenants(type, definitionKeysAndVersions, collection), setTenantInfo, showError);
@@ -69,9 +70,11 @@ export function DefinitionList({
               </div>
             )}
             <div className="actions">
-              <Button icon onClick={() => onCopy(idx)}>
-                <Icon type="copy-small" size="14px" />
-              </Button>
+              {!isDefinitionLimitReached && (
+                <Button icon onClick={() => onCopy(idx)}>
+                  <Icon type="copy-small" size="14px" />
+                </Button>
+              )}
               <Popover
                 renderInPortal="DefinitionList"
                 onOpen={() => setOpenPopover(idx)}
@@ -87,11 +90,15 @@ export function DefinitionList({
                   onRemove={() => {
                     onRemove(idx);
                     setOpenPopover();
-                  }}
-                  onCopy={() => {
-                    onCopy(idx);
                     document.body.click(); // closes the popover
                   }}
+                  onCopy={
+                    !isDefinitionLimitReached &&
+                    (() => {
+                      onCopy(idx);
+                      document.body.click(); // closes the popover
+                    })
+                  }
                   type={type}
                 />
               </Popover>

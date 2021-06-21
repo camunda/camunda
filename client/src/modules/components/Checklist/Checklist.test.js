@@ -107,3 +107,10 @@ it('should prepend items to the checklist', () => {
 
   expect(node.find('.itemsList').childAt(0).prop('className')).toBe('test');
 });
+
+it('should allow overwriting the selectAll button with a custom header', () => {
+  const node = shallow(<Checklist {...props} customHeader="Custom Header Content" />);
+
+  expect(node.find('.selectAll')).not.toExist();
+  expect(node.find('.customHeader')).toIncludeText('Custom Header Content');
+});

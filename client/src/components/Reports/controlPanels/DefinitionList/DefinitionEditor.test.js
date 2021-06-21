@@ -108,7 +108,7 @@ it('should allow removing the definition', () => {
   const spy = jest.fn();
   const node = shallow(<DefinitionEditor {...props} onRemove={spy} />);
 
-  node.find('.actionBar').find(Button).at(1).simulate('click');
+  node.find('.actionBar').find(Button).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
