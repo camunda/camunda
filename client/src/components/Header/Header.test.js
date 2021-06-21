@@ -7,8 +7,9 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {isEventBasedProcessEnabled} from './service';
+import {isOptimizeCloudEnvironment} from 'config';
 
+import {isEventBasedProcessEnabled} from './service';
 import {Header} from './Header';
 
 jest.mock('config', () => ({
@@ -17,6 +18,7 @@ jest.mock('config', () => ({
     backgroundColor: '#000',
     logo: 'url',
   }),
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
 }));
 
 jest.mock('./service', () => ({
@@ -24,7 +26,7 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  mightFail: async (data, cb) => cb(await data),
   location: {pathname: '/'},
   history: {push: jest.fn()},
 };
@@ -33,6 +35,7 @@ it('matches the snapshot', async () => {
   const node = shallow(<Header {...props} />);
 
   await runLastEffect();
+  await node.update();
 
   expect(node).toMatchSnapshot();
 });
@@ -51,6 +54,7 @@ it('should show and hide the event based process nav item depending on authoriza
   const enabled = shallow(<Header {...props} />);
 
   await runLastEffect();
+  await enabled.update();
 
   expect(enabled.find('[linksTo="/events/processes/"]')).toExist();
 
@@ -58,6 +62,18 @@ it('should show and hide the event based process nav item depending on authoriza
   const disabled = shallow(<Header {...props} />);
 
   await runLastEffect();
+  await disabled.update();
 
-  expect(disabled.find('[linksTo="/eventBasedProcess/"]')).not.toExist();
+  expect(disabled.find('[linksTo="/events/processes/"]')).not.toExist();
+});
+
+it('should hide event based process nav item in cloud environment', async () => {
+  isEventBasedProcessEnabled.mockReturnValueOnce(true);
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+  const node = shallow(<Header {...props} />);
+
+  await runLastEffect();
+  await node.update();
+
+  expect(node.find('[linksTo="/events/processes/"]')).not.toExist();
 });
