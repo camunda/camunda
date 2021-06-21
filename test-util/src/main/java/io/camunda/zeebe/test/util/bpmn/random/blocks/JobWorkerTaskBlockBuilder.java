@@ -10,7 +10,6 @@ package io.camunda.zeebe.test.util.bpmn.random.blocks;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
-import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
@@ -76,7 +75,7 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
     final var jobWorkerTaskBuilder = taskBuilder.apply(nodeBuilder);
 
-    jobWorkerTaskBuilder.id(taskId);
+    jobWorkerTaskBuilder.id(taskId).name(taskId);
     jobWorkerTaskBuilder.zeebeJobRetries("3");
     jobWorkerTaskBuilder.zeebeJobType(jobType);
 
@@ -89,14 +88,14 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
       if (hasBoundaryErrorEvent) {
         result =
-            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(taskId))
+            ((AbstractJobWorkerTaskBuilder<?, ?>) exclusiveGatewayBuilder.moveToNode(taskId))
                 .boundaryEvent(boundaryErrorEventId, b -> b.error(errorCode))
                 .connectTo(joinGatewayId);
       }
 
       if (hasBoundaryTimerEvent) {
         result =
-            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(taskId))
+            ((AbstractJobWorkerTaskBuilder<?, ?>) exclusiveGatewayBuilder.moveToNode(taskId))
                 .boundaryEvent(
                     /* the value of that variable will be calculated when the execution flow is
                     known*/
@@ -171,6 +170,18 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
   public static BlockBuilderFactory serviceTaskFactory() {
     return new Factory(AbstractFlowNodeBuilder::serviceTask);
+  }
+
+  public static BlockBuilderFactory businessRuleTaskFactory() {
+    return new Factory(AbstractFlowNodeBuilder::businessRuleTask);
+  }
+
+  public static BlockBuilderFactory scriptTaskFactory() {
+    return new Factory(AbstractFlowNodeBuilder::scriptTask);
+  }
+
+  public static BlockBuilderFactory sendTaskFactory() {
+    return new Factory(AbstractFlowNodeBuilder::sendTask);
   }
 
   private static class Factory implements BlockBuilderFactory {
