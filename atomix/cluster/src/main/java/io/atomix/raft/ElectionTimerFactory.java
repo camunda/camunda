@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ * Copyright © 2020 camunda services GmbH (info@camunda.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe;
+package io.atomix.raft;
 
-/**
- * Marker interface used to categorize unstable tests.
- *
- * <pre>
- * Usage:
- *   {@literal @}Test
- *   {@literal @}Category(io.camunda.zeebe.UnstableTest)
- *    public void myUnstableTest()
- * </pre>
- */
-public interface UnstableTest {}
+import org.slf4j.Logger;
+
+@FunctionalInterface
+public interface ElectionTimerFactory {
+
+  /**
+   * Creates a new ElectionTimer
+   *
+   * @param triggerElection - A runnable which start election by sending the poll requests.
+   * @param logger - A logger for logging
+   * @return an ElectionTimer
+   */
+  ElectionTimer create(Runnable triggerElection, Logger logger);
+}

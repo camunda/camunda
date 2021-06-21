@@ -2,13 +2,15 @@
   {
     "extension": "revapi.semver.ignore",
     "configuration": {
-      "enabled" : true,
-      "versionIncreaseAllows" : {
-        "major" : "breaking",
-        "minor" : "nonBreaking",
-        "patch" : "equivalent"
+      "enabled": true,
+      "versionIncreaseAllows": {
+        "major": "breaking",
+        "minor": "nonBreaking",
+        "patch": "nonBreaking"
       },
-      "passThroughDifferences": ["java.class.nonPublicPartOfAPI"]
+      "passThroughDifferences": [
+        "java.class.nonPublicPartOfAPI"
+      ]
     }
   }
 ]

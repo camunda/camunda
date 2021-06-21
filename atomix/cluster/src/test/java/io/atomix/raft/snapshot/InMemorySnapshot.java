@@ -24,7 +24,6 @@ import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.NavigableMap;
@@ -161,9 +160,9 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
-  public ActorFuture<Boolean> apply(final SnapshotChunk chunk) throws IOException {
+  public ActorFuture<Void> apply(final SnapshotChunk chunk) {
     chunks.put(chunk.getChunkName(), StringUtil.fromBytes(chunk.getContent()));
-    return CompletableActorFuture.completed(true);
+    return CompletableActorFuture.completed(null);
   }
 
   @Override

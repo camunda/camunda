@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.UserTaskT
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import java.util.List;
@@ -80,6 +81,7 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new JobWorkerTaskTransformer<>(ServiceTask.class));
     step2Visitor.registerHandler(new JobWorkerTaskTransformer<>(BusinessRuleTask.class));
     step2Visitor.registerHandler(new JobWorkerTaskTransformer<>(ScriptTask.class));
+    step2Visitor.registerHandler(new JobWorkerTaskTransformer<>(SendTask.class));
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
     step2Visitor.registerHandler(new UserTaskTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
