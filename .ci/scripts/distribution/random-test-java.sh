@@ -8,7 +8,8 @@ MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
 SUREFIRE_FORK_COUNT=${SUREFIRE_FORK_COUNT:-}
 JUNIT_THREAD_COUNT=${JUNIT_THREAD_COUNT:-}
 MAVEN_PROPERTIES=(
-  -Dzeebe.it.skip
+  -DskipITs
+  -DskipChecks
   -DtestMavenId=1
   -Dsurefire.rerunFailingTestsCount=0
 )
@@ -24,4 +25,4 @@ if [ ! -z "$JUNIT_THREAD_COUNT" ]; then
   MAVEN_PROPERTIES+=("-DjunitThreadCount=$JUNIT_THREAD_COUNT")
 fi
 
-mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} verify -P skip-unstable-ci,parallel-tests,include-random-tests "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}
+mvn -o -B --fail-never -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} test -P parallel-tests,include-random-tests "${MAVEN_PROPERTIES[@]}" | tee ${tmpfile}

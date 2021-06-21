@@ -9,7 +9,7 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.2-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <licenses>
@@ -22,7 +22,7 @@
   <properties>
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <proto.dir>${project.build.directory}/proto</proto.dir>
+    <proto.dir>${maven.multiModuleProjectDirectory}/gateway-protocol/src/main/proto</proto.dir>
   </properties>
 
   <dependencies>
@@ -58,27 +58,8 @@
   </dependencies>
 
   <build>
-
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <!-- ensure that it runs before the protobuf plugin -->
-            <phase>initialize</phase>
-            <id>unpack proto definition</id>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeArtifactIds>zeebe-gateway-protocol</includeArtifactIds>
-              <outputDirectory>${proto.dir}</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
+      <!-- generate Java protobuf code -->
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
@@ -86,11 +67,11 @@
           <protoSourceRoot>${proto.dir}</protoSourceRoot>
         </configuration>
       </plugin>
-
     </plugins>
   </build>
 
   <profiles>
+    <!-- profile to generate Golang protobuf code -->
     <profile>
       <id>golang</id>
       <build>

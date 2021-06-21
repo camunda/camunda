@@ -9,7 +9,7 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.2-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <build>
@@ -21,7 +21,9 @@
         </includes>
       </resource>
     </resources>
+
     <plugins>
+      <!-- enforce backwards compatibility -->
       <plugin>
         <groupId>com.salesforce.servicelibs</groupId>
         <artifactId>proto-backwards-compatibility</artifactId>

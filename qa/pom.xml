@@ -9,11 +9,59 @@
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
     <version>1.0.2-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <modules>
     <module>integration-tests</module>
+    <module>update-tests</module>
   </modules>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <!-- combine both surefire and failsafe include patterns for now -->
+          <includes>
+            <include>**/IT*.java</include>
+            <include>**/*IT.java</include>
+            <include>**/*ITCase.java</include>
+            <include>**/Test*.java</include>
+            <include>**/*Test.java</include>
+            <include>**/*Tests.java</include>
+            <include>**/*TestCase.java</include>
+          </includes>
+          <!--
+            as our in-house CI does not enable IPv6, clients not running in a Testcontainer-managed
+            container will not be able to use IPv6; as such, ensure we always prefer IPv4 when
+            resolving host names
+          -->
+          <argLine>-XX:MaxDirectMemorySize=4g -Djava.net.preferIPv4Stack=true</argLine>
+        </configuration>
+      </plugin>
+
+      <!-- hardcode skipping surefire for now since we're not renaming all the files just yet -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+
+      <!--
+        hardcode skipping JaCoCo for integration tests as they most likely just end up touching
+        everything without really giving us an idea on the coverage
+        -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

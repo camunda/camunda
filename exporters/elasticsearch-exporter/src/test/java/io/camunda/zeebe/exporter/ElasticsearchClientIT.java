@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegrationTestCase {
+public class ElasticsearchClientIT extends AbstractElasticsearchExporterIntegrationTestCase {
 
   private static final long RECORD_KEY = 1234L;
   private ElasticsearchExporterConfiguration configuration;
@@ -38,7 +38,7 @@ public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegr
     elastic.start();
 
     configuration = getDefaultConfiguration();
-    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
+    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientIT.class));
     bulkRequest = new ArrayList<>();
     client = new ElasticsearchClient(configuration, logSpy, bulkRequest);
   }
