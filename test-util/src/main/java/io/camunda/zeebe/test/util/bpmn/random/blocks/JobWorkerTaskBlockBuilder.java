@@ -25,8 +25,11 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import java.util.Random;
 
-/** Generates a service task. The service task may have boundary events */
-public class ServiceTaskBlockBuilder implements BlockBuilder {
+/**
+ * Generates a task that is based on a job and is processed by a job worker (e.g. a service task).
+ * The task may have boundary events
+ */
+public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
   private final String serviceTaskId;
   private final String jobType;
@@ -38,7 +41,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
   private final boolean hasBoundaryErrorEvent;
   private final boolean hasBoundaryTimerEvent;
 
-  public ServiceTaskBlockBuilder(final IDGenerator idGenerator, final Random random) {
+  public JobWorkerTaskBlockBuilder(final IDGenerator idGenerator, final Random random) {
     serviceTaskId = idGenerator.nextId();
     jobType = "job_" + serviceTaskId;
     errorCode = "error_" + serviceTaskId;
@@ -159,7 +162,7 @@ public class ServiceTaskBlockBuilder implements BlockBuilder {
 
     @Override
     public BlockBuilder createBlockBuilder(final ConstructionContext context) {
-      return new ServiceTaskBlockBuilder(context.getIdGenerator(), context.getRandom());
+      return new JobWorkerTaskBlockBuilder(context.getIdGenerator(), context.getRandom());
     }
 
     @Override
