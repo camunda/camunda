@@ -146,6 +146,7 @@
     <skipTests>false</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
       you can use the following to disable specific checks. the approach taken is to use a single
@@ -1361,11 +1362,6 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
       </plugin>
-
-      <plugin>
-        <groupId>io.zeebe</groupId>
-        <artifactId>flaky-test-extractor-maven-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
 
@@ -1670,6 +1666,25 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to skip flaky test extraction when tests are skipped -->
+    <profile>
+      <id>extract-flaky-tests</id>
+      <activation>
+        <property>
+          <name>skipTests</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.zeebe</groupId>
+            <artifactId>flaky-test-extractor-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>
