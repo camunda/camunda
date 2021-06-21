@@ -138,7 +138,8 @@ public class RaftPartition implements Partition, HealthMonitorable {
         config,
         managementService.getMembershipService().getLocalMember().id(),
         managementService.getMembershipService(),
-        managementService.getMessagingService());
+        managementService.getMessagingService(),
+        partitionMetadata);
   }
 
   /**

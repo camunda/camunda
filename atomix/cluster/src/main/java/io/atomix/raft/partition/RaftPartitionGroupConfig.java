@@ -31,6 +31,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private static final int DEFAULT_PARTITIONS = 7;
   private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
+  private static final boolean DEFAULT_PRIORITY_ELECTION = false;
 
   private Set<String> members = new HashSet<>();
   private int partitionSize;
@@ -39,6 +40,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
   private int maxAppendsPerFollower = 2;
   private int maxAppendBatchSize = 32 * 1024;
+  private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
@@ -187,5 +189,13 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   @Override
   public PartitionGroup.Type getType() {
     return RaftPartitionGroup.TYPE;
+  }
+
+  public boolean isPriorityElectionEnabled() {
+    return priorityElectionEnabled;
+  }
+
+  public void setPriorityElectionEnabled(final boolean enable) {
+    priorityElectionEnabled = enable;
   }
 }
