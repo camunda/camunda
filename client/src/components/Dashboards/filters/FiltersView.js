@@ -5,6 +5,7 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import equals from 'fast-deep-equal';
 
 import {Button} from 'components';
 import {t} from 'translation';
@@ -45,7 +46,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 icon="calender"
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== dateFilter);
+                  const rest = filter.filter((filter) => !equals(filter, dateFilter));
                   if (newFilter) {
                     setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
                   } else {
@@ -69,7 +70,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 reports={reports}
                 resetTrigger={resetTrigger}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== variableFilter);
+                  const rest = filter.filter((filter) => !equals(filter, variableFilter));
                   if (newFilter) {
                     setFilter([
                       ...rest,
@@ -93,7 +94,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 resetTrigger={resetTrigger}
                 type={type}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== identityFilter);
+                  const rest = filter.filter((filter) => !equals(filter, identityFilter));
                   if (newFilter) {
                     setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
                   } else {

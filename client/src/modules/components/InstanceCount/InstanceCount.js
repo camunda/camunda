@@ -152,17 +152,12 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
   );
 }
 
-// dashboard filters don't have the concept of include/exclude undefined, however this field is returned
-// from the backend when the filter is applied. In order to compare the set dashboard filters with what
-// is returned, we remove the includeUndefined and excludeUndefined fields from the filter
+// Instance State Dashboard filters don't have a data field, but the backend returns it with the value null
+// when the filter is applied. In order to compare the set dashboard filters with what
+// is returned, we remove the data field from the filter if it is not set
 function sanitize(filter) {
-  if (filter.data?.data) {
-    // date variables have two nested data fields
-    return update(filter, {data: {data: {$unset: ['includeUndefined', 'excludeUndefined']}}});
-  }
-  if (filter.data) {
-    // normal date filters have one level of data
-    return update(filter, {data: {$unset: ['includeUndefined', 'excludeUndefined']}});
+  if (!filter.data) {
+    return update(filter, {$unset: ['data']});
   }
   return filter;
 }

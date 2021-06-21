@@ -6,6 +6,7 @@
 
 import React, {useState} from 'react';
 import update from 'immutability-helper';
+import equals from 'fast-deep-equal';
 
 import {Button, Icon, LabeledInput} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
@@ -63,7 +64,7 @@ export default function FiltersEdit({
                 title={t('dashboard.filter.types.' + type)}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== dateFilter);
+                  const rest = filter.filter((filter) => !equals(filter, dateFilter));
                   if (newFilter) {
                     setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
                   } else {
@@ -88,7 +89,7 @@ export default function FiltersEdit({
                 filter={variableFilter?.data.data}
                 reports={reports}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== variableFilter);
+                  const rest = filter.filter((filter) => !equals(filter, variableFilter));
                   if (newFilter) {
                     setFilter([
                       ...rest,
@@ -123,7 +124,7 @@ export default function FiltersEdit({
                 filter={identityFilter?.data}
                 reports={reports}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== identityFilter);
+                  const rest = filter.filter((filter) => !equals(filter, identityFilter));
                   if (newFilter) {
                     setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
                   } else {
