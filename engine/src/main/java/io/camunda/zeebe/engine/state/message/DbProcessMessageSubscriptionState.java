@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -22,7 +24,8 @@ import org.agrona.DirectBuffer;
 
 public final class DbProcessMessageSubscriptionState
     implements MutableProcessMessageSubscriptionState,
-        MutablePendingProcessMessageSubscriptionState {
+        MutablePendingProcessMessageSubscriptionState,
+        StreamProcessorLifecycleAware {
 
   // (elementInstanceKey, messageName) => ProcessMessageSubscription
   private final DbLong elementInstanceKey;
@@ -48,7 +51,10 @@ public final class DbProcessMessageSubscriptionState
             transactionContext,
             elementKeyAndMessageName,
             processMessageSubscription);
+  }
 
+  @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
     subscriptionColumnFamily.forEach(
         subscription -> {
           if (subscription.isOpening() || subscription.isClosing()) {

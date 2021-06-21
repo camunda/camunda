@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -103,6 +104,11 @@ public class ZeebeDbState implements MutableZeebeState {
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    processMessageSubscriptionState.onRecovered(context);
   }
 
   @Override

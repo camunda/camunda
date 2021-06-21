@@ -40,8 +40,7 @@ public class DbMigrationState implements MutableMigrationState {
     processSubscriptionElementInstanceKey = new DbLong();
     processSubscriptionMessageName = new DbString();
     processSubscriptionElementKeyAndMessageName =
-        new DbCompositeKey<>(processSubscriptionElementInstanceKey,
-            processSubscriptionMessageName);
+        new DbCompositeKey<>(processSubscriptionElementInstanceKey, processSubscriptionMessageName);
 
     processSubscriptionSentTime = new DbLong();
     processSubscriptionSentTimeCompositeKey =
