@@ -27,7 +27,7 @@ public class BlockSequenceBuilder implements BlockBuilder {
 
   private static final List<BlockBuilderFactory> BLOCK_BUILDER_FACTORIES =
       Arrays.asList(
-          new JobWorkerTaskBlockBuilder.Factory(),
+          JobWorkerTaskBlockBuilder.serviceTaskFactory(),
           new IntermediateMessageCatchEventBlockBuilder.Factory(),
           new SubProcessBlockBuilder.Factory(),
           new ExclusiveGatewayBlockBuilder.Factory(),

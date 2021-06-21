@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractJobWorkerTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.test.util.bpmn.random.BlockBuilder;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateJobAndThrowError;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepTriggerTimerBoundaryEvent;
 import java.util.Random;
+import java.util.function.Function;
 
 /**
  * Generates a task that is based on a job and is processed by a job worker (e.g. a service task).
@@ -31,7 +33,7 @@ import java.util.Random;
  */
 public class JobWorkerTaskBlockBuilder implements BlockBuilder {
 
-  private final String serviceTaskId;
+  private final String taskId;
   private final String jobType;
   private final String errorCode;
   private final String boundaryErrorEventId;
@@ -41,13 +43,22 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
   private final boolean hasBoundaryErrorEvent;
   private final boolean hasBoundaryTimerEvent;
 
-  public JobWorkerTaskBlockBuilder(final IDGenerator idGenerator, final Random random) {
-    serviceTaskId = idGenerator.nextId();
-    jobType = "job_" + serviceTaskId;
-    errorCode = "error_" + serviceTaskId;
+  private final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
+      taskBuilder;
 
-    boundaryErrorEventId = "boundary_error_" + serviceTaskId;
-    boundaryTimerEventId = "boundary_timer_" + serviceTaskId;
+  public JobWorkerTaskBlockBuilder(
+      final IDGenerator idGenerator,
+      final Random random,
+      final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
+          taskBuilder) {
+    this.taskBuilder = taskBuilder;
+
+    taskId = idGenerator.nextId();
+    jobType = "job_" + taskId;
+    errorCode = "error_" + taskId;
+
+    boundaryErrorEventId = "boundary_error_" + taskId;
+    boundaryTimerEventId = "boundary_timer_" + taskId;
 
     hasBoundaryErrorEvent =
         random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
@@ -63,29 +74,29 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
   public AbstractFlowNodeBuilder<?, ?> buildFlowNodes(
       final AbstractFlowNodeBuilder<?, ?> nodeBuilder) {
 
-    final ServiceTaskBuilder serviceTaskBuilder = nodeBuilder.serviceTask(serviceTaskId);
+    final var jobWorkerTaskBuilder = taskBuilder.apply(nodeBuilder);
 
-    serviceTaskBuilder.zeebeJobRetries("3");
+    jobWorkerTaskBuilder.id(taskId);
+    jobWorkerTaskBuilder.zeebeJobRetries("3");
+    jobWorkerTaskBuilder.zeebeJobType(jobType);
 
-    serviceTaskBuilder.zeebeJobType(jobType);
-
-    AbstractFlowNodeBuilder<?, ?> result = serviceTaskBuilder;
+    AbstractFlowNodeBuilder<?, ?> result = jobWorkerTaskBuilder;
 
     if (hasBoundaryEvents) {
-      final String joinGatewayId = "boundary_join_" + serviceTaskId;
+      final String joinGatewayId = "boundary_join_" + taskId;
       final ExclusiveGatewayBuilder exclusiveGatewayBuilder =
-          serviceTaskBuilder.exclusiveGateway(joinGatewayId);
+          jobWorkerTaskBuilder.exclusiveGateway(joinGatewayId);
 
       if (hasBoundaryErrorEvent) {
         result =
-            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(serviceTaskId))
+            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(taskId))
                 .boundaryEvent(boundaryErrorEventId, b -> b.error(errorCode))
                 .connectTo(joinGatewayId);
       }
 
       if (hasBoundaryTimerEvent) {
         result =
-            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(serviceTaskId))
+            ((ServiceTaskBuilder) exclusiveGatewayBuilder.moveToNode(taskId))
                 .boundaryEvent(
                     /* the value of that variable will be calculated when the execution flow is
                     known*/
@@ -105,7 +116,7 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
   public ExecutionPathSegment findRandomExecutionPath(final Random random) {
     final ExecutionPathSegment result = new ExecutionPathSegment();
 
-    final var activateStep = new StepActivateBPMNElement(serviceTaskId);
+    final var activateStep = new StepActivateBPMNElement(taskId);
     result.appendDirectSuccessor(activateStep);
 
     if (hasBoundaryTimerEvent) {
@@ -158,11 +169,25 @@ public class JobWorkerTaskBlockBuilder implements BlockBuilder {
     return result;
   }
 
-  public static class Factory implements BlockBuilderFactory {
+  public static BlockBuilderFactory serviceTaskFactory() {
+    return new Factory(AbstractFlowNodeBuilder::serviceTask);
+  }
+
+  private static class Factory implements BlockBuilderFactory {
+
+    private final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
+        taskBuilder;
+
+    public Factory(
+        final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
+            taskBuilder) {
+      this.taskBuilder = taskBuilder;
+    }
 
     @Override
     public BlockBuilder createBlockBuilder(final ConstructionContext context) {
-      return new JobWorkerTaskBlockBuilder(context.getIdGenerator(), context.getRandom());
+      return new JobWorkerTaskBlockBuilder(
+          context.getIdGenerator(), context.getRandom(), taskBuilder);
     }
 
     @Override
