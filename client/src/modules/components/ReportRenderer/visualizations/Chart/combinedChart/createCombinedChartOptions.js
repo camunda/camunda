@@ -10,7 +10,7 @@ import {generateLegendLabels} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
 
-export default function createCombinedChartOptions({report, targetValue, theme}) {
+export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, configuration},
     result,
@@ -31,13 +31,11 @@ export default function createCombinedChartOptions({report, targetValue, theme})
 
   const tooltipCallbacks = {
     label: (tooltipItem, data) => {
-      const {formatter} = data.datasets[tooltipItem.datasetIndex];
-
       return formatTooltip(
         tooltipItem,
         data,
         configuration,
-        formatter,
+        data.datasets[tooltipItem.datasetIndex].formatter ?? formatter,
         result.instanceCount,
         isDuration
       );
