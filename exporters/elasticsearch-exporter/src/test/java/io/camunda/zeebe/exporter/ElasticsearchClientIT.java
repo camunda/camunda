@@ -38,7 +38,7 @@ public class ElasticsearchClientIT extends AbstractElasticsearchExporterIntegrat
     elastic.start();
 
     configuration = getDefaultConfiguration();
-    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
+    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientIT.class));
     bulkRequest = new ArrayList<>();
     client = new ElasticsearchClient(configuration, logSpy, bulkRequest);
   }
