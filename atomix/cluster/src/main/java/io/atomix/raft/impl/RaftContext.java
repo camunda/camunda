@@ -142,6 +142,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
     this.electionConfig = electionConfig;
+    if (electionConfig.isPriorityElectionEnabled()) {
+      log.debug(
+          "Priority election is enabled with target priority {} and node priority {}",
+          electionConfig.getInitialTargetPriority(),
+          electionConfig.getNodePriority());
+    }
 
     // Lock the storage directory.
     if (!storage.lock(localMemberId.id())) {

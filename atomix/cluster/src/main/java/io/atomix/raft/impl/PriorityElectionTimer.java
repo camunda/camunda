@@ -75,6 +75,10 @@ public class PriorityElectionTimer implements ElectionTimer {
               });
       triggerElection.run();
     } else {
+      log.debug(
+          "Node priority {} < target priority {}. Not triggering election.",
+          nodePriority,
+          targetPriority);
       electionTimer =
           threadContext.schedule(
               pollTimeout,
