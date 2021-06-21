@@ -107,7 +107,7 @@ it('should have a sorting menu if at least one column is sortable', () => {
   expect(node.find('.sortMenu')).toExist();
 });
 
-it('should always call onsorting change with default order from the sorting menu', () => {
+it('should always call onChange with default order from the sorting menu', () => {
   const spy = jest.fn();
   const node = shallow(
     <EntityList
@@ -163,7 +163,7 @@ it('should indicate which column is sorted', () => {
   expect(node.find('.columnHeaders div').at(2)).toHaveClassName('sorted');
 });
 
-it('should call reload when clicking on the header column', () => {
+it('should call onChange when clicking on the header column', () => {
   const spy = jest.fn();
   const node = shallow(
     <EntityList

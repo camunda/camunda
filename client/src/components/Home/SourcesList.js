@@ -19,7 +19,7 @@ import {
   removeSource,
   checkDeleteSourceConflicts,
   checkSourcesConflicts,
-  deleteSources,
+  removeSources,
 } from './service';
 
 import AddSourceModal from './modals/AddSourceModal';
@@ -119,7 +119,7 @@ export default withErrorHandling(
             bulkActions={[
               {
                 type: 'delete',
-                action: async (selectedSources) => await deleteSources(collection, selectedSources),
+                action: async (selectedSources) => await removeSources(collection, selectedSources),
                 checkConflicts: async (selectedSources) =>
                   await checkSourcesConflicts(collection, selectedSources),
                 conflictMessage: t('common.deleter.affectedMessage.bulk.process'),

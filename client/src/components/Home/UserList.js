@@ -14,7 +14,7 @@ import {withErrorHandling} from 'HOC';
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 
-import {addUser, editUser, removeUser, getUsers, deleteUsers} from './service';
+import {addUser, editUser, removeUser, getUsers, removeUsers} from './service';
 import './UserList.scss';
 
 export default withErrorHandling(
@@ -79,7 +79,7 @@ export default withErrorHandling(
             bulkActions={[
               {
                 type: 'delete',
-                action: (selectedUsers) => deleteUsers(collection, selectedUsers),
+                action: (selectedUsers) => removeUsers(collection, selectedUsers),
               },
             ]}
             onChange={this.updateList}

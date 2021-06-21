@@ -158,3 +158,14 @@ it('should use the provided delete button text', () => {
 
   expect(node.find('.confirm')).toIncludeText('Delete');
 });
+
+it('should invoke onConflict if the conflict response is a boolean true', () => {
+  const conflictChecker = jest.fn().mockReturnValue(true);
+  const spy = jest.fn();
+
+  const node = shallow(<Deleter {...props} onConflict={spy} checkConflicts={conflictChecker} />);
+
+  node.setProps({entity});
+
+  expect(spy).toHaveBeenCalled();
+});

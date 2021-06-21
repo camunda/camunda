@@ -38,7 +38,7 @@ export default withErrorHandling(
           this.setState({loading: true});
           this.props.mightFail(
             checkConflicts(entity),
-            async (response) => {
+            (response) => {
               if (typeof response === 'boolean') {
                 if (response) {
                   this.props.onConflict?.();

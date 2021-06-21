@@ -20,7 +20,7 @@ import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import DashboardTemplateModal from './modals/DashboardTemplateModal';
-import {loadEntities, importEntity, deleteEntities, checkConflicts} from './service';
+import {loadEntities, importEntity, removeEntities, checkConflicts} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -126,7 +126,7 @@ export class Home extends React.Component {
             bulkActions={[
               {
                 type: 'delete',
-                action: deleteEntities,
+                action: removeEntities,
                 checkConflicts,
                 conflictMessage: t('common.deleter.affectedMessage.bulk.report'),
               },

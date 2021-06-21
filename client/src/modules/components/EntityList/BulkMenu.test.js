@@ -7,10 +7,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Deleter} from 'components';
+import {Deleter, Dropdown} from 'components';
 
 import {BulkMenu} from './BulkMenu';
-import {Dropdown} from '../Dropdown';
 
 const props = {
   selectedEntries: [{id: 'reportId', type: 'report'}],
@@ -30,13 +29,13 @@ beforeEach(() => {
 it('should show bulk operation dropdown', () => {
   const node = shallow(<BulkMenu {...props} />);
 
-  expect(node.find('Dropdown')).toMatchSnapshot();
+  expect(node.find(Dropdown)).toExist();
 });
 
 it('should not dropdown if there are no selected entries', () => {
   const node = shallow(<BulkMenu {...props} selectedEntries={[]} />);
 
-  expect(node.find('Dropdown')).not.toExist();
+  expect(node.find(Dropdown)).not.toExist();
 });
 
 it('should delete selected entities, reset selected items and any conflicts on confirmation', () => {

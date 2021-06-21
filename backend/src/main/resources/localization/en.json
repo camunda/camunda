@@ -1088,7 +1088,7 @@
           "alert": "The following Alert(s) will also be deleted:"
         },
         "bulk": {
-          "report": "Any selected Reports will be removed from associated Dashboards, Combined Reports. Their Alerts will be deleted.",
+          "report": "Any selected Reports will be removed from associated Dashboards and Combined Reports. Their Alerts will be deleted.",
           "process": "Removing Data Sources deletes all associated Reports and their Alerts."
         }
       },

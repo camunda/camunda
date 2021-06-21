@@ -105,7 +105,7 @@ export async function importEntity(json, collectionId) {
   return await post('api/import', json, {query});
 }
 
-export async function deleteEntities(entities, collectionId) {
+export async function removeEntities(entities, collectionId) {
   const query = {};
   if (collectionId) {
     query.collectionId = collectionId;
@@ -125,11 +125,11 @@ export async function checkConflicts(entities, collectionId) {
   return await response.json();
 }
 
-export async function deleteAlerts(alerts) {
+export async function removeAlerts(alerts) {
   return await post('api/alert/delete', getIds(alerts));
 }
 
-export async function deleteSources(collectionId, scopes) {
+export async function removeSources(collectionId, scopes) {
   return await post(`api/collection/${collectionId}/scope/delete`, getIds(scopes));
 }
 
@@ -142,7 +142,7 @@ export async function checkSourcesConflicts(collectionId, scopes) {
   return await response.json();
 }
 
-export async function deleteUsers(collectionId, users) {
+export async function removeUsers(collectionId, users) {
   return await post(`api/collection/${collectionId}/roles/delete`, getIds(users));
 }
 

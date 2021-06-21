@@ -15,7 +15,7 @@ import {getWebhooks} from 'config';
 
 import AlertModal from './modals/AlertModal';
 import CopyAlertModal from './modals/CopyAlertModal';
-import {loadAlerts, addAlert, editAlert, removeAlert, deleteAlerts} from './service';
+import {loadAlerts, addAlert, editAlert, removeAlert, removeAlerts} from './service';
 
 import './AlertList.scss';
 
@@ -131,7 +131,7 @@ export default withErrorHandling(
             bulkActions={[
               {
                 type: 'delete',
-                action: deleteAlerts,
+                action: removeAlerts,
               },
             ]}
             onChange={this.loadAlerts}

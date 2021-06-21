@@ -16,7 +16,7 @@ import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 
-import {loadCollectionEntities, importEntity, deleteEntities, checkConflicts} from './service';
+import {loadCollectionEntities, importEntity, removeEntities, checkConflicts} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
@@ -191,7 +191,7 @@ export class Collection extends React.Component {
               bulkActions={[
                 {
                   type: 'delete',
-                  action: async (selected) => await deleteEntities(selected, collection),
+                  action: async (selected) => await removeEntities(selected, collection),
                   checkConflicts: async (selected) => await checkConflicts(selected, collection),
                   conflictMessage: t('common.deleter.affectedMessage.bulk.report'),
                 },
