@@ -44,6 +44,9 @@ pipeline {
     environment {
         NEXUS = credentials("camunda-nexus")
         SONARCLOUD_TOKEN = credentials('zeebe-sonarcloud-token')
+
+        // ensure tests always use the pre-built Docker image instead of rebuilding it every time
+        ZEEBE_USE_EXISTING_DOCKER_IMAGE = "true"
     }
 
     triggers {
