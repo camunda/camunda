@@ -22,7 +22,6 @@ import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import {useNotifications} from 'modules/notifications';
 import Table from 'modules/components/Table';
 import React from 'react';
-import {HAS_PARENT_INSTANCE_ID} from 'modules/feature-flags';
 
 const {TD} = Table;
 
@@ -66,20 +65,18 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
       <TD>{`Version ${instance.processVersion}`}</TD>
       <TD data-testid="start-time">{formatDate(instance.startDate)}</TD>
       <TD data-testid="end-time">{formatDate(instance.endDate)}</TD>
-      {HAS_PARENT_INSTANCE_ID && (
-        <TD data-testid="parent-process-id">
-          {parentInstanceId !== null ? (
-            <InstanceAnchor
-              to={(location) => Locations.instance(parentInstanceId, location)}
-              title={`View parent instance ${parentInstanceId}`}
-            >
-              {parentInstanceId}
-            </InstanceAnchor>
-          ) : (
-            'None'
-          )}
-        </TD>
-      )}
+      <TD data-testid="parent-process-id">
+        {parentInstanceId !== null ? (
+          <InstanceAnchor
+            to={(location) => Locations.instance(parentInstanceId, location)}
+            title={`View parent instance ${parentInstanceId}`}
+          >
+            {parentInstanceId}
+          </InstanceAnchor>
+        ) : (
+          'None'
+        )}
+      </TD>
       <TD>
         <Operations
           instance={instance}

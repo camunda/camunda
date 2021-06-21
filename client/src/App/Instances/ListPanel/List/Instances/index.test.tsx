@@ -15,7 +15,6 @@ import {instancesStore} from 'modules/stores/instances';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {Instances} from './';
-import {HAS_PARENT_INSTANCE_ID} from 'modules/feature-flags';
 
 const createWrapper =
   (historyMock = createMemoryHistory()) =>
@@ -63,14 +62,12 @@ describe('List/Instances', () => {
       within(rows[0]).getByText(`Version ${firstInstance.processVersion}`)
     ).toBeInTheDocument();
     expect(within(rows[0]).getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    if (HAS_PARENT_INSTANCE_ID) {
-      expect(
-        within(rows[0]).getByRole('link', {
-          name: `View parent instance ${firstInstance.parentInstanceId}`,
-        })
-      ).toBeInTheDocument();
-      expect(within(rows[0]).queryByText('None')).not.toBeInTheDocument();
-    }
+    expect(
+      within(rows[0]).getByRole('link', {
+        name: `View parent instance ${firstInstance.parentInstanceId}`,
+      })
+    ).toBeInTheDocument();
+    expect(within(rows[0]).queryByText('None')).not.toBeInTheDocument();
     expect(
       within(rows[0]).getByRole('button', {
         name: `Cancel Instance ${firstInstance.id}`,
@@ -95,9 +92,7 @@ describe('List/Instances', () => {
       within(rows[1]).getByText(`Version ${secondInstance.processVersion}`)
     ).toBeInTheDocument();
     expect(within(rows[1]).getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    if (HAS_PARENT_INSTANCE_ID) {
-      expect(within(rows[1]).getByText('None')).toBeInTheDocument();
-    }
+    expect(within(rows[1]).getByText('None')).toBeInTheDocument();
     expect(
       within(rows[1]).getByRole('button', {
         name: `Cancel Instance ${secondInstance.id}`,
