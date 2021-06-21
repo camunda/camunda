@@ -113,8 +113,7 @@
     <plugin.version.fmt>2.11</plugin.version.fmt>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
-    <plugin.version.proto-backwards-compatibility>1.0.6
-    </plugin.version.proto-backwards-compatibility>
+    <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.2.0</plugin.version.resources>
     <plugin.version.scala>4.5.3</plugin.version.scala>
