@@ -66,7 +66,10 @@ public enum ZbColumnFamilies {
 
   // process message subscription
   PROCESS_SUBSCRIPTION_BY_KEY,
+  // migration start
+  @Deprecated // only used for migration logic
   PROCESS_SUBSCRIPTION_BY_SENT_TIME,
+  // migration end
 
   // incident
   INCIDENTS,

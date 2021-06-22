@@ -60,6 +60,8 @@ public final class EngineProcessors {
     // register listener that handles migrations immediately, so it is the first to be called
     typedRecordProcessors.withListener(new DbMigrationController());
 
+    typedRecordProcessors.withListener(processingContext.getZeebeState());
+
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
     final int maxFragmentSize = processingContext.getMaxFragmentSize();
