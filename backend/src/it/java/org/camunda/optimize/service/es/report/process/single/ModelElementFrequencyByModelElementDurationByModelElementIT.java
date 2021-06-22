@@ -26,7 +26,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.util.BpmnModels;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -466,7 +465,6 @@ public abstract class ModelElementFrequencyByModelElementDurationByModelElementI
     return createExpectedDistributedByEntries(bucketValue, getExpectedModelElements());
   }
 
-  @NotNull
   private List<MapResultEntryDto> createExpectedDistributedByEntries(final double bucketValue,
                                                                      final List<String> expectedModelElements) {
     return expectedModelElements

@@ -37,7 +37,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -110,7 +109,6 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     );
   }
 
-  @NotNull
   private static String getUpdateImportSourceScript(final String importType) {
     //@formatter:off
     return
