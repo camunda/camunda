@@ -92,7 +92,10 @@ it('should separate report and dashboard level filters', () => {
     {type: 'nonCanceledInstancesOnly', data: null},
   ];
 
-  const dashboardFilters = [{type: 'runningInstancesOnly'}, {type: 'nonCanceledInstancesOnly'}];
+  const dashboardFilters = [
+    {type: 'runningInstancesOnly', data: null},
+    {type: 'nonCanceledInstancesOnly', data: null},
+  ];
 
   const reportWithAllFilters = update(props.report, {data: {filter: {$set: allFilters}}});
 

@@ -33,7 +33,13 @@ export default function DateFilter({
   }, [isFixed]);
 
   function setRelativeFilter(unit, past) {
-    setFilter({type: 'relative', start: {value: past ? 1 : 0, unit}, end: null});
+    setFilter({
+      type: 'relative',
+      start: {value: past ? 1 : 0, unit},
+      end: null,
+      excludeUndefined: false,
+      includeUndefined: false,
+    });
   }
 
   function isFilter(unit, past) {
@@ -102,6 +108,8 @@ export default function DateFilter({
                   type: 'fixed',
                   start: format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                   end: format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  excludeUndefined: false,
+                  includeUndefined: false,
                 });
               }
             }}

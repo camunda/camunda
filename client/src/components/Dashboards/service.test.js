@@ -12,8 +12,8 @@ const filters = [
     data: {type: 'relative', start: {value: 0, unit: 'days'}, end: null},
     filterLevel: 'instance',
   },
-  {type: 'runningInstancesOnly', filterLevel: 'instance'},
-  {type: 'nonCanceledInstancesOnly', filterLevel: 'instance'},
+  {type: 'runningInstancesOnly', filterLevel: 'instance', data: null},
+  {type: 'nonCanceledInstancesOnly', filterLevel: 'instance', data: null},
   {
     type: 'variable',
     data: {name: 'boolVar', type: 'Boolean', data: {values: [false]}},

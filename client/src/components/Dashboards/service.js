@@ -120,7 +120,11 @@ export function getDefaultFilter(availableFilters) {
     if (availableFilter?.data.defaultValues) {
       if (availableFilter.type === 'state') {
         return filters.push(
-          ...availableFilter.data.defaultValues.map((type) => ({filterLevel: 'instance', type}))
+          ...availableFilter.data.defaultValues.map((type) => ({
+            filterLevel: 'instance',
+            type,
+            data: null,
+          }))
         );
       }
 

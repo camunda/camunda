@@ -6,7 +6,6 @@
 
 import React, {useState} from 'react';
 import equals from 'fast-deep-equal';
-import update from 'immutability-helper';
 
 import {Popover} from 'components';
 import {FilterList} from 'filter';
@@ -67,7 +66,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
 
     data.filter.forEach((filter) => {
       const additionalFilterIdx = unappliedAdditionalFilters.findIndex((additionalFilter) =>
-        equals(additionalFilter, sanitize(filter))
+        equals(additionalFilter, filter)
       );
       if (additionalFilterIdx !== -1) {
         additionalFilters.push(filter);
@@ -150,16 +149,6 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
       </span>
     </div>
   );
-}
-
-// Instance State Dashboard filters don't have a data field, but the backend returns it with the value null
-// when the filter is applied. In order to compare the set dashboard filters with what
-// is returned, we remove the data field from the filter if it is not set
-function sanitize(filter) {
-  if (!filter.data) {
-    return update(filter, {$unset: ['data']});
-  }
-  return filter;
 }
 
 export default withErrorHandling(InstanceCount);
