@@ -82,7 +82,7 @@ public final class ReplayStateMachine {
   private static final String LOG_STMT_REPLAY_FINISHED =
       "Processor finished replay at event position {}";
   private static final String LOG_STMT_FAILED_ON_REPLAY =
-      "Event {} failed on replay last time, will call #onError to update process instance blacklist.";
+      "Event {} failed on processing last time, will add process instance {} to blacklist.";
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
 
@@ -308,12 +308,12 @@ public final class ReplayStateMachine {
       final long position, final TypedRecord<?> currentEvent) {
     final TransactionOperation operation;
 
-    if (failedEventPositions.contains(position)) {
-      // TODO (saig0): build the blacklist by applying error events (#7429)
-      // currently, we don't add instances to blacklist because we don't process the failed commands
-      LOG.info(LOG_STMT_FAILED_ON_REPLAY, currentEvent);
+    if (currentEvent.getValueType() == ValueType.ERROR) {
+      final var errorRecord = (ErrorRecord) currentEvent.getValue();
+      final var blacklistedInstance = errorRecord.getProcessInstanceKey();
+      LOG.info(LOG_STMT_FAILED_ON_REPLAY, currentEvent, blacklistedInstance);
       operation =
-          () -> zeebeState.getBlackListState().tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
+          () -> zeebeState.getBlackListState().blacklistProcessInstance(blacklistedInstance);
     } else {
       operation =
           () -> {
