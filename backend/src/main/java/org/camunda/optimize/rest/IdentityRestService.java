@@ -8,9 +8,9 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -67,11 +67,8 @@ public class IdentityRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public UserResponseDto getCurrentUser(@Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return identityService.getUserById(userId)
-      .map(userDto -> new UserResponseDto(userDto, identityService.getUserAuthorizations(userId)))
-      .orElseThrow(
-        () -> new OptimizeRuntimeException("Could not find currently logged in user identity with id: " + userId + ".")
-      );
+    final UserDto currentUserDto = identityService.getUserById(userId).orElseGet(() -> new UserDto(userId));
+    return new UserResponseDto(currentUserDto, identityService.getUserAuthorizations(userId));
   }
 
 }
