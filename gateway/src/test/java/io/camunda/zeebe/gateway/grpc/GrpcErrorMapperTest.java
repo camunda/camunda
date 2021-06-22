@@ -29,16 +29,24 @@ import org.apache.logging.slf4j.Log4jLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.helpers.NOPLogger;
 
+@Execution(ExecutionMode.CONCURRENT)
 final class GrpcErrorMapperTest {
   private final RecordingAppender recorder = new RecordingAppender();
-  private final Logger log = (Logger) LogManager.getLogger(GrpcErrorMapperTest.class);
-  private final Log4jLogger logger = new Log4jLogger(log, log.getName());
   private final GrpcErrorMapper errorMapper = new GrpcErrorMapper();
 
+  private Logger log;
+  private Log4jLogger logger;
+
   @BeforeEach
-  void setUp() {
+  void beforeEach(final TestInfo testInfo) {
+    log = (Logger) LogManager.getLogger(testInfo.getDisplayName());
+    logger = new Log4jLogger(log, log.getName());
+
     recorder.start();
     log.addAppender(recorder);
   }
@@ -85,10 +93,8 @@ final class GrpcErrorMapperTest {
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
-    assertThat(recorder.getAppendedEvents()).hasSize(2);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
     assertThat(recorder.getAppendedEvents().get(0).getLevel())
-        .isEqualTo(Level.TRACE); // partition leader mismatch
-    assertThat(recorder.getAppendedEvents().get(1).getLevel())
         .isEqualTo(Level.TRACE); // resource exhausted
     assertThat(status.getDetailsCount()).isEqualTo(1);
 
