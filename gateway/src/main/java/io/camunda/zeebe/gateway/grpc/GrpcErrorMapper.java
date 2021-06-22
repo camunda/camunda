@@ -24,9 +24,11 @@ import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
+import org.slf4j.helpers.NOPLogger;
 
 /** Maps arbitrary {@link Throwable} to {@link StatusRuntimeException} and logs the exception. */
 public final class GrpcErrorMapper {
@@ -80,7 +82,7 @@ public final class GrpcErrorMapper {
       // RequestRetriesExhaustedException will sometimes carry suppressed exceptions which can be
       // added/mapped as error details to give more information to the user
       for (final Throwable suppressed : error.getSuppressed()) {
-        builder.addDetails(Any.pack(mapErrorToStatus(rootError, suppressed, logger)));
+        builder.addDetails(Any.pack(mapErrorToStatus(rootError, suppressed, NOPLogger.NOP_LOGGER)));
       }
 
       // this error occurs when all partitions have exhausted for requests which have no fixed
@@ -97,6 +99,11 @@ public final class GrpcErrorMapper {
       builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
       logger.warn(
           "Expected to handle gRPC request, but a connection timeout exception occurred",
+          rootError);
+    } else if (error instanceof ConnectException) {
+      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+      logger.warn(
+          "Expected to handle gRPC request, but there was a connection error with one of the brokers",
           rootError);
     } else {
       builder
