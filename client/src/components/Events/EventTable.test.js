@@ -34,7 +34,13 @@ jest.mock('./service', () => ({
   isNonTimerEvent: jest.fn().mockReturnValue(false),
 }));
 
-jest.mock('debouncePromise', () => () => (fn, delay, ...args) => fn(...args));
+jest.mock(
+  'debouncePromise',
+  () =>
+    () =>
+    (fn, delay, ...args) =>
+      fn(...args)
+);
 
 const props = {
   selection: {id: 'a', $instanceOf: (type) => type === 'bpmn:Event'},

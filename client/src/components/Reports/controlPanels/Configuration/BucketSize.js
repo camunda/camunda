@@ -44,9 +44,8 @@ export default function BucketSize({
   const isGroupedByDuration = groupBy?.type === 'duration';
 
   if (isBucketableVariableReport || isGroupedByDuration || isDistributedByVariable) {
-    const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} = configuration[
-      customBucket
-    ];
+    const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} =
+      configuration[customBucket];
     const flush = () => applyChanges.flush();
 
     const units = (

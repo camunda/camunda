@@ -14,7 +14,13 @@ jest.mock('./service', () => ({
   loadExternalGroups: jest.fn().mockReturnValue([null, 'group 1']),
 }));
 
-jest.mock('debouncePromise', () => () => (fn, delay, ...args) => fn(...args));
+jest.mock(
+  'debouncePromise',
+  () =>
+    () =>
+    (fn, delay, ...args) =>
+      fn(...args)
+);
 jest.mock('debounce', () => (fn) => fn);
 
 const props = {
