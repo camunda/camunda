@@ -141,7 +141,6 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .collect(toList());
   }
 
-  @NotNull
   private static String getDataSourceMigrationScript(final boolean eventBased) {
     return eventBased ? getUpdateImportSourceScript(DataImportSourceType.EVENTS.getId())
       : getUpdateImportSourceScript(DataImportSourceType.ENGINE.getId());
