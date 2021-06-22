@@ -65,7 +65,7 @@ export default withErrorHandling(
               {t('whatsNew.modalHeader')} {optimizeVersion}
             </Modal.Header>
             <Modal.Content>
-              {text ? <ReactMarkdown source={text} /> : <LoadingIndicator />}
+              {text ? <ReactMarkdown>{text}</ReactMarkdown> : <LoadingIndicator />}
             </Modal.Content>
             <Modal.Actions>
               <Button main className="close" onClick={this.closeModal}>
