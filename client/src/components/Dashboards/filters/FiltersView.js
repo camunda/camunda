@@ -74,7 +74,11 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                   if (newFilter) {
                     setFilter([
                       ...rest,
-                      {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
+                      {
+                        type,
+                        data: {data: newFilter, name: data.name, type: data.type},
+                        filterLevel: 'instance',
+                      },
                     ]);
                   } else {
                     setFilter(rest);
