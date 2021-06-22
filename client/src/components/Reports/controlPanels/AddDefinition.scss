@@ -8,4 +8,10 @@
   .MessageBox {
     font-size: 12px;
   }
+
+  .Checklist {
+    .selectAllInView {
+      display: none;
+    }
+  }
 }

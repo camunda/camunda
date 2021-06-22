@@ -115,7 +115,7 @@ export default function Checklist({
             {filteredData.length === 0 && <p>{labels.empty}</p>}
             {query && filteredData.length > 1 && (
               <LabeledInput
-                className={classnames({highlight: allSelectedInView})}
+                className={classnames('selectAllInView', {highlight: allSelectedInView})}
                 type="checkbox"
                 checked={allSelectedInView}
                 label={t('common.multiSelect.selectAll')}
