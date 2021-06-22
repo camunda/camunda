@@ -86,7 +86,7 @@ public final class AtomixFactory {
     final RaftPartitionGroup partitionGroup =
         createRaftPartitionGroup(configuration, rootDirectory, snapshotStoreFactory);
 
-    return atomixBuilder.withPartitionGroups(partitionGroup).build();
+    return atomixBuilder.withPartitionGroup(partitionGroup).build();
   }
 
   private static RaftPartitionGroup createRaftPartitionGroup(

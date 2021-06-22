@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
-import static io.camunda.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -113,8 +111,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   private void initializePartitionHealthStatus() {
-    final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup(GROUP_NAME);
+    final ManagedPartitionGroup partitionGroup = atomix.getPartitionService().getPartitionGroup();
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     partitionGroup.getPartitions().stream()
@@ -161,8 +158,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   private void initializePartitionInstallStatus() {
-    final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup(GROUP_NAME);
+    final ManagedPartitionGroup partitionGroup = atomix.getPartitionService().getPartitionGroup();
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     partitionInstallStatus =

@@ -25,11 +25,11 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
+import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -38,8 +38,6 @@ import io.atomix.utils.concurrent.Threads;
 import io.atomix.utils.config.ConfigurationException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -102,7 +100,6 @@ public class Atomix extends AtomixCluster {
     this(config, null, null);
   }
 
-  @SuppressWarnings("unchecked")
   protected Atomix(
       final AtomixConfig config,
       final ManagedMessagingService messagingService,
@@ -180,7 +177,6 @@ public class Atomix extends AtomixCluster {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   protected CompletableFuture<Void> stopServices() {
     return partitions
         .stop()
@@ -201,17 +197,19 @@ public class Atomix extends AtomixCluster {
   }
 
   /** Builds a partition service. */
-  @SuppressWarnings("unchecked")
   private static ManagedPartitionService buildPartitionService(
       final AtomixConfig config,
       final ClusterMembershipService clusterMembershipService,
       final ClusterCommunicationService messagingService) {
-    final List<ManagedPartitionGroup> partitionGroups = new ArrayList<>();
-    for (final PartitionGroupConfig<?> partitionGroupConfig :
-        config.getPartitionGroups().values()) {
-      partitionGroups.add(partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig));
-    }
 
-    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroups);
+    final PartitionGroupConfig<?> partitionGroupConfig = config.getPartitionGroup();
+
+    final var partitionGroup =
+        partitionGroupConfig != null
+            ? partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig)
+            : null;
+
+    return new DefaultPartitionService(
+        clusterMembershipService, messagingService, (RaftPartitionGroup) partitionGroup);
   }
 }

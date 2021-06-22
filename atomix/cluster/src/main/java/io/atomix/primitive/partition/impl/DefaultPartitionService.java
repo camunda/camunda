@@ -16,22 +16,15 @@
  */
 package io.atomix.primitive.partition.impl;
 
-import com.google.common.collect.Maps;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
-import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionService;
-import io.atomix.utils.concurrent.Futures;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import io.atomix.raft.partition.RaftPartitionGroup;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,49 +35,41 @@ public class DefaultPartitionService implements ManagedPartitionService {
   private final ClusterMembershipService clusterMembershipService;
   private final ClusterCommunicationService communicationService;
   private volatile PartitionManagementService partitionManagementService;
-  private final Map<String, ManagedPartitionGroup> groups = Maps.newConcurrentMap();
+  private final ManagedPartitionGroup group;
   private final AtomicBoolean started = new AtomicBoolean();
 
-  @SuppressWarnings("unchecked")
   public DefaultPartitionService(
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService messagingService,
-      final Collection<ManagedPartitionGroup> groups) {
+      final RaftPartitionGroup group) {
     clusterMembershipService = membershipService;
     communicationService = messagingService;
-    groups.forEach(group -> this.groups.put(group.name(), group));
+    this.group = group;
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public PartitionGroup getPartitionGroup(final String name) {
-    return groups.get(name);
+  public ManagedPartitionGroup getPartitionGroup() {
+    return group;
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public Collection<PartitionGroup> getPartitionGroups() {
-    return (Collection) groups.values();
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
   public CompletableFuture<PartitionService> start() {
     if (started.compareAndSet(false, true)) {
 
       partitionManagementService =
           new DefaultPartitionManagementService(clusterMembershipService, communicationService);
 
-      return Futures.allOf(
-              groups.values().stream()
-                  .map(grp -> grp.join(partitionManagementService))
-                  .collect(Collectors.toList()))
-          .thenApply(
-              v -> {
-                LOGGER.debug("Started {}", getClass());
-                started.set(true);
-                return this;
-              });
+      final var startStepFuture =
+          group != null
+              ? group.join(partitionManagementService)
+              : CompletableFuture.completedFuture(null);
+
+      return startStepFuture.thenApply(
+          v -> {
+            LOGGER.debug("Started {}", getClass());
+            started.set(true);
+            return this;
+          });
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -95,13 +80,11 @@ public class DefaultPartitionService implements ManagedPartitionService {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public CompletableFuture<Void> stop() {
-    final Stream<CompletableFuture<Void>> groupStream =
-        groups.values().stream().map(ManagedPartitionGroup::close);
-    final List<CompletableFuture<Void>> futures = groupStream.collect(Collectors.toList());
+    final var stopStepFuture =
+        group != null ? group.close() : CompletableFuture.completedFuture(null);
 
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
+    return stopStepFuture
         .exceptionally(
             throwable -> {
               LOGGER.error("Failed closing partition group(s)", throwable);

@@ -274,16 +274,12 @@ public final class RaftRolesTest {
                   .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
                   .build();
 
-          final Atomix atomix = builder.withPartitionGroups(partitionGroup).build();
+          final Atomix atomix = builder.withPartitionGroup(partitionGroup).build();
 
           final DefaultPartitionService partitionService =
               (DefaultPartitionService) atomix.getPartitionService();
 
-          partitionService.getPartitionGroups().stream()
-              .findFirst()
-              .ifPresent(
-                  raftPartitionGroup ->
-                      raftPartitionGroup.getPartitions().forEach(partitionConsumer));
+          partitionService.getPartitionGroup().getPartitions().forEach(partitionConsumer);
           return atomix;
         });
   }
