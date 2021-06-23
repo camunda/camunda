@@ -27,7 +27,7 @@ spec:
       - name: VAULT_ADDR
         value: https://${vaultPrefix}vault.int.camunda.com/
       - name: CLUSTER
-        value: camunda-ci-v2
+        value: camunda-ci
       - name: SA_NAMESPACE
         valueFrom:
           fieldRef:
