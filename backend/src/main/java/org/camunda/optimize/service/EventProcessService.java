@@ -56,8 +56,8 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -103,7 +103,7 @@ public class EventProcessService {
   );
   private static final String DEFAULT_PROCESS_NAME = "New Process";
 
-  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final EventProcessDefinitionService eventProcessDefinitionService;
   private final ReportService reportService;
   private final ReportRelationService reportRelationService;
@@ -544,9 +544,9 @@ public class EventProcessService {
 
   private boolean validateEventSourceAuthorisation(final String userId, final EventSourceEntryDto<?> eventSource) {
     return EventSourceType.EXTERNAL.equals(eventSource.getSourceType())
-      || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+      || definitionAuthorizationService.isAuthorizedToAccessDefinition(
       userId,
-      IdentityType.USER,
+      PROCESS,
       ((CamundaEventSourceConfigDto) eventSource.getConfiguration()).getProcessDefinitionKey(),
       ((CamundaEventSourceEntryDto) eventSource).getConfiguration().getTenants()
     );

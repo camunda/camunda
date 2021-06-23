@@ -6,7 +6,7 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParamet
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.service.es.reader.DurationOutliersReader;
-import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -26,7 +26,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class OutlierAnalysisService {
 
-  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final DurationOutliersReader outliersReader;
 
   public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams,
@@ -55,8 +55,8 @@ public class OutlierAnalysisService {
   }
 
   private void doAuthorizationCheck(final ProcessDefinitionParametersDto processDefinitionParams, final String userId) {
-    if (!definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-      userId, IdentityType.USER, processDefinitionParams.getProcessDefinitionKey(), processDefinitionParams.getTenantIds()
+    if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
+      userId, DefinitionType.PROCESS, processDefinitionParams.getProcessDefinitionKey(), processDefinitionParams.getTenantIds()
     )) {
       throw new ForbiddenException(
         "Current user is not authorized to access data of the provided process definition and tenant combination");

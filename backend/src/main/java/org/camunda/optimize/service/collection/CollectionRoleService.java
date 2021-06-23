@@ -23,7 +23,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.util.definition.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class CollectionRoleService {
   private final AuthorizedCollectionService authorizedCollectionService;
-  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final IdentityService identityService;
@@ -150,7 +150,7 @@ public class CollectionRoleService {
       for (CollectionRoleResponseDto role : roles) {
         List<CollectionScopeEntryDto> scopes = authCollectionDto.getDefinitionDto().getData().getScope();
         Boolean hasFullScopeAuthorizations = scopes.stream()
-          .allMatch(s -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
+          .allMatch(s -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
             role.getIdentity().getId(),
             role.getIdentity().getType(),
             s.getDefinitionKey(),

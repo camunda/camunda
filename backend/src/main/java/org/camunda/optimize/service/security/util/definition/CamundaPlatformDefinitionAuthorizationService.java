@@ -79,26 +79,27 @@ public class CamundaPlatformDefinitionAuthorizationService implements DataSource
   }
 
   @Override
-  public boolean isAuthorizedToAccessDefinition(final String userId,
-                                                final DefinitionType type,
+  public boolean isAuthorizedToAccessDefinition(final String identityId,
+                                                final IdentityType identityType,
                                                 final String definitionKey,
+                                                final DefinitionType definitionType,
                                                 final List<String> tenantIds) {
     if (StringUtils.isBlank(definitionKey)) {
       return true;
     }
-    switch (type) {
+    switch (definitionType) {
       case PROCESS:
         return eventProcessAuthorizationService.isAuthorizedToEventProcess(
-          userId, definitionKey
+          identityId, definitionKey
         ).orElseGet(() -> engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-          userId, IdentityType.USER, definitionKey, tenantIds
+          identityId, identityType, definitionKey, tenantIds
         ));
       case DECISION:
         return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
-          userId, IdentityType.USER, definitionKey, tenantIds
+          identityId, identityType, definitionKey, tenantIds
         );
       default:
-        throw new IllegalArgumentException("Unsupported definition type: " + type);
+        throw new IllegalArgumentException("Unsupported definition type: " + definitionType);
     }
   }
 

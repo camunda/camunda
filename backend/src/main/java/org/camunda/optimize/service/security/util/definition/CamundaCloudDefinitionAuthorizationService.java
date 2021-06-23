@@ -8,6 +8,7 @@ package org.camunda.optimize.service.security.util.definition;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
@@ -35,8 +36,11 @@ public class CamundaCloudDefinitionAuthorizationService implements DataSourceDef
   }
 
   @Override
-  public boolean isAuthorizedToAccessDefinition(final String userId, final DefinitionType type,
-                                                final String definitionKey, final List<String> tenantIds) {
+  public boolean isAuthorizedToAccessDefinition(final String identityId,
+                                                final IdentityType identityType,
+                                                final String definitionKey,
+                                                final DefinitionType definitionType,
+                                                final List<String> tenantIds) {
     return true;
   }
 
