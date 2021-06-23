@@ -473,7 +473,7 @@ public final class Broker implements AutoCloseable {
               atomix.getCommunicationService(), atomix.getEventService(), partitionListener, actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(atomix, topologyManager, actor);
+          new PartitionCommandSenderImpl(atomix.getCommunicationService(), topologyManager, actor);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 

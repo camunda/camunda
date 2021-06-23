@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.core.Atomix;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.clustering.topology.TopologyManager;
 import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
@@ -20,17 +20,20 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class PartitionCommandSenderImpl implements PartitionCommandSender {
 
-  private final Atomix atomix;
+  private final ClusterCommunicationService communicationService;
 
   private final TopologyPartitionListenerImpl partitionListener;
 
   public PartitionCommandSenderImpl(
-      final Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
-    this.atomix = atomix;
+      final ClusterCommunicationService communicationService,
+      final TopologyManager topologyManager,
+      final ActorControl actor) {
+    this.communicationService = communicationService;
     partitionListener = new TopologyPartitionListenerImpl(actor);
     topologyManager.addTopologyPartitionListener(partitionListener);
   }
 
+  @Override
   public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
 
     final Int2IntHashMap partitionLeaders = partitionListener.getPartitionLeaders();
@@ -43,9 +46,7 @@ public final class PartitionCommandSenderImpl implements PartitionCommandSender 
     final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
     command.write(buffer, 0);
 
-    atomix
-        .getCommunicationService()
-        .send("subscription", bytes, MemberId.from("" + partitionLeader));
+    communicationService.send("subscription", bytes, MemberId.from("" + partitionLeader));
     return true;
   }
 }
