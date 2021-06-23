@@ -113,8 +113,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   }
 
   private void initializePartitionHealthStatus() {
-    partitionGroup.getPartitions().stream()
-        .filter(partition -> partition.members().contains(nodeId))
+    partitionGroup.getPartitionsWithMember(nodeId).stream()
         .map(partition -> partition.id().id())
         .forEach(
             partitionId ->
