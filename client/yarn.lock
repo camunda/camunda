@@ -5673,14 +5673,6 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^1.6.2, diagram-js-direct-editing@^1.6.3:
-  version "1.6.3"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.3.tgz#e7c59d7ac395439728f8da155f93510c58740c48"
-  integrity sha512-OwDpK4cNJ4QYuV855HvtZcB9/krfZRQ80uaE6bwaKbyb4584sD7nCtR5yWOyhJx4dIh1gMoqhF7d7G57M4tQVQ==
-  dependencies:
-    min-dash "^3.5.2"
-    min-dom "^3.1.3"
-
 diagram-js-direct-editing@^1.6.3:
   version "1.6.3"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.3.tgz#e7c59d7ac395439728f8da155f93510c58740c48"
@@ -5747,14 +5739,14 @@ discontinuous-range@1.0.0:
   resolved "https://registry.yarnpkg.com/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"
   integrity sha1-44Mx8IRLukm5qctxx3FYWqsbxlo=
 
-dmn-js-decision-table@^10.3.0:
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-10.3.0.tgz#57c3fe75ef68dd1911f0ab4c8f75b200e24ae037"
-  integrity sha512-H9QXjNT6FH6QuSXytCAaK5/qRT/3QAkwnc0RzhAjo+lqmIeDK2bOgvY8SSVHCm1xT3RzTzepJLRLBg9G+Jg7Dw==
+dmn-js-decision-table@^11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-11.0.1.tgz#9d13f38c32342e4b0f97ca743e1e5a6f5b2cd46b"
+  integrity sha512-STqGpbClwd7keXIFwsVZD2GJehAV9RH2Vc2gLeSCjxAeVpWdSzi5BNTRjeMpr5SusWO4ORR+rPT5Ahx94xj8vQ==
   dependencies:
     css.escape "^1.5.1"
     diagram-js "^7.2.0"
-    dmn-js-shared "^10.3.0"
+    dmn-js-shared "^11.0.0"
     escape-html "^1.0.3"
     inferno "~5.6.2"
     min-dash "^3.5.2"
@@ -5762,41 +5754,41 @@ dmn-js-decision-table@^10.3.0:
     selection-ranges "^3.0.2"
     table-js "^7.1.0"
 
-dmn-js-drd@^10.3.0:
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-10.3.0.tgz#6c602ac70f0c6d5c0ce4ad099cd581d6df5a5c75"
-  integrity sha512-GF7SsjBs945VbexyxsyzZaJrZ86Te5HwSPXQKIrYZOol+SszYG2VfN4tSBjb0rUhqrQYMG+S1t1VxLUMNxqfig==
+dmn-js-drd@^11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-11.0.1.tgz#c8f7bd0fe7366526ce1320f90f9d3fc9bcf97eca"
+  integrity sha512-RvjVT+QbN7q4UzAQnqYH4/SWNcLvvKN6UJmWPaYiWpmN29HXAWN6jn9GolcN635JMM2satlcRIU7SmQmfopapA==
   dependencies:
     diagram-js "^7.2.0"
     diagram-js-direct-editing "^1.6.3"
-    dmn-js-shared "^10.3.0"
+    dmn-js-shared "^11.0.0"
     inherits "^2.0.1"
     min-dash "^3.5.2"
     min-dom "^3.1.3"
     object-refs "^0.3.0"
     tiny-svg "^2.2.1"
 
-dmn-js-literal-expression@^10.3.0:
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-10.3.0.tgz#05f4aa072de0f04634d7b78939a8dbc71e91db22"
-  integrity sha512-CsZ2su6dAmSVqFrBfEAC5HvbnT6GZ7j1Dy88TYBZ3Ak4Bpz2z0k9wE1BSUBMX1ck9N1V6stuha8NKHFwq4ZjoQ==
+dmn-js-literal-expression@^11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-11.0.1.tgz#a34b1192320d0aa94f12ed80b174563ed6ff3eb8"
+  integrity sha512-Q5edmkTZNGSyCf07CkzObJDd1byxr7LjzJN50kUV516JUBpnw3yIfc6N3SP44oU32wLJbmQ/UpmIcV9Opst6nA==
   dependencies:
     diagram-js "^7.2.0"
-    dmn-js-shared "^10.3.0"
+    dmn-js-shared "^11.0.0"
     escape-html "^1.0.3"
     inferno "~5.6.2"
     min-dash "^3.5.2"
     min-dom "^3.1.3"
     table-js "^7.1.0"
 
-dmn-js-shared@^10.3.0:
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-10.3.0.tgz#eb6e0b1e3f567c336fbbccf72f63eb514565f249"
-  integrity sha512-m+Uk7STxrJPVkhdkiBYZJJKTknZXzwGW+ieECrquXorV2XEgPkYJesCkQyDQrp6q3qCe0z7Lbg1u40S7NYZIlw==
+dmn-js-shared@^11.0.0:
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-11.0.0.tgz#5a41b86c2ac287721ae052f435626b000b899313"
+  integrity sha512-aNTbzclBMWHu6EhkdjFcowMuzBd40wt2WHo9WGKl88H3lYH5QLC2aMBNxOOqroYEkcWcTeZbOrSWNnn+0zORbQ==
   dependencies:
     camunda-dmn-moddle "^1.0.0"
     diagram-js "^7.2.0"
-    dmn-moddle "^9.1.0"
+    dmn-moddle "^10.0.0"
     ids "^0.2.0"
     inferno "~5.6.2"
     min-dash "^3.5.2"
@@ -5805,29 +5797,29 @@ dmn-js-shared@^10.3.0:
     selection-update "^0.1.2"
     table-js "^7.1.0"
 
-dmn-js@^10.3.0:
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-10.3.0.tgz#eb4c9d265bccc55bbf0e4a17245a8dddad24dbdc"
-  integrity sha512-miJOLOrs9i8jvE7tutjEbpUn8fWmdb7xiAAKlyeRcSefLlBpwiIFmC0V7pbqPaB9D2fVN6vI8SP7TvRmif+CMw==
+dmn-js@^11.0.1:
+  version "11.0.1"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-11.0.1.tgz#875c3979edc49f90a454835166ad83694b9febba"
+  integrity sha512-7vXID2fpmPt27Ssy/X7q/BO1IEgdb5B8iq8z/OOEXjkCOqlhBckPMJC2ysKHZuOod1mXA4N2Y1URZ7CU9F3xFg==
   dependencies:
-    dmn-js-decision-table "^10.3.0"
-    dmn-js-drd "^10.3.0"
-    dmn-js-literal-expression "^10.3.0"
-    dmn-js-shared "^10.3.0"
+    dmn-js-decision-table "^11.0.1"
+    dmn-js-drd "^11.0.1"
+    dmn-js-literal-expression "^11.0.1"
+    dmn-js-shared "^11.0.0"
+
+dmn-moddle@^10.0.0:
+  version "10.0.0"
+  resolved "https://registry.yarnpkg.com/dmn-moddle/-/dmn-moddle-10.0.0.tgz#dadabfac6b6efb2d94ae328ba5ed2a840639d632"
+  integrity sha512-JD08qH2VqA7O54qCQFrGruwGyVovow+9g2O5/ww0KpC/n0mvuua117dz2CONiUWexJxq/dOAaMjrQwkWnK+oEA==
+  dependencies:
+    min-dash "^3.0.0"
+    moddle "^5.0.1"
+    moddle-xml "^9.0.5"
 
 dmn-moddle@^8.0.0:
   version "8.0.4"
   resolved "https://registry.yarnpkg.com/dmn-moddle/-/dmn-moddle-8.0.4.tgz#96e2f69aedd441fa88ed66ef7087aa00341b6689"
   integrity sha512-7pVmt6Jr44cEleQeaitYx1InSEgU993LBbskEug/UUwfoR72ZdszHiSwfDIP5hUnc+dJylIgMbz10MXbQSld7g==
-  dependencies:
-    min-dash "^3.0.0"
-    moddle "^5.0.1"
-    moddle-xml "^8.0.1"
-
-dmn-moddle@^9.1.0:
-  version "9.1.0"
-  resolved "https://registry.yarnpkg.com/dmn-moddle/-/dmn-moddle-9.1.0.tgz#8caf73fce08f70501432c57ea464a5fd33965a62"
-  integrity sha512-LA76wn5SD5fjExD0ZqHAngApN6iGb2bQhKFZCykQa6uyTadBys4kmgcv/sYv/WAm5cY0DcS/Vnn35YgK75f6VQ==
   dependencies:
     min-dash "^3.0.0"
     moddle "^5.0.1"
