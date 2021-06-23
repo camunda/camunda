@@ -14,6 +14,7 @@ import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.MAX_INA
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
+import io.camunda.tasklist.util.SoftHashMap;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,6 +68,8 @@ public class ElasticsearchSessionRepository
   @Autowired
   @Qualifier("sessionThreadPoolScheduler")
   private ThreadPoolTaskScheduler sessionThreadScheduler;
+
+  private Map<String, ElasticsearchSession> cache = new SoftHashMap<>();
 
   @PostConstruct
   private void setUp() {
@@ -137,6 +140,11 @@ public class ElasticsearchSessionRepository
   @Override
   public void save(ElasticsearchSession session) {
     LOGGER.debug("Save session {}", session);
+    if (session.isExpired()) {
+      delete(session.getId());
+      return;
+    }
+    cache.put(session.getId(), session);
     if (session.isChanged()) {
       LOGGER.debug("Session {} changed, save in Elasticsearch.", session);
       executeAsyncElasticsearchRequest(
@@ -169,6 +177,7 @@ public class ElasticsearchSessionRepository
   @Override
   public void delete(String id) {
     LOGGER.debug("Delete session {}", id);
+    cache.remove(id);
     executeAsyncElasticsearchRequest(
         () ->
             retryElasticsearchClient.deleteDocument(

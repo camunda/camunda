@@ -1,6 +1,7 @@
 {
   "aliases": {},
   "mappings": {
+    "dynamic": "true",
     "properties": {
       "id": {
         "type": "keyword"
@@ -15,10 +16,7 @@
         "type": "integer"
       },
       "attributes": {
-        "properties": {
-          "name": { "type":  "keyword"},
-          "value": { "type":  "binary"}
-        }
+        "type": "object"
       }
     }
   }

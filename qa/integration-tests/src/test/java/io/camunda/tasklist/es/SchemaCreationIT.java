@@ -12,6 +12,7 @@ import io.camunda.tasklist.management.ElsIndicesCheck;
 import io.camunda.tasklist.schema.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
+import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
 import io.camunda.tasklist.schema.migration.ProcessorStep;
 import io.camunda.tasklist.util.ElasticsearchTestRule;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -64,6 +66,29 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
             ProcessorStep.ORDER);
   }
 
+  @Test // ZTL-1010
+  public void testDynamicMappingsOfIndices() throws Exception {
+    final IndexDescriptor sessionIndex =
+        indexDescriptors.stream()
+            .filter(
+                indexDescriptor ->
+                    indexDescriptor.getIndexName().equals(TasklistWebSessionIndex.INDEX_NAME))
+            .findFirst()
+            .orElseThrow();
+    assertThatIndexHasDynamicMappingOf(sessionIndex, "true");
+
+    final List<IndexDescriptor> strictMappingIndices =
+        indexDescriptors.stream()
+            .filter(
+                indexDescriptor ->
+                    !indexDescriptor.getIndexName().equals(TasklistWebSessionIndex.INDEX_NAME))
+            .collect(Collectors.toList());
+
+    for (IndexDescriptor indexDescriptor : strictMappingIndices) {
+      assertThatIndexHasDynamicMappingOf(indexDescriptor, "strict");
+    }
+  }
+
   private Map<String, Object> getFieldDescriptions(IndexDescriptor indexDescriptor)
       throws IOException {
     final Map<String, MappingMetadata> mappings =
@@ -88,5 +113,17 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
 
     assertThat(getIndexResponse.getAliases()).hasSize(1);
     assertThat(getIndexResponse.getAliases().get(indexName).get(0).alias()).isEqualTo(aliasName);
+  }
+
+  private void assertThatIndexHasDynamicMappingOf(
+      final IndexDescriptor indexDescriptor, String dynamicMapping) throws IOException {
+    final Map<String, MappingMetadata> mappings =
+        esClient
+            .indices()
+            .get(
+                new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
+            .getMappings();
+    final MappingMetadata mappingMetadata = mappings.get(indexDescriptor.getFullQualifiedName());
+    assertThat(mappingMetadata.getSourceAsMap()).containsEntry("dynamic", dynamicMapping);
   }
 }

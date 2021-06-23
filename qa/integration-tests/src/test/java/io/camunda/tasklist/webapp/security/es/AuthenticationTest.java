@@ -3,17 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.camunda.tasklist.webapp.security;
+package io.camunda.tasklist.webapp.security.es;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
@@ -21,12 +14,8 @@ import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.webapp.security.es.UserStorage;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import org.assertj.core.util.Lists;
+import io.camunda.tasklist.webapp.security.AuthenticationTestable;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -42,14 +31,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 /** This tests: authentication and security over GraphQL API /currentUser to get current user */
 @ActiveProfiles({TasklistURIs.AUTH_PROFILE, "test"})
-public class AuthenticationTest extends TasklistIntegrationTest {
-
-  private static final String SET_COOKIE_HEADER = "Set-Cookie";
+public class AuthenticationTest extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String GRAPHQL_URL = "/graphql";
   private static final String CURRENT_USER_QUERY =
@@ -89,7 +74,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response.getHeaders());
+    assertThatCookiesAreSet(response, tasklistProperties.isCsrfPreventionEnabled());
   }
 
   @Test
@@ -99,8 +84,6 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(response.getHeaders().containsKey(SET_COOKIE_HEADER)).isFalse();
-    assertThat(response.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
   }
 
   @Test
@@ -110,14 +93,12 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThat(loginResponse.getHeaders()).containsKey(SET_COOKIE_HEADER);
-    assertThat(getSessionCookie(loginResponse.getHeaders()).orElse("")).contains(COOKIE_JSESSIONID);
+    assertThatCookiesAreSet(loginResponse, tasklistProperties.isCsrfPreventionEnabled());
     // when
     final ResponseEntity<String> logoutResponse = logout(loginResponse);
 
     assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThat(logoutResponse.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
-    assertThatCookiesAreDeleted(logoutResponse.getHeaders());
+    assertThatCookiesAreDeleted(logoutResponse, tasklistProperties.isCsrfPreventionEnabled());
   }
 
   @Test
@@ -143,7 +124,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
   public void shouldReturnCurrentUser() {
     // given authenticated user
     final ResponseEntity<Void> loginResponse = login(USERNAME, PASSWORD);
-
+    assertThatCookiesAreSet(loginResponse, tasklistProperties.isCsrfPreventionEnabled());
     // when
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(
@@ -186,7 +167,6 @@ public class AuthenticationTest extends TasklistIntegrationTest {
             prepareRequestWithCookies(logoutResponse.getHeaders(), CURRENT_USER_QUERY),
             String.class);
     assertThat(responseEntity.getStatusCode()).isIn(HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED);
-    assertThat(responseEntity.getHeaders().containsKey(X_CSRF_TOKEN)).isFalse();
   }
 
   @Test
@@ -212,8 +192,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     final HttpEntity<String> request =
-        new HttpEntity<String>(
-            new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
+        new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
     response =
         testRestTemplate.postForEntity(
             "/actuator/loggers/io.camunda.tasklist", request, String.class);
@@ -224,84 +203,8 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     assertThat(response.getBody()).contains("\"configuredLevel\" : \"TRACE\"");
   }
 
-  private HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
-    final HttpHeaders headers = new HttpHeaders();
-    if (responseHeaders.containsKey(X_CSRF_HEADER)) {
-      final String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
-      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
-      headers.set(csrfHeader, csrfToken);
-    }
-    return headers;
-  }
-
-  private HttpEntity<Map> prepareRequestWithCookies(HttpHeaders httpHeaders) {
-    return prepareRequestWithCookies(httpHeaders, null);
-  }
-
-  private HttpEntity<Map> prepareRequestWithCookies(HttpHeaders httpHeaders, String graphQlQuery) {
-
-    final HttpHeaders headers = getHeaderWithCSRF(httpHeaders);
-    headers.setContentType(APPLICATION_JSON);
-    headers.add("Cookie", getCookiesAsString(httpHeaders));
-
-    final HashMap<String, String> body = new HashMap<>();
-    if (graphQlQuery != null) {
-      body.put("query", graphQlQuery);
-    }
-
-    return new HttpEntity<>(body, headers);
-  }
-
-  private ResponseEntity<Void> login(String username, String password) {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.setContentType(APPLICATION_FORM_URLENCODED);
-
-    final MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-    body.add("username", username);
-    body.add("password", password);
-
-    return testRestTemplate.postForEntity(
-        LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
-  }
-
-  private ResponseEntity<String> logout(ResponseEntity<Void> response) {
-    final HttpEntity<Map> request = prepareRequestWithCookies(response.getHeaders());
-    return testRestTemplate.postForEntity(LOGOUT_RESOURCE, request, String.class);
-  }
-
-  private void assertThatCookiesAreSet(HttpHeaders headers) {
-    assertThat(headers).containsKey(SET_COOKIE_HEADER);
-    assertThat(getSessionCookie(headers).orElse("")).contains(COOKIE_JSESSIONID);
-    if (tasklistProperties.isCsrfPreventionEnabled()) {
-      assertThat(headers).containsKey(X_CSRF_TOKEN);
-      assertThat(headers.get(X_CSRF_TOKEN).get(0)).isNotBlank();
-    }
-  }
-
-  private void assertThatCookiesAreDeleted(HttpHeaders headers) {
-    assertThat(headers).containsKey(SET_COOKIE_HEADER);
-    final List<String> cookies = headers.get(SET_COOKIE_HEADER);
-    final String emptyValue = "=;";
-    if (tasklistProperties.isCsrfPreventionEnabled()) {
-      assertThat(cookies).anyMatch((cookie) -> cookie.contains(X_CSRF_TOKEN + emptyValue));
-    }
-    assertThat(cookies).anyMatch((cookie) -> cookie.contains(COOKIE_JSESSIONID + emptyValue));
-  }
-
-  private String getCookiesAsString(HttpHeaders headers) {
-    return String.format(
-        "%s; %s", getSessionCookie(headers).orElse(""), getCSRFCookie(headers).orElse(""));
-  }
-
-  private Optional<String> getSessionCookie(HttpHeaders headers) {
-    return getCookies(headers).stream().filter(key -> key.contains(COOKIE_JSESSIONID)).findFirst();
-  }
-
-  private Optional<String> getCSRFCookie(HttpHeaders headers) {
-    return getCookies(headers).stream().filter(key -> key.contains(X_CSRF_TOKEN)).findFirst();
-  }
-
-  private List<String> getCookies(HttpHeaders headers) {
-    return Optional.ofNullable(headers.get(SET_COOKIE_HEADER)).orElse(Lists.emptyList());
+  @Override
+  public TestRestTemplate getTestRestTemplate() {
+    return testRestTemplate;
   }
 }
