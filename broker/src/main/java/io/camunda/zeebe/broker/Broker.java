@@ -222,7 +222,13 @@ public final class Broker implements AutoCloseable {
       startContext.addStep(
           "embedded gateway",
           () -> {
-            embeddedGatewayService = new EmbeddedGatewayService(brokerCfg, scheduler, atomix);
+            embeddedGatewayService =
+                new EmbeddedGatewayService(
+                    brokerCfg,
+                    scheduler,
+                    atomix.getMessagingService(),
+                    atomix.getMembershipService(),
+                    atomix.getEventService());
             return embeddedGatewayService;
           });
     }
