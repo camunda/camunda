@@ -348,7 +348,8 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
-    healthCheckService = new BrokerHealthCheckService(localBroker, atomix);
+    healthCheckService =
+        new BrokerHealthCheckService(localBroker, atomix.getPartitionService().getPartitionGroup());
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
