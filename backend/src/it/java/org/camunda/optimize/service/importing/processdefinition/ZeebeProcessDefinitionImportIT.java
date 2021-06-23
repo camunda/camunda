@@ -201,7 +201,8 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
       zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    Awaitility.dontCatchUncaughtExceptions()
+    Awaitility.given().ignoreExceptions()
+      .await()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
@@ -212,7 +213,8 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     final CountRequest definitionCountRequest =
       new CountRequest(expectedIndex)
         .query(boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED)));
-    Awaitility.catchUncaughtExceptions()
+    Awaitility.given().ignoreExceptions()
+      .await()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient

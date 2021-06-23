@@ -559,9 +559,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   private void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    Awaitility.dontCatchUncaughtExceptions()
+    final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    Awaitility.given().ignoreExceptions()
+      .await()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
@@ -569,11 +569,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
           .indices()
           .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
       ).isTrue());
-    final CountRequest definitionCountRequest =
-      new CountRequest(expectedIndex)
-        .query(getQueryForProcessableEvents());
-    Awaitility.dontCatchUncaughtExceptions()
-      .timeout(5, TimeUnit.SECONDS)
+    final CountRequest definitionCountRequest = new CountRequest(expectedIndex).query(getQueryForProcessableEvents());
+    Awaitility.given().ignoreExceptions()
+      .await()
+      .timeout(10, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
           .getHighLevelClient()
