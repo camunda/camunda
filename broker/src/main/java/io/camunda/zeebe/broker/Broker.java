@@ -236,8 +236,7 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("disk space monitor", () -> diskSpaceMonitorStep(brokerCfg.getData()));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
-    startContext.addStep(
-        "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
+    startContext.addStep("zeebe partitions", () -> partitionsStep(brokerCfg, localBroker));
     startContext.addStep("register diskspace usage listeners", this::addDiskSpaceUsageListeners);
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
@@ -379,8 +378,7 @@ public final class Broker implements AutoCloseable {
     return managementRequestHandler;
   }
 
-  private AutoCloseable partitionsStep(
-      final BrokerCfg brokerCfg, final ClusterCfg clusterCfg, final BrokerInfo localBroker)
+  private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker)
       throws Exception {
     final RaftPartitionGroup partitionGroup =
         (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup();
@@ -415,7 +413,8 @@ public final class Broker implements AutoCloseable {
                     brokerCfg,
                     commandHandler,
                     snapshotStoreSupplier,
-                    createFactory(topologyManager, clusterCfg, atomix,
+                    createFactory(
+                        topologyManager, brokerCfg.getCluster(), atomix,
                         managementRequestHandler),
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
