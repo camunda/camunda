@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,15 +33,18 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   private final EngineContext engineContext;
   private final IdentityLinkLogWriter identityLinkLogWriter;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public IdentityLinkLogImportService(final IdentityLinkLogWriter identityLinkLogWriter,
                                       final AssigneeCandidateGroupService assigneeCandidateGroupService,
                                       final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                      final EngineContext engineContext) {
+                                      final EngineContext engineContext,
+                                      final ProcessDefinitionResolverService processDefinitionResolverService) {
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.identityLinkLogWriter = identityLinkLogWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -71,6 +75,14 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
     final List<HistoricIdentityLinkLogDto> engineEntities) {
     return engineEntities.stream()
       .filter(instance -> instance.getProcessInstanceId() != null)
+      .map(identityLinkLog -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        identityLinkLog,
+        HistoricIdentityLinkLogDto::getProcessDefinitionKey,
+        HistoricIdentityLinkLogDto::getProcessDefinitionId,
+        HistoricIdentityLinkLogDto::setProcessDefinitionKey
+      ))
+      .filter(identityLinkLog -> identityLinkLog.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .filter(entry -> SUPPORTED_TYPES.contains(entry.getType()))
       .collect(Collectors.toList());

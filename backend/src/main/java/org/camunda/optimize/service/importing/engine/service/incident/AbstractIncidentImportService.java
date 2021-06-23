@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -25,11 +26,14 @@ public abstract class AbstractIncidentImportService implements ImportService<His
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  public AbstractIncidentImportService(ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       EngineContext engineContext) {
+  protected AbstractIncidentImportService(final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                          final EngineContext engineContext,
+                                          final ProcessDefinitionResolverService processDefinitionResolverService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -59,6 +63,14 @@ public abstract class AbstractIncidentImportService implements ImportService<His
     return engineIncidents
       .stream()
       .filter(this::containsProcessInstanceId)
+      .map(incident -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        incident,
+        HistoricIncidentEngineDto::getProcessDefinitionKey,
+        HistoricIncidentEngineDto::getProcessDefinitionId,
+        HistoricIncidentEngineDto::setProcessDefinitionKey
+      ))
+      .filter(incident -> incident.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }

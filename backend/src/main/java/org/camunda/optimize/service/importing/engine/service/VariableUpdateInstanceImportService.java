@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private ProcessVariableUpdateWriter variableWriter;
   private CamundaEventImportService camundaEventService;
   protected EngineContext engineContext;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   @Override
   public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,
@@ -110,6 +112,14 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
     (List<HistoricVariableUpdateInstanceDto> engineEntities) {
     final Map<String, PluginVariableDto> resultSet = engineEntities.stream()
+      .map(variable -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        variable,
+        HistoricVariableUpdateInstanceDto::getProcessDefinitionKey,
+        HistoricVariableUpdateInstanceDto::getProcessDefinitionId,
+        HistoricVariableUpdateInstanceDto::setProcessDefinitionKey
+      ))
+      .filter(variable -> variable.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toMap(
         PluginVariableDto::getId,

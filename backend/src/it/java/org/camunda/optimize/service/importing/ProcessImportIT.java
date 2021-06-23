@@ -24,7 +24,6 @@ import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -67,6 +66,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
@@ -168,6 +169,26 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void instancesWithoutDefinitionKeyCanBeImported() {
+    // given
+    final String key = "processKey";
+    final ProcessDefinitionEngineDto definition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(key));
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+    engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricProcessInstances();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances)
+      .singleElement()
+      .extracting(ProcessInstanceDto::getProcessDefinitionKey)
+      .isEqualTo(key);
+  }
+
+  @Test
   public void allProcessDefinitionFieldDataIsAvailable() {
     // given
     deployAndStartSimpleServiceTask();
@@ -240,7 +261,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    
+
     // then
     assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
   }
@@ -328,6 +349,23 @@ public class ProcessImportIT extends AbstractImportIT {
         tuple(START_EVENT, false),
         tuple(USER_TASK_1, true)
       );
+  }
+
+  @Test
+  public void flowNodesWithoutProcessDefinitionKeyCanBeImported() {
+    // given
+    deployAndStartSimpleServiceTask();
+    engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricFlowNodes();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances).hasSize(1);
+    assertThat(allProcessInstances.get(0).getFlowNodeInstances())
+      .extracting(FlowNodeInstanceDto::getFlowNodeId)
+      .containsExactlyInAnyOrder(START_EVENT, SERVICE_TASK, END_EVENT);
   }
 
   @Test

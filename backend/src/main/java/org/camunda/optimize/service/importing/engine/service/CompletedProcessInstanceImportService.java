@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -28,8 +29,14 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
                                                final EngineContext engineContext,
                                                final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                                final CompletedProcessInstanceWriter completedProcessInstanceWriter,
-                                               final CamundaEventImportService camundaEventService) {
-    super(elasticsearchImportJobExecutor, engineContext, businessKeyImportAdapterProvider);
+                                               final CamundaEventImportService camundaEventService,
+                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
+    super(
+      elasticsearchImportJobExecutor,
+      engineContext,
+      businessKeyImportAdapterProvider,
+      processDefinitionResolverService
+    );
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }

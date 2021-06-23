@@ -10,11 +10,12 @@ import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.VariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
@@ -27,17 +28,20 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final ProcessVariableUpdateWriter variableWriter;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public VariableUpdateEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                    final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                    final ConfigurationService configurationService,
                                                    final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                    final ProcessVariableUpdateWriter variableWriter,
-                                                   final VariableImportAdapterProvider variableImportAdapterProvider) {
+                                                   final VariableImportAdapterProvider variableImportAdapterProvider,
+                                                   final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.variableWriter = variableWriter;
     this.variableImportAdapterProvider = variableImportAdapterProvider;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -58,7 +62,8 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
         variableImportAdapterProvider,
         variableWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

@@ -511,6 +511,28 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
   }
 
+  @Test
+  public void userTasksWithoutProcessDefinitionKeyCanBeImported() {
+    // given a completed and a running userTask without definitionKey
+    deployAndStartTwoUserTasksProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricFlowNodes();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getUserTasks()).hasSize(2)
+          .extracting(FlowNodeInstanceDto::getFlowNodeId)
+          .containsExactlyInAnyOrder(USER_TASK_1, USER_TASK_2);
+      });
+  }
+
   private static List<ProcessReportDataType> allUserTaskReports() {
     return Arrays.stream(
       ProcessReportDataType.values())

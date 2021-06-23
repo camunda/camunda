@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,15 +28,18 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   protected EngineContext engineContext;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  public CompletedActivityInstanceImportService(CompletedActivityInstanceWriter completedActivityInstanceWriter,
-                                                CamundaEventImportService camundaEventService,
-                                                ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                EngineContext engineContext) {
+  public CompletedActivityInstanceImportService(final CompletedActivityInstanceWriter completedActivityInstanceWriter,
+                                                final CamundaEventImportService camundaEventService,
+                                                final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                                final EngineContext engineContext,
+                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -63,7 +67,16 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto>
                                                                        engineEntities) {
     return engineEntities
-      .stream().map(this::mapEngineEntityToOptimizeEntity)
+      .stream()
+      .map(activity -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        activity,
+        HistoricActivityInstanceEngineDto::getProcessDefinitionKey,
+        HistoricActivityInstanceEngineDto::getProcessDefinitionId,
+        HistoricActivityInstanceEngineDto::setProcessDefinitionKey
+      ))
+      .filter(activity -> activity.getProcessDefinitionKey() != null)
+      .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 

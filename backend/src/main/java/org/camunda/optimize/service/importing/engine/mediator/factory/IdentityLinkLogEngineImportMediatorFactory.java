@@ -10,11 +10,12 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.IdentityLinkLogInstanceFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.IdentityLinkLogImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
@@ -27,15 +28,18 @@ import java.util.List;
 public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final IdentityLinkLogWriter identityLinkLogWriter;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public IdentityLinkLogEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
                                                     final IdentityLinkLogWriter identityLinkLogWriter,
-                                                    final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+                                                    final AssigneeCandidateGroupService assigneeCandidateGroupService,
+                                                    final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.identityLinkLogWriter = identityLinkLogWriter;
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -54,7 +58,11 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractEngineIm
       importIndexHandlerRegistry.getIdentityLinkImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(IdentityLinkLogInstanceFetcher.class, engineContext),
       new IdentityLinkLogImportService(
-        identityLinkLogWriter, assigneeCandidateGroupService, elasticsearchImportJobExecutor, engineContext
+        identityLinkLogWriter,
+        assigneeCandidateGroupService,
+        elasticsearchImportJobExecutor,
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

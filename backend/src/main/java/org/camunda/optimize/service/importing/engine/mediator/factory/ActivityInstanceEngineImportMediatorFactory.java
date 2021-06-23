@@ -10,14 +10,15 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningActivityInstanceFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedActivityInstanceImportService;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
@@ -30,17 +31,20 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public ActivityInstanceEngineImportMediatorFactory(final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                      final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                      final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                                      final BeanFactory beanFactory,
                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService) {
+                                                     final ConfigurationService configurationService,
+                                                     final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -63,7 +67,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
         completedActivityInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -82,7 +87,8 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractEngineI
         runningActivityInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

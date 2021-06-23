@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
@@ -363,6 +364,23 @@ public class IncidentImportIT extends AbstractImportIT {
                      .extracting(IncidentDto::getId)
                      .containsExactly(getIncidentIdForIncidentWithProcessInstanceId(historicIncidents))
       );
+  }
+
+  @Test
+  public void incidentWithoutProcessDefinitionKeyCanBeImported() {
+    // given
+    incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricIncidents();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<IncidentDto> incidents = elasticSearchIntegrationTestExtension.getAllProcessInstances()
+      .stream()
+      .flatMap(inst -> inst.getIncidents().stream())
+      .collect(toList());
+    assertThat(incidents).hasSize(1);
   }
 
   private String getIncidentIdForIncidentWithProcessInstanceId(final List<HistoricIncidentEngineDto> historicIncidents) {

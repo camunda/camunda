@@ -26,7 +26,7 @@ public class ProcessInstanceResolverService {
     Optional<String> instanceDefinitionKey =
       processInstanceReader.getProcessDefinitionKeysForInstanceId(processInstanceId);
 
-    if (!instanceDefinitionKey.isPresent() && engineContext != null) {
+    if (instanceDefinitionKey.isEmpty() && engineContext != null) {
       log.info(
         "Instance with id [{}] hasn't been imported yet. " +
           "Trying to directly fetch the instance from the engine.",

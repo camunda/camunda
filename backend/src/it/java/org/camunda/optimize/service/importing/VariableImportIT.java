@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.netmikey.logunit.api.LogCapturer;
+import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -440,6 +441,27 @@ public class VariableImportIT extends AbstractImportIT {
 
     // then
     assertThat(variableValues).isEmpty();
+  }
+
+  @SneakyThrows
+  @Test
+  public void variablesWithoutDefinitionKeyCanBeImported() {
+    // given
+    final BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
+    ProcessInstanceEngineDto instanceDto =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+
+    engineDatabaseExtension.removeProcessDefinitionKeyFromAllHistoricVariableUpdates();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    final List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    final List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
+
+    // then
+    assertThat(variablesResponseDtos).hasSize(variables.size());
+    assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
   private ComplexVariableDto createComplexVariableDto() {

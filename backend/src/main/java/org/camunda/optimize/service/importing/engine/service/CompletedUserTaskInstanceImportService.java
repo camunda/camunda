@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +27,16 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public CompletedUserTaskInstanceImportService(final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
                                                 final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                final EngineContext engineContext) {
+                                                final EngineContext engineContext,
+                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -61,6 +65,14 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   private List<FlowNodeInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities) {
     return engineEntities.stream()
       .filter(instance -> instance.getProcessInstanceId() != null)
+      .map(userTask -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        userTask,
+        HistoricUserTaskInstanceDto::getProcessDefinitionKey,
+        HistoricUserTaskInstanceDto::getProcessDefinitionId,
+        HistoricUserTaskInstanceDto::setProcessDefinitionKey
+      ))
+      .filter(userTask -> userTask.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }

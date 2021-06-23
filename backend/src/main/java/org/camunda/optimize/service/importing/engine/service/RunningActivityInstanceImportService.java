@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,16 +28,18 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   protected EngineContext engineContext;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
-  public RunningActivityInstanceImportService(RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                              CamundaEventImportService camundaEventService,
-                                              ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                              EngineContext engineContext
-  ) {
+  public RunningActivityInstanceImportService(final RunningActivityInstanceWriter runningActivityInstanceWriter,
+                                              final CamundaEventImportService camundaEventService,
+                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                              final EngineContext engineContext,
+                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
     this.camundaEventService = camundaEventService;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -64,7 +67,16 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
 
   private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto> engineEntities) {
     return engineEntities
-      .stream().map(this::mapEngineEntityToOptimizeEntity)
+      .stream()
+      .map(activity -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        activity,
+        HistoricActivityInstanceEngineDto::getProcessDefinitionKey,
+        HistoricActivityInstanceEngineDto::getProcessDefinitionId,
+        HistoricActivityInstanceEngineDto::setProcessDefinitionKey
+      ))
+      .filter(activity -> activity.getProcessDefinitionKey() != null)
+      .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 

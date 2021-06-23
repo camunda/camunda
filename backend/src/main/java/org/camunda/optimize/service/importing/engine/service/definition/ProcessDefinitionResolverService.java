@@ -12,6 +12,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -29,6 +33,27 @@ public class ProcessDefinitionResolverService extends AbstractDefinitionResolver
   protected void syncCache() {
     processDefinitionReader.getAllProcessDefinitions()
       .forEach(this::addToCacheIfNotNull);
+  }
+
+  public <T> T enrichEngineDtoWithDefinitionKey(final EngineContext engineContext,
+                                                final T engineEntity,
+                                                final Function<T, String> definitionKeyGetter,
+                                                final Function<T, String> definitionIdGetter,
+                                                final BiConsumer<T, String> definitionKeySetter) {
+    // Under some circumstances, eg due to very old process instance data or specific userOperationLogs, the
+    // definitionKey may not be present. It is required to write to the correct instanceIndex, so we need to retrieve
+    // it if possible
+    if (definitionKeyGetter.apply(engineEntity) == null) {
+      Optional<String> definitionKey = Optional.empty();
+      if (definitionIdGetter.apply(engineEntity) != null) {
+        definitionKey = getDefinition(
+          definitionIdGetter.apply(engineEntity),
+          engineContext
+        ).map(ProcessDefinitionOptimizeDto::getKey);
+      }
+      definitionKey.ifPresent(key -> definitionKeySetter.accept(engineEntity, key));
+    }
+    return engineEntity;
   }
 
 }

@@ -233,6 +233,8 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
+    ProcessDefinitionResolverService processDefinitionResolverService = getApplicationContext().getBean(
+      ProcessDefinitionResolverService.class);
     CamundaEventImportServiceFactory camundaEventServiceFactory =
       getApplicationContext().getBean(CamundaEventImportServiceFactory.class);
 
@@ -242,7 +244,8 @@ public class EmbeddedOptimizeExtension
           writer,
           camundaEventServiceFactory.createCamundaEventService(configuredEngine),
           getElasticsearchImportJobExecutor(),
-          configuredEngine
+          configuredEngine,
+          processDefinitionResolverService
         );
       CompletableFuture<Void> done = new CompletableFuture<>();
       service.executeImport(activities, () -> done.complete(null));
