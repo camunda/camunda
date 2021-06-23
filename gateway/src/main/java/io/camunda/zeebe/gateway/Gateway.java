@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.gateway;
 
-import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -49,16 +51,13 @@ public final class Gateway {
 
   public Gateway(
       final GatewayCfg gatewayCfg,
-      final AtomixCluster atomixCluster,
+      final MessagingService messagingService,
+      final ClusterMembershipService membershipService,
+      final ClusterEventService eventService,
       final ActorScheduler actorScheduler) {
     this(
         gatewayCfg,
-        cfg ->
-            new BrokerClientImpl(
-                cfg,
-                atomixCluster.getMessagingService(),
-                atomixCluster.getMembershipService(),
-                atomixCluster.getEventService()),
+        cfg -> new BrokerClientImpl(cfg, messagingService, membershipService, eventService),
         DEFAULT_SERVER_BUILDER_FACTORY,
         actorScheduler);
   }
