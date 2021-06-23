@@ -29,5 +29,6 @@ exports[`match snapshot 1`] = `
       },
     ]
   }
+  retainEndDateOnFirstSelection={false}
 />
 `;
