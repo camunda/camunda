@@ -572,7 +572,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     final CountRequest definitionCountRequest =
       new CountRequest(expectedIndex)
         .query(getQueryForProcessableEvents());
-    Awaitility.catchUncaughtExceptions()
+    Awaitility.dontCatchUncaughtExceptions()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
