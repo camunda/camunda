@@ -17,6 +17,7 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class OptimizeElasticsearchClientFactory {
 
     final RequestOptionsProvider requestOptionsProvider =
       new RequestOptionsProvider(elasticsearchCustomHeaderProvider.getPlugins());
-    waitForElasticsearch(esClient, backoffCalculator, requestOptionsProvider);
+    waitForElasticsearch(esClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("Elasticsearch client has successfully been started");
 
     final OptimizeElasticsearchClient prefixedClient = new OptimizeElasticsearchClient(
@@ -51,11 +52,11 @@ public class OptimizeElasticsearchClientFactory {
 
   private static void waitForElasticsearch(final RestHighLevelClient esClient,
                                            final BackoffCalculator backoffCalculator,
-                                           final RequestOptionsProvider requestOptionsProvider) throws IOException {
+                                           final RequestOptions requestOptions) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
-        isConnected = getNumberOfClusterNodes(esClient, requestOptionsProvider) > 0;
+        isConnected = getNumberOfClusterNodes(esClient, requestOptions) > 0;
         if (!isConnected) {
           long sleepTime = backoffCalculator.calculateSleepTime();
           log.info("No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
@@ -70,14 +71,14 @@ public class OptimizeElasticsearchClientFactory {
         throw new OptimizeRuntimeException(message, e);
       }
     }
-    checkESVersionSupport(esClient);
+    checkESVersionSupport(esClient, requestOptions);
   }
 
   private static int getNumberOfClusterNodes(final RestHighLevelClient esClient,
-                                             final RequestOptionsProvider requestOptionsProvider) {
+                                             final RequestOptions requestOptions) {
     try {
       return esClient.cluster()
-        .health(new ClusterHealthRequest(), requestOptionsProvider.getRequestOptions())
+        .health(new ClusterHealthRequest(), requestOptions)
         .getNumberOfNodes();
     } catch (IOException e) {
       log.error("Failed getting number of cluster nodes.", e);

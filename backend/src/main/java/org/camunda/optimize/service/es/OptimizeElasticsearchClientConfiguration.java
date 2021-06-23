@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es;
 
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -14,25 +16,26 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
-
 @Configuration
+@AllArgsConstructor
 @Slf4j
 public class OptimizeElasticsearchClientConfiguration {
+  private final ConfigurationService configurationService;
+  private final OptimizeIndexNameService optimizeIndexNameService;
+  private final ElasticSearchSchemaManager elasticSearchSchemaManager;
+  private final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider;
 
   @Bean(destroyMethod = "close")
-  public OptimizeElasticsearchClient optimizeElasticsearchClient(
-    final ConfigurationService configurationService,
-    final OptimizeIndexNameService optimizeIndexNameService,
-    final ElasticSearchSchemaManager elasticSearchSchemaManager,
-    final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider,
-    final BackoffCalculator backoffCalculator) throws IOException {
+  public OptimizeElasticsearchClient optimizeElasticsearchClient(final BackoffCalculator backoffCalculator) {
+    return createOptimizeElasticsearchClient(backoffCalculator);
+  }
 
+  @SneakyThrows
+  public OptimizeElasticsearchClient createOptimizeElasticsearchClient(final BackoffCalculator backoffCalculator) {
     return OptimizeElasticsearchClientFactory.create(
       configurationService, optimizeIndexNameService, elasticSearchSchemaManager,
       elasticsearchCustomHeaderProvider, backoffCalculator
     );
-
   }
 
 }
