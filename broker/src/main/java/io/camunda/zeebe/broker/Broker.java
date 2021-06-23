@@ -319,7 +319,8 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {
     final SubscriptionApiCommandMessageHandlerService messageHandlerService =
-        new SubscriptionApiCommandMessageHandlerService(localBroker, atomix);
+        new SubscriptionApiCommandMessageHandlerService(
+            localBroker, atomix.getCommunicationService());
     partitionListeners.add(messageHandlerService);
     scheduleActor(messageHandlerService);
     diskSpaceUsageListeners.add(messageHandlerService);
