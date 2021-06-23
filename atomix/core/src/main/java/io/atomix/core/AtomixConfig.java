@@ -19,14 +19,12 @@ package io.atomix.core;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.utils.config.Config;
-import java.util.HashMap;
-import java.util.Map;
 
 /** Atomix configuration. */
 public class AtomixConfig implements Config {
 
   private final ClusterConfig cluster = new ClusterConfig();
-  private final Map<String, PartitionGroupConfig<?>> partitionGroups = new HashMap<>();
+  private PartitionGroupConfig<?> partitionGroup;
 
   /**
    * Returns the cluster configuration.
@@ -42,8 +40,8 @@ public class AtomixConfig implements Config {
    *
    * @return the partition group configurations
    */
-  Map<String, PartitionGroupConfig<?>> getPartitionGroups() {
-    return partitionGroups;
+  PartitionGroupConfig<?> getPartitionGroup() {
+    return partitionGroup;
   }
 
   /**
@@ -52,8 +50,8 @@ public class AtomixConfig implements Config {
    * @param partitionGroup the partition group configuration to add
    * @return the Atomix configuration
    */
-  AtomixConfig addPartitionGroup(final PartitionGroupConfig partitionGroup) {
-    partitionGroups.put(partitionGroup.getName(), partitionGroup);
+  AtomixConfig setPartitionGroup(final PartitionGroupConfig partitionGroup) {
+    this.partitionGroup = partitionGroup;
     return this;
   }
 }

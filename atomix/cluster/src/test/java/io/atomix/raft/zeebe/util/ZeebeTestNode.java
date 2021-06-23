@@ -23,7 +23,6 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.partition.RaftPartition;
@@ -32,8 +31,6 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import java.io.File;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,7 +67,7 @@ public class ZeebeTestNode {
   }
 
   private RaftPartitionGroup getDataPartitionGroup() {
-    return (RaftPartitionGroup) partitionService.getPartitionGroup(DATA_PARTITION_GROUP_NAME);
+    return (RaftPartitionGroup) partitionService.getPartitionGroup();
   }
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
@@ -130,10 +127,8 @@ public class ZeebeTestNode {
   private ManagedPartitionService buildPartitionService(
       final ClusterMembershipService clusterMembershipService,
       final ClusterCommunicationService messagingService) {
-    final List<ManagedPartitionGroup> partitionGroups =
-        Collections.singletonList(dataPartitionGroup);
-
-    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroups);
+    return new DefaultPartitionService(
+        clusterMembershipService, messagingService, dataPartitionGroup);
   }
 
   public CompletableFuture<Void> stop() {

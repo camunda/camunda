@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.core.Atomix;
-import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
@@ -60,9 +60,8 @@ public final class AtomixFactoryTest {
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();
   }
 
-  private RaftPartitionGroup getPartitionGroup(final Atomix atomix) {
-    return (RaftPartitionGroup)
-        atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
+  private ManagedPartitionGroup getPartitionGroup(final Atomix atomix) {
+    return atomix.getPartitionService().getPartitionGroup();
   }
 
   private RaftPartitionGroupConfig getPartitionGroupConfig(final Atomix atomix) {

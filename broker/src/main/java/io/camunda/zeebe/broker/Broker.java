@@ -371,8 +371,7 @@ public final class Broker implements AutoCloseable {
       final BrokerCfg brokerCfg, final ClusterCfg clusterCfg, final BrokerInfo localBroker)
       throws Exception {
     final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup)
-            atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
+        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup();
 
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
     final List<RaftPartition> owningPartitions =

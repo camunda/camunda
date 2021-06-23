@@ -62,7 +62,7 @@ public class AtomixTest {
                                       new NoopSnapshotStoreFactory()));
 
                   final var raftPartitionGroup = new RaftPartitionGroup(groupConfig);
-                  return builder.withPartitionGroups(raftPartitionGroup).build();
+                  return builder.withPartitionGroup(raftPartitionGroup).build();
                 })
             .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
