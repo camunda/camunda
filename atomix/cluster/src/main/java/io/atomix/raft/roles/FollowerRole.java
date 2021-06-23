@@ -38,6 +38,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.Quorum;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,6 +65,7 @@ public final class FollowerRole extends ActiveRole {
     }
 
     raft.getMembershipService().addListener(clusterListener);
+    lastHeartbeat = System.currentTimeMillis();
     return super.start().thenRun(this::resetHeartbeatTimeout).thenApply(v -> this);
   }
 
@@ -130,9 +132,12 @@ public final class FollowerRole extends ActiveRole {
 
     // If there are no other members in the cluster, immediately transition to leader.
     if (votingMembers.isEmpty()) {
+      log.info("Transitioning to candidate as there are no known other active members");
       raft.transition(RaftServer.Role.CANDIDATE);
       return;
     }
+
+    log.info("Sending poll requests to all active members: {}", votingMembers);
 
     final Quorum quorum =
         new Quorum(
@@ -158,8 +163,6 @@ public final class FollowerRole extends ActiveRole {
     } else {
       lastTerm = 0;
     }
-
-    log.debug("Polling members {}", votingMembers);
 
     // Once we got the last log term, iterate through each current member
     // of the cluster and vote each member for a vote.
@@ -260,12 +263,14 @@ public final class FollowerRole extends ActiveRole {
     }
 
     if (raft.getFirstCommitIndex() == 0 || raft.getState() == RaftContext.State.READY) {
-      final long missTime = System.currentTimeMillis() - lastHeartbeat;
-      log.info(
-          "No heartbeat from {} in the last {} (calculated from last {} ms), sending poll requests",
-          raft.getLeader(),
-          delay,
-          missTime);
+      final var timeSinceLastHeartbeatMs = System.currentTimeMillis() - lastHeartbeat;
+      final var leader =
+          Optional.ofNullable(raft.getLeader())
+              .map(DefaultRaftMember::memberId)
+              .map(MemberId::id)
+              .orElse("a known leader");
+
+      log.info("No heartbeat from {} since {}ms", leader, timeSinceLastHeartbeatMs);
       raft.getRaftRoleMetrics().countHeartbeatMiss();
 
       raft.setLeader(null);
