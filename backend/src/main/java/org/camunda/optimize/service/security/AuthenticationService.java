@@ -36,7 +36,9 @@ public class AuthenticationService {
    * @throws ForbiddenException     if no engine that authenticates the user also authorizes the user
    * @throws NotAuthorizedException if no engine authenticates the user
    */
-  public String authenticateUser(final CredentialsRequestDto credentials) throws ForbiddenException, NotAuthorizedException {
+  public String authenticateUser(final CredentialsRequestDto credentials) throws
+                                                                          ForbiddenException,
+                                                                          NotAuthorizedException {
     final List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
     final Optional<String> authenticatedUserId = engineContextFactory.getConfiguredEngines().stream()
       .map(engineContext -> engineAuthenticationProvider.performAuthenticationCheck(credentials, engineContext))
@@ -44,7 +46,7 @@ public class AuthenticationService {
       .filter(AuthenticationResultDto::isAuthenticated)
       .map(authenticationResultDto -> engineContextFactory
         .getConfiguredEngineByAlias(authenticationResultDto.getEngineAlias())
-        .getUserById(authenticationResultDto.getAuthenticatedUser())
+        .flatMap(engineContext -> engineContext.getUserById(authenticationResultDto.getAuthenticatedUser()))
       )
       .filter(Optional::isPresent)
       .map(Optional::get)

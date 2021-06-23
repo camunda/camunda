@@ -1,0 +1,41 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.security;
+
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.util.configuration.CamundaCloudCondition;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
+
+import java.util.Collections;
+import java.util.List;
+
+@Conditional(CamundaCloudCondition.class)
+@Component
+@Slf4j
+public class CamundaCloudApplicationAuthorizationService implements ApplicationAuthorizationService {
+
+  @Override
+  public boolean isUserAuthorizedToAccessOptimize(final String userId) {
+    return true;
+  }
+
+  @Override
+  public boolean isGroupAuthorizedToAccessOptimize(final String groupId) {
+    return true;
+  }
+
+  @Override
+  public List<String> getAuthorizedEnginesForUser(final String userId) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<String> getAuthorizedEnginesForGroup(final String groupId) {
+    return Collections.emptyList();
+  }
+
+}

@@ -99,10 +99,11 @@ public class CamundaPlatformTenantAuthorizationService
   protected Map<String, ResolvedResourceTypeAuthorizations> fetchAuthorizationsForUserId(final String userId) {
     final Map<String, ResolvedResourceTypeAuthorizations> result = new HashMap<>();
     applicationAuthorizationService.getAuthorizedEnginesForUser(userId)
-      .forEach(engineAlias -> {
-        final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
-        result.put(engineAlias, resolveUserAuthorizations(userId, engineContext));
-      });
+      .forEach(
+        engineAlias -> engineContextFactory.getConfiguredEngineByAlias(engineAlias).ifPresent(
+          engineContext -> result.put(engineAlias, resolveUserAuthorizations(userId, engineContext))
+        )
+      );
     return result;
   }
 
@@ -110,10 +111,11 @@ public class CamundaPlatformTenantAuthorizationService
   protected Map<String, ResolvedResourceTypeAuthorizations> fetchAuthorizationsForGroupId(final String groupId) {
     final Map<String, ResolvedResourceTypeAuthorizations> result = new HashMap<>();
     applicationAuthorizationService.getAuthorizedEnginesForGroup(groupId)
-      .forEach(engineAlias -> {
-        final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
-        result.put(engineAlias, resolveGroupAuthorizations(groupId, engineContext));
-      });
+      .forEach(
+        engineAlias -> engineContextFactory.getConfiguredEngineByAlias(engineAlias).ifPresent(
+          engineContext -> result.put(engineAlias, resolveGroupAuthorizations(groupId, engineContext))
+        )
+      );
     return result;
   }
 

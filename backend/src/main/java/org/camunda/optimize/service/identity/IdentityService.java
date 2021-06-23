@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.IdentityAuthorizationService;
@@ -69,7 +68,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public boolean isSuperUserIdentity(final String userId) {
-    return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId)||
+    return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId) ||
       isInSuperUserGroup(userId);
   }
 
@@ -245,10 +244,10 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   private List<GroupDto> fetchUserGroups(final String userId) {
     final Set<GroupDto> result = new HashSet<>();
     applicationAuthorizationService.getAuthorizedEnginesForUser(userId)
-      .forEach(engineAlias -> {
-        final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
-        result.addAll(engineContext.getAllGroupsOfUser(userId));
-      });
+      .forEach(
+        engineAlias -> engineContextFactory.getConfiguredEngineByAlias(engineAlias)
+          .ifPresent(engineContext -> result.addAll(engineContext.getAllGroupsOfUser(userId)))
+      );
     return new ArrayList<>(result);
   }
 

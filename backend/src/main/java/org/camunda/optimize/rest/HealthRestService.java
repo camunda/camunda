@@ -26,7 +26,8 @@ public class HealthRestService {
 
   @GET
   public Response getImportStatus() {
-    if (statusCheckingService.isConnectedToEsAndAtLeastOneEngine()) {
+    if (statusCheckingService.isConnectedToElasticSearch()
+      && statusCheckingService.isConnectedToAtLeastOneEngineOrNoEnginePresent()) {
       return Response.ok().build();
     }
     return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();

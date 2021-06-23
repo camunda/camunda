@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.rest.engine.PlatformEngineContextFactory;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.TenantService;
@@ -314,7 +314,7 @@ public class EmbeddedOptimizeExtension
   }
 
   private Collection<EngineContext> getConfiguredEngines() {
-    return getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines();
+    return getApplicationContext().getBean(PlatformEngineContextFactory.class).getConfiguredEngines();
   }
 
   public EngineConfiguration getDefaultEngineConfiguration() {
