@@ -63,14 +63,6 @@ export class BranchControlPanel extends React.Component {
     }
   }
 
-  getDefinitionConfig = () => {
-    return {
-      processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersions: this.props.processDefinitionVersions,
-      tenantIds: this.props.tenantIds,
-    };
-  };
-
   hover = (element) => () => {
     this.props.updateHover(element);
   };
@@ -107,6 +99,20 @@ export class BranchControlPanel extends React.Component {
   };
 
   render() {
+    const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
+
+    const definitions = [];
+    if (processDefinitionKey) {
+      definitions.push({
+        identifier: 'definition',
+        key: processDefinitionKey,
+        versions: processDefinitionVersions,
+        tenantIds: tenantIds,
+        name: processDefinitionKey,
+        displayName: processDefinitionKey,
+      });
+    }
+
     return (
       <div className="BranchControlPanel">
         <ul className="list">
@@ -139,7 +145,7 @@ export class BranchControlPanel extends React.Component {
                 this.props.onChange({filter: update(this.props.filter, filter)})
               }
               xml={this.props.xml}
-              {...this.getDefinitionConfig()}
+              definitions={definitions}
               filterLevel="instance"
               flowNodeNames={this.state.flowNodeNames}
               variables={this.state.variables}

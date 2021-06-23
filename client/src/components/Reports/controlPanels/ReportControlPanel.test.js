@@ -585,3 +585,59 @@ it('should call updateReport with correct payload when adding measures', () => {
   );
   expect(spy).toHaveBeenCalledWith(reportUpdateMock, true);
 });
+
+describe('filter handling when removing definitions', () => {
+  const report = update(props.report, {
+    data: {
+      definitions: {
+        $set: [
+          {
+            key: 'aKey',
+            versions: ['aVersion'],
+            tenantIds: [],
+            identifier: 'def1',
+          },
+          {
+            key: 'aKey',
+            versions: ['aVersion'],
+            tenantIds: [],
+            identifier: 'def2',
+          },
+        ],
+      },
+      filter: {
+        $set: [
+          {filterLevel: 'instance', type: 'runningInstancesOnly', appliedTo: ['def1', 'def2']},
+        ],
+      },
+    },
+  });
+
+  it('should remove removed definitions from filters', async () => {
+    const spy = jest.fn();
+    const node = shallow(<ReportControlPanel {...props} report={report} updateReport={spy} />);
+
+    await node.find(DefinitionList).prop('onRemove')(0);
+
+    expect(spy.mock.calls[0][0].filter).toEqual({
+      $set: [{filterLevel: 'instance', type: 'runningInstancesOnly', appliedTo: ['def2']}],
+    });
+  });
+
+  it('should remove filters if they contain no definitions after definition removal', async () => {
+    const spy = jest.fn();
+    const node = shallow(
+      <ReportControlPanel
+        {...props}
+        report={update(report, {data: {filter: {0: {appliedTo: {$set: ['def1']}}}}})}
+        updateReport={spy}
+      />
+    );
+
+    await node.find(DefinitionList).prop('onRemove')(0);
+
+    expect(spy.mock.calls[0][0].filter).toEqual({
+      $set: [],
+    });
+  });
+});

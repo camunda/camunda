@@ -9,11 +9,19 @@
     margin: 5px 0;
     width: 100%;
 
+    .ActionItem {
+      .content,
+      .header .type {
+        font-size: 10px;
+      }
+    }
+
     .parameterName {
       @include highlighted;
       max-width: 230px;
       text-overflow: ellipsis;
       overflow: hidden;
+      font-size: 11px;
     }
 
     .previewList {
@@ -25,6 +33,12 @@
 
     .filterText {
       display: block;
+    }
+
+    .appliedTo {
+      margin-top: 6px;
+      margin-bottom: 0;
+      color: var(--blue-darken-55);
     }
   }
 

@@ -112,6 +112,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                   {t('report.instanceCount.reportFiltersHeading')}
                 </div>
                 <FilterList
+                  definitions={data.definitions}
                   data={reportFilters}
                   flowNodeNames={flowNodeNames}
                   variables={variables}
@@ -125,6 +126,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                   {t('report.instanceCount.additionalFiltersHeading')}
                 </div>
                 <FilterList
+                  definitions={data.definitions}
                   data={additionalFilters}
                   flowNodeNames={flowNodeNames}
                   variables={variables}

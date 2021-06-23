@@ -290,3 +290,30 @@ it('should display a completed instances only filter', () => {
     '<b>Completed</b> Instances only'
   );
 });
+
+describe('apply to handling', () => {
+  const data = [
+    {
+      type: 'completedInstancesOnly',
+      data: null,
+      appliedTo: ['definition1'],
+    },
+  ];
+
+  it('should show how many definitions the filter applies to', () => {
+    const node = shallow(
+      <FilterList
+        data={data}
+        definitions={[{identifier: 'definition1'}, {identifier: 'definition2'}]}
+      />
+    );
+
+    expect(node.find('.appliedTo')).toIncludeText('Applied to: 1 Process');
+  });
+
+  it('should not show how many definitions the filter applies to if there is only one definition', () => {
+    const node = shallow(<FilterList data={data} definitions={[{identifier: 'definition1'}]} />);
+
+    expect(node.find('.appliedTo')).not.toExist();
+  });
+});

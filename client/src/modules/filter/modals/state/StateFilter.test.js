@@ -32,5 +32,5 @@ it('should call the addFilter prop with the selected filter option', () => {
   node.find({label: 'Filter Option 2'}).simulate('change');
   node.find({primary: true}).simulate('click');
 
-  expect(spy).toHaveBeenCalledWith({type: 'option2'});
+  expect(spy).toHaveBeenCalledWith({type: 'option2', appliedTo: ['all']});
 });

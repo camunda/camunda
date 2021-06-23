@@ -75,15 +75,15 @@ export default class Filter extends React.Component {
 
   getFilterConfig = (type) => {
     if (type === 'variable') {
-      const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
+      const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.definitionConfig();
       return {
         getVariables: async () =>
           await loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
         getValues: async (name, type, numResults, valueFilter) =>
           await loadValues(
-            this.props.processDefinitionKey,
-            this.props.processDefinitionVersions,
-            this.props.tenantIds,
+            processDefinitionKey,
+            processDefinitionVersions,
+            tenantIds,
             name,
             type,
             0,
@@ -121,34 +121,32 @@ export default class Filter extends React.Component {
   };
 
   definitionConfig = () => {
-    const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
+    const {definitions} = this.props;
+    const firstDefinition = definitions?.[0] ?? {};
+
     return {
-      processDefinitionKey,
-      processDefinitionVersions,
-      tenantIds,
+      processDefinitionKey: firstDefinition.key,
+      processDefinitionVersions: firstDefinition.versions,
+      tenantIds: firstDefinition.tenantIds,
     };
   };
 
   processDefinitionIsNotSelected = () => {
-    return (
-      !this.props.processDefinitionKey ||
-      this.props.processDefinitionKey === '' ||
-      !this.props.processDefinitionVersions ||
-      this.props.processDefinitionVersions.length === 0
-    );
+    return !this.props.definitions?.length;
   };
 
   render() {
-    const FilterModal = this.getFilterModal(this.state.newFilterType);
-    const EditFilterModal = this.getFilterModal(
-      this.state.editFilter ? this.state.editFilter.type : null
-    );
+    const {filterLevel, data, definitions} = this.props;
+    const {newFilterType, editFilter} = this.state;
 
-    const displayAllFilters = !this.props.filterLevel;
-    const displayInstanceFilters = displayAllFilters || this.props.filterLevel === 'instance';
-    const displayViewFilters = displayAllFilters || this.props.filterLevel === 'view';
+    const FilterModal = this.getFilterModal(newFilterType);
+    const EditFilterModal = this.getFilterModal(editFilter ? editFilter.type : null);
 
-    const filters = this.props.data.filter(
+    const displayAllFilters = !filterLevel;
+    const displayInstanceFilters = displayAllFilters || filterLevel === 'instance';
+    const displayViewFilters = displayAllFilters || filterLevel === 'view';
+
+    const filters = data.filter(
       ({filterLevel}) => filterLevel === this.props.filterLevel || displayAllFilters
     );
 
@@ -199,6 +197,7 @@ export default class Filter extends React.Component {
         )}
         {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
+          definitions={definitions}
           {...this.definitionConfig()}
           flowNodeNames={this.props.flowNodeNames}
           openEditFilterModal={this.openEditFilterModal}
@@ -207,21 +206,23 @@ export default class Filter extends React.Component {
           variables={this.props.variables}
         />
         <FilterModal
+          definitions={definitions}
           addFilter={this.addFilter}
           close={this.closeModal}
           xml={this.props.xml}
           {...this.definitionConfig()}
-          filterType={this.state.newFilterType}
-          config={this.getFilterConfig(this.state.newFilterType)}
+          filterType={newFilterType}
+          config={this.getFilterConfig(newFilterType)}
         />
         <EditFilterModal
+          definitions={definitions}
           addFilter={this.editFilter}
-          filterData={this.state.editFilter}
+          filterData={editFilter}
           close={this.closeModal}
           xml={this.props.xml}
           {...this.definitionConfig()}
-          filterType={this.state.editFilter && this.state.editFilter.type}
-          config={this.getFilterConfig(this.state.editFilter && this.state.editFilter.type)}
+          filterType={editFilter?.type}
+          config={this.getFilterConfig(editFilter?.type)}
         />
       </div>
     );

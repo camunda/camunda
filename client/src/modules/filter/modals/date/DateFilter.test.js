@@ -17,6 +17,7 @@ jest.mock('./service');
 const props = {
   filterType: 'startDate',
   filterData: null,
+  definitions: [{identifier: 'definition'}],
 };
 
 it('should contain a modal', () => {
@@ -27,7 +28,11 @@ it('should contain a modal', () => {
 
 it('should render preview if the filter is valid', async () => {
   convertFilterToState.mockReturnValue({dateType: 'yesterday'});
-  const filter = {type: 'startDate', data: {type: 'relative', start: {value: '1', unit: 'days'}}};
+  const filter = {
+    type: 'startDate',
+    data: {type: 'relative', start: {value: '1', unit: 'days'}},
+    appliedTo: ['definition'],
+  };
   const node = shallow(<DateFilter {...props} filterData={filter} />);
 
   expect(convertFilterToState).toHaveBeenCalledWith(filter.data);
@@ -37,7 +42,11 @@ it('should render preview if the filter is valid', async () => {
 
 it('should have a create filter button', () => {
   const spy = jest.fn();
-  const filter = {type: 'startDate', data: {type: 'rolling', start: {value: '5', unit: 'days'}}};
+  const filter = {
+    type: 'startDate',
+    data: {type: 'rolling', start: {value: '5', unit: 'days'}},
+    appliedTo: ['definition'],
+  };
   const node = shallow(<DateFilter {...props} addFilter={spy} filterData={filter} />);
   const addButton = node.find('[primary]');
 

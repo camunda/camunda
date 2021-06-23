@@ -81,7 +81,7 @@ export default function DashboardRenderer({
               disableNameLink={disableReportInteractions || disableNameLink}
               loadReport={loadReport}
               report={report}
-              filter={filter}
+              filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}
               addons={addons}
             />
           </div>

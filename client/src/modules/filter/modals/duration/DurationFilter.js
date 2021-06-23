@@ -9,38 +9,59 @@ import React from 'react';
 import {Modal, Button, Input, Select, Message, Form} from 'components';
 import {numberParser} from 'services';
 
+import FilterDefinitionSelection from '../FilterDefinitionSelection';
+
 import './DurationFilter.scss';
 import {t} from 'translation';
 
 export default class DurationFilter extends React.Component {
   constructor(props) {
     super(props);
+
+    let applyTo = [
+      {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
+    ];
+
+    if (props.filterData && props.filterData.appliedTo?.[0] !== 'all') {
+      applyTo = props.filterData.appliedTo.map((id) =>
+        props.definitions.find(({identifier}) => identifier === id)
+      );
+    }
+
     this.state = {
-      value: props.filterData ? props.filterData.data.value.toString() : '7',
-      operator: props.filterData ? props.filterData.data.operator : '>',
-      unit: props.filterData ? props.filterData.data.unit : 'days',
+      value: props.filterData?.data.value.toString() ?? '7',
+      operator: props.filterData?.data.operator ?? '>',
+      unit: props.filterData?.data.unit ?? 'days',
+      applyTo,
     };
   }
 
   createFilter = () => {
+    const {value, operator, unit, applyTo} = this.state;
+
     this.props.addFilter({
       type: 'processInstanceDuration',
       data: {
-        value: parseFloat(this.state.value),
-        operator: this.state.operator,
-        unit: this.state.unit,
+        value: parseFloat(value),
+        operator,
+        unit,
       },
+      appliedTo: applyTo.map(({identifier}) => identifier),
     });
   };
 
   render() {
-    const {value, operator, unit} = this.state;
+    const {value, operator, unit, applyTo} = this.state;
+    const {definitions} = this.props;
+
     const isValidInput = numberParser.isPositiveNumber(value);
+    const isValidFilter = isValidInput && applyTo.length > 0;
+
     return (
       <Modal
         open={true}
         onClose={this.props.close}
-        onConfirm={isValidInput ? this.createFilter : undefined}
+        onConfirm={isValidFilter ? this.createFilter : undefined}
         className="DurationFilter"
       >
         <Modal.Header>
@@ -49,6 +70,11 @@ export default class DurationFilter extends React.Component {
           })}
         </Modal.Header>
         <Modal.Content>
+          <FilterDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo}
+            setApplyTo={(applyTo) => this.setState({applyTo})}
+          />
           <p className="description">{t('common.filter.durationModal.includeInstance')} </p>
           <Form horizontal>
             <Form.Group noSpacing>
@@ -96,7 +122,7 @@ export default class DurationFilter extends React.Component {
           <Button main onClick={this.props.close}>
             {t('common.cancel')}
           </Button>
-          <Button main primary disabled={!isValidInput} onClick={this.createFilter}>
+          <Button main primary disabled={!isValidFilter} onClick={this.createFilter}>
             {this.props.filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>

@@ -211,6 +211,25 @@ export default withErrorHandling(
         };
       }
 
+      const newFilters = [];
+      const identifierOfRemovedDefinition = data.definitions[idx].identifier;
+      data.filter.forEach((filter) => {
+        if (filter.appliedTo.includes(identifierOfRemovedDefinition)) {
+          if (filter.appliedTo.length > 1) {
+            // if the filter contains at least one other definition, we remove the removed definition from the list
+            newFilters.push({
+              ...filter,
+              appliedTo: filter.appliedTo.filter(
+                (identifier) => identifier !== identifierOfRemovedDefinition
+              ),
+            });
+          }
+        } else {
+          newFilters.push(filter);
+        }
+      });
+      change.filter = {$set: newFilters};
+
       await this.props.updateReport(change, true);
       this.props.setLoading(false);
     };
@@ -306,7 +325,7 @@ export default withErrorHandling(
       const {data, result} = this.props.report;
       const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
 
-      const {key, versions, tenantIds} = data.definitions?.[0] ?? {};
+      const {key} = data.definitions?.[0] ?? {};
 
       const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
       const shouldAllowAddingMeasure = data.view?.properties.length === 1 && shouldDisplayMeasure;
@@ -469,9 +488,7 @@ export default withErrorHandling(
                 flowNodeNames={flowNodeNames}
                 data={data.filter}
                 onChange={this.props.updateReport}
-                processDefinitionKey={key}
-                processDefinitionVersions={versions}
-                tenantIds={tenantIds}
+                definitions={data.definitions}
                 xml={data.configuration.xml}
                 variables={variables}
               />

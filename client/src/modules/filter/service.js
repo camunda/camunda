@@ -5,6 +5,7 @@
  */
 
 import {post, get} from 'request';
+import equal from 'fast-deep-equal';
 
 export async function loadValues(
   processDefinitionKey,
@@ -78,10 +79,11 @@ export function filterSameTypeExistingFilters(filters, newFilter) {
   ];
 
   return filters.filter(
-    ({type, filterLevel}) =>
+    ({type, filterLevel, appliedTo}) =>
       !(
         newFilter.filterLevel === filterLevel &&
         newFilter.type === type &&
+        equal(newFilter.appliedTo, appliedTo) &&
         uniqueFilters.includes(type)
       )
   );

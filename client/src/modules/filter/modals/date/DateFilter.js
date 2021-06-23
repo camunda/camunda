@@ -9,6 +9,8 @@ import React from 'react';
 import {t} from 'translation';
 import {Modal, Button, Form, MessageBox, DateRangeInput} from 'components';
 
+import FilterDefinitionSelection from '../FilterDefinitionSelection';
+
 import DateFilterPreview from './DateFilterPreview';
 import {convertFilterToState, convertStateToFilter, isValid} from './service';
 
@@ -22,31 +24,43 @@ export default class DateFilter extends React.Component {
     customNum: '2',
     startDate: null,
     endDate: null,
+    applyTo: [
+      {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
+    ],
   };
 
   componentDidMount() {
-    const {filterData} = this.props;
+    const {filterData, definitions} = this.props;
     if (!filterData) {
       return;
     }
 
     this.setState(convertFilterToState(filterData.data));
+
+    if (filterData.appliedTo?.[0] !== 'all') {
+      this.setState({
+        applyTo: filterData.appliedTo.map((id) =>
+          definitions.find(({identifier}) => identifier === id)
+        ),
+      });
+    }
   }
 
   confirm = () => {
-    const {type, unit, customNum, startDate, endDate} = this.state;
+    const {type, unit, customNum, startDate, endDate, applyTo} = this.state;
     const {addFilter, filterType} = this.props;
     if (isValid(this.state)) {
       return addFilter({
         type: filterType,
         data: convertStateToFilter({type, unit, customNum, startDate, endDate}),
+        appliedTo: applyTo.map(({identifier}) => identifier),
       });
     }
   };
 
   render() {
-    const {type, unit, customNum, startDate, endDate} = this.state;
-    const {close, filterData, filterType} = this.props;
+    const {type, unit, customNum, startDate, endDate, applyTo} = this.state;
+    const {close, filterData, filterType, definitions} = this.props;
 
     return (
       <Modal open={true} onClose={close} onConfirm={this.confirm} className="DateFilter">
@@ -56,6 +70,11 @@ export default class DateFilter extends React.Component {
           })}
         </Modal.Header>
         <Modal.Content>
+          <FilterDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo}
+            setApplyTo={(applyTo) => this.setState({applyTo})}
+          />
           {filterType === 'endDate' && (
             <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
           )}

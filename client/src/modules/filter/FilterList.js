@@ -53,6 +53,28 @@ export default class FilterList extends React.Component {
     return nameOrId;
   };
 
+  appliedToSnippet = ({appliedTo}) => {
+    if (!this.props.definitions || this.props.definitions.length <= 1) {
+      return null;
+    }
+
+    if (appliedTo?.[0] === 'all') {
+      return (
+        <p className="appliedTo">
+          {t('common.filter.list.appliedTo')}: {t('common.all').toLowerCase()}{' '}
+          {t('common.process.label-plural')}
+        </p>
+      );
+    }
+
+    return (
+      <p className="appliedTo">
+        {t('common.filter.list.appliedTo')}: {appliedTo.length}{' '}
+        {t('common.process.label' + (appliedTo.length > 1 ? '-plural' : ''))}
+      </p>
+    );
+  };
+
   render() {
     const list = [];
 
@@ -70,6 +92,7 @@ export default class FilterList extends React.Component {
               }}
             >
               <DateFilterPreview filterType={filter.type} filter={filter.data} />
+              {this.appliedToSnippet(filter)}
             </ActionItem>
           </li>
         );
@@ -99,6 +122,7 @@ export default class FilterList extends React.Component {
                 ) : (
                   <VariablePreview type={filter.type} variableName={variableName} filter={data} />
                 )}
+                {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>
           );
@@ -123,6 +147,7 @@ export default class FilterList extends React.Component {
                 }}
               >
                 <NodeListPreview nodes={selectedNodes} operator={operator} type={filter.type} />
+                {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>
           );
@@ -148,6 +173,7 @@ export default class FilterList extends React.Component {
                     {t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)}
                   </b>
                 </span>
+                {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>
           );
@@ -191,6 +217,7 @@ export default class FilterList extends React.Component {
               >
                 <span className="parameterName">{t('common.filter.types.flowNodeDuration')}</span>
                 <span className="filterText">{filterValues}</span>
+                {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>
           );
@@ -209,6 +236,7 @@ export default class FilterList extends React.Component {
                   className="filterText"
                   dangerouslySetInnerHTML={{__html: getStateFilterFilterText(filter)}}
                 />
+                {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>
           );
@@ -224,6 +252,7 @@ export default class FilterList extends React.Component {
                 }}
               >
                 <AssigneeFilterPreview filter={filter} />
+                {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>
           );

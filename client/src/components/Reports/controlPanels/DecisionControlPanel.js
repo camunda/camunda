@@ -233,6 +233,7 @@ export class DecisionControlPanel extends React.Component {
               {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
             </Button>
             <DecisionFilter
+              definitions={definitions}
               data={filter}
               onChange={this.props.updateReport}
               decisionDefinitionKey={key}

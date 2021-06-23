@@ -7,22 +7,28 @@
 import React, {useState} from 'react';
 
 import {Modal, Button, Form, LabeledInput} from 'components';
-
 import {t} from 'translation';
+
+import FilterDefinitionSelection from '../FilterDefinitionSelection';
+
 import getMapping from './options';
 
 import './StateFilter.scss';
 
-export default function StateFilter({addFilter, close, filterType}) {
+export default function StateFilter({addFilter, close, filterType, definitions}) {
   const [selectedOption, setSelectedOption] = useState();
+  const [applyTo, setApplyTo] = useState([
+    {identifier: 'all', displayName: t('common.filter.definitionSelection.allProcesses')},
+  ]);
+
   const options = getMapping(filterType);
 
   function createFilter() {
     const type = options.mappings[selectedOption].key;
-    addFilter({type});
+    addFilter({type, appliedTo: applyTo.map(({identifier}) => identifier)});
   }
 
-  const isFilterValid = typeof selectedOption !== 'undefined';
+  const isFilterValid = typeof selectedOption !== 'undefined' && applyTo.length > 0;
 
   return (
     <Modal
@@ -33,6 +39,11 @@ export default function StateFilter({addFilter, close, filterType}) {
     >
       <Modal.Header>{options?.modalTitle}</Modal.Header>
       <Modal.Content>
+        <FilterDefinitionSelection
+          availableDefinitions={definitions}
+          applyTo={applyTo}
+          setApplyTo={setApplyTo}
+        />
         <p className="description">{options?.pretext}</p>
         <Form>
           <fieldset>

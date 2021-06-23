@@ -864,6 +864,9 @@
     },
     "filter": {
       "label": "Filter",
+      "definitionSelection": {
+        "allProcesses": "Alle enthaltenen Prozesse"
+      },
       "tooltip": {
         "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
         "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
@@ -933,6 +936,7 @@
         "flowNodeStatus": "Prozessknoten-Status"
       },
       "list": {
+        "appliedTo": "Angewendet auf",
         "operators": {
           "isBetween": "liegt zwischen",
           "between": "zwischen",
