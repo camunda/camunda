@@ -14,6 +14,7 @@ import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_F
 import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.camunda.tasklist.util.ElasticsearchChecks.TASK_VARIABLE_EXISTS_CHECK;
+import static io.camunda.tasklist.util.ElasticsearchChecks.VARIABLES_EXIST_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -93,6 +94,10 @@ public class TasklistTester {
   @Autowired
   @Qualifier(TASK_VARIABLE_EXISTS_CHECK)
   private TestCheck taskVariableExists;
+
+  @Autowired
+  @Qualifier(VARIABLES_EXIST_CHECK)
+  private TestCheck variablesExist;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -337,8 +342,7 @@ public class TasklistTester {
   }
 
   public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {
-    elasticsearchTestRule.processAllRecordsAndWait(
-        tasksAreCreatedCheck, processInstanceId, flowNodeBpmnId, taskCount);
+    elasticsearchTestRule.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
@@ -394,6 +398,11 @@ public class TasklistTester {
 
   public TasklistTester taskVariableExists(String varName) {
     elasticsearchTestRule.processAllRecordsAndWait(taskVariableExists, taskId, varName);
+    return this;
+  }
+
+  public TasklistTester variablesExist(String[] varNames) {
+    elasticsearchTestRule.processAllRecordsAndWait(variablesExist, varNames);
     return this;
   }
 

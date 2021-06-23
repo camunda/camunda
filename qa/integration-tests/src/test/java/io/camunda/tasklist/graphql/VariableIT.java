@@ -109,6 +109,8 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
             .startProcessInstance(bpmnProcessId, "{\"upperLevelVar\": 2}")
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId)
+            .and()
+            .variablesExist(new String[] {"innerVar", "overwrittenVar", "upperLevelVar"})
             .when()
             .getAllTasks(variableFragmentResource);
 

@@ -38,14 +38,15 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
-    tester.createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId);
-    processAllRecordsAndWait(processIsDeployedCheck, tester.getProcessDefinitionKey());
-    tester
-        .startProcessInstance(bpmnProcessId)
-        .startProcessInstance(bpmnProcessId)
-        .startProcessInstance(bpmnProcessId);
-    processAllRecordsAndWait(taskIsCreatedCheck, tester.getProcessInstanceId(), flowNodeBpmnId);
-    final GraphQLResponse response = tester.getAllTasks();
+    final GraphQLResponse response =
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .waitUntil()
+            .processIsDeployed()
+            .startProcessInstances(bpmnProcessId, 3)
+            .waitUntil()
+            .tasksAreCreated(flowNodeBpmnId, 3)
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());

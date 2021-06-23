@@ -68,6 +68,6 @@ public class FormIT extends TasklistZeebeIntegrationTest {
         .and()
         .startProcessInstances(bpmnProcessId, 2)
         .waitUntil()
-        .taskIsCreated(flowNodeBpmnId);
+        .tasksAreCreated(flowNodeBpmnId, 2);
   }
 }

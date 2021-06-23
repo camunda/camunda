@@ -51,7 +51,8 @@ public class ElasticsearchChecks {
       "taskIsCanceledByFlowNodeBpmnIdCheck";
   public static final String TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK =
       "taskIsCompletedByFlowNodeBpmnIdCheck";
-  public static final String TASK_VARIABLE_EXISTS_CHECK = "variableExistsCheck";
+  public static final String TASK_VARIABLE_EXISTS_CHECK = "taskVariableExistsCheck";
+  public static final String VARIABLES_EXIST_CHECK = "variablesExistsCheck";
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchChecks.class);
 
@@ -167,8 +168,8 @@ public class ElasticsearchChecks {
   }
 
   /**
-   * Checks whether the tasks for given args[0] processInstanceKey (Long) and given args[1]
-   * flowNodeBpmnId (String) exist and are in state CREATED.
+   * Checks whether the tasks for given args[0] flowNodeBpmnId (String) exist and are in state
+   * CREATED.
    */
   @Bean(name = TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   public TestCheck getTasksAreCreatedByFlowNodeBpmnIdCheck() {
@@ -180,16 +181,13 @@ public class ElasticsearchChecks {
 
       @Override
       public boolean test(final Object[] objects) {
-        assertThat(objects).hasSize(3);
+        assertThat(objects).hasSize(2);
         assertThat(objects[0]).isInstanceOf(String.class);
-        assertThat(objects[1]).isInstanceOf(String.class);
-        assertThat(objects[2]).isInstanceOf(Integer.class);
-        final String processInstanceKey = (String) objects[0];
-        final String flowNodeBpmnId = (String) objects[1];
-        final int taskCount = (Integer) objects[2];
+        assertThat(objects[1]).isInstanceOf(Integer.class);
+        final String flowNodeBpmnId = (String) objects[0];
+        final int taskCount = (Integer) objects[1];
         try {
-          final List<TaskEntity> tasks =
-              elasticsearchHelper.getTask(processInstanceKey, flowNodeBpmnId);
+          final List<TaskEntity> tasks = elasticsearchHelper.getTask(null, flowNodeBpmnId);
           return (tasks.size() == taskCount)
               && (tasks.stream()
                   .map(TaskEntity::getState)
@@ -339,6 +337,27 @@ public class ElasticsearchChecks {
         final String varName = (String) objects[1];
         try {
           return elasticsearchHelper.checkVariableExists(taskId, varName);
+        } catch (NotFoundException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
+  /** Checks whether the task variable exists. */
+  @Bean(name = VARIABLES_EXIST_CHECK)
+  public TestCheck getVariablesExistCheck() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return VARIABLES_EXIST_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        final String[] varNames = (String[]) objects;
+        try {
+          return elasticsearchHelper.checkVariablesExist(varNames);
         } catch (NotFoundException ex) {
           return false;
         }

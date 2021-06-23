@@ -12,6 +12,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
@@ -48,6 +49,8 @@ public class ElasticsearchHelper {
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
   @Autowired private TaskVariableTemplate taskVariableTemplate;
+
+  @Autowired private VariableIndex variableIndex;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -106,14 +109,17 @@ public class ElasticsearchHelper {
   }
 
   public List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId) {
+    TermQueryBuilder piId = null;
+    if (processInstanceId != null) {
+      piId = termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
+    }
     final SearchRequest searchRequest =
         new SearchRequest(taskTemplate.getAlias())
             .source(
                 new SearchSourceBuilder()
                     .query(
                         joinWithAnd(
-                            termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId),
-                            termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, flowNodeBpmnId)))
+                            piId, termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, flowNodeBpmnId)))
                     .sort(TaskTemplate.CREATION_TIME, SortOrder.DESC));
 
     try {
@@ -135,7 +141,7 @@ public class ElasticsearchHelper {
 
   public boolean checkVariableExists(final String taskId, final String varName) {
     final TermQueryBuilder taskIdQ = termQuery(TaskVariableTemplate.TASK_ID, taskId);
-    final TermQueryBuilder varNameQ = termQuery(VariableIndex.NAME, varName);
+    final TermQueryBuilder varNameQ = termQuery(TaskVariableTemplate.NAME, varName);
     final SearchRequest searchRequest =
         new SearchRequest(taskVariableTemplate.getAlias())
             .source(
@@ -147,6 +153,22 @@ public class ElasticsearchHelper {
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public boolean checkVariablesExist(final String[] varNames) {
+    final SearchRequest searchRequest =
+        new SearchRequest(variableIndex.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(constantScoreQuery(termsQuery(VariableIndex.NAME, varNames))));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return response.getHits().getTotalHits().value == varNames.length;
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
