@@ -242,4 +242,12 @@ test('complex Homepage actions', async (t) => {
 
   await t.expect(e.reportItem.visible).ok();
   await t.expect(e.reportItem.textContent).contains('Invoice Evaluation Count – Copy');
+
+  // bulk deleting home entities
+  await t.click(e.homepageLink);
+  await t.click(e.selectAllCheckbox);
+  await t.click(e.bulkMenu);
+  await t.click(e.del(e.bulkMenu));
+  await t.click(e.modalConfirmbutton);
+  await t.expect(e.listItem.exists).notOk();
 });
