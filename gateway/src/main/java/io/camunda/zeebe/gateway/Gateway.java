@@ -45,7 +45,6 @@ public final class Gateway {
   private Server server;
   private BrokerClient brokerClient;
 
-  @SuppressWarnings("squid:S3077")
   private volatile Status status = Status.INITIAL;
 
   public Gateway(
@@ -54,7 +53,12 @@ public final class Gateway {
       final ActorScheduler actorScheduler) {
     this(
         gatewayCfg,
-        cfg -> new BrokerClientImpl(cfg, atomixCluster),
+        cfg ->
+            new BrokerClientImpl(
+                cfg,
+                atomixCluster.getMessagingService(),
+                atomixCluster.getMembershipService(),
+                atomixCluster.getEventService()),
         DEFAULT_SERVER_BUILDER_FACTORY,
         actorScheduler);
   }
