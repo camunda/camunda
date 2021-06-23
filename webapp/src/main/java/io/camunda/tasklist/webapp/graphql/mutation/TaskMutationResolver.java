@@ -5,11 +5,17 @@
  */
 package io.camunda.tasklist.webapp.graphql.mutation;
 
+import static io.camunda.tasklist.Metrics.COUNTER_NAME_CLAIMED_TASKS;
+import static io.camunda.tasklist.Metrics.COUNTER_NAME_COMPLETED_TASKS;
+import static io.camunda.tasklist.Metrics.TAG_KEY_ASSIGNEE;
+import static io.camunda.tasklist.Metrics.TAG_KEY_BPMN_PROCESS_ID;
+import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.webapp.es.TaskValidator.CAN_COMPLETE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.kickstart.tools.GraphQLMutationResolver;
+import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TaskValidationException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -42,6 +48,8 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private Metrics metrics;
+
   public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
     final Map<String, Object> variablesMap =
         variables.stream()
@@ -70,12 +78,14 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     // persist completion and variables
     final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskSearchHit);
     variableService.persistTaskVariables(taskId, variables);
-    return TaskDTO.createFrom(completedTask, objectMapper);
+    final TaskDTO task = TaskDTO.createFrom(completedTask, objectMapper);
+    updateCompletedMetric(task);
+    return task;
   }
 
-  private Object extractTypedValue(VariableInputDTO var) {
+  private Object extractTypedValue(VariableInputDTO variable) {
     try {
-      return objectMapper.readValue(var.getValue(), Object.class);
+      return objectMapper.readValue(variable.getValue(), Object.class);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -86,7 +96,12 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     final String currentUsername = getCurrentUsername();
     task.setAssigneeUsername(currentUsername);
     taskReaderWriter.persistTaskAssignee(task, currentUsername);
+    updateClaimedMetric(task);
     return task;
+  }
+
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
   }
 
   public TaskDTO unclaimTask(String taskId) {
@@ -104,7 +119,19 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     return currentUser.getUsername();
   }
 
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
+  private void updateClaimedMetric(final TaskDTO task) {
+    metrics.recordCounts(
+        COUNTER_NAME_CLAIMED_TASKS, 1,
+        TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
+        TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
+        TAG_KEY_ASSIGNEE, task.getAssigneeUsername());
+  }
+
+  private void updateCompletedMetric(final TaskDTO task) {
+    metrics.recordCounts(
+        COUNTER_NAME_COMPLETED_TASKS, 1,
+        TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
+        TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
+        TAG_KEY_ASSIGNEE, task.getAssigneeUsername());
   }
 }

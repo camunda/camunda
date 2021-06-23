@@ -18,8 +18,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.entities.UserEntity;
+import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.MetricAssert;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.webapp.security.es.UserStorage;
 import java.util.HashMap;
@@ -197,7 +197,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     assertThat(response.getBody()).contains("actuator/info");
 
     final ResponseEntity<String> prometheusResponse =
-        testRestTemplate.getForEntity(MetricAssert.ENDPOINT, String.class);
+        testRestTemplate.getForEntity(MetricIT.ENDPOINT, String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }

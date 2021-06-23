@@ -33,13 +33,20 @@ public class Metrics {
       "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
+
+  public static final String COUNTER_NAME_CLAIMED_TASKS = "claimed.tasks";
+  public static final String COUNTER_NAME_COMPLETED_TASKS = "completed.tasks";
   // Tags
   // -----
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
       TAG_KEY_TYPE = "type",
       TAG_KEY_PARTITION = "partition",
-      TAG_KEY_STATUS = "status";
+      TAG_KEY_STATUS = "status",
+      TAG_KEY_BPMN_PROCESS_ID = "bpmnProcessId",
+      TAG_KEY_FLOW_NODE_ID = "flowNodeId",
+      TAG_KEY_ASSIGNEE = "assignee";
+
   //  Values:
   public static final String TAG_VALUE_PROCESSINSTANCES = "processInstances",
       TAG_VALUE_CORESTATISTICS = "corestatistics",
