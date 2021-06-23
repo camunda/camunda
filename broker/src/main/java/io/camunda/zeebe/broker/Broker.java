@@ -348,7 +348,8 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
     healthCheckService =
-        new BrokerHealthCheckService(localBroker, atomix.getPartitionService().getPartitionGroup());
+        new BrokerHealthCheckService(localBroker,
+            atomix.getPartitionService().getPartitionGroup());
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
@@ -413,7 +414,8 @@ public final class Broker implements AutoCloseable {
                     commandHandler,
                     snapshotStoreSupplier,
                     createFactory(
-                        topologyManager, brokerCfg.getCluster(), atomix, managementRequestHandler),
+                        topologyManager, brokerCfg.getCluster(), atomix,
+                        managementRequestHandler),
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
             final PartitionTransitionImpl transitionBehavior =
@@ -519,6 +521,8 @@ public final class Broker implements AutoCloseable {
     return embeddedGatewayService;
   }
 
+  // only used for tests
+  @Deprecated
   public Atomix getAtomix() {
     return atomix;
   }
