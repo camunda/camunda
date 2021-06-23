@@ -317,7 +317,13 @@ it('should preserve previously deselected tenants if version changes', async () 
   await node.find(VersionPopover).simulate('change', ['2']);
   await flushPromises();
 
-  expect(spy).toHaveBeenCalledWith({key: 'foo', name: 'Foo', tenantIds: ['a'], versions: ['2']});
+  expect(spy).toHaveBeenCalledWith({
+    key: 'foo',
+    name: 'Foo',
+    tenantIds: ['a'],
+    versions: ['2'],
+    identifier: 'definition',
+  });
 });
 
 describe('tenants', () => {
@@ -373,6 +379,7 @@ describe('tenants', () => {
       name: 'Foo',
       tenantIds: ['a', 'b', 'c'],
       versions: ['3'],
+      identifier: 'definition',
     });
   });
 });

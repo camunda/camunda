@@ -12,7 +12,13 @@ import deepEqual from 'fast-deep-equal';
 import {Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
-import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
+import {
+  getFlowNodeNames,
+  reportConfig,
+  loadProcessDefinitionXml,
+  loadVariables,
+  getRandomId,
+} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 
@@ -141,6 +147,7 @@ export default withErrorHandling(
         tenantIds: [...definitionToCopy.tenantIds],
         versions: [...definitionToCopy.versions],
         displayName: definitionToCopy.displayName + ` (${t('common.copyLabel')})`,
+        identifier: getRandomId(),
       };
 
       const change = {

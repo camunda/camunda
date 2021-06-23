@@ -89,7 +89,7 @@ export class DecisionControlPanel extends React.Component {
       return true;
     });
 
-  changeDefinition = async ({key, versions, tenantIds, name}) => {
+  changeDefinition = async ({key, versions, tenantIds, name, identifier}) => {
     const {groupBy, configuration} = this.props.report.data;
     const {columnOrder, includedColumns, excludedColumns} = configuration.tableColumns;
     const definitionData = {
@@ -98,6 +98,7 @@ export class DecisionControlPanel extends React.Component {
       tenantIds,
       name,
       displayName: name,
+      identifier,
     };
 
     this.props.setLoading(true);

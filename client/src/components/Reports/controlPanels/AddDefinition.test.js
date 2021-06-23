@@ -19,6 +19,11 @@ jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue(),
 }));
 
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  getRandomId: () => 'randomID',
+}));
+
 const props = {
   mightFail: (data, cb) => cb(data),
   location: {pathname: ''},
@@ -88,6 +93,7 @@ it('should call back with definitions to add', () => {
       displayName: 'Definition A',
       versions: ['latest'],
       tenantIds: [null],
+      identifier: 'randomID',
     },
   ]);
 });

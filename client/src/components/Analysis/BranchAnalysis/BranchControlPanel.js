@@ -118,11 +118,12 @@ export class BranchControlPanel extends React.Component {
               versions={this.props.processDefinitionVersions}
               tenants={this.props.tenantIds}
               xml={this.props.xml}
-              onChange={({key, versions, tenantIds}) =>
+              onChange={({key, versions, tenantIds, identifier}) =>
                 this.props.onChange({
                   processDefinitionKey: key,
                   processDefinitionVersions: versions,
                   tenantIds,
+                  identifier,
                 })
               }
             />

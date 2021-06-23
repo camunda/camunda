@@ -26,11 +26,16 @@ export function TemplateModal({
   templateToState = (data) => data,
 }) {
   const [name, setName] = useState(t(entity + '.new'));
-  const [definition, setDefinition] = useState({definitionKey: '', versions: [], tenants: []});
+  const [definition, setDefinition] = useState({
+    definitionKey: '',
+    versions: [],
+    tenants: [],
+    identifier: 'definition',
+  });
   const [xml, setXml] = useState();
   const [template, setTemplate] = useState();
 
-  const {definitionKey, definitionName, versions, tenants} = definition;
+  const {definitionKey, definitionName, versions, tenants, identifier} = definition;
 
   useEffect(() => {
     const {definitionKey, versions, tenants} = definition;
@@ -88,12 +93,13 @@ export function TemplateModal({
               definitionKey={definitionKey}
               versions={versions}
               tenants={tenants}
-              onChange={({key, versions, tenantIds, name}) =>
+              onChange={({key, versions, tenantIds, name, identifier}) =>
                 setDefinition({
                   definitionKey: key,
                   versions,
                   tenants: tenantIds,
                   definitionName: name,
+                  identifier,
                 })
               }
             />
@@ -123,6 +129,7 @@ export function TemplateModal({
                   displayName: definitionName,
                   versions,
                   tenantIds: tenants,
+                  identifier,
                 },
               ],
               xml,

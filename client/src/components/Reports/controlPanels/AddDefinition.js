@@ -9,7 +9,7 @@ import {withRouter} from 'react-router-dom';
 
 import {Button, Icon, Modal, Checklist, MessageBox} from 'components';
 import {withErrorHandling} from 'HOC';
-import {getCollection} from 'services';
+import {getCollection, getRandomId} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 
@@ -113,6 +113,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
                       displayName: name,
                       versions: ['latest'],
                       tenantIds: tenantInfo[idx].tenants.map(({id}) => id),
+                      identifier: getRandomId(),
                     }))
                   ),
                 showError
