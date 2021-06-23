@@ -23,13 +23,6 @@ export default function ListItem({
 }) {
   const content = (
     <>
-      {' '}
-      <Input
-        onClick={(evt) => evt.stopPropagation()}
-        type="checkbox"
-        checked={isSelected}
-        onChange={onSelectionChange}
-      />
       <Icon type={icon} />
       <div className="name">
         <span className="type">{type}</span>
@@ -62,6 +55,7 @@ export default function ListItem({
         selectable: actions?.length > 0,
       })}
     >
+      <Input type="checkbox" checked={isSelected} onChange={onSelectionChange} />
       {link ? <Link to={link}>{content}</Link> : <div>{content}</div>}
     </li>
   );

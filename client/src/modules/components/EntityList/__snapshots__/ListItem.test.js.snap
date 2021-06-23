@@ -4,14 +4,12 @@ exports[`should match snapshot 1`] = `
 <li
   className="ListItem selectable"
 >
+  <ForwardRef(Input)
+    type="checkbox"
+  />
   <Link
     to="/report/1"
   >
-     
-    <ForwardRef(Input)
-      onClick={[Function]}
-      type="checkbox"
-    />
     <Icon
       type="process"
     />

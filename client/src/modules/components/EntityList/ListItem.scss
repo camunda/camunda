@@ -8,6 +8,7 @@
   margin-bottom: 14px;
   list-style: none;
   position: relative;
+  display: flex;
 
   &:not(.active) > a:hover {
     background-color: var(--silver-lighten-99);
@@ -22,6 +23,14 @@
     }
   }
 
+  > .Input[type='checkbox'] {
+    margin-left: 20px;
+    margin-right: 0;
+    flex: 0 0 18px;
+    height: 18px;
+    align-self: center;
+  }
+
   > a,
   > div {
     display: flex;
@@ -29,6 +38,7 @@
     height: 100%;
     color: inherit;
     text-decoration: none;
+    flex-grow: 1;
 
     > .Icon {
       flex: 0 0 24px;
@@ -36,13 +46,6 @@
       margin-left: 15px;
       margin-right: 0;
     }
-  }
-
-  .Input[type='checkbox'] {
-    margin-left: 20px;
-    margin-right: 0;
-    flex: 0 0 18px;
-    height: 18px;
   }
 
   .name {
