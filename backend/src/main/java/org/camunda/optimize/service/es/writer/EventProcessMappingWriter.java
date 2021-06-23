@@ -115,7 +115,7 @@ public class EventProcessMappingWriter {
         esClient,
         boolQuery().must(termsQuery(EventProcessMappingIndex.ID, eventProcessMappingIds)),
         "event process mapping ids" + eventProcessMappingIds,
-        false,
+        true,
         EVENT_PROCESS_MAPPING_INDEX_NAME
       );
     } catch (OptimizeRuntimeException e) {
