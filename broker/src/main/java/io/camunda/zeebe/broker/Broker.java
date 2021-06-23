@@ -8,6 +8,8 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
@@ -413,7 +415,11 @@ public final class Broker implements AutoCloseable {
                     commandHandler,
                     snapshotStoreSupplier,
                     createFactory(
-                        topologyManager, brokerCfg.getCluster(), atomix, managementRequestHandler),
+                        topologyManager,
+                        brokerCfg.getCluster(),
+                        atomix.getCommunicationService(),
+                        atomix.getEventService(),
+                        managementRequestHandler),
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
             final PartitionTransitionImpl transitionBehavior =
@@ -457,7 +463,8 @@ public final class Broker implements AutoCloseable {
   private TypedRecordProcessorsFactory createFactory(
       final TopologyManagerImpl topologyManager,
       final ClusterCfg clusterCfg,
-      final Atomix atomix,
+      final ClusterCommunicationService communicationService,
+      final ClusterEventService eventService,
       final LeaderManagementRequestHandler requestHandler) {
     return (ActorControl actor,
         MutableZeebeState zeebeState,
@@ -470,10 +477,10 @@ public final class Broker implements AutoCloseable {
 
       final DeploymentDistributorImpl deploymentDistributor =
           new DeploymentDistributorImpl(
-              atomix.getCommunicationService(), atomix.getEventService(), partitionListener, actor);
+              communicationService, eventService, partitionListener, actor);
 
       final PartitionCommandSenderImpl partitionCommandSender =
-          new PartitionCommandSenderImpl(atomix.getCommunicationService(), topologyManager, actor);
+          new PartitionCommandSenderImpl(communicationService, topologyManager, actor);
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(stream.getPartitionId(), partitionCommandSender);
 
