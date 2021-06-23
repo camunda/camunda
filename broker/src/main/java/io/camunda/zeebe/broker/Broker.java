@@ -340,7 +340,8 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable topologyManagerStep(
       final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
-    topologyManager = new TopologyManagerImpl(atomix, localBroker, clusterCfg);
+    topologyManager =
+        new TopologyManagerImpl(atomix.getMembershipService(), localBroker, clusterCfg);
     partitionListeners.add(topologyManager);
     scheduleActor(topologyManager);
     return topologyManager;
