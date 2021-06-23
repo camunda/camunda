@@ -48,7 +48,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,7 +62,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private static final Duration SNAPSHOT_TIMEOUT = Duration.ofSeconds(15);
   private final String name;
   private final RaftPartitionGroupConfig config;
-  private final int partitionSize;
+  private final int replicationFactor;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
   private final List<PartitionId> sortedPartitionIds = Lists.newCopyOnWriteArrayList();
   private final String snapshotSubject;
@@ -77,7 +76,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
             LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
     name = config.getName();
     this.config = config;
-    partitionSize = config.getPartitionSize();
+    replicationFactor = config.getPartitionSize();
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
@@ -179,15 +178,20 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     // We expect to bootstrap partitions where leadership is equally distributed.
     // First member of a PartitionMetadata is the bootstrap leader
-    metadata = buildPartitions();
+    final var members =
+        config.getMembers().stream().map(MemberId::from).collect(Collectors.toSet());
+    metadata =
+        new PartitionDistributor()
+            .generatePartitionDistribution(members, sortedPartitionIds, replicationFactor);
+    // Example distribution with priority, clusterSize=4, partitionCount=5, replicationFactor=3
     // +------------------+----+----+----+---+
     // | Partition \ Node | 0  | 1  | 2  | 3 |
     // +------------------+----+----+----+---+
-    // |                1 | L  | F  | F  |   |
-    // |                2 |    | L  | F  | F |
-    // |                3 | F  |    | L  | F |
-    // |                4 | F  | F  |    | L |
-    // |                5 | L  | F  | F  |   |
+    // |                1 | 3  | 2  | 1  |   |
+    // |                2 |    | 3  | 2  | 1 |
+    // |                3 | 1  |    | 3  | 2 |
+    // |                4 | 2  | 1  |    | 3 |
+    // |                5 | 3  | 1  | 2  |   |
     // +------------------+----+----+----+---+
 
     communicationService = managementService.getMessagingService();
@@ -227,32 +231,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
               LOGGER.info("Stopped");
             });
-  }
-
-  private Collection<PartitionMetadata> buildPartitions() {
-    final List<MemberId> sorted =
-        new ArrayList<>(
-            config.getMembers().stream().map(MemberId::from).collect(Collectors.toSet()));
-    Collections.sort(sorted);
-
-    int partitionSize = this.partitionSize;
-    if (partitionSize == 0) {
-      partitionSize = sorted.size();
-    }
-
-    final int length = sorted.size();
-    final int count = Math.min(partitionSize, length);
-
-    final Set<PartitionMetadata> metadata = Sets.newHashSet();
-    for (int i = 0; i < partitions.size(); i++) {
-      final PartitionId partitionId = sortedPartitionIds.get(i);
-      final List<MemberId> membersForPartition = new ArrayList<>(count);
-      for (int j = 0; j < count; j++) {
-        membersForPartition.add(sorted.get((i + j) % length));
-      }
-      metadata.add(new PartitionMetadata(partitionId, membersForPartition));
-    }
-    return metadata;
   }
 
   /** Raft partition group type. */
