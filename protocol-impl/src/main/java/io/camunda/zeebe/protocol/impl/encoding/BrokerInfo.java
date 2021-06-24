@@ -50,7 +50,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-@SuppressWarnings({"squid:S1200", "squid:S1448"})
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
@@ -234,7 +233,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-  @SuppressWarnings("squid:S138")
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -330,7 +328,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-  @SuppressWarnings("squid:S138")
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder

@@ -8,13 +8,13 @@
 package io.camunda.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.core.Atomix;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.ClusterEventService;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentResponse;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
-import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -41,14 +41,19 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
 
   private final TopologyPartitionListenerImpl partitionListener;
   private final ActorControl actor;
-  private final Atomix atomix;
+
+  private final ClusterCommunicationService communicationService;
+  private final ClusterEventService eventService;
 
   public DeploymentDistributorImpl(
-      final Atomix atomix,
+      final ClusterCommunicationService communicationService,
+      final ClusterEventService eventService,
       final TopologyPartitionListenerImpl partitionListener,
-      final MutableDeploymentState deploymentsState,
       final ActorControl actor) {
-    this.atomix = atomix;
+
+    this.communicationService = communicationService;
+    this.eventService = eventService;
+
     this.partitionListener = partitionListener;
     this.actor = actor;
   }
@@ -100,9 +105,7 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
     final MemberId memberId = new MemberId(Integer.toString(partitionLeaderId));
 
     final CompletableFuture<byte[]> pushDeploymentFuture =
-        atomix
-            .getCommunicationService()
-            .send(DEPLOYMENT_PUSH_TOPIC, bytes, memberId, PUSH_REQUEST_TIMEOUT);
+        communicationService.send(DEPLOYMENT_PUSH_TOPIC, bytes, memberId, PUSH_REQUEST_TIMEOUT);
 
     pushDeploymentFuture.whenComplete(
         (response, throwable) -> {
@@ -160,32 +163,30 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
       final CompletableActorFuture<Void> distributedFuture) {
     final String topic = getDeploymentResponseTopic(deploymentKey, partitionId);
 
-    if (atomix.getEventService().getSubscriptions(topic).isEmpty()) {
+    if (eventService.getSubscriptions(topic).isEmpty()) {
       LOG.trace("Setting up deployment subscription for topic {}", topic);
-      atomix
-          .getEventService()
-          .subscribe(
-              topic,
-              (byte[] response) -> {
-                LOG.trace("Receiving deployment response on topic {}", topic);
-                final DirectBuffer responseBuffer = new UnsafeBuffer(response);
+      eventService.subscribe(
+          topic,
+          (byte[] response) -> {
+            LOG.trace("Receiving deployment response on topic {}", topic);
+            final DirectBuffer responseBuffer = new UnsafeBuffer(response);
 
-                if (pushDeploymentResponse.tryWrap(responseBuffer)) {
-                  // might be completed due to retry
-                  if (!distributedFuture.isDone()) {
-                    distributedFuture.complete(null);
-                  }
-                } else if (errorResponse.tryWrap(responseBuffer)) {
-                  errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
-                  LOG.warn(
-                      "Received rejected deployment push due to error of type {}: '{}'",
-                      errorResponse.getErrorCode().name(),
-                      BufferUtil.bufferAsString(errorResponse.getErrorData()));
-                } else {
-                  LOG.warn("Received unknown deployment response on topic {}", topic);
-                }
-                return CompletableFuture.completedFuture(null);
-              });
+            if (pushDeploymentResponse.tryWrap(responseBuffer)) {
+              // might be completed due to retry
+              if (!distributedFuture.isDone()) {
+                distributedFuture.complete(null);
+              }
+            } else if (errorResponse.tryWrap(responseBuffer)) {
+              errorResponse.wrap(responseBuffer, 0, responseBuffer.capacity());
+              LOG.warn(
+                  "Received rejected deployment push due to error of type {}: '{}'",
+                  errorResponse.getErrorCode().name(),
+                  BufferUtil.bufferAsString(errorResponse.getErrorData()));
+            } else {
+              LOG.warn("Received unknown deployment response on topic {}", topic);
+            }
+            return CompletableFuture.completedFuture(null);
+          });
     }
   }
 

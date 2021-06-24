@@ -10,8 +10,8 @@ package io.camunda.zeebe.broker.clustering.topology;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
+import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
-import io.atomix.core.Atomix;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
@@ -29,21 +29,22 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-@SuppressWarnings("squid:S1200")
 public final class TopologyManagerImpl extends Actor
     implements TopologyManager, ClusterMembershipEventListener, PartitionListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final Int2ObjectHashMap<BrokerInfo> partitionLeaders = new Int2ObjectHashMap<>();
-  private final Atomix atomix;
+  private final ClusterMembershipService membershipService;
   private final BrokerInfo localBroker;
 
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
   private final String actorName;
 
   public TopologyManagerImpl(
-      final Atomix atomix, final BrokerInfo localBroker, final ClusterCfg clusterCfg) {
-    this.atomix = atomix;
+      final ClusterMembershipService membershipService,
+      final BrokerInfo localBroker,
+      final ClusterCfg clusterCfg) {
+    this.membershipService = membershipService;
     this.localBroker = localBroker;
     localBroker
         .setClusterSize(clusterCfg.getClusterSize())
@@ -83,9 +84,8 @@ public final class TopologyManagerImpl extends Actor
   protected void onActorStarted() {
     // ensures that the first published event will contain the broker's info
     publishTopologyChanges();
-    atomix.getMembershipService().addListener(this);
-    atomix
-        .getMembershipService()
+    membershipService.addListener(this);
+    membershipService
         .getMembers()
         .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
   }
@@ -214,7 +214,7 @@ public final class TopologyManagerImpl extends Actor
               + "PartitionsCount: {} == {}, "
               + "ReplicationFactor: {} == {}.",
           eventSource.id(),
-          atomix.getMembershipService().getLocalMember().id(),
+          membershipService.getLocalMember().id(),
           brokerInfo.getNodeId(),
           localBroker.getClusterSize(),
           brokerInfo.getClusterSize(),
@@ -240,7 +240,7 @@ public final class TopologyManagerImpl extends Actor
 
   // Propagate local partition info to other nodes through Atomix member properties
   private void publishTopologyChanges() {
-    final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
+    final Properties memberProperties = membershipService.getLocalMember().properties();
     localBroker.writeIntoProperties(memberProperties);
   }
 

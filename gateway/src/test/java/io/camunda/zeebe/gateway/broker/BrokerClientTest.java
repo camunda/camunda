@@ -93,7 +93,13 @@ public final class BrokerClientTest {
             .build();
     atomixCluster.start().join();
 
-    client = new BrokerClientImpl(configuration, atomixCluster, clock);
+    client =
+        new BrokerClientImpl(
+            configuration,
+            atomixCluster.getMessagingService(),
+            atomixCluster.getMembershipService(),
+            atomixCluster.getEventService(),
+            clock);
 
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);

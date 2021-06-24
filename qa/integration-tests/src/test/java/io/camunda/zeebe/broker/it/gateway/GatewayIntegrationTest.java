@@ -53,7 +53,13 @@ public final class GatewayIntegrationTest {
 
     final ControlledActorClock clock = new ControlledActorClock();
     final AtomixCluster atomixCluster = broker.getAtomix();
-    client = new BrokerClientImpl(configuration, atomixCluster, clock);
+    client =
+        new BrokerClientImpl(
+            configuration,
+            atomixCluster.getMessagingService(),
+            atomixCluster.getMembershipService(),
+            atomixCluster.getEventService(),
+            clock);
   }
 
   @After
