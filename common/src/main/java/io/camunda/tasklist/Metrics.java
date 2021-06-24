@@ -45,7 +45,8 @@ public class Metrics {
       TAG_KEY_STATUS = "status",
       TAG_KEY_BPMN_PROCESS_ID = "bpmnProcessId",
       TAG_KEY_FLOW_NODE_ID = "flowNodeId",
-      TAG_KEY_ASSIGNEE = "assignee";
+      TAG_KEY_USER_ID = "userId",
+      TAG_KEY_ORGANIZATION_ID = "organizationId";
 
   //  Values:
   public static final String TAG_VALUE_PROCESSINSTANCES = "processInstances",

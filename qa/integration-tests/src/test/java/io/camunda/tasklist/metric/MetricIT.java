@@ -71,23 +71,23 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{assignee=\"joe\",bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",} 1.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe-id\",} 1.0"));
     assertThat(filter(claimedTasksMetrics, m -> m.contains("jane")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{assignee=\"jane\",bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",} 2.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane-id\",} 2.0"));
     assertThat(filter(claimedTasksMetrics, m -> m.contains("demo")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{assignee=\"demo\",bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",} 1.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\"demo-id\",} 1.0"));
   }
 
   @Test
-  public void providesCompletedTasks() throws IOException {
+  public void providesCompletedTasks() {
     // create users
     final UserDTO joe = new UserDTO().setUsername("joe").setFirstname("Joe").setLastname("Doe");
     final UserDTO jane = new UserDTO().setUsername("jane").setFirstname("Jane").setLastname("Doe");
@@ -135,19 +135,19 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{assignee=\"joe\",bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",} 1.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe-id\",} 1.0"));
     assertThat(filter(completedTasksMetrics, m -> m.contains("jane")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{assignee=\"jane\",bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",} 2.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane-id\",} 2.0"));
     assertThat(filter(completedTasksMetrics, m -> m.contains("demo")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{assignee=\"demo\",bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",} 1.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\"demo-id\",} 1.0"));
   }
 
   protected List<String> metricsFor(final String key) {

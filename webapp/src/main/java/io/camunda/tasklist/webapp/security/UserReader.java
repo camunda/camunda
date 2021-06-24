@@ -10,10 +10,16 @@ import java.util.List;
 
 public interface UserReader {
 
+  String DEFAULT_ORGANIZATION = "null";
   String EMPTY = "";
+
   String DEFAULT_USER = "No name";
 
   UserDTO getCurrentUser();
+
+  String getCurrentUserId();
+
+  String getCurrentOrganizationId();
 
   List<UserDTO> getUsersByUsernames(List<String> usernames);
 }

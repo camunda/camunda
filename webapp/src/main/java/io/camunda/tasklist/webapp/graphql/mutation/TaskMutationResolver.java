@@ -7,9 +7,10 @@ package io.camunda.tasklist.webapp.graphql.mutation;
 
 import static io.camunda.tasklist.Metrics.COUNTER_NAME_CLAIMED_TASKS;
 import static io.camunda.tasklist.Metrics.COUNTER_NAME_COMPLETED_TASKS;
-import static io.camunda.tasklist.Metrics.TAG_KEY_ASSIGNEE;
 import static io.camunda.tasklist.Metrics.TAG_KEY_BPMN_PROCESS_ID;
 import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
+import static io.camunda.tasklist.Metrics.TAG_KEY_ORGANIZATION_ID;
+import static io.camunda.tasklist.Metrics.TAG_KEY_USER_ID;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.webapp.es.TaskValidator.CAN_COMPLETE;
 
@@ -120,18 +121,19 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
   }
 
   private void updateClaimedMetric(final TaskDTO task) {
-    metrics.recordCounts(
-        COUNTER_NAME_CLAIMED_TASKS, 1,
-        TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
-        TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
-        TAG_KEY_ASSIGNEE, task.getAssigneeUsername());
+    metrics.recordCounts(COUNTER_NAME_CLAIMED_TASKS, 1, getTaskMetricLabels(task));
   }
 
   private void updateCompletedMetric(final TaskDTO task) {
-    metrics.recordCounts(
-        COUNTER_NAME_COMPLETED_TASKS, 1,
-        TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
-        TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
-        TAG_KEY_ASSIGNEE, task.getAssigneeUsername());
+    metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
+  }
+
+  private String[] getTaskMetricLabels(final TaskDTO task) {
+    return new String[] {
+      TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
+      TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
+      TAG_KEY_USER_ID, userReader.getCurrentUserId(),
+      TAG_KEY_ORGANIZATION_ID, userReader.getCurrentOrganizationId()
+    };
   }
 }
