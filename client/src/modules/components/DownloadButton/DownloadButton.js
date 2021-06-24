@@ -9,19 +9,33 @@ import React from 'react';
 import {Button} from 'components';
 import {withErrorHandling} from 'HOC';
 import {get} from 'request';
+import {showError} from 'notifications';
 
-export function DownloadButton({href, fileName, onClick, mightFail, error, resetError, ...props}) {
+export function DownloadButton({
+  href,
+  fileName,
+  onClick,
+  mightFail,
+  error,
+  resetError,
+  retriever,
+  ...props
+}) {
   return (
     <Button
       {...props}
       onClick={(evt) => {
         onClick?.(evt);
-        mightFail(getData(href), (data) => {
-          const hiddenElement = document.createElement('a');
-          hiddenElement.href = window.URL.createObjectURL(data);
-          hiddenElement.download = fileName || href.substring(href.lastIndexOf('/') + 1);
-          hiddenElement.click();
-        });
+        mightFail(
+          retriever || getData(href),
+          (data) => {
+            const hiddenElement = document.createElement('a');
+            hiddenElement.href = window.URL.createObjectURL(data);
+            hiddenElement.download = fileName || href.substring(href.lastIndexOf('/') + 1);
+            hiddenElement.click();
+          },
+          showError
+        );
       }}
     />
   );
