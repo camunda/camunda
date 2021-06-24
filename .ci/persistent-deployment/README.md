@@ -7,7 +7,7 @@ This environment is an Optimize persistent deployment that contains:
 * An Elasticsearch cluster with persistent volume and data.
 * A PostgreSQL database.
 
-This environment is deployed under the `optimize-persistent` namespace of the `ci-v2` Kubernetes cluster (the cluster
+This environment is deployed under the `optimize-persistent` namespace of the `ci` Kubernetes cluster (the cluster
 itself is maintained by the Infrastructure team).
 
 The environment is split between 2 places:
@@ -51,21 +51,21 @@ curl -X PUT "http://localhost:9200/_snapshot/optimize-persistent-data/<my-snapsh
 ```
 
 You can see the created snapshot by checking the content of the [optimize-persistent-data](https://console.cloud.google.com/storage/browser/optimize-persistent-data;tab=objects?forceOnBucketsSortingFiltering=false&organizationId=669107107215&project=ci-30-162810&prefix=&forceOnObjectsSortingFiltering=false)
- bucket in `camunda-ci-v2` gcp cluster.
+ bucket in the `camunda-ci` gcp project.
 
 ## 3. PostgreSQL Database
 
 ### Database
 
-The `optimize-persistent` database is part of `camunda-ci-v2` gcp project. You can see it [here](https://console.cloud.google.com/sql/instances/optimize-persistent/overview?organizationId=669107107215&project=ci-30-162810).
+The `optimize-persistent` database is part of the `camunda-ci` gcp project. You can see it [here](https://console.cloud.google.com/sql/instances/optimize-persistent/overview?organizationId=669107107215&project=ci-30-162810).
 
 In order to access the database from the command line, you can follow the documentation [here](https://confluence.camunda.com/display/SRE/Connect+to+gcloud+SQL+database+instance).
-The username and password used to access the database are stored in [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/k8s-camunda-ci-v2/optimize/db)
+The username and password used to access the database are stored in [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/k8s-camunda-ci/optimize/db)
 but this could only be access by INFRA team, so you should ask INFRA to share the credentials with you.
 
 ### Upgrade
 
-In order to upgrade the `optimize-persistent`, you can open a PR in github `infra-core` project and change [this line](https://github.com/camunda/infra-core/blob/stage/camunda-ci-v2/terraform/google/prod/db.tf#L69).
+In order to upgrade the `optimize-persistent`, you can open a PR in github `infra-core` project and change [this line](https://github.com/camunda/infra-core/blob/stage/camunda-ci/terraform/google/prod/db.tf#L69).
 
 ### Backup
 
