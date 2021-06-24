@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    experimental:
+      enablePriorityElection: true
