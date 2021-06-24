@@ -40,8 +40,8 @@ import java.util.function.Function;
  *   <li>{@link #multicast(String, Object, Set)} sends the message to all provided members
  *   <li>{@link #unicast(String, Object, MemberId)} sends a unicast message directly to the given
  *       member
- *   <li>{@link #send(String, Object, MemberId)} sends a message directly to the given member and
- *       awaits a reply
+ *   <li>{@link #send(String, Object, MemberId, Duration)} sends a message directly to the given
+ *       member and awaits a reply
  * </ul>
  *
  * To register to listen for messages, use one of the {@link #subscribe(String, Consumer, Executor)}
@@ -153,71 +153,6 @@ public interface ClusterCommunicationService {
       String subject, M message, Function<M, byte[]> encoder, boolean reliable);
 
   /**
-   * Sends a message to the specified member over TCP.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param toMemberId destination node identifier
-   * @param <M> message type
-   * @return future that is completed when the message is sent
-   */
-  default <M> CompletableFuture<Void> unicast(
-      final String subject, final M message, final MemberId toMemberId) {
-    return unicast(subject, message, BASIC::encode, toMemberId, true);
-  }
-
-  /**
-   * Sends a message to the specified member.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param toMemberId destination node identifier
-   * @param reliable whether to perform a reliable (TCP) unicast
-   * @param <M> message type
-   * @return future that is completed when the message is sent
-   */
-  default <M> CompletableFuture<Void> unicast(
-      final String subject, final M message, final MemberId toMemberId, final boolean reliable) {
-    return unicast(subject, message, BASIC::encode, toMemberId, reliable);
-  }
-
-  /**
-   * Sends a message to the specified member over TCP.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param encoder function for encoding message to byte[]
-   * @param toMemberId destination node identifier
-   * @param <M> message type
-   * @return future that is completed when the message is sent
-   */
-  default <M> CompletableFuture<Void> unicast(
-      final String subject,
-      final M message,
-      final Function<M, byte[]> encoder,
-      final MemberId toMemberId) {
-    return unicast(subject, message, encoder, toMemberId, true);
-  }
-
-  /**
-   * Sends a message to the specified member.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param encoder function for encoding message to byte[]
-   * @param toMemberId destination node identifier
-   * @param reliable whether to perform a reliable (TCP) unicast
-   * @param <M> message type
-   * @return future that is completed when the message is sent
-   */
-  <M> CompletableFuture<Void> unicast(
-      String subject,
-      M message,
-      Function<M, byte[]> encoder,
-      MemberId toMemberId,
-      boolean reliable);
-
-  /**
    * Multicasts a message to a set of members over TCP.
    *
    * @param subject message subject
@@ -281,19 +216,29 @@ public interface ClusterCommunicationService {
       boolean reliable);
 
   /**
-   * Sends a message and expects a reply.
+   * Sends a message to a member over TCP.
    *
    * @param subject message subject
    * @param message message to send
-   * @param toMemberId recipient node identifier
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
+   * @param memberId recipient node identifier
+   * @param <M> message type
    */
-  default <M, R> CompletableFuture<R> send(
-      final String subject, final M message, final MemberId toMemberId) {
-    return send(subject, message, BASIC::encode, BASIC::decode, toMemberId, null);
+  default <M> void unicast(final String subject, final M message, final MemberId memberId) {
+    unicast(subject, message, BASIC::encode, memberId, true);
   }
+
+  /**
+   * Sends a message to a member.
+   *
+   * @param subject message subject
+   * @param message message to send
+   * @param encoder function for encoding message to byte[]
+   * @param memberId recipient node identifier
+   * @param reliable whether to perform a reliable (TCP) unicast
+   * @param <M> message type
+   */
+  <M> void unicast(
+      String subject, M message, Function<M, byte[]> encoder, MemberId memberId, boolean reliable);
 
   /**
    * Sends a message and expects a reply.
@@ -309,27 +254,6 @@ public interface ClusterCommunicationService {
   default <M, R> CompletableFuture<R> send(
       final String subject, final M message, final MemberId toMemberId, final Duration timeout) {
     return send(subject, message, BASIC::encode, BASIC::decode, toMemberId, timeout);
-  }
-
-  /**
-   * Sends a message and expects a reply.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param encoder function for encoding request to byte[]
-   * @param decoder function for decoding response from byte[]
-   * @param toMemberId recipient node identifier
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
-   */
-  default <M, R> CompletableFuture<R> send(
-      final String subject,
-      final M message,
-      final Function<M, byte[]> encoder,
-      final Function<byte[], R> decoder,
-      final MemberId toMemberId) {
-    return send(subject, message, encoder, decoder, toMemberId, null);
   }
 
   /**
