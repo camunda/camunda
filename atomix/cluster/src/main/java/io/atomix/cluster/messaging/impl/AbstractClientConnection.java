@@ -28,21 +28,24 @@ import org.slf4j.LoggerFactory;
 /** Base class for client-side connections. Manages request futures and timeouts. */
 abstract class AbstractClientConnection implements ClientConnection {
   private final Logger log = LoggerFactory.getLogger(getClass());
-  private final Map<Long, Callback> callbacks = Maps.newConcurrentMap();
   private final AtomicBoolean closed = new AtomicBoolean(false);
+
+  // since all messages go through the same entry point, we keep a map of message IDs -> response
+  // futures to allow dynamic dispatch of messages to the right response future
+  private final Map<Long, CompletableFuture<byte[]>> responseFutures = Maps.newConcurrentMap();
 
   @Override
   public void dispatch(final ProtocolReply message) {
-    final Callback callback = callbacks.remove(message.id());
-    if (callback != null) {
+    final CompletableFuture<byte[]> responseFuture = responseFutures.remove(message.id());
+    if (responseFuture != null) {
       if (message.status() == ProtocolReply.Status.OK) {
-        callback.complete(message.payload());
+        responseFuture.complete(message.payload());
       } else if (message.status() == ProtocolReply.Status.ERROR_NO_HANDLER) {
-        callback.completeExceptionally(new MessagingException.NoRemoteHandler());
+        responseFuture.completeExceptionally(new MessagingException.NoRemoteHandler());
       } else if (message.status() == ProtocolReply.Status.ERROR_HANDLER_EXCEPTION) {
-        callback.completeExceptionally(new MessagingException.RemoteHandlerFailure());
+        responseFuture.completeExceptionally(new MessagingException.RemoteHandlerFailure());
       } else if (message.status() == ProtocolReply.Status.PROTOCOL_EXCEPTION) {
-        callback.completeExceptionally(new MessagingException.ProtocolException());
+        responseFuture.completeExceptionally(new MessagingException.ProtocolException());
       }
     } else {
       log.debug(
@@ -54,40 +57,27 @@ abstract class AbstractClientConnection implements ClientConnection {
   @Override
   public void close() {
     if (closed.compareAndSet(false, true)) {
-      for (final Callback callback : callbacks.values()) {
-        callback.completeExceptionally(new ConnectException());
+      for (final CompletableFuture<byte[]> responseFuture : responseFutures.values()) {
+        responseFuture.completeExceptionally(
+            new ConnectException(String.format("Connection %s was closed", this)));
       }
     }
   }
 
-  /** Client connection callback. */
-  final class Callback {
-    private final long id;
-    private final CompletableFuture<byte[]> replyFuture;
+  /**
+   * Registers a request to await a response. The future returned is already set up to remove itself
+   * from the registry to ensure cleanup.
+   *
+   * <p>Will return the same future if there already exists one for a given ID.
+   *
+   * @param id the request ID
+   * @return the response future for the given request ID
+   */
+  protected CompletableFuture<byte[]> awaitResponseForRequestWithId(final long id) {
+    final CompletableFuture<byte[]> responseFuture =
+        responseFutures.computeIfAbsent(id, ignored -> new CompletableFuture<>());
+    responseFuture.whenComplete((result, error) -> responseFutures.remove(id));
 
-    Callback(final long id, final CompletableFuture<byte[]> future) {
-      this.id = id;
-      replyFuture = future;
-      callbacks.put(id, this);
-    }
-
-    /**
-     * Completes the callback with the given value.
-     *
-     * @param value the value with which to complete the callback
-     */
-    void complete(final byte[] value) {
-      replyFuture.complete(value);
-    }
-
-    /**
-     * Completes the callback exceptionally.
-     *
-     * @param error the callback exception
-     */
-    void completeExceptionally(final Throwable error) {
-      replyFuture.completeExceptionally(error);
-      callbacks.remove(id);
-    }
+    return responseFuture;
   }
 }

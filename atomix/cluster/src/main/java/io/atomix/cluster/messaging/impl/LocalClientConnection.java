@@ -16,7 +16,6 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /** Local client-side connection. */
@@ -34,10 +33,8 @@ final class LocalClientConnection extends AbstractClientConnection {
   }
 
   @Override
-  public CompletableFuture<byte[]> sendAndReceive(
-      final ProtocolRequest message, final Duration timeout) {
-    final CompletableFuture<byte[]> future = new CompletableFuture<>();
-    new Callback(message.id(), future);
+  public CompletableFuture<byte[]> sendAndReceive(final ProtocolRequest message) {
+    final CompletableFuture<byte[]> future = awaitResponseForRequestWithId(message.id());
     serverConnection.dispatch(message);
     return future;
   }
@@ -46,5 +43,10 @@ final class LocalClientConnection extends AbstractClientConnection {
   public void close() {
     super.close();
     serverConnection.close();
+  }
+
+  @Override
+  public String toString() {
+    return "LocalClientConnection{}";
   }
 }
