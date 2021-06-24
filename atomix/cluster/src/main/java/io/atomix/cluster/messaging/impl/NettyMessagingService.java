@@ -200,11 +200,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
     final CompletableFuture<byte[]> responseFuture;
     if (keepAlive) {
       responseFuture =
-          executeOnPooledConnection(
-              address, type, c -> c.sendAndReceive(message, timeout), executor);
+          executeOnPooledConnection(address, type, c -> c.sendAndReceive(message), executor);
     } else {
       responseFuture =
-          executeOnTransientConnection(address, c -> c.sendAndReceive(message, timeout), executor);
+          executeOnTransientConnection(address, c -> c.sendAndReceive(message), executor);
     }
 
     final var timeoutFuture =
