@@ -24,13 +24,15 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.agrona.CloseHelper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.containers.ToxiproxyContainer.ContainerProxy;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -38,13 +40,15 @@ import org.testcontainers.utility.DockerImageName;
  * "gossip" messages use UDP. SWIM has other messages to probe and sync that uses TCP. So the
  * brokers can still find each other.
  */
-public class AdvertisedAddressTest {
+@Testcontainers
+final class AdvertisedAddressTest {
   private static final String TOXIPROXY_NETWORK_ALIAS = "toxiproxy";
   private static final String TOXIPROXY_IMAGE = "shopify/toxiproxy:2.1.0";
-  @Rule public final Network network = Network.newNetwork();
 
-  @Rule
-  public final ToxiproxyContainer toxiproxy =
+  private final Network network = Network.newNetwork();
+
+  @Container
+  private final ToxiproxyContainer toxiproxy =
       new ToxiproxyContainer(DockerImageName.parse(TOXIPROXY_IMAGE))
           .withNetwork(network)
           .withNetworkAliases(TOXIPROXY_NETWORK_ALIAS);
@@ -60,19 +64,19 @@ public class AdvertisedAddressTest {
           .withReplicationFactor(3)
           .build();
 
-  @Before
-  public void setup() {
+  @BeforeEach
+  void beforeEach() {
     cluster.getBrokers().values().forEach(this::configureBroker);
     cluster.getGateways().values().forEach(this::configureGateway);
   }
 
-  @After
-  public void tearDown() {
-    cluster.stop();
+  @AfterEach
+  void afterEach() {
+    CloseHelper.quietCloseAll(cluster, network);
   }
 
   @Test
-  public void shouldCommunicateOverProxy() {
+  void shouldCommunicateOverProxy() {
     // given
     cluster.start();
 
