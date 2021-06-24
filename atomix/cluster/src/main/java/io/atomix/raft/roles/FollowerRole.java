@@ -50,8 +50,6 @@ public final class FollowerRole extends ActiveRole {
   private final ElectionTimer electionTimer;
   private final ClusterMembershipEventListener clusterListener = this::handleClusterEvent;
 
-  private long lastHeartbeat;
-
   public FollowerRole(final RaftContext context, final ElectionTimerFactory electionTimerFactory) {
     super(context);
     electionTimer = electionTimerFactory.create(this::schedulePollRequests, log);
@@ -67,7 +65,6 @@ public final class FollowerRole extends ActiveRole {
     }
 
     raft.getMembershipService().addListener(clusterListener);
-    lastHeartbeat = System.currentTimeMillis();
     return super.start().thenRun(electionTimer::reset).thenApply(v -> this);
   }
 
@@ -232,11 +229,12 @@ public final class FollowerRole extends ActiveRole {
   }
 
   private void updateHeartbeat(final long currentTimestamp) {
-    if (lastHeartbeat > 0) {
-      raft.getRaftRoleMetrics().observeHeartbeatInterval(currentTimestamp - lastHeartbeat);
+    if (raft.getLastHeartbeat() > 0) {
+      raft.getRaftRoleMetrics()
+          .observeHeartbeatInterval(currentTimestamp - raft.getLastHeartbeat());
     }
 
-    lastHeartbeat = currentTimestamp;
+    raft.setLastHeartbeat(currentTimestamp);
   }
 
   private void schedulePollRequests() {
@@ -247,7 +245,7 @@ public final class FollowerRole extends ActiveRole {
     }
 
     if (raft.getFirstCommitIndex() == 0 || raft.getState() == RaftContext.State.READY) {
-      final var timeSinceLastHeartbeatMs = System.currentTimeMillis() - lastHeartbeat;
+      final var timeSinceLastHeartbeatMs = System.currentTimeMillis() - raft.getLastHeartbeat();
       final var leader =
           Optional.ofNullable(raft.getLeader())
               .map(DefaultRaftMember::memberId)

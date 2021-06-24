@@ -122,6 +122,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private PersistedSnapshot currentSnapshot;
   private volatile HealthStatus health = HealthStatus.HEALTHY;
 
+  private long lastHeartbeat;
+
   public RaftContext(
       final String name,
       final MemberId localMemberId,
@@ -1003,6 +1005,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public Random getRandom() {
     return random;
+  }
+
+  public long getLastHeartbeat() {
+    return lastHeartbeat;
+  }
+
+  public void setLastHeartbeat(final long lastHeartbeat) {
+    this.lastHeartbeat = lastHeartbeat;
+  }
+
+  public void resetLastHeartbeat() {
+    setLastHeartbeat(System.currentTimeMillis());
   }
 
   /** Raft server state. */
