@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.testcontainers.ZeebeTestContainerDefaults;
@@ -21,7 +19,6 @@ import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
@@ -94,7 +91,7 @@ final class AdvertisedAddressTest {
 
     // when - send a message to verify the gateway can talk to the broker directly not just via
     // gossip
-    try (final var client = newClientBuilder().build()) {
+    try (final var client = cluster.newClientBuilder().build()) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       final var messageSend =
           client
@@ -174,21 +171,5 @@ final class AdvertisedAddressTest {
         TOXIPROXY_NETWORK_ALIAS + ":" + contactPointProxy.getOriginalProxyPort());
     gateway.setDockerImageName(
         ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
-  }
-
-  // TODO(menski): replace with test container after update to new package names
-  private ZeebeClientBuilder newClientBuilder() {
-    final ZeebeGatewayNode<?> gateway =
-        cluster.getGateways().values().stream()
-            .filter(ZeebeNode::isStarted)
-            .findAny()
-            .orElseThrow(
-                () ->
-                    new NoSuchElementException(
-                        "Expected at least one gateway for the client to connect to, but there is none"));
-
-    return ZeebeClient.newClientBuilder()
-        .gatewayAddress(gateway.getExternalGatewayAddress())
-        .usePlaintext();
   }
 }
