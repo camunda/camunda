@@ -163,6 +163,7 @@ public class ConfigurationService {
   private Map<String, WebhookConfiguration> configuredWebhooks;
 
   private Integer exportCsvLimit;
+  private char exportCsvDelimiter;
 
   private Properties quartzProperties;
 
@@ -228,7 +229,10 @@ public class ConfigurationService {
 
   public SecurityConfiguration getSecurityConfiguration() {
     if (securityConfiguration == null) {
-      securityConfiguration = configJsonContext.read(ConfigurationServiceConstants.SECURITY, SecurityConfiguration.class);
+      securityConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.SECURITY,
+        SecurityConfiguration.class
+      );
     }
     return securityConfiguration;
   }
@@ -870,6 +874,18 @@ public class ConfigurationService {
       exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT, Integer.class);
     }
     return exportCsvLimit;
+  }
+
+  public char getExportCsvDelimiter() {
+    if (exportCsvDelimiter == 0) {
+      String delimiter = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_DELIMITER);
+      if (delimiter != null) {
+        exportCsvDelimiter = delimiter.charAt(0);
+      } else {
+        exportCsvDelimiter = ',';
+      }
+    }
+    return exportCsvDelimiter;
   }
 
   public String getElasticsearchSecurityUsername() {

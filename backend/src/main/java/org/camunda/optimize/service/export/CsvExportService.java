@@ -46,7 +46,7 @@ public class CsvExportService {
           0,
           timezone
         );
-      return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv));
+      return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv, configurationService.getExportCsvDelimiter()));
     } catch (NotFoundException e) {
       log.debug("Could not find report with id {} to export the result to csv!", reportId, e);
       return Optional.empty();
@@ -74,7 +74,7 @@ public class CsvExportService {
           0,
           timezone
         );
-      return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv);
+      return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv, configurationService.getExportCsvDelimiter());
     } catch (Exception e) {
       log.error("Could not evaluate report to export the result to csv!", e);
       throw e;

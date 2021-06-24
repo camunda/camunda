@@ -425,6 +425,7 @@ export:
     # can cause temporary heap memory peaks of up to ~200MB with the actual CSV file having a size of ~20MB.
     # Please adjust the heap memory accordingly.
     limit: 1000
+    delimiter: ","
 
 sharing:
   # decides if the sharing feature of Optimize can be used in the UI.

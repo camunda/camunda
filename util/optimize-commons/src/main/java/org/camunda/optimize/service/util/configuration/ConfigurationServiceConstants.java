@@ -24,7 +24,7 @@ public class ConfigurationServiceConstants {
   public static final String EMAIL_AUTHENTICATION = "$.email.authentication";
 
   public static final String CONFIGURED_WEBHOOKS = "$.webhookAlerting.webhooks";
-
+  //@formatter:off
   public static final String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   public static final String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
 
@@ -93,6 +93,7 @@ public class ConfigurationServiceConstants {
   public static final String CONTAINER_ACCESSURL = "$.container.accessUrl";
 
   public static final String EXPORT_CSV_LIMIT = "$.export.csv.limit";
+  public static final String EXPORT_CSV_DELIMITER = "$.export.csv.delimiter";
 
   public static final String HISTORY_CLEANUP = "$.historyCleanup";
   public static final String HISTORY_CLEANUP_PROCESS_DATA = HISTORY_CLEANUP + ".processDataCleanup";
@@ -114,5 +115,6 @@ public class ConfigurationServiceConstants {
 
   //  This isn't strictly part of the configuration service, but is part of how Optimize is configured
   public static final String CLOUD_PROFILE = "cloud";
+  //@formatter:on
 
 }

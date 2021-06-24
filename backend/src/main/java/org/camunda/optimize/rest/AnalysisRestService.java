@@ -104,7 +104,7 @@ public class AnalysisRestService {
     );
 
     return Response
-        .ok(CSVUtils.mapCsvLinesToCsvBytes(processInstanceIdsCsv), MediaType.APPLICATION_OCTET_STREAM)
+        .ok(CSVUtils.mapCsvLinesToCsvBytes(processInstanceIdsCsv, ','), MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-Disposition", "attachment; filename=" + resultFileName)
         .build();
   }

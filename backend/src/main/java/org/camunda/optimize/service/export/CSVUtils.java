@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
@@ -40,10 +41,10 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
 
-  public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings) {
+  public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings, final char csvDelimiter) {
     final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
     final BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(arrayOutputStream));
-    final CSVWriter csvWriter = new CSVWriter(bufferedWriter, ',', '"', '"', "\r\n");
+    final CSVWriter csvWriter = new CSVWriter(bufferedWriter, csvDelimiter, '"', '"', "\r\n");
 
     byte[] bytes = null;
     try {
