@@ -15,9 +15,18 @@ import {PopoverOverlay} from './';
 import {createInstance} from 'modules/testUtils';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
+import {MemoryRouter} from 'react-router';
 
 const FLOW_NODE_ID = 'startEvent';
 const FLOW_NODE_INSTANCE_ID = '2251799813686348';
+
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
 
 const completedFlowNodeMetaData = {
   flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
@@ -39,6 +48,7 @@ const completedFlowNodeMetaData = {
     jobWorker: null,
     jobDeadline: '2021-03-26T10:00:00.000+0000',
     jobCustomHeaders: null,
+    calledProcessInstanceId: '229843728748927482',
   },
 };
 
@@ -62,6 +72,7 @@ const incidentFlowNodeMetaData = {
     jobWorker: null,
     jobDeadline: null,
     jobCustomHeaders: null,
+    calledProcessInstanceId: null,
   },
 };
 
@@ -92,7 +103,7 @@ const renderPopover = () => {
     flowNode: document.createElementNS('http://www.w3.org/2000/svg', 'svg'),
   };
 
-  render(<PopoverOverlay {...PopoverlayProps} />, {wrapper: ThemeProvider});
+  render(<PopoverOverlay {...PopoverlayProps} />, {wrapper: Wrapper});
 };
 
 describe('PopoverOverlay', () => {
@@ -131,6 +142,7 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/endDate/)).toBeInTheDocument();
     expect(screen.getByText(/incidentErrorType/)).toBeInTheDocument();
     expect(screen.getByText(/incidentErrorMessage/)).toBeInTheDocument();
+    expect(screen.getByText(/calledProcessInstanceId/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'Show more metadata'})
     ).toBeInTheDocument();
@@ -143,6 +155,7 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText(incidentErrorType)).toBeInTheDocument();
     expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
+    expect(screen.getByText('None')).toBeInTheDocument();
   });
 
   it('should render meta data for completed flow node', async () => {
@@ -160,6 +173,7 @@ describe('PopoverOverlay', () => {
     await screen.findByText(/flowNodeInstanceId/);
     expect(screen.getByText(/startDate/)).toBeInTheDocument();
     expect(screen.getByText(/endDate/)).toBeInTheDocument();
+    expect(screen.getByText(/calledProcessInstanceId/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'Show more metadata'})
     ).toBeInTheDocument();
@@ -170,6 +184,11 @@ describe('PopoverOverlay', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getAllByText(MOCK_TIMESTAMP)).toHaveLength(2);
+    expect(
+      screen.getByText(
+        completedFlowNodeMetaData.instanceMetadata.calledProcessInstanceId
+      )
+    ).toBeInTheDocument();
 
     expect(screen.queryByText(/jobId/)).not.toBeInTheDocument();
     expect(screen.queryByText(/incidentErrorType/)).not.toBeInTheDocument();
@@ -224,5 +243,8 @@ describe('PopoverOverlay', () => {
     expect(screen.getByText(/"jobRetries": null/)).toBeInTheDocument();
     expect(screen.getByText(/"jobWorker": null/)).toBeInTheDocument();
     expect(screen.getByText(/"jobCustomHeaders": null/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"calledProcessInstanceId": "229843728748927482"/)
+    ).toBeInTheDocument();
   });
 });

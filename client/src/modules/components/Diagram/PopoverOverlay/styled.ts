@@ -133,6 +133,7 @@ const Popover = styled.div`
       box-shadow: ${shadow};
       padding: 11px;
       padding-top: 12px;
+      cursor: auto;
       ${arrowStyle}
     `;
   }}

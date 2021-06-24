@@ -29,36 +29,63 @@ import {OverlayType} from 'modules/types/modeler';
 import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';
 import {getPopoverPosition} from './getPopoverPosition';
+import {InstanceAnchor} from 'App/Instances/ListPanel/List/Instances/styled';
+import {Locations} from 'modules/routes';
 
 const InstanceMetaData: React.FC<{
   metaData: InstanceMetaDataEntity;
-}> = ({metaData}) => {
-  const metaDataSubset = (({
+}> = ({
+  metaData: {
     flowNodeInstanceId,
     jobId,
     startDate,
     endDate,
     incidentErrorType,
     incidentErrorMessage,
-  }) => ({
-    flowNodeInstanceId,
-    jobId,
-    startDate,
-    endDate,
-    incidentErrorType,
-    incidentErrorMessage,
-  }))(metaData);
-
+    calledProcessInstanceId,
+  },
+}) => {
   return (
     <SummaryData>
-      {Object.entries(metaDataSubset)
-        .filter(([key, value]) => key === 'endDate' || value !== null)
-        .map(([key, value]) => (
-          <Fragment key={key}>
-            <SummaryDataKey>{key}:</SummaryDataKey>
-            <SummaryDataValue>{value || '--'}</SummaryDataValue>
-          </Fragment>
-        ))}
+      <SummaryDataKey>flowNodeInstanceId:</SummaryDataKey>
+      <SummaryDataValue>{flowNodeInstanceId}</SummaryDataValue>
+      {jobId !== null && (
+        <>
+          <SummaryDataKey>jobId:</SummaryDataKey>
+          <SummaryDataValue>{jobId}</SummaryDataValue>
+        </>
+      )}
+      <SummaryDataKey>startDate:</SummaryDataKey>
+      <SummaryDataValue>{startDate}</SummaryDataValue>
+      <SummaryDataKey>endDate:</SummaryDataKey>
+      <SummaryDataValue>{endDate || '--'}</SummaryDataValue>
+      {incidentErrorType !== null && (
+        <>
+          <SummaryDataKey>incidentErrorType:</SummaryDataKey>
+          <SummaryDataValue>{incidentErrorType}</SummaryDataValue>
+        </>
+      )}
+      {incidentErrorMessage !== null && (
+        <>
+          <SummaryDataKey>incidentErrorMessage:</SummaryDataKey>
+          <SummaryDataValue>{incidentErrorMessage}</SummaryDataValue>
+        </>
+      )}
+      <SummaryDataKey>calledProcessInstanceId:</SummaryDataKey>
+      <SummaryDataValue>
+        {calledProcessInstanceId ? (
+          <InstanceAnchor
+            to={(location) =>
+              Locations.instance(calledProcessInstanceId, location)
+            }
+            title={`View called instance ${calledProcessInstanceId}`}
+          >
+            {calledProcessInstanceId}
+          </InstanceAnchor>
+        ) : (
+          'None'
+        )}
+      </SummaryDataValue>
     </SummaryData>
   );
 };

@@ -36,6 +36,7 @@ type InstanceMetaData = {
   jobRetries: number | null;
   jobType: string | null;
   jobWorker: string | null;
+  calledProcessInstanceId: string | null;
 };
 
 type Breadcrumb = {flowNodeId: string; flowNodeType: string};
