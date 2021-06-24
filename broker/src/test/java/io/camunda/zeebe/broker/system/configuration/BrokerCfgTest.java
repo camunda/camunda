@@ -506,6 +506,18 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldDisablePriorityElectionByDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // when
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isEnablePriorityElection()).isFalse();
+  }
+
+  @Test
   public void shouldSetEnablePriorityElectionFromConfig() {
     // given
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
