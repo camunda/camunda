@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.configuration.Com
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportCountChartDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportDurationChartDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
@@ -466,16 +467,18 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   private static ProcessReportDataDto createSimpleProcessReportData() {
     return TemplatedProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(DEFINITION_KEY)
-      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      // using definition key as identifier to ensure we have consistent identifiers
+      .definitions(List.of(new ReportDataDefinitionDto(DEFINITION_KEY, DEFINITION_KEY, List.of(DEFINITION_VERSION))))
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
   }
 
   private static DecisionReportDataDto createSimpleDecisionReportData() {
     final DecisionReportDataDto decisionReportData = new DecisionReportDataDto();
-    decisionReportData.setDecisionDefinitionKey(DEFINITION_KEY);
-    decisionReportData.setDecisionDefinitionVersion(DEFINITION_VERSION);
+    // using definition key as identifier to ensure we have consistent identifiers
+    decisionReportData.setDefinitions(List.of(
+      new ReportDataDefinitionDto(DEFINITION_KEY, DEFINITION_KEY, List.of(DEFINITION_VERSION))
+    ));
     return decisionReportData;
   }
 

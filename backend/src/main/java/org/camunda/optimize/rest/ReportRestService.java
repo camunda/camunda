@@ -68,7 +68,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
-                                                    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
+                                                    @Valid final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleProcessReport(
       userId,
@@ -86,7 +86,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewSingleDecisionReport(@Context final ContainerRequestContext requestContext,
-                                                     SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
+                                                     @Valid final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleDecisionReport(
       userId,
@@ -215,10 +215,10 @@ public class ReportRestService {
   @Path("/process/single/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateSingleProcessReport(@Context ContainerRequestContext requestContext,
-                                        @PathParam("id") String reportId,
-                                        @QueryParam("force") boolean force,
-                                        @NotNull SingleProcessReportDefinitionRequestDto updatedReport) {
+  public void updateSingleProcessReport(@Context final ContainerRequestContext requestContext,
+                                        @PathParam("id") final String reportId,
+                                        @QueryParam("force") final boolean force,
+                                        @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -233,10 +233,10 @@ public class ReportRestService {
   @Path("/decision/single/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateSingleDecisionReport(@Context ContainerRequestContext requestContext,
-                                         @PathParam("id") String reportId,
-                                         @QueryParam("force") boolean force,
-                                         @NotNull SingleDecisionReportDefinitionRequestDto updatedReport) {
+  public void updateSingleDecisionReport(@Context final ContainerRequestContext requestContext,
+                                         @PathParam("id") final String reportId,
+                                         @QueryParam("force") final boolean force,
+                                         @NotNull @Valid final SingleDecisionReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -254,7 +254,7 @@ public class ReportRestService {
   public void updateCombinedProcessReport(@Context ContainerRequestContext requestContext,
                                           @PathParam("id") String reportId,
                                           @QueryParam("force") boolean force,
-                                          @NotNull CombinedReportDefinitionRequestDto updatedReport) {
+                                          @NotNull  CombinedReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);

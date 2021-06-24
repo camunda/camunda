@@ -105,10 +105,15 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // given
     final List<ReportDataDefinitionDto> definitions = Arrays.asList(
       new ReportDataDefinitionDto(
-        RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+        "1", RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
       ),
       new ReportDataDefinitionDto(
-        RANDOM_KEY + 2, RANDOM_STRING + 2, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+        "2",
+        RANDOM_KEY + 2,
+        RANDOM_STRING + 2,
+        RANDOM_STRING,
+        Collections.singletonList(ALL_VERSIONS),
+        DEFAULT_TENANT_IDS
       )
     );
 
@@ -128,6 +133,44 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     assertThat(id).isNotNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void createNewSingleReportWithDefinitionWithoutIdentifierFails(final ReportType reportType) {
+    // given
+    final List<ReportDataDefinitionDto> definitions = List.of(
+      new ReportDataDefinitionDto(
+        null, RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+      )
+    );
+
+    // when
+
+    Response response;
+    switch (reportType) {
+      case PROCESS:
+        response = embeddedOptimizeExtension
+          .getRequestExecutor()
+          .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto(
+            ProcessReportDataDto.builder().definitions(definitions).build()
+          ))
+          .execute();
+        break;
+      case DECISION:
+        response = embeddedOptimizeExtension
+          .getRequestExecutor()
+          .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionRequestDto(
+            DecisionReportDataDto.builder().definitions(definitions).build()
+          ))
+          .execute();
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
+    }
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -200,6 +243,50 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void updateReportWithoutDefinitionIdentifierFails(final ReportType reportType) {
+    // given
+    final String id = addEmptyReportToOptimize(reportType);
+
+    // given
+    final List<ReportDataDefinitionDto> definitions = List.of(
+      new ReportDataDefinitionDto(
+        null, RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
+      )
+    );
+
+    // when
+    Response response;
+    switch (reportType) {
+      case PROCESS:
+        response = embeddedOptimizeExtension
+          .getRequestExecutor()
+          .buildUpdateSingleReportRequest(
+            id,
+            new SingleProcessReportDefinitionRequestDto(ProcessReportDataDto.builder().definitions(definitions).build())
+          )
+          .execute();
+        break;
+      case DECISION:
+        response = embeddedOptimizeExtension
+          .getRequestExecutor()
+          .buildUpdateSingleReportRequest(
+            id,
+            new SingleDecisionReportDefinitionRequestDto(
+              DecisionReportDataDto.builder().definitions(definitions).build()
+            )
+          )
+          .execute();
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
+    }
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest

@@ -59,6 +59,7 @@ public class MigrateDecisionReportIT extends AbstractUpgrade34IT {
           assertThat(definitions)
             .singleElement()
             .satisfies(definitionDoc -> {
+              assertThat(definitionDoc).containsKey(ReportDataDefinitionDto.Fields.identifier);
               assertThat(definitionDoc).containsKey(ReportDataDefinitionDto.Fields.key);
               assertThat(definitionDoc).containsKey(ReportDataDefinitionDto.Fields.name);
               assertThat(definitionDoc).containsKey(ReportDataDefinitionDto.Fields.displayName);
@@ -77,14 +78,17 @@ public class MigrateDecisionReportIT extends AbstractUpgrade34IT {
       .extracting(ReportDefinitionDto::getData)
       .extracting(SingleReportDataDto::getDefinitions)
       .satisfies(definitions -> {
-        assertThat(definitions).containsExactly(
-          new ReportDataDefinitionDto(
-            "invoice-assign-approver",
-            "Assign Approver Group",
-            Collections.singletonList("2"),
-            Arrays.asList(null, "tenant1")
-          )
-        );
+        assertThat(definitions)
+          .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ReportDataDefinitionDto.Fields.identifier)
+          .allSatisfy(reportDataDefinitionDto -> assertThat(reportDataDefinitionDto.getIdentifier()).isNotEmpty())
+          .containsExactly(
+            new ReportDataDefinitionDto(
+              "invoice-assign-approver",
+              "Assign Approver Group",
+              Collections.singletonList("2"),
+              Arrays.asList(null, "tenant1")
+            )
+          );
       });
 
     assertThat(getDocumentOfIndexByIdAs(
@@ -106,13 +110,16 @@ public class MigrateDecisionReportIT extends AbstractUpgrade34IT {
       .extracting(ReportDefinitionDto::getData)
       .extracting(SingleReportDataDto::getDefinitions)
       .satisfies(definitions -> {
-        assertThat(definitions).containsExactly(
-          new ReportDataDefinitionDto(
-            "test",
-            Collections.singletonList(ALL_VERSIONS),
-            CollectionClient.DEFAULT_TENANTS
-          )
-        );
+        assertThat(definitions)
+          .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ReportDataDefinitionDto.Fields.identifier)
+          .allSatisfy(reportDataDefinitionDto -> assertThat(reportDataDefinitionDto.getIdentifier()).isNotEmpty())
+          .containsExactly(
+            new ReportDataDefinitionDto(
+              "test",
+              Collections.singletonList(ALL_VERSIONS),
+              CollectionClient.DEFAULT_TENANTS
+            )
+          );
       });
   }
 

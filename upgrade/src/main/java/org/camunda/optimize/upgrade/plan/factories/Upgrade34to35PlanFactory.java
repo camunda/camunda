@@ -351,6 +351,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       "String definitionKey = ctx._source.data.processDefinitionKey;\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
       "  ctx._source.data.definitions.add([\n" +
+      "    \"identifier\" : UUID.randomUUID().toString(),\n" +
       "    \"key\" : definitionKey,\n" +
       "    \"name\" : ctx._source.data.processDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
@@ -373,6 +374,7 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       "String definitionKey = ctx._source.data.decisionDefinitionKey;\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
       "  ctx._source.data.definitions.add([\n" +
+      "    \"identifier\" : UUID.randomUUID().toString(),\n" +
       "    \"key\" : definitionKey,\n" +
       "    \"name\" : ctx._source.data.decisionDefinitionName,\n" +
       "    \"displayName\" : null,\n" +

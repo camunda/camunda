@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
+import javax.validation.Valid;
 import java.time.OffsetDateTime;
 
 @Data
@@ -33,6 +34,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   protected String lastModifier;
   protected String collectionId;
 
+  @Valid
   protected D data;
 
   private final boolean combined;

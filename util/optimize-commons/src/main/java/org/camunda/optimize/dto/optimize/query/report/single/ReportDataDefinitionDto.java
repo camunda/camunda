@@ -12,7 +12,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
+import java.util.UUID;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
@@ -21,6 +23,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 @FieldNameConstants
 @NoArgsConstructor
 public class ReportDataDefinitionDto {
+  @NotEmpty
+  private String identifier = UUID.randomUUID().toString();
   private String key;
   private String name;
   private String displayName;
@@ -29,6 +33,17 @@ public class ReportDataDefinitionDto {
 
   public ReportDataDefinitionDto(final String key) {
     this.key = key;
+  }
+
+  public ReportDataDefinitionDto(final String identifier, final String key) {
+    this.identifier = identifier;
+    this.key = key;
+  }
+
+  public ReportDataDefinitionDto(final String identifier, final String key, final List<String> versions) {
+    this.identifier = identifier;
+    this.key = key;
+    this.versions = versions;
   }
 
   public ReportDataDefinitionDto(final String key, final List<String> versions, final List<String> tenantIds) {
