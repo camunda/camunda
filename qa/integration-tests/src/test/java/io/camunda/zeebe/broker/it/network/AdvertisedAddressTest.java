@@ -68,6 +68,18 @@ final class AdvertisedAddressTest {
   void beforeEach() {
     cluster.getBrokers().values().forEach(this::configureBroker);
     cluster.getGateways().values().forEach(this::configureGateway);
+
+    // the first pass of configureBroker builds up the initial contact points; this has to be done
+    // as we're also creating the proxies. we use a second pass such that all nodes known about all
+    // others during bootstrapping.
+    cluster
+        .getBrokers()
+        .values()
+        .forEach(
+            broker ->
+                broker.withEnv(
+                    "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS",
+                    String.join(",", initialContactPoints)));
   }
 
   @AfterEach
@@ -132,8 +144,6 @@ final class AdvertisedAddressTest {
     broker.setDockerImageName(
         ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString());
     broker
-        .withEnv(
-            "ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", String.join(",", initialContactPoints))
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
         .withEnv("ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST", TOXIPROXY_NETWORK_ALIAS)
