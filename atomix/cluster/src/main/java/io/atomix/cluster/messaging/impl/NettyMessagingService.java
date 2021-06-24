@@ -99,6 +99,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private Class<? extends Channel> clientChannelClass;
   private Channel serverChannel;
   private final List<CompletableFuture> openFutures;
+  private final MessagingConfig config;
 
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
   private ScheduledExecutorService timeoutExecutor;
@@ -116,6 +117,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
+    this.config = config;
+
     openFutures = new CopyOnWriteArrayList<>();
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
     initAddresses(config);
@@ -316,8 +319,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
               } catch (final InterruptedException e) {
                 interrupted = true;
               }
-              final Future<?> serverShutdownFuture = serverGroup.shutdownGracefully();
-              final Future<?> clientShutdownFuture = clientGroup.shutdownGracefully();
+              final Future<?> serverShutdownFuture =
+                  serverGroup.shutdownGracefully(
+                      config.getShutdownQuietPeriod().toMillis(),
+                      config.getShutdownTimeout().toMillis(),
+                      TimeUnit.MILLISECONDS);
+              final Future<?> clientShutdownFuture =
+                  clientGroup.shutdownGracefully(
+                      config.getShutdownQuietPeriod().toMillis(),
+                      config.getShutdownTimeout().toMillis(),
+                      TimeUnit.MILLISECONDS);
               try {
                 serverShutdownFuture.sync();
               } catch (final InterruptedException e) {

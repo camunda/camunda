@@ -29,13 +29,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
-import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -47,6 +47,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -71,45 +72,47 @@ public class NettyMessagingServiceTest {
   Address addressv21;
   Address addressv22;
   Address invalidAddress;
-  private MessagingService messagingService;
+  private ManagedMessagingService messagingService;
 
   @Before
   public void setUp() throws Exception {
     address1 = Address.from(SocketUtil.getNextAddress().getPort());
+    final var config = new MessagingConfig().setShutdownQuietPeriod(Duration.ofMillis(50));
+
     netty1 =
         (ManagedMessagingService)
-            new NettyMessagingService("test", address1, new MessagingConfig()).start().join();
+            new NettyMessagingService("test", address1, config).start().join();
 
     address2 = Address.from(SocketUtil.getNextAddress().getPort());
     netty2 =
         (ManagedMessagingService)
-            new NettyMessagingService("test", address2, new MessagingConfig()).start().join();
+            new NettyMessagingService("test", address2, config).start().join();
 
     addressv11 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv11 =
         (ManagedMessagingService)
-            new NettyMessagingService("test", addressv11, new MessagingConfig(), ProtocolVersion.V1)
+            new NettyMessagingService("test", addressv11, config, ProtocolVersion.V1)
                 .start()
                 .join();
 
     addressv12 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv12 =
         (ManagedMessagingService)
-            new NettyMessagingService("test", addressv12, new MessagingConfig(), ProtocolVersion.V1)
+            new NettyMessagingService("test", addressv12, config, ProtocolVersion.V1)
                 .start()
                 .join();
 
     addressv21 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv21 =
         (ManagedMessagingService)
-            new NettyMessagingService("test", addressv21, new MessagingConfig(), ProtocolVersion.V2)
+            new NettyMessagingService("test", addressv21, config, ProtocolVersion.V2)
                 .start()
                 .join();
 
     addressv22 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv22 =
         (ManagedMessagingService)
-            new NettyMessagingService("test", addressv22, new MessagingConfig(), ProtocolVersion.V2)
+            new NettyMessagingService("test", addressv22, config, ProtocolVersion.V2)
                 .start()
                 .join();
 
@@ -127,21 +130,17 @@ public class NettyMessagingServiceTest {
 
   @After
   public void tearDown() throws Exception {
-    if (netty1 != null) {
-      try {
-        netty1.stop().join();
-      } catch (final Exception e) {
-        LOGGER.warn("Failed stopping netty1", e);
-      }
-    }
-
-    if (netty2 != null) {
-      try {
-        netty2.stop().join();
-      } catch (final Exception e) {
-        LOGGER.warn("Failed stopping netty2", e);
-      }
-    }
+    Stream.of(netty1, netty2, nettyv11, nettyv12, nettyv21, nettyv22, messagingService)
+        .parallel()
+        .filter(Objects::nonNull)
+        .forEach(
+            service -> {
+              try {
+                service.stop().join();
+              } catch (final Exception e) {
+                LOGGER.warn("Failed stopping NettyMessagingService {}", service, e);
+              }
+            });
   }
 
   @Test
@@ -332,21 +331,6 @@ public class NettyMessagingServiceTest {
   }
 
   @Test
-  public void testSendAndReceiveWithDynamicTimeout() {
-    final String subject = nextSubject();
-    final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler =
-        (ep, payload) -> new CompletableFuture<>();
-    netty2.registerHandler(subject, handler);
-
-    try {
-      netty1.sendAndReceive(address2, subject, "hello world".getBytes()).join();
-      fail();
-    } catch (final CompletionException e) {
-      assertTrue(e.getCause() instanceof TimeoutException);
-    }
-  }
-
-  @Test
   @Ignore
   public void testSendAndReceiveWithExecutor() {
     final String subject = nextSubject();
@@ -441,7 +425,7 @@ public class NettyMessagingServiceTest {
     final var startFuture = new NettyMessagingService("test", nonBindableAddress, config).start();
 
     // then - should not fail by using advertisedAddress for binding
-    messagingService = startFuture.join();
+    messagingService = (ManagedMessagingService) startFuture.join();
     assertThat(messagingService.bindingAddresses()).contains(bindingAddress);
     assertThat(messagingService.address()).isEqualTo(nonBindableAddress);
   }
