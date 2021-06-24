@@ -12,8 +12,8 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.core.Atomix;
+import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
@@ -370,8 +370,7 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable partitionsStep(
       final BrokerCfg brokerCfg, final ClusterCfg clusterCfg, final BrokerInfo localBroker)
       throws Exception {
-    final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup();
+    final ManagedPartitionGroup partitionGroup = atomix.getPartitionService().getPartitionGroup();
 
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
     final List<RaftPartition> owningPartitions =

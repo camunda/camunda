@@ -22,7 +22,6 @@ import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionService;
-import io.atomix.raft.partition.RaftPartitionGroup;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -41,7 +40,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
   public DefaultPartitionService(
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService messagingService,
-      final RaftPartitionGroup group) {
+      final ManagedPartitionGroup group) {
     clusterMembershipService = membershipService;
     communicationService = messagingService;
     this.group = group;
