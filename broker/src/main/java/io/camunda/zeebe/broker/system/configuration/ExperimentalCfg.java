@@ -20,10 +20,12 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
+  public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = false;
 
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
+  private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
   private RocksdbCfg rocksdb = new RocksdbCfg();
 
   @Override
@@ -65,6 +67,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
 
   public void setRocksdb(final RocksdbCfg rocksdb) {
     this.rocksdb = rocksdb;
+  }
+
+  public boolean isEnablePriorityElection() {
+    return enablePriorityElection;
+  }
+
+  public void setEnablePriorityElection(final boolean enablePriorityElection) {
+    this.enablePriorityElection = enablePriorityElection;
   }
 
   @Override
