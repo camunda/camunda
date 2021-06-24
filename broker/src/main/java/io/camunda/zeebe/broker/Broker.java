@@ -349,8 +349,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
-    healthCheckService =
-        new BrokerHealthCheckService(localBroker, atomix.getPartitionService().getPartitionGroup());
+    healthCheckService = new BrokerHealthCheckService(localBroker, atomix.getPartitionGroup());
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
@@ -381,7 +380,7 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker)
       throws Exception {
-    final ManagedPartitionGroup partitionGroup = atomix.getPartitionService().getPartitionGroup();
+    final ManagedPartitionGroup partitionGroup = clusterServices.getPartitionService().getPartitionGroup();
 
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 

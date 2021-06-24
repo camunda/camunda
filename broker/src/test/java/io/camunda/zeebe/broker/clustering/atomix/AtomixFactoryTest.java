@@ -61,7 +61,7 @@ public final class AtomixFactoryTest {
   }
 
   private ManagedPartitionGroup getPartitionGroup(final Atomix atomix) {
-    return atomix.getPartitionService().getPartitionGroup();
+    return atomix.getPartitionGroup();
   }
 
   private RaftPartitionGroupConfig getPartitionGroupConfig(final Atomix atomix) {
