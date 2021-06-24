@@ -7,6 +7,7 @@ metadata:
   labels:
     app: optimize-persistent
     team: optimize
+    camunda.cloud/managed-by: ci
 spec:
   replicas: 1
   revisionHistoryLimit: 0
@@ -20,6 +21,7 @@ spec:
     metadata:
       labels:
         app: optimize-persistent
+        camunda.cloud/managed-by: ci
     spec:
       imagePullSecrets:
       - name: registry-camunda-cloud

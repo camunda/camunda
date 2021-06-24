@@ -1,30 +1,41 @@
-## Persistent Deployment
+# Optimize Persistent Deployment
 
-### Intro 
+## Intro
 
 This environment is an Optimize persistent deployment that contains:
-* An Elasticsearch cluster with persistent volume and data.
-* A postgres database.
 * An Optimize deployment (Optimize container + Cambpm container).
+* An Elasticsearch cluster with persistent volume and data.
+* A PostgreSQL database.
 
-This environment is deployed under the `optimize-persistent` namespace of the `ci-v2` Kubernetes cluster (the cluster 
+This environment is deployed under the `optimize-persistent` namespace of the `ci-v2` Kubernetes cluster (the cluster
 itself is maintained by the Infrastructure team).
 
-#### Elasticsearch Cluster
+The environment is split between 2 places:
+* **Static resources**: The resources tend to change less frequently or need a special permission to run and
+  those are managed in the [infra-core](https://github.com/camunda/infra-core/) repo.
+  For example, PostgreSQL instance and its access is managed in the infra-core repo.
+* **Dynamic resources**: The resources tend to change more frequently, and they are managed by Optimize team using
+  Optimize Jenkins.
 
-Before performing any change to the resources, you need to make sure you are in the right cluster and k8s context. 
-See [this page](https://confluence.camunda.com/pages/viewpage.action?pageId=70785400) for more details.
+## 1. Optimize Application
 
-##### Upgrade
+### Upgrade
 
-The upgrade of the ES instance is done manually by changing the version in `.ci/persistent-deployment/elasticsearch/elasticsearch-cluster.yml`
-file and run:
+* The upgrade of the Optimize deployment, change the version in `optimize/deployment.yml`
+* Now go to Jenkins instance of targeted infrastructure env (e.g. prod, stage, etc).
+* Run the job [deploy-optimize-persistent](../jobs/deploy_optimize_persistent.dsl)
+  then, `Build with Parameters` and tick `DEPLOY_OPTIMIZE` to deploy the new version of Optimize.
 
-```shell script
-kubectl apply -f .ci/persistent-deployment/elasticsearch/elasticsearch-cluster.yml 
-```
+## 2. Elasticsearch Cluster
 
-##### Backup
+### Upgrade
+
+* The upgrade of the ES instance, change the version in `elasticsearch/elasticsearch-cluster.yml`
+* Now go to Jenkins instance of targeted infrastructure env (e.g. prod, stage, etc).
+* Run the job [deploy-optimize-persistent](../jobs/deploy_optimize_persistent.dsl)
+  then, `Build with Parameters` and tick `DEPLOY_ELASTICSEARCH` to deploy the new version of ES.
+
+### Backup
 
 ES backup (or snapshot as it is known for ES users) is done manually using the `curl` as following:
 
@@ -42,9 +53,9 @@ curl -X PUT "http://localhost:9200/_snapshot/optimize-persistent-data/<my-snapsh
 You can see the created snapshot by checking the content of the [optimize-persistent-data](https://console.cloud.google.com/storage/browser/optimize-persistent-data;tab=objects?forceOnBucketsSortingFiltering=false&organizationId=669107107215&project=ci-30-162810&prefix=&forceOnObjectsSortingFiltering=false)
  bucket in `camunda-ci-v2` gcp cluster.
 
-#### Postgres database
+## 3. PostgreSQL Database
 
-##### Database
+### Database
 
 The `optimize-persistent` database is part of `camunda-ci-v2` gcp project. You can see it [here](https://console.cloud.google.com/sql/instances/optimize-persistent/overview?organizationId=669107107215&project=ci-30-162810).
 
@@ -52,11 +63,10 @@ In order to access the database from the command line, you can follow the docume
 The username and password used to access the database are stored in [vault](https://vault.int.camunda.com/ui/vault/secrets/secret/show/k8s-camunda-ci-v2/optimize/db)
 but this could only be access by INFRA team, so you should ask INFRA to share the credentials with you.
 
-##### Upgrade
+### Upgrade
 
 In order to upgrade the `optimize-persistent`, you can open a PR in github `infra-core` project and change [this line](https://github.com/camunda/infra-core/blob/stage/camunda-ci-v2/terraform/google/prod/db.tf#L69).
 
-##### Backup
+### Backup
 
 An automatic backup is configured for `optimize-persistent` nightly at 2am Berlin time.
-

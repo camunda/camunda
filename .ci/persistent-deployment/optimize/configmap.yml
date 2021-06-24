@@ -8,6 +8,7 @@ metadata:
   namespace: optimize-persistent
   labels:
     app: optimize-persistent-config
+    camunda.cloud/managed-by: ci
 data:
 ######################## OPT ########################
   OptimizeLicense.txt: |
