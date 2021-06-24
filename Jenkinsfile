@@ -109,14 +109,14 @@ pipeline {
                 // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-                  mvn verify -f qa/import-old-zeebe-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
+                  mvn verify -f qa/integration-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests,old-zeebe -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
                   '''
               }
             }
           }
           post {
             always {
-              junit testResults: 'qa/import-old-zeebe-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'qa/integration-tests/target-old-zeebe/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }

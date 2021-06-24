@@ -27,6 +27,9 @@ public enum FlowNodeType {
   SEQUENCE_FLOW,
   MULTI_INSTANCE_BODY,
   CALL_ACTIVITY,
+  BUSINESS_RULE_TASK,
+  SCRIPT_TASK,
+  SEND_TASK,
   UNKNOWN;
 
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeType.class);
@@ -38,7 +41,7 @@ public enum FlowNodeType {
     try {
       return FlowNodeType.valueOf(bpmnElementType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Activity type not found for value [{}]. UNKNOWN type will be assigned.", bpmnElementType);
+      logger.error("Flow node type not found for value [{}]. UNKNOWN type will be assigned.", bpmnElementType);
       return UNKNOWN;
     }
   }

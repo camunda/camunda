@@ -25,7 +25,6 @@
         <module>util</module>
         <module>data-generator</module>
         <module>integration-tests</module>
-        <module>import-old-zeebe-tests</module>
         <module>import-performance-tests</module>
         <module>query-performance-tests</module>
         <module>batch-operation-performance-tests</module>

@@ -17,18 +17,18 @@
       <bpmn:incoming>SequenceFlow_1q6ade7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1s6g17c</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_162x79i" name="Ship Articles">
+    <bpmn:sendTask id="Task_162x79i" name="Ship Articles">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="shipArticles" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0drux68</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_19klrd3</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:sendTask>
     <bpmn:endEvent id="EndEvent_042s0oc">
       <bpmn:incoming>SequenceFlow_19klrd3</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_19klrd3" sourceRef="Task_162x79i" targetRef="EndEvent_042s0oc" />
-    <bpmn:serviceTask id="Task_1t0a4uy" name="Check order items">
+    <bpmn:businessRuleTask id="Task_1t0a4uy" name="Check order items">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="checkItems" />
         <zeebe:ioMapping>
@@ -38,7 +38,7 @@
       <bpmn:incoming>SequenceFlow_1dwqvrt</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_01a5668</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1fgekwd</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:businessRuleTask>
     <bpmn:exclusiveGateway id="ExclusiveGateway_0n882rg" name="All items available?">
       <bpmn:incoming>SequenceFlow_1fgekwd</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0drux68</bpmn:outgoing>
@@ -68,13 +68,13 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paid = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1q6ade7" sourceRef="ServiceTask_00g0gy6" targetRef="Task_1b1r7ow" />
-    <bpmn:serviceTask id="ServiceTask_0fiiz29" name="Request from  warehouse">
+    <bpmn:scriptTask id="ServiceTask_0fiiz29" name="Request from  warehouse">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="requestWarehouse" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_11p0iy6</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_01a5668</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:scriptTask>
     <bpmn:sequenceFlow id="SequenceFlow_11p0iy6" name="Smth is missing" sourceRef="ExclusiveGateway_0n882rg" targetRef="ServiceTask_0fiiz29">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=smthIsMissing = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
