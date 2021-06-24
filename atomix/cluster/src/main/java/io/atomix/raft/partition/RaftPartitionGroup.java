@@ -421,6 +421,11 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
       return this;
     }
 
+    public Builder withPriorityElection(final boolean enable) {
+      config.setPriorityElectionEnabled(enable);
+      return this;
+    }
+
     @Override
     public RaftPartitionGroup build() {
       return new RaftPartitionGroup(config);

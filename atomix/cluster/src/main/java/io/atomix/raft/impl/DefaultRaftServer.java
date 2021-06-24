@@ -265,7 +265,8 @@ public class DefaultRaftServer implements RaftServer {
               singleThreadFactory,
               maxAppendBatchSize,
               maxAppendsPerFollower,
-              randomSupplier);
+              randomSupplier,
+              electionConfig);
       raft.setElectionTimeout(electionTimeout);
       raft.setHeartbeatInterval(heartbeatInterval);
       raft.setEntryValidator(entryValidator);

@@ -26,6 +26,7 @@ import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
@@ -422,6 +423,7 @@ public interface RaftServer {
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected int maxAppendsPerFollower = 2;
     protected int maxAppendBatchSize = 32 * 1024;
+    protected RaftElectionConfig electionConfig = RaftElectionConfig.ofDefaultElection();
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -553,6 +555,11 @@ public interface RaftServer {
 
     public Builder withEntryValidator(final EntryValidator entryValidator) {
       this.entryValidator = entryValidator;
+      return this;
+    }
+
+    public Builder withElectionConfig(final RaftElectionConfig electionConfig) {
+      this.electionConfig = electionConfig;
       return this;
     }
   }

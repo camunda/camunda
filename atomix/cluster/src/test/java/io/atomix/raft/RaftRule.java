@@ -60,10 +60,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
@@ -92,20 +92,28 @@ public final class RaftRule extends ExternalResource {
   // Keep a reference to the snapshots to ensure they are persisted across the restarts.
   private Map<String, AtomicReference<InMemorySnapshot>> snapshots;
   private Map<String, TestSnapshotStore> snapshotStores;
+  private final BiFunction<MemberId, Builder, Builder> serverConfigurator;
 
-  private RaftRule(final int nodeCount) {
+  private RaftRule(
+      final int nodeCount, final BiFunction<MemberId, Builder, Builder> serverConfigurator) {
     this.nodeCount = nodeCount;
+    this.serverConfigurator = serverConfigurator;
   }
 
-  public static RaftRule withBootstrappedNodes(final int nodeCount) {
+  public static RaftRule withBootstrappedNodes(
+      final int nodeCount, final BiFunction<MemberId, Builder, Builder> serverConfigurator) {
     if (nodeCount < 1) {
       throw new IllegalArgumentException("Expected to have at least one node to configure.");
     }
-    return new RaftRule(nodeCount);
+    return new RaftRule(nodeCount, serverConfigurator);
+  }
+
+  public static RaftRule withBootstrappedNodes(final int nodeCount) {
+    return new RaftRule(nodeCount, (m, b) -> b);
   }
 
   public static RaftRule withoutNodes() {
-    return new RaftRule(-1);
+    return new RaftRule(-1, (m, b) -> b);
   }
 
   public RaftRule setEntryValidator(final EntryValidator entryValidator) {
@@ -133,7 +141,7 @@ public final class RaftRule extends ExternalResource {
     protocolFactory = new TestRaftProtocolFactory(context);
 
     if (nodeCount > 0) {
-      createServers(nodeCount);
+      createServers(nodeCount, serverConfigurator);
     }
   }
 
@@ -182,7 +190,9 @@ public final class RaftRule extends ExternalResource {
   }
 
   /** Creates a set of Raft servers. */
-  private List<RaftServer> createServers(final int nodes) throws Exception {
+  private List<RaftServer> createServers(
+      final int nodes, final BiFunction<MemberId, Builder, Builder> serverConfigurator)
+      throws Exception {
     final List<RaftServer> servers = new ArrayList<>();
 
     for (int i = 0; i < nodes; i++) {
@@ -193,7 +203,7 @@ public final class RaftRule extends ExternalResource {
 
     for (int i = 0; i < nodes; i++) {
       final var raftMember = members.get(i);
-      final RaftServer server = createServer(raftMember.memberId());
+      final RaftServer server = createServer(raftMember.memberId(), serverConfigurator);
       server
           .bootstrap(members.stream().map(RaftMember::memberId).collect(Collectors.toList()))
           .thenAccept(this::addCommitListener)
@@ -219,7 +229,7 @@ public final class RaftRule extends ExternalResource {
 
   public void joinCluster(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId())
+    createServer(member.memberId(), serverConfigurator)
         .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
@@ -227,7 +237,7 @@ public final class RaftRule extends ExternalResource {
 
   public void bootstrapNode(final String nodeId) throws Exception {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId())
+    createServer(member.memberId(), serverConfigurator)
         .bootstrap(getMemberIds())
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
@@ -236,7 +246,7 @@ public final class RaftRule extends ExternalResource {
   public void bootstrapNodeWithMemberIds(final String nodeId, final List<MemberId> memberIds)
       throws Exception {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId())
+    createServer(member.memberId(), serverConfigurator)
         .bootstrap(memberIds)
         .thenAccept(this::addCommitListener)
         .get(30, TimeUnit.SECONDS);
@@ -426,28 +436,19 @@ public final class RaftRule extends ExternalResource {
     commitAwaiter.awaitCommit();
   }
 
-  /** Creates a Raft server. */
-  private RaftServer createServer(final MemberId memberId) {
-    return createServer(
-        memberId,
-        b -> {
-          final var storage = createStorage(memberId);
-          storage
-              .getPersistedSnapshotStore()
-              .addSnapshotListener(new RaftSnapshotListener(memberId));
-          return b.withStorage(storage);
-        });
-  }
-
   private RaftServer createServer(
-      final MemberId memberId, final UnaryOperator<Builder> configurator) {
+      final MemberId memberId, final BiFunction<MemberId, Builder, Builder> configurator) {
     final TestRaftServerProtocol protocol = protocolFactory.newServerProtocol(memberId);
+    final var storage = createStorage(memberId);
+    storage.getPersistedSnapshotStore().addSnapshotListener(new RaftSnapshotListener(memberId));
+
     final RaftServer.Builder defaults =
         RaftServer.builder(memberId)
             .withMembershipService(mock(ClusterMembershipService.class))
             .withProtocol(protocol)
-            .withEntryValidator(entryValidator);
-    final RaftServer server = configurator.apply(defaults).build();
+            .withEntryValidator(entryValidator)
+            .withStorage(storage);
+    final RaftServer server = configurator.apply(memberId, defaults).build();
 
     servers.put(memberId.id(), server);
     return server;
