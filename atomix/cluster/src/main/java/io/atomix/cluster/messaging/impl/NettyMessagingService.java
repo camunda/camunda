@@ -51,6 +51,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -587,14 +588,34 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.channel(clientChannelClass);
     bootstrap.remoteAddress(resolvedAddress, address.port());
     bootstrap.handler(new BasicClientChannelInitializer(future));
-    bootstrap
-        .connect()
+    final Channel channel =
+        bootstrap
+            .connect()
+            .addListener(
+                onConnect -> {
+                  if (!onConnect.isSuccess()) {
+                    future.completeExceptionally(
+                        new ConnectException(
+                            String.format("Failed to connect channel for address %s", address)));
+                  }
+                })
+            .channel();
+
+    // immediately ensure we're notified of the channel being closed. the common case is that the
+    // channel is closed after we've handled the request (and response in the case of a
+    // sendAndReceive operation), so the future is already completed by then. If it isn't, then the
+    // channel was closed too early, which should be handled as a failure from the consumer point
+    // of view.
+    channel
+        .closeFuture()
         .addListener(
-            f -> {
-              if (!f.isSuccess()) {
-                future.completeExceptionally(f.cause());
-              }
-            });
+            onClose ->
+                future.completeExceptionally(
+                    new ConnectException(
+                        String.format(
+                            "Channel %s for address %s was closed unexpectedly before the request was handled",
+                            channel, address))));
+
     return future;
   }
 
