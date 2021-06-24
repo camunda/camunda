@@ -6,11 +6,21 @@
 package io.camunda.tasklist.webapp.graphql.entity;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
+import static io.camunda.tasklist.webapp.security.UserReader.DEFAULT_USER;
+import static io.camunda.tasklist.webapp.security.UserReader.EMPTY;
 
+import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.entities.UserEntity;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.webapp.security.es.User;
+import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 public class UserDTO {
 
@@ -45,25 +55,6 @@ public class UserDTO {
     return this;
   }
 
-  // Used by web application context
-  public static UserDTO createFrom(User userDetails) {
-    return new UserDTO()
-        .setUsername(userDetails.getUsername())
-        .setFirstname(userDetails.getFirstname())
-        .setLastname(userDetails.getLastname());
-  }
-
-  public static List<UserDTO> createFrom(List<UserEntity> userEntities) {
-    return map(userEntities, UserDTO::createFrom);
-  }
-
-  private static UserDTO createFrom(UserEntity userEntity) {
-    return new UserDTO()
-        .setUsername(userEntity.getUsername())
-        .setFirstname(userEntity.getFirstname())
-        .setLastname(userEntity.getLastname());
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(firstname, lastname, username);
@@ -84,5 +75,58 @@ public class UserDTO {
     return Objects.equals(firstname, other.firstname)
         && Objects.equals(lastname, other.lastname)
         && Objects.equals(username, other.username);
+  }
+
+  public static List<UserDTO> createFrom(List<UserEntity> userEntities) {
+    return map(userEntities, UserDTO::createFrom);
+  }
+
+  // Used by web application context
+  public static UserDTO createFrom(User userDetails) {
+    return new UserDTO()
+        .setUsername(userDetails.getUsername())
+        .setFirstname(userDetails.getFirstname())
+        .setLastname(userDetails.getLastname());
+  }
+
+  private static UserDTO createFrom(UserEntity userEntity) {
+    return new UserDTO()
+        .setUsername(userEntity.getUsername())
+        .setFirstname(userEntity.getFirstname())
+        .setLastname(userEntity.getLastname());
+  }
+
+  public static UserDTO buildFromJWTAuthenticationToken(
+      final JwtAuthenticationToken authentication) {
+    final String name = authentication.getName();
+    if (ConversionUtils.stringIsEmpty(name)) {
+      return createUserDTO(DEFAULT_USER);
+    } else {
+      return createUserDTO(name);
+    }
+  }
+
+  public static UserDTO buildFromTokenAuthentication(
+      TokenAuthentication tokenAuth, TasklistProperties tasklistProperties) {
+    final Map<String, Claim> claims = tokenAuth.getClaims();
+    String name = DEFAULT_USER;
+    if (claims.containsKey(tasklistProperties.getAuth0().getNameKey())) {
+      name = claims.get(tasklistProperties.getAuth0().getNameKey()).asString();
+    }
+    return createUserDTO(name);
+  }
+
+  public static UserDTO buildFromAuthentication(final Authentication authentication) {
+    final Object principal = authentication.getPrincipal();
+    if (principal instanceof User) {
+      return UserDTO.createFrom((User) principal);
+    } else {
+      throw new TasklistRuntimeException(
+          String.format("Could not build UserDTO from authentication principal %s", principal));
+    }
+  }
+
+  public static UserDTO createUserDTO(String name) {
+    return new UserDTO().setUsername(name).setFirstname(EMPTY).setLastname(name);
   }
 }

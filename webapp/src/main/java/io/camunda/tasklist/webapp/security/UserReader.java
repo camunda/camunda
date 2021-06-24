@@ -10,7 +10,10 @@ import java.util.List;
 
 public interface UserReader {
 
-  public UserDTO getCurrentUser();
+  String EMPTY = "";
+  String DEFAULT_USER = "No name";
 
-  public List<UserDTO> getUsersByUsernames(List<String> usernames);
+  UserDTO getCurrentUser();
+
+  List<UserDTO> getUsersByUsernames(List<String> usernames);
 }

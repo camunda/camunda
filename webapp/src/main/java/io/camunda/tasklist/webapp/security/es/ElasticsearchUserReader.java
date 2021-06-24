@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,7 +28,11 @@ public class ElasticsearchUserReader implements UserReader {
   public UserDTO getCurrentUser() {
     final SecurityContext context = SecurityContextHolder.getContext();
     final Authentication authentication = context.getAuthentication();
-    return UserDTO.createFrom((User) authentication.getPrincipal());
+    if (authentication instanceof JwtAuthenticationToken) {
+      return UserDTO.buildFromJWTAuthenticationToken((JwtAuthenticationToken) authentication);
+    } else {
+      return UserDTO.buildFromAuthentication(authentication);
+    }
   }
 
   @Override
