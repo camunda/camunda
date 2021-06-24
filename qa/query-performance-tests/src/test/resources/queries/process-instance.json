@@ -17,7 +17,9 @@
   {
     "title": "Process instance variables by id",
     "url": "/api/process-instances/${processInstanceId}/variables",
-    "pathParams": "scopeId=${processInstanceId}",
-    "method": "GET"
+    "method": "POST",
+    "body": {
+      "scopeId": "${processInstanceId}"
+    }
   }
 ]
