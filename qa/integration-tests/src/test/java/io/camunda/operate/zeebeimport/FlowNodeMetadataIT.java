@@ -308,6 +308,8 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
     assertThat(flowNodeMetadata.getInstanceCount()).isNull();
     assertThat(flowNodeMetadata.getInstanceMetadata()).isNotNull();
     assertThat(flowNodeMetadata.getInstanceMetadata().getFlowNodeType()).isEqualTo(CALL_ACTIVITY);
+    assertThat(flowNodeMetadata.getInstanceMetadata().getCalledProcessDefinitionName())
+        .isEqualTo(calledProcessId);
     final String calledProcessInstanceId1 = flowNodeMetadata.getInstanceMetadata()
         .getCalledProcessInstanceId();
     assertThat(calledProcessInstanceId1).isNotNull();

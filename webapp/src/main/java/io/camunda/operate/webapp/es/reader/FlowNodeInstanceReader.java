@@ -540,24 +540,38 @@ public class FlowNodeInstanceReader extends AbstractReader {
 
   private FlowNodeInstanceMetadataDto buildInstanceMetadata(final FlowNodeInstanceEntity flowNodeInstance) {
     final EventEntity eventEntity = getEventEntity(flowNodeInstance.getId());
-    String calledProcessInstanceId = null;
+    final String[] calledProcessInstanceId = {null};
+    final String[] calledProcessDefinitionName = {null};
     if (flowNodeInstance.getType().equals(FlowNodeType.CALL_ACTIVITY)) {
-      calledProcessInstanceId = getCalledProcessInstanceId(flowNodeInstance.getId());
+      findCalledProcessInstance(flowNodeInstance.getId(),
+          sh -> {
+            calledProcessInstanceId[0] = sh.getId();
+            final Map<String, Object> source = sh.getSourceAsMap();
+            String processName = (String)source.get(ListViewTemplate.PROCESS_NAME);
+            if (processName == null) {
+              processName = (String)source.get(ListViewTemplate.BPMN_PROCESS_ID);
+            }
+            calledProcessDefinitionName[0] = processName;
+          });
     }
     return FlowNodeInstanceMetadataDto
-        .createFrom(flowNodeInstance, eventEntity, calledProcessInstanceId);
+        .createFrom(flowNodeInstance, eventEntity, calledProcessInstanceId[0],
+            calledProcessDefinitionName[0]);
   }
 
-  private String getCalledProcessInstanceId(final String flowNodeInstanceId) {
+  private void findCalledProcessInstance(final String flowNodeInstanceId,
+      Consumer<SearchHit> processInstanceConsumer) {
     final TermQueryBuilder parentFlowNodeInstanceQ = termQuery(PARENT_FLOW_NODE_INSTANCE_KEY,
         flowNodeInstanceId);
     final SearchRequest request = ElasticsearchUtil.createSearchRequest(listViewTemplate)
         .source(new SearchSourceBuilder().query(parentFlowNodeInstanceQ)
-        .fetchSource(false));
+            .fetchSource(
+                new String[]{ListViewTemplate.PROCESS_NAME, ListViewTemplate.BPMN_PROCESS_ID},
+                null));
     try {
       final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value >= 1) {
-        return response.getHits().getAt(0).getId();
+        processInstanceConsumer.accept(response.getHits().getAt(0));
       }
     } catch (IOException e) {
       final String message = String.format(
@@ -565,7 +579,6 @@ public class FlowNodeInstanceReader extends AbstractReader {
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    return null;
   }
 
   private EventEntity getEventEntity(final String flowNodeInstanceId) {

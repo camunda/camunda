@@ -25,6 +25,7 @@ public class FlowNodeInstanceMetadataDto {
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
   private String calledProcessInstanceId;
+  private String calledProcessDefinitionName;
 
   private String eventId;
   /**
@@ -96,6 +97,16 @@ public class FlowNodeInstanceMetadataDto {
   public FlowNodeInstanceMetadataDto setCalledProcessInstanceId(
       final String calledProcessInstanceId) {
     this.calledProcessInstanceId = calledProcessInstanceId;
+    return this;
+  }
+
+  public String getCalledProcessDefinitionName() {
+    return calledProcessDefinitionName;
+  }
+
+  public FlowNodeInstanceMetadataDto setCalledProcessDefinitionName(
+      final String calledProcessDefinitionName) {
+    this.calledProcessDefinitionName = calledProcessDefinitionName;
     return this;
   }
 
@@ -173,7 +184,7 @@ public class FlowNodeInstanceMetadataDto {
   }
 
   public static FlowNodeInstanceMetadataDto createFrom(FlowNodeInstanceEntity flowNodeInstance,
-      EventEntity eventEntity, String calledProcessInstanceId) {
+      EventEntity eventEntity, String calledProcessInstanceId, String calledProcessDefinitionName) {
     FlowNodeInstanceMetadataDto metadataDto = new FlowNodeInstanceMetadataDto();
     //flow node instance data
     metadataDto.setFlowNodeInstanceId(flowNodeInstance.getId());
@@ -181,7 +192,12 @@ public class FlowNodeInstanceMetadataDto {
     metadataDto.setFlowNodeType(flowNodeInstance.getType());
     metadataDto.setStartDate(flowNodeInstance.getStartDate());
     metadataDto.setEndDate(flowNodeInstance.getEndDate());
-    metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
+    if (calledProcessInstanceId != null) {
+      metadataDto.setCalledProcessInstanceId(calledProcessInstanceId);
+    }
+    if (calledProcessDefinitionName != null) {
+      metadataDto.setCalledProcessDefinitionName(calledProcessDefinitionName);
+    }
 
     //last event data
     metadataDto.setEventId(eventEntity.getId());
@@ -209,6 +225,7 @@ public class FlowNodeInstanceMetadataDto {
         ", startDate=" + startDate +
         ", endDate=" + endDate +
         ", calledProcessInstanceId='" + calledProcessInstanceId + '\'' +
+        ", calledProcessDefinitionName='" + calledProcessDefinitionName + '\'' +
         ", eventId='" + eventId + '\'' +
         ", jobType='" + jobType + '\'' +
         ", jobRetries=" + jobRetries +
