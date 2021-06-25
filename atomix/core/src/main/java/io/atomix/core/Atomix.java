@@ -29,7 +29,6 @@ import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
-import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -209,7 +208,6 @@ public class Atomix extends AtomixCluster {
             ? partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig)
             : null;
 
-    return new DefaultPartitionService(
-        clusterMembershipService, messagingService, (RaftPartitionGroup) partitionGroup);
+    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroup);
   }
 }

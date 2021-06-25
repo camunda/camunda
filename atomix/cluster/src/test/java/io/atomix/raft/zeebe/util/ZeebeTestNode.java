@@ -23,6 +23,7 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.partition.RaftPartition;
@@ -66,8 +67,8 @@ public class ZeebeTestNode {
     return (RaftPartition) getDataPartitionGroup().getPartition(String.valueOf(id));
   }
 
-  private RaftPartitionGroup getDataPartitionGroup() {
-    return (RaftPartitionGroup) partitionService.getPartitionGroup();
+  private ManagedPartitionGroup getDataPartitionGroup() {
+    return partitionService.getPartitionGroup();
   }
 
   public CompletableFuture<Void> start(final Collection<ZeebeTestNode> nodes) {
