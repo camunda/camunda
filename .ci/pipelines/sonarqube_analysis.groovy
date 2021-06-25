@@ -55,10 +55,10 @@ spec:
     resources:
       limits:
         cpu: 8
-        memory: 8Gi
+        memory: 10Gi
       requests:
         cpu: 8
-        memory: 8Gi
+        memory: 10Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     imagePullPolicy: Always
