@@ -96,7 +96,7 @@
     <version.kryo>5.1.1</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
-    <version.jqwik>1.5.1</version.jqwik>
+    <version.jqwik>1.5.2</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
     <version.byte-buddy>1.11.5</version.byte-buddy>
