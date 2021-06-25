@@ -24,7 +24,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender commandSender;
-  private final MutablePendingProcessMessageSubscriptionState transientMessageSubscriptionState;
+  private final MutablePendingProcessMessageSubscriptionState pendingState;
   private final long subscriptionTimeoutInMillis;
 
   private ActorControl actor;
@@ -32,9 +32,9 @@ public final class PendingProcessMessageSubscriptionChecker
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutablePendingProcessMessageSubscriptionState transientMessageSubscriptionState) {
+      final MutablePendingProcessMessageSubscriptionState pendingState) {
     this.commandSender = commandSender;
-    this.transientMessageSubscriptionState = transientMessageSubscriptionState;
+    this.pendingState = pendingState;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();
   }
 
@@ -78,7 +78,7 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private void checkPendingSubscriptions() {
-    transientMessageSubscriptionState.visitSubscriptionBefore(
+    pendingState.visitSubscriptionBefore(
         ActorClock.currentTimeMillis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
   }
 
@@ -94,7 +94,7 @@ public final class PendingProcessMessageSubscriptionChecker
 
     if (success) {
       final var sentTime = ActorClock.currentTimeMillis();
-      transientMessageSubscriptionState.updateSentTime(subscription.getRecord(), sentTime);
+      pendingState.updateSentTime(subscription.getRecord(), sentTime);
     }
 
     return success;

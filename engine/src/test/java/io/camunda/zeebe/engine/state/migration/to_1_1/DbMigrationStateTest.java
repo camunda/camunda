@@ -7,15 +7,19 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_1_1;
 
+import static io.camunda.zeebe.engine.state.migration.to_1_1.TestUtilities.createLegacyMessageSubscription;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Assertions;
@@ -32,6 +36,83 @@ public class DbMigrationStateTest {
   private MutableZeebeState zeebeState;
 
   private TransactionContext transactionContext;
+
+  @Test
+  public void testMigrateMessageSubscriptionSentTime() throws Exception {
+    // given database with legacy records
+    final var legacySubscriptionState =
+        new LegacyDbMessageSubscriptionState(zeebeDb, transactionContext);
+
+    final LegacyMessageSubscription subscriptionInCorrelation =
+        createLegacyMessageSubscription(100, 1);
+    legacySubscriptionState.put(
+        subscriptionInCorrelation.getKey(), subscriptionInCorrelation.getRecord());
+    legacySubscriptionState.updateSentTime(subscriptionInCorrelation, TEST_SENT_TIME);
+
+    final LegacyMessageSubscription subscriptionNotInCorrelation =
+        createLegacyMessageSubscription(101, 2);
+    legacySubscriptionState.put(
+        subscriptionNotInCorrelation.getKey(), subscriptionNotInCorrelation.getRecord());
+    transactionContext.getCurrentTransaction().commit();
+
+    // when
+    final var migrationState = zeebeState.getMigrationState();
+    migrationState.migrateMessageSubscriptionSentTime(
+        zeebeState.getMessageSubscriptionState(), zeebeState.getPendingMessageSubscriptionState());
+
+    // then
+
+    // the sent time column family is empty
+    assertThat(
+            zeebeDb.isEmpty(ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME, transactionContext))
+        .describedAs("Column family MESSAGE_SUBSCRIPTION_BY_SENT_TIME is empty")
+        .isTrue();
+
+    final var subscriptionState = zeebeState.getMessageSubscriptionState();
+
+    // the correlating subscription has correlating = true in persistent state
+    final var migratedSubscriptionInCorrelation =
+        lookupMigratedMessageSubscription(subscriptionInCorrelation, subscriptionState);
+    assertThat(migratedSubscriptionInCorrelation.isCorrelating())
+        .describedAs("Correlating flag")
+        .isTrue();
+
+    // the non-correlating subscription has correlating = false in persistent state
+    final var migratedSubscriptionNotInCorrelation =
+        lookupMigratedMessageSubscription(subscriptionNotInCorrelation, subscriptionState);
+    assertThat(migratedSubscriptionNotInCorrelation.isCorrelating())
+        .describedAs("Correlating flag")
+        .isFalse();
+
+    assertThaRecordIsPresentInTransientState(migratedSubscriptionInCorrelation.getRecord());
+  }
+
+  private MessageSubscription lookupMigratedMessageSubscription(
+      final LegacyMessageSubscription subscription,
+      final MutableMessageSubscriptionState subscriptionState) {
+    return subscriptionState.get(
+        subscription.getRecord().getElementInstanceKey(),
+        subscription.getRecord().getMessageNameBuffer());
+  }
+
+  private void assertThaRecordIsPresentInTransientState(final MessageSubscriptionRecord record) {
+    final var transientSubscriptionState = zeebeState.getPendingMessageSubscriptionState();
+
+    final var correlatingSubscriptions = new ArrayList<MessageSubscriptionRecord>();
+
+    transientSubscriptionState.visitSubscriptionBefore(
+        TEST_SENT_TIME + 1,
+        subscription -> {
+          correlatingSubscriptions.add(subscription.getRecord());
+          return true;
+        });
+
+    assertThat(correlatingSubscriptions).hasSize(1).containsExactly(record);
+
+    transientSubscriptionState.visitSubscriptionBefore(
+        TEST_SENT_TIME,
+        subscription -> Assertions.fail("Found unexpected subscription " + subscription));
+  }
 
   @Test
   public void testMigrateProcessMessageSubscriptionSentTime() {

@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
@@ -24,15 +24,15 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
-  private final MutableMessageSubscriptionState subscriptionState;
+  private final MutablePendingMessageSubscriptionState pendingState;
 
   public MessageObserver(
       final MessageState messageState,
-      final MutableMessageSubscriptionState subscriptionState,
+      final MutablePendingMessageSubscriptionState pendingState,
       final SubscriptionCommandSender subscriptionCommandSender) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.messageState = messageState;
-    this.subscriptionState = subscriptionState;
+    this.pendingState = pendingState;
   }
 
   @Override
@@ -45,7 +45,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
-            subscriptionCommandSender, subscriptionState, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
     actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

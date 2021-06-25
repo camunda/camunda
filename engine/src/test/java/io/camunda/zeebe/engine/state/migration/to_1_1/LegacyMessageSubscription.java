@@ -5,33 +5,32 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.state.message;
+package io.camunda.zeebe.engine.state.migration.to_1_1;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 
-public final class MessageSubscription extends UnpackedObject implements DbValue {
+public final class LegacyMessageSubscription extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<MessageSubscriptionRecord> recordProp =
       new ObjectProperty<>("record", new MessageSubscriptionRecord());
 
   private final LongProperty keyProp = new LongProperty("key");
 
-  private final BooleanProperty correlatingProp = new BooleanProperty("correlating", false);
+  private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
 
-  public MessageSubscription() {
-    declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
+  public LegacyMessageSubscription() {
+    declareProperty(recordProp).declareProperty(keyProp).declareProperty(commandSentTimeProp);
   }
 
   public MessageSubscriptionRecord getRecord() {
     return recordProp.getValue();
   }
 
-  public MessageSubscription setRecord(final MessageSubscriptionRecord record) {
+  public LegacyMessageSubscription setRecord(final MessageSubscriptionRecord record) {
     recordProp.getValue().wrap(record);
     return this;
   }
@@ -40,17 +39,20 @@ public final class MessageSubscription extends UnpackedObject implements DbValue
     return keyProp.getValue();
   }
 
-  public MessageSubscription setKey(final long key) {
+  public LegacyMessageSubscription setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }
 
-  public boolean isCorrelating() {
-    return correlatingProp.getValue();
+  public long getCommandSentTime() {
+    return commandSentTimeProp.getValue();
   }
 
-  public MessageSubscription setCorrelating(final boolean correlating) {
-    correlatingProp.setValue(correlating);
-    return this;
+  public void setCommandSentTime(final long commandSentTime) {
+    commandSentTimeProp.setValue(commandSentTime);
+  }
+
+  public boolean isCorrelating() {
+    return commandSentTimeProp.getValue() > 0;
   }
 }

@@ -15,12 +15,26 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 
 public class DbMigrationState implements MutableMigrationState {
+
+  // ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME
+  // (sentTime, elementInstanceKey, messageName) => \0
+  private final DbLong messageSubscriptionSentTime;
+  private final DbLong messageSubscriptionElementInstanceKey;
+  private final DbString messageSubscriptionMessageName;
+
+  private final DbCompositeKey<DbLong, DbString> messageSubscriptionElementKeyAndMessageName;
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>
+      messageSubscriptionSentTimeCompositeKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
+      messageSubscriptionSentTimeColumnFamily;
 
   // ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME,
   // (sentTime, elementInstanceKey, messageName) => \0
@@ -37,6 +51,22 @@ public class DbMigrationState implements MutableMigrationState {
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
+    messageSubscriptionElementInstanceKey = new DbLong();
+    messageSubscriptionMessageName = new DbString();
+    messageSubscriptionElementKeyAndMessageName =
+        new DbCompositeKey<>(messageSubscriptionElementInstanceKey, messageSubscriptionMessageName);
+
+    messageSubscriptionSentTime = new DbLong();
+    messageSubscriptionSentTimeCompositeKey =
+        new DbCompositeKey<>(
+            messageSubscriptionSentTime, messageSubscriptionElementKeyAndMessageName);
+    messageSubscriptionSentTimeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
+            transactionContext,
+            messageSubscriptionSentTimeCompositeKey,
+            DbNil.INSTANCE);
+
     processSubscriptionElementInstanceKey = new DbLong();
     processSubscriptionMessageName = new DbString();
     processSubscriptionElementKeyAndMessageName =
@@ -52,6 +82,29 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             processSubscriptionSentTimeCompositeKey,
             DbNil.INSTANCE);
+  }
+
+  @Override
+  public void migrateMessageSubscriptionSentTime(
+      final MutableMessageSubscriptionState messageSubscriptionState,
+      final MutablePendingMessageSubscriptionState transientState) {
+
+    messageSubscriptionSentTimeColumnFamily.forEach(
+        (key, value) -> {
+          final var sentTime = key.getFirst().getValue();
+          final var elementKeyAndMessageName = key.getSecond();
+          final var elementInstanceKey = elementKeyAndMessageName.getFirst().getValue();
+          final var messageName = elementKeyAndMessageName.getSecond().getBuffer();
+
+          final var messageSubscription =
+              messageSubscriptionState.get(elementInstanceKey, messageName);
+          if (messageSubscription != null) {
+            messageSubscriptionState.updateToCorrelatingState(messageSubscription.getRecord());
+            transientState.updateCommandSentTime(messageSubscription.getRecord(), sentTime);
+          }
+
+          messageSubscriptionSentTimeColumnFamily.delete(key);
+        });
   }
 
   @Override
