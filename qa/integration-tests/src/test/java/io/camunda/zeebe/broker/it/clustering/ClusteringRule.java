@@ -581,11 +581,11 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void stepDown(final Broker broker, final int partitionId) {
-    final var atomix = broker.getAtomix();
+    final var atomix = broker.getClusterServices();
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        atomix.getPartitionService().getPartitionGroup().getPartitions().stream()
+        atomix.getPartitionGroup().getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == partitionId)
             .map(RaftPartition.class::cast)

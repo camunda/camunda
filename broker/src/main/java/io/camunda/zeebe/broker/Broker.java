@@ -19,6 +19,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.camunda.zeebe.broker.clustering.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
@@ -118,7 +119,8 @@ public final class Broker implements AutoCloseable {
   private final SystemContext brokerContext;
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
-  private Atomix atomix;
+
+  private ClusterServices clusterServices;
   private CompletableFuture<Broker> startFuture;
   private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
@@ -133,6 +135,8 @@ public final class Broker implements AutoCloseable {
   private SnapshotStoreSupplier snapshotStoreSupplier;
   private final List<ZeebePartition> partitions = new ArrayList<>();
   private BrokerAdminService brokerAdminService;
+
+  private final TestCompanionClass testCompanionObject = new TestCompanionClass();
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
     brokerContext = systemContext;
@@ -212,7 +216,7 @@ public final class Broker implements AutoCloseable {
         () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
-    startContext.addStep("cluster services", () -> atomix.start().join());
+    startContext.addStep("cluster services", () -> clusterServices.start().join());
     startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
@@ -222,9 +226,9 @@ public final class Broker implements AutoCloseable {
                 new EmbeddedGatewayService(
                     brokerCfg,
                     scheduler,
-                    atomix.getMessagingService(),
-                    atomix.getMembershipService(),
-                    atomix.getEventService());
+                    clusterServices.getMessagingService(),
+                    clusterServices.getMembershipService(),
+                    clusterServices.getEventService());
             return embeddedGatewayService;
           });
     }
@@ -258,10 +262,14 @@ public final class Broker implements AutoCloseable {
     final var snapshotStoreFactory =
         new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
     snapshotStoreSupplier = snapshotStoreFactory;
-    atomix = AtomixFactory.fromConfiguration(brokerCfg, snapshotStoreFactory);
+    final var atomix = AtomixFactory.fromConfiguration(brokerCfg, snapshotStoreFactory);
+    testCompanionObject.atomix = atomix;
+    clusterServices = new ClusterServices(atomix);
 
     return () ->
-        atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        clusterServices
+            .stop()
+            .get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   private AutoCloseable commandApiTransportAndHandlerStep(
@@ -310,7 +318,7 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {
     final SubscriptionApiCommandMessageHandlerService messageHandlerService =
         new SubscriptionApiCommandMessageHandlerService(
-            localBroker, atomix.getCommunicationService());
+            localBroker, clusterServices.getCommunicationService());
     partitionListeners.add(messageHandlerService);
     scheduleActor(messageHandlerService);
     diskSpaceUsageListeners.add(messageHandlerService);
@@ -331,7 +339,7 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable topologyManagerStep(
       final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
     topologyManager =
-        new TopologyManagerImpl(atomix.getMembershipService(), localBroker, clusterCfg);
+        new TopologyManagerImpl(clusterServices.getMembershipService(), localBroker, clusterCfg);
     partitionListeners.add(topologyManager);
     scheduleActor(topologyManager);
     return topologyManager;
@@ -339,7 +347,7 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
     healthCheckService =
-        new BrokerHealthCheckService(localBroker, atomix.getPartitionService().getPartitionGroup());
+        new BrokerHealthCheckService(localBroker, clusterServices.getPartitionGroup());
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
@@ -361,7 +369,9 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable managementRequestStep(final BrokerInfo localBroker) {
     managementRequestHandler =
         new LeaderManagementRequestHandler(
-            localBroker, atomix.getCommunicationService(), atomix.getEventService());
+            localBroker,
+            clusterServices.getCommunicationService(),
+            clusterServices.getEventService());
     scheduleActor(managementRequestHandler);
     partitionListeners.add(managementRequestHandler);
     diskSpaceUsageListeners.add(managementRequestHandler);
@@ -370,9 +380,9 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable partitionsStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker)
       throws Exception {
-    final ManagedPartitionGroup partitionGroup = atomix.getPartitionService().getPartitionGroup();
+    final ManagedPartitionGroup partitionGroup = clusterServices.getPartitionGroup();
 
-    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+    final MemberId nodeId = clusterServices.getMembershipService().getLocalMember().id();
 
     final List<RaftPartition> owningPartitions =
         partitionGroup.getPartitionsWithMember(nodeId).stream()
@@ -388,8 +398,8 @@ public final class Broker implements AutoCloseable {
           () -> {
             final var messagingService =
                 new AtomixPartitionMessagingService(
-                    atomix.getCommunicationService(),
-                    atomix.getMembershipService(),
+                    clusterServices.getCommunicationService(),
+                    clusterServices.getMembershipService(),
                     owningPartition.members());
 
             final PartitionContext context =
@@ -405,8 +415,8 @@ public final class Broker implements AutoCloseable {
                     createFactory(
                         topologyManager,
                         brokerCfg.getCluster(),
-                        atomix.getCommunicationService(),
-                        atomix.getEventService(),
+                        clusterServices.getCommunicationService(),
+                        clusterServices.getEventService(),
                         managementRequestHandler),
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
@@ -476,7 +486,7 @@ public final class Broker implements AutoCloseable {
           requestHandler.getPushDeploymentRequestHandler();
 
       final LongPollingJobNotification jobsAvailableNotification =
-          new LongPollingJobNotification(atomix.getEventService());
+          new LongPollingJobNotification(clusterServices.getEventService());
 
       return EngineProcessors.createEngineProcessors(
           processingContext,
@@ -517,7 +527,11 @@ public final class Broker implements AutoCloseable {
   // only used for tests
   @Deprecated
   public Atomix getAtomix() {
-    return atomix;
+    return testCompanionObject.atomix;
+  }
+
+  public ClusterServices getClusterServices() {
+    return clusterServices;
   }
 
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
@@ -530,5 +544,10 @@ public final class Broker implements AutoCloseable {
 
   public SystemContext getBrokerContext() {
     return brokerContext;
+  }
+
+  @Deprecated // only used for test; temporary work around
+  private static final class TestCompanionClass {
+    private Atomix atomix;
   }
 }

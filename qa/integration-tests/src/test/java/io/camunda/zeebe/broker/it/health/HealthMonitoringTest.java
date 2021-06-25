@@ -39,8 +39,7 @@ public class HealthMonitoringTest {
     final var raftPartition =
         (RaftPartition)
             leader
-                .getAtomix()
-                .getPartitionService()
+                .getClusterServices()
                 .getPartitionGroup()
                 .getPartition(PartitionId.from(GROUP_NAME, START_PARTITION_ID));
     raftPartition.getServer().stop();
