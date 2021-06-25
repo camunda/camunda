@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.Level;
@@ -29,12 +30,8 @@ import org.apache.logging.slf4j.Log4jLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.helpers.NOPLogger;
 
-@Execution(ExecutionMode.CONCURRENT)
 final class GrpcErrorMapperTest {
   private final RecordingAppender recorder = new RecordingAppender();
   private final GrpcErrorMapper errorMapper = new GrpcErrorMapper();
@@ -43,8 +40,8 @@ final class GrpcErrorMapperTest {
   private Log4jLogger logger;
 
   @BeforeEach
-  void beforeEach(final TestInfo testInfo) {
-    log = (Logger) LogManager.getLogger(testInfo.getDisplayName());
+  void beforeEach() {
+    log = (Logger) LogManager.getLogger(UUID.randomUUID().toString());
     logger = new Log4jLogger(log, log.getName());
 
     recorder.start();
