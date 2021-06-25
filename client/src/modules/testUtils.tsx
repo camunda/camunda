@@ -730,6 +730,189 @@ export const multiInstanceProcess = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
+export const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
+  <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1vnazga">
+      <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_03acvim">
+      <bpmn:incoming>SequenceFlow_0ogmd2w</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0b1strv" sourceRef="StartEvent_1vnazga" targetRef="ServiceTask_1daop2o" />
+    <bpmn:subProcess id="SubProcess_1ip6c6s" name="Event Subprocess" triggeredByEvent="true">
+      <bpmn:endEvent id="EndEvent_1uddjvh">
+        <bpmn:incoming>SequenceFlow_10d38p0</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:serviceTask id="ServiceTask_0h8cwwl" name="Event Subprocess task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="eventSupbprocessTask" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SequenceFlow_0xk369x</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_10d38p0</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SequenceFlow_10d38p0" sourceRef="ServiceTask_0h8cwwl" targetRef="EndEvent_1uddjvh" />
+      <bpmn:sequenceFlow id="SequenceFlow_0xk369x" sourceRef="StartEvent_1u9mwoj" targetRef="ServiceTask_0h8cwwl" />
+      <bpmn:startEvent id="StartEvent_1u9mwoj" name="Interrupting timer">
+        <bpmn:outgoing>SequenceFlow_0xk369x</bpmn:outgoing>
+        <bpmn:timerEventDefinition>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT3M</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+    </bpmn:subProcess>
+    <bpmn:serviceTask id="ServiceTask_1daop2o" name="Parent process task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="parentProcessTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0b1strv</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1aytoqp</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1aytoqp" sourceRef="ServiceTask_1daop2o" targetRef="ServiceTask_0ruokei" />
+    <bpmn:subProcess id="ServiceTask_0ruokei">
+      <bpmn:incoming>SequenceFlow_1aytoqp</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0ogmd2w</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_1dgs6mf">
+        <bpmn:outgoing>SequenceFlow_03jyud1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="ServiceTask_0wfdfpx" name="Subprocess task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="subprocessTask" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SequenceFlow_03jyud1</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1ey1yvq</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SequenceFlow_03jyud1" sourceRef="StartEvent_1dgs6mf" targetRef="ServiceTask_0wfdfpx" />
+      <bpmn:endEvent id="EndEvent_171a64z">
+        <bpmn:incoming>SequenceFlow_1ey1yvq</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1ey1yvq" sourceRef="ServiceTask_0wfdfpx" targetRef="EndEvent_171a64z" />
+      <bpmn:subProcess id="SubProcess_006dg16" name="Event Subprocess inside Subprocess" triggeredByEvent="true">
+        <bpmn:endEvent id="EndEvent_0dq3i8l">
+          <bpmn:incoming>SequenceFlow_0vkqogh</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:serviceTask id="ServiceTask_0cj9pdg" name="Task in sub-subprocess">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="subSubprocessTask" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>SequenceFlow_1c82aad</bpmn:incoming>
+          <bpmn:outgoing>SequenceFlow_0vkqogh</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="SequenceFlow_1c82aad" sourceRef="StartEvent_0kpitfv" targetRef="ServiceTask_0cj9pdg" />
+        <bpmn:sequenceFlow id="SequenceFlow_0vkqogh" sourceRef="ServiceTask_0cj9pdg" targetRef="EndEvent_0dq3i8l" />
+        <bpmn:startEvent id="StartEvent_0kpitfv" name="Timer in sub-subprocess" isInterrupting="false">
+          <bpmn:outgoing>SequenceFlow_1c82aad</bpmn:outgoing>
+          <bpmn:timerEventDefinition>
+            <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R2/PT5S</bpmn:timeCycle>
+          </bpmn:timerEventDefinition>
+        </bpmn:startEvent>
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="SequenceFlow_0ogmd2w" sourceRef="ServiceTask_0ruokei" targetRef="EndEvent_03acvim" />
+  </bpmn:process>
+  <bpmn:message id="Message_03ggk3d" name="interruptProcess">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=clientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_1nvz8ri" name="continueProcess">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=clientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="eventSubprocessProcess">
+      <bpmndi:BPMNShape id="StartEvent_1vnazga_di" bpmnElement="StartEvent_1vnazga">
+        <dc:Bounds x="212" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_03acvim_di" bpmnElement="EndEvent_03acvim">
+        <dc:Bounds x="1202" y="242" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0b1strv_di" bpmnElement="SequenceFlow_0b1strv">
+        <di:waypoint x="248" y="270" />
+        <di:waypoint x="344" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_1u7mexg_di" bpmnElement="SubProcess_1ip6c6s" isExpanded="true">
+        <dc:Bounds x="200" y="500" width="388" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1uddjvh_di" bpmnElement="EndEvent_1uddjvh">
+        <dc:Bounds x="512" y="582" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0h8cwwl_di" bpmnElement="ServiceTask_0h8cwwl">
+        <dc:Bounds x="350" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_10d38p0_di" bpmnElement="SequenceFlow_10d38p0">
+        <di:waypoint x="450" y="600" />
+        <di:waypoint x="512" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0xk369x_di" bpmnElement="SequenceFlow_0xk369x">
+        <di:waypoint x="288" y="600" />
+        <di:waypoint x="350" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1daop2o_di" bpmnElement="ServiceTask_1daop2o">
+        <dc:Bounds x="344" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1aytoqp_di" bpmnElement="SequenceFlow_1aytoqp">
+        <di:waypoint x="444" y="270" />
+        <di:waypoint x="530" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_1aoke6f_di" bpmnElement="ServiceTask_0ruokei" isExpanded="true">
+        <dc:Bounds x="530" y="85" width="590" height="370" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1dgs6mf_di" bpmnElement="StartEvent_1dgs6mf">
+        <dc:Bounds x="660.3333333333333" y="167" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0ogmd2w_di" bpmnElement="SequenceFlow_0ogmd2w">
+        <di:waypoint x="1120" y="260" />
+        <di:waypoint x="1202" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0wfdfpx_di" bpmnElement="ServiceTask_0wfdfpx">
+        <dc:Bounds x="740" y="145" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_03jyud1_di" bpmnElement="SequenceFlow_03jyud1">
+        <di:waypoint x="696" y="185" />
+        <di:waypoint x="740" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_171a64z_di" bpmnElement="EndEvent_171a64z">
+        <dc:Bounds x="882" y="167" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1ey1yvq_di" bpmnElement="SequenceFlow_1ey1yvq">
+        <di:waypoint x="840" y="185" />
+        <di:waypoint x="882" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_006dg16_di" bpmnElement="SubProcess_006dg16" isExpanded="true">
+        <dc:Bounds x="630" y="270" width="388" height="145" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0dq3i8l_di" bpmnElement="EndEvent_0dq3i8l">
+        <dc:Bounds x="942" y="317" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0cj9pdg_di" bpmnElement="ServiceTask_0cj9pdg">
+        <dc:Bounds x="780" y="295" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1c82aad_di" bpmnElement="SequenceFlow_1c82aad">
+        <di:waypoint x="718" y="335" />
+        <di:waypoint x="780" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0vkqogh_di" bpmnElement="SequenceFlow_0vkqogh">
+        <di:waypoint x="880" y="335" />
+        <di:waypoint x="942" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="StartEvent_08k6psq_di" bpmnElement="StartEvent_0kpitfv">
+        <dc:Bounds x="682" y="317" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="669" y="360" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0d2wour_di" bpmnElement="StartEvent_1u9mwoj">
+        <dc:Bounds x="252" y="582" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="228" y="625" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`;
+
 export const createMultiInstanceFlowNodeInstances = (
   processInstanceId: string
 ): {
@@ -861,6 +1044,80 @@ export const createMultiInstanceFlowNodeInstances = (
             sortValues: [1606300828415, '2251799813686204'],
           },
         ],
+      },
+    },
+  };
+};
+
+export const createEventSubProcessFlowNodeInstances = (
+  processInstanceId: string
+): {
+  level1: FlowNodeInstances;
+  level2: FlowNodeInstances;
+} => {
+  return {
+    level1: {
+      [processInstanceId]: {
+        children: [
+          {
+            id: '6755399441057427',
+            type: 'START_EVENT',
+            state: 'COMPLETED',
+            flowNodeId: 'StartEvent_1vnazga',
+            startDate: '2021-06-22T13:43:59.698+0000',
+            endDate: '2021-06-22T13:43:59.701+0000',
+            treePath: `${processInstanceId}/6755399441057427`,
+            sortValues: [1624369439698, '6755399441057427'],
+          },
+          {
+            id: '6755399441057429',
+            type: 'SERVICE_TASK',
+            state: 'TERMINATED',
+            flowNodeId: 'ServiceTask_1daop2o',
+            startDate: '2021-06-22T13:43:59.707+0000',
+            endDate: '2021-06-22T13:46:59.705+0000',
+            treePath: `${processInstanceId}/6755399441057429`,
+            sortValues: [1624369439707, '6755399441057429'],
+          },
+          {
+            id: '6755399441063916',
+            type: 'EVENT_SUB_PROCESS',
+            state: 'INCIDENT',
+            flowNodeId: 'SubProcess_1ip6c6s',
+            startDate: '2021-06-22T13:46:59.705+0000',
+            endDate: null,
+            treePath: `${processInstanceId}/6755399441063916`,
+            sortValues: [1624369619705, '6755399441063916'],
+          },
+        ],
+        running: null,
+      },
+    },
+    level2: {
+      [`${processInstanceId}/6755399441063916`]: {
+        children: [
+          {
+            id: '6755399441063918',
+            type: 'START_EVENT',
+            state: 'COMPLETED',
+            flowNodeId: 'StartEvent_1u9mwoj',
+            startDate: '2021-06-22T13:46:59.714+0000',
+            endDate: '2021-06-22T13:46:59.719+0000',
+            treePath: `${processInstanceId}/6755399441063916/6755399441063918`,
+            sortValues: [1624369619714, '6755399441063918'],
+          },
+          {
+            id: '6755399441063920',
+            type: 'SERVICE_TASK',
+            state: 'INCIDENT',
+            flowNodeId: 'ServiceTask_0h8cwwl',
+            startDate: '2021-06-22T13:46:59.722+0000',
+            endDate: null,
+            treePath: `${processInstanceId}/6755399441063916/6755399441063920`,
+            sortValues: [1624369619722, '6755399441063920'],
+          },
+        ],
+        running: true,
       },
     },
   };

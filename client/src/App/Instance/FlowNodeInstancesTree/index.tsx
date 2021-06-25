@@ -48,7 +48,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     };
 
     const isMultiInstance = flowNodeInstance.type === TYPE.MULTI_INSTANCE_BODY;
-    const isSubProcess = flowNodeInstance.type === 'SUB_PROCESS';
+    const isSubProcess =
+      flowNodeInstance.type === 'SUB_PROCESS' ||
+      flowNodeInstance.type === 'EVENT_SUB_PROCESS';
+
     const isFoldable = isMultiInstance || isSubProcess;
 
     const isSelected = flowNodeSelectionStore.isSelected({
