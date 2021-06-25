@@ -50,14 +50,19 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
   const {selectableIds} = instancesDiagramStore;
   const {statistics} = processStatisticsStore.state;
   const {process, version, flowNodeId} = getFilters(history.location.search);
-  const isNoProcessSelected = process === undefined;
-  const isNoVersionSelected = version === 'all';
+  const isNoProcessSelected = status !== 'error' && process === undefined;
+  const isNoVersionSelected = status !== 'error' && version === 'all';
 
   const selectedProcess = processesStore.state.processes.find(
     ({bpmnProcessId}) => bpmnProcessId === process
   );
 
   const processName = selectedProcess?.name || selectedProcess?.bpmnProcessId;
+  const isDiagramLoading =
+    processStatisticsStore.state.isLoading ||
+    status === 'fetching' ||
+    processesStore.state.status === 'initial' ||
+    processesStore.state.status === 'fetching';
 
   return (
     <SplitPane.Pane {...props}>
@@ -65,19 +70,18 @@ const DiagramPanel: React.FC<Props> = observer((props) => {
         <span>{processName ?? 'Process'}</span>
       </Styled.PaneHeader>
       <SplitPane.Pane.Body style={{position: 'relative'}}>
-        {(processStatisticsStore.state.isLoading ||
-          status === 'fetching' ||
-          processesStore.state.status === 'initial' ||
-          processesStore.state.status === 'fetching') && (
+        {isDiagramLoading ? (
           <SpinnerSkeleton data-testid="diagram-spinner" />
+        ) : (
+          status === 'error' && (
+            <Message>
+              <StatusMessage variant="error">
+                Diagram could not be fetched
+              </StatusMessage>
+            </Message>
+          )
         )}
-        {status === 'error' && (
-          <Message>
-            <StatusMessage variant="error">
-              Diagram could not be fetched
-            </StatusMessage>
-          </Message>
-        )}
+
         {isNoProcessSelected && (
           <Message>
             {

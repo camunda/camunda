@@ -398,6 +398,9 @@ describe('ListPanel', () => {
     expect(
       await screen.findByText('Instances could not be fetched')
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText('There are no Instances matching this filter set')
+    ).not.toBeInTheDocument();
 
     unmount();
     instancesStore.reset();
@@ -417,6 +420,9 @@ describe('ListPanel', () => {
     expect(
       await screen.findByText('Instances could not be fetched')
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText('There are no Instances matching this filter set')
+    ).not.toBeInTheDocument();
   });
 
   describe('getting started experience', () => {

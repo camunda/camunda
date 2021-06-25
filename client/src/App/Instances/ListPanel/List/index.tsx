@@ -103,11 +103,10 @@ const List: React.FC<ListProps> = observer((props) => {
               <Skeleton {...props} rowsToDisplay={entriesPerPage} />
             )}
             {status === 'error' && <Message type="error" />}
-            {status === 'refetching' ? null : areProcessInstancesEmpty ? (
+            {status === 'fetched' && areProcessInstancesEmpty && (
               <Message type="empty" />
-            ) : (
-              <Instances />
             )}
+            {status === 'refetching' ? null : <Instances />}
           </Table>
         </Styled.TableContainer>
       </Styled.List>

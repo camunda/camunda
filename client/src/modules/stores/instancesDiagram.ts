@@ -43,7 +43,6 @@ class InstancesDiagram extends NetworkReconnectionHandler {
     makeObservable(this, {
       state: observable,
       reset: override,
-      resetDiagramModel: action,
       startFetching: action,
       handleFetchSuccess: action,
       handleFetchError: action,
@@ -79,10 +78,6 @@ class InstancesDiagram extends NetworkReconnectionHandler {
     return this.selectableFlowNodes.map(({id}) => id);
   }
 
-  resetDiagramModel = () => {
-    this.state.diagramModel = null;
-  };
-
   startFetching = () => {
     this.state.status = 'fetching';
   };
@@ -93,7 +88,7 @@ class InstancesDiagram extends NetworkReconnectionHandler {
   };
 
   handleFetchError = (error?: Error) => {
-    this.resetDiagramModel();
+    this.state.diagramModel = null;
     this.state.status = 'error';
 
     logger.error('Diagram failed to fetch');

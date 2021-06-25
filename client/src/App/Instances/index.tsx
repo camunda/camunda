@@ -70,7 +70,7 @@ const Instances: React.FC = observer(() => {
   useEffect(() => {
     if (processesStatus === 'fetched') {
       if (processId === undefined) {
-        instancesDiagramStore.resetDiagramModel();
+        instancesDiagramStore.reset();
         processStatisticsStore.reset();
 
         if (

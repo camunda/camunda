@@ -164,6 +164,9 @@ describe('DiagramPanel', () => {
     expect(
       await screen.findByText('Diagram could not be fetched')
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/There is no Process selected/)
+    ).not.toBeInTheDocument();
 
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
@@ -190,5 +193,8 @@ describe('DiagramPanel', () => {
     expect(
       await screen.findByText('Diagram could not be fetched')
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/There is no Process selected/)
+    ).not.toBeInTheDocument();
   });
 });
