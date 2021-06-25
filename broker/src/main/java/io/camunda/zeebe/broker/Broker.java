@@ -75,7 +75,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
-import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -127,7 +126,6 @@ public final class Broker implements AutoCloseable {
   private ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
-  private ServerTransport serverTransport;
   private BrokerHealthCheckService healthCheckService;
   private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
@@ -210,12 +208,8 @@ public final class Broker implements AutoCloseable {
     startContext.addStep(
         "membership and replication protocol", () -> atomixCreateStep(brokerCfg, localBroker));
     startContext.addStep(
-        "command api transport",
-        () ->
-            commandApiTransportStep(
-                clusterCfg, brokerCfg.getNetwork().getCommandApi(), localBroker));
-    startContext.addStep(
-        "command api handler", () -> commandApiHandlerStep(brokerCfg, localBroker));
+        "command api transport and handler",
+        () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     startContext.addStep("cluster services", () -> atomix.start().join());
@@ -270,11 +264,10 @@ public final class Broker implements AutoCloseable {
         atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  private AutoCloseable commandApiTransportStep(
-      final ClusterCfg clusterCfg,
-      final SocketBindingCfg commpandApiConfig,
-      final BrokerInfo localBroker) {
-    final var messagingService = createMessagingService(clusterCfg, commpandApiConfig);
+  private AutoCloseable commandApiTransportAndHandlerStep(
+      final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
+    final var messagingService =
+        createMessagingService(brokerCfg.getCluster(), brokerCfg.getNetwork().getCommandApi());
     messagingService.start().join();
     LOG.debug(
         "Bound command API to {}, using advertised address {} ",
@@ -282,10 +275,22 @@ public final class Broker implements AutoCloseable {
         messagingService.address());
 
     final var transportFactory = new TransportFactory(scheduler);
-    serverTransport =
+    final var serverTransport =
         transportFactory.createServerTransport(localBroker.getNodeId(), messagingService);
 
+    final BackpressureCfg backpressureCfg = brokerCfg.getBackpressure();
+    PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
+    if (backpressureCfg.isEnabled()) {
+      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
+    }
+
+    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
+    partitionListeners.add(commandHandler);
+    scheduleActor(commandHandler);
+    diskSpaceUsageListeners.add(commandHandler);
+
     return () -> {
+      commandHandler.close();
       serverTransport.close();
       messagingService.stop().join();
     };
@@ -300,22 +305,6 @@ public final class Broker implements AutoCloseable {
         clusterCfg.getClusterName(),
         Address.from(socketCfg.getAdvertisedHost(), socketCfg.getAdvertisedPort()),
         messagingConfig);
-  }
-
-  private AutoCloseable commandApiHandlerStep(
-      final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
-
-    final BackpressureCfg backpressureCfg = brokerCfg.getBackpressure();
-    PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
-    if (backpressureCfg.isEnabled()) {
-      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
-    }
-
-    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
-    partitionListeners.add(commandHandler);
-    scheduleActor(commandHandler);
-    diskSpaceUsageListeners.add(commandHandler);
-    return commandHandler;
   }
 
   private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {
