@@ -9,16 +9,19 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedOrCanceledFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningFlowNodesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -27,7 +30,9 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +43,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.command.util.DurationScriptUtil.getDurationFilterScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
@@ -80,7 +86,8 @@ public abstract class ModelElementFilterQueryUtil {
       .filter(filter -> flowNodeStatusViewFilterInstanceQueries.containsKey(filter.getClass())
         || filter instanceof CandidateGroupFilterDto
         || filter instanceof AssigneeFilterDto
-        || filter instanceof FlowNodeDurationFilterDto)
+        || filter instanceof FlowNodeDurationFilterDto
+        || filter instanceof ExecutedFlowNodeFilterDto)
       .collect(Collectors.toList());
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
       BoolQueryBuilder viewFilterInstanceQuery = createFlowNodeTypeFilterQuery(isUserTaskReport);
@@ -95,6 +102,9 @@ public abstract class ModelElementFilterQueryUtil {
           } else if (filter instanceof AssigneeFilterDto) {
             final IdentityLinkFilterDataDto filterData = (IdentityLinkFilterDataDto) filter.getData();
             createAssigneeFilterQuery(filterData, viewFilterInstanceQuery);
+          } else if (filter instanceof ExecutedFlowNodeFilterDto) {
+            final ExecutedFlowNodeFilterDataDto filterData = (ExecutedFlowNodeFilterDataDto) filter.getData();
+            createExecutedFlowNodeFilterQuery(filterData, viewFilterInstanceQuery);
           } else {
             flowNodeStatusViewFilterInstanceQueries.get(filter.getClass()).apply(viewFilterInstanceQuery);
           }
@@ -110,6 +120,7 @@ public abstract class ModelElementFilterQueryUtil {
     addAssigneeFilter(filterBoolQuery, reportDataDto);
     addCandidateGroupFilter(filterBoolQuery, reportDataDto);
     addFlowNodeDurationFilter(filterBoolQuery, reportDataDto);
+    addFlowNodeIdFilter(filterBoolQuery, reportDataDto);
     return filterBoolQuery;
   }
 
@@ -121,11 +132,48 @@ public abstract class ModelElementFilterQueryUtil {
       ));
   }
 
-  public static BoolQueryBuilder createFlowNodeIdFilter(final ProcessReportDataDto reportDataDto,
-                                                        final Set<String> flowNodeIds) {
-    final BoolQueryBuilder filterBoolQuery = createModelElementAggregationFilter(reportDataDto);
-    filterBoolQuery.filter(QueryBuilders.termsQuery(nestedFieldReference(FLOW_NODE_ID), flowNodeIds));
-    return filterBoolQuery;
+  public static BoolQueryBuilder createInclusiveFlowNodeIdFilterQuery(final ProcessReportDataDto reportDataDto,
+                                                                      final Set<String> flowNodeIds) {
+    return createExecutedFlowNodeFilterQuery(
+      createModelElementAggregationFilter(reportDataDto),
+      nestedFieldReference(FLOW_NODE_ID),
+      new ArrayList<>(flowNodeIds),
+      IN
+    );
+  }
+
+  public static BoolQueryBuilder createExecutedFlowNodeFilterQuery(final ExecutedFlowNodeFilterDataDto executedFlowNodeFilterData,
+                                                                   final BoolQueryBuilder boolQuery) {
+    return createExecutedFlowNodeFilterQuery(
+      boolQuery,
+      nestedFieldReference(FLOW_NODE_ID),
+      executedFlowNodeFilterData.getValues(),
+      executedFlowNodeFilterData.getOperator()
+    );
+  }
+
+  public static BoolQueryBuilder createExecutedFlowNodeFilterQuery(final ExecutedFlowNodeFilterDataDto executedFlowNodeFilterData,
+                                                                   final String nestedFieldReference,
+                                                                   final BoolQueryBuilder boolQuery) {
+    return createExecutedFlowNodeFilterQuery(
+      boolQuery,
+      nestedFieldReference,
+      executedFlowNodeFilterData.getValues(),
+      executedFlowNodeFilterData.getOperator()
+    );
+  }
+
+  public static BoolQueryBuilder createExecutedFlowNodeFilterQuery(final BoolQueryBuilder boolQuery,
+                                                                   final String nestedFieldReference,
+                                                                   final List<String> flowNodeIds,
+                                                                   final FilterOperator operator) {
+    final TermsQueryBuilder termsQuery = termsQuery(nestedFieldReference, flowNodeIds);
+    if (IN.equals(operator)) {
+      boolQuery.filter(termsQuery);
+    } else {
+      boolQuery.filter(boolQuery().mustNot(termsQuery));
+    }
+    return boolQuery;
   }
 
   public static QueryBuilder createFlowNodeDurationFilterQuery(final FlowNodeDurationFiltersDataDto durationFilterData) {
@@ -264,6 +312,18 @@ public abstract class ModelElementFilterQueryUtil {
       .map(ProcessFilterDto::getData)
       .forEach(candidateFilterData -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(
         candidateFilterData,
+        boolQuery()
+      )));
+  }
+
+  public static void addFlowNodeIdFilter(final BoolQueryBuilder boolQuery,
+                                         final ProcessReportDataDto reportDataDto) {
+    findAllViewLevelFiltersOfType(
+      reportDataDto.getFilter(),
+      ExecutedFlowNodeFilterDto.class
+    ).map(ProcessFilterDto::getData)
+      .forEach(executedFlowNodeFilterData -> boolQuery.filter(createExecutedFlowNodeFilterQuery(
+        executedFlowNodeFilterData,
         boolQuery()
       )));
   }

@@ -90,7 +90,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -110,7 +109,6 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.util.BpmnModels.DEFAULT_TOPIC;
 
 @Slf4j
 public class SimpleEngineClient {
@@ -1489,7 +1487,7 @@ public class SimpleEngineClient {
         if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
           throw new OptimizeRuntimeException(
             String.format(
-              "Could not execute external task with id %s. Status-code: %s",
+              "Could not fail external task with id %s. Status-code: %s",
               externalTask.getId(),
               response.getStatusLine().getStatusCode()
             )
@@ -1535,51 +1533,62 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  private List<ExternalTaskEngineDto> fetchAndLockExternalTasks(final String processInstanceId) {
-    HttpPost post = new HttpPost(getExternalTaskFetchAndLockUri());
-    post.addHeader("Content-Type", "application/json");
-    post.setEntity(new StringEntity(
-      // @formatter:off
-      String.format(
-        "{\n" +
-          "\"workerId\": \"" + "%s" + "\",\n" +
-          "\"maxTasks\": " + 100 + ",\n" +
-          "\"topics\": [" +
-            "{\"" +
-              "topicName\": \"%s\", " +
-              "\"lockDuration\": 1000000" +
-            "}" +
-          "]\n" +
-        "}",
-        DEFAULT_WORKER,
-        DEFAULT_TOPIC
-      )
-      /// @formatter:on
-    ));
-    try (CloseableHttpResponse response = client.execute(post)) {
+  private List<ExternalTaskEngineDto> fetchExternalTasks(final String processInstanceId) {
+    HttpRequestBase get = new HttpGet(getExternalTaskUri());
+    URI uri = new URIBuilder(get.getURI())
+      .addParameter("processInstanceId", processInstanceId)
+      .build();
+    get.setURI(uri);
+    try (CloseableHttpResponse response = client.execute(get)) {
       if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
         // @formatter:off
-        final List<ExternalTaskEngineDto> externalTaskEngineDtos =
-          objectMapper.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {});
+        return objectMapper.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {});
         // @formatter:on
-        return externalTaskEngineDtos
-          .stream()
-          .filter(task -> Objects.equals(task.getProcessInstanceId(), processInstanceId))
-          .collect(Collectors.toList());
       } else {
         throw new OptimizeRuntimeException(
           String.format(
-            "Could not fetch and lock external tasks. Status-code: %s",
+            "Could not fetch external tasks. Status-code: %s",
             response.getStatusLine().getStatusCode()
           )
         );
       }
-    } catch (IOException e) {
-      String message = "Could not fetch and lock external tasks!";
-      log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @SneakyThrows
+  private List<ExternalTaskEngineDto> fetchAndLockExternalTasks(final String processInstanceId) {
+    final List<ExternalTaskEngineDto> externalTasks = fetchExternalTasks(processInstanceId);
+    final StringEntity entity = new StringEntity(
+      String.format(
+        "{\n" +
+          "\"workerId\": \"" + "%s" + "\",\n" +
+          "\"lockDuration\": 1000000\n" +
+          "}",
+        DEFAULT_WORKER
+      )
+    );
+    for (ExternalTaskEngineDto task : externalTasks) {
+      HttpPost post = new HttpPost(getExternalTaskLockUri(task.getId()));
+      post.addHeader("Content-Type", "application/json");
+      post.setEntity(entity);
+      try (CloseableHttpResponse response = client.execute(post)) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+          throw new OptimizeRuntimeException(
+            String.format(
+              "Could not lock external task with id %s. Status-code: %s",
+              task.getId(),
+              response.getStatusLine().getStatusCode()
+            )
+          );
+        }
+      } catch (IOException e) {
+        String message = "Could not lock external tasks!";
+        log.error(message, e);
+        throw new OptimizeRuntimeException(message, e);
+      }
+    }
+    return externalTasks;
   }
 
   @SneakyThrows
@@ -2211,6 +2220,10 @@ public class SimpleEngineClient {
 
   private String getExternalTaskFetchAndLockUri() {
     return getExternalTaskUri() + "fetchAndLock";
+  }
+
+  private String getExternalTaskLockUri(final String externalTaskId) {
+    return getExternalTaskUri() + externalTaskId + "/lock";
   }
 
   private String getExternalTaskFailureUri(final String externalTaskId) {

@@ -9,8 +9,10 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -24,7 +26,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createExecutedFlowNodeFilterQuery;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_STATUS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -47,6 +51,7 @@ public class IncidentFilterQueryUtil {
     final BoolQueryBuilder filterBoolQuery = boolQuery();
     addOpenIncidentFilter(filterBoolQuery, reportDataDto.getFilter());
     addResolvedIncidentFilter(filterBoolQuery, reportDataDto.getFilter());
+    addExecutedFlowNodeFilter(filterBoolQuery, reportDataDto);
     return filterBoolQuery;
   }
 
@@ -94,11 +99,37 @@ public class IncidentFilterQueryUtil {
     }
   }
 
+  public static void addExecutedFlowNodeFilter(final BoolQueryBuilder boolQuery,
+                                               final ProcessReportDataDto reportDataDto) {
+    findAllViewLevelFiltersOfType(
+      reportDataDto.getFilter(),
+      ExecutedFlowNodeFilterDto.class
+    ).map(ProcessFilterDto::getData)
+      .forEach(executedFlowNodeFilterData -> boolQuery.filter(createExecutedFlowNodeFilterQuery(
+        executedFlowNodeFilterData,
+        nestedFieldReference(IncidentDto.Fields.activityId),
+        boolQuery()
+      )));
+  }
+
+  private static String nestedFieldReference(final String fieldName) {
+    return INCIDENTS + "." + fieldName;
+  }
+
   private static boolean containsViewLevelFilterOfType(final List<ProcessFilterDto<?>> filters,
                                                        final Class<? extends ProcessFilterDto<?>> filterClass) {
     return filters.stream()
       .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
       .anyMatch(filterClass::isInstance);
+  }
+
+  private static <T extends ProcessFilterDto<?>> Stream<T> findAllViewLevelFiltersOfType(
+    final List<ProcessFilterDto<?>> filters,
+    final Class<T> filterClass) {
+    return filters.stream()
+      .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
+      .filter(filterClass::isInstance)
+      .map(filterClass::cast);
   }
 
 }

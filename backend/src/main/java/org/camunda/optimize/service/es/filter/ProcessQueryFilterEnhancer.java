@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
@@ -187,6 +188,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
     return filter
       .stream()
       .filter(clazz::isInstance)
+      .filter(f -> FilterApplicationLevel.INSTANCE.equals(f.getFilterLevel()))
       .map(dateFilter -> (T) dateFilter.getData())
       .collect(Collectors.toList());
   }

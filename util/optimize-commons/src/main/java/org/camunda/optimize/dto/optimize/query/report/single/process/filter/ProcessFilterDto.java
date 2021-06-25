@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
+
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which
  * filter type the jackson object mapper should transform the object to.
@@ -42,8 +43,7 @@ import java.util.List;
   @JsonSubTypes.Type(value = RunningFlowNodesOnlyFilterDto.class, name = "runningFlowNodesOnly"),
   @JsonSubTypes.Type(value = CompletedFlowNodesOnlyFilterDto.class, name = "completedFlowNodesOnly"),
   @JsonSubTypes.Type(value = CanceledFlowNodesOnlyFilterDto.class, name = "canceledFlowNodesOnly"),
-  @JsonSubTypes.Type(value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-    name = "completedOrCanceledFlowNodesOnly")
+  @JsonSubTypes.Type(value = CompletedOrCanceledFlowNodesOnlyFilterDto.class, name = "completedOrCanceledFlowNodesOnly")
 })
 @Data
 @NoArgsConstructor

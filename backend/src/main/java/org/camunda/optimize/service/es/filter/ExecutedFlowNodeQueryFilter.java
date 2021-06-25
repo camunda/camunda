@@ -22,6 +22,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 /**
  * The executed flow node catches any flow nodes that are completed or still running, including those that are marked
@@ -47,7 +48,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
         boolQueryBuilder.should(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            termQuery(nestedActivityIdFieldLabel(), value),
+            termQuery(nestedFlowNodeIdFieldLabel(), value),
             ScoreMode.None
           )
         );
@@ -57,7 +58,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
         boolQueryBuilder.mustNot(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            termQuery(nestedActivityIdFieldLabel(), value),
+            termQuery(nestedFlowNodeIdFieldLabel(), value),
             ScoreMode.None
           )
         );
@@ -69,7 +70,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
     return boolQueryBuilder;
   }
 
-  private String nestedActivityIdFieldLabel() {
+  private String nestedFlowNodeIdFieldLabel() {
     return FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID;
   }
 }

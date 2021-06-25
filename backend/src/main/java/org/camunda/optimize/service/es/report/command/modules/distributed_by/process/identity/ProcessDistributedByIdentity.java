@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createFlowNodeIdFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createInclusiveFlowNodeIdFilterQuery;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
@@ -68,7 +68,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
         // one is used to decide which user tasks should be taken into account. To make sure that we only fetch
         // assignees related to this definition version we filter for userTasks that only occur in the latest version.
         FILTERED_USER_TASKS_AGGREGATION,
-        createFlowNodeIdFilter(
+        createInclusiveFlowNodeIdFilterQuery(
           context.getReportData(),
           getUserTaskIds(context.getReportData())
         )

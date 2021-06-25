@@ -26,6 +26,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -212,6 +213,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertReportWithIncompatibleFilters(reportType, result);
   }
 
+  @Disabled // Disabled as there currently are no incompatible duration viewLevel filters. To be adjusted with OPT-5349 and OPT-5350
   @ParameterizedTest
   @MethodSource("reportTypesToEvaluate")
   public void testIncompatibleCombinationOfViewLevelFlowNodeDurationFilters(final ProcessReportDataType reportType) {

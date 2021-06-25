@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 
-public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
+public class ExecutedFlowNodeInstanceLevelFilterIT extends AbstractFilterIT {
 
   @Test
   public void filterByOneFlowNode() {
