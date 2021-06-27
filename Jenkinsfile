@@ -440,7 +440,7 @@ pipeline {
                     }
                     currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}"
                 } else {
-                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, null)
                 }
 
                 sendZeebeSlackMessage()
