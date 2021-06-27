@@ -149,7 +149,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "bpmn-tck/**/*/TEST*.xml", keepLongStdio: true
+                            junit testResults: "bpmn-tck/**/*/TEST*.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -165,7 +165,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST-go.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST-go.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -187,7 +187,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -205,7 +205,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -272,7 +272,7 @@ pipeline {
 
                             post {
                                 always {
-                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
+                                    junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true, allowEmptyResults: true
                                     stash allowEmpty: true, name: itFlakyTestStashName, includes: '**/FlakyTests.txt'
                                 }
 
