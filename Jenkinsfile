@@ -434,11 +434,10 @@ pipeline {
 
                 if (flakes) {
                     currentBuild.result = 'UNSTABLE'
-                    flakes.each {
-                        // `it` is an implicit iterator variable in groovy and holds the test case
-                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', it)
+                    for (flake in flakes) {
+                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flake)
                     }
-                    currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}"
+                    currentBuild.description = "Flaky tests (#${flakes.size()}): [<br />${flakes.join(',<br />')}"
                 } else {
                     org.camunda.helper.CIAnalytics.trackBuildStatus(this, null)
                 }
