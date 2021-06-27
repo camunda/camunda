@@ -25,13 +25,7 @@
         <configuration>
           <!-- combine both surefire and failsafe include patterns for now -->
           <includes>
-            <include>**/IT*.java</include>
-            <include>**/*IT.java</include>
-            <include>**/*ITCase.java</include>
-            <include>**/Test*.java</include>
-            <include>**/*Test.java</include>
-            <include>**/*Tests.java</include>
-            <include>**/*TestCase.java</include>
+            <include>**/*SomethingImpossible.java</include>
           </includes>
           <!--
             as our in-house CI does not enable IPv6, clients not running in a Testcontainer-managed
