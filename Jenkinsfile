@@ -433,7 +433,6 @@ pipeline {
                 def flakes = combineFlakeResults(flakeFiles)
 
                 if (flakes) {
-                    currentBuild.result = 'UNSTABLE'
                     for (flake in flakes) {
                         org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flake)
                     }
