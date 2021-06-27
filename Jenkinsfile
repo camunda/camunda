@@ -294,18 +294,6 @@ pipeline {
                 failure {
                     zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
                     zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
-                    dir(itAgentUnstashDirectory) {
-                        unstash name: itFlakyTestStashName
-                    }
-
-                    script {
-                        def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
-                        def flakes = combineFlakeResults(flakeFiles)
-
-                        if (flakes) {
-                            currentBuild.description = "Flaky Tests: <br>" + flakes.join('<br>')
-                        }
-                    }
                 }
             }
         }
@@ -419,23 +407,46 @@ pipeline {
                     if (!isBorsStagingBranch()) {
                         build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                     }
-                }
 
-                String userReason = null
-                if (currentBuild.description ==~ /.*Flaky Tests.*/) {
-                    userReason = 'flaky-tests'
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
                 }
-                org.camunda.helper.CIAnalytics.trackBuildStatus(this, userReason)
             }
         }
+
+        success {
+            script {
+                org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
+            }
+        }
+
         failure {
             script {
                 if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
                     return
                 }
+
+                dir(itAgentUnstashDirectory) {
+                    unstash name: itFlakyTestStashName
+                }
+
+                def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
+                def flakes = combineFlakeResults(flakeFiles)
+
+                if (flakyTestCases) {
+                    currentBuild.result = 'UNSTABLE'
+                    flakyTestCases.each {
+                        // `it` is an implicit iterator variable in groovy and holds the test case
+                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', it)
+                    }
+                    currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}"
+                } else {
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
+                }
+
                 sendZeebeSlackMessage()
             }
         }
+
         changed {
             script {
                 if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
