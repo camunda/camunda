@@ -432,9 +432,9 @@ pipeline {
                 def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
                 def flakes = combineFlakeResults(flakeFiles)
 
-                if (flakyTestCases) {
+                if (flakes) {
                     currentBuild.result = 'UNSTABLE'
-                    flakyTestCases.each {
+                    flakes.each {
                         // `it` is an implicit iterator variable in groovy and holds the test case
                         org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', it)
                     }
