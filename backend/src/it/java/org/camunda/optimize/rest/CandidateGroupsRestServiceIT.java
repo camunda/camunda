@@ -196,6 +196,8 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
       startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_IMPOSTERS);
     engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
     startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
+    final String candidateGroupNotInEngine = "anotherGroupID";
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(candidateGroupNotInEngine);
 
     // when
     final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroups(
@@ -205,12 +207,13 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getTotal()).isEqualTo(3);
     assertThat(searchResponse.getResult())
-      .hasSize(2)
+      .hasSize(3)
       .containsExactlyInAnyOrder(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS),
-        new GroupDto(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS)
+        new GroupDto(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS),
+        new GroupDto(candidateGroupNotInEngine, candidateGroupNotInEngine)
       );
   }
 
@@ -222,6 +225,8 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
       startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_IMPOSTERS);
     engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
     startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
+    final String candidateGroupNotInEngine = "anotherGroupID";
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(candidateGroupNotInEngine);
     final String reportId = reportClient.createAndStoreProcessReport(instance.getProcessDefinitionKey());
 
     // when
@@ -232,12 +237,13 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getTotal()).isEqualTo(3);
     assertThat(searchResponse.getResult())
-      .hasSize(2)
+      .hasSize(3)
       .containsExactlyInAnyOrder(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS),
-        new GroupDto(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS)
+        new GroupDto(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS),
+        new GroupDto(candidateGroupNotInEngine, candidateGroupNotInEngine)
       );
   }
 
@@ -436,6 +442,33 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void searchForCandidateGroupsWithSearchTerm_forDefinition_groupNotInEngine() {
+    // given
+    final String candidateGroupNotInEngine = "anotherGroupID";
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      startSimpleUserTaskProcessWithCandidateGroupAndImport(candidateGroupNotInEngine);
+    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
+
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroups(
+      AssigneeCandidateGroupDefinitionSearchRequestDto.builder()
+        .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+        .terms("groupID")
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(1);
+    assertThat(searchResponse.getResult())
+      .hasSize(1)
+      .containsExactlyInAnyOrder(
+        new GroupDto(candidateGroupNotInEngine, candidateGroupNotInEngine)
+      );
+  }
+
+  @Test
   public void searchForCandidateGroupsWithSearchTerm_forReports() {
     // given
     engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
@@ -459,6 +492,33 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
       .singleElement()
       .isEqualTo(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS)
+      );
+  }
+
+  @Test
+  public void searchForCandidateGroupsWithSearchTerm_forReports_groupNotInEngine() {
+    // given
+    final String candidateGroupNotInEngine = "anotherGroupID";
+    final ProcessInstanceEngineDto instance =
+      startSimpleUserTaskProcessWithCandidateGroupAndImport(candidateGroupNotInEngine);
+    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(CANDIDATE_GROUP_ID_CREW_MEMBERS);
+    final String reportId = reportClient.createAndStoreProcessReport(instance.getProcessDefinitionKey());
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroups(
+      AssigneeCandidateGroupReportSearchRequestDto.builder()
+        .reportIds(Collections.singletonList(reportId))
+        .terms("groupID")
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(1);
+    assertThat(searchResponse.getResult())
+      .singleElement()
+      .isEqualTo(
+        new GroupDto(candidateGroupNotInEngine, candidateGroupNotInEngine)
       );
   }
 

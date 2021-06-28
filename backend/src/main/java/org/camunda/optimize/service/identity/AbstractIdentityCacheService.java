@@ -30,6 +30,7 @@ import org.springframework.scheduling.support.CronTrigger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -264,14 +265,22 @@ public abstract class AbstractIdentityCacheService extends AbstractScheduledServ
 
   protected List<UserDto> fetchUsersById(final EngineContext engineContext, final Collection<String> userIdBatch) {
     if (getCacheConfiguration().isIncludeUserMetaData()) {
-      return engineContext.getUsersById(userIdBatch);
+      List<UserDto> users = engineContext.getUsersById(userIdBatch);
+      List<String> usersNotInEngine = new ArrayList<>(userIdBatch);
+      usersNotInEngine.removeIf(userId -> users.stream().anyMatch(user -> user.getId().equals(userId)));
+      users.addAll(usersNotInEngine.stream().map(UserDto::new).collect(Collectors.toList()));
+      return users;
     } else {
       return userIdBatch.stream().map(UserDto::new).collect(Collectors.toList());
     }
   }
 
   protected List<GroupDto> fetchGroupsById(final EngineContext engineContext, final Collection<String> groupIdBatch) {
-    return engineContext.getGroupsById(groupIdBatch);
+    List<GroupDto> groups = engineContext.getGroupsById(groupIdBatch);
+    List<String> groupsNotInEngine = new ArrayList<>(groupIdBatch);
+    groupsNotInEngine.removeIf(groupId -> groups.stream().anyMatch(group -> group.getId().equals(groupId)));
+    groups.addAll(groupsNotInEngine.stream().map(GroupDto::new).collect(Collectors.toList()));
+    return groups;
   }
 
   private void notifyCacheListeners(final SearchableIdentityCache newIdentityCache) {
