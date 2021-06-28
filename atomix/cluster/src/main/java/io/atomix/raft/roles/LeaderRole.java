@@ -72,11 +72,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
-    final var electionLatency = System.currentTimeMillis() - raft.getLastHeartbeat();
   }
 
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
+    raft.getRaftRoleMetrics()
+        .setElectionLatency(System.currentTimeMillis() - raft.getLastHeartbeat());
+
     // Reset state for the leader.
     takeLeadership();
 

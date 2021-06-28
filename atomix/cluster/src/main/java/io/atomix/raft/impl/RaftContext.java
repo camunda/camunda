@@ -195,6 +195,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     raftRoleMetrics = new RaftRoleMetrics(name);
     replicationMetrics = new RaftReplicationMetrics(name);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
+    lastHeartbeat = System.currentTimeMillis();
     started = true;
   }
 
