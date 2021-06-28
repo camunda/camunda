@@ -95,11 +95,11 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          new LogStreamPartitionStep(),
           new SnapshotReplicationPartitionStep(),
           new StateControllerPartitionStep(),
-          new LogDeletionPartitionStep(),
           new LeaderPostStoragePartitionStep(),
+          new LogDeletionPartitionStep(),
+          new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
@@ -109,8 +109,9 @@ public final class Broker implements AutoCloseable {
       List.of(
           new SnapshotReplicationPartitionStep(),
           new StateControllerPartitionStep(),
-          new LogDeletionPartitionStep(),
-          new FollowerPostStoragePartitionStep());
+          new FollowerPostStoragePartitionStep(),
+          new LogDeletionPartitionStep());
+
   private final SystemContext brokerContext;
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
