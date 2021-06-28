@@ -13,8 +13,8 @@ import {DMNDiagram} from './DMNDiagram';
 jest.mock('dmn-js', () =>
   jest.fn().mockImplementation(() => ({
     destroy: jest.fn(),
-    importXML: jest.fn().mockImplementation((xml, callback) => callback()),
-    open: jest.fn().mockImplementation((_, cb) => cb()),
+    importXML: jest.fn(),
+    open: jest.fn(),
     getViews: jest.fn().mockReturnValue([
       {type: 'DMNDiagram', element: {id: 'a'}},
       {type: 'DMNDiagram', element: {id: 'key'}},
@@ -67,8 +67,8 @@ it('should import the provided xml', async () => {
 it('invoke onLoad after openning the diagram', async () => {
   const spy = jest.fn();
   shallow(<DMNDiagram {...props} onLoad={spy} />);
-  await flushPromises();
   runLastEffect();
+  await flushPromises();
 
   expect(useRef.viewer.current.open).toHaveBeenCalled();
   expect(spy).toHaveBeenCalled();

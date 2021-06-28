@@ -38,20 +38,21 @@ export function DMNDiagram({
 
     mightFail(
       migrateDiagram(xml),
-      (dmn13Xml) => viewer.current.importXML(dmn13Xml, open),
+      async (dmn13Xml) => {
+        if (dmn13Xml) {
+          await viewer.current.importXML(dmn13Xml);
+          await viewer.current.open(
+            viewer.current
+              .getViews()
+              .find(
+                ({type, element: {id}}) => type === 'decisionTable' && id === decisionDefinitionKey
+              )
+          );
+          onLoad();
+        }
+      },
       showError
     );
-
-    function open() {
-      viewer.current.open(
-        viewer.current
-          .getViews()
-          .find(
-            ({type, element: {id}}) => type === 'decisionTable' && id === decisionDefinitionKey
-          ),
-        onLoad
-      );
-    }
   }, [xml, decisionDefinitionKey, mightFail, additionalModules, onLoad]);
 
   return (
