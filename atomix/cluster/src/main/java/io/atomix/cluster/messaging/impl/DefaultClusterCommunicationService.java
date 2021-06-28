@@ -92,6 +92,17 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
+  public <M> void unicast(
+      final String subject,
+      final M message,
+      final Function<M, byte[]> encoder,
+      final MemberId memberId,
+      final boolean reliable) {
+    final byte[] payload = encoder.apply(message);
+    doUnicast(subject, payload, memberId, reliable);
+  }
+
+  @Override
   public <M, R> CompletableFuture<R> send(
       final String subject,
       final M message,

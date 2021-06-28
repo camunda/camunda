@@ -37,12 +37,14 @@ import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.serializer.Serializer;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /** Raft server protocol that uses a {@link ClusterCommunicationService}. */
 public class RaftServerCommunicator implements RaftServerProtocol {
 
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private final RaftMessageContext context;
   private final Serializer serializer;
   private final ClusterCommunicationService clusterCommunicator;
@@ -210,7 +212,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
       final String subject, final T request, final MemberId memberId) {
     metrics.sendMessage(memberId.id(), request.getClass().getSimpleName());
     return clusterCommunicator.send(
-        subject, request, serializer::encode, serializer::decode, MemberId.from(memberId.id()));
+        subject,
+        request,
+        serializer::encode,
+        serializer::decode,
+        MemberId.from(memberId.id()),
+        REQUEST_TIMEOUT);
   }
 
   private <T extends RaftMessage> T recordReceivedMetrics(final T m) {
