@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.engine.impl;
 
-import io.atomix.core.Atomix;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -29,13 +29,13 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions =
       new Int2ObjectHashMap<>();
-  private final Atomix atomix;
+  private final ClusterCommunicationService communicationService;
   private final String actorName;
   private SubscriptionCommandMessageHandler messageHandler;
 
   public SubscriptionApiCommandMessageHandlerService(
-      final BrokerInfo localBroker, final Atomix atomix) {
-    this.atomix = atomix;
+      final BrokerInfo localBroker, final ClusterCommunicationService communicationService) {
+    this.communicationService = communicationService;
     actorName = buildActorName(localBroker.getNodeId(), "SubscriptionApi");
   }
 
@@ -47,7 +47,7 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   @Override
   protected void onActorStarting() {
     messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
-    atomix.getCommunicationService().subscribe(SUBSCRIPTION_TOPIC, messageHandler);
+    communicationService.subscribe(SUBSCRIPTION_TOPIC, messageHandler);
   }
 
   @Override
@@ -99,9 +99,8 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
           LOG.debug(
               "Broker is out of disk space. All requests with topic {} will be rejected.",
               SUBSCRIPTION_TOPIC);
-          atomix.getCommunicationService().unsubscribe(SUBSCRIPTION_TOPIC);
-          atomix
-              .getCommunicationService()
+          communicationService.unsubscribe(SUBSCRIPTION_TOPIC);
+          communicationService
               // SubscriptionMessageHandler does not send any response
               .subscribe(SUBSCRIPTION_TOPIC, b -> CompletableFuture.completedFuture(null));
         });
@@ -114,8 +113,8 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
           LOG.debug(
               "Broker has disk space available again. All requests with topic {} will be accepted.",
               SUBSCRIPTION_TOPIC);
-          atomix.getCommunicationService().unsubscribe(SUBSCRIPTION_TOPIC);
-          atomix.getCommunicationService().subscribe(SUBSCRIPTION_TOPIC, messageHandler);
+          communicationService.unsubscribe(SUBSCRIPTION_TOPIC);
+          communicationService.subscribe(SUBSCRIPTION_TOPIC, messageHandler);
         });
   }
 }

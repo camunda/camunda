@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.TestLoggers;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -162,6 +163,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   public SpringBrokerBridge getSpringBrokerBridge() {
     return springBrokerBridge;
+  }
+
+  public ClusterServices getClusterServices() {
+    return broker.getClusterServices();
   }
 
   public Atomix getAtomix() {

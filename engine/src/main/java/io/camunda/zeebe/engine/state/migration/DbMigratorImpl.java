@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -22,7 +21,10 @@ public class DbMigratorImpl implements DbMigrator {
       LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
   // add new migration tasks here, migrations are executed in the order they appear in the list
-  private static final List<MigrationTask> MIGRATION_TASKS = Collections.emptyList();
+  private static final List<MigrationTask> MIGRATION_TASKS =
+      List.of(
+          new ProcessMessageSubscriptionSentTimeMigration(),
+          new MessageSubscriptionSentTimeMigration());
   // Be mindful of https://github.com/camunda-cloud/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 

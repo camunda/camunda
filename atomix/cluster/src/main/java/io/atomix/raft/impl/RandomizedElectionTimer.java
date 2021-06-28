@@ -21,12 +21,14 @@ import io.atomix.utils.concurrent.ThreadContext;
 import java.time.Duration;
 import java.util.Random;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of the default election in raft. It uses a randomized timeout to prevent
  * multiple nodes from starting the election at the same time.
  */
 public class RandomizedElectionTimer implements ElectionTimer {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RandomizedElectionTimer.class);
 
   private Scheduled electionTimer;
   private final Duration electionTimeout;
@@ -54,6 +56,7 @@ public class RandomizedElectionTimer implements ElectionTimer {
     final Duration delay =
         electionTimeout.plus(Duration.ofMillis(random.nextInt((int) electionTimeout.toMillis())));
     electionTimer = threadContext.schedule(delay, this::onElectionTimeout);
+    LOGGER.trace("Election timeout scheduled for {}", delay);
   }
 
   @Override

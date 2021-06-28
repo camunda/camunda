@@ -376,7 +376,13 @@ public final class ClusteringRule extends ExternalResource {
 
     actorScheduler.start();
 
-    final Gateway gateway = new Gateway(gatewayCfg, atomixCluster, actorScheduler);
+    final Gateway gateway =
+        new Gateway(
+            gatewayCfg,
+            atomixCluster.getMessagingService(),
+            atomixCluster.getMembershipService(),
+            atomixCluster.getEventService(),
+            actorScheduler);
     closeables.manage(gateway::stop);
     closeables.manage(atomixCluster::stop);
     closeables.manage(actorScheduler::stop);
@@ -575,15 +581,11 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void stepDown(final Broker broker, final int partitionId) {
-    final var atomix = broker.getAtomix();
+    final var atomix = broker.getClusterServices();
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        atomix
-            .getPartitionService()
-            .getPartitionGroup(AtomixFactory.GROUP_NAME)
-            .getPartitions()
-            .stream()
+        atomix.getPartitionGroup().getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == partitionId)
             .map(RaftPartition.class::cast)

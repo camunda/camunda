@@ -27,9 +27,43 @@ helm repo update
 ## Monitoring
 
 To monitor your cluster, we will set up a the [Prometheus Operator helm chart](https://github.com/helm/charts/tree/master/stable/prometheus-operator),
-which will install the following components the operator and Grafana.
+which will install the following components the operator and Grafana. There are some pre-requisites for Grafana first.
 
-To do so, run:
+By default, Grafana is setup for Github OAuth, allowing users from the zeebe-io, camunda, and camunda-cloud organizations to login as editors. If you want to use it, you will need to deploy a secret which contains your Github OAuth Application's client ID and client secret, e.g.:
+
+```yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-github-oauth
+type: Opaque
+stringData:
+  client_id: <ID>
+  client_secret: <SECRET>
+```
+
+Save this to a file `oauth-secret.yml`, and apply via `kubectl apply -f oauth-secret.yml`.
+
+Additionally, the admin user will require a pre-defined secret for the username and password. Note that once this is set during the first run, changes to the secret will _not_ update the password - to do that, you need to either use the `grafana-cli` or the do it via the web interface.
+
+Here's an example of a secret you would need to deploy:
+
+```yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin-password
+type: Opaque
+stringData:
+  admin-user: <ADMIN USER>
+  admin-password: <SUPER STRONG PASSWORD>
+```
+
+Save this to `admin.yml` and apply via `kubectl apply -f admin.yml`.
+
+Once these secrets exist, you can now install the operator. To do so, run:
 
 ```sh
 helm install metrics stable/prometheus-operator --atomic -f prometheus-operator-values.yml

@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -32,6 +34,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
@@ -58,12 +63,13 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
-  private final MutableMessageSubscriptionState messageSubscriptionState;
+  private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
-  private final MutableProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
   private final MutableIncidentState incidentState;
   private final MutableBlackListState blackListState;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
+  private final MutableMigrationState mutableMigrationState;
 
   private final int partitionId;
 
@@ -97,6 +103,14 @@ public class ZeebeDbState implements MutableZeebeState {
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     lastProcessedPositionState = new DbLastProcessedPositionState(zeebeDb, transactionContext);
+
+    mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    messageSubscriptionState.onRecovered(context);
+    processMessageSubscriptionState.onRecovered(context);
   }
 
   @Override
@@ -165,8 +179,23 @@ public class ZeebeDbState implements MutableZeebeState {
   }
 
   @Override
+  public MutableMigrationState getMigrationState() {
+    return mutableMigrationState;
+  }
+
+  @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState() {
+    return messageSubscriptionState;
+  }
+
+  @Override
+  public MutablePendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
+    return processMessageSubscriptionState;
   }
 
   @Override

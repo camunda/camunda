@@ -160,7 +160,7 @@ public final class ProcessEventProcessors {
             new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, writers))
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
-                subscriptionCommandSender, zeebeState.getProcessMessageSubscriptionState()));
+                subscriptionCommandSender, zeebeState.getPendingProcessMessageSubscriptionState()));
   }
 
   private static void addTimerStreamProcessors(

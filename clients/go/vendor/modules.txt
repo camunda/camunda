@@ -44,7 +44,7 @@ github.com/davecgh/go-spew/spew
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/api/errcode
-# github.com/docker/docker v20.10.6+incompatible
+# github.com/docker/docker v20.10.7+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -145,7 +145,7 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.11.0
+# github.com/testcontainers/testcontainers-go v0.11.1
 ## explicit
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait

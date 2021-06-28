@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
-import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -37,23 +39,31 @@ public final class BrokerClientImpl implements BrokerClient {
 
   private final ActorScheduler actorScheduler;
   private final BrokerTopologyManagerImpl topologyManager;
-  private final AtomixCluster atomixCluster;
   private final boolean ownsActorScheduler;
   private final BrokerRequestManager requestManager;
   private boolean isClosed;
   private Subscription jobAvailableSubscription;
+  private final ClusterEventService eventService;
 
-  public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {
-    this(configuration, atomixCluster, null);
+  public BrokerClientImpl(
+      final GatewayCfg configuration,
+      final MessagingService messagingService,
+      final ClusterMembershipService membershipService,
+      final ClusterEventService eventService) {
+    this(configuration, messagingService, membershipService, eventService, null);
   }
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
-      final AtomixCluster atomixCluster,
+      final MessagingService messagingService,
+      final ClusterMembershipService membershipService,
+      final ClusterEventService eventService,
       final ActorClock actorClock) {
     this(
         configuration,
-        atomixCluster,
+        messagingService,
+        membershipService,
+        eventService,
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
@@ -65,10 +75,12 @@ public final class BrokerClientImpl implements BrokerClient {
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
-      final AtomixCluster atomixCluster,
+      final MessagingService messagingService,
+      final ClusterMembershipService membershipService,
+      final ClusterEventService eventService,
       final ActorScheduler actorScheduler,
       final boolean ownsActorScheduler) {
-    this.atomixCluster = atomixCluster;
+    this.eventService = eventService;
     this.actorScheduler = actorScheduler;
     this.ownsActorScheduler = ownsActorScheduler;
 
@@ -77,7 +89,6 @@ public final class BrokerClientImpl implements BrokerClient {
     }
 
     final ClusterCfg clusterCfg = configuration.getCluster();
-    final var membershipService = atomixCluster.getMembershipService();
     topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
     actorScheduler.submitActor(topologyManager);
     membershipService.addListener(topologyManager);
@@ -86,7 +97,6 @@ public final class BrokerClientImpl implements BrokerClient {
         .forEach(
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
-    final var messagingService = atomixCluster.getMessagingService();
     final var atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     actorScheduler.submitActor(atomixTransportAdapter);
     requestManager =
@@ -178,8 +188,7 @@ public final class BrokerClientImpl implements BrokerClient {
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
     jobAvailableSubscription =
-        atomixCluster
-            .getEventService()
+        eventService
             .subscribe(
                 topic,
                 msg -> {

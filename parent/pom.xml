@@ -37,7 +37,7 @@
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.11.0</version.agrona>
     <version.animal-sniffer>1.20</version.animal-sniffer>
-    <version.assertj>3.20.1</version.assertj>
+    <version.assertj>3.20.2</version.assertj>
     <version.awaitility>4.1.0</version.awaitility>
     <version.camunda>7.15.0</version.camunda>
     <version.checkstyle>8.43</version.checkstyle>
@@ -64,16 +64,16 @@
     <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.14.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>3.11.1</version.mockito>
-    <version.mockito-jupiter>3.11.1</version.mockito-jupiter>
+    <version.mockito>3.11.2</version.mockito>
+    <version.mockito-jupiter>3.11.2</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.0</version.msgpack>
-    <version.netty-tcnative>2.0.39.Final</version.netty-tcnative>
+    <version.netty-tcnative>2.0.40.Final</version.netty-tcnative>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.11.0</version.prometheus>
     <version.protobuf>3.17.3</version.protobuf>
     <version.protobuf-common>2.3.2</version.protobuf-common>
-    <version.micrometer>1.7.0</version.micrometer>
+    <version.micrometer>1.7.1</version.micrometer>
     <version.rocksdbjni>6.20.3</version.rocksdbjni>
     <version.sbe>1.23.0</version.sbe>
     <version.scala-parser>2.0.0</version.scala-parser>
@@ -90,17 +90,17 @@
     <version.feel-scala>1.13.2</version.feel-scala>
     <version.rest-assured>4.4.0</version.rest-assured>
     <version.spring>5.3.8</version.spring>
-    <version.spring-boot>2.5.1</version.spring-boot>
+    <version.spring-boot>2.5.2</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.1</version.config>
     <version.kryo>5.1.1</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
-    <version.jqwik>1.5.1</version.jqwik>
+    <version.jqwik>1.5.2</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.11.3</version.byte-buddy>
-    <version.revapi>0.24.2</version.revapi>
+    <version.byte-buddy>1.11.5</version.byte-buddy>
+    <version.revapi>0.24.3</version.revapi>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -113,8 +113,7 @@
     <plugin.version.fmt>2.11</plugin.version.fmt>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
-    <plugin.version.proto-backwards-compatibility>1.0.6
-    </plugin.version.proto-backwards-compatibility>
+    <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.2.0</plugin.version.resources>
     <plugin.version.scala>4.5.3</plugin.version.scala>
@@ -147,6 +146,7 @@
     <skipTests>false</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
+    <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
       you can use the following to disable specific checks. the approach taken is to use a single
@@ -632,22 +632,13 @@
         <version>${version.asm}</version>
       </dependency>
 
+      <!-- Testcontainers & Docker for container based integration tests -->
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
+        <artifactId>testcontainers-bom</artifactId>
         <version>${version.testcontainers}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.testcontainers}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>toxiproxy</artifactId>
-        <version>${version.testcontainers}</version>
+        <scope>import</scope>
+        <type>pom</type>
       </dependency>
 
       <dependency>
@@ -1374,11 +1365,6 @@
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
       </plugin>
-
-      <plugin>
-        <groupId>io.zeebe</groupId>
-        <artifactId>flaky-test-extractor-maven-plugin</artifactId>
-      </plugin>
     </plugins>
   </build>
 
@@ -1683,6 +1669,25 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to skip flaky test extraction when tests are skipped -->
+    <profile>
+      <id>extract-flaky-tests</id>
+      <activation>
+        <property>
+          <name>skipTests</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.zeebe</groupId>
+            <artifactId>flaky-test-extractor-maven-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

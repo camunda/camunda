@@ -459,6 +459,12 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
       # maxAppendBatchSize = 32KB;
 
+      # When this flag is enabled, the leader election algorithm attempts to elect the leaders based on a pre-defined priority.
+      # As a result, it tries to distributed the leaders uniformly across the brokers. Note that it is only a best-effort strategy.
+      # It is not guaranteed to be a strictly uniform distribution.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
+      # enablePriorityElection = false;
+
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
         # Specify custom column family options overwriting Zeebe's own defaults.

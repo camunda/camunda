@@ -21,7 +21,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import io.atomix.primitive.partition.Partition;
-import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
@@ -274,16 +273,9 @@ public final class RaftRolesTest {
                   .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
                   .build();
 
-          final Atomix atomix = builder.withPartitionGroups(partitionGroup).build();
+          final Atomix atomix = builder.withPartitionGroup(partitionGroup).build();
 
-          final DefaultPartitionService partitionService =
-              (DefaultPartitionService) atomix.getPartitionService();
-
-          partitionService.getPartitionGroups().stream()
-              .findFirst()
-              .ifPresent(
-                  raftPartitionGroup ->
-                      raftPartitionGroup.getPartitions().forEach(partitionConsumer));
+          atomix.getPartitionGroup().getPartitions().forEach(partitionConsumer);
           return atomix;
         });
   }

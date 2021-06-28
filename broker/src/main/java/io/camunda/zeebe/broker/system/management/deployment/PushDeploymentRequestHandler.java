@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.management.deployment;
 
-import io.atomix.core.Atomix;
+import io.atomix.cluster.messaging.ClusterEventService;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.clustering.management.MessageHeaderDecoder;
@@ -43,15 +43,15 @@ public final class PushDeploymentRequestHandler
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions;
   private final ActorControl actor;
-  private final Atomix atomix;
+  private final ClusterEventService eventService;
 
   public PushDeploymentRequestHandler(
       final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions,
       final ActorControl actor,
-      final Atomix atomix) {
+      final ClusterEventService eventService) {
     this.leaderPartitions = leaderPartitions;
     this.actor = actor;
-    this.atomix = atomix;
+    this.eventService = eventService;
   }
 
   @Override
@@ -96,7 +96,7 @@ public final class PushDeploymentRequestHandler
     final String topic =
         DeploymentDistributorImpl.getDeploymentResponseTopic(deploymentKey, partitionId);
 
-    atomix.getEventService().broadcast(topic, deploymentResponse.toBytes());
+    eventService.broadcast(topic, deploymentResponse.toBytes());
     LOG.trace("Send deployment response on topic {} for partition {}", topic, partitionId);
   }
 

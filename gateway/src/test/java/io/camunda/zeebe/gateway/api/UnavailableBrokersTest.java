@@ -54,7 +54,13 @@ class UnavailableBrokersTest {
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 
-    gateway = new Gateway(new GatewayCfg().setNetwork(networkCfg), cluster, actorScheduler);
+    gateway =
+        new Gateway(
+            new GatewayCfg().setNetwork(networkCfg),
+            cluster.getMessagingService(),
+            cluster.getMembershipService(),
+            cluster.getEventService(),
+            actorScheduler);
     gateway.start();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());

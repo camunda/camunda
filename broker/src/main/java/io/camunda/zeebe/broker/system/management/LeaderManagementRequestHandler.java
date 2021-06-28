@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
-import io.atomix.core.Atomix;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.ClusterEventService;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
@@ -34,11 +35,16 @@ public final class LeaderManagementRequestHandler extends Actor
       new Int2ObjectHashMap<>();
   private final String actorName;
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
-  private final Atomix atomix;
   private final ErrorResponse outOfDiskSpaceError;
+  private final ClusterCommunicationService communicationService;
+  private final ClusterEventService eventService;
 
-  public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
-    this.atomix = atomix;
+  public LeaderManagementRequestHandler(
+      final BrokerInfo localBroker,
+      final ClusterCommunicationService communicationService,
+      final ClusterEventService eventService) {
+    this.communicationService = communicationService;
+    this.eventService = eventService;
     actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
     outOfDiskSpaceError = new ErrorResponse();
     outOfDiskSpaceError
@@ -100,8 +106,8 @@ public final class LeaderManagementRequestHandler extends Actor
   @Override
   protected void onActorStarting() {
     pushDeploymentRequestHandler =
-        new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
-    atomix.getCommunicationService().subscribe(DEPLOYMENT_TOPIC, pushDeploymentRequestHandler);
+        new PushDeploymentRequestHandler(leaderForPartitions, actor, eventService);
+    communicationService.subscribe(DEPLOYMENT_TOPIC, pushDeploymentRequestHandler);
   }
 
   public PushDeploymentRequestHandler getPushDeploymentRequestHandler() {
@@ -115,12 +121,10 @@ public final class LeaderManagementRequestHandler extends Actor
           LOG.debug(
               "Broker is out of disk space. All requests with topic {} will be rejected.",
               DEPLOYMENT_TOPIC);
-          atomix.getCommunicationService().unsubscribe(DEPLOYMENT_TOPIC);
-          atomix
-              .getCommunicationService()
-              .subscribe(
-                  DEPLOYMENT_TOPIC,
-                  b -> CompletableFuture.completedFuture(outOfDiskSpaceError.toBytes()));
+          communicationService.unsubscribe(DEPLOYMENT_TOPIC);
+          communicationService.subscribe(
+              DEPLOYMENT_TOPIC,
+              b -> CompletableFuture.completedFuture(outOfDiskSpaceError.toBytes()));
         });
   }
 
@@ -131,10 +135,8 @@ public final class LeaderManagementRequestHandler extends Actor
           LOG.debug(
               "Broker has disk space available again. All requests with topic {} will be accepted.",
               DEPLOYMENT_TOPIC);
-          atomix.getCommunicationService().unsubscribe(DEPLOYMENT_TOPIC);
-          atomix
-              .getCommunicationService()
-              .subscribe(DEPLOYMENT_TOPIC, pushDeploymentRequestHandler);
+          communicationService.unsubscribe(DEPLOYMENT_TOPIC);
+          communicationService.subscribe(DEPLOYMENT_TOPIC, pushDeploymentRequestHandler);
         });
   }
 }

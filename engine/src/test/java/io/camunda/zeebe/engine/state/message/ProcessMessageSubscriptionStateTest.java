@@ -18,7 +18,6 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +37,7 @@ public final class ProcessMessageSubscriptionStateTest {
   public void shouldNotExist() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     final boolean exist =
@@ -52,7 +51,7 @@ public final class ProcessMessageSubscriptionStateTest {
   public void shouldExistSubscription() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     final boolean exist =
@@ -66,7 +65,7 @@ public final class ProcessMessageSubscriptionStateTest {
   public void shouldGetSubscription() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     final var subscription =
@@ -76,178 +75,13 @@ public final class ProcessMessageSubscriptionStateTest {
     assertThat(subscription).isNotNull();
     assertThat(subscription.getKey()).isEqualTo(1L);
     assertThat(subscription.getRecord()).isEqualTo(record);
-    assertThat(subscription.getCommandSentTime()).isEqualTo(1_000L);
-  }
-
-  @Test
-  public void shouldNoVisitSubscriptionBeforeTime() {
-    // given
-    final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record1, 1_000L);
-
-    final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    state.put(2L, record2, 3_000L);
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(1_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).isEmpty();
-  }
-
-  @Test
-  public void shouldVisitSubscriptionBeforeTime() {
-    // given
-    final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record1, 1_000L);
-
-    final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    state.put(2L, record2, 3_000L);
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).hasSize(1).contains(1L);
-  }
-
-  @Test
-  public void shouldFindSubscriptionBeforeTimeInOrder() {
-    // given
-    final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record1, 1_000L);
-
-    final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    state.put(2L, record2, 2_000L);
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(3_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).hasSize(2).containsExactly(1L, 2L);
-  }
-
-  @Test
-  public void shouldNotVisitSubscriptionIfOpened() {
-    // given
-    final ProcessMessageSubscriptionRecord record1 = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record1, 1_000L);
-
-    final ProcessMessageSubscriptionRecord record2 = subscriptionRecordWithElementInstanceKey(2L);
-    state.put(2L, record2, 2_000L);
-    state.updateToOpenedState(record2.setSubscriptionPartitionId(3));
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).hasSize(1).contains(1L);
-  }
-
-  @Test
-  public void shouldUpdateSubscriptionSentTime() {
-    // given
-    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-
-    // when
-    state.put(1L, record, 1_000L);
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).hasSize(1).contains(1L);
-
-    // and
-    final ProcessMessageSubscription existingSubscription =
-        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
-    state.updateSentTimeInTransaction(existingSubscription, 1_500);
-
-    keys.clear();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).hasSize(1).contains(1L);
-  }
-
-  @Test
-  public void shouldUpdateOpenState() {
-    // given
-    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record, 1_000L);
-    final ProcessMessageSubscription subscription =
-        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
-
-    Assertions.assertThat(subscription.isOpening()).isTrue();
-
-    // when
-    state.updateToOpenedState(record.setSubscriptionPartitionId(3));
-
-    // then
-    final ProcessMessageSubscription updatedSubscription =
-        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
-    Assertions.assertThat(updatedSubscription.isOpening()).isFalse();
-
-    // and
-    assertThat(updatedSubscription.getRecord().getSubscriptionPartitionId()).isEqualTo(3);
-
-    // and
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).isEmpty();
-  }
-
-  @Test
-  public void shouldUpdateCloseState() {
-    // given
-    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record, 1_000L);
-    state.updateToOpenedState(record.setSubscriptionPartitionId(3));
-    final ProcessMessageSubscription subscription =
-        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
-
-    Assertions.assertThat(subscription.isClosing()).isFalse();
-
-    // when
-    state.updateToClosingState(record, 1_000);
-
-    // then
-    final ProcessMessageSubscription updatedSubscription =
-        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
-    assertThat(updatedSubscription.isClosing()).isTrue();
-
-    // and
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).hasSize(1).contains(1L);
-  }
-
-  @Test
-  public void shouldRemoveSubscription() {
-    // given
-    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record, 1_000L);
-
-    // when
-    state.remove(1L, record.getMessageNameBuffer());
-
-    // then
-    final List<Long> keys = new ArrayList<>();
-    state.visitSubscriptionBefore(2_000, s -> keys.add(s.getRecord().getElementInstanceKey()));
-
-    assertThat(keys).isEmpty();
-
-    // and
-    assertThat(state.existSubscriptionForElementInstance(1L, record.getMessageNameBuffer()))
-        .isFalse();
   }
 
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
     final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
-    state.put(1L, record, 1_000L);
+    state.put(1L, record);
 
     // when
     state.remove(1L, record.getMessageNameBuffer());
@@ -261,8 +95,8 @@ public final class ProcessMessageSubscriptionStateTest {
   @Test
   public void shouldNotRemoveSubscriptionOnDifferentKey() {
     // given
-    state.put(1L, subscriptionRecord("messageName", "correlationKey", 1L), 1_000L);
-    state.put(2L, subscriptionRecord("messageName", "correlationKey", 2L), 1_000L);
+    state.put(1L, subscriptionRecord("messageName", "correlationKey", 1L));
+    state.put(2L, subscriptionRecord("messageName", "correlationKey", 2L));
 
     // when
     state.remove(2L, wrapString("messageName"));
@@ -274,9 +108,9 @@ public final class ProcessMessageSubscriptionStateTest {
   @Test
   public void shouldVisitAllSubscriptionsInTheState() {
     // given
-    state.put(1L, subscriptionRecord("message1", "correlationKey", 1L), 1_000L);
-    state.put(2L, subscriptionRecord("message2", "correlationKey", 1L), 1_000L);
-    state.put(3L, subscriptionRecord("message3", "correlationKey", 2L), 1_000L);
+    state.put(1L, subscriptionRecord("message1", "correlationKey", 1L));
+    state.put(2L, subscriptionRecord("message2", "correlationKey", 1L));
+    state.put(3L, subscriptionRecord("message3", "correlationKey", 2L));
 
     // when
     final List<Tuple<Long, DirectBuffer>> visited = new ArrayList<>();
@@ -292,6 +126,22 @@ public final class ProcessMessageSubscriptionStateTest {
     assertThat(visited)
         .containsExactly(
             new Tuple<>(1L, wrapString("message1")), new Tuple<>(1L, wrapString("message2")));
+  }
+
+  @Test
+  public void shouldRemoveSubscription() {
+    // given
+    final ProcessMessageSubscriptionRecord record = subscriptionRecordWithElementInstanceKey(1L);
+    state.put(1L, record);
+
+    // when
+    state.remove(1L, record.getMessageNameBuffer());
+
+    final var subscription =
+        state.getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());
+
+    // then
+    assertThat(subscription).isNull();
   }
 
   private ProcessMessageSubscriptionRecord subscriptionRecordWithElementInstanceKey(

@@ -36,6 +36,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
+import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.TransferRequest;
@@ -90,6 +91,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   protected final RaftServerProtocol protocol;
   protected final RaftStorage storage;
   private final Logger log;
+  private final RaftElectionConfig electionConfig;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
@@ -129,7 +131,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       final RaftThreadContextFactory threadContextFactory,
       final int maxAppendBatchSize,
       final int maxAppendsPerFollower,
-      final Supplier<Random> randomFactory) {
+      final Supplier<Random> randomFactory,
+      final RaftElectionConfig electionConfig) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
@@ -138,6 +141,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
+    this.electionConfig = electionConfig;
+    if (electionConfig.isPriorityElectionEnabled()) {
+      log.debug(
+          "Priority election is enabled with target priority {} and node priority {}",
+          electionConfig.getInitialTargetPriority(),
+          electionConfig.getNodePriority());
+    }
 
     // Lock the storage directory.
     if (!storage.lock(localMemberId.id())) {
@@ -582,8 +592,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private ElectionTimer createElectionTimer(final Runnable triggerElection, final Logger log) {
-    return new RandomizedElectionTimer(
-        electionTimeout, threadContext, random, triggerElection, log);
+    if (electionConfig.isPriorityElectionEnabled()) {
+      return new PriorityElectionTimer(
+          electionTimeout,
+          threadContext,
+          triggerElection,
+          log,
+          electionConfig.getInitialTargetPriority(),
+          electionConfig.getNodePriority());
+    } else {
+      return new RandomizedElectionTimer(
+          electionTimeout, threadContext, random, triggerElection, log);
+    }
   }
 
   /** Transitions the server to the base state for the given member type. */

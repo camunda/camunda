@@ -86,7 +86,7 @@ public final class AtomixFactory {
     final RaftPartitionGroup partitionGroup =
         createRaftPartitionGroup(configuration, rootDirectory, snapshotStoreFactory);
 
-    return atomixBuilder.withPartitionGroups(partitionGroup).build();
+    return atomixBuilder.withPartitionGroup(partitionGroup).build();
   }
 
   private static RaftPartitionGroup createRaftPartitionGroup(
@@ -114,7 +114,8 @@ public final class AtomixFactory {
             .withEntryValidator(new ZeebeEntryValidator())
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
-            .withJournalIndexDensity(dataCfg.getLogIndexDensity());
+            .withJournalIndexDensity(dataCfg.getLogIndexDensity())
+            .withPriorityElection(experimentalCfg.isEnablePriorityElection());
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 

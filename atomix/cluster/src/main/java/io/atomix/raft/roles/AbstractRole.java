@@ -55,17 +55,18 @@ public abstract class AbstractRole implements RaftRole {
    *
    * @return The Raft state represented by this state.
    */
+  @Override
   public abstract RaftServer.Role role();
 
   /** Logs a request. */
   protected final <R extends RaftRequest> R logRequest(final R request) {
-    log.debug("Received {}", request);
+    log.trace("Received {}", request);
     return request;
   }
 
   /** Logs a response. */
   protected final <R extends RaftResponse> R logResponse(final R response) {
-    log.debug("Sending {}", response);
+    log.trace("Sending {}", response);
     return response;
   }
 
