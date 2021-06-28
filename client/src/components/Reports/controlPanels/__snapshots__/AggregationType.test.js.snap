@@ -3,6 +3,7 @@
 exports[`should render an aggregation selection for duration reports 1`] = `
 <Popover
   className="AggregationType"
+  renderInPortal="AggregationType"
   title={
     <React.Fragment>
       <span
@@ -60,6 +61,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
 exports[`should render an user task duration selection for user task duration reports 1`] = `
 <Popover
   className="AggregationType"
+  renderInPortal="AggregationType"
   title={
     <React.Fragment>
       <span

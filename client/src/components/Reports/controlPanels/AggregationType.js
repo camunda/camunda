@@ -89,6 +89,7 @@ export default function AggregationType({report, onChange}) {
     return (
       <Popover
         className="AggregationType"
+        renderInPortal="AggregationType"
         title={
           <>
             <span className="content">{popoverTitle}</span>

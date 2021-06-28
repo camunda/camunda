@@ -197,3 +197,34 @@ it('should render in Portal if requested', () => {
   expect(node.find('.PortalClassName')).toExist();
   expect(node.find('.PortalClassName')).toIncludeText('content');
 });
+
+it('should flip the popover vertically if there is no enough space below when using portal rendering', () => {
+  const node = shallow(
+    <Popover title="a" renderInPortal="test">
+      <p>Child content</p>
+    </Popover>
+  );
+
+  node.instance().header = {
+    getBoundingClientRect: () => ({bottom: 100}),
+  };
+
+  node.instance().buttonRef = {
+    getBoundingClientRect: () => ({left: 0, bottom: 300, height: 50}),
+  };
+
+  node.instance().footerRef = {
+    getBoundingClientRect: () => ({top: 400}),
+  };
+
+  node.instance().popoverDialogRef = {
+    clientWidth: 50,
+    clientHeight: 400,
+  };
+
+  node.instance().calculateDialogStyle();
+  node.setState({open: true});
+  node.update();
+  expect(node.state().dialogStyles.bottom).toBe(60);
+  expect(node.find('.Popover__dialog')).toHaveClassName('scrollable');
+});

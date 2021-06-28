@@ -94,6 +94,9 @@ export default class Popover extends React.Component {
     if (!this.footerRef) {
       this.footerRef = document.body.querySelector('.Footer');
     }
+    if (!this.headerRef) {
+      this.headerRef = document.body.querySelector('.Header');
+    }
   }
 
   calculateDialogStyle = () => {
@@ -102,23 +105,33 @@ export default class Popover extends React.Component {
     if (this.buttonRef && this.popoverDialogRef) {
       const overlayWidth = this.popoverDialogRef.clientWidth;
       const overlayHeight = this.popoverDialogRef.clientHeight;
-      const buttonLeftPosition = this.buttonRef.getBoundingClientRect().left;
-      const buttonBottomPosition = this.buttonRef.getBoundingClientRect().bottom;
+      const buttonRect = this.buttonRef.getBoundingClientRect();
       this.initilizeFooterRef();
       const footerTop = this.footerRef?.getBoundingClientRect().top ?? 0;
+      const headerBottom = this.headerRef?.getBoundingClientRect().bottom ?? 0;
 
       const bodyWidth = document.body.clientWidth;
       const margin = 10;
 
-      if (buttonLeftPosition + overlayWidth > bodyWidth) {
+      if (buttonRect.left + overlayWidth > bodyWidth) {
         style.right = 0;
       } else {
         style.left = 0;
       }
 
-      if (overlayHeight + buttonBottomPosition > footerTop - margin) {
-        style.height = footerTop - buttonBottomPosition - 2 * margin + 'px';
+      if (overlayHeight + buttonRect.bottom > footerTop - margin) {
+        style.height = footerTop - buttonRect.bottom - 2 * margin + 'px';
         scrollable = true;
+      }
+
+      const topSpace = buttonRect.bottom - headerBottom;
+      const bottomSpace = footerTop - buttonRect.bottom;
+
+      if (this.props.renderInPortal && bottomSpace < overlayHeight && topSpace > bottomSpace) {
+        // flip vertically
+        style.bottom = buttonRect.height + margin;
+        scrollable = overlayHeight > topSpace;
+        style.height = scrollable ? topSpace : overlayHeight;
       }
     }
 
@@ -134,6 +147,7 @@ export default class Popover extends React.Component {
 
   createOverlay = () => {
     const {renderInPortal} = this.props;
+    const {dialogStyles} = this.state;
 
     let overlayStyles = {};
     let arrowStyles = {};
@@ -141,12 +155,15 @@ export default class Popover extends React.Component {
       const box = this.buttonRef.getBoundingClientRect();
       overlayStyles = {
         left: box.left,
+        width: box.width,
         top: box.top + box.height,
       };
+    }
 
-      arrowStyles = {
-        left: box.width / 2,
-      };
+    if (dialogStyles.bottom) {
+      // flip arrow vertically
+      arrowStyles.top = -dialogStyles.bottom;
+      arrowStyles.transform = 'rotate(180deg)';
     }
 
     const markup = (

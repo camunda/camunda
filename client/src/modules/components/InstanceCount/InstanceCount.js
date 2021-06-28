@@ -98,6 +98,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
             icon={useIcon}
             title={!useIcon && t('report.instanceCount.appliedFilters')}
             disabled={noInfo}
+            renderInPortal="instanceCountPopover"
           >
             <div className="countString">
               {typeof instanceCount === 'number' &&
