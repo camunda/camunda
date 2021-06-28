@@ -398,7 +398,7 @@ public final class Broker implements AutoCloseable {
                     clusterServices.getMembershipService(),
                     owningPartition.members());
 
-            final PartitionTransitionContext context =
+            final PartitionTransitionContext transitionContext =
                 new PartitionTransitionContext(
                     localBroker.getNodeId(),
                     owningPartition,
@@ -417,8 +417,9 @@ public final class Broker implements AutoCloseable {
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
             final PartitionTransitionImpl transitionBehavior =
-                new PartitionTransitionImpl(context, LEADER_STEPS, FOLLOWER_STEPS);
-            final ZeebePartition zeebePartition = new ZeebePartition(context, transitionBehavior);
+                new PartitionTransitionImpl(transitionContext, LEADER_STEPS, FOLLOWER_STEPS);
+            final ZeebePartition zeebePartition =
+                new ZeebePartition(transitionContext, transitionBehavior);
             scheduleActor(zeebePartition);
             zeebePartition.addFailureListener(
                 new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));

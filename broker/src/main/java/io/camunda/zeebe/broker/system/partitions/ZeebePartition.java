@@ -41,23 +41,25 @@ public final class ZeebePartition extends Actor
   private final HealthMetrics healthMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
 
-  private final PartitionTransitionContext context;
+  private final PartitionContext context;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
   private ActorFuture<Void> currentTransitionFuture;
 
   public ZeebePartition(
-      final PartitionTransitionContext context, final PartitionTransition transition) {
-    this.context = context;
+      final PartitionTransitionContext transitionContext, final PartitionTransition transition) {
+    context = transitionContext.toPartitionContext();
     this.transition = transition;
 
-    context.setActor(actor);
-    context.setDiskSpaceAvailable(true);
+    transitionContext.setActor(actor);
+    transitionContext.setDiskSpaceAvailable(true);
 
-    actorName = buildActorName(context.getNodeId(), "ZeebePartition", context.getPartitionId());
-    context.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
-    zeebePartitionHealth = new ZeebePartitionHealth(context.getPartitionId());
-    healthMetrics = new HealthMetrics(context.getPartitionId());
+    actorName =
+        buildActorName(
+            transitionContext.getNodeId(), "ZeebePartition", transitionContext.getPartitionId());
+    transitionContext.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
+    zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId());
+    healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
   }

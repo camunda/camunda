@@ -33,8 +33,7 @@ public class PartitionTransitionTest {
   private final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
   private final Timeout testTimeout = Timeout.seconds(30);
 
-  @Rule public final RuleChain chain = RuleChain.outerRule(testTimeout).around(
-      schedulerRule);
+  @Rule public final RuleChain chain = RuleChain.outerRule(testTimeout).around(schedulerRule);
 
   private PartitionTransitionContext ctx;
 

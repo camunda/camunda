@@ -87,8 +87,7 @@ public final class TestPartitionStep implements PartitionStep {
     }
 
     public TestPartitionStep build() {
-      return new TestPartitionStep(failOpen, failClose, throwOnOpen,
-          throwOnClose);
+      return new TestPartitionStep(failOpen, failClose, throwOnOpen, throwOnClose);
     }
   }
 }

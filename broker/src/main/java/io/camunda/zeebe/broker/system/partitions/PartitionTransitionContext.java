@@ -30,7 +30,15 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-public class PartitionTransitionContext {
+/**
+ * Interface encapsulating all the information about a partition that are needed during transition
+ * to the role of the partition
+ *
+ * <p><strong>Note:</strong> Currently this class implements {@code PartitionConcept}. This is for
+ * legacy reasons to keep the change set small. In the future the transition should be the process
+ * by which the partition context is created.
+ */
+public class PartitionTransitionContext implements PartitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -90,6 +98,7 @@ public class PartitionTransitionContext {
     this.partitionProcessingState = partitionProcessingState;
   }
 
+  @Override
   public ExporterDirector getExporterDirector() {
     return exporterDirector;
   }
@@ -122,6 +131,7 @@ public class PartitionTransitionContext {
     this.zeebeDb = zeebeDb;
   }
 
+  @Override
   public HealthMonitor getComponentHealthMonitor() {
     return criticalComponentsHealthMonitor;
   }
@@ -130,6 +140,7 @@ public class PartitionTransitionContext {
     this.criticalComponentsHealthMonitor = criticalComponentsHealthMonitor;
   }
 
+  @Override
   public AsyncSnapshotDirector getSnapshotDirector() {
     return snapshotDirector;
   }
@@ -170,6 +181,7 @@ public class PartitionTransitionContext {
     this.deferredCommitPosition = deferredCommitPosition;
   }
 
+  @Override
   public StreamProcessor getStreamProcessor() {
     return streamProcessor;
   }
@@ -178,6 +190,7 @@ public class PartitionTransitionContext {
     this.streamProcessor = streamProcessor;
   }
 
+  @Override
   public LogStream getLogStream() {
     return logStream;
   }
@@ -190,10 +203,12 @@ public class PartitionTransitionContext {
     return nodeId;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
+  @Override
   public List<PartitionListener> getPartitionListeners() {
     return partitionListeners;
   }
@@ -214,6 +229,7 @@ public class PartitionTransitionContext {
     return snapshotStoreSupplier;
   }
 
+  @Override
   public RaftPartition getRaftPartition() {
     return raftPartition;
   }
@@ -234,34 +250,42 @@ public class PartitionTransitionContext {
     return exporterRepository;
   }
 
+  @Override
   public void setDiskSpaceAvailable(final boolean diskSpaceAvailable) {
     partitionProcessingState.setDiskSpaceAvailable(diskSpaceAvailable);
   }
 
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
 
+  @Override
   public boolean shouldExport() {
     return !partitionProcessingState.isExportingPaused();
   }
 
+  @Override
   public void pauseProcessing() throws IOException {
     partitionProcessingState.pauseProcessing();
   }
 
+  @Override
   public void resumeProcessing() throws IOException {
     partitionProcessingState.resumeProcessing();
   }
 
+  @Override
   public boolean pauseExporting() throws IOException {
     return partitionProcessingState.pauseExporting();
   }
 
+  @Override
   public boolean resumeExporting() throws IOException {
     return partitionProcessingState.resumeExporting();
   }
 
+  @Override
   public long getCurrentTerm() {
     return currentTerm;
   }
@@ -270,11 +294,16 @@ public class PartitionTransitionContext {
     this.currentTerm = currentTerm;
   }
 
+  @Override
   public Role getCurrentRole() {
     return currentRole;
   }
 
   public void setCurrentRole(final Role currentRole) {
     this.currentRole = currentRole;
+  }
+
+  public PartitionContext toPartitionContext() {
+    return this;
   }
 }
