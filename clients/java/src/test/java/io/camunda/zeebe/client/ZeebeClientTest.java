@@ -179,6 +179,29 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldCloudBuilderBuildProperClient() {
     // given
     final String clusterId = "clusterId";
+    final String region = "asdf-123";
+
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
+            .withClusterId(clusterId)
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .withRegion(region)
+            .build()) {
+      // when
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGatewayAddress())
+          .isEqualTo(String.format("%s.%s.zeebe.camunda.io:443", clusterId, region));
+    }
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClientWithDefaultRegion() {
+    // given
+    final String clusterId = "clusterId";
     try (final ZeebeClient client =
         ZeebeClient.newCloudClientBuilder()
             .withClusterId(clusterId)
@@ -191,7 +214,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
       assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.zeebe.camunda.io:443", clusterId));
+          .isEqualTo(String.format("%s.bru-2.zeebe.camunda.io:443", clusterId));
     }
   }
 
