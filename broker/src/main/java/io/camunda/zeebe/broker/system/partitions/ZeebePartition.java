@@ -396,9 +396,7 @@ public final class ZeebePartition extends Actor
   public void triggerSnapshot() {
     actor.call(
         () -> {
-          if (context.getSnapshotDirector() != null) {
-            context.getSnapshotDirector().forceSnapshot();
-          }
+          context.triggerSnapshot();
         });
   }
 

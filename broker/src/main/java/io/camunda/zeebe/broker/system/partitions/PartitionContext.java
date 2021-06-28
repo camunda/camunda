@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -41,7 +40,7 @@ public interface PartitionContext {
 
   StreamProcessor getStreamProcessor();
 
-  AsyncSnapshotDirector getSnapshotDirector();
+  void triggerSnapshot();
 
   ExporterDirector getExporterDirector();
 

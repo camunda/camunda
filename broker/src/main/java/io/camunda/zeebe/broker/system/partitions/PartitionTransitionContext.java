@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Interface encapsulating all the information about a partition that are needed during transition
- * to the role of the partition
+ * Class encapsulating all the information about a partition that are needed during transition to
+ * the role of the partition
  *
  * <p><strong>Note:</strong> Currently this class implements {@code PartitionConcept}. This is for
  * legacy reasons to keep the change set small. In the future the transition should be the process
@@ -142,7 +142,6 @@ public class PartitionTransitionContext implements PartitionContext {
     this.criticalComponentsHealthMonitor = criticalComponentsHealthMonitor;
   }
 
-  @Override
   public AsyncSnapshotDirector getSnapshotDirector() {
     return snapshotDirector;
   }
@@ -320,5 +319,12 @@ public class PartitionTransitionContext implements PartitionContext {
   @Override
   public void notifyListenersOfBecomingInactive() {
     partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(), getCurrentTerm()));
+  }
+
+  @Override
+  public void triggerSnapshot() {
+    if (getSnapshotDirector() != null) {
+      getSnapshotDirector().forceSnapshot();
+    }
   }
 }
