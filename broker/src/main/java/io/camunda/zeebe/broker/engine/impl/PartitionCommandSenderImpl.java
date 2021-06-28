@@ -31,6 +31,7 @@ public final class PartitionCommandSenderImpl implements PartitionCommandSender 
     topologyManager.addTopologyPartitionListener(partitionListener);
   }
 
+  @Override
   public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
 
     final Int2IntHashMap partitionLeaders = partitionListener.getPartitionLeaders();
@@ -45,7 +46,7 @@ public final class PartitionCommandSenderImpl implements PartitionCommandSender 
 
     atomix
         .getCommunicationService()
-        .send("subscription", bytes, MemberId.from("" + partitionLeader));
+        .unicast("subscription", bytes, MemberId.from("" + partitionLeader));
     return true;
   }
 }

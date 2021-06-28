@@ -95,20 +95,6 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M> CompletableFuture<Void> unicast(
-      final String subject,
-      final M message,
-      final Function<M, byte[]> encoder,
-      final MemberId toMemberId,
-      final boolean reliable) {
-    try {
-      return doUnicast(subject, encoder.apply(message), toMemberId, reliable);
-    } catch (final Exception e) {
-      return Futures.exceptionalFuture(e);
-    }
-  }
-
-  @Override
   public <M> void multicast(
       final String subject,
       final M message,
@@ -117,6 +103,17 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       final boolean reliable) {
     final byte[] payload = encoder.apply(message);
     nodes.forEach(memberId -> doUnicast(subject, payload, memberId, reliable));
+  }
+
+  @Override
+  public <M> void unicast(
+      final String subject,
+      final M message,
+      final Function<M, byte[]> encoder,
+      final MemberId memberId,
+      final boolean reliable) {
+    final byte[] payload = encoder.apply(message);
+    doUnicast(subject, payload, memberId, reliable);
   }
 
   @Override

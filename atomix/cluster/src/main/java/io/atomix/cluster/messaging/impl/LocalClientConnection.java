@@ -16,17 +16,13 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
 
 /** Local client-side connection. */
 final class LocalClientConnection extends AbstractClientConnection {
   private final LocalServerConnection serverConnection;
 
-  LocalClientConnection(
-      final ScheduledExecutorService executorService, final HandlerRegistry handlers) {
-    super(executorService);
+  LocalClientConnection(final HandlerRegistry handlers) {
     serverConnection = new LocalServerConnection(handlers, this);
   }
 
@@ -37,10 +33,8 @@ final class LocalClientConnection extends AbstractClientConnection {
   }
 
   @Override
-  public CompletableFuture<byte[]> sendAndReceive(
-      final ProtocolRequest message, final Duration timeout) {
-    final CompletableFuture<byte[]> future = new CompletableFuture<>();
-    new Callback(message.id(), message.subject(), timeout, future);
+  public CompletableFuture<byte[]> sendAndReceive(final ProtocolRequest message) {
+    final CompletableFuture<byte[]> future = awaitResponseForRequestWithId(message.id());
     serverConnection.dispatch(message);
     return future;
   }
@@ -49,5 +43,10 @@ final class LocalClientConnection extends AbstractClientConnection {
   public void close() {
     super.close();
     serverConnection.close();
+  }
+
+  @Override
+  public String toString() {
+    return "LocalClientConnection{}";
   }
 }
