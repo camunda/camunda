@@ -21,7 +21,6 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -50,7 +49,6 @@ public class PartitionContext {
 
   private StreamProcessor streamProcessor;
   private LogStream logStream;
-  private AtomixLogStorage atomixLogStorage;
   private long deferredCommitPosition;
   private SnapshotReplication snapshotReplication;
   private StateControllerImpl stateController;
@@ -170,14 +168,6 @@ public class PartitionContext {
 
   public void setDeferredCommitPosition(final long deferredCommitPosition) {
     this.deferredCommitPosition = deferredCommitPosition;
-  }
-
-  public AtomixLogStorage getAtomixLogStorage() {
-    return atomixLogStorage;
-  }
-
-  public void setAtomixLogStorage(final AtomixLogStorage atomixLogStorage) {
-    this.atomixLogStorage = atomixLogStorage;
   }
 
   public StreamProcessor getStreamProcessor() {
