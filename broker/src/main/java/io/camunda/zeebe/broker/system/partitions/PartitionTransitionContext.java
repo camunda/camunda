@@ -26,9 +26,11 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
+import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Interface encapsulating all the information about a partition that are needed during transition
@@ -190,7 +192,6 @@ public class PartitionTransitionContext implements PartitionContext {
     this.streamProcessor = streamProcessor;
   }
 
-  @Override
   public LogStream getLogStream() {
     return logStream;
   }
@@ -206,11 +207,6 @@ public class PartitionTransitionContext implements PartitionContext {
   @Override
   public int getPartitionId() {
     return partitionId;
-  }
-
-  @Override
-  public List<PartitionListener> getPartitionListeners() {
-    return partitionListeners;
   }
 
   public PartitionMessagingService getMessagingService() {
@@ -305,5 +301,24 @@ public class PartitionTransitionContext implements PartitionContext {
 
   public PartitionContext toPartitionContext() {
     return this;
+  }
+
+  @Override
+  public List<ActorFuture<Void>> notifyListenersOfBecomingFollower(final long newTerm) {
+    return partitionListeners.stream()
+        .map(l -> l.onBecomingFollower(getPartitionId(), newTerm))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
+    return partitionListeners.stream()
+        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public void notifyListenersOfBecomingInactive() {
+    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(), getCurrentTerm()));
   }
 }

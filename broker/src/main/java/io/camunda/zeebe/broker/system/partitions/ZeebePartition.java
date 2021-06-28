@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
@@ -109,12 +108,7 @@ public final class ZeebePartition extends Actor
         (success, error) -> {
           if (error == null) {
             final List<ActorFuture<Void>> listenerFutures =
-                context.getPartitionListeners().stream()
-                    .map(
-                        l ->
-                            l.onBecomingLeader(
-                                context.getPartitionId(), newTerm, context.getLogStream()))
-                    .collect(Collectors.toList());
+                context.notifyListenersOfBecomingLeader(newTerm);
             actor.runOnCompletion(
                 listenerFutures,
                 t -> {
@@ -137,9 +131,7 @@ public final class ZeebePartition extends Actor
         (success, error) -> {
           if (error == null) {
             final List<ActorFuture<Void>> listenerFutures =
-                context.getPartitionListeners().stream()
-                    .map(l -> l.onBecomingFollower(context.getPartitionId(), newTerm))
-                    .collect(Collectors.toList());
+                context.notifyListenersOfBecomingFollower(newTerm);
             actor.runOnCompletion(
                 listenerFutures,
                 t -> {
@@ -274,9 +266,7 @@ public final class ZeebePartition extends Actor
 
   private void handleRecoverableFailure() {
     zeebePartitionHealth.setServicesInstalled(false);
-    context
-        .getPartitionListeners()
-        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
+    context.notifyListenersOfBecomingInactive();
 
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
     // failure. The transition for the higher term will be already enqueued and services will be
@@ -305,9 +295,7 @@ public final class ZeebePartition extends Actor
     transitionToInactive();
     context.getRaftPartition().goInactive();
     failureListeners.forEach(FailureListener::onUnrecoverableFailure);
-    context
-        .getPartitionListeners()
-        .forEach(l -> l.onBecomingInactive(context.getPartitionId(), context.getCurrentTerm()));
+    context.notifyListenersOfBecomingInactive();
   }
 
   private void onRecoveredInternal() {
