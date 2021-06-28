@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -53,7 +52,6 @@ public class PartitionContext {
   private LogStream logStream;
   private AtomixLogStorage atomixLogStorage;
   private long deferredCommitPosition;
-  private RaftLogReader raftLogReader;
   private SnapshotReplication snapshotReplication;
   private StateControllerImpl stateController;
   private LogDeletionService logDeletionService;
@@ -164,14 +162,6 @@ public class PartitionContext {
 
   public void setSnapshotReplication(final SnapshotReplication snapshotReplication) {
     this.snapshotReplication = snapshotReplication;
-  }
-
-  public RaftLogReader getRaftLogReader() {
-    return raftLogReader;
-  }
-
-  public void setRaftLogReader(final RaftLogReader raftLogReader) {
-    this.raftLogReader = raftLogReader;
   }
 
   public long getDeferredCommitPosition() {

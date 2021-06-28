@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import static io.camunda.zeebe.broker.Loggers.SYSTEM_LOGGER;
+
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -35,6 +37,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private static final ReplicationContext INVALID_SNAPSHOT = new ReplicationContext(null, -1, null);
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
 
+  private final int partitionId;
+
   private final SnapshotReplication replication;
   private final Map<String, ReplicationContext> receivedSnapshots =
       new Object2NullableObjectHashMap<>();
@@ -59,6 +63,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
       final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
+    this.partitionId = partitionId;
     this.constructableSnapshotStore = constructableSnapshotStore;
     this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;
@@ -155,6 +160,12 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       db.close();
       db = null;
       LOG.debug("Closed database from '{}'.", runtimeDirectory);
+    }
+
+    try {
+      entrySupplier.close();
+    } catch (final Exception e) {
+      SYSTEM_LOGGER.error("Unexpected error closing log reader for partition {}", partitionId, e);
     }
 
     FileUtil.deleteFolderIfExists(runtimeDirectory);

@@ -59,7 +59,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.FollowerPostStorageP
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LeaderPostStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.RaftLogReaderPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStep;
@@ -99,7 +98,6 @@ public final class Broker implements AutoCloseable {
       List.of(
           new AtomixLogStoragePartitionStep(),
           new LogStreamPartitionStep(),
-          new RaftLogReaderPartitionStep(),
           new SnapshotReplicationPartitionStep(),
           new StateControllerPartitionStep(),
           new LogDeletionPartitionStep(),
@@ -111,7 +109,6 @@ public final class Broker implements AutoCloseable {
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          new RaftLogReaderPartitionStep(),
           new SnapshotReplicationPartitionStep(),
           new StateControllerPartitionStep(),
           new LogDeletionPartitionStep(),
