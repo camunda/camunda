@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {makeObservable, observable, action} from 'mobx';
 import {Notification} from 'modules/notifications';
 
 type State = {
@@ -20,7 +20,11 @@ const DEFAULT_STATE: State = {
 class SessionValidation {
   state: State = {...DEFAULT_STATE};
   constructor() {
-    makeAutoObservable(this);
+    makeObservable(this, {
+      state: observable,
+      disableUserSession: action,
+      enableUserSession: action,
+    });
   }
 
   disableUserSession = (notification: Notification | undefined) => {
