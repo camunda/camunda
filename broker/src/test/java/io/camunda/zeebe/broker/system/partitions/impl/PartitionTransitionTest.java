@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -33,13 +33,14 @@ public class PartitionTransitionTest {
   private final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
   private final Timeout testTimeout = Timeout.seconds(30);
 
-  @Rule public final RuleChain chain = RuleChain.outerRule(testTimeout).around(schedulerRule);
+  @Rule public final RuleChain chain = RuleChain.outerRule(testTimeout).around(
+      schedulerRule);
 
-  private PartitionContext ctx;
+  private PartitionTransitionContext ctx;
 
   @Before
   public void setup() {
-    ctx = mock(PartitionContext.class);
+    ctx = mock(PartitionTransitionContext.class);
     when(ctx.getPartitionId()).thenReturn(0);
   }
 

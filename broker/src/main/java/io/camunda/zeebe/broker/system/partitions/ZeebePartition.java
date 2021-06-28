@@ -41,12 +41,13 @@ public final class ZeebePartition extends Actor
   private final HealthMetrics healthMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
 
-  private final PartitionContext context;
+  private final PartitionTransitionContext context;
   private final PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
   private ActorFuture<Void> currentTransitionFuture;
 
-  public ZeebePartition(final PartitionContext context, final PartitionTransition transition) {
+  public ZeebePartition(
+      final PartitionTransitionContext context, final PartitionTransition transition) {
     this.context = context;
     this.transition = transition;
 

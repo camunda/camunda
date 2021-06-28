@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-public class PartitionContext {
+public class PartitionTransitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -63,7 +63,7 @@ public class PartitionContext {
   private long currentTerm;
   private Role currentRole;
 
-  public PartitionContext(
+  public PartitionTransitionContext(
       final int nodeId,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
