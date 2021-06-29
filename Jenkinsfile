@@ -31,11 +31,6 @@ def itFlakyTestStashName = 'it-flakyTests'
 // the latest stable branch is run an hour later at 01:00 AM.
 def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
 
-// get filled in later on the first stage to get the actual node name; unfortunately using the agent
-// label is not enough, since the node name is NOT the label, and we cannot know the node name until
-// it's actually scheduled and running
-def mainAgentName
-
 // since we report the CI analytics at the very end, when the build is finished, we need to share
 // the result of the flaky test analysis "globally"
 def flakyTestCases = []
@@ -74,7 +69,6 @@ pipeline {
         stage('Prepare Distribution') {
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                    script { mainAgentName = env.NODE_NAME }
                     setHumanReadableBuildDisplayName()
 
                     prepareMavenContainer()
@@ -301,32 +295,27 @@ pipeline {
 
             post {
                 always {
-                    // ensure this is run on the main agent, otherwise it could be ran on either the
-                    // IT or main agent, and there's no way of knowing for sure
-                    node(mainAgentName) {
-                        checkCodeCoverage()
-                    }
+                    script { print "Post always executed on: ${env.NODE_NAME}" }
+                    checkCodeCoverage()
                 }
 
                 failure {
-                    // ensure this is run on the main agent, otherwise it could be ran on either the
-                    // IT or main agent, and there's no way of knowing for sure
-                    node(mainAgentName) {
-                        zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
-                        zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
+                    script { print "Post failure executed on: ${env.NODE_NAME}" }
 
-                        dir(itAgentUnstashDirectory) {
-                            unstash name: itFlakyTestStashName
-                        }
+                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+                    zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
 
-                        script {
-                            def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
-                            def flakes = combineFlakeResults(flakeFiles)
+                    dir(itAgentUnstashDirectory) {
+                        unstash name: itFlakyTestStashName
+                    }
 
-                            flakyTestCases = [flakes].flatten()
-                            if (flakyTestCases) {
-                                currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
-                            }
+                    script {
+                        def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
+                        def flakes = combineFlakeResults(flakeFiles)
+
+                        flakyTestCases = [flakes].flatten()
+                        if (flakyTestCases) {
+                            currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
                         }
                     }
                 }
