@@ -44,22 +44,24 @@ import java.util.function.Function;
 /** Raft server protocol that uses a {@link ClusterCommunicationService}. */
 public class RaftServerCommunicator implements RaftServerProtocol {
 
-  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private final RaftMessageContext context;
   private final Serializer serializer;
   private final ClusterCommunicationService clusterCommunicator;
   private final String partitionName;
   private final RaftRequestMetrics metrics;
+  private final Duration requestTimeout;
 
   public RaftServerCommunicator(
       final String prefix,
       final Serializer serializer,
-      final ClusterCommunicationService clusterCommunicator) {
+      final ClusterCommunicationService clusterCommunicator,
+      final Duration requestTimeout) {
     context = new RaftMessageContext(prefix);
     partitionName = prefix;
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
         Preconditions.checkNotNull(clusterCommunicator, "clusterCommunicator cannot be null");
+    this.requestTimeout = requestTimeout;
     metrics = new RaftRequestMetrics(partitionName);
   }
 
@@ -217,7 +219,7 @@ public class RaftServerCommunicator implements RaftServerProtocol {
         serializer::encode,
         serializer::decode,
         MemberId.from(memberId.id()),
-        REQUEST_TIMEOUT);
+        requestTimeout);
   }
 
   private <T extends RaftMessage> T recordReceivedMetrics(final T m) {

@@ -17,7 +17,7 @@
 package io.atomix.raft.partition;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import io.atomix.primitive.partition.PartitionGroup;
+import io.atomix.primitive.partition.PartitionGroup.Type;
 import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
@@ -32,6 +32,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
   private static final boolean DEFAULT_PRIORITY_ELECTION = false;
+  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
   private Set<String> members = new HashSet<>();
   private int partitionSize;
@@ -41,6 +42,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private int maxAppendsPerFollower = 2;
   private int maxAppendBatchSize = 32 * 1024;
   private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
+  private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
@@ -187,7 +189,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   }
 
   @Override
-  public PartitionGroup.Type getType() {
+  public Type getType() {
     return RaftPartitionGroup.TYPE;
   }
 
@@ -197,5 +199,13 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
 
   public void setPriorityElectionEnabled(final boolean enable) {
     priorityElectionEnabled = enable;
+  }
+
+  public Duration getRequestTimeout() {
+    return requestTimeout;
+  }
+
+  public void setRequestTimeout(final Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
   }
 }
