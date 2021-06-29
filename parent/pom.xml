@@ -45,7 +45,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
-    <version.docker-java-api>3.2.8</version.docker-java-api>
+    <version.docker-java-api>3.2.10</version.docker-java-api>
     <version.elasticsearch>7.13.2</version.elasticsearch>
     <version.error-prone>2.7.1</version.error-prone>
     <version.grpc>1.38.1</version.grpc>
