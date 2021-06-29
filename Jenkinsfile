@@ -317,8 +317,9 @@ pipeline {
 
                         script {
                             def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
-                            flakyTestCases += combineFlakeResults(flakeFiles)
+                            def flakes = combineFlakeResults(flakeFiles)
 
+                            flakyTestCases = [flakes].flatten()
                             if (flakyTestCases) {
                                 currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
                             }
