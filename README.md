@@ -20,7 +20,7 @@ Zeebe provides visibility into and control over business processes that span mul
 
 ## Release Lifecycle
 
-Our release cadence within major releases is a minor release every three months, with an alpha release on each of the two months between minor releases. Releases happen on the second Tuesday of the month, Berlin time.
+Our release cadence within major releases is a minor release every three months, with an alpha release on each of the two months between minor releases. Releases happen on the second Tuesday of the month, Berlin time (CET).
 
 Minor releases are supported with patches for six months after their release.
 
