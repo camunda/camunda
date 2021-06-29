@@ -84,7 +84,7 @@ pipeline {
           dir('infra-core') {
             sh("""
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/operate-branch \
+              ${WORKSPACE}/infra-core/camunda-ci/deployments/operate-branch \
               ${WORKSPACE}/operate/.ci/branch-deployment \
               ${params.BRANCH} \
               operate
