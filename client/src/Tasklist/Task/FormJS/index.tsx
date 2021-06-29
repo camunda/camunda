@@ -13,7 +13,7 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
-import {createForm} from '@bpmn-io/form-js';
+import {createForm, Form as FormJSViewer} from '@bpmn-io/form-js';
 import '@bpmn-io/form-js/dist/assets/form-js.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {Button} from 'modules/components/Button';
@@ -69,7 +69,7 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   });
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const formRef = useRef<ReturnType<typeof createForm> | null>(null);
+  const formRef = useRef<FormJSViewer | null>(null);
   const {assignee, taskState} = task;
   const {
     form: {schema},
@@ -91,52 +91,59 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   const {displayNotification} = useNotifications();
 
   useEffect(() => {
-    const container = containerRef.current;
+    async function renderForm() {
+      const container = containerRef.current;
 
-    if (
-      container !== null &&
-      schema !== null &&
-      formRef.current === null &&
-      !areVariablesLoading
-    ) {
-      const data = formatVariablesToFormData(variables);
-      try {
-        const form = createForm({
-          schema: JSON.parse(schema),
-          data,
-          container,
-          properties: {
-            readOnly: !canCompleteTask,
-          },
-        });
+      if (
+        container !== null &&
+        schema !== null &&
+        formRef.current === null &&
+        !areVariablesLoading
+      ) {
+        const data = formatVariablesToFormData(variables);
+        try {
+          const form = await createForm({
+            schema: JSON.parse(schema),
+            data,
+            container,
+            properties: {
+              readOnly: !canCompleteTask,
+            },
+          });
 
-        form.on('changed', ({errors}: any) => {
-          setIsFormValid(Object.keys(errors).length === 0);
-        });
+          form.on('changed', ({errors}: any) => {
+            setIsFormValid(Object.keys(errors).length === 0);
+          });
 
-        form.on('submit', async ({errors, data}: any) => {
-          if (Object.keys(errors).length === 0) {
-            const variables = Object.entries(data).map(
-              ([name, value]) =>
-                ({
-                  name,
-                  value: JSON.stringify(value),
-                } as Variable),
-            );
-            await onSubmit(variables);
-            updateSelectedVariables(variables);
+          form.on('submit', async ({errors, data}: any) => {
+            if (Object.keys(errors).length === 0) {
+              const variables = Object.entries(data).map(
+                ([name, value]) =>
+                  ({
+                    name,
+                    value: JSON.stringify(value),
+                  } as Variable),
+              );
+              await onSubmit(variables);
+              updateSelectedVariables(variables);
+            }
+          });
+
+          if (canCompleteTask) {
+            form.validate();
           }
-        });
 
-        setIsFormValid(Object.keys(form.validateAll(data)).length === 0);
-        formRef.current = form;
-      } catch {
-        removeFormReference();
-        displayNotification('error', {
-          headline: 'Invalid Form schema',
-        });
+          formRef.current = form;
+        } catch {
+          removeFormReference();
+          displayNotification('error', {
+            headline: 'Invalid Form schema',
+          });
+        }
       }
     }
+
+    renderForm();
   }, [
     canCompleteTask,
     onSubmit,
@@ -151,15 +158,19 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
   useLayoutEffect(() => {
     formRef.current?.setProperty('readOnly', !canCompleteTask);
     formRef.current?.reset();
+    if (canCompleteTask) {
+      formRef.current?.validate();
+    }
   }, [canCompleteTask]);
 
   useEffect(() => {
-    if (taskState === 'COMPLETED') {
-      formRef.current?.setState({
-        data: formatVariablesToFormData(variables),
-      });
+    if (taskState === 'COMPLETED' && schema !== null) {
+      formRef.current?.importSchema(
+        JSON.parse(schema),
+        formatVariablesToFormData(variables),
+      );
     }
-  }, [taskState, variables]);
+  }, [taskState, variables, schema]);
 
   useEffect(() => {
     return () => {

@@ -121,20 +121,6 @@ describe('<FormJS />', () => {
       },
     );
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /complete task/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    );
-
     expect(await screen.findByText('Field is required.')).toBeInTheDocument();
 
     rerender(
@@ -223,16 +209,18 @@ describe('<FormJS />', () => {
     );
 
     await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenCalledWith([
-        {
-          name: 'isCool',
-          value: '"yes"',
-        },
-        {
-          name: 'myVar',
-          value: '"new value"',
-        },
-      ]),
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          {
+            name: 'isCool',
+            value: '"yes"',
+          },
+          {
+            name: 'myVar',
+            value: '"new value"',
+          },
+        ]),
+      ),
     );
   });
 });

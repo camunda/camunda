@@ -1278,36 +1278,36 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/form-js-editor@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.1.0.tgz#693a3a13e3929f8a5aa7b8c72661315ef73106d3"
-  integrity sha512-LeL7CEa4f5A5eZHf/nlBDzKZmrEVhhejtgoUr74HmszTWwi/gWeKM8JhwuCcD1vh1bBF8reVQ1lA/EOg7Vtl7w==
+"@bpmn-io/form-js-editor@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-editor/-/form-js-editor-0.2.4.tgz#f3854468c5df1b665c993ace0d81c72986b0e57d"
+  integrity sha512-5SAuxW72bvFdqF6T8VZyA3Lw2blA/nkIQmUDWHvLhaFcFvwzbAoZhOC/2RFnjyVpvzxixqEfv4a9lBbhFCT/XA==
   dependencies:
-    "@bpmn-io/form-js-viewer" "^0.1.0"
+    "@bpmn-io/form-js-viewer" "^0.2.4"
     array-move "^3.0.1"
     dragula "^3.7.3"
     min-dash "^3.7.0"
-    mitt "^2.1.0"
+    min-dom "^3.1.3"
     preact "^10.5.12"
 
-"@bpmn-io/form-js-viewer@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.1.0.tgz#06b24963ae1d848c453ab3f375ab5a72366f76e9"
-  integrity sha512-Gl4889AJIcopX1zjwFffXEX4IzVl7HIsKYjwdu+t0ExOovLw1iG4ZAWCXMo/0p1UYh65kxTDg9YaYv9xxiMgtw==
+"@bpmn-io/form-js-viewer@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.2.4.tgz#22884c1d1177bc8d23d511f7e1473dc032dbc6b9"
+  integrity sha512-32hd625YTrfGjwH5Me0WzcFHpm++TKeGYy9puoW0vdRQVj/dAu6jMJucaHM1dtnD53EBS0jykPU1gysd3NvaFg==
   dependencies:
+    didi "^5.2.1"
     min-dash "^3.7.0"
-    mitt "^2.1.0"
     preact "^10.5.12"
     preact-markup "^2.1.1"
     snarkdown "^2.0.0"
 
-"@bpmn-io/form-js@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.1.0.tgz#67cca55e8c7247be2dd8a180f1396399eeb89597"
-  integrity sha512-wPIfEGIEWNZXApbschVehGjxDK6GN7yrkHXEVbHeJvJ5wKy6Af37CuFdfUZjgHrLOPIewup5cXVB0QhaZ9D6jg==
+"@bpmn-io/form-js@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js/-/form-js-0.2.4.tgz#14ff2f8ba9dd2a6a3168144ef5a4d61c40b38081"
+  integrity sha512-VTkcgsPWhDXXC5yeimSHjes7w2KC3pynWTTgrTDCQ2KENfV1N9cy6wRz3lZqjdPeESDv8c+m3si/A4WI0qDejw==
   dependencies:
-    "@bpmn-io/form-js-editor" "^0.1.0"
-    "@bpmn-io/form-js-viewer" "^0.1.0"
+    "@bpmn-io/form-js-editor" "^0.2.4"
+    "@bpmn-io/form-js-viewer" "^0.2.4"
 
 "@camunda-cloud/common-ui-react@^0.0.15":
   version "0.0.15"
@@ -5642,6 +5642,11 @@ component-emitter@^1.2.1:
   resolved "https://registry.yarnpkg.com/component-emitter/-/component-emitter-1.3.0.tgz#16e4070fba8ae29b679f2215853ee181ab2eabc0"
   integrity sha512-Rd3se6QB+sO1TwqZjscQrurpEPIfO0/yYnSin6Q/rD3mOutHvUrCAhJub3r90uNb+SESBuE0QYoB90YdfatsRg==
 
+component-event@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/component-event/-/component-event-0.1.4.tgz#3de78fc28782381787e24bf2a7c536bf0142c9b4"
+  integrity sha1-PeePwoeCOBeH4kvyp8U2vwFCybQ=
+
 compose-function@3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/compose-function/-/compose-function-3.0.3.tgz#9ed675f13cc54501d30950a486ff6a7ba3ab185f"
@@ -6605,6 +6610,11 @@ device-specs@^1.0.0:
   resolved "https://registry.yarnpkg.com/device-specs/-/device-specs-1.0.0.tgz#47b54577b9b159118bbb0a175177d0aa9c50a9c9"
   integrity sha512-fYXbFSeilT7bnKWFi4OERSPHdtaEoDGn4aUhV5Nly6/I+Tp6JZ/6Icmd7LVIF5euyodGpxz2e/bfUmDnIdSIDw==
 
+didi@^5.2.1:
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-5.2.1.tgz#1a0b1336be8baa0b068a72036eedd9fb94135bff"
+  integrity sha512-IKNnajUlD4lWMy/Q9Emkk7H1qnzREgY4UyE3IhmOi/9IKua0JYtYldk928bOdt1yNxN8EiOy1sqtSozEYsmjCg==
+
 diff-sequences@^26.6.2:
   version "26.6.2"
   resolved "https://registry.yarnpkg.com/diff-sequences/-/diff-sequences-26.6.2.tgz#48ba99157de1923412eed41db6b6d4aa9ca7c0b1"
@@ -6740,6 +6750,11 @@ domhandler@^2.3.0:
   integrity sha512-JiK04h0Ht5u/80fdLMCEmV4zkNh2BcoMFBmZ/91WtYZ8qVXSKjiw7fXMgFPnHcSZgOo3XdinHvmnDUeMf5R4wA==
   dependencies:
     domelementtype "1"
+
+domify@^1.3.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/domify/-/domify-1.4.1.tgz#2e1e813019646715deeb8d3c5de4d3ef7bddd07e"
+  integrity sha512-x18nuiDHMCZGXr4KJSRMf/TWYtiaRo6RX8KN9fEbW54mvbQ6pieUuerC2ahBg+kEp1wycFj8MPUI0WkIOw5E9w==
 
 domutils@^1.5.1, domutils@^1.7.0:
   version "1.7.0"
@@ -9134,6 +9149,11 @@ indexes-of@^1.0.1:
   resolved "https://registry.yarnpkg.com/indexes-of/-/indexes-of-1.0.1.tgz#f30f716c8e2bd346c7b67d3df3915566a7c05607"
   integrity sha1-8w9xbI4r00bHtn0985FVZqfAVgc=
 
+indexof@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/indexof/-/indexof-0.0.1.tgz#82dc336d232b9062179d05ab3293a66059fd435d"
+  integrity sha1-gtwzbSMrkGIXnQWrMpOmYFn9Q10=
+
 infer-owner@^1.0.3, infer-owner@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/infer-owner/-/infer-owner-1.0.4.tgz#c4cefcaa8e51051c2a40ba2ce8a3d27295af9467"
@@ -11194,6 +11214,11 @@ match-url-wildcard@0.0.4:
   dependencies:
     escape-string-regexp "^1.0.5"
 
+matches-selector@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/matches-selector/-/matches-selector-1.2.0.tgz#d1814e7e8f43e69d22ac33c9af727dc884ecf12a"
+  integrity sha512-c4vLwYWyl+Ji+U43eU/G5FwxWd4ZH0ePUsFs5y0uwD9HUEFBXUQ1zUUan+78IpRD+y4pUfG0nAzNM292K7ItvA==
+
 material-colors@^1.2.1:
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/material-colors/-/material-colors-1.2.6.tgz#6d1958871126992ceecc72f4bcc4d8f010865f46"
@@ -11405,6 +11430,16 @@ min-document@^2.19.0:
   dependencies:
     dom-walk "^0.1.0"
 
+min-dom@^3.1.3:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-3.1.3.tgz#6d3f4092439c80d13df52ac98d6a7d5fe92bfdbd"
+  integrity sha512-Lbi1NZjLV9Hg6/bEe2Lfk2Fzsv1MwheR61whqTLP+FxLndYo9TxpksEgM5Kr1khjfCtFTMr0waeEfwIpStkRdw==
+  dependencies:
+    component-event "^0.1.4"
+    domify "^1.3.1"
+    indexof "0.0.1"
+    matches-selector "^1.2.0"
+
 min-indent@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/min-indent/-/min-indent-1.0.1.tgz#a63f681673b30571fbe8bc25686ae746eefa9869"
@@ -11525,11 +11560,6 @@ mississippi@^3.0.0:
     pumpify "^1.3.3"
     stream-each "^1.1.0"
     through2 "^2.0.0"
-
-mitt@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/mitt/-/mitt-2.1.0.tgz#f740577c23176c6205b121b2973514eade1b2230"
-  integrity sha512-ILj2TpLiysu2wkBbWjAmww7TkZb65aiQO+DkVdUTBpBXq+MHYiETENkKFMtsJZX1Lf4pe4QOrTSjIfUwN5lRdg==
 
 mixin-deep@^1.2.0:
   version "1.3.2"

@@ -182,7 +182,7 @@ test('task completion with form on Claimed by Me filter', async (t) => {
         .getByRole('button', {name: /complete task/i})
         .hasAttribute('disabled'),
     )
-    .notOk()
+    .ok()
     .click(screen.getByRole('combobox', {name: /filter/i}))
     .click(screen.findByRole('option', {name: /claimed by me/i}))
     .click(screen.findByText(/^user registration$/i))
