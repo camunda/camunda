@@ -76,6 +76,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   @Override
   public synchronized CompletableFuture<RaftRole> start() {
+    raft.getRaftRoleMetrics()
+        .setElectionLatency(System.currentTimeMillis() - raft.getLastHeartbeat());
+
     // Reset state for the leader.
     takeLeadership();
 
@@ -93,6 +96,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   @Override
   public synchronized CompletableFuture<Void> stop() {
+    raft.resetLastHeartbeat();
     return super.stop()
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
