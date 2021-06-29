@@ -8,6 +8,10 @@
           {
             "matcher": "java-package",
             "match": "/org\\.assertj(\\..*)?/"
+          },
+          {
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.broker.system.configuration"
           }
         ]
       }
