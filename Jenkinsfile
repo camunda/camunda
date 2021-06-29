@@ -71,6 +71,7 @@ pipeline {
         stage('Prepare Distribution') {
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
+                    print "Pod label: ${POD_LABEL}"
                     setHumanReadableBuildDisplayName()
 
                     prepareMavenContainer()
