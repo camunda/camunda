@@ -366,7 +366,12 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   @SneakyThrows
   public void failExternalTasks(final String processInstanceId) {
-    engineClient.failExternalTasks(processInstanceId);
+    failExternalTasks(processInstanceId, null);
+  }
+
+  @SneakyThrows
+  public void failExternalTasks(final String processInstanceId, final String businessKey) {
+    engineClient.failExternalTasks(processInstanceId, businessKey);
   }
 
   public void completeExternalTasks(final String processInstanceId) {
@@ -411,6 +416,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) {
     return engineClient.startProcessInstance(processDefinitionId, variables, "aBusinessKey");
+  }
+
+  public ProcessInstanceEngineDto startProcessInstance(final String processDefinitionId, final String businessKey) {
+    return engineClient.startProcessInstance(processDefinitionId, new HashMap<>(), businessKey);
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String procDefId,

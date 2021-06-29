@@ -222,19 +222,18 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
     // given
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getTwoExternalTaskProcess(DEF_KEY));
-    Map<String, Object> variables = new HashMap<>();
 
     final ProcessInstanceEngineDto instance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), "businessKey1");
     final ProcessInstanceEngineDto instance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), "businessKey2");
 
     // instance1 has 1 resolved incident in serviceTask1 and one open incident in serviceTask2
-    incidentClient.createOpenIncident(instance1.getId());
+    incidentClient.createOpenIncident(instance1);
     engineIntegrationExtension.completeExternalTasks(instance1.getId());
-    incidentClient.createOpenIncident(instance1.getId());
+    incidentClient.createOpenIncident(instance1);
     // instance2 has 1 open incident in serviceTask1
-    incidentClient.createOpenIncident(instance2.getId());
+    incidentClient.createOpenIncident(instance2);
     importAllEngineEntitiesFromScratch();
 
     // when filtering out service task 2 (ie a filter that only affects flowNode data and not instance count because
@@ -245,7 +244,7 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
         new String[]{SERVICE_TASK_ID_2}
       );
 
-    // then both instances are in the result but the serviceTask1 bucket is not
+    // then both instances are in the result but the serviceTask2 bucket is not
     assertThat(resultDto.getInstanceCount()).isEqualTo(2);
     assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2);
     assertThat(resultDto.getFirstMeasureData())

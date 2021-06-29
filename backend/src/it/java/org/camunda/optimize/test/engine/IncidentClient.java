@@ -121,4 +121,11 @@ public class IncidentClient {
     engineIntegrationExtension.failExternalTasks(processInstanceId);
   }
 
+  public void createOpenIncident(final ProcessInstanceEngineDto processInstance) {
+    // To create an incident, first tasks are locked and then they are failed.
+    // The businessKey is required to lock only the tasks of the instance with that businessKey
+    // Otherwise, all tasks are locked and no further incidents can be created for other instances
+    engineIntegrationExtension.failExternalTasks(processInstance.getId(), processInstance.getBusinessKey());
+  }
+
 }
