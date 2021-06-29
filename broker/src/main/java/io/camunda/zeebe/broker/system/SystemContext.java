@@ -126,6 +126,23 @@ public final class SystemContext {
     if (experimental.isDisableExplicitRaftFlush()) {
       LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
     }
+
+    final var heartbeatInterval = cluster.getHeartbeatInterval();
+    final var electionTimeout = cluster.getElectionTimeout();
+    if (heartbeatInterval.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
+    }
+    if (electionTimeout.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
+    }
+    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "electionTimeout %s must be greater than heartbeatInterval %s",
+              electionTimeout, heartbeatInterval));
+    }
   }
 
   private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
