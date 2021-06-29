@@ -441,14 +441,11 @@ pipeline {
                 }
 
                 // we track each flaky test as a separate result so we can count how "flaky" a test is
-                print "Flaky tests? ${flakyTestCases}"
                 if (flakyTestCases) {
                     for (flakyTestCase in flakyTestCases) {
-                        print "Tracking flaky test case: ${flakyTestCase}"
                         org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flakyTestCase)
                     }
                 } else {
-                    print "Tracking normal build result: ${currentBuild.currentResult}"
                     org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.currentResult)
                 }
             }
