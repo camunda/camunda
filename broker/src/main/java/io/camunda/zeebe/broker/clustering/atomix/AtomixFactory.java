@@ -111,6 +111,8 @@ public final class AtomixFactory {
             .withSnapshotStoreFactory(snapshotStoreFactory)
             .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())
             .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
+            .withHeartbeatInterval(clusterCfg.getHeartbeatInterval())
+            .withElectionTimeout(clusterCfg.getElectionTimeout())
             .withEntryValidator(new ZeebeEntryValidator())
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())

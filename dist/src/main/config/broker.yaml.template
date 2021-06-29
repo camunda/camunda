@@ -200,6 +200,20 @@
       # Example:
       # clusterName: zeebe-cluster
 
+      # Configure heartbeatInterval. The leader sends a heartbeat to a follower every heartbeatInterval.
+      # Note: This is an advanced setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_HEARTBEATINTERVAL.
+      # heartbeatInterval: 250ms
+
+      # Configure electionTimeout. If a follower does not receive a heartbeat from the leader with in an election timeout,
+      # it can start a new leader election. electionTimeout should be greater than configured heartbeatInterval.
+      # When the electionTimeout is large, there will be delay in detecting a leader failure.
+      # When the electionTimeout is small, it can lead to false positives when detecting leader failures and thus leading to unnecessary leader changes.
+      # If the network latency between the nodes is high, it is recommended to have a higher election latency.
+      # Note: This is an advanced setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_ELECTIONTIMEOUT.
+      # electionTimeout: 2500ms
+
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
       # membership:

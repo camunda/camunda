@@ -338,6 +338,31 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
+     * Sets the heartbeatInterval. The leader will send heartbeats to a follower at this interval.
+     *
+     * @param heartbeatInterval the delay between two heartbeats
+     * @return the Raft partition group builder
+     */
+    public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
+      checkArgument(heartbeatInterval.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
+      config.setHeartbeatInterval(heartbeatInterval);
+      return this;
+    }
+
+    /**
+     * Sets the election timeout. If a follower does not receive a heartbeat from the leader within
+     * election timeout, it can start a new leader election.
+     *
+     * @param electionTimeout the election timeout
+     * @return the Raft partition group builder
+     */
+    public Builder withElectionTimeout(final Duration electionTimeout) {
+      checkArgument(electionTimeout.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
+      config.setElectionTimeout(electionTimeout);
+      return this;
+    }
+
+    /**
      * Sets the path to the data directory.
      *
      * @param dataDir the path to the replica's data directory
