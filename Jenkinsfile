@@ -12,6 +12,8 @@ def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def latestStableBranchName = 'stable/1.0'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
+def mainAgentName = "zeebe-ci-build_${buildName}"
+def itAgentName = "zeebe-ci-build_${buildName}_it"
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
@@ -24,8 +26,8 @@ def longTimeoutMinutes = 45
 
 // the IT agent needs to share some files for post analysis, and since they share the same name as
 // those in the main agent, we unstash them in a separate directory
-itAgentUnstashDirectory = '.tmp/it'
-itFlakyTestStashName = 'it-flakyTests'
+def itAgentUnstashDirectory = '.tmp/it'
+def itFlakyTestStashName = 'it-flakyTests'
 
 // the develop branch should be run at midnight to do a nightly build including QA test run
 // the latest stable branch is run an hour later at 01:00 AM.
@@ -39,7 +41,7 @@ pipeline {
     agent {
         kubernetes {
             cloud 'zeebe-ci'
-            label "zeebe-ci-build_${buildName}"
+            label mainAgentName
             defaultContainer 'jnlp'
             yaml templatePodspec('.ci/podSpecs/distribution-template.yml')
         }
@@ -228,7 +230,7 @@ pipeline {
                     agent {
                         kubernetes {
                             cloud 'zeebe-ci'
-                            label "zeebe-ci-build_${buildName}_it"
+                            label itAgentName
                             defaultContainer 'jnlp'
                             yaml templatePodspec('.ci/podSpecs/integration-test-template.yml')
                         }
@@ -295,13 +297,17 @@ pipeline {
 
             post {
                 always {
-                    checkCodeCoverage()
+                    // ensure this is run on the main agent, otherwise it could be ran on either the
+                    // IT or main agent, and there's no way of knowing for sure
+                    node(mainAgentName) {
+                        checkCodeCoverage()
+                    }
                 }
 
                 failure {
                     // ensure this is run on the main agent, otherwise it could be ran on either the
                     // IT or main agent, and there's no way of knowing for sure
-                    node("zeebe-ci-build_${buildName}") {
+                    node(mainAgentName) {
                         zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
                         zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
 
@@ -311,14 +317,10 @@ pipeline {
 
                         script {
                             def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
-                            flakyTestCases = combineFlakeResults(flakeFiles)
+                            flakyTestCases += combineFlakeResults(flakeFiles)
 
-                            print "Flakes: ${flakyTestCases}"
                             if (flakyTestCases) {
-                                if (!currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
-                                    currentBuild.result = 'UNSTABLE'
-                                }
-                                currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}"
+                                currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
                             }
                         }
                     }
@@ -435,16 +437,17 @@ pipeline {
                     if (!isBorsStagingBranch()) {
                         build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                     }
-
                 }
 
-                // we track each flaky test as a separate result so we can count how "flaky" a test
-                // is
+                // we track each flaky test as a separate result so we can count how "flaky" a test is
+                print "Flaky tests? ${flakyTestCases}"
                 if (flakyTestCases) {
                     for (flakyTestCase in flakyTestCases) {
+                        print "Tracking flaky test case: ${flakyTestCase}"
                         org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flakyTestCase)
                     }
                 } else {
+                    print "Tracking normal build result: ${currentBuild.currentResult}"
                     org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.currentResult)
                 }
             }

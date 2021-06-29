@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
-final class TestSomethingImpossible {
+final class ITestSomethingImpossible {
   private static final AtomicBoolean TOGGLE = new AtomicBoolean();
   private static final AtomicBoolean TOGGLE_PRIME = new AtomicBoolean();
 
