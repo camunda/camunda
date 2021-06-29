@@ -19,7 +19,6 @@ function analyseFlakyTests() {
   local -r irOutputFile=$(mktemp)
 
   if grep -q "\[WARNING\] Flakes:" ${testInputFile}; then
-    tmpfile2=$(mktemp)
     awk '/^\[WARNING\] Flakes:.*$/{flag=1}/^\[ERROR\] Tests run:.*Flakes: [0-9]*$/{print;flag=0}flag' ${testInputFile} > ${irOutputFile}
     grep "\[ERROR\]   Run 1: " ${irOutputFile} | awk '{print $4}' >> ${testOutputFile}
     echo 'ERROR: Flaky Tests detected'>&2
