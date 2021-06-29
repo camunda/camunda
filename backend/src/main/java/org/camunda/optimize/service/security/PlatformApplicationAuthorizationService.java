@@ -28,12 +28,12 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 @Conditional(CamundaPlatformCondition.class)
 @Component
 @Slf4j
-public class CamundaPlatformApplicationAuthorizationService extends AbstractCachingAuthorizationService<List<String>>
+public class PlatformApplicationAuthorizationService extends AbstractCachingAuthorizationService<List<String>>
   implements ApplicationAuthorizationService {
   private static final List<String> RELEVANT_PERMISSIONS = List.of(ALL_PERMISSION, ACCESS_PERMISSION);
 
-  public CamundaPlatformApplicationAuthorizationService(final EngineContextFactory engineContextFactory,
-                                                        final ConfigurationService configurationService) {
+  public PlatformApplicationAuthorizationService(final EngineContextFactory engineContextFactory,
+                                                 final ConfigurationService configurationService) {
     super(engineContextFactory, configurationService);
   }
 

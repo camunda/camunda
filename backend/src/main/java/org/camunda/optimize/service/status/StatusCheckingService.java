@@ -74,9 +74,12 @@ public class StatusCheckingService {
     return isConnected;
   }
 
-  public boolean isConnectedToAtLeastOneEngineOrNoEnginePresent() {
+  public boolean isConnectedToAtLeastOnePlatformEngineOrCloud() {
     final Collection<EngineContext> configuredEngines = engineContextFactory.getConfiguredEngines();
-    return configuredEngines.isEmpty() || configuredEngines
+    // if there is no engine configured == cloud
+    return configuredEngines.isEmpty()
+      // else there must be as least one connected Camunda Platform engine
+      || configuredEngines
       .stream()
       .anyMatch(engineContext -> isConnectedToEngine(engineContext, true));
   }

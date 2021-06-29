@@ -143,7 +143,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             ES_VERSION: elasticSearchVersion,
             CAMBPM_VERSION: cambpmVersion,
             ZEEBE_VERSION: zeebeVersion,
-            ...(zeebeMode && {COMPOSE_PROFILES: 'zeebe'}),
+            COMPOSE_PROFILES: zeebeMode ? 'zeebe' : 'cambpm',
           },
         });
 

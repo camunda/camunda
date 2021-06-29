@@ -16,7 +16,7 @@ import java.util.List;
 @Conditional(CamundaCloudCondition.class)
 @Component
 @Slf4j
-public class CamundaCloudApplicationAuthorizationService implements ApplicationAuthorizationService {
+public class CloudApplicationAuthorizationService implements ApplicationAuthorizationService {
 
   @Override
   public boolean isUserAuthorizedToAccessOptimize(final String userId) {
