@@ -122,12 +122,6 @@ pipeline {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     container('docker') {
                         sh '.ci/scripts/docker/build.sh'
-
-                        // the hazelcast exporter is used by the BPMN TCK, and must therefore be
-                        // built beforehand - if this ever becomes too slow, we can move this to a
-                        // BPMN TCK agent and make this is a sequential stage prior to running the
-                        // TCK
-                        sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                     }
                 }
             }
@@ -140,21 +134,6 @@ pipeline {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
-                        }
-                    }
-                }
-
-                stage('BPMN TCK') {
-                    when { expression { return false } } // disable TCK until migrated to new API
-                    steps {
-                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                            runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
-                        }
-                    }
-
-                    post {
-                        always {
-                            junit testResults: "bpmn-tck/**/*/TEST*.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
