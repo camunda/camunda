@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -578,7 +579,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldNotWriteResponseOnFailedEventProcessing() {
+  public void shouldWriteResponseOnFailedEventProcessing() {
     // given
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
@@ -607,14 +608,21 @@ public final class StreamProcessorTest {
         streamProcessorRule.getCommandResponseWriter();
 
     final InOrder inOrder = inOrder(commandResponseWriter);
-
+    // it doesn't send the staged command response
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
     inOrder
         .verify(commandResponseWriter, TIMEOUT.times(1))
         .intent(ProcessInstanceIntent.ELEMENT_COMPLETING);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
-    inOrder.verify(commandResponseWriter, never()).tryWriteResponse(anyInt(), anyLong());
+    // instead, it sends a rejection response because of the failure
+    inOrder
+        .verify(commandResponseWriter, TIMEOUT.times(1))
+        .recordType(RecordType.COMMAND_REJECTION);
+    inOrder
+        .verify(commandResponseWriter, TIMEOUT.times(1))
+        .rejectionType(RejectionType.PROCESSING_ERROR);
+    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test
