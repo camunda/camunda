@@ -24,12 +24,17 @@ def longTimeoutMinutes = 45
 
 // the IT agent needs to share some files for post analysis, and since they share the same name as
 // those in the main agent, we unstash them in a separate directory
-itAgentUnstashDirectory = '.tmp/it'
-itFlakyTestStashName = 'it-flakyTests'
+def itAgentUnstashDirectory = '.tmp/it'
+def itFlakyTestStashName = 'it-flakyTests'
 
 // the develop branch should be run at midnight to do a nightly build including QA test run
 // the latest stable branch is run an hour later at 01:00 AM.
 def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
+
+// since we report the build status to CI analytics at the very end, when the build is finished, we
+// need to share the result of the flaky test analysis between different stages, so using a global
+// variable is a necessary evil here
+def flakyTestCases = []
 
 pipeline {
     agent {
@@ -302,8 +307,9 @@ pipeline {
                         def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
                         def flakes = combineFlakeResults(flakeFiles)
 
+                        flakyTestCases = [flakes].flatten()
                         if (flakes) {
-                            currentBuild.description = "Flaky Tests: <br>" + flakes.join('<br>')
+                            currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
                         }
                     }
                 }
@@ -421,13 +427,17 @@ pipeline {
                     }
                 }
 
-                String userReason = null
-                if (currentBuild.description ==~ /.*Flaky Tests.*/) {
-                    userReason = 'flaky-tests'
+                // we track each flaky test as a separate result so we can count how "flaky" a test is
+                if (flakyTestCases) {
+                    for (flakyTestCase in flakyTestCases) {
+                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flakyTestCase)
+                    }
+                } else {
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.currentResult)
                 }
-                org.camunda.helper.CIAnalytics.trackBuildStatus(this, userReason)
             }
         }
+
         failure {
             script {
                 if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
@@ -436,6 +446,7 @@ pipeline {
                 sendZeebeSlackMessage()
             }
         }
+
         changed {
             script {
                 if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
