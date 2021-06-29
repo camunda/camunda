@@ -84,7 +84,7 @@ pipeline {
           dir('infra-core') {
             sh("""
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/zeebe-tasklist-branch \
+              ${WORKSPACE}/infra-core/camunda-ci/deployments/zeebe-tasklist-branch \
               ${WORKSPACE}/tasklist/.ci/branch-deployment \
               ${params.BRANCH} \
               zeebe-tasklist
