@@ -44,7 +44,15 @@ public interface ZeebeClientCloudBuilderStep1 {
        */
       ZeebeClientCloudBuilderStep4 withClientSecret(String clientSecret);
 
-      interface ZeebeClientCloudBuilderStep4 extends ZeebeClientBuilder {}
+      interface ZeebeClientCloudBuilderStep4 extends ZeebeClientBuilder {
+
+        /**
+         * Sets the region of the Camunda Cloud cluster. Default is 'bru-2'.
+         *
+         * @param region region of the Camunda Cloud cluster
+         */
+        ZeebeClientCloudBuilderStep4 withRegion(String region);
+      }
     }
   }
 }

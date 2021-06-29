@@ -26,5 +26,17 @@
         ]
       }
     }
+  },
+  {
+    "extension": "revapi.differences",
+    "configuration": {
+      "justification": "Ignore new methods on all types, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
+      "ignore": true,
+      "differences": [
+        {
+          "code": "java.method.addedToInterface"
+        }
+      ]
+    }
   }
 ]
