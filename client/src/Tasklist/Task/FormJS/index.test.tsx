@@ -4,10 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {MockedResponse} from '@apollo/client/testing';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   claimedTaskWithForm,
   unclaimedTaskWithForm,
@@ -20,19 +18,36 @@ import {
   mockGetSelectedVariables,
   mockGetSelectedVariablesEmptyVariables,
 } from 'modules/queries/get-selected-variables';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {mockServer} from 'modules/mockServer';
+import {graphql} from 'msw';
 
-function createWrapper(mocks: MockedResponse[] = []) {
-  const Wrapper: React.FC = ({children}) => (
-    <MockedApolloProvider mocks={[mockGetCurrentUser, mockGetForm, ...mocks]}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </MockedApolloProvider>
-  );
-
-  return Wrapper;
-}
+const Wrapper: React.FC = ({children}) => (
+  <ApolloProvider client={client}>
+    <MockThemeProvider>{children}</MockThemeProvider>
+  </ApolloProvider>
+);
 
 describe('<FormJS />', () => {
+  beforeEach(() => {
+    mockServer.use(
+      graphql.query('GetForm', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetForm.result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+  });
+
   it('should render form for unclaimed task', async () => {
+    mockServer.use(
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      }),
+    );
+
     render(
       <FormJS
         id="form-0"
@@ -41,7 +56,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([mockGetSelectedVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -58,6 +73,12 @@ describe('<FormJS />', () => {
   });
 
   it('should render form for claimed task', async () => {
+    mockServer.use(
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      }),
+    );
+
     render(
       <FormJS
         id="form-0"
@@ -66,7 +87,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([mockGetSelectedVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -83,6 +104,12 @@ describe('<FormJS />', () => {
   });
 
   it('should render a prefilled form', async () => {
+    mockServer.use(
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      }),
+    );
+
     render(
       <FormJS
         id="form-0"
@@ -91,7 +118,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([mockGetSelectedVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -105,6 +132,17 @@ describe('<FormJS />', () => {
   });
 
   it('should disable form submission', async () => {
+    mockServer.use(
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(
+          ctx.data(mockGetSelectedVariablesEmptyVariables().result.data),
+        );
+      }),
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables('1').result.data));
+      }),
+    );
+
     const {rerender} = render(
       <FormJS
         key="0"
@@ -114,10 +152,7 @@ describe('<FormJS />', () => {
         onSubmit={() => Promise.resolve()}
       />,
       {
-        wrapper: createWrapper([
-          mockGetSelectedVariablesEmptyVariables(),
-          mockGetSelectedVariables('1'),
-        ]),
+        wrapper: Wrapper,
       },
     );
 
@@ -145,6 +180,12 @@ describe('<FormJS />', () => {
   });
 
   it('should submit prefilled form', async () => {
+    mockServer.use(
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      }),
+    );
+
     const mockOnSubmit = jest.fn();
     render(
       <FormJS
@@ -154,7 +195,7 @@ describe('<FormJS />', () => {
         onSubmit={mockOnSubmit}
       />,
       {
-        wrapper: createWrapper([mockGetSelectedVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -187,6 +228,12 @@ describe('<FormJS />', () => {
   });
 
   it('should submit edited form', async () => {
+    mockServer.use(
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      }),
+    );
+
     const mockOnSubmit = jest.fn();
     render(
       <FormJS
@@ -196,7 +243,7 @@ describe('<FormJS />', () => {
         onSubmit={mockOnSubmit}
       />,
       {
-        wrapper: createWrapper([mockGetSelectedVariables()]),
+        wrapper: Wrapper,
       },
     );
 

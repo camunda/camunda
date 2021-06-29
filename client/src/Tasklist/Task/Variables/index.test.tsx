@@ -6,7 +6,6 @@
 
 import * as React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {
   mockGetTaskVariables,
@@ -18,38 +17,37 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
 import userEvent from '@testing-library/user-event';
-import {MockedResponse} from '@apollo/client/testing';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql} from 'msw';
 
-function createWrapper(mocks: MockedResponse[] = []) {
-  const Wrapper: React.FC = ({children}) => {
-    if (mocks.length > 0) {
-      return (
-        <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </MockedApolloProvider>
-      );
-    } else {
-      return (
-        <ApolloProvider client={client}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </ApolloProvider>
-      );
-    }
-  };
-
-  return Wrapper;
-}
+const Wrapper: React.FC = ({children}) => (
+  <ApolloProvider client={client}>
+    <MockThemeProvider>{children}</MockThemeProvider>
+  </ApolloProvider>
+);
 
 describe('<Variables />', () => {
+  beforeEach(() => {
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+  });
+
   it('should show existing variables for unassigned tasks', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={unclaimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -62,10 +60,16 @@ describe('<Variables />', () => {
   });
 
   it('should show a message when the tasks has no variables', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskEmptyVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -76,10 +80,16 @@ describe('<Variables />', () => {
   });
 
   it('should edit variable', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
     const newVariableValue = '"changedValue"';
@@ -89,16 +99,20 @@ describe('<Variables />', () => {
     userEvent.clear(screen.getByDisplayValue('"0001"'));
     userEvent.type(screen.getByLabelText('myVar'), newVariableValue);
 
-    expect(
-      await screen.findByDisplayValue(newVariableValue),
-    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(newVariableValue)).toBeInTheDocument();
   });
 
   it('should add two variables and remove one', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -108,13 +122,13 @@ describe('<Variables />', () => {
       }),
     );
     userEvent.click(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: /Add Variable/,
       }),
     );
 
     expect(
-      await screen.findAllByRole('textbox', {
+      screen.getAllByRole('textbox', {
         name: /new variable/i,
       }),
     ).toHaveLength(4);
@@ -144,13 +158,13 @@ describe('<Variables />', () => {
     ).toBeInTheDocument();
 
     userEvent.click(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: 'Remove new variable 1',
       }),
     );
 
     expect(
-      await screen.findAllByRole('textbox', {
+      screen.getAllByRole('textbox', {
         name: /new variable/i,
       }),
     ).toHaveLength(2);
@@ -181,10 +195,16 @@ describe('<Variables />', () => {
   });
 
   it('should add variable on task without variables', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -208,10 +228,16 @@ describe('<Variables />', () => {
   });
 
   it('should validate an empty variable name', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -221,22 +247,26 @@ describe('<Variables />', () => {
       }),
     );
     userEvent.type(
-      await screen.findByRole('textbox', {
+      screen.getByRole('textbox', {
         name: 'New variable 0 value',
       }),
       '"valid_value"',
     );
 
-    expect(
-      await screen.findByTitle('Name has to be filled'),
-    ).toBeInTheDocument();
+    expect(screen.getByTitle('Name has to be filled')).toBeInTheDocument();
   });
 
   it('should validate an empty variable value', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -246,22 +276,26 @@ describe('<Variables />', () => {
       }),
     );
     userEvent.type(
-      await screen.findByRole('textbox', {
+      screen.getByRole('textbox', {
         name: 'New variable 0 name',
       }),
       'valid_name',
     );
 
-    expect(
-      await screen.findByTitle('Value has to be JSON'),
-    ).toBeInTheDocument();
+    expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
   });
 
   it('should validate an invalid variable value', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -272,22 +306,26 @@ describe('<Variables />', () => {
     );
 
     userEvent.type(
-      await screen.findByRole('textbox', {name: 'New variable 0 value'}),
+      screen.getByRole('textbox', {name: 'New variable 0 value'}),
       'invalid_value}}}',
     );
 
     expect(
-      await screen.findByTitle(
-        'Name has to be filled and Value has to be JSON',
-      ),
+      screen.getByTitle('Name has to be filled and Value has to be JSON'),
     ).toBeInTheDocument();
   });
 
   it('should not validate valid variables', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -298,14 +336,14 @@ describe('<Variables />', () => {
     );
 
     userEvent.type(
-      await screen.findByRole('textbox', {
+      screen.getByRole('textbox', {
         name: 'New variable 0 name',
       }),
       'valid_name',
     );
 
     userEvent.type(
-      await screen.findByRole('textbox', {
+      screen.getByRole('textbox', {
         name: 'New variable 0 value',
       }),
       '"valid_value"',
@@ -321,11 +359,17 @@ describe('<Variables />', () => {
   });
 
   it('should handle submission', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const mockOnSubmit = jest.fn();
     const {rerender} = render(
       <Variables key="id_0" task={claimedTask()} onSubmit={mockOnSubmit} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -412,16 +456,22 @@ describe('<Variables />', () => {
   });
 
   it('should change variable and complete task', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const mockOnSubmit = jest.fn();
 
     render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: createWrapper([mockGetTaskVariables()]),
+      wrapper: Wrapper,
     });
 
     userEvent.clear(await screen.findByLabelText('myVar'));
     userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
     userEvent.click(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: 'Complete Task',
       }),
     );
@@ -437,10 +487,16 @@ describe('<Variables />', () => {
   });
 
   it('should add new variable and complete task', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const mockOnSubmit = jest.fn();
 
     render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: createWrapper([mockGetTaskVariables()]),
+      wrapper: Wrapper,
     });
 
     userEvent.click(await screen.findByText('Add Variable'));
@@ -457,7 +513,7 @@ describe('<Variables />', () => {
       '"newVariableValue"',
     );
     userEvent.click(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: 'Complete Task',
       }),
     );
@@ -473,10 +529,16 @@ describe('<Variables />', () => {
   });
 
   it('should disable submit button on form errors for existing variables', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -498,10 +560,16 @@ describe('<Variables />', () => {
   });
 
   it('should disable submit button on form errors for new variables', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -529,10 +597,16 @@ describe('<Variables />', () => {
   });
 
   it('should disable completion button', async () => {
+    mockServer.use(
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(
       <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
       {
-        wrapper: createWrapper([mockGetTaskVariables()]),
+        wrapper: Wrapper,
       },
     );
 
@@ -565,7 +639,7 @@ describe('<Variables />', () => {
     );
     const mockOnSubmit = jest.fn();
     render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();

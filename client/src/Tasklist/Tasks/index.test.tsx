@@ -16,7 +16,6 @@ import {Tasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   mockGetAllOpenTasks,
   mockGetEmptyTasks,
@@ -25,19 +24,19 @@ import {
   mockGetCompleted,
 } from 'modules/queries/get-tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {MockedResponse} from '@apollo/client/testing';
 import {FilterValues} from 'modules/constants/filterValues';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {mockServer} from 'modules/mockServer';
+import {graphql} from 'msw';
 
-const getWrapper = (
-  mock: MockedResponse[],
-  history = createMemoryHistory({initialEntries: ['/']}),
-) => {
+const getWrapper = (history = createMemoryHistory({initialEntries: ['/']})) => {
   const Wrapper: React.FC = ({children}) => (
-    <MockedApolloProvider mocks={mock}>
+    <ApolloProvider client={client}>
       <Router history={history}>
         <MockThemeProvider>{children}</MockThemeProvider>
       </Router>
-    </MockedApolloProvider>
+    </ApolloProvider>
   );
 
   return Wrapper;
@@ -45,7 +44,13 @@ const getWrapper = (
 
 describe('<Tasks />', () => {
   it('should not render when loading', async () => {
-    render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks()])});
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+    );
+
+    render(<Tasks />, {wrapper: getWrapper()});
 
     expect(screen.queryByTestId('task-0')).not.toBeInTheDocument();
     await waitForElementToBeRemoved(
@@ -55,7 +60,13 @@ describe('<Tasks />', () => {
   });
 
   it('should render tasks', async () => {
-    render(<Tasks />, {wrapper: getWrapper([mockGetAllOpenTasks()])});
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+    );
+
+    render(<Tasks />, {wrapper: getWrapper()});
 
     const [firstTask, secondTask] = mockGetAllOpenTasks().result.data.tasks;
 
@@ -94,7 +105,13 @@ describe('<Tasks />', () => {
   });
 
   it('should render empty message when there are no tasks', async () => {
-    render(<Tasks />, {wrapper: getWrapper([mockGetEmptyTasks])});
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetEmptyTasks.result.data));
+      }),
+    );
+
+    render(<Tasks />, {wrapper: getWrapper()});
 
     expect(
       await screen.findByText('There are no Tasks available'),
@@ -102,9 +119,17 @@ describe('<Tasks />', () => {
   });
 
   it('should show all tasks claimed by me', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetClaimedByMe.result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+
     render(<Tasks />, {
       wrapper: getWrapper(
-        [mockGetClaimedByMe, mockGetCurrentUser],
         createMemoryHistory({
           initialEntries: [`/?filter=${FilterValues.ClaimedByMe}`],
         }),
@@ -121,9 +146,14 @@ describe('<Tasks />', () => {
   });
 
   it('should show all unclaimed tasks', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetUnclaimed.result.data));
+      }),
+    );
+
     render(<Tasks />, {
       wrapper: getWrapper(
-        [mockGetUnclaimed],
         createMemoryHistory({
           initialEntries: [`/?filter=${FilterValues.Unclaimed}`],
         }),
@@ -140,9 +170,14 @@ describe('<Tasks />', () => {
   });
 
   it('should show all completed tasks', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCompleted.result.data));
+      }),
+    );
+
     render(<Tasks />, {
       wrapper: getWrapper(
-        [mockGetCompleted],
         createMemoryHistory({
           initialEntries: [`/?filter=${FilterValues.Completed}`],
         }),
@@ -159,15 +194,21 @@ describe('<Tasks />', () => {
   });
 
   it('should show the loading spinner while changing filters', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCompleted.result.data));
+      }),
+    );
+
     const historyMock = createMemoryHistory({
       initialEntries: [`/?filter=${FilterValues.Completed}`],
     });
 
     render(<Tasks />, {
-      wrapper: getWrapper(
-        [mockGetAllOpenTasks(), mockGetCompleted],
-        historyMock,
-      ),
+      wrapper: getWrapper(historyMock),
     });
 
     expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();

@@ -13,7 +13,7 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
+import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -55,9 +55,11 @@ const MockComponent: React.FC<{withPolling: boolean}> = ({withPolling}) => {
   );
 };
 
+const mockApolloClient = createApolloClient({maxTasksDisplayed: 3});
+
 const Wrapper: React.FC = ({children}) => {
   return (
-    <ApolloProvider client={client}>
+    <ApolloProvider client={mockApolloClient}>
       <MemoryRouter initialEntries={['/']}>
         <MockThemeProvider>{children}</MockThemeProvider>
       </MemoryRouter>

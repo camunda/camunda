@@ -13,75 +13,89 @@ import {login} from 'modules/stores/login';
 import {mergePathname} from 'modules/utils/mergePathname';
 import {MAX_TASKS_DISPLAYED} from 'modules/constants/tasks';
 
-const client = new ApolloClient({
-  cache: new InMemoryCache({
-    typePolicies: {
-      Query: {
-        fields: {
-          tasks: {
-            keyArgs: false,
-            merge(existing, incoming, {args}) {
-              let merged = existing ? existing.slice(0) : [];
+type CreateApolloClientOptions = {maxTasksDisplayed: number};
+const defaultCreateApolloClient = {
+  maxTasksDisplayed: MAX_TASKS_DISPLAYED,
+} as const;
+function createApolloClient({
+  maxTasksDisplayed,
+}: CreateApolloClientOptions = defaultCreateApolloClient) {
+  return new ApolloClient({
+    cache: new InMemoryCache({
+      typePolicies: {
+        Query: {
+          fields: {
+            tasks: {
+              keyArgs: false,
+              merge(existing, incoming, {args}) {
+                let merged = existing ? existing.slice(0) : [];
 
-              let result;
+                let result;
 
-              // requesting next page
-              if (args?.query?.searchAfter !== undefined) {
-                merged.push(...incoming);
-                result = merged.slice(
-                  Math.max(merged.length - MAX_TASKS_DISPLAYED, 0),
-                );
-              }
-              // requesting previous page
-              else if (args?.query?.searchBefore !== undefined) {
-                if (incoming.length > 0) {
-                  merged.unshift(...incoming);
+                // requesting next page
+                if (args?.query?.searchAfter !== undefined) {
+                  merged.push(...incoming);
+                  result = merged.slice(
+                    Math.max(merged.length - maxTasksDisplayed, 0),
+                  );
+                }
+                // requesting previous page
+                else if (args?.query?.searchBefore !== undefined) {
+                  if (incoming.length > 0) {
+                    merged.unshift(...incoming);
+                  }
+
+                  result = merged.slice(0, maxTasksDisplayed);
+                }
+                // initial request / polling / refreshing after mutations
+                else {
+                  result = incoming;
                 }
 
-                result = merged.slice(0, MAX_TASKS_DISPLAYED);
-              }
-              // initial request / polling / refreshing after mutations
-              else {
-                result = incoming;
-              }
-
-              return result;
+                return result;
+              },
             },
           },
         },
       },
-    },
-  }),
-  link: new HttpLink({
-    uri: mergePathname(window.clientConfig?.contextPath ?? '/', '/graphql'),
-    async fetch(uri: RequestInfo, options: RequestInit) {
-      const token = getCsrfToken(document.cookie);
+    }),
+    link: new HttpLink({
+      uri: mergePathname(window.clientConfig?.contextPath ?? '/', '/graphql'),
+      async fetch(uri: RequestInfo, options: RequestInit) {
+        const token = getCsrfToken(document.cookie);
 
-      if (token !== null) {
-        options.headers = {
-          ...options.headers,
-          [CsrfKeyName]: token,
-        };
-      }
+        if (token !== null) {
+          options.headers = {
+            ...options.headers,
+            [CsrfKeyName]: token,
+          };
+        }
 
-      const response = await fetch(uri, options);
-      if (response.ok) {
-        login.activateSession();
-      }
+        const response = await fetch(uri, options);
+        if (response.ok) {
+          login.activateSession();
+        }
 
-      if ([401, 403].includes(response.status)) {
-        await resetApolloStore();
-        login.disableSession();
-      }
+        if ([401, 403].includes(response.status)) {
+          await resetApolloStore();
+          login.disableSession();
+        }
 
-      return response;
-    },
-  }),
-});
+        return response;
+      },
+    }),
+  });
+}
+
+const client = createApolloClient();
 
 async function resetApolloStore() {
   await client.clearStore();
   client.stop();
 }
 
-export {client, resetApolloStore};
+async function clearClientCache() {
+  await client.cache.reset();
+}
+
+export {client, resetApolloStore, clearClientCache, createApolloClient};

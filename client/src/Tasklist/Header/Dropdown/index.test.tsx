@@ -6,35 +6,30 @@
 
 import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {MockedResponse} from '@apollo/client/testing';
-
 import {Dropdown} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {mockServer} from 'modules/mockServer';
+import {graphql, rest} from 'msw';
 
-const fetchMock = jest.spyOn(window, 'fetch');
-
-const getWrapper = (mocks: MockedResponse[]) => {
-  const Wrapper: React.FC = ({children}) => {
-    return (
-      <MockedApolloProvider mocks={mocks}>
-        <MockThemeProvider>{children}</MockThemeProvider>
-      </MockedApolloProvider>
-    );
-  };
-
-  return Wrapper;
-};
+const Wrapper: React.FC = ({children}) => (
+  <ApolloProvider client={client}>
+    <MockThemeProvider>{children}</MockThemeProvider>
+  </ApolloProvider>
+);
 
 describe('<Dropdown />', () => {
-  afterAll(() => {
-    fetchMock.mockRestore();
-  });
-
   it('should render dropdown', async () => {
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+
     render(<Dropdown />, {
-      wrapper: getWrapper([mockGetCurrentUser]),
+      wrapper: Wrapper,
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
@@ -42,13 +37,19 @@ describe('<Dropdown />', () => {
   });
 
   it('should show&hide dropdown menu behavior works correctly', async () => {
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+
     render(
       <>
         <Dropdown />
         <div data-testid="some-other-element" />
       </>,
       {
-        wrapper: getWrapper([mockGetCurrentUser]),
+        wrapper: Wrapper,
       },
     );
 
@@ -88,9 +89,17 @@ describe('<Dropdown />', () => {
   });
 
   it('should hide the menu after the option is clicked', async () => {
-    fetchMock.mockResolvedValueOnce(new Response(undefined, {status: 200}));
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      rest.post('/api/logout', (_, res, ctx) => {
+        return res.once(ctx.status(200), ctx.body(''));
+      }),
+    );
+
     render(<Dropdown />, {
-      wrapper: getWrapper([mockGetCurrentUser]),
+      wrapper: Wrapper,
     });
 
     fireEvent.click(await screen.findByText('Demo User'));

@@ -16,8 +16,6 @@ import {
   waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
-import {MockedResponse} from '@apollo/client/testing';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   mockGetTaskClaimed,
   mockGetTaskCompletedWithForm,
@@ -48,34 +46,17 @@ jest.mock('modules/notifications', () => ({
   }),
 }));
 
-type GetWrapperProps = {
-  mocks: MockedResponse[];
-  history: History;
-};
-
-const getWrapper = ({mocks, history}: GetWrapperProps) => {
+const getWrapper = (history: History) => {
   const Wrapper: React.FC = ({children}) => {
-    if (mocks.length > 0) {
-      return (
+    return (
+      <ApolloProvider client={client}>
         <Router history={history}>
           <Route path="/:id">
-            <MockedApolloProvider mocks={mocks}>
-              <MockThemeProvider>{children}</MockThemeProvider>
-            </MockedApolloProvider>
+            <MockThemeProvider>{children}</MockThemeProvider>
           </Route>
         </Router>
-      );
-    } else {
-      return (
-        <ApolloProvider client={client}>
-          <Router history={history}>
-            <Route path="/:id">
-              <MockThemeProvider>{children}</MockThemeProvider>
-            </Route>
-          </Router>
-        </ApolloProvider>
-      );
-    }
+      </ApolloProvider>
+    );
   };
 
   return Wrapper;
@@ -83,47 +64,57 @@ const getWrapper = ({mocks, history}: GetWrapperProps) => {
 
 describe('<Task />', () => {
   it('should render created task', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimed(),
-          mockGetCurrentUser,
-          mockGetTaskClaimedWithForm(),
-          mockGetForm,
-          mockGetTaskVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(
-      await screen.findByRole('button', {
+      screen.getByRole('button', {
         name: 'Complete Task',
       }),
     ).toBeInTheDocument();
   });
 
   it('should render created task with embedded form', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimedWithForm().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetForm', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetForm.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetCurrentUser,
-          mockGetTaskClaimedWithForm(),
-          mockGetForm,
-          mockGetTaskVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -136,19 +127,24 @@ describe('<Task />', () => {
   });
 
   it('should render completed task', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskCompleted().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskCompleted(),
-          mockGetCurrentUser,
-          mockGetTaskVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -161,20 +157,27 @@ describe('<Task />', () => {
   });
 
   it('should render completed task with embedded form', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskCompletedWithForm().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetForm', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetForm.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetCurrentUser,
-          mockGetTaskCompletedWithForm(),
-          mockGetForm,
-          mockGetTaskVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
@@ -187,21 +190,30 @@ describe('<Task />', () => {
   });
 
   it('should complete task without variables', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.mutation('CompleteTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockCompleteTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimed(),
-          mockGetCurrentUser,
-          mockCompleteTask,
-          mockGetAllOpenTasks(true),
-          mockGetTaskEmptyVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     userEvent.click(
@@ -220,19 +232,27 @@ describe('<Task />', () => {
   });
 
   it('should get error on complete task', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.mutation('CompleteTask', (_, res) => {
+        return res.networkError('Network error');
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimed(),
-          mockGetCurrentUser,
-          mockGetTaskVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     userEvent.click(
@@ -250,21 +270,30 @@ describe('<Task />', () => {
   });
 
   it('should display gse notification on complete task', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.mutation('CompleteTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockCompleteTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0?gseUrl=https://www.testUrl.com'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimed(),
-          mockGetCurrentUser,
-          mockCompleteTask,
-          mockGetAllOpenTasks(true),
-          mockGetTaskEmptyVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     userEvent.click(
@@ -288,19 +317,24 @@ describe('<Task />', () => {
   });
 
   it('should show a loading spinner while loading', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({
       initialEntries: ['/0'],
     });
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [
-          mockGetTaskClaimed(),
-          mockGetCurrentUser,
-          mockGetTaskVariables(),
-        ],
-      }),
+      wrapper: getWrapper(history),
     });
 
     expect(screen.getByTestId('details-overlay')).toBeInTheDocument();
@@ -309,24 +343,41 @@ describe('<Task />', () => {
   });
 
   it('should reset variables', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
+      }),
+      graphql.mutation('UnclaimTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockUnclaimTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+      graphql.mutation('ClaimTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockClaimTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed('1').result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskEmptyVariables('1').result.data));
+      }),
+    );
+
     const mockHistory = createMemoryHistory({
       initialEntries: ['/0'],
     });
     render(<Task />, {
-      wrapper: getWrapper({
-        history: mockHistory,
-        mocks: [
-          mockGetCurrentUser,
-          mockGetTaskClaimed(),
-          mockGetTaskEmptyVariables(),
-          mockUnclaimTask,
-          mockGetAllOpenTasks(true),
-          mockClaimTask,
-          mockGetAllOpenTasks(true),
-          mockGetTaskClaimed('1'),
-          mockGetTaskEmptyVariables('1'),
-        ],
-      }),
+      wrapper: getWrapper(mockHistory),
     });
 
     userEvent.click(
@@ -336,14 +387,14 @@ describe('<Task />', () => {
     );
 
     userEvent.type(
-      await screen.findByRole('textbox', {
+      screen.getByRole('textbox', {
         name: 'New variable 0 name',
       }),
       'valid_name',
     );
 
     userEvent.type(
-      await screen.findByRole('textbox', {
+      screen.getByRole('textbox', {
         name: 'New variable 0 value',
       }),
       '"valid_value"',
@@ -386,21 +437,36 @@ describe('<Task />', () => {
   });
 
   it('should not allow duplicate variables', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.mutation('UnclaimTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockUnclaimTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+      graphql.mutation('ClaimTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockClaimTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+      graphql.query('GetTaskVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      }),
+    );
+
     render(<Task />, {
-      wrapper: getWrapper({
-        history: createMemoryHistory({
+      wrapper: getWrapper(
+        createMemoryHistory({
           initialEntries: ['/0'],
         }),
-        mocks: [
-          mockGetCurrentUser,
-          mockGetTaskClaimed(),
-          mockUnclaimTask,
-          mockGetAllOpenTasks(true),
-          mockClaimTask,
-          mockGetAllOpenTasks(true),
-          mockGetTaskVariables(),
-        ],
-      }),
+      ),
     });
 
     userEvent.click(
@@ -495,10 +561,7 @@ describe('<Task />', () => {
     );
 
     render(<Task />, {
-      wrapper: getWrapper({
-        history,
-        mocks: [],
-      }),
+      wrapper: getWrapper(history),
     });
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();

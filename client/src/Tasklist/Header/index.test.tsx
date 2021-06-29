@@ -12,18 +12,19 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import {login} from 'modules/stores/login';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {rest} from 'msw';
+import {rest, graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => (
-    <MockedApolloProvider mocks={[mockGetCurrentUser]}>
+    <ApolloProvider client={client}>
       <Router history={history}>
         <MockThemeProvider>{children}</MockThemeProvider>
       </Router>
-    </MockedApolloProvider>
+    </ApolloProvider>
   );
   return Wrapper;
 }
@@ -31,6 +32,14 @@ function createWrapper(history = createMemoryHistory()) {
 describe('<Header />', () => {
   afterEach(() => {
     login.reset();
+  });
+
+  beforeEach(() => {
+    mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
   });
 
   it('should render header', async () => {

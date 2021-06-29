@@ -9,7 +9,6 @@ import {Details} from './';
 import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
@@ -23,20 +22,18 @@ import {
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {MockedResponse} from '@apollo/client/testing';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {mockServer} from 'modules/mockServer';
+import {graphql} from 'msw';
 
-type GetWrapperProps = {
-  id: string;
-  mocks: MockedResponse[];
-};
-
-const getWrapper = ({id, mocks}: GetWrapperProps) => {
+const getWrapper = (id: string = '0') => {
   const Wrapper: React.FC = ({children}) => (
     <MemoryRouter initialEntries={[`/${id}`]}>
       <Route path="/:id">
-        <MockedApolloProvider mocks={mocks}>
+        <ApolloProvider client={client}>
           <MockThemeProvider>{children}</MockThemeProvider>
-        </MockedApolloProvider>
+        </ApolloProvider>
       </Route>
     </MemoryRouter>
   );
@@ -46,8 +43,14 @@ const getWrapper = ({id, mocks}: GetWrapperProps) => {
 
 describe('<Details />', () => {
   it('should render completed task details', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskCompleted().result.data));
+      }),
+    );
+
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted()]}),
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -70,8 +73,14 @@ describe('<Details />', () => {
   });
 
   it('should render unclaimed task details', async () => {
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
+      }),
+    );
+
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskUnclaimed()]}),
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -88,15 +97,20 @@ describe('<Details />', () => {
   });
 
   it('should render unclaimed task and claim it', async () => {
-    render(<Details />, {
-      wrapper: getWrapper({
-        id: '0',
-        mocks: [
-          mockGetTaskUnclaimed(),
-          mockClaimTask,
-          mockGetAllOpenTasks(true),
-        ],
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
       }),
+      graphql.mutation('ClaimTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockClaimTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
+    );
+
+    render(<Details />, {
+      wrapper: getWrapper(),
     });
     expect(
       await screen.findByRole('button', {name: 'Claim'}),
@@ -123,15 +137,22 @@ describe('<Details />', () => {
   });
 
   it('should render claimed task and unclaim it', async () => {
-    render(<Details />, {
-      wrapper: getWrapper({
-        id: '0',
-        mocks: [
-          mockGetTaskClaimed(),
-          mockUnclaimTask,
-          mockGetAllOpenTasksUnclaimed(true),
-        ],
+    mockServer.use(
+      graphql.query('GetTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
+      graphql.mutation('UnclaimTask', (_, res, ctx) => {
+        return res.once(ctx.data(mockUnclaimTask.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(
+          ctx.data(mockGetAllOpenTasksUnclaimed(true).result.data),
+        );
+      }),
+    );
+
+    render(<Details />, {
+      wrapper: getWrapper(),
     });
 
     expect(

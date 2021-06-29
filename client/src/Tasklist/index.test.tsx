@@ -12,8 +12,6 @@ import {
   fireEvent,
 } from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {MockedResponse} from '@apollo/client/testing';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetAllOpenTasks, mockGetUnclaimed} from 'modules/queries/get-tasks';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
@@ -21,45 +19,41 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 
 import {Tasklist} from './index';
 import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
+import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
-jest.mock('modules/constants/tasks', () => ({
-  MAX_TASKS_DISPLAYED: 5,
-}));
+const mockApolloClient = createApolloClient({maxTasksDisplayed: 5});
 
-const getWrapper =
-  (mock: MockedResponse[] = []): React.FC =>
-  ({children}) => {
-    if (mock.length > 0) {
-      return (
-        <MockedApolloProvider mocks={mock}>
-          <MemoryRouter initialEntries={['/']}>
-            <MockThemeProvider>{children}</MockThemeProvider>
-          </MemoryRouter>
-        </MockedApolloProvider>
-      );
-    } else {
-      return (
-        <ApolloProvider client={client}>
-          <MemoryRouter initialEntries={['/']}>
-            <MockThemeProvider>{children}</MockThemeProvider>
-          </MemoryRouter>
-        </ApolloProvider>
-      );
-    }
-  };
+const Wrapper: React.FC = ({children}) => {
+  return (
+    <ApolloProvider client={mockApolloClient}>
+      <MemoryRouter initialEntries={['/']}>
+        <MockThemeProvider>{children}</MockThemeProvider>
+      </MemoryRouter>
+    </ApolloProvider>
+  );
+};
 
 describe('<Tasklist />', () => {
   it('should load tasks', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetUnclaimed.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetUnclaimed.result.data));
+      }),
+    );
+
     render(<Tasklist />, {
-      wrapper: getWrapper([
-        mockGetAllOpenTasks(),
-        mockGetCurrentUser,
-        mockGetUnclaimed,
-        mockGetUnclaimed,
-      ]),
+      wrapper: Wrapper,
     });
 
     expect(
@@ -119,25 +113,12 @@ describe('<Tasklist />', () => {
         );
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(
-          ctx.data({
-            data: {
-              currentUser: {
-                firstname: 'Demo',
-                lastname: 'User',
-                username: 'demo',
-                __typename: 'User',
-              },
-            },
-            loading: false,
-            error: null,
-          }),
-        );
+        return res(ctx.data(mockGetCurrentUser.result.data));
       }),
     );
 
     render(<Tasklist />, {
-      wrapper: getWrapper(),
+      wrapper: Wrapper,
     });
 
     expect(
@@ -160,6 +141,7 @@ describe('<Tasklist />', () => {
         );
       }),
     );
+
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},
     });
@@ -176,6 +158,7 @@ describe('<Tasklist />', () => {
         );
       }),
     );
+
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},
     });
@@ -196,6 +179,7 @@ describe('<Tasklist />', () => {
         );
       }),
     );
+
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},
     });

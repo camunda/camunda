@@ -20,18 +20,20 @@ import {
   mockGetCompleted,
 } from 'modules/queries/get-tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {MockedResponse} from '@apollo/client/testing';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
+import {mockServer} from 'modules/mockServer';
+import {graphql} from 'msw';
 
 const getWrapper =
-  (history = createMemoryHistory(), mock: MockedResponse[] = []): React.FC =>
+  (history = createMemoryHistory()): React.FC =>
   ({children}) => {
     return (
-      <MockedApolloProvider mocks={mock}>
+      <ApolloProvider client={client}>
         <Router history={history}>
           <MockThemeProvider>{children}</MockThemeProvider>
         </Router>
-      </MockedApolloProvider>
+      </ApolloProvider>
     );
   };
 
@@ -39,16 +41,30 @@ const FILTERS = OPTIONS.map(({value}) => value);
 
 describe('<Filters />', () => {
   it('should write the filters to the search params', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetEmptyTasks.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetClaimedByMe.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetUnclaimed.result.data));
+      }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCompleted.result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+
     const history = createMemoryHistory();
     render(<Filters />, {
-      wrapper: getWrapper(history, [
-        mockGetAllOpenTasks(),
-        mockGetEmptyTasks,
-        mockGetClaimedByMe,
-        mockGetUnclaimed,
-        mockGetCompleted,
-        mockGetCurrentUser,
-      ]),
+      wrapper: getWrapper(history),
     });
 
     await waitFor(() =>
@@ -69,10 +85,16 @@ describe('<Filters />', () => {
   });
 
   it('should redirect to the initial page', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+    );
+
     const history = createMemoryHistory({initialEntries: ['/foobar']});
 
     render(<Filters />, {
-      wrapper: getWrapper(history, [mockGetAllOpenTasks()]),
+      wrapper: getWrapper(history),
     });
 
     await waitFor(() =>
@@ -89,6 +111,11 @@ describe('<Filters />', () => {
   });
 
   it('should preserve existing search params on the URL', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+    );
     const mockSearchParam = {
       id: 'foo',
       value: 'bar',
@@ -98,7 +125,7 @@ describe('<Filters />', () => {
     });
 
     render(<Filters />, {
-      wrapper: getWrapper(history, [mockGetAllOpenTasks()]),
+      wrapper: getWrapper(history),
     });
 
     await waitFor(() =>
@@ -118,13 +145,22 @@ describe('<Filters />', () => {
   });
 
   it('should load a value from the URL', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetClaimedByMe.result.data));
+      }),
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
+    );
+
     const [, mockFilter] = OPTIONS;
     const history = createMemoryHistory({
       initialEntries: [`/?filter=${mockFilter.value}`],
     });
 
     render(<Filters />, {
-      wrapper: getWrapper(history, [mockGetClaimedByMe, mockGetCurrentUser]),
+      wrapper: getWrapper(history),
     });
 
     await waitFor(() =>
@@ -135,8 +171,14 @@ describe('<Filters />', () => {
   });
 
   it('should have the correct options', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+    );
+
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks()]),
+      wrapper: getWrapper(createMemoryHistory()),
     });
 
     await waitFor(() =>
@@ -151,8 +193,14 @@ describe('<Filters />', () => {
   });
 
   it('should should disable the filter while loading', async () => {
+    mockServer.use(
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
+      }),
+    );
+
     render(<Filters />, {
-      wrapper: getWrapper(createMemoryHistory(), [mockGetAllOpenTasks()]),
+      wrapper: getWrapper(createMemoryHistory()),
     });
 
     await waitFor(() =>
