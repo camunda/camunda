@@ -12,8 +12,6 @@ def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
 def latestStableBranchName = 'stable/1.0'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
-def mainAgentName = "zeebe-ci-build_${buildName}"
-def itAgentName = "zeebe-ci-build_${buildName}_it"
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
 def daysToKeep = isDevelopBranch ? '7' : '-1'
@@ -33,6 +31,11 @@ def itFlakyTestStashName = 'it-flakyTests'
 // the latest stable branch is run an hour later at 01:00 AM.
 def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
 
+// get filled in later on the first stage to get the actual node name; unfortunately using the agent
+// label is not enough, since the node name is NOT the label, and we cannot know the node name until
+// it's actually scheduled and running
+def mainAgentName
+
 // since we report the CI analytics at the very end, when the build is finished, we need to share
 // the result of the flaky test analysis "globally"
 def flakyTestCases = []
@@ -41,7 +44,7 @@ pipeline {
     agent {
         kubernetes {
             cloud 'zeebe-ci'
-            label mainAgentName
+            label "zeebe-ci-build_${buildName}"
             defaultContainer 'jnlp'
             yaml templatePodspec('.ci/podSpecs/distribution-template.yml')
         }
@@ -71,8 +74,7 @@ pipeline {
         stage('Prepare Distribution') {
             steps {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
-                    print "Pod label: ${mainAgentName}"
-                    print "Node name: ${env.NODE_NAME}"
+                    script { mainAgentName = env.NODE_NAME }
                     setHumanReadableBuildDisplayName()
 
                     prepareMavenContainer()
@@ -232,7 +234,7 @@ pipeline {
                     agent {
                         kubernetes {
                             cloud 'zeebe-ci'
-                            label itAgentName
+                            label "zeebe-ci-build_${buildName}_it"
                             defaultContainer 'jnlp'
                             yaml templatePodspec('.ci/podSpecs/integration-test-template.yml')
                         }
