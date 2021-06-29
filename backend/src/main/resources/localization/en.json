@@ -861,7 +861,8 @@
       },
       "tooltip": {
         "instance": "Process instance Filters return data from process instances matching the filter requirement. If the filter is based on a Flow Node, the returned data will show all instances where this Flow Node was triggered.",
-        "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views."
+        "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views.",
+        "disabledView": "Reports with multiple definitions do not support Flow Node data filters."
       },
       "state": {
         "modalPretext": {
@@ -930,6 +931,7 @@
       },
       "list": {
         "appliedTo": "Applied to",
+        "invalidDefinition": "Data Source is missing version or tenant selection.",
         "operators": {
           "isBetween": "is between",
           "between": "between",
@@ -1062,6 +1064,7 @@
       "multiple": "Multiple",
       "noDefinition": "No definitions found",
       "limitReached": "Process definition limit reached. Only ten processes allowed.",
+      "viewLevelWarning": "Reports with multiple definitions do not support Flow Node data filters. Existing Flow Node data filters will be removed.",
       "select": {
         "process": "Select Process",
         "decision": "Select Decision"

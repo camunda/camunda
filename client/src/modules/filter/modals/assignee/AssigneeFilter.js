@@ -12,6 +12,8 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
+import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
 
 import './AssigneeFilter.scss';
@@ -19,8 +21,7 @@ import './AssigneeFilter.scss';
 export function AssigneeFilter({
   filterData,
   close,
-  processDefinitionKey,
-  tenantIds,
+  definitions,
   reportIds,
   getPretext,
   getPosttext,
@@ -30,8 +31,16 @@ export function AssigneeFilter({
   filterType,
   addFilter,
 }) {
+  const validDefinitions = definitions?.filter(
+    (definition) => definition.versions.length && definition.tenantIds.length
+  );
+
   const [users, setUsers] = useState([]);
   const [operator, setOperator] = useState('in');
+  const [applyTo, setApplyTo] = useState(
+    validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ??
+      validDefinitions?.[0]
+  );
 
   useEffect(() => {
     (async () => {
@@ -64,7 +73,11 @@ export function AssigneeFilter({
   }, [filterData, filterType, mightFail]);
 
   const confirm = () => {
-    addFilter({type: filterType, data: {operator, values: users.map((user) => user.identity.id)}});
+    addFilter({
+      type: filterType,
+      data: {operator, values: users.map((user) => user.identity.id)},
+      appliedTo: [applyTo?.identifier],
+    });
   };
 
   return (
@@ -75,6 +88,16 @@ export function AssigneeFilter({
         })}
       </Modal.Header>
       <Modal.Content>
+        {!reportIds && (
+          <FilterSingleDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo}
+            setApplyTo={(applyTo) => {
+              setApplyTo(applyTo);
+              setUsers([]);
+            }}
+          />
+        )}
         {getPretext?.(users, operator)}
         <ButtonGroup>
           <Button active={operator === 'in'} onClick={() => setOperator('in')}>
@@ -99,8 +122,8 @@ export function AssigneeFilter({
                     });
                   } else {
                     dataPromise = loadUsersByDefinition(filterType, {
-                      processDefinitionKey,
-                      tenantIds,
+                      processDefinitionKey: applyTo?.key,
+                      tenantIds: applyTo?.tenantIds,
                       terms: query,
                     });
                   }

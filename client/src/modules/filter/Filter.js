@@ -80,15 +80,20 @@ export default class Filter extends React.Component {
 
   getFilterConfig = (type) => {
     if (type === 'variable') {
-      const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.definitionConfig();
       return {
-        getVariables: async () =>
-          await loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
-        getValues: async (name, type, numResults, valueFilter) =>
+        getVariables: async (definition) =>
+          await loadVariables([
+            {
+              processDefinitionKey: definition.key,
+              processDefinitionVersions: definition.versions,
+              tenantIds: definition.tenantIds,
+            },
+          ]),
+        getValues: async (name, type, numResults, valueFilter, definition) =>
           await loadValues(
-            processDefinitionKey,
-            processDefinitionVersions,
-            tenantIds,
+            definition.key,
+            definition.versions,
+            definition.tenantIds,
             name,
             type,
             0,
@@ -125,19 +130,13 @@ export default class Filter extends React.Component {
     );
   };
 
-  definitionConfig = () => {
-    const {definitions} = this.props;
-    const firstDefinition = definitions?.[0] ?? {};
-
-    return {
-      processDefinitionKey: firstDefinition.key,
-      processDefinitionVersions: firstDefinition.versions,
-      tenantIds: firstDefinition.tenantIds,
-    };
-  };
-
   processDefinitionIsNotSelected = () => {
-    return !this.props.definitions?.length;
+    const {definitions} = this.props;
+
+    return (
+      !definitions?.length || // no definitions are selected
+      definitions.every((definition) => !definition.versions.length || !definition.tenantIds.length) // every definition is missing either version or tenant selection
+    );
   };
 
   render() {
@@ -190,6 +189,7 @@ export default class Filter extends React.Component {
               </Tooltip>
             </div>
             <ViewFilters
+              definitions={definitions}
               processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
               openNewFilterModal={this.openNewFilterModal('view')}
             />
@@ -203,8 +203,6 @@ export default class Filter extends React.Component {
         {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
           definitions={definitions}
-          {...this.definitionConfig()}
-          flowNodeNames={this.props.flowNodeNames}
           openEditFilterModal={this.openEditFilterModal}
           data={filters}
           deleteFilter={this.deleteFilter}
@@ -215,7 +213,6 @@ export default class Filter extends React.Component {
           addFilter={this.addFilter}
           close={this.closeModal}
           xml={this.props.xml}
-          {...this.definitionConfig()}
           filterType={newFilterType}
           config={this.getFilterConfig(newFilterType)}
         />
@@ -225,7 +222,6 @@ export default class Filter extends React.Component {
           filterData={editFilter}
           close={this.closeModal}
           xml={this.props.xml}
-          {...this.definitionConfig()}
           filterType={editFilter?.type}
           config={this.getFilterConfig(editFilter?.type)}
         />

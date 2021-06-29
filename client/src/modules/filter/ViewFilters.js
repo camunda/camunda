@@ -6,15 +6,20 @@
 
 import React from 'react';
 
-import {Dropdown} from 'components';
+import {Dropdown, Tooltip} from 'components';
 import {t} from 'translation';
 
-export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  return (
+export default function ViewFilters({
+  openNewFilterModal,
+  processDefinitionIsNotSelected,
+  definitions,
+}) {
+  const dropdown = (
     <Dropdown
       label={t('common.add')}
       id="ControlPanel__filters"
       className="ViewFilters Filter__dropdown"
+      disabled={definitions?.length > 1}
     >
       <Dropdown.Option onClick={openNewFilterModal('flowNodeStatus')}>
         {t('common.filter.types.flowNodeStatus')}
@@ -48,4 +53,13 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
       </Dropdown.Option>
     </Dropdown>
   );
+
+  if (definitions?.length > 1) {
+    return (
+      <Tooltip content={t('common.filter.tooltip.disabledView')}>
+        <div>{dropdown}</div>
+      </Tooltip>
+    );
+  }
+  return dropdown;
 }

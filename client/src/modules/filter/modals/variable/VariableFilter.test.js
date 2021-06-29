@@ -24,8 +24,7 @@ jest.mock('./date', () => {
 });
 
 const props = {
-  processDefinitionKey: 'procDefKey',
-  processDefinitionVersion: '1',
+  definitions: [{identifier: 'definition', key: 'procDefKey', versions: ['1'], tenantIds: [null]}],
   filterType: 'variable',
   config: {
     getVariables: jest.fn().mockReturnValue([
@@ -46,6 +45,7 @@ const filterData = {
       values: ['value1', 'value2'],
     },
   },
+  appliedTo: ['definition'],
 };
 
 it('should contain a modal', () => {
@@ -64,7 +64,7 @@ it('should disable add filter button if no variable is selected', () => {
 
 it('should take filter given by properties', async () => {
   const spy = jest.fn();
-  const node = shallow(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
+  const node = await shallow(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
@@ -83,9 +83,9 @@ it('should enable add filter button if variable selection is valid', async () =>
   expect(buttons.at(1).prop('disabled')).toBeFalsy(); // create filter
 });
 
-it('should create a new filter', () => {
+it('should create a new string filter', async () => {
   const spy = jest.fn();
-  const node = shallow(<VariableFilter {...props} addFilter={spy} />);
+  const node = await shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'String'},
@@ -108,12 +108,13 @@ it('should create a new filter', () => {
         values: ['value1', 'value2'],
       },
     },
+    appliedTo: ['definition'],
   });
 });
 
-it('should create a new filter', () => {
+it('should create a new  boolean filter', async () => {
   const spy = jest.fn();
-  const node = shallow(<VariableFilter {...props} addFilter={spy} />);
+  const node = await shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'Boolean'},
@@ -129,6 +130,7 @@ it('should create a new filter', () => {
       type: 'Boolean',
       data: {},
     },
+    appliedTo: ['definition'],
   });
 });
 
@@ -145,15 +147,16 @@ it('should use custom filter parsing logic from input components', () => {
         end: 'someOtherDate',
       },
     },
+    appliedTo: ['definition'],
   };
   shallow(<VariableFilter {...props} filterData={existingFilter} />);
 
   expect(DateInput.parseFilter).toHaveBeenCalledWith(existingFilter);
 });
 
-it('should use custom filter adding logic from input components', () => {
+it('should use custom filter adding logic from input components', async () => {
   const spy = jest.fn();
-  const node = shallow(<VariableFilter {...props} addFilter={spy} />);
+  const node = await shallow(<VariableFilter {...props} addFilter={spy} />);
 
   const selectedVariable = {name: 'foo', type: 'Date'};
   const filter = {startDate: 'start', endDate: 'end'};
@@ -167,7 +170,13 @@ it('should use custom filter adding logic from input components', () => {
 
   node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
-  expect(DateInput.addFilter).toHaveBeenCalledWith(spy, 'variable', selectedVariable, filter);
+  expect(DateInput.addFilter).toHaveBeenCalledWith(
+    spy,
+    'variable',
+    selectedVariable,
+    filter,
+    props.definitions[0]
+  );
 });
 
 it('should load available variables', () => {

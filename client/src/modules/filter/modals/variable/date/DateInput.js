@@ -67,7 +67,7 @@ export default class DateInput extends React.Component {
 
   static parseFilter = ({data}) => convertFilterToState(data.data);
 
-  static addFilter = (addFilter, type, variable, filter) => {
+  static addFilter = (addFilter, type, variable, filter, applyTo) => {
     const filterData = convertStateToFilter(filter);
 
     addFilter({
@@ -77,6 +77,7 @@ export default class DateInput extends React.Component {
         type: variable.type,
         data: {...filterData, type: filterData.type || 'fixed'},
       },
+      appliedTo: [applyTo?.identifier],
     });
   };
 }

@@ -64,11 +64,12 @@ it('should convert includeUndefined to a null entry in filter values', () => {
     'variable',
     {name: 'aVariableName', type: 'long'},
     {operator: 'in', values: ['123'], includeUndefined: true},
-    false
+    {identifier: 'definition'}
   );
 
   expect(spy).toHaveBeenCalledWith({
     data: {data: {operator: 'in', values: ['123', null]}, name: 'aVariableName', type: 'long'},
     type: 'variable',
+    appliedTo: ['definition'],
   });
 });

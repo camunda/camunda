@@ -861,7 +861,8 @@
       },
       "tooltip": {
         "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
-        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
+        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten.",
+        "disabledView": "Berichte mit mehreren Definitionen unterstützen keine Prozessknoten-Daten Filter."
       },
       "state": {
         "modalPretext": {
@@ -930,6 +931,7 @@
       },
       "list": {
         "appliedTo": "Angewendet auf",
+        "invalidDefinition": "Datenquelle hat keine Versions- oder Mandantenselektion.",
         "operators": {
           "isBetween": "liegt zwischen",
           "between": "zwischen",
@@ -1062,6 +1064,7 @@
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",
       "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
+      "viewLevelWarning": "Berichte mit mehreren Definitionen unterstützen keine Prozessknoten-Daten Filter. Existierende Prozessknoten-Daten Filter werden entfernt.",
       "select": {
         "process": "Prozess auswählen",
         "decision": "Entscheidung auswählen"

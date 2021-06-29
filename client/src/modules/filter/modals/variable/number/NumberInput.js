@@ -95,7 +95,7 @@ export default class NumberInput extends React.Component {
     includeUndefined: values.includes(null),
   });
 
-  static addFilter = (addFilter, type, variable, {operator, values, includeUndefined}) => {
+  static addFilter = (addFilter, type, variable, {operator, values, includeUndefined}, applyTo) => {
     addFilter({
       type,
       data: {
@@ -106,6 +106,7 @@ export default class NumberInput extends React.Component {
           values: includeUndefined ? [...values, null] : values,
         },
       },
+      appliedTo: [applyTo?.identifier],
     });
   };
 }

@@ -9,7 +9,7 @@ import equals from 'fast-deep-equal';
 
 import {Popover} from 'components';
 import {FilterList} from 'filter';
-import {getFlowNodeNames, loadVariables, loadInputVariables, loadOutputVariables} from 'services';
+import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -18,7 +18,6 @@ import './InstanceCount.scss';
 
 export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter, showHeader}) {
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [flowNodeNames, setFlowNodeNames] = useState();
   const [variables, setVariables] = useState();
 
   const {data, reportType} = report;
@@ -31,8 +30,6 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
 
   function loadRequiredData() {
     if (reportType === 'process') {
-      mightFail(getFlowNodeNames(key, versions?.[0], tenantIds?.[0]), setFlowNodeNames, showError);
-
       const payload = [
         {
           processDefinitionKey: key,
@@ -122,7 +119,6 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                 <FilterList
                   definitions={data.definitions}
                   data={reportFilters}
-                  flowNodeNames={flowNodeNames}
                   variables={variables}
                   expanded
                 />
@@ -136,7 +132,6 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                 <FilterList
                   definitions={data.definitions}
                   data={additionalFilters}
-                  flowNodeNames={flowNodeNames}
                   variables={variables}
                   expanded
                 />

@@ -21,6 +21,7 @@ const props = {
   config: {getValues: jest.fn().mockReturnValue(['val1', 'val2'])},
   setValid: jest.fn(),
   changeFilter: jest.fn(),
+  definition: {identifier: 'definition'},
 };
 
 beforeEach(() => {
@@ -37,7 +38,7 @@ it('should show a checklist', () => {
 it('should load 10 values initially', () => {
   shallow(<StringInput {...props} />);
 
-  expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 11, '');
+  expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 11, '', props.definition);
 });
 
 it('should pass available values to the typeahead', () => {
@@ -59,7 +60,7 @@ it('should load 10 more values if the user wants more', () => {
 
   node.find('[link]').simulate('click', {preventDefault: jest.fn()});
 
-  expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '');
+  expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '', props.definition);
 });
 
 it('should disable add filter button if no value is selected', () => {
@@ -145,7 +146,8 @@ it('should filter empty values when adding the filter', () => {
     spy,
     'variable',
     {name: 'varName', type: 'String'},
-    {operator: 'contains', values: ['A', '', '', 'B', null]}
+    {operator: 'contains', values: ['A', '', '', 'B', null]},
+    {identifier: 'definition'}
   );
 
   expect(spy).toHaveBeenCalledWith({
@@ -158,6 +160,7 @@ it('should filter empty values when adding the filter', () => {
         values: ['A', 'B', null],
       },
     },
+    appliedTo: ['definition'],
   });
 });
 

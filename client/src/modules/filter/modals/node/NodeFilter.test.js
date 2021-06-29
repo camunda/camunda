@@ -5,25 +5,44 @@
  */
 
 import React from 'react';
-
-import NodeFilter from './NodeFilter';
-import {Button} from 'components';
 import {shallow} from 'enzyme';
 
+import {Button} from 'components';
+import {loadProcessDefinitionXml} from 'services';
+
+import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+import {NodeFilter} from './NodeFilter';
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  loadProcessDefinitionXml: jest.fn().mockReturnValue('fooXml'),
+}));
+
+beforeEach(() => {
+  loadProcessDefinitionXml.mockClear();
+});
+
+const props = {
+  mightFail: (data, fn) => fn(data),
+  definitions: [
+    {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
+  ],
+};
+
 it('should contain a modal', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
 
   expect(node.find('Modal')).toExist();
 });
 
 it('should display a diagram', () => {
-  const node = shallow(<NodeFilter xml="fooXml" />);
+  const node = shallow(<NodeFilter {...props} />);
 
   expect(node.find('.diagramContainer').childAt(0).props().xml).toBe('fooXml');
 });
 
 it('should add an unselected node to the selectedNodes on toggle', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
 
   const flowNode = {
     name: 'foo',
@@ -36,7 +55,7 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
 });
 
 it('should remove a selected node from the selectedNodes on toggle', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
 
   const flowNode = {
     name: 'foo',
@@ -51,7 +70,7 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
 
 it('should create an executed node filter when operator is specified', () => {
   const spy = jest.fn();
-  const node = shallow(<NodeFilter addFilter={spy} />);
+  const node = shallow(<NodeFilter {...props} addFilter={spy} />);
 
   const flowNode1 = {
     name: 'foo',
@@ -75,12 +94,13 @@ it('should create an executed node filter when operator is specified', () => {
       operator: 'in',
       values: [flowNode1.id, flowNode2.id],
     },
+    appliedTo: ['definition'],
   });
 });
 
 it('should set filter type depending on selected operation', () => {
   const spy = jest.fn();
-  const node = shallow(<NodeFilter addFilter={spy} />);
+  const node = shallow(<NodeFilter {...props} addFilter={spy} />);
 
   const flowNode1 = {
     name: 'foo',
@@ -101,6 +121,7 @@ it('should set filter type depending on selected operation', () => {
       operator: undefined,
       values: [flowNode1.id],
     },
+    appliedTo: ['definition'],
   });
 
   node.find(Button).at(3).simulate('click');
@@ -112,11 +133,12 @@ it('should set filter type depending on selected operation', () => {
       operator: undefined,
       values: [flowNode1.id],
     },
+    appliedTo: ['definition'],
   });
 });
 
 it('should disable create filter button if no node was selected', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
   node.setState({
     selectedNodes: [],
   });
@@ -125,7 +147,7 @@ it('should disable create filter button if no node was selected', () => {
 });
 
 it('should create preview list of selected node', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
 
   const flowNode = {
     name: 'foo',
@@ -142,17 +164,43 @@ it('should create preview list of selected node', () => {
 });
 
 it('should contain buttons to switch between executed and not executed mode', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
 
   expect(node.find('ButtonGroup')).toMatchSnapshot();
 });
 
 it('should set the operator when clicking the operator buttons', () => {
-  const node = shallow(<NodeFilter />);
+  const node = shallow(<NodeFilter {...props} />);
 
   node.find(Button).at(1).simulate('click');
   expect(node.state().operator).toBe('in');
 
   node.find(Button).at(2).simulate('click');
   expect(node.state().operator).toBe('not in');
+});
+
+it('should initially load xml', async () => {
+  shallow(<NodeFilter {...props} />);
+  await flushPromises();
+
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('definitionKey', 'all', null);
+});
+
+it('should load new xml after changing definition', async () => {
+  const definitions = [
+    {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
+    {
+      identifier: 'otherDefinition',
+      key: 'otherDefinitionKey',
+      versions: ['1'],
+      tenantIds: ['marketing', 'sales'],
+    },
+  ];
+  const node = shallow(<NodeFilter {...props} definitions={definitions} />);
+  await flushPromises();
+
+  node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
+  await flushPromises();
+
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('otherDefinitionKey', '1', 'marketing');
 });

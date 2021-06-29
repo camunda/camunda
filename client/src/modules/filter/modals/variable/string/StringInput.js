@@ -57,7 +57,8 @@ export default class StringInput extends React.Component {
         this.props.variable.id || this.props.variable.name,
         this.props.variable.type,
         this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
-        this.state.valueFilter
+        this.state.valueFilter,
+        this.props.definition
       );
 
       const numberOfUnselectedValuesToDisplay =
@@ -303,7 +304,7 @@ export default class StringInput extends React.Component {
     );
   }
 
-  static addFilter = (addFilter, type, variable, {operator, values}) => {
+  static addFilter = (addFilter, type, variable, {operator, values}, applyTo) => {
     addFilter({
       type,
       data: {
@@ -314,6 +315,7 @@ export default class StringInput extends React.Component {
           values: values.filter((val) => val !== ''),
         },
       },
+      appliedTo: [applyTo?.identifier],
     });
   };
 }

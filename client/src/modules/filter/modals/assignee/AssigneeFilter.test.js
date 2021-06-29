@@ -23,9 +23,7 @@ jest.mock('./service', () => ({
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  processDefinitionKey: 'key',
-  processDefinitionVersions: ['1'],
-  tenantIds: ['tenant1'],
+  definitions: [{identifier: 'definition', key: 'key', versions: ['1'], tenantIds: ['tenant1']}],
   filterType: 'assignee',
 };
 
@@ -35,6 +33,7 @@ const filterData = {
     operator: 'not in',
     values: ['demo', 'john'],
   },
+  appliedTo: ['definition'],
 };
 
 beforeEach(() => {
@@ -49,8 +48,8 @@ it('should load existing roles', async () => {
   await node.find(UserTypeahead).prop('fetchUsers')('demo');
 
   expect(loadUsersByDefinition).toHaveBeenCalledWith('assignee', {
-    processDefinitionKey: props.processDefinitionKey,
-    tenantIds: props.tenantIds,
+    processDefinitionKey: props.definitions[0].key,
+    tenantIds: props.definitions[0].tenantIds,
     terms: 'demo',
   });
 });
@@ -81,6 +80,7 @@ it('should add/remove a role', async () => {
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null, 'demo']},
     type: 'assignee',
+    appliedTo: ['definition'],
   });
 
   spy.mockClear();
@@ -93,6 +93,7 @@ it('should add/remove a role', async () => {
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'in', values: [null]},
     type: 'assignee',
+    appliedTo: ['definition'],
   });
 });
 

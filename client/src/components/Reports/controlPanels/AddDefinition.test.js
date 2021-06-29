@@ -101,9 +101,9 @@ it('should call back with definitions to add', () => {
 it('should show a warning if limit of 10 definitions is reached', () => {
   const node = shallow(<AddDefinition {...props} definitions={Array(9).fill({})} />);
 
-  expect(node.find('MessageBox')).not.toExist();
+  expect(node.find('MessageBox').length).toBe(1);
 
   node.find('Checklist').simulate('change', [{}]);
 
-  expect(node.find('MessageBox')).toExist();
+  expect(node.find('MessageBox').length).toBe(2);
 });

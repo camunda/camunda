@@ -13,6 +13,7 @@ import {Button} from 'components';
 
 import {DefinitionList} from './DefinitionList';
 import ReportSelect from './ReportSelect';
+import AddDefinition from './AddDefinition';
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
@@ -132,7 +133,7 @@ it('should not show an "Always show tooltips" button for other visualizations', 
   expect(node).not.toIncludeText('Tooltips');
 });
 
-it('should load the flownode names and hand them to the filter and process part', async () => {
+it('should load the flownode names and hand them to the process part', async () => {
   const node = shallow(
     <ReportControlPanel
       {...props}
@@ -147,7 +148,6 @@ it('should load the flownode names and hand them to the filter and process part'
   node.update();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
-  expect(node.find('Filter').at(0).prop('flowNodeNames')).toEqual(getFlowNodeNames());
   expect(node.find('ProcessPart').prop('flowNodeNames')).toEqual(getFlowNodeNames());
 });
 
@@ -586,7 +586,7 @@ it('should call updateReport with correct payload when adding measures', () => {
   expect(spy).toHaveBeenCalledWith(reportUpdateMock, true);
 });
 
-describe('filter handling when removing definitions', () => {
+describe('filter handling when changing definitions', () => {
   const report = update(props.report, {
     data: {
       definitions: {
@@ -635,6 +635,25 @@ describe('filter handling when removing definitions', () => {
     );
 
     await node.find(DefinitionList).prop('onRemove')(0);
+
+    expect(spy.mock.calls[0][0].filter).toEqual({
+      $set: [],
+    });
+  });
+
+  it('should remove existing view level filters when adding definitions', async () => {
+    const spy = jest.fn();
+    const node = shallow(
+      <ReportControlPanel
+        {...props}
+        report={update(report, {
+          data: {filter: {0: {appliedTo: {$set: ['def1']}, filterLevel: {$set: 'view'}}}},
+        })}
+        updateReport={spy}
+      />
+    );
+
+    await node.find(AddDefinition).prop('onAdd')([{}]);
 
     expect(spy.mock.calls[0][0].filter).toEqual({
       $set: [],

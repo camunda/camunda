@@ -41,6 +41,7 @@ const props = {
   addFilter: jest.fn(),
   xml: 'fooXml',
   data: [],
+  definitions: [{identifier: 'definition'}],
 };
 
 it('should contain a modal', () => {
@@ -95,6 +96,7 @@ it('should invoke addFilter when applying the filter', async () => {
   expect(spy).toHaveBeenCalledWith({
     data: {operator: 'not in', values: ['b', 'c']},
     type: 'executedFlowNodes',
+    appliedTo: ['definition'],
   });
 });
 

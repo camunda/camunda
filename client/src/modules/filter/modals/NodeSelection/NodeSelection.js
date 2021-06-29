@@ -59,6 +59,7 @@ export default class NodeSelection extends React.Component {
     this.props.addFilter({
       type: 'executedFlowNodes',
       data: {operator: 'not in', values: allFlowNodes.filter((id) => !selectedNodes.includes(id))},
+      appliedTo: [this.props.definitions[0].identifier],
     });
   };
 
