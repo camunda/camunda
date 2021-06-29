@@ -27,11 +27,11 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
       name: ci-optimize-cambpm-config
   - name: nginx-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
       name: ci-optimize-nginx-proxy-config
   imagePullSecrets:
   - name: registry-camunda-cloud
