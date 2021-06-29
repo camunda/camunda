@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import static io.camunda.zeebe.engine.util.RecordToWrite.command;
+import static io.camunda.zeebe.engine.util.RecordToWrite.event;
+import static io.camunda.zeebe.engine.util.RecordToWrite.rejection;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,20 +21,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.util.concurrent.atomic.AtomicLong;
-import org.assertj.core.api.Assumptions;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,10 +42,9 @@ public final class StreamProcessorReplayTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  private static final int EXPECTED_ON_RECOVERED_INVOCATIONS = 2;
+  private static final int EXPECTED_ON_RECOVERED_INVOCATIONS = 1;
 
-  private static final ProcessInstanceRecord RECORD =
-      new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.TESTING_ONLY);
+  private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
@@ -60,13 +56,9 @@ public final class StreamProcessorReplayTest {
   @Test
   public void shouldReplayEvents() {
     // given
-    final long commandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.sourceRecordPosition(commandPosition));
+    streamProcessorRule.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // when
     startStreamProcessor(typedRecordProcessor, eventApplier);
@@ -86,13 +78,9 @@ public final class StreamProcessorReplayTest {
   @Test
   public void shouldSkipCommands() {
     // given
-    final var commandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.sourceRecordPosition(commandPosition));
+    streamProcessorRule.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     // when
     startStreamProcessor(typedRecordProcessor, eventApplier);
@@ -102,9 +90,7 @@ public final class StreamProcessorReplayTest {
     inOrder
         .verify(typedRecordProcessor, never())
         .processRecord(anyLong(), any(), any(), any(), any());
-    inOrder
-        .verify(eventApplier, never())
-        .applyState(anyLong(), eq(ProcessInstanceIntent.ACTIVATE_ELEMENT), any());
+    inOrder.verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
         .onRecovered(any());
@@ -114,13 +100,9 @@ public final class StreamProcessorReplayTest {
   @Test
   public void shouldSkipRejections() {
     // given
-    final var commandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeCommandRejection(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        RECORD,
-        writer -> writer.sourceRecordPosition(commandPosition));
+    streamProcessorRule.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        rejection().processInstance(ACTIVATE_ELEMENT, RECORD).causedBy(0));
 
     // when
     startStreamProcessor(typedRecordProcessor, eventApplier);
@@ -130,9 +112,7 @@ public final class StreamProcessorReplayTest {
     inOrder
         .verify(typedRecordProcessor, never())
         .processRecord(anyLong(), any(), any(), any(), any());
-    inOrder
-        .verify(eventApplier, never())
-        .applyState(anyLong(), eq(ProcessInstanceIntent.ACTIVATE_ELEMENT), any());
+    inOrder.verify(eventApplier, never()).applyState(anyLong(), eq(ACTIVATE_ELEMENT), any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(EXPECTED_ON_RECOVERED_INVOCATIONS))
         .onRecovered(any());
@@ -148,7 +128,7 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     final long commandPositionBeforeSnapshot =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
+        streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, RECORD);
 
     streamProcessorRule.writeEvent(
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
@@ -162,14 +142,9 @@ public final class StreamProcessorReplayTest {
     streamProcessorRule.closeStreamProcessor();
 
     // when
-    final long commandPositionAfterSnapshot =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer ->
-            writer.key(eventKeyAfterSnapshot).sourceRecordPosition(commandPositionAfterSnapshot));
+    streamProcessorRule.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().key(eventKeyAfterSnapshot).processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
 
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
@@ -186,22 +161,11 @@ public final class StreamProcessorReplayTest {
     final var lastGeneratedKey = 2L;
     final var previousGeneratedKey = 1L;
 
-    final long firstCommandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.key(lastGeneratedKey).sourceRecordPosition(firstCommandPosition));
-
-    final long secondCommandPosition =
-        streamProcessorRule.writeCommand(
-            previousGeneratedKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.key(previousGeneratedKey).sourceRecordPosition(secondCommandPosition));
+    streamProcessorRule.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().key(lastGeneratedKey).processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0),
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().key(previousGeneratedKey).processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(2));
 
     // when
     startStreamProcessor(typedRecordProcessor, eventApplier);
@@ -215,101 +179,16 @@ public final class StreamProcessorReplayTest {
   }
 
   @Test
-  public void shouldRestoreKeyGeneratorAfterSkippingCommand() {
-    Assumptions.assumeThat(MigratedStreamProcessors.isMigrated(ValueType.INCIDENT))
-        .describedAs("Expected a not yet migrated value type")
-        .isFalse();
-
-    final var incidentRecord = new IncidentRecord();
-
-    // given
-    final var lastGeneratedKey = 3L;
-    final var previousGeneratedKey = 1L;
-    final var firstGeneratedKey = 2L;
-
-    final long firstCommandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.key(firstGeneratedKey).sourceRecordPosition(firstCommandPosition));
-
-    final long secondCommandPosition =
-        streamProcessorRule.writeCommand(
-            previousGeneratedKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.key(previousGeneratedKey).sourceRecordPosition(secondCommandPosition));
-
-    final long reprocessingCommandPosition =
-        streamProcessorRule.writeCommand(IncidentIntent.RESOLVE, incidentRecord);
-
-    streamProcessorRule.writeEvent(
-        IncidentIntent.RESOLVED,
-        incidentRecord,
-        writer -> writer.key(lastGeneratedKey).sourceRecordPosition(reprocessingCommandPosition));
-
-    // when
-    final var generatedKeyOnReprocessing = new AtomicLong(-1);
-
-    streamProcessorRule
-        .withEventApplierFactory(zeebeState -> eventApplier)
-        .startTypedStreamProcessor(
-            (processors, context) ->
-                processors
-                    .onCommand(
-                        ValueType.PROCESS_INSTANCE,
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                        typedRecordProcessor)
-                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onCommand(
-                        ValueType.INCIDENT,
-                        IncidentIntent.RESOLVE,
-                        new TypedRecordProcessor<>() {
-                          @Override
-                          public void processRecord(
-                              final TypedRecord<UnifiedRecordValue> record,
-                              final TypedResponseWriter responseWriter,
-                              final TypedStreamWriter streamWriter) {
-                            final var keyGenerator = context.getZeebeState().getKeyGenerator();
-                            generatedKeyOnReprocessing.set(keyGenerator.nextKey());
-                          }
-                        }));
-
-    awaitUntilProcessed(reprocessingCommandPosition);
-
-    // then
-    assertThat(generatedKeyOnReprocessing.get())
-        .describedAs(
-            "Expected the generated key on reprocessing to be equal to the written key on the stream")
-        .isEqualTo(lastGeneratedKey);
-  }
-
-  @Test
   public void shouldIgnoreKeysFromDifferentPartition() {
     // given
     final var keyOfThisPartition = Protocol.encodePartitionId(0, 1L);
     final var keyOfOtherPartition = Protocol.encodePartitionId(1, 2L);
 
-    final long firstCommandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.key(keyOfThisPartition).sourceRecordPosition(firstCommandPosition));
-
-    final long secondCommandPosition =
-        streamProcessorRule.writeCommand(
-            keyOfOtherPartition, ProcessInstanceIntent.ACTIVATE_ELEMENT, RECORD);
-
-    streamProcessorRule.writeEvent(
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        RECORD,
-        writer -> writer.key(keyOfOtherPartition).sourceRecordPosition(secondCommandPosition));
+    streamProcessorRule.writeBatch(
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().key(keyOfThisPartition).processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0),
+        command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        event().key(keyOfOtherPartition).processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(2));
 
     // when
     startStreamProcessor(typedRecordProcessor, eventApplier);
@@ -328,12 +207,8 @@ public final class StreamProcessorReplayTest {
         .withEventApplierFactory(zeebeState -> eventApplier)
         .startTypedStreamProcessor(
             (processors, context) ->
-                processors
-                    .onCommand(
-                        ValueType.PROCESS_INSTANCE,
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                        typedRecordProcessor)
-                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
+                processors.onCommand(
+                    ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor));
   }
 
   private void awaitUntilProcessed(final long position) {

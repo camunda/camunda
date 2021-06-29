@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor.HEALTH_CHECK_TICK_DURATION;
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors.processors;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.mockito.Mockito.mock;
 
@@ -18,12 +16,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectP
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class StreamProcessorHealthTest {
+
+  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
@@ -67,46 +70,13 @@ public class StreamProcessorHealthTest {
     streamProcessor =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, context) ->
-                processors.onEvent(
+                processors.onCommand(
                     ValueType.PROCESS_INSTANCE,
-                    ELEMENT_ACTIVATING,
+                    ACTIVATE_ELEMENT,
                     mock(TypedRecordProcessor.class)));
 
     // then
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
-  }
-
-  @Test
-  public void shouldMarkUnhealthyWhenReprocessingRetryLoop() {
-    // given
-    shouldProcessingThrowException.set(true);
-    final long firstPosition = streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeProcessInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
-
-    waitUntil(
-        () ->
-            streamProcessorRule
-                .events()
-                .onlyProcessInstanceRecords()
-                .withIntent(ELEMENT_ACTIVATED)
-                .exists());
-
-    streamProcessor = getErrorProneStreamProcessor();
-    final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
-    streamProcessorRule.getActorSchedulerRule().submitActor(healthStatusCheck);
-
-    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.HEALTHY));
-    waitUntil(() -> invocation.get() > 1);
-
-    // when
-    streamProcessorRule.getClock().addTime(HEALTH_CHECK_TICK_DURATION.multipliedBy(1));
-    // give some time for scheduled timers to get executed
-    final int retried = invocation.get();
-    waitUntil(() -> retried < invocation.get());
-    streamProcessorRule.getClock().addTime(HEALTH_CHECK_TICK_DURATION.multipliedBy(1));
-
-    // then
-    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
   }
 
   @Test
@@ -120,7 +90,8 @@ public class StreamProcessorHealthTest {
 
     // when
     shouldFlushThrowException.set(true);
-    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
@@ -135,7 +106,8 @@ public class StreamProcessorHealthTest {
     // when
     shouldProcessingThrowException.set(false);
     shouldFlushThrowException.set(true);
-    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
@@ -154,7 +126,8 @@ public class StreamProcessorHealthTest {
     // since processing fails we will write error event
     // we want to fail error even transaction
     shouldFailErrorHandlingInTransaction.set(true);
-    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
@@ -166,7 +139,9 @@ public class StreamProcessorHealthTest {
     shouldFlushThrowException.set(true);
     streamProcessor = getErrorProneStreamProcessor();
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
-    streamProcessorRule.writeProcessInstanceEvent(ELEMENT_ACTIVATING, 1);
+
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
 
     // when
@@ -184,9 +159,9 @@ public class StreamProcessorHealthTest {
               mockedLogStreamWriter = new WrappedStreamWriter();
               processingContext.logStreamWriter(mockedLogStreamWriter);
               return processors(zeebeState.getKeyGenerator(), processingContext.getWriters())
-                  .onEvent(
+                  .onCommand(
                       ValueType.PROCESS_INSTANCE,
-                      ELEMENT_ACTIVATING,
+                      ACTIVATE_ELEMENT,
                       new TypedRecordProcessor<>() {
                         @Override
                         public void processRecord(
