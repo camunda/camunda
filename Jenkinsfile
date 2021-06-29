@@ -31,6 +31,10 @@ itFlakyTestStashName = 'it-flakyTests'
 // the latest stable branch is run an hour later at 01:00 AM.
 def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
 
+// since we report the CI analytics at the very end, when the build is finished, we need to share
+// the result of the flaky test analysis "globally"
+def flakyTestCases = []
+
 pipeline {
     agent {
         kubernetes {
@@ -68,10 +72,10 @@ pipeline {
                     setHumanReadableBuildDisplayName()
 
                     prepareMavenContainer()
-                    prepareMavenContainer('jdk8')
-                    container('golang') {
-                        sh '.ci/scripts/distribution/prepare-go.sh'
-                    }
+                    // prepareMavenContainer('jdk8')
+//                     container('golang') {
+//                         sh '.ci/scripts/distribution/prepare-go.sh'
+//                     }
 
                     runMavenContainerCommand(".ci/scripts/distribution/ensure-naming-for-process.sh")
 
@@ -92,9 +96,9 @@ pipeline {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     // since zbctl is included in camunda-cloud-zeebe.tar.gz, which is produced by
                     // maven, we have to build the go artifacts first
-                    container('golang') {
-                        sh '.ci/scripts/distribution/build-go.sh'
-                    }
+//                     container('golang') {
+//                         sh '.ci/scripts/distribution/build-go.sh'
+//                     }
                     runMavenContainerCommand('.ci/scripts/distribution/build-java.sh')
 
                     // to simplify building the Docker image, we copy the distribution to a fixed
@@ -122,7 +126,7 @@ pipeline {
                         // built beforehand - if this ever becomes too slow, we can move this to a
                         // BPMN TCK agent and make this is a sequential stage prior to running the
                         // TCK
-                        sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
+                        // sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                     }
                 }
             }
@@ -132,6 +136,7 @@ pipeline {
             when { not { expression { params.SKIP_VERIFY } } }
             parallel {
                 stage('Analyse') {
+                    when { expression { return false } } // disable for testing
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
@@ -155,6 +160,7 @@ pipeline {
                 }
 
                 stage('Test (Go)') {
+                    when { expression { return false } } // disable for testing
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             container('golang') {
@@ -181,7 +187,7 @@ pipeline {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/test-java.sh')
-                            runMavenContainerCommand('.ci/scripts/distribution/random-test-java.sh')
+                            // runMavenContainerCommand('.ci/scripts/distribution/random-test-java.sh')
                         }
                     }
 
@@ -193,6 +199,7 @@ pipeline {
                 }
 
                 stage('Test (Java 8)') {
+                    when { expression { return false } } // disable for testing
                     environment {
                         SUREFIRE_REPORT_NAME_SUFFIX = 'java8-testrun'
                     }
@@ -292,8 +299,29 @@ pipeline {
                 }
 
                 failure {
-                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
-                    zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
+                    // ensure this is run on the main agent, otherwise it could be ran on either the
+                    // IT or main agent, and there's no way of knowing for sure
+                    node("zeebe-ci-build_${buildName}") {
+                        zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+                        zip zipFile: 'test-errors.zip', archive: true, glob: "**/hs_err_*.log"
+
+                        dir(itAgentUnstashDirectory) {
+                            unstash name: itFlakyTestStashName
+                        }
+
+                        script {
+                            def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
+                            flakyTestCases = combineFlakeResults(flakeFiles)
+
+                            print "Flakes: ${flakyTestCases}"
+                            if (flakyTestCases) {
+                                if (!currentBuild.resultIsWorseOrEqualTo('UNSTABLE')) {
+                                    currentBuild.result = 'UNSTABLE'
+                                }
+                                currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}"
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -408,14 +436,17 @@ pipeline {
                         build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                     }
 
-                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
                 }
-            }
-        }
 
-        success {
-            script {
-                org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
+                // we track each flaky test as a separate result so we can count how "flaky" a test
+                // is
+                if (flakyTestCases) {
+                    for (flakyTestCase in flakyTestCases) {
+                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flakyTestCase)
+                    }
+                } else {
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.currentResult)
+                }
             }
         }
 
@@ -423,22 +454,6 @@ pipeline {
             script {
                 if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
                     return
-                }
-
-                dir(itAgentUnstashDirectory) {
-                    unstash name: itFlakyTestStashName
-                }
-
-                def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
-                def flakes = combineFlakeResults(flakeFiles)
-
-                if (flakes) {
-                    for (flake in flakes) {
-                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flake)
-                    }
-                    currentBuild.description = "Flaky tests (#${flakes.size()}): [<br />${flakes.join(',<br />')}"
-                } else {
-                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, null)
                 }
 
                 sendZeebeSlackMessage()

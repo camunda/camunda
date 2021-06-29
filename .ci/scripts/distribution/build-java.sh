@@ -4,4 +4,5 @@
 LIMITS_CPU=${LIMITS_CPU:-$(getconf _NPROCESSORS_ONLN)}
 MAVEN_PARALLELISM=${MAVEN_PARALLELISM:-$LIMITS_CPU}
 
-mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pchecks,spotbugs,prepare-offline
+# temporarily skip checks to speed up build
+mvn -B -T${MAVEN_PARALLELISM} -s ${MAVEN_SETTINGS_XML} -DskipTests -DskipChecks clean install -Pchecks,spotbugs,prepare-offline
