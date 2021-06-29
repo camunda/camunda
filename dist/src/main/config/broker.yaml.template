@@ -479,6 +479,13 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
       # enablePriorityElection = false;
 
+      # Allows to configure specific raft properties
+      # raft:
+        # Sets the timeout for all requests send by raft leaders and followers.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
+        # requestTimeout = 5s
+
+
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
         # Specify custom column family options overwriting Zeebe's own defaults.
