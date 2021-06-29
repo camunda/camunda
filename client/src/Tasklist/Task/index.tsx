@@ -104,11 +104,11 @@ const Task: React.FC = () => {
 
       if (gseUrl !== null && !notifications.isGseNotificationVisible) {
         notifications.displayNotification('info', {
-          headline: 'To continue to getting started, go back to',
+          headline: 'To continue to getting started, go back to your',
           isDismissable: false,
           isGseNotification: true,
           navigation: {
-            label: 'Cloud',
+            label: 'Camunda Cloud Console.',
             navigationHandler: () => {
               window.location.href = gseUrl;
             },

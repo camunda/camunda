@@ -278,11 +278,11 @@ describe('<Task />', () => {
     });
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
-      headline: 'To continue to getting started, go back to',
+      headline: 'To continue to getting started, go back to your',
       isDismissable: false,
       isGseNotification: true,
       navigation: expect.objectContaining({
-        label: 'Cloud',
+        label: 'Camunda Cloud Console.',
       }),
     });
   });
