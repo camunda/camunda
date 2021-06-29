@@ -52,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -72,6 +73,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> deferredFailureListeners = new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
+  private final Duration requestTimeout;
 
   private RaftServer server;
   private ReceivableSnapshotStore persistedSnapshotStore;
@@ -93,6 +95,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             getClass(),
             LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
     this.partitionMetadata = partitionMetadata;
+    requestTimeout = config.getRequestTimeout();
   }
 
   @Override
@@ -306,7 +309,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   private RaftServerCommunicator createServerProtocol() {
     return new RaftServerCommunicator(
-        partition.name(), Serializer.using(RaftNamespaces.RAFT_PROTOCOL), clusterCommunicator);
+        partition.name(),
+        Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
+        clusterCommunicator,
+        requestTimeout);
   }
 
   public CompletableFuture<Void> stepDown() {
