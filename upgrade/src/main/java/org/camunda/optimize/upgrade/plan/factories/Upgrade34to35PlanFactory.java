@@ -349,15 +349,21 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       //@formatter:off
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.processDefinitionKey;\n" +
+      "String appliedToValue = \"all\";\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
+      "  String identifier = UUID.randomUUID().toString();\n" +
       "  ctx._source.data.definitions.add([\n" +
-      "    \"identifier\" : UUID.randomUUID().toString(),\n" +
+      "    \"identifier\" : identifier,\n" +
       "    \"key\" : definitionKey,\n" +
       "    \"name\" : ctx._source.data.processDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
       "    \"versions\" : ctx._source.data.processDefinitionVersions,\n" +
       "    \"tenantIds\" : ctx._source.data.tenantIds != null ? ctx._source.data.tenantIds : Collections.singletonList(null)\n" +
       "  ]);\n" +
+      "  appliedToValue = identifier;\n" +
+      "}\n" +
+      "if (ctx._source.data.filter != null) {\n" +
+      "  ctx._source.data.filter.forEach(filter -> filter.appliedTo = [appliedToValue]);\n" +
       "}\n" +
       "ctx._source.data.remove(\"processDefinitionKey\");\n" +
       "ctx._source.data.remove(\"processDefinitionName\");\n" +
@@ -372,15 +378,21 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       //@formatter:off
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.decisionDefinitionKey;\n" +
+      "String appliedToValue = \"all\";\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
+      "  String identifier = UUID.randomUUID().toString();\n" +
       "  ctx._source.data.definitions.add([\n" +
-      "    \"identifier\" : UUID.randomUUID().toString(),\n" +
+      "    \"identifier\" : identifier,\n" +
       "    \"key\" : definitionKey,\n" +
       "    \"name\" : ctx._source.data.decisionDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
       "    \"versions\" : ctx._source.data.decisionDefinitionVersions,\n" +
       "    \"tenantIds\" : ctx._source.data.tenantIds != null ? ctx._source.data.tenantIds : Collections.singletonList(null)\n" +
       "  ]);\n" +
+      "  appliedToValue = identifier;\n" +
+      "}\n" +
+      "if (ctx._source.data.filter != null) {\n" +
+      "  ctx._source.data.filter.forEach(filter -> filter.appliedTo = [appliedToValue]);\n" +
       "}\n" +
       "ctx._source.data.remove(\"decisionDefinitionKey\");\n" +
       "ctx._source.data.remove(\"decisionDefinitionName\");\n" +

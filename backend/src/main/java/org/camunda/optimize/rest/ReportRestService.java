@@ -194,7 +194,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
-                                                                      @NotNull ReportDefinitionDto reportDefinitionDto,
+                                                                      @Valid @NotNull ReportDefinitionDto reportDefinitionDto,
                                                                       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);

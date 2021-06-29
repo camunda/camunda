@@ -100,6 +100,9 @@ public class ReportConstants {
   public static final String INSTANCE = "instance";
   public static final String VIEW = "view";
 
+  // filter applied to special values
+  public static final String APPLIED_TO_ALL_DEFINITIONS = "all";
+
   // date filter
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";

@@ -59,12 +59,13 @@ public class BeanConstraintViolationExceptionHandler implements ExceptionMapper<
         .collect(Collectors.toList());
 
       // check if argument is list
-      final Path.Node argumentNode = Iterables.get(propertyNodePath, 0);
-      if (argumentNode.isInIterable()) {
-        propertyName = String.format("element[%d].%s", argumentNode.getIndex(), argumentNode.toString());
-      } else {
-        propertyName = argumentNode.toString();
-      }
+      propertyName = propertyNodePath.stream().map(node -> {
+        if (node.isInIterable()) {
+          return String.format("element[%d].%s", node.getIndex(), node);
+        } else {
+          return node.toString();
+        }
+      }).collect(Collectors.joining("."));
     }
     return Optional.ofNullable(propertyName).orElseGet(() -> constraintViolation.getPropertyPath().toString());
   }

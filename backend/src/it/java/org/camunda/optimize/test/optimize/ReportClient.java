@@ -474,7 +474,7 @@ public class ReportClient {
       .execute(SingleProcessReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public SingleDecisionReportDefinitionRequestDto getDecisionReportById(final String id) {
+  public SingleDecisionReportDefinitionRequestDto getSingleDecisionReportById(final String id) {
     return getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(SingleDecisionReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());

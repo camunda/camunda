@@ -9,7 +9,9 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -17,13 +19,13 @@ import org.camunda.optimize.upgrade.plan.factories.Upgrade34to35PlanFactory;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 
 public class MigrateProcessReportIT extends AbstractUpgrade34IT {
 
@@ -67,6 +69,16 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
               assertThat(definitionDoc).containsKey(ReportDataDefinitionDto.Fields.tenantIds);
             });
         }
+
+        List<Map<String, Object>> filters =
+          (List<Map<String, Object>>) reportData.get(ProcessReportDataDto.Fields.filter);
+        if (!filters.isEmpty()) {
+          assertThat(filters)
+            .singleElement()
+            .satisfies(filter -> {
+              assertThat(filter).containsKey(ProcessFilterDto.Fields.appliedTo);
+            });
+        }
       });
 
     assertThat(getDocumentOfIndexByIdAs(
@@ -76,9 +88,8 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
     ))
       .isPresent().get()
       .extracting(ReportDefinitionDto::getData)
-      .extracting(SingleReportDataDto::getDefinitions)
-      .satisfies(definitions -> {
-        assertThat(definitions)
+      .satisfies(reportData -> {
+        assertThat(reportData.getDefinitions())
           .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ReportDataDefinitionDto.Fields.identifier)
           .allSatisfy(reportDataDefinitionDto -> assertThat(reportDataDefinitionDto.getIdentifier()).isNotEmpty())
           .containsExactly(
@@ -86,8 +97,14 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
               "invoice",
               "Invoice Receipt",
               Collections.singletonList("2"),
-              Arrays.asList("tenant1")
+              List.of("tenant1")
             )
+          );
+
+        assertThat(reportData.getFilter())
+          .singleElement()
+          .satisfies(filterDto -> assertThat(filterDto.getAppliedTo())
+            .containsExactly(reportData.getFirstDefinition().get().getIdentifier())
           );
       });
 
@@ -98,8 +115,13 @@ public class MigrateProcessReportIT extends AbstractUpgrade34IT {
     ))
       .isPresent().get()
       .extracting(ReportDefinitionDto::getData)
-      .extracting(SingleReportDataDto::getDefinitions)
-      .satisfies(definitions -> assertThat(definitions).isEmpty());
+      .satisfies(reportData -> {
+        assertThat(reportData.getDefinitions()).isEmpty();
+
+        assertThat(reportData.getFilter())
+          .singleElement()
+          .satisfies(filterDto -> assertThat(filterDto.getAppliedTo()).containsExactly(APPLIED_TO_ALL_DEFINITIONS));
+      });
 
     assertThat(getDocumentOfIndexByIdAs(
       indexName,

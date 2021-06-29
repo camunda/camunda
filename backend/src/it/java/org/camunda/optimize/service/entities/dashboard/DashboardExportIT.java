@@ -46,7 +46,7 @@ public class DashboardExportIT extends AbstractExportImportIT {
 
     final String decisionReportId = createSimpleReport(ReportType.DECISION);
     final SingleDecisionReportDefinitionRequestDto decisionReport =
-      reportClient.getDecisionReportById(decisionReportId);
+      reportClient.getSingleDecisionReportById(decisionReportId);
     final SingleDecisionReportDefinitionExportDto expectedDecision = createExportDto(decisionReport);
 
     final CombinedReportDefinitionRequestDto combinedDef =

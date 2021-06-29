@@ -9,8 +9,11 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
@@ -47,11 +50,15 @@ import java.util.List;
 })
 @Data
 @NoArgsConstructor
+@FieldNameConstants
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
   @NotNull
   protected FilterApplicationLevel filterLevel;
+
+  @NotEmpty
+  protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
 
   protected ProcessFilterDto(final DATA data, FilterApplicationLevel filterLevel) {
     this.data = data;

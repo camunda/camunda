@@ -21,7 +21,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -41,6 +43,7 @@ import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
@@ -574,12 +577,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateInvalidReportById() {
     // given
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(RANDOM_KEY)
-      .setProcessDefinitionVersion(RANDOM_VERSION)
-      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-      .build();
+    ProcessReportDataDto reportData = createProcessReportData(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
     reportData.setGroupBy(new NoneGroupByDto());
     reportData.setVisualization(ProcessVisualization.NUMBER);
     String id = addSingleProcessReportWithDefinition(reportData);
@@ -670,6 +668,41 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
+  public void evaluateUnsavedProcessReport_filterAppliedToValidationFails() {
+    // given
+    final ProcessReportDataDto reportDataDto = createProcessReportData();
+    reportDataDto.setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(Collections.emptyList()).add().buildList()
+    );
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void evaluateUnsavedDecisionReport_filterAppliedToValidationFails() {
+    // given
+    final DecisionReportDataDto reportDataDto = createDecisionReportData();
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(List.of("invalid"));
+    reportDataDto.getFilter().add(filterDto);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void evaluateUnsavedCombinedReportWithoutAuthorization() {
     // when
     Response response = embeddedOptimizeExtension
@@ -714,22 +747,12 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     String id;
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-          .build();
+        ProcessReportDataDto processReportDataDto = createProcessReportData(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
         processReportDataDto.setView(null);
         id = addSingleProcessReportWithDefinition(processReportDataDto);
         break;
       case DECISION:
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
+        DecisionReportDataDto decisionReportDataDto = createDecisionReportData();
         decisionReportDataDto.setView(null);
         id = addSingleDecisionReportWithDefinition(decisionReportDataDto, null);
         break;
@@ -804,12 +827,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
           .build()),
       Stream.of(ProcessReportDataType.values())
         .filter(type -> !ProcessReportDataType.RAW_DATA.equals(type))
-        .map(type -> TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(type)
-          .build())
+        .map(type -> createProcessReportData(type))
     );
   }
 
@@ -817,20 +835,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     final SingleReportDataDto reportDataDto;
     switch (reportType) {
       case PROCESS:
-        reportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
+        reportDataDto = createProcessReportData(ProcessReportDataType.RAW_DATA);
         break;
       case DECISION:
-        reportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
+        reportDataDto = createDecisionReportData();
         break;
       default:
         throw new IllegalStateException("Uncovered type: " + reportType);
@@ -1053,6 +1061,28 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       .operator(NOT_CONTAINS)
       .add()
       .buildList();
+  }
+
+  private static DecisionReportDataDto createDecisionReportData() {
+    return DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(RANDOM_KEY)
+      .setDecisionDefinitionVersion(RANDOM_VERSION)
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
+  }
+
+  private static ProcessReportDataDto createProcessReportData() {
+    return createProcessReportData(ProcessReportDataType.RAW_DATA);
+  }
+
+  private static ProcessReportDataDto createProcessReportData(final ProcessReportDataType reportDataType) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(RANDOM_KEY)
+      .setProcessDefinitionVersion(RANDOM_VERSION)
+      .setReportDataType(reportDataType)
+      .build();
   }
 
 }

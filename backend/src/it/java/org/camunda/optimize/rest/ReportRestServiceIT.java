@@ -21,12 +21,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitio
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -51,6 +55,7 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
@@ -139,11 +144,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @EnumSource(ReportType.class)
   public void createNewSingleReportWithDefinitionWithoutIdentifierFails(final ReportType reportType) {
     // given
-    final List<ReportDataDefinitionDto> definitions = List.of(
-      new ReportDataDefinitionDto(
-        null, RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
-      )
-    );
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(null);
 
     // when
 
@@ -184,6 +185,158 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void createNewSingleProcessReportWithFiltersAppliedToDefaultsToAll() {
+    // given
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
+    final ProcessReportDataDto reportDataDto = ProcessReportDataDto.builder().definitions(definitions).build();
+    reportDataDto.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
+
+    // when
+    final String id = addSingleProcessReportWithDefinition(reportDataDto);
+    final SingleProcessReportDefinitionRequestDto reportById = reportClient.getSingleProcessReportById(id);
+
+    // then
+    assertThat(reportById.getData().getFilter())
+      .singleElement()
+      .satisfies(filterDto -> assertThat(filterDto.getAppliedTo()).containsExactly(APPLIED_TO_ALL_DEFINITIONS));
+  }
+
+  @Test
+  public void createNewSingleProcessReportWithFiltersAppliedToSetToProvidedDefinition() {
+    // given
+    final String definitionIdentifier = "1";
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
+    final ProcessReportDataDto reportDataDto = ProcessReportDataDto.builder().definitions(definitions).build();
+    reportDataDto.setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(definitionIdentifier).add().buildList()
+    );
+
+    // when
+    final String id = addSingleProcessReportWithDefinition(reportDataDto);
+    final SingleProcessReportDefinitionRequestDto reportById = reportClient.getSingleProcessReportById(id);
+
+    // then
+    assertThat(reportById.getData().getFilter())
+      .singleElement()
+      .satisfies(filterDto -> assertThat(filterDto.getAppliedTo()).containsExactly(definitionIdentifier));
+  }
+
+  @Test
+  public void createNewSingleProcessReportWithFiltersAppliedToSetToInvalidIdFails() {
+    // given
+    final String definitionIdentifier = "1";
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
+    final ProcessReportDataDto reportDataDto = ProcessReportDataDto.builder().definitions(definitions).build();
+    reportDataDto.setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo("invalid").add().buildList()
+    );
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto(reportDataDto))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewSingleProcessReportWithEmptyFiltersAppliedToFails() {
+    // given
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
+    final ProcessReportDataDto reportDataDto = ProcessReportDataDto.builder().definitions(definitions).build();
+    reportDataDto.setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(Collections.emptyList()).add().buildList()
+    );
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionRequestDto(reportDataDto))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewSingleDecisionReportWithFiltersAppliedToDefaultsToAll() {
+    // given
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
+    final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
+    reportDataDto.getFilter()
+      .add(DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS));
+
+    // when
+    final String id = addSingleDecisionReportWithDefinition(reportDataDto);
+    final SingleDecisionReportDefinitionRequestDto reportById = reportClient.getSingleDecisionReportById(id);
+
+    // then
+    assertThat(reportById.getData().getFilter())
+      .singleElement()
+      .satisfies(filterDto -> assertThat(filterDto.getAppliedTo()).containsExactly(APPLIED_TO_ALL_DEFINITIONS));
+  }
+
+  @Test
+  public void createNewSingleDecisionReportWithFiltersAppliedToSetToProvidedDefinition() {
+    // given
+    final String definitionIdentifier = "1";
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
+    final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(List.of(definitionIdentifier));
+    reportDataDto.getFilter().add(filterDto);
+
+    // when
+    final String id = addSingleDecisionReportWithDefinition(reportDataDto);
+    final SingleDecisionReportDefinitionRequestDto reportById = reportClient.getSingleDecisionReportById(id);
+
+    // then
+    assertThat(reportById.getData().getFilter())
+      .singleElement()
+      .satisfies(filter -> assertThat(filter.getAppliedTo()).containsExactly(definitionIdentifier));
+  }
+
+  @Test
+  public void createNewSingleDecisionReportWithFiltersAppliedToSetToInvalidIdFails() {
+    // given
+    final String definitionIdentifier = "1";
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(definitionIdentifier);
+    final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(List.of("invalid"));
+    reportDataDto.getFilter().add(filterDto);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionRequestDto(reportDataDto))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewSingleDecisionReportWithEmptyFiltersAppliedToFails() {
+    // given
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier("1");
+    final DecisionReportDataDto reportDataDto = DecisionReportDataDto.builder().definitions(definitions).build();
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(Collections.emptyList());
+    reportDataDto.getFilter().add(filterDto);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest(new SingleDecisionReportDefinitionRequestDto(reportDataDto))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -252,11 +405,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     final String id = addEmptyReportToOptimize(reportType);
 
     // given
-    final List<ReportDataDefinitionDto> definitions = List.of(
-      new ReportDataDefinitionDto(
-        null, RANDOM_KEY, RANDOM_STRING, RANDOM_STRING, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
-      )
-    );
+    final List<ReportDataDefinitionDto> definitions = createSingleDefinitionListWithIdentifier(null);
 
     // when
     Response response;
@@ -284,6 +433,107 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       default:
         throw new OptimizeIntegrationTestException("Unsupported report type: " + reportType);
     }
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateSingleProcessReportWithFiltersAppliedToSetToProvidedDefinition() {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(ReportType.PROCESS);
+    final SingleProcessReportDefinitionRequestDto reportDefinition = reportClient.getSingleProcessReportById(reportId);
+    final String definitionIdentifier = reportDefinition.getData().getDefinitions().get(0).getIdentifier();
+    reportDefinition.getData().setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(definitionIdentifier).add().buildList()
+    );
+
+    // when
+    final Response response = reportClient.updateSingleProcessReport(reportId, reportDefinition);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void updateSingleProcessReportWithFiltersAppliedToSetToInvalidIdFails() {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(ReportType.PROCESS);
+    final SingleProcessReportDefinitionRequestDto reportDefinition = reportClient.getSingleProcessReportById(reportId);
+    reportDefinition.getData().setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo("invalid").add().buildList()
+    );
+
+    // when
+    final Response response = reportClient.updateSingleProcessReport(reportId, reportDefinition);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateSingleProcessReportWithEmptyFiltersAppliedToFails() {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(ReportType.PROCESS);
+    final SingleProcessReportDefinitionRequestDto reportDefinition = reportClient.getSingleProcessReportById(reportId);
+    reportDefinition.getData().setFilter(
+      ProcessFilterBuilder.filter().completedInstancesOnly().appliedTo(Collections.emptyList()).add().buildList()
+    );
+
+    // when
+    final Response response = reportClient.updateSingleProcessReport(reportId, reportDefinition);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateSingleDecisionReportWithFiltersAppliedToSetToProvidedDefinition() {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(DECISION);
+    final SingleDecisionReportDefinitionRequestDto reportDefinition = reportClient.getSingleDecisionReportById(reportId);
+    final String definitionIdentifier = reportDefinition.getData().getDefinitions().get(0).getIdentifier();
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(List.of(definitionIdentifier));
+    reportDefinition.getData().getFilter().add(filterDto);
+
+    // when
+    final Response response = reportClient.updateDecisionReport(reportId, reportDefinition);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void updateSingleDecisionReportWithFiltersAppliedToSetToInvalidIdFails() {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(DECISION);
+    final SingleDecisionReportDefinitionRequestDto reportDefinition = reportClient.getSingleDecisionReportById(reportId);
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(List.of("invalid"));
+    reportDefinition.getData().getFilter().add(filterDto);
+
+    // when
+    final Response response = reportClient.updateDecisionReport(reportId, reportDefinition);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateSingleDecisionReportWithEmptyFiltersAppliedToFails() {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(DECISION);
+    final SingleDecisionReportDefinitionRequestDto reportDefinition = reportClient.getSingleDecisionReportById(reportId);
+    final EvaluationDateFilterDto filterDto =
+      DecisionFilterUtilHelper.createRelativeEvaluationDateFilter(1L, DateFilterUnit.SECONDS);
+    filterDto.setAppliedTo(Collections.emptyList());
+    reportDefinition.getData().getFilter().add(filterDto);
+
+    // when
+    final Response response = reportClient.updateDecisionReport(reportId, reportDefinition);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -874,6 +1124,17 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
         final ReportDefinitionDto newSingleReport = reportClient.getReportById(newSingleReportId);
         assertThat(newSingleReport.getCollectionId()).isEqualTo(newCollectionId);
       });
+  }
+
+  private List<ReportDataDefinitionDto> createSingleDefinitionListWithIdentifier(final String definitionIdentifier) {
+    return List.of(new ReportDataDefinitionDto(
+      definitionIdentifier,
+      RANDOM_KEY,
+      RANDOM_STRING,
+      RANDOM_STRING,
+      Collections.singletonList(ALL_VERSIONS),
+      DEFAULT_TENANT_IDS
+    ));
   }
 
   private Response updateReportRequest(final String id, final ReportType reportType) {
