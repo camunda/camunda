@@ -17,9 +17,7 @@
 package io.atomix.core;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.google.common.io.Resources;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
@@ -35,9 +33,6 @@ import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.Threads;
-import io.atomix.utils.config.ConfigurationException;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -74,25 +69,7 @@ import org.slf4j.LoggerFactory;
  * all services are available.
  */
 public class Atomix extends AtomixCluster {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(Atomix.class);
-  private static final String VERSION_RESOURCE = "VERSION";
-  private static final String BUILD;
-  private static final Version VERSION;
-
-  static {
-    try {
-      BUILD =
-          Resources.toString(
-              checkNotNull(
-                  Atomix.class.getClassLoader().getResource(VERSION_RESOURCE),
-                  VERSION_RESOURCE + " resource is null"),
-              StandardCharsets.UTF_8);
-    } catch (final IOException | NullPointerException e) {
-      throw new ConfigurationException("Failed to load Atomix version", e);
-    }
-    VERSION = BUILD.trim().length() > 0 ? Version.from(BUILD.trim().split("\\s+")[0]) : null;
-  }
 
   private final ScheduledExecutorService executorService;
   private final ManagedPartitionService partitions;
@@ -107,7 +84,11 @@ public class Atomix extends AtomixCluster {
       final AtomixConfig config,
       final ManagedMessagingService messagingService,
       final ManagedUnicastService unicastService) {
-    super(config.getClusterConfig(), VERSION, messagingService, unicastService);
+    super(
+        config.getClusterConfig(),
+        Version.from("1.1.0-SNAPSHOT"),
+        messagingService,
+        unicastService);
     executorService =
         Executors.newScheduledThreadPool(
             Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
@@ -168,7 +149,6 @@ public class Atomix extends AtomixCluster {
               "Atomix instance " + (closeFuture.isDone() ? "shutdown" : "shutting down")));
     }
 
-    LOGGER.info(BUILD);
     return super.start();
   }
 

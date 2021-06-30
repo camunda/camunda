@@ -15,25 +15,16 @@
   ~ limitations under the License.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe Atomix</name>
   <artifactId>zeebe-atomix</artifactId>
+  <packaging>jar</packaging>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <groupId>org.codehaus.mojo</groupId>
-      </plugin>
-    </plugins>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>src/main/filtered-resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
-  </build>
+  <parent>
+    <artifactId>zeebe-atomix-parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <version>1.0.2-SNAPSHOT</version>
+  </parent>
 
   <dependencies>
     <dependency>
@@ -90,14 +81,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Atomix</name>
-
-  <packaging>jar</packaging>
-
-  <parent>
-    <artifactId>zeebe-atomix-parent</artifactId>
-    <groupId>io.camunda</groupId>
-    <version>1.0.2-SNAPSHOT</version>
-  </parent>
 </project>
