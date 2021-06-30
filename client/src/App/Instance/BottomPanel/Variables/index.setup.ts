@@ -29,7 +29,7 @@ const mockVariables = [
     processInstanceId: '2251799813686037',
     hasActiveOperation: true,
   },
-];
+] as const;
 
 const mockMetaData = {
   breadcrumb: [],

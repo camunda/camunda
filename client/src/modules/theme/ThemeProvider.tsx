@@ -11,7 +11,7 @@ import {observer} from 'mobx-react';
 import {theme} from './theme';
 import {currentTheme} from 'modules/stores/currentTheme';
 
-const ThemeProvider = observer(({children}: any) => {
+const ThemeProvider: React.FC = observer(({children}) => {
   return (
     <DefaultProvider theme={theme[currentTheme.state.selectedTheme]}>
       {children}

@@ -14,7 +14,16 @@ import {mockServer} from 'modules/mock-server/node';
 // configure enzyme
 Enzyme.configure({adapter: new Adapter()});
 
-// mock date util
+class MockJSONEditor {
+  updateText() {}
+  destroy() {}
+  set() {}
+  get() {}
+}
+
+jest.mock('jsoneditor', () => MockJSONEditor);
+jest.mock('brace/theme/tomorrow_night', () => undefined);
+jest.mock('brace/theme/tomorrow', () => undefined);
 jest.mock('modules/utils/date/formatDate');
 jest.mock('@camunda-cloud/common-ui-react', () => {
   const React = require('react');

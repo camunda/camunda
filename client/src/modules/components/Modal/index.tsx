@@ -35,6 +35,7 @@ type ModalProps = {
   isVisible: boolean;
   className?: string;
   size: 'SMALL' | 'BIG';
+  preventKeyboardEvents?: boolean;
 };
 
 export default class Modal extends React.Component<ModalProps> {
@@ -82,11 +83,13 @@ export default class Modal extends React.Component<ModalProps> {
   }
 
   addEventListener() {
-    this.eventListenerAdded = true;
-    this.prevActiveElement = document.activeElement as HTMLElement;
+    if (!this.props.preventKeyboardEvents) {
+      this.eventListenerAdded = true;
+      this.prevActiveElement = document.activeElement as HTMLElement;
 
-    this.prevActiveElement && this.prevActiveElement.blur();
-    document.addEventListener('keydown', this.handleKeyDown);
+      this.prevActiveElement && this.prevActiveElement.blur();
+      document.addEventListener('keydown', this.handleKeyDown);
+    }
   }
 
   removeEventListener() {

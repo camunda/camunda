@@ -1064,4 +1064,70 @@ describe('Variables', () => {
       flowNodeMetaDataStore.reset();
     });
   });
+
+  it('should have JSON editor when adding a new Variable', async () => {
+    currentInstanceStore.setCurrentInstance(instanceMock);
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json(mockVariables))
+      )
+    );
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<Variables />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    userEvent.click(screen.getByRole('button', {name: /add variable/i}));
+    userEvent.click(
+      screen.getByRole('button', {name: /open json editor modal/i})
+    );
+
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: /close/i})
+    ).toBeEnabled();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: /save/i})
+    ).toBeEnabled();
+    expect(
+      within(screen.getByTestId('modal')).getByTestId('json-editor-container')
+    ).toBeInTheDocument();
+  });
+
+  it('should have JSON editor when editing a Variable', async () => {
+    currentInstanceStore.setCurrentInstance(instanceMock);
+
+    mockServer.use(
+      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
+        res.once(ctx.json([mockVariables[0]]))
+      )
+    );
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<Variables />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+    userEvent.click(screen.getByRole('button', {name: /enter edit mode/i}));
+    userEvent.click(
+      screen.getByRole('button', {name: /open json editor modal/i})
+    );
+
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: /close/i})
+    ).toBeEnabled();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: /save/i})
+    ).toBeEnabled();
+    expect(
+      within(screen.getByTestId('modal')).getByTestId('json-editor-container')
+    ).toBeInTheDocument();
+  });
 });

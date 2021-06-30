@@ -10,14 +10,18 @@ import {
   CloseIcon,
   CheckIcon,
   EditButtonsContainer,
+  ModalIcon,
 } from './styled';
 import {useForm, useFormState} from 'react-final-form';
 import {getError} from './getError';
 import {Warning as WarningIcon} from 'modules/components/Warning';
-
 import {useFieldError} from 'modules/hooks/useFieldError';
 
-const EditButtons: React.FC = () => {
+type Props = {
+  onModalButtonClick?: () => void;
+};
+
+const EditButtons: React.FC<Props> = ({onModalButtonClick}) => {
   const form = useForm();
   const {values, initialValues, validating, hasValidationErrors} =
     useFormState();
@@ -34,6 +38,15 @@ const EditButtons: React.FC = () => {
       <Warning>
         {errorMessage !== undefined && <WarningIcon title={errorMessage} />}
       </Warning>
+
+      <EditButton
+        type="button"
+        title="Open JSON editor modal"
+        onClick={onModalButtonClick}
+        size="large"
+        iconButtonTheme="default"
+        icon={<ModalIcon />}
+      />
 
       <EditButton
         type="button"

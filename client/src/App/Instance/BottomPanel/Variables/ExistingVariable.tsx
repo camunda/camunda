@@ -11,13 +11,12 @@ import {
   EditTextarea,
   EditButtonsTD,
 } from './styled';
-import {Field} from 'react-final-form';
-import {useRef} from 'react';
-
-import {EditButtons} from './EditButtons';
-
 import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
 import {validateValueComplete} from './validators';
+import {Field, useForm, useFormState} from 'react-final-form';
+import {useRef, useState} from 'react';
+import {EditButtons} from './EditButtons';
+import {JSONEditorModal} from './JSONEditorModal';
 
 type Props = {
   variableName: string;
@@ -30,6 +29,10 @@ const ExistingVariable: React.FC<Props> = ({
   variableValue,
   onHeightChange,
 }) => {
+  const formState = useFormState();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const form = useForm();
+
   const editInputTDRef = useRef<HTMLTableDataCellElement>(null);
 
   return (
@@ -73,8 +76,20 @@ const ExistingVariable: React.FC<Props> = ({
         </Field>
       </EditInputTD>
       <EditButtonsTD>
-        <EditButtons />
+        <EditButtons onModalButtonClick={() => setIsModalVisible(true)} />
       </EditButtonsTD>
+      <JSONEditorModal
+        title={`Edit Variable "${variableName}"`}
+        value={formState.values?.value}
+        onClose={() => {
+          setIsModalVisible(false);
+        }}
+        onSave={(value) => {
+          form.change('value', value);
+          setIsModalVisible(false);
+        }}
+        isModalVisible={isModalVisible}
+      />
     </>
   );
 };
