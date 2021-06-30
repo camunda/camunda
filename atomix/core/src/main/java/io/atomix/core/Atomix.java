@@ -34,8 +34,6 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.Threads;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,9 +67,7 @@ import org.slf4j.LoggerFactory;
 public class Atomix extends AtomixCluster {
   private static final Logger LOGGER = LoggerFactory.getLogger(Atomix.class);
 
-  private final ScheduledExecutorService executorService;
   private final ManagedPartitionService partitions;
-  private final ThreadContext threadContext = new SingleThreadContext("atomix-%d");
   private final ManagedPartitionGroup partitionGroup;
 
   protected Atomix(final AtomixConfig config) {
@@ -87,11 +83,6 @@ public class Atomix extends AtomixCluster {
         Version.from(VersionUtil.getVersion()),
         messagingService,
         unicastService);
-    executorService =
-        Executors.newScheduledThreadPool(
-            Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
-            Threads.namedThreads("atomix-primitive-%d", LOGGER));
-
     final PartitionGroupConfig<?> partitionGroupConfig = config.getPartitionGroup();
 
     partitionGroup =
@@ -99,7 +90,7 @@ public class Atomix extends AtomixCluster {
             ? partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig)
             : null;
 
-    partitions = buildPartitionService(config, getMembershipService(), getCommunicationService());
+    partitions = buildPartitionService(getMembershipService(), getCommunicationService());
   }
 
   /**
@@ -166,20 +157,12 @@ public class Atomix extends AtomixCluster {
   }
 
   @Override
-  protected CompletableFuture<Void> completeShutdown() {
-    executorService.shutdownNow();
-    threadContext.close();
-    return super.completeShutdown();
-  }
-
-  @Override
   public String toString() {
     return toStringHelper(this).add("partitionGroup", partitionGroup).toString();
   }
 
   /** Builds a partition service. */
   private ManagedPartitionService buildPartitionService(
-      final AtomixConfig config,
       final ClusterMembershipService clusterMembershipService,
       final ClusterCommunicationService messagingService) {
 
