@@ -553,7 +553,7 @@ def combineFlakeResults(flakeFiles = []) {
         }
     }
 
-    return flakes
+    return [flakes].flatten()
 }
 
 def checkCodeCoverage() {
