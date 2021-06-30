@@ -25,6 +25,9 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
   private static final boolean DEFAULT_PRIORITY_ELECTION = false;
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
+  private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT =
+      DEFAULT_ELECTION_TIMEOUT.multipliedBy(2);
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -32,6 +35,8 @@ public class RaftPartitionConfig {
   private int maxAppendBatchSize = 32 * 1024;
   private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
+  private Duration maxQuorumResponseTimeout = DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT;
 
   /**
    * Returns the Raft leader election timeout.
@@ -101,7 +106,43 @@ public class RaftPartitionConfig {
     return requestTimeout;
   }
 
+  /**
+   * Sets the timeout for every requests send between the replicas.
+   *
+   * @param requestTimeout the request timeout
+   */
   public void setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+  }
+
+  public int getMinStepDownFailureCount() {
+    return minStepDownFailureCount;
+  }
+
+  /**
+   * If the leader is not able to reach the quorum, the leader may step down. This is triggered
+   * after minStepDownFailureCount number of requests fails to get a response from the quorum of
+   * followers as well as if the last response was received before maxQuorumResponseTime.
+   *
+   * @param minStepDownFailureCount The number of failures after which a leader considers stepping
+   *     down.
+   */
+  public void setMinStepDownFailureCount(final int minStepDownFailureCount) {
+    this.minStepDownFailureCount = minStepDownFailureCount;
+  }
+
+  public Duration getMaxQuorumResponseTimeout() {
+    return maxQuorumResponseTimeout;
+  }
+
+  /**
+   * If the leader is not able to reach the quorum, the leader may step down. This is triggered
+   * after minStepDownFailureCount number of requests fails to get a response from the quorum of
+   * followers as well as if the last response was received before maxQuorumResponseTime.
+   *
+   * @param maxQuorumResponseTimeout the quorum response time out to trigger leader step down
+   */
+  public void setMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
+    this.maxQuorumResponseTimeout = maxQuorumResponseTimeout;
   }
 }
