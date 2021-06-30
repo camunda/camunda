@@ -451,6 +451,17 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
       return this;
     }
 
+    /**
+     * Sets the timeout for all messages sent between raft replicas.
+     *
+     * @param requestTimeout the timeout
+     * @return the Raft Partition group builder
+     */
+    public Builder withRequestTimeout(final Duration requestTimeout) {
+      config.setRequestTimeout(requestTimeout);
+      return this;
+    }
+
     @Override
     public RaftPartitionGroup build() {
       return new RaftPartitionGroup(config);
