@@ -255,7 +255,7 @@ public class IncidentDataDeployer {
     ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
       final ProcessInstanceEngineDto processInstanceEngineDto =
         incidentClient.startProcessInstanceAndCreateResolvedIncident(processDefinitionId);
-      incidentClient.createOpenIncident(processInstanceEngineDto.getId());
+      incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
       return processInstanceEngineDto;
     }
 

@@ -365,13 +365,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @SneakyThrows
-  public void failExternalTasks(final String processInstanceId) {
-    failExternalTasks(processInstanceId, null);
-  }
-
-  @SneakyThrows
-  public void failExternalTasks(final String processInstanceId, final String businessKey) {
-    engineClient.failExternalTasks(processInstanceId, businessKey);
+  public void failExternalTasks(final String businessKey) {
+    engineClient.failExternalTasks(businessKey);
   }
 
   public void completeExternalTasks(final String processInstanceId) {

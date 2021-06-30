@@ -224,15 +224,14 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     // given two process instances
     // Instance 1: one incident in task 1 (resolved) and one incident in task 2 (open)
     // Instance 2: one incident in task 1 (open) and because of that the task is still pending.
-    // Hint: failExternalTasks method does not complete the tasks
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
-    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
       engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto2.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto2.getBusinessKey());
 
     importAllEngineEntitiesFromScratch();
 
@@ -281,9 +280,9 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     // given
     final ProcessInstanceEngineDto firstInstance =
       engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
-    engineIntegrationExtension.failExternalTasks(firstInstance.getId());
-    engineIntegrationExtension.completeExternalTasks(firstInstance.getId());
-    engineIntegrationExtension.failExternalTasks(firstInstance.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(firstInstance.getBusinessKey());
+    incidentClient.resolveOpenIncidents(firstInstance.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(firstInstance.getBusinessKey());
     // the second instance has no incidents
     engineIntegrationExtension.startProcessInstance(firstInstance.getDefinitionId());
 
@@ -314,12 +313,12 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
   public void multiLevelFiltersOnlyAppliedToInstances(final List<ProcessFilterDto<?>> filtersToApply) {
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
-    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
       engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto2.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto2.getBusinessKey());
 
     importAllEngineEntitiesFromScratch();
 

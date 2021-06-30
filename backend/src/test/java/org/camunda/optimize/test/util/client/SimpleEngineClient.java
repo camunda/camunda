@@ -90,7 +90,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -1469,8 +1468,8 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  public void failExternalTasks(final String processInstanceId, final String businessKey) {
-    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasksWithBusinessKey(processInstanceId, businessKey);
+  public void failExternalTasks(final String businessKey) {
+    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasksWithBusinessKey(businessKey);
     for (ExternalTaskEngineDto externalTask : externalTasks) {
       HttpPost executeJobRequest = new HttpPost(getExternalTaskFailureUri(externalTask.getId()));
       executeJobRequest.addHeader("Content-Type", "application/json");
@@ -1535,22 +1534,15 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  public List<ExternalTaskEngineDto> fetchAndLockExternalTasksWithBusinessKey(final String processInstanceId,
-                                                                              final String businessKey) {
+  public List<ExternalTaskEngineDto> fetchAndLockExternalTasksWithBusinessKey(final String businessKey) {
     HttpPost post = new HttpPost(getExternalTaskFetchAndLockUri());
     post.addHeader("Content-Type", "application/json");
     post.setEntity(createFetchAndLockEntity(businessKey));
     try (CloseableHttpResponse response = client.execute(post)) {
       if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        // @formatter:off
-        final List<ExternalTaskEngineDto> externalTaskEngineDtos =
-          objectMapper.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {});
-        // @formatter:on
-        return externalTaskEngineDtos
-          .stream()
-          .filter(task -> Objects.equals(task.getProcessInstanceId(), processInstanceId))
-          .collect(Collectors.toList());
+        return objectMapper.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {
+        });
       } else {
         throw new OptimizeRuntimeException(
           String.format(

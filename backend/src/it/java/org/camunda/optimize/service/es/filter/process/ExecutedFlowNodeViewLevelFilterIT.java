@@ -229,11 +229,11 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
       engineIntegrationExtension.startProcessInstance(processDefinition.getId(), "businessKey2");
 
     // instance1 has 1 resolved incident in serviceTask1 and one open incident in serviceTask2
-    incidentClient.createOpenIncident(instance1);
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(instance1.getBusinessKey());
     engineIntegrationExtension.completeExternalTasks(instance1.getId());
-    incidentClient.createOpenIncident(instance1);
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(instance1.getBusinessKey());
     // instance2 has 1 open incident in serviceTask1
-    incidentClient.createOpenIncident(instance2);
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(instance2.getBusinessKey());
     importAllEngineEntitiesFromScratch();
 
     // when filtering out service task 2 (ie a filter that only affects flowNode data and not instance count because

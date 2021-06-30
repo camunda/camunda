@@ -174,13 +174,13 @@ public class IncidentImportIT extends AbstractImportIT {
     BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
 
     importAllEngineEntitiesFromScratch();
 
     // when we resolve the open incident and create another incident
-    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
 
     importAllEngineEntitiesFromLastIndex();
 
