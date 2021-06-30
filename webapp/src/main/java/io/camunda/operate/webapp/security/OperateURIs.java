@@ -24,8 +24,13 @@ public final class OperateURIs {
       COOKIE_JSESSIONID = "OPERATE-SESSION",
 
       SSO_AUTH_PROFILE = "sso-auth",
-      CALLBACK_URI = "/sso-callback",
+      SSO_CALLBACK_URI = "/sso-callback",
       NO_PERMISSION = "/noPermission",
+
+      IAM_AUTH_PROFILE = "iam-auth",
+
+      IAM_CALLBACK_URI = "/iam-callback",
+      IAM_LOGOUT_CALLBACK_URI = "/iam-logout-callback",
 
       X_CSRF_PARAM = "OPERATE-X-CSRF-PARAM",
       X_CSRF_HEADER = "OPERATE-X-CSRF-HEADER",
@@ -35,7 +40,8 @@ public final class OperateURIs {
    public static final String DEFAULT_AUTH = AUTH_PROFILE;
    public static final Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE,
                                                           LDAP_AUTH_PROFILE,
-                                                          SSO_AUTH_PROFILE);
+                                                          SSO_AUTH_PROFILE,
+                                                          IAM_AUTH_PROFILE);
 
    public static final String[] AUTH_WHITELIST = {
        "/swagger-resources",

@@ -120,5 +120,9 @@ public interface AuthenticationTestable {
     return responseEntity.getBody();
   }
 
+  default ResponseEntity<String> get(String path) {
+    return getTestRestTemplate().getForEntity(path, String.class);
+  }
+
   public TestRestTemplate getTestRestTemplate();
 }

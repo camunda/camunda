@@ -7,7 +7,7 @@ package io.camunda.operate.webapp.security.sso;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.asMap;
-import static io.camunda.operate.webapp.security.OperateURIs.CALLBACK_URI;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
@@ -138,7 +138,7 @@ public class AuthenticationTest {
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
-        CALLBACK_URI,
+        SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
         operateProperties.getAuth0().getBackendDomain()
     );
@@ -148,7 +148,7 @@ public class AuthenticationTest {
         .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
             operateProperties.getAuth0().getOrganization()));
 
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK_URI, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
 
     response = get(ROOT, cookies);
@@ -168,7 +168,7 @@ public class AuthenticationTest {
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
-        CALLBACK_URI,
+        SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
         operateProperties.getAuth0().getBackendDomain()
     );
@@ -177,7 +177,7 @@ public class AuthenticationTest {
         .willReturn(
             orgExtractor.apply(operateProperties.getAuth0().getClaimName(), "wrong-organization"));
 
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK_URI, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
         "logout",
@@ -202,7 +202,7 @@ public class AuthenticationTest {
     response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
-        CALLBACK_URI,
+        SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
         operateProperties.getAuth0().getBackendDomain()
     );
@@ -210,7 +210,7 @@ public class AuthenticationTest {
     doThrow(IdentityVerificationException.class).when(authenticationController)
         .handle(any(), any());
 
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK_URI, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(NO_PERMISSION));
   }
 
@@ -223,7 +223,7 @@ public class AuthenticationTest {
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(operateProperties.getAuth0().getClaimName(),
             operateProperties.getAuth0().getOrganization()));
-    response = get(CALLBACK_URI, cookies);
+    response = get(SSO_CALLBACK_URI, cookies);
     response = get(ROOT, cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -255,7 +255,7 @@ public class AuthenticationTest {
 
     assertThat(redirectLocationIn(response)).contains(
         operateProperties.getAuth0().getDomain(),
-        CALLBACK_URI,
+        SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
         operateProperties.getAuth0().getBackendDomain()
     );
@@ -264,7 +264,7 @@ public class AuthenticationTest {
         .apply(operateProperties.getAuth0().getClaimName(),
             operateProperties.getAuth0().getOrganization()));
 
-    response = get(CALLBACK_URI, httpEntity);
+    response = get(SSO_CALLBACK_URI, httpEntity);
     assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
     response = get(userInfoUrl, httpEntity);
     assertThat(response.getBody()).contains("\"lastname\":\"operate-testuser\"");

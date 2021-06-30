@@ -29,6 +29,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <version.zeebe>1.1.0-SNAPSHOT</version.zeebe>
+    <version.iam>1.2.0-ALPHA0</version.iam>
     <version.log4j>2.13.3</version.log4j>
     <version.elasticsearch>7.13.2</version.elasticsearch>
     <version.spring.boot>2.5.1</version.spring.boot>
@@ -76,6 +77,12 @@
         <version>${version.zeebe}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-cloud-iam-sdk</artifactId>
+        <version>${version.iam}</version>
       </dependency>
 
       <dependency>
@@ -446,6 +453,30 @@
       </releases>
       <snapshots>
         <enabled>true</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>camunda-shared-services-snapshot</id>
+      <name>IAM Snapshot Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-shared-services-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>camunda-shared-services</id>
+      <name>IAM Repository</name>
+      <url>https://app.camunda.com/nexus/content/repositories/camunda-shared-services/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
       </snapshots>
     </repository>
 

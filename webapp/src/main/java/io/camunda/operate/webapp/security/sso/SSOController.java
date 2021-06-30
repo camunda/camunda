@@ -5,7 +5,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import static io.camunda.operate.webapp.security.OperateURIs.CALLBACK_URI;
+import static io.camunda.operate.webapp.security.OperateURIs.SSO_CALLBACK_URI;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
@@ -68,7 +68,7 @@ public class SSOController {
 
   private String getAuthorizeUrl(final HttpServletRequest req, final HttpServletResponse res) {
     return authenticationController
-        .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
+        .buildAuthorizeUrl(req, res, getRedirectURI(req, SSO_CALLBACK_URI))
         .withAudience(
             String.format("https://%s/userinfo", operateProperties.getAuth0().getBackendDomain())) // get user profile
         .withScope("openid profile email") // which info we request
@@ -83,7 +83,7 @@ public class SSOController {
    * @throws ServletException
    * @throws IOException
    */
-  @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
+  @RequestMapping(value = SSO_CALLBACK_URI, method = RequestMethod.GET)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws IOException {
     logger.debug("Called back by auth0 with {} {} and SessionId: {}", req.getRequestURI(), req.getQueryString(), req.getSession().getId());
     try {
