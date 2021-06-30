@@ -1552,6 +1552,9 @@
                   <goal>resolve-plugins</goal>
                   <goal>go-offline</goal>
                 </goals>
+                <configuration>
+                  <silent>true</silent>
+                </configuration>
               </execution>
               <execution>
                 <id>analyze-dependencies</id>
