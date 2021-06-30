@@ -31,10 +31,17 @@
       <artifactId>zeebe-atomix-cluster</artifactId>
       <groupId>io.camunda</groupId>
     </dependency>
+
     <dependency>
       <artifactId>zeebe-atomix-utils</artifactId>
       <groupId>io.camunda</groupId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
@@ -45,6 +52,7 @@
       <artifactId>slf4j-api</artifactId>
       <groupId>org.slf4j</groupId>
     </dependency>
+
     <dependency>
       <artifactId>guava</artifactId>
       <groupId>com.google.guava</groupId>
@@ -55,26 +63,25 @@
       <artifactId>netty-common</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <artifactId>hamcrest</artifactId>
       <groupId>org.hamcrest</groupId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <artifactId>junit</artifactId>
       <groupId>junit</groupId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <artifactId>zeebe-test-util</artifactId>
       <groupId>io.camunda</groupId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
