@@ -11,7 +11,7 @@ MAVEN_PROPERTIES=(
   -DskipUTs
   -DskipChecks
   -DtestMavenId=2
-  -Dsurefire.rerunFailingTestsCount=7
+  -Dfailsafe.rerunFailingTestsCount=7
 )
 tmpfile=$(mktemp)
 
