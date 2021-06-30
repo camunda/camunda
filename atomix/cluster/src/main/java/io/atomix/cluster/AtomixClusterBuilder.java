@@ -23,7 +23,9 @@ import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
 import io.atomix.utils.Builder;
+import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collection;
 import java.util.Properties;
 
@@ -222,6 +224,6 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   @Override
   public AtomixCluster build() {
-    return new AtomixCluster(config, null);
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 }

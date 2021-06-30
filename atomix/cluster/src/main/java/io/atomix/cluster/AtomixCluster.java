@@ -116,6 +116,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     this.messagingService =
         messagingService != null ? messagingService : buildMessagingService(config);
     this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
+
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);
     membershipService =
