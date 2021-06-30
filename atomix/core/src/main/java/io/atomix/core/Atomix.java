@@ -33,6 +33,7 @@ import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.Threads;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -86,7 +87,7 @@ public class Atomix extends AtomixCluster {
       final ManagedUnicastService unicastService) {
     super(
         config.getClusterConfig(),
-        Version.from("1.1.0-SNAPSHOT"),
+        Version.from(VersionUtil.getVersion()),
         messagingService,
         unicastService);
     executorService =
