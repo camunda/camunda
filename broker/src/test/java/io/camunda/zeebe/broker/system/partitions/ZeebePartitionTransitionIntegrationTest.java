@@ -29,12 +29,12 @@ public class ZeebePartitionTransitionIntegrationTest {
 
   @Rule public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
 
-  private PartitionContext ctx;
+  private PartitionTransitionContext ctx;
   private PartitionTransition transition;
 
   @Before
   public void setup() {
-    ctx = mock(PartitionContext.class);
+    ctx = mock(PartitionTransitionContext.class);
     final TestPartitionStep firstComponent = spy(TestPartitionStep.builder().build());
     final TestPartitionStep secondComponent = spy(TestPartitionStep.builder().build());
     transition =
@@ -48,6 +48,7 @@ public class ZeebePartitionTransitionIntegrationTest {
         mock(CriticalComponentsHealthMonitor.class);
 
     when(ctx.getRaftPartition()).thenReturn(raftPartition);
+    when(ctx.toPartitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
   }
 

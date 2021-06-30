@@ -45,9 +45,9 @@ import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentReques
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
@@ -398,8 +398,8 @@ public final class Broker implements AutoCloseable {
                     clusterServices.getMembershipService(),
                     owningPartition.members());
 
-            final PartitionContext context =
-                new PartitionContext(
+            final PartitionTransitionContext transitionContext =
+                new PartitionTransitionContext(
                     localBroker.getNodeId(),
                     owningPartition,
                     partitionListeners,
@@ -417,8 +417,9 @@ public final class Broker implements AutoCloseable {
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
             final PartitionTransitionImpl transitionBehavior =
-                new PartitionTransitionImpl(context, LEADER_STEPS, FOLLOWER_STEPS);
-            final ZeebePartition zeebePartition = new ZeebePartition(context, transitionBehavior);
+                new PartitionTransitionImpl(transitionContext, LEADER_STEPS, FOLLOWER_STEPS);
+            final ZeebePartition zeebePartition =
+                new ZeebePartition(transitionContext, transitionBehavior);
             scheduleActor(zeebePartition);
             zeebePartition.addFailureListener(
                 new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));

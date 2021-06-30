@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.StateReplication;
@@ -19,7 +19,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 public class SnapshotReplicationPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContext context) {
     final SnapshotReplication replication =
         shouldReplicateSnapshots(context)
             ? new StateReplication(
@@ -31,7 +31,7 @@ public class SnapshotReplicationPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContext context) {
     try {
       if (context.getSnapshotReplication() != null) {
         context.getSnapshotReplication().close();
@@ -53,7 +53,7 @@ public class SnapshotReplicationPartitionStep implements PartitionStep {
     return "SnapshotReplication";
   }
 
-  private boolean shouldReplicateSnapshots(final PartitionContext state) {
+  private boolean shouldReplicateSnapshots(final PartitionTransitionContext state) {
     return state.getBrokerCfg().getCluster().getReplicationFactor() > 1;
   }
 }
