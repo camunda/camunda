@@ -76,7 +76,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
             LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
     name = config.getName();
     this.config = config;
-    replicationFactor = config.getPartitionSize();
+    replicationFactor = config.getReplicationFactor();
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
@@ -94,8 +94,8 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
-    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitions());
-    for (int i = 0; i < config.getPartitions(); i++) {
+    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitionCount());
+    for (int i = 0; i < config.getPartitionCount(); i++) {
       partitions.add(
           new RaftPartition(
               PartitionId.from(config.getName(), i + 1),
@@ -297,7 +297,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @throws IllegalArgumentException if the number of partitions is not positive
      */
     public Builder withNumPartitions(final int numPartitions) {
-      config.setPartitions(numPartitions);
+      config.setPartitionCount(numPartitions);
       return this;
     }
 
@@ -309,7 +309,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @throws IllegalArgumentException if the partition size is not positive
      */
     public Builder withPartitionSize(final int partitionSize) {
-      config.setPartitionSize(partitionSize);
+      config.setReplicationFactor(partitionSize);
       return this;
     }
 
@@ -321,7 +321,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
       checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
-      config.setMaxAppendsPerFollower(maxAppendsPerFollower);
+      config.getPartitionConfig().setMaxAppendsPerFollower(maxAppendsPerFollower);
       return this;
     }
 
@@ -333,7 +333,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
       checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
-      config.setMaxAppendBatchSize(maxAppendBatchSize);
+      config.getPartitionConfig().setMaxAppendBatchSize(maxAppendBatchSize);
       return this;
     }
 
@@ -345,7 +345,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
       checkArgument(heartbeatInterval.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
-      config.setHeartbeatInterval(heartbeatInterval);
+      config.getPartitionConfig().setHeartbeatInterval(heartbeatInterval);
       return this;
     }
 
@@ -358,7 +358,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withElectionTimeout(final Duration electionTimeout) {
       checkArgument(electionTimeout.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
-      config.setElectionTimeout(electionTimeout);
+      config.getPartitionConfig().setElectionTimeout(electionTimeout);
       return this;
     }
 
@@ -447,7 +447,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     public Builder withPriorityElection(final boolean enable) {
-      config.setPriorityElectionEnabled(enable);
+      config.getPartitionConfig().setPriorityElectionEnabled(enable);
       return this;
     }
 
@@ -458,7 +458,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @return the Raft Partition group builder
      */
     public Builder withRequestTimeout(final Duration requestTimeout) {
-      config.setRequestTimeout(requestTimeout);
+      config.getPartitionConfig().setRequestTimeout(requestTimeout);
       return this;
     }
 

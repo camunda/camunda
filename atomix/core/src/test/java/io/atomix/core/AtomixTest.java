@@ -50,8 +50,8 @@ public class AtomixTest {
                   final var groupConfig =
                       new RaftPartitionGroupConfig()
                           .setName("raft")
-                          .setPartitionSize(3)
-                          .setPartitions(7)
+                          .setReplicationFactor(3)
+                          .setPartitionCount(7)
                           .setMembers(Set.of("1"))
                           .setStorageConfig(
                               new RaftStorageConfig()
