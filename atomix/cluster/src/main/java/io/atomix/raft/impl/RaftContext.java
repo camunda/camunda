@@ -37,6 +37,7 @@ import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.TransferRequest;
@@ -106,8 +107,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final LogCompactor logCompactor;
   private volatile State state = State.ACTIVE;
   private RaftRole role = new InactiveRole(this);
-  private Duration electionTimeout = Duration.ofMillis(500);
-  private Duration heartbeatInterval = Duration.ofMillis(150);
+  private final Duration electionTimeout;
+  private final Duration heartbeatInterval;
   private volatile MemberId leader;
   private volatile long term;
   private MemberId lastVotedFor;
@@ -131,10 +132,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       final RaftServerProtocol protocol,
       final RaftStorage storage,
       final RaftThreadContextFactory threadContextFactory,
-      final int maxAppendBatchSize,
-      final int maxAppendsPerFollower,
       final Supplier<Random> randomFactory,
-      final RaftElectionConfig electionConfig) {
+      final RaftElectionConfig electionConfig,
+      final RaftPartitionConfig partitionConfig) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
@@ -185,8 +185,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     logCompactor = new LogCompactor(this);
 
-    this.maxAppendBatchSize = maxAppendBatchSize;
-    this.maxAppendsPerFollower = maxAppendsPerFollower;
+    maxAppendBatchSize = partitionConfig.getMaxAppendBatchSize();
+    maxAppendsPerFollower = partitionConfig.getMaxAppendsPerFollower();
+    heartbeatInterval = partitionConfig.getHeartbeatInterval();
+    electionTimeout = partitionConfig.getElectionTimeout();
     cluster = new RaftClusterContext(localMemberId, this);
 
     // Register protocol listeners.
@@ -703,15 +705,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Sets the election timeout.
-   *
-   * @param electionTimeout The election timeout.
-   */
-  public void setElectionTimeout(final Duration electionTimeout) {
-    this.electionTimeout = electionTimeout;
-  }
-
-  /**
    * Returns the first commit index.
    *
    * @return The first commit index.
@@ -741,15 +734,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public Duration getHeartbeatInterval() {
     return heartbeatInterval;
-  }
-
-  /**
-   * Sets the heartbeat interval.
-   *
-   * @param heartbeatInterval The Raft heartbeat interval.
-   */
-  public void setHeartbeatInterval(final Duration heartbeatInterval) {
-    this.heartbeatInterval = checkNotNull(heartbeatInterval, "heartbeatInterval cannot be null");
   }
 
   /**

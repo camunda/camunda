@@ -182,12 +182,9 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .withName(partition.name())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
-        .withHeartbeatInterval(partitionConfig.getHeartbeatInterval())
-        .withElectionTimeout(partitionConfig.getElectionTimeout())
-        .withMaxAppendBatchSize(partitionConfig.getMaxAppendBatchSize())
-        .withMaxAppendsPerFollower(partitionConfig.getMaxAppendsPerFollower())
+        .withPartitionConfig(partitionConfig)
         .withStorage(createRaftStorage())
-        .withEntryValidator(partitionConfig.getEntryValidator())
+        .withEntryValidator(config.getEntryValidator())
         .withElectionConfig(electionConfig)
         .build();
   }

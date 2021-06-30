@@ -22,6 +22,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
@@ -158,10 +159,9 @@ public final class ControllableRaftContexts {
             new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),
             createStorage(memberId),
             getRaftThreadContextFactory(memberId),
-            32 * 1024, // Copied from defaults
-            2, // Copied from defaults
             () -> random,
-            RaftElectionConfig.ofDefaultElection());
+            RaftElectionConfig.ofDefaultElection(),
+            new RaftPartitionConfig());
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
   }

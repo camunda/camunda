@@ -16,12 +16,9 @@
  */
 package io.atomix.raft.partition;
 
-import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.raft.zeebe.NoopEntryValidator;
 import java.time.Duration;
 
-/** Raft partition group configuration. */
+/** Configurations for a single partition. */
 public class RaftPartitionConfig {
 
   private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
@@ -35,9 +32,6 @@ public class RaftPartitionConfig {
   private int maxAppendBatchSize = 32 * 1024;
   private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
-
-  @Optional("EntryValidator")
-  private EntryValidator entryValidator = new NoopEntryValidator();
 
   /**
    * Returns the Raft leader election timeout.
@@ -76,26 +70,6 @@ public class RaftPartitionConfig {
    */
   public RaftPartitionConfig setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
-    return this;
-  }
-
-  /**
-   * Returns the entry validator to be called when an entry is appended.
-   *
-   * @return the entry validator
-   */
-  public EntryValidator getEntryValidator() {
-    return entryValidator;
-  }
-
-  /**
-   * Sets the entry validator to be called when an entry is appended.
-   *
-   * @param entryValidator the entry validator
-   * @return the Raft Partition group builder
-   */
-  public RaftPartitionConfig setEntryValidator(final EntryValidator entryValidator) {
-    this.entryValidator = entryValidator;
     return this;
   }
 
