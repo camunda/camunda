@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -22,7 +21,6 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -51,9 +49,7 @@ public class PartitionContext {
 
   private StreamProcessor streamProcessor;
   private LogStream logStream;
-  private AtomixLogStorage atomixLogStorage;
   private long deferredCommitPosition;
-  private RaftLogReader raftLogReader;
   private SnapshotReplication snapshotReplication;
   private StateControllerImpl stateController;
   private LogDeletionService logDeletionService;
@@ -166,28 +162,12 @@ public class PartitionContext {
     this.snapshotReplication = snapshotReplication;
   }
 
-  public RaftLogReader getRaftLogReader() {
-    return raftLogReader;
-  }
-
-  public void setRaftLogReader(final RaftLogReader raftLogReader) {
-    this.raftLogReader = raftLogReader;
-  }
-
   public long getDeferredCommitPosition() {
     return deferredCommitPosition;
   }
 
   public void setDeferredCommitPosition(final long deferredCommitPosition) {
     this.deferredCommitPosition = deferredCommitPosition;
-  }
-
-  public AtomixLogStorage getAtomixLogStorage() {
-    return atomixLogStorage;
-  }
-
-  public void setAtomixLogStorage(final AtomixLogStorage atomixLogStorage) {
-    this.atomixLogStorage = atomixLogStorage;
   }
 
   public StreamProcessor getStreamProcessor() {

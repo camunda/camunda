@@ -53,13 +53,11 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.AtomixLogStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.FollowerPostStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LeaderPostStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.RaftLogReaderPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStep;
@@ -97,13 +95,11 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          new AtomixLogStoragePartitionStep(),
-          new LogStreamPartitionStep(),
-          new RaftLogReaderPartitionStep(),
           new SnapshotReplicationPartitionStep(),
           new StateControllerPartitionStep(),
-          new LogDeletionPartitionStep(),
           new LeaderPostStoragePartitionStep(),
+          new LogDeletionPartitionStep(),
+          new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
           new StreamProcessorPartitionStep(),
           new SnapshotDirectorPartitionStep(),
@@ -111,11 +107,11 @@ public final class Broker implements AutoCloseable {
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          new RaftLogReaderPartitionStep(),
           new SnapshotReplicationPartitionStep(),
           new StateControllerPartitionStep(),
-          new LogDeletionPartitionStep(),
-          new FollowerPostStoragePartitionStep());
+          new FollowerPostStoragePartitionStep(),
+          new LogDeletionPartitionStep());
+
   private final SystemContext brokerContext;
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
