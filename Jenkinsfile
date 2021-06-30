@@ -550,6 +550,8 @@ def combineFlakeResults(flakeFiles = []) {
 
     for (flakeFile in flakeFiles) {
         if (fileExists(flakeFile)) {
+            def flaky = readFile(flakeFile).split('\n')
+            print "Flaky for file ${flakeFile}: ${flaky}"
             flakes = [flakes, readFile(flakeFile).split('\n')].flatten()
             print "Flakes after reading file ${flakeFile}: ${flakes}"
         }
