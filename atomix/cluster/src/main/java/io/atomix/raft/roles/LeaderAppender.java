@@ -63,7 +63,9 @@ final class LeaderAppender extends AbstractAppender {
     heartbeatInterval = raft.getHeartbeatInterval().toMillis();
     minStepDownFailureCount = raft.getMinStepDownFailureCount();
     maxQuorumResponseTimeout =
-        Math.max(electionTimeout * 2, raft.getMaxQuorumResponseTimeout().toMillis());
+        raft.getMaxQuorumResponseTimeout().isZero()
+            ? electionTimeout * 2
+            : raft.getMaxQuorumResponseTimeout().toMillis();
   }
 
   /**

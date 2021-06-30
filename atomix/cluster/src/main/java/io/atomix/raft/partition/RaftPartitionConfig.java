@@ -26,8 +26,7 @@ public class RaftPartitionConfig {
   private static final boolean DEFAULT_PRIORITY_ELECTION = false;
   private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
-  private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT =
-      DEFAULT_ELECTION_TIMEOUT.multipliedBy(2);
+  private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -139,6 +138,8 @@ public class RaftPartitionConfig {
    * If the leader is not able to reach the quorum, the leader may step down. This is triggered
    * after minStepDownFailureCount number of requests fails to get a response from the quorum of
    * followers as well as if the last response was received before maxQuorumResponseTime.
+   *
+   * <p>When this value is zero, it uses a default value of electionTimeout * 2
    *
    * @param maxQuorumResponseTimeout the quorum response time out to trigger leader step down
    */
