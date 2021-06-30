@@ -313,6 +313,7 @@ pipeline {
                         def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
                         def flakes = combineFlakeResults(flakeFiles)
 
+                        print "Combined flakes: ${flakes}"
                         flakyTestCases = [flakes].flatten()
                         if (flakyTestCases) {
                             currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
@@ -550,6 +551,7 @@ def combineFlakeResults(flakeFiles = []) {
     for (flakeFile in flakeFiles) {
         if (fileExists(flakeFile)) {
             flakes += readFile(flakeFile).split('\n')
+            print "Flakes after reading file ${flakeFile}: ${flakes}"
         }
     }
 
