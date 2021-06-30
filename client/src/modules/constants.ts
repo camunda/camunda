@@ -37,6 +37,8 @@ export const TYPE = {
   TASK_SUBPROCESS: 'TASK_SUBPROCESS',
   TASK_CALL_ACTIVITY: 'TASK_CALL_ACTIVITY',
   TASK_USER: 'TASK_USER',
+  TASK_BUSINESS_RULE: 'TASK_BUSINESS_RULE',
+  TASK_SCRIPT: 'TASK_SCRIPT',
 
   EVENT_SUBPROCESS: 'EVENT_SUBPROCESS',
 
@@ -63,6 +65,8 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:SubProcess': TYPE.TASK_SUBPROCESS,
   'bpmn:ServiceTask': TYPE.TASK_SERVICE,
   'bpmn:UserTask': TYPE.TASK_USER,
+  'bpmn:BusinessRuleTask': TYPE.TASK_BUSINESS_RULE,
+  'bpmn:ScriptTask': TYPE.TASK_SCRIPT,
   'bpmn:ReceiveTask': TYPE.TASK_RECEIVE,
   'bpmn:SendTask': TYPE.TASK_SEND,
   'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY,

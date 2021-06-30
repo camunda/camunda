@@ -28,6 +28,8 @@ import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-
 import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-multi-instance-sequential.svg';
 import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flow-node-call-activity.svg';
 import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
+import {ReactComponent as FlowNodeTaskBusinessRule} from 'modules/components/Icon/flow-node-task-business-rule.svg';
+import {ReactComponent as FlowNodeTaskScript} from 'modules/components/Icon/flow-node-task-script.svg';
 
 /**
  * Event Imports
@@ -95,8 +97,6 @@ const GATEWAY_EVENT_BASED = styled(FlowNodeGatewayEventBased)`
 
 const TASK_SERVICE = styled(FlowNodeTaskService)`
   ${newIconStyle};
-  top: 3px;
-  left: 0px;
 `;
 
 const TASK_RECEIVE = styled(FlowNodeTaskReceive)`
@@ -121,8 +121,14 @@ const TASK_CALL_ACTIVITY = styled(FlowNodeCallActivity)`
 
 const TASK_USER = styled(FlowNodeTaskUser)`
   ${newIconStyle};
-  top: 3px;
-  left: 0px;
+`;
+
+const TASK_BUSINESS_RULE = styled(FlowNodeTaskBusinessRule)`
+  ${newIconStyle};
+`;
+
+const TASK_SCRIPT = styled(FlowNodeTaskScript)`
+  ${newIconStyle};
 `;
 
 /**
@@ -248,6 +254,8 @@ export {
   TASK_SUBPROCESS,
   TASK_CALL_ACTIVITY,
   TASK_USER,
+  TASK_BUSINESS_RULE,
+  TASK_SCRIPT,
   MULTI_SEQUENTIAL,
   MULTI_PARALLEL,
   START,
