@@ -50,36 +50,6 @@
   </properties>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>buildnumber-maven-plugin</artifactId>
-          <configuration>
-            <doCheck>false</doCheck>
-            <doUpdate>false</doUpdate>
-            <format>{0} (revision {1} built on {2,date,yyyy-MM-dd HH:mm:ss})</format>
-            <items>
-              <item>${project.version}</item>
-              <item>scmVersion</item>
-              <item>timestamp</item>
-            </items>
-            <revisionOnScmFailure>N/A</revisionOnScmFailure>
-            <shortRevisionLength>6</shortRevisionLength>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>create</goal>
-              </goals>
-              <id>configure-buildnumber</id>
-              <phase>validate</phase>
-            </execution>
-          </executions>
-          <groupId>org.codehaus.mojo</groupId>
-          <version>1.4</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <!-- LICENSE PLUGIN -->
       <plugin>
@@ -102,7 +72,6 @@
           <suppressionsLocation>src/main/resources/suppression.xml</suppressionsLocation>
         </configuration>
       </plugin>
-
     </plugins>
   </build>
 </project>

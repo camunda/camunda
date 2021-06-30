@@ -15,35 +15,33 @@
   ~ limitations under the License.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <name>Zeebe Atomix</name>
   <artifactId>zeebe-atomix</artifactId>
+  <packaging>jar</packaging>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>buildnumber-maven-plugin</artifactId>
-        <groupId>org.codehaus.mojo</groupId>
-      </plugin>
-    </plugins>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>src/main/filtered-resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
-  </build>
+  <parent>
+    <artifactId>zeebe-atomix-parent</artifactId>
+    <groupId>io.camunda</groupId>
+    <version>1.1.0-SNAPSHOT</version>
+  </parent>
 
   <dependencies>
     <dependency>
       <artifactId>zeebe-atomix-cluster</artifactId>
       <groupId>io.camunda</groupId>
     </dependency>
+
     <dependency>
       <artifactId>zeebe-atomix-utils</artifactId>
       <groupId>io.camunda</groupId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
@@ -54,6 +52,7 @@
       <artifactId>slf4j-api</artifactId>
       <groupId>org.slf4j</groupId>
     </dependency>
+
     <dependency>
       <artifactId>guava</artifactId>
       <groupId>com.google.guava</groupId>
@@ -64,40 +63,29 @@
       <artifactId>netty-common</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <artifactId>hamcrest</artifactId>
       <groupId>org.hamcrest</groupId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <artifactId>junit</artifactId>
       <groupId>junit</groupId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <artifactId>zeebe-test-util</artifactId>
       <groupId>io.camunda</groupId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Atomix</name>
-
-  <packaging>jar</packaging>
-
-  <parent>
-    <artifactId>zeebe-atomix-parent</artifactId>
-    <groupId>io.camunda</groupId>
-    <version>1.1.0-SNAPSHOT</version>
-  </parent>
 </project>
