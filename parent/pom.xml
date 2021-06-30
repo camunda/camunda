@@ -100,6 +100,7 @@
     <version.json-smart>2.4.7</version.json-smart>
     <version.byte-buddy>1.11.0</version.byte-buddy>
     <version.revapi>0.24.1</version.revapi>
+    <version.commons-io>2.9.0</version.commons-io>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
@@ -742,6 +743,12 @@
         <groupId>com.esotericsoftware</groupId>
         <artifactId>minlog</artifactId>
         <version>${version.minlog}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${version.commons-io}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
