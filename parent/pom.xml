@@ -1545,6 +1545,7 @@
           <groupId>org.revapi</groupId>
           <artifactId>revapi-java</artifactId>
           <version>${version.revapi}</version>
+          <scope>test</scope>
         </dependency>
       </dependencies>
       <build>
