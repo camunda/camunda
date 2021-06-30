@@ -48,7 +48,7 @@
     <version.docker-java-api>3.2.11</version.docker-java-api>
     <version.elasticsearch>7.13.2</version.elasticsearch>
     <version.error-prone>2.7.1</version.error-prone>
-    <version.grpc>1.38.1</version.grpc>
+    <version.grpc>1.39.0</version.grpc>
     <version.gson>2.8.7</version.gson>
     <version.guava>30.1.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -390,62 +390,24 @@
 
       <dependency>
         <groupId>io.grpc</groupId>
-        <artifactId>grpc-core</artifactId>
-        <version>${version.grpc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-api</artifactId>
-        <version>${version.grpc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-protobuf</artifactId>
-        <version>${version.grpc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-protobuf-lite</artifactId>
-        <version>${version.grpc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-stub</artifactId>
+        <artifactId>grpc-bom</artifactId>
+        <scope>import</scope>
+        <type>pom</type>
         <version>${version.grpc}</version>
       </dependency>
 
       <dependency>
         <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-java</artifactId>
+        <artifactId>protobuf-bom</artifactId>
         <version>${version.protobuf}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-java-util</artifactId>
-        <version>${version.protobuf}</version>
+        <scope>import</scope>
+        <type>pom</type>
       </dependency>
 
       <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>proto-google-common-protos</artifactId>
         <version>${version.protobuf-common}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-netty</artifactId>
-        <version>${version.grpc}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-testing</artifactId>
-        <version>${version.grpc}</version>
       </dependency>
 
       <dependency>
