@@ -524,6 +524,19 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
         # requestTimeout = 5s
 
+        # If the leader is not able to reach the quorum, the leader may step down.
+        # This is triggered after minStepDownFailureCount number of requests fails to get a response from the quorum of
+        # followers as well as if the last response was received before maxQuorumResponseTime.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MINSTEPDOWNFAILURECOUNT
+        # minStepDownFailureCount = 3
+
+        # If the leader is not able to reach the quorum, the leader may step down.
+        # This is triggered after minStepDownFailureCount number of requests fails to get a response from the quorum of
+        # followers as well as if the last response was received before maxQuorumResponseTime.
+        # When this value is 0, it will use a default value of electionTimeout * 2.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MAXQUORUMRESPONSETIMEOUT
+        # maxQuorumResponseTimeout = 0ms
+
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:
         # Specify custom column family options overwriting Zeebe's own defaults.
