@@ -1496,6 +1496,9 @@
       with mvn dependency:go-offline and then run the tests in offline mode. But the plugin misses
       to download the surefire-junit dependency, therefore define an explicit dependency while downloading.
 
+      NOTE: make sure to specify the scope as test for all dependencies, otherwise they will get
+            added to the distribution!
+
       Usage: mvn install -Pprepare-offline
     -->
     <profile>
@@ -1539,6 +1542,7 @@
           <groupId>org.revapi</groupId>
           <artifactId>revapi-java</artifactId>
           <version>${version.revapi}</version>
+          <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>io.zeebe</groupId>
