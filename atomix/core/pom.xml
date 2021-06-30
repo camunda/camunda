@@ -49,11 +49,6 @@
     </dependency>
 
     <dependency>
-      <artifactId>slf4j-api</artifactId>
-      <groupId>org.slf4j</groupId>
-    </dependency>
-
-    <dependency>
       <artifactId>guava</artifactId>
       <groupId>com.google.guava</groupId>
     </dependency>
