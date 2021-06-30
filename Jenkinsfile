@@ -550,12 +550,12 @@ def combineFlakeResults(flakeFiles = []) {
 
     for (flakeFile in flakeFiles) {
         if (fileExists(flakeFile)) {
-            flakes += readFile(flakeFile).split('\n')
+            flakes = [flakes, readFile(flakeFile).split('\n')].flatten()
             print "Flakes after reading file ${flakeFile}: ${flakes}"
         }
     }
 
-    return [flakes].flatten()
+    return flakes.flatten()
 }
 
 def checkCodeCoverage() {
