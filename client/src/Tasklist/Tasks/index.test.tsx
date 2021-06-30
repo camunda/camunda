@@ -113,9 +113,7 @@ describe('<Tasks />', () => {
 
     render(<Tasks />, {wrapper: getWrapper()});
 
-    expect(
-      await screen.findByText('There are no Tasks available'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('No Tasks available')).toBeInTheDocument();
   });
 
   it('should show all tasks claimed by me', async () => {

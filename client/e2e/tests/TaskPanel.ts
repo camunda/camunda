@@ -33,9 +33,7 @@ test('filter selection', async (t) => {
 
   await t.expect(await getURL()).contains('/?filter=claimed-by-me');
   await t
-    .expect(
-      withinExpandedPanel.getByText('There are no Tasks available').exists,
-    )
+    .expect(withinExpandedPanel.getByText('No Tasks available').exists)
     .ok();
 
   await t
@@ -45,9 +43,7 @@ test('filter selection', async (t) => {
   await t.expect(await getURL()).contains('/?filter=all-open');
 
   await t
-    .expect(
-      withinExpandedPanel.queryByText('There are no Tasks available.').exists,
-    )
+    .expect(withinExpandedPanel.queryByText('No Tasks available.').exists)
     .notOk()
     .expect(withinExpandedPanel.getByRole('list').exists)
     .ok();

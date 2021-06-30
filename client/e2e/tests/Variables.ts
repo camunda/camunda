@@ -128,7 +128,7 @@ test('new variable still exists after refresh if task is completed', async (t) =
   await t.click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(screen.getByText('Select a Task to see the details').exists)
+    .expect(screen.getByText('Select a Task to view the details').exists)
     .ok();
 
   await t.navigateTo(currentUrl);
@@ -199,7 +199,7 @@ test('edited variable is saved after refresh if task is completed', async (t) =>
   await t.click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(screen.getByText('Select a Task to see the details').exists)
+    .expect(screen.getByText('Select a Task to view the details').exists)
     .ok();
   await t.navigateTo(currentUrl);
   await t.expect(screen.getByText('"updatedValue"').exists).ok();

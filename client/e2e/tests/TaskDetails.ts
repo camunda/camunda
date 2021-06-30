@@ -139,7 +139,7 @@ test('complete task', async (t) => {
     .click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(screen.getByText('Select a Task to see the details').exists)
+    .expect(screen.getByText('Select a Task to view the details').exists)
     .ok();
 
   await t.navigateTo(currentUrl);
