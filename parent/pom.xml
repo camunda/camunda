@@ -993,7 +993,7 @@
           </executions>
           <configuration>
             <includes>
-              <include>**/*SomethingImpossible.java</include>
+              <include>**/IT*SomethingImpossible.java</include>
             </includes>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>

@@ -314,7 +314,7 @@ pipeline {
                         def flakes = combineFlakeResults(flakeFiles)
 
                         print "Combined flakes: ${flakes}"
-                        flakyTestCases = [flakes].flatten()
+                        flakyTestCases = flakes.flatten()
                         if (flakyTestCases) {
                             currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
                         }
@@ -550,14 +550,11 @@ def combineFlakeResults(flakeFiles = []) {
 
     for (flakeFile in flakeFiles) {
         if (fileExists(flakeFile)) {
-            def flaky = readFile(flakeFile).split('\n')
-            print "Flaky for file ${flakeFile}: ${flaky}"
-            flakes = [flakes, readFile(flakeFile).split('\n')].flatten()
-            print "Flakes after reading file ${flakeFile}: ${flakes}"
+            flakes += readFile(flakeFile).split('\n')
         }
     }
 
-    return flakes.flatten()
+    return flakes
 }
 
 def checkCodeCoverage() {
