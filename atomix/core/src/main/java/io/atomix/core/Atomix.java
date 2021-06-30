@@ -29,13 +29,8 @@ import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.SingleThreadContext;
-import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.concurrent.Threads;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Primary interface for managing Atomix clusters and operating on distributed primitives.
@@ -65,8 +60,6 @@ import org.slf4j.LoggerFactory;
  * all services are available.
  */
 public class Atomix extends AtomixCluster {
-  private static final Logger LOGGER = LoggerFactory.getLogger(Atomix.class);
-
   private final ManagedPartitionService partitions;
   private final ManagedPartitionGroup partitionGroup;
 
