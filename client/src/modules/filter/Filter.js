@@ -18,6 +18,7 @@ import {
   DurationFilter,
   NodeDuration,
   StateFilter,
+  NodeSelection,
 } from './modals';
 import FilterList from './FilterList';
 import {loadValues, filterSameTypeExistingFilters} from './service';
@@ -64,6 +65,10 @@ export default class Filter extends React.Component {
       case 'executedFlowNodes':
       case 'executingFlowNodes':
       case 'canceledFlowNodes':
+        const {newFilterLevel, editFilter} = this.state;
+        if (newFilterLevel === 'view' || editFilter?.filterLevel === 'view') {
+          return NodeSelection;
+        }
         return NodeFilter;
       case 'assignee':
       case 'candidateGroup':

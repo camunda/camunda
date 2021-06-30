@@ -40,6 +40,12 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
       >
         {t('report.groupBy.userGroup')}
       </Dropdown.Option>
+      <Dropdown.Option
+        disabled={processDefinitionIsNotSelected}
+        onClick={openNewFilterModal('executedFlowNodes')}
+      >
+        {t('common.filter.types.flowNodeSelection')}
+      </Dropdown.Option>
     </Dropdown>
   );
 }

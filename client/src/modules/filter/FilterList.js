@@ -146,7 +146,18 @@ export default class FilterList extends React.Component {
                   this.props.deleteFilter(filter);
                 }}
               >
-                <NodeListPreview nodes={selectedNodes} operator={operator} type={filter.type} />
+                {filter.filterLevel === 'view' ? (
+                  <>
+                    <span className="parameterName">
+                      {t('common.filter.types.flowNodeSelection')}
+                    </span>
+                    <b className="filterText">
+                      {selectedNodes.length} {t('common.filter.excludedFlowNodes')}
+                    </b>
+                  </>
+                ) : (
+                  <NodeListPreview nodes={selectedNodes} operator={operator} type={filter.type} />
+                )}
                 {this.appliedToSnippet(filter)}
               </ActionItem>
             </li>

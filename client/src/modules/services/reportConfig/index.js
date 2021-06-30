@@ -35,10 +35,6 @@ config.process.update = (type, data, props) => {
       changes.configuration.processPart = {$set: null};
     }
 
-    if (data.entity === 'userTask' && props.report.data.view?.entity !== 'userTask') {
-      changes.configuration.hiddenNodes = {$set: {active: false, keys: []}};
-    }
-
     if (data.properties.length > 1) {
       // multi-measure reports do not support goals
       changes.configuration.targetValue = {active: {$set: false}};

@@ -135,7 +135,6 @@ it('should display nodeListPreview for flow node filter', async () => {
 
   const node = shallow(
     <FilterList
-      id={'qwe'}
       data={data}
       openEditFilterModal={jest.fn()}
       flowNodeNames={{flowNode: 'flow node name'}}
@@ -147,6 +146,30 @@ it('should display nodeListPreview for flow node filter', async () => {
     operator: 'in',
     type: 'executedFlowNodes',
   });
+});
+
+it('should display nodeListPreview for flow node filter', async () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      filterLevel: 'view',
+      data: {
+        operator: 'no in',
+        values: ['flowNode1', 'flownode2'],
+      },
+    },
+  ];
+
+  const node = shallow(
+    <FilterList
+      data={data}
+      openEditFilterModal={jest.fn()}
+      flowNodeNames={{flowNode: 'flow node name'}}
+    />
+  );
+
+  expect(node.find('.parameterName')).toIncludeText('Flow Node Selection');
+  expect(node.find('.filterText')).toIncludeText('2 excluded Flow Nodes');
 });
 
 it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {

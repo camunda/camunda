@@ -464,14 +464,6 @@
         "total": "Total"
       },
       "userTaskDistributedBy": "Distribution",
-      "visibleNodes": {
-        "legend": "Customize Node Display",
-        "btn": "Select Flow Nodes...",
-        "modal": {
-          "title": "Select Flow Nodes",
-          "description": "Selected nodes appear in the visualization."
-        }
-      },
       "colorPicker": {
         "legend": "Color"
       },
@@ -933,7 +925,8 @@
         "viewIncident": "Flow Node Incidents",
         "openIncident": "Open Incidents",
         "resolvedIncident": "Resolved Incidents",
-        "flowNodeStatus": "Flow Node State"
+        "flowNodeStatus": "Flow Node State",
+        "flowNodeSelection": "Flow Node Selection"
       },
       "list": {
         "appliedTo": "Applied to",
@@ -1061,7 +1054,8 @@
       "incompatibleFilters": "No data shown due to incompatible filters",
       "instanceFilter": "Process Instance Filter",
       "decisionFilter": "Decision Instance Filter",
-      "flowNodeFilter": "Flow Node Data Filter"
+      "flowNodeFilter": "Flow Node Data Filter",
+      "excludedFlowNodes": "excluded Flow Nodes"
     },
     "definitionSelection": {
       "latest": "Latest",

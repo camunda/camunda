@@ -23,7 +23,7 @@ export default function HyperReportRenderer({report, ...rest}) {
     return <ProcessReportRenderer {...rest} report={emptyReport} />;
   }
 
-  const firstEntryResult = result.data[0].value.filter(isVisible(report));
+  const firstEntryResult = result.data[0].value;
   const newResultData = {};
 
   formatResult(report.data, firstEntryResult).forEach(({key, label}) => {
@@ -98,20 +98,4 @@ function formatResult(data, result) {
   }
 
   return result;
-}
-
-function isVisible(report) {
-  const {hiddenNodes} = report.data.configuration;
-
-  return ({key}) => {
-    if (
-      ['flowNode', 'userTask'].includes(report.data.distributedBy.type) &&
-      hiddenNodes.active &&
-      hiddenNodes.keys.includes(key)
-    ) {
-      return false;
-    }
-
-    return true;
-  };
 }

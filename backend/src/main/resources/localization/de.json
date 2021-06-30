@@ -464,14 +464,6 @@
         "total": "Summe"
       },
       "userTaskDistributedBy": "Aufteilung",
-      "visibleNodes": {
-        "legend": "Anzuzeigende Prozessknoten anpassen",
-        "btn": "Prozessknoten auswählen....",
-        "modal": {
-          "title": "Prozessknoten auswählen",
-          "description": "Ausgewählte Knoten erscheinen in der Visualisierung."
-        }
-      },
       "colorPicker": {
         "legend": "Farbe"
       },
@@ -933,7 +925,8 @@
         "viewIncident": "Prozessknotenzwischenfälle",
         "openIncident": "mit offenen Zwischenfällen",
         "resolvedIncident": "mit gelösten Zwischenfällen",
-        "flowNodeStatus": "Prozessknoten-Status"
+        "flowNodeStatus": "Prozessknoten-Status",
+        "flowNodeSelection": "Prozessknotenauswahl"
       },
       "list": {
         "appliedTo": "Angewendet auf",
@@ -1061,7 +1054,8 @@
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "instanceFilter": "Prozessinstanzen Filter",
       "decisionFilter": "Entscheidungsevaluierungen Filter",
-      "flowNodeFilter": "Prozessknoten-Daten Filter"
+      "flowNodeFilter": "Prozessknoten-Daten Filter",
+      "excludedFlowNodes": "Ausgeschlossene Prozessknoten"
     },
     "definitionSelection": {
       "latest": "Neueste",

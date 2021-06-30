@@ -83,9 +83,6 @@ export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child');
 export const limitPrecisionInput = Selector('.precision input');
-export const showFlowNodesSwitch = Selector('.VisibleNodesFilter .Switch');
-export const showFlowNodes = Selector('.Button').withText('Select Flow Nodes...');
-export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
 export const distributedBySelect = Selector('.label').withText('Distribution').nextSibling();

@@ -9,33 +9,6 @@ import config from './index';
 jest.mock('./reportConfig', () => () => ({update: () => ({})}));
 
 describe('process update', () => {
-  it('should reset hidden nodes configuration when switching to user task view', () => {
-    const changes = config.process.update(
-      'view',
-      {properties: ['duration'], entity: 'userTask'},
-      {report: {data: {view: {entity: 'flowNode', properties: ['duration']}, configuration: {}}}}
-    );
-
-    expect(changes.configuration.hiddenNodes).toEqual({$set: {active: false, keys: []}});
-  });
-  it('should not reset hidden nodes configuration when switching between different flow node views', () => {
-    const changes = config.process.update(
-      'view',
-      {properties: ['duration'], entity: 'flowNode'},
-      {
-        report: {
-          data: {
-            view: {entity: 'flowNode', properties: ['frequency']},
-            groupBy: {},
-            configuration: {},
-          },
-        },
-      }
-    );
-
-    expect(changes.configuration.hiddenNodes).not.toBeDefined();
-  });
-
   it('should reset aggregation type if its incompatible outside variable reports', () => {
     const changes = config.process.update(
       'view',

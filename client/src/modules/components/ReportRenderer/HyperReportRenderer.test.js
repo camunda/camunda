@@ -27,9 +27,7 @@ it('should convert a hypermap to a combined report', () => {
           },
           visualization: 'bar',
           distributedBy: {type: 'userTask', value: null},
-          configuration: {
-            hiddenNodes: {active: true, keys: ['taskId3']},
-          },
+          configuration: {},
         },
         result: {
           measures: [

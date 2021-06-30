@@ -6,10 +6,6 @@
         "color": "#1991c8",
         "aggregationTypes": ["avg"],
         "userTaskDurationTimes": ["total"],
-        "hiddenNodes": {
-          "active": false,
-          "keys": []
-        },
         "showInstanceCount": false,
         "pointMarkers": true,
         "precision": null,
@@ -129,10 +125,6 @@
         "color": "#1991c8",
         "aggregationTypes": ["avg"],
         "userTaskDurationTimes": ["total"],
-        "hiddenNodes": {
-          "active": false,
-          "keys": []
-        },
         "showInstanceCount": false,
         "pointMarkers": true,
         "precision": null,
@@ -182,13 +174,15 @@
         "xlabel": "",
         "sorting": null
       },
-      "definitions": [{
-        "key": null,
-        "versions": null,
-        "name": null,
-        "displayName": null,
-        "tenantIds": [null]
-      }],
+      "definitions": [
+        {
+          "key": null,
+          "versions": null,
+          "name": null,
+          "displayName": null,
+          "tenantIds": [null]
+        }
+      ],
       "filter": [],
       "view": null,
       "groupBy": null,

@@ -11,7 +11,6 @@ import {t} from 'translation';
 
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
-import VisibleNodesFilter from './VisibleNodesFilter';
 import DateVariableUnit from './DateVariableUnit';
 import BucketSize from './BucketSize';
 
@@ -74,10 +73,6 @@ export default class Configuration extends React.Component {
         xLabel: '',
         yLabel: '',
         color: ColorPicker.dark.steelBlue,
-        hiddenNodes: {
-          active: false,
-          keys: [],
-        },
         groupByDateVariableUnit: 'automatic',
         distributeByDateVariableUnit: 'automatic',
         customBucket: {
@@ -128,7 +123,6 @@ export default class Configuration extends React.Component {
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
             <BucketSize report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
-            <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
           </Form>
           <Button className="resetButton" onClick={this.resetToDefaults}>
             {t('report.config.reset')}

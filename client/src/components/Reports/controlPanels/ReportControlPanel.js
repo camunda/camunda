@@ -152,7 +152,6 @@ export default withErrorHandling(
 
       const change = {
         definitions: {$splice: [[idx, 0, newDefinition]]},
-        configuration: {hiddenNodes: {$set: {active: false, keys: []}}},
       };
       if (this.props.report.data.visualization === 'heat') {
         change.visualization = {$set: 'table'};
@@ -172,12 +171,6 @@ export default withErrorHandling(
       const {definitions} = update(data, change);
       change = {...change, ...(await this.processDefinitionUpdate(definitions))};
       change.configuration = change.configuration || {};
-      change.configuration.hiddenNodes = {
-        $set: {
-          active: false,
-          keys: [],
-        },
-      };
       if (data.definitions.length === 1) {
         // if we add the second definition, we need to make sure that it's not a heatmap report
         if (data.visualization === 'heat') {

@@ -34,30 +34,6 @@ it('should process duration reports', () => {
   });
 });
 
-it('should filter hidden flow nodes', () => {
-  expect(
-    processResult({
-      result: {
-        data: [
-          {key: 'foo', value: 123},
-          {key: 'bar', value: 5},
-        ],
-      },
-      data: {
-        configuration: {xml: 'fooXml', hiddenNodes: {active: true, keys: ['foo']}},
-        visualization: 'line',
-        groupBy: {
-          type: 'flowNodes',
-          value: '',
-        },
-        view: {properties: ['']},
-      },
-    })
-  ).toEqual({
-    data: [{key: 'bar', value: 5}],
-  });
-});
-
 it('should add a label to data with variable value key "missing"', () => {
   expect(
     processResult({
@@ -65,7 +41,7 @@ it('should add a label to data with variable value key "missing"', () => {
         data: [{key: 'missing', value: 5}],
       },
       data: {
-        configuration: {xml: 'fooXml', hiddenNodes: ['foo']},
+        configuration: {xml: 'fooXml'},
         groupBy: {
           type: 'variable',
           value: '',

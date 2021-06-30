@@ -397,34 +397,6 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
   await t.expect(e.option('Heatmap').hasClass('disabled')).notOk();
 });
 
-test('select which flow nodes to show from the configuration', async (t) => {
-  await u.createNewReport(t);
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
-  await u.selectView(t, 'Flow Node', 'Count');
-
-  await t.expect(e.nodeTableCell('Assign Approver Group').exists).ok();
-
-  await t.resizeWindow(1150, 800);
-
-  await t.click(e.configurationButton);
-
-  await t.click(e.showFlowNodesSwitch);
-  await t.click(e.showFlowNodes);
-  await t.click(e.deselectAllButton);
-
-  await t.click(e.flowNode('approveInvoice'));
-  await t.click(e.flowNode('reviewInvoice'));
-  await t.click(e.flowNode('prepareBankTransfer'));
-
-  await t
-    .takeElementScreenshot(e.modalContainer, 'process/single-report/shownNodes.png')
-    .maximizeWindow();
-
-  await t.click(e.primaryModalButton);
-
-  await t.expect(e.nodeTableCell('Assign Approver Group').exists).notOk();
-});
-
 test('bar/line chart configuration', async (t) => {
   await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
