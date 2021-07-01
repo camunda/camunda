@@ -69,9 +69,8 @@ public class StreamProcessorPartitionStep implements PartitionStep {
         .zeebeDb(state.getZeebeDb())
         .eventApplierFactory(EventAppliers::new)
         .nodeId(state.getNodeId())
-        .commandResponseWriter(state.getCommandApiService().newCommandResponseWriter())
-        .onProcessedListener(
-            state.getCommandApiService().getOnProcessedListener(state.getPartitionId()))
+        .commandResponseWriter(state.getCommandResponseWriter())
+        .onProcessedListener(state.getOnProcessedListener())
         .streamProcessorFactory(
             processingContext -> {
               final ActorControl actor = processingContext.getActor();

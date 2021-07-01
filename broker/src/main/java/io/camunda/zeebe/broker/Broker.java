@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.clustering.atomix.AtomixFactory;
+import io.camunda.zeebe.broker.clustering.topology.TopologyManager;
 import io.camunda.zeebe.broker.clustering.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
@@ -398,6 +399,14 @@ public final class Broker implements AutoCloseable {
                     clusterServices.getMembershipService(),
                     owningPartition.members());
 
+            final var typedRecordProcessorsFactory =
+                createFactory(
+                    topologyManager,
+                    brokerCfg.getCluster(),
+                    clusterServices.getCommunicationService(),
+                    clusterServices.getEventService(),
+                    managementRequestHandler);
+
             final PartitionTransitionContext transitionContext =
                 new PartitionTransitionContext(
                     localBroker.getNodeId(),
@@ -406,14 +415,10 @@ public final class Broker implements AutoCloseable {
                     messagingService,
                     scheduler,
                     brokerCfg,
-                    commandHandler,
+                    () -> commandHandler.newCommandResponseWriter(),
+                    () -> commandHandler.getOnProcessedListener(partitionId),
                     snapshotStoreSupplier,
-                    createFactory(
-                        topologyManager,
-                        brokerCfg.getCluster(),
-                        clusterServices.getCommunicationService(),
-                        clusterServices.getEventService(),
-                        managementRequestHandler),
+                    typedRecordProcessorsFactory,
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
             final PartitionTransitionImpl transitionBehavior =
@@ -456,7 +461,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final TopologyManagerImpl topologyManager,
+      final TopologyManager topologyManager,
       final ClusterCfg clusterCfg,
       final ClusterCommunicationService communicationService,
       final ClusterEventService eventService,

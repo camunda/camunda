@@ -17,9 +17,10 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -30,6 +31,8 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -51,7 +54,8 @@ public class PartitionTransitionContext implements PartitionContext {
   private final SnapshotStoreSupplier snapshotStoreSupplier;
   private final RaftPartition raftPartition;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
-  private final CommandApiService commandApiService;
+  private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
+  private final Supplier<Consumer<TypedRecord>> onProcessedListenerSupplier;
   private final Integer partitionId;
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
@@ -80,7 +84,8 @@ public class PartitionTransitionContext implements PartitionContext {
       final PartitionMessagingService messagingService,
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
-      final CommandApiService commandApiService,
+      final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
+      final Supplier<Consumer<TypedRecord>> onProcessedListenerSupplier,
       final SnapshotStoreSupplier snapshotStoreSupplier,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
@@ -91,7 +96,8 @@ public class PartitionTransitionContext implements PartitionContext {
     this.brokerCfg = brokerCfg;
     this.snapshotStoreSupplier = snapshotStoreSupplier;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
-    this.commandApiService = commandApiService;
+    this.onProcessedListenerSupplier = onProcessedListenerSupplier;
+    this.commandResponseWriterSupplier = commandResponseWriterSupplier;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     partitionId = raftPartition.id().id();
     scheduler = actorScheduler;
@@ -233,10 +239,6 @@ public class PartitionTransitionContext implements PartitionContext {
     return typedRecordProcessorsFactory;
   }
 
-  public CommandApiService getCommandApiService() {
-    return commandApiService;
-  }
-
   public int getMaxFragmentSize() {
     return maxFragmentSize;
   }
@@ -326,5 +328,13 @@ public class PartitionTransitionContext implements PartitionContext {
     if (getSnapshotDirector() != null) {
       getSnapshotDirector().forceSnapshot();
     }
+  }
+
+  public Consumer<TypedRecord> getOnProcessedListener() {
+    return onProcessedListenerSupplier.get();
+  }
+
+  public CommandResponseWriter getCommandResponseWriter() {
+    return commandResponseWriterSupplier.get();
   }
 }
