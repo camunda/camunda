@@ -345,7 +345,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       return HealthStatus.UNHEALTHY;
     }
 
-    if (!processingStateMachine.isMakingProgress()) {
+    if (processingStateMachine == null || !processingStateMachine.isMakingProgress()) {
       return HealthStatus.UNHEALTHY;
     }
 
