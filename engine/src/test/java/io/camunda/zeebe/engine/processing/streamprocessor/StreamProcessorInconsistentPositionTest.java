@@ -100,7 +100,7 @@ public final class StreamProcessorInconsistentPositionTest {
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     final var streamProcessor =
-        firstStreamProcessorComposite.startTypedStreamProcessor(
+        firstStreamProcessorComposite.startTypedStreamProcessorNotAwaitOpening(
             (processors, context) ->
                 processors
                     .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)

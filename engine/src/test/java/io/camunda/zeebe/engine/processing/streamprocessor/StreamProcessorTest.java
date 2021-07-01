@@ -93,10 +93,11 @@ public final class StreamProcessorTest {
   public void shouldCallStreamProcessorLifecycleOnFail() throws InterruptedException {
     // given
     final CountDownLatch failedLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
+    streamProcessorRule.startTypedStreamProcessorNotAwaitOpening(
         (processors, state) ->
             processors.withListener(
                 new StreamProcessorLifecycleAware() {
+
                   @Override
                   public void onRecovered(final ReadonlyProcessingContext context) {
                     throw new RuntimeException("force fail");
