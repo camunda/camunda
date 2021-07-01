@@ -14,6 +14,9 @@ import {
   validateVariableNameComplete,
   validateVariableValueComplete,
   validateIdsNotTooLong,
+  validateParentInstanceIdCharacters,
+  validateParentInstanceIdNotTooLong,
+  validateParentInstanceIdComplete,
 } from './validators';
 
 describe('validators', () => {
@@ -123,6 +126,66 @@ describe('validators', () => {
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
+  });
+
+  it('should validate parent instance id without delay', async () => {
+    expect(validateParentInstanceIdCharacters('', {})).toBeUndefined();
+
+    expect(
+      validateParentInstanceIdCharacters('2251799813685543', {})
+    ).toBeUndefined();
+    expect(
+      validateParentInstanceIdCharacters('22517998136855430', {})
+    ).toBeUndefined();
+    expect(
+      validateParentInstanceIdCharacters('225179981368554300', {})
+    ).toBeUndefined();
+    expect(
+      validateParentInstanceIdCharacters('2251799813685543000', {})
+    ).toBeUndefined();
+
+    expect(validateParentInstanceIdCharacters('2251799813685543a', {})).toBe(
+      'Id has to be 16 to 19 digit numbers'
+    );
+    expect(validateParentInstanceIdCharacters('a', {})).toBe(
+      'Id has to be 16 to 19 digit numbers'
+    );
+
+    expect(validateParentInstanceIdCharacters('-', {})).toBe(
+      'Id has to be 16 to 19 digit numbers'
+    );
+
+    expect(
+      validateParentInstanceIdCharacters(
+        '2251799813685543 2251799813685543',
+        {}
+      )
+    ).toBe('Id has to be 16 to 19 digit numbers');
+
+    expect(
+      validateParentInstanceIdCharacters(
+        '2251799813685543,2251799813685543',
+        {}
+      )
+    ).toBe('Id has to be 16 to 19 digit numbers');
+
+    expect(validateParentInstanceIdNotTooLong('11111111111111111111', {})).toBe(
+      'Id has to be 16 to 19 digit numbers'
+    );
+
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
+  });
+
+  it('should validate parent instance id with delay', async () => {
+    expect(validateParentInstanceIdComplete('1', {})).resolves.toBe(
+      'Id has to be 16 to 19 digit numbers'
+    );
+
+    expect(
+      validateParentInstanceIdComplete('225179981368554', {})
+    ).resolves.toBe('Id has to be 16 to 19 digit numbers');
+
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
   it('should validate date without delay', () => {

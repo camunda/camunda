@@ -12,6 +12,7 @@ import {isValid} from 'date-fns';
 
 const ERRORS = {
   ids: 'Id has to be 16 to 19 digit numbers, separated by space or comma',
+  parentInstanceId: 'Id has to be 16 to 19 digit numbers',
   date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
   operationId: 'Id has to be a UUID',
   variables: {
@@ -22,6 +23,16 @@ const ERRORS = {
 } as const;
 
 const VALIDATION_TIMEOUT = 750;
+
+const areIdsTooLong = (value: string) => {
+  return parseIds(value).some((id) => id.length > 19);
+};
+
+const areIdsComplete = (value: string) => {
+  return (
+    value === '' || parseIds(value).every((id) => /^[0-9]{16,19}$/.test(id))
+  );
+};
 
 const validateIdsCharacters: FieldValidator<FiltersType['ids']> = (
   value = ''
@@ -37,21 +48,41 @@ const validateIdsCharacters: FieldValidator<FiltersType['ids']> = (
 const validateIdsNotTooLong: FieldValidator<FiltersType['ids']> = (
   value = ''
 ) => {
-  const hasTooLongIds = parseIds(value).some((item) => item.length > 19);
-  if (hasTooLongIds) {
+  if (areIdsTooLong(value)) {
     return ERRORS.ids;
   }
 };
 
 const validatesIdsComplete: FieldValidator<FiltersType['ids']> =
   promisifyValidator((value = '') => {
-    if (
-      value !== '' &&
-      !parseIds(value).every((id) => /^[0-9]{16,19}$/.test(id))
-    ) {
+    if (!areIdsComplete(value)) {
       return ERRORS.ids;
     }
   }, VALIDATION_TIMEOUT);
+
+const validateParentInstanceIdCharacters: FieldValidator<
+  FiltersType['parentInstanceId']
+> = (value = '') => {
+  if (value !== '' && !/^[0-9]+$/.test(value)) {
+    return ERRORS.parentInstanceId;
+  }
+};
+
+const validateParentInstanceIdComplete: FieldValidator<
+  FiltersType['parentInstanceId']
+> = promisifyValidator((value = '') => {
+  if (!areIdsComplete(value)) {
+    return ERRORS.parentInstanceId;
+  }
+}, VALIDATION_TIMEOUT);
+
+const validateParentInstanceIdNotTooLong: FieldValidator<
+  FiltersType['parentInstanceId']
+> = (value = '') => {
+  if (areIdsTooLong(value)) {
+    return ERRORS.parentInstanceId;
+  }
+};
 
 const validateDateComplete: FieldValidator<
   FiltersType['startDate'] | FiltersType['endDate']
@@ -133,6 +164,9 @@ export {
   validateIdsCharacters,
   validateIdsNotTooLong,
   validatesIdsComplete,
+  validateParentInstanceIdCharacters,
+  validateParentInstanceIdComplete,
+  validateParentInstanceIdNotTooLong,
   validateDateCharacters,
   validateDateComplete,
   validateOperationIdCharacters,

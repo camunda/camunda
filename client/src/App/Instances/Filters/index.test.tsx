@@ -335,6 +335,57 @@ describe('Filters', () => {
       ).not.toBeInTheDocument();
     });
 
+    it('should validate parent instance id', async () => {
+      const MOCK_HISTORY = createMemoryHistory({
+        initialEntries: ['/'],
+      });
+
+      render(<Filters />, {
+        wrapper: getWrapper(MOCK_HISTORY),
+      });
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.type(screen.getByLabelText('Parent Instance Id'), 'a');
+
+      expect(
+        screen.getByTitle('Id has to be 16 to 19 digit numbers')
+      ).toBeInTheDocument();
+      expect(MOCK_HISTORY.location.search).toBe('');
+
+      userEvent.clear(screen.getByLabelText('Parent Instance Id'));
+
+      expect(
+        screen.queryByTitle('Id has to be 16 to 19 digit numbers')
+      ).not.toBeInTheDocument();
+
+      userEvent.type(screen.getByLabelText('Parent Instance Id'), '1');
+
+      expect(
+        await screen.findByTitle('Id has to be 16 to 19 digit numbers')
+      ).toBeInTheDocument();
+
+      userEvent.clear(screen.getByLabelText('Parent Instance Id'));
+
+      expect(
+        screen.queryByTitle('Id has to be 16 to 19 digit numbers')
+      ).not.toBeInTheDocument();
+
+      userEvent.type(
+        screen.getByLabelText('Parent Instance Id'),
+        '1111111111111111, 2222222222222222'
+      );
+
+      expect(
+        await screen.findByTitle('Id has to be 16 to 19 digit numbers')
+      ).toBeInTheDocument();
+
+      userEvent.clear(screen.getByLabelText('Parent Instance Id'));
+
+      expect(
+        screen.queryByTitle('Id has to be 16 to 19 digit numbers')
+      ).not.toBeInTheDocument();
+    });
+
     it('should validate start date', async () => {
       const MOCK_HISTORY = createMemoryHistory({
         initialEntries: ['/'],

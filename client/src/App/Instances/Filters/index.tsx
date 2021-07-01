@@ -35,6 +35,9 @@ import {
   validateIdsCharacters,
   validateIdsNotTooLong,
   validatesIdsComplete,
+  validateParentInstanceIdComplete,
+  validateParentInstanceIdNotTooLong,
+  validateParentInstanceIdCharacters,
 } from './validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
@@ -114,11 +117,21 @@ const Filters: React.FC = () => {
                 <Error name="ids" />
               </Row>
               <Row>
-                <Field name="parentInstanceId">
+                <Field
+                  name="parentInstanceId"
+                  validate={mergeValidators(
+                    validateParentInstanceIdCharacters,
+                    validateParentInstanceIdNotTooLong,
+                    validateParentInstanceIdComplete
+                  )}
+                >
                   {({input}) => (
-                    <Input {...input} placeholder="Parent Instance Id" />
+                    <InjectAriaInvalid name={input.name}>
+                      <Input {...input} placeholder="Parent Instance Id" />
+                    </InjectAriaInvalid>
                   )}
                 </Field>
+                <Error name="parentInstanceId" />
               </Row>
               <Row>
                 <Field name="errorMessage">
