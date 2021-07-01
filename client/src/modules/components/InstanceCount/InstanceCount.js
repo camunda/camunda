@@ -16,7 +16,7 @@ import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter}) {
+export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter, showHeader}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [flowNodeNames, setFlowNodeNames] = useState();
   const [variables, setVariables] = useState();
@@ -100,18 +100,25 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
             disabled={noInfo}
             renderInPortal="instanceCountPopover"
           >
-            <div className="countString">
-              {typeof instanceCount === 'number' &&
-                t(`report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}`, {
-                  count: instanceCount,
-                  totalCount,
-                })}
-            </div>
+            {showHeader && (
+              <div className="countString">
+                {typeof instanceCount === 'number' &&
+                  t(
+                    `report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}`,
+                    {
+                      count: instanceCount,
+                      totalCount,
+                    }
+                  )}
+              </div>
+            )}
             {reportFilters.length > 0 && (
               <>
-                <div className="filterListHeading">
-                  {t('report.instanceCount.reportFiltersHeading')}
-                </div>
+                {showHeader && (
+                  <div className="filterListHeading">
+                    {t('report.instanceCount.reportFiltersHeading')}
+                  </div>
+                )}
                 <FilterList
                   definitions={data.definitions}
                   data={reportFilters}

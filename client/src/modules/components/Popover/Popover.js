@@ -107,7 +107,7 @@ export default class Popover extends React.Component {
       const overlayHeight = this.popoverDialogRef.clientHeight;
       const buttonRect = this.buttonRef.getBoundingClientRect();
       this.initilizeFooterRef();
-      const footerTop = this.footerRef?.getBoundingClientRect().top ?? 0;
+      const footerTop = this.footerRef?.getBoundingClientRect().top ?? window.innerHeight;
       const headerBottom = this.headerRef?.getBoundingClientRect().bottom ?? 0;
 
       const bodyWidth = document.body.clientWidth;

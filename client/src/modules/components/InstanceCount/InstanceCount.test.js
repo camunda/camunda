@@ -192,3 +192,10 @@ it('should substitute the popover title with an icon if requested', () => {
   expect(node.find('Popover').prop('title')).toBe(false);
   expect(node.find('Popover').prop('icon')).toBe('someIcon');
 });
+
+it('should show instance count and filter list headings if showHeader prop is added', () => {
+  const node = shallow(<InstanceCount {...props} showHeader />);
+
+  expect(node.find('Popover .countString')).toExist();
+  expect(node.find('.filterListHeading')).toExist();
+});
