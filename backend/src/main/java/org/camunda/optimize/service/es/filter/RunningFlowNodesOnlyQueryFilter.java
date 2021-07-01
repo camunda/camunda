@@ -12,7 +12,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createRunningFlowNodesOnlyFilterQuery;
@@ -26,7 +25,7 @@ public class RunningFlowNodesOnlyQueryFilter implements QueryFilter<RunningFlowN
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<RunningFlowNodesOnlyFilterDataDto> runningFlowNodesFilterData,
-                         final ZoneId timezone, final boolean isUserTaskReport) {
+                         final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(runningFlowNodesFilterData)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(FLOW_NODE_INSTANCES, createRunningFlowNodesOnlyFilterQuery(boolQuery()), ScoreMode.None));

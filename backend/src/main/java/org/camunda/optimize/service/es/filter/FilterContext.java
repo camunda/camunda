@@ -5,10 +5,14 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.elasticsearch.index.query.BoolQueryBuilder;
+import lombok.Builder;
+import lombok.Value;
 
-import java.util.List;
+import java.time.ZoneId;
 
-public interface QueryFilterEnhancer<T> {
-  void addFilterToQuery(BoolQueryBuilder query, List<T> filter, FilterContext filterContext);
+@Builder
+@Value
+public class FilterContext {
+  ZoneId timezone;
+  boolean userTaskReport;
 }

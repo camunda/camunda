@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDa
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
+import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -58,8 +59,8 @@ public class DateAggregationContext {
   private final DistributedByType distributedByType;
   private final List<ProcessFilterDto<?>> processFilters;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
-  @Builder.Default
-  private final boolean isUserTaskReport = false;
+  @NonNull
+  private final FilterContext filterContext;
 
   public ZonedDateTime getEarliestDate() {
     return ZonedDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), timezone);

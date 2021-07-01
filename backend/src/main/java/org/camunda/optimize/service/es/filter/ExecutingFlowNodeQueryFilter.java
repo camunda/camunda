@@ -11,11 +11,10 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -28,7 +27,7 @@ public class ExecutingFlowNodeQueryFilter implements QueryFilter<ExecutingFlowNo
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<ExecutingFlowNodeFilterDataDto> flowNodeFilter,
-                         final ZoneId timezone, final boolean isUserTaskReport) {
+                         final FilterContext filterContext) {
     List<QueryBuilder> filters = query.filter();
     flowNodeFilter.forEach(filter -> filters.add(createFilterQueryBuilder(filter)));
   }

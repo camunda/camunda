@@ -57,12 +57,13 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   abstract String getVariablePath();
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variableFilters,
-                         final ZoneId timezone, final boolean isUserTaskReport) {
+  public void addFilters(final BoolQueryBuilder query,
+                         final List<VariableFilterDataDto<?>> variableFilters,
+                         final FilterContext filterContext) {
     if (variableFilters != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDataDto<?> variable : variableFilters) {
-        filters.add(createFilterQueryBuilder(variable, timezone));
+        filters.add(createFilterQueryBuilder(variable, filterContext.getTimezone()));
       }
     }
   }

@@ -94,7 +94,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends ProcessGrou
       .minMaxStats(stats)
       .timezone(context.getTimezone())
       .subAggregations(distributedByPart.createAggregations(context))
-      .isUserTaskReport(context.getReportData().isUserTaskReport())
+      .filterContext(context.getFilterContext())
       .build();
 
     final Optional<AggregationBuilder> bucketLimitedHistogramAggregation =

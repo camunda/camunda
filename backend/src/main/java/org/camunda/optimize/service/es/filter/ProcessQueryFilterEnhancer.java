@@ -41,7 +41,6 @@ import org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilt
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -79,112 +78,90 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CompletedOrCanceledFlowNodesOnlyQueryFilter completedOrCanceledFlowNodesOnlyQueryFilter;
   private final InstancesContainingUserTasksFilter instancesContainingUserTasksFilter;
 
-  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
-    addFilterToQuery(query, filters, timezone, false);
-  }
-
   @Override
-  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone,
-                               final boolean isUserTaskReport) {
+  public void addFilterToQuery(final BoolQueryBuilder query,
+                               final List<ProcessFilterDto<?>> filters,
+                               final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(filters)) {
       startDateQueryFilter.addFilters(
-        query,
-        extractFilters(filters, StartDateFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, StartDateFilterDto.class), filterContext
       );
-      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class), timezone, isUserTaskReport);
+      endDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, EndDateFilterDto.class), filterContext
+      );
       variableQueryFilter.addFilters(
-        query,
-        extractFilters(filters, VariableFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, VariableFilterDto.class), filterContext
       );
       executedFlowNodeQueryFilter.addFilters(
-        query,
-        extractFilters(filters, ExecutedFlowNodeFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, ExecutedFlowNodeFilterDto.class), filterContext
       );
       executingFlowNodeQueryFilter.addFilters(
-        query, extractFilters(filters, ExecutingFlowNodeFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, ExecutingFlowNodeFilterDto.class), filterContext
+      );
       canceledFlowNodeQueryFilter.addFilters(
-        query,
-        extractFilters(filters, CanceledFlowNodeFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, CanceledFlowNodeFilterDto.class), filterContext
       );
       durationQueryFilter.addFilters(
-        query,
-        extractFilters(filters, DurationFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, DurationFilterDto.class), filterContext
       );
       runningInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, RunningInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, RunningInstancesOnlyFilterDto.class), filterContext
+      );
       completedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, CompletedInstancesOnlyFilterDto.class), filterContext
+      );
       canceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CanceledInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, CanceledInstancesOnlyFilterDto.class), filterContext
+      );
       nonCanceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, NonCanceledInstancesOnlyFilterDto.class), filterContext
+      );
       suspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, SuspendedInstancesOnlyFilterDto.class), filterContext
+      );
       nonSuspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, NonSuspendedInstancesOnlyFilterDto.class), filterContext
+      );
       flowNodeDurationQueryFilter.addFilters(
-        query,
-        extractFilters(filters, FlowNodeDurationFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, FlowNodeDurationFilterDto.class), filterContext
       );
       assigneeQueryFilter.addFilters(
-        query,
-        extractFilters(filters, AssigneeFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, AssigneeFilterDto.class), filterContext
       );
       candidateGroupQueryFilter.addFilters(
-        query,
-        extractFilters(filters, CandidateGroupFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, CandidateGroupFilterDto.class), filterContext
       );
       openIncidentQueryFilter.addFilters(
-        query,
-        extractFilters(filters, OpenIncidentFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, OpenIncidentFilterDto.class), filterContext
       );
       resolvedIncidentQueryFilter.addFilters(
-        query,
-        extractFilters(filters, ResolvedIncidentFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, ResolvedIncidentFilterDto.class), filterContext
       );
       noIncidentQueryFilter.addFilters(
-        query,
-        extractFilters(filters, NoIncidentFilterDto.class),
-        timezone,
-        isUserTaskReport
+        query, extractInstanceFilters(filters, NoIncidentFilterDto.class), filterContext
       );
       runningFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, RunningFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, RunningFlowNodesOnlyFilterDto.class), filterContext
+      );
       completedFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, CompletedFlowNodesOnlyFilterDto.class), filterContext
+      );
       canceledFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CanceledFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, CanceledFlowNodesOnlyFilterDto.class), filterContext
+      );
       completedOrCanceledFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), filterContext
+      );
       instancesContainingUserTasksFilter.addFilters(
-        query, extractFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), timezone, isUserTaskReport);
+        query, extractInstanceFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), filterContext
+      );
     }
-    addInstanceFilterForViewLevelMatching(query, filters, isUserTaskReport);
+    addInstanceFilterForViewLevelMatching(query, filters, filterContext.isUserTaskReport());
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <T extends FilterDataDto> List<T> extractFilters(final List<ProcessFilterDto<?>> filter,
-                                                          final Class<? extends ProcessFilterDto<T>> clazz) {
+  public <T extends FilterDataDto> List<T> extractInstanceFilters(final List<ProcessFilterDto<?>> filter,
+                                                                  final Class<? extends ProcessFilterDto<T>> clazz) {
     return filter
       .stream()
       .filter(clazz::isInstance)

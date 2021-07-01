@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Ro
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
+import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.filter.QueryFilter;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
@@ -27,7 +28,6 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggre
 import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -66,10 +66,7 @@ public class DateHistogramFilterUtil {
       context.getDecisionFilters(), EvaluationDateFilterDto.class);
 
     final BoolQueryBuilder limitFilterQuery = createFilterBoolQueryBuilder(
-      evaluationDateFilter,
-      queryFilterEnhancer.getEvaluationDateQueryFilter(),
-      context.getTimezone(),
-      context.isUserTaskReport()
+      evaluationDateFilter, queryFilterEnhancer.getEvaluationDateQueryFilter(), context.getFilterContext()
     );
 
     if (!evaluationDateFilter.isEmpty()) {
@@ -107,10 +104,10 @@ public class DateHistogramFilterUtil {
 
     final ProcessQueryFilterEnhancer queryFilterEnhancer = context.getProcessQueryFilterEnhancer();
 
-    final List<DateFilterDataDto<?>> startDateFilters = queryFilterEnhancer.extractFilters(
+    final List<DateFilterDataDto<?>> startDateFilters = queryFilterEnhancer.extractInstanceFilters(
       context.getProcessFilters(), StartDateFilterDto.class
     );
-    final List<DateFilterDataDto<?>> endDateFilters = queryFilterEnhancer.extractFilters(
+    final List<DateFilterDataDto<?>> endDateFilters = queryFilterEnhancer.extractInstanceFilters(
       context.getProcessFilters(), EndDateFilterDto.class
     );
 
@@ -118,10 +115,7 @@ public class DateHistogramFilterUtil {
     final BoolQueryBuilder limitFilterQuery;
     if (!endDateFilters.isEmpty() && startDateFilters.isEmpty()) {
       limitFilterQuery = createFilterBoolQueryBuilder(
-        endDateFilters,
-        queryFilterEnhancer.getEndDateQueryFilter(),
-        context.getTimezone(),
-        context.isUserTaskReport()
+        endDateFilters, queryFilterEnhancer.getEndDateQueryFilter(), context.getFilterContext()
       );
     } else {
       if (!startDateFilters.isEmpty()) {
@@ -131,10 +125,7 @@ public class DateHistogramFilterUtil {
         ).ifPresent(dateHistogramAggregation::extendedBounds);
       }
       limitFilterQuery = createFilterBoolQueryBuilder(
-        startDateFilters,
-        queryFilterEnhancer.getStartDateQueryFilter(),
-        context.getTimezone(),
-        context.isUserTaskReport()
+        startDateFilters, queryFilterEnhancer.getStartDateQueryFilter(), context.getFilterContext()
       );
     }
     return limitFilterQuery;
@@ -147,10 +138,10 @@ public class DateHistogramFilterUtil {
 
     final ProcessQueryFilterEnhancer queryFilterEnhancer = context.getProcessQueryFilterEnhancer();
 
-    final List<DateFilterDataDto<?>> startDateFilters = queryFilterEnhancer.extractFilters(
+    final List<DateFilterDataDto<?>> startDateFilters = queryFilterEnhancer.extractInstanceFilters(
       context.getProcessFilters(), StartDateFilterDto.class
     );
-    final List<DateFilterDataDto<?>> endDateFilters = queryFilterEnhancer.extractFilters(
+    final List<DateFilterDataDto<?>> endDateFilters = queryFilterEnhancer.extractInstanceFilters(
       context.getProcessFilters(), EndDateFilterDto.class
     );
 
@@ -158,10 +149,7 @@ public class DateHistogramFilterUtil {
     final BoolQueryBuilder limitFilterQuery;
     if (endDateFilters.isEmpty() && !startDateFilters.isEmpty()) {
       limitFilterQuery = createFilterBoolQueryBuilder(
-        startDateFilters,
-        queryFilterEnhancer.getStartDateQueryFilter(),
-        context.getTimezone(),
-        context.isUserTaskReport()
+        startDateFilters, queryFilterEnhancer.getStartDateQueryFilter(), context.getFilterContext()
       );
     } else {
       if (!endDateFilters.isEmpty()) {
@@ -173,10 +161,7 @@ public class DateHistogramFilterUtil {
       }
 
       limitFilterQuery = createFilterBoolQueryBuilder(
-        endDateFilters,
-        queryFilterEnhancer.getEndDateQueryFilter(),
-        context.getTimezone(),
-        context.isUserTaskReport()
+        endDateFilters, queryFilterEnhancer.getEndDateQueryFilter(), context.getFilterContext()
       );
     }
 
@@ -185,9 +170,9 @@ public class DateHistogramFilterUtil {
 
   public static BoolQueryBuilder createFilterBoolQueryBuilder(final List<DateFilterDataDto<?>> filters,
                                                               final QueryFilter<DateFilterDataDto<?>> queryFilter,
-                                                              final ZoneId timezone, final boolean isUserTaskReport) {
+                                                              final FilterContext filterContext) {
     final BoolQueryBuilder limitFilterQuery = boolQuery();
-    queryFilter.addFilters(limitFilterQuery, filters, timezone, isUserTaskReport);
+    queryFilter.addFilters(limitFilterQuery, filters, filterContext);
     return limitFilterQuery;
   }
 

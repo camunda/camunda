@@ -100,6 +100,7 @@ public class VariableAggregationService {
       .timezone(context.getTimezone())
       .subAggregations(context.getSubAggregations())
       .dateAggregationName(VARIABLES_AGGREGATION)
+      .filterContext(context.getFilterContext())
       .build();
 
     return dateAggregationService.createDateVariableAggregation(dateAggContext);

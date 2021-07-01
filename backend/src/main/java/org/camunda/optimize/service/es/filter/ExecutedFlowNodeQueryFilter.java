@@ -12,7 +12,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
@@ -22,7 +21,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 /**
  * The executed flow node catches any flow nodes that are completed or still running, including those that are marked
@@ -33,8 +31,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
-                         final ZoneId timezone, final boolean isUserTaskReport) {
+  public void addFilters(final BoolQueryBuilder query,
+                         final List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
+                         final FilterContext filterContext) {
     List<QueryBuilder> filters = query.filter();
     for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));

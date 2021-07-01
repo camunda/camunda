@@ -71,6 +71,7 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
       .subAggregations(distributedByPart.createAggregations(context))
       .decisionFilters(context.getReportData().getFilter())
       .decisionQueryFilterEnhancer(queryFilterEnhancer)
+      .filterContext(context.getFilterContext())
       .build();
 
     return dateAggregationService.createDecisionEvaluationDateAggregation(dateAggContext)

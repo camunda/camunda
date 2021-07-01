@@ -10,7 +10,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
@@ -22,7 +21,7 @@ public class CompletedInstancesOnlyQueryFilter implements QueryFilter<CompletedI
 
   public void addFilters(final BoolQueryBuilder query,
                          final List<CompletedInstancesOnlyFilterDataDto> runningOnly,
-                         final ZoneId timezone, final boolean isUserTaskReport) {
+                         final FilterContext filterContext) {
     if (runningOnly != null && !runningOnly.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

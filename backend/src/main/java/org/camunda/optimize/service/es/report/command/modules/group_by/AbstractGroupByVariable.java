@@ -124,6 +124,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .baseQueryForMinMaxStats(searchSourceBuilder.query())
       .subAggregations(Collections.singletonList(reverseNestedAggregationBuilder))
       .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
+      .filterContext(context.getFilterContext())
       .build();
 
     final Optional<AggregationBuilder> variableSubAggregation =

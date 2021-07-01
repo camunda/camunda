@@ -9,9 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.es.report.command.exec.DecisionReportCmdExecutionPlan;
-import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 
 public abstract class DecisionCmd<T> implements Command<T, SingleDecisionReportDefinitionRequestDto> {
 
@@ -27,10 +25,6 @@ public abstract class DecisionCmd<T> implements Command<T, SingleDecisionReportD
   }
 
   protected abstract DecisionReportCmdExecutionPlan<T> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder);
-
-  public BoolQueryBuilder getBaseQuery(final ReportEvaluationContext<SingleDecisionReportDefinitionRequestDto> reportEvaluationContext) {
-    return executionPlan.setupBaseQuery(new ExecutionContext<>(reportEvaluationContext));
-  }
 
   @Override
   public String createCommandKey() {

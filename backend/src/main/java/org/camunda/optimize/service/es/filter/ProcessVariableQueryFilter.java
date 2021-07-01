@@ -58,12 +58,11 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<VariableFilterDataDto<?>> variables,
-                         final ZoneId timezone,
-                         final boolean isUserTaskReport) {
+                         final FilterContext filterContext) {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDataDto<?> variable : variables) {
-        filters.add(createFilterQueryBuilder(variable, timezone));
+        filters.add(createFilterQueryBuilder(variable, filterContext.getTimezone()));
       }
     }
   }

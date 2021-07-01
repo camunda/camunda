@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
@@ -23,7 +22,7 @@ public class StartDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<DateFilterDataDto<?>> filter,
-                         final ZoneId timezone, final boolean isUserTaskReport) {
-    dateFilterQueryService.addFilters(query, filter, START_DATE, timezone);
+                         final FilterContext filterContext) {
+    dateFilterQueryService.addFilters(query, filter, START_DATE, filterContext.getTimezone());
   }
 }

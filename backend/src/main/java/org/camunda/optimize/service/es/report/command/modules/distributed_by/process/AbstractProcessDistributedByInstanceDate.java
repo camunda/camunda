@@ -54,7 +54,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
       .distributedByType(getDistributedBy().getType())
       .processFilters(context.getReportData().getFilter())
       .processQueryFilterEnhancer(queryFilterEnhancer)
-      .isUserTaskReport(context.getReportData().isUserTaskReport())
+      .filterContext(context.getFilterContext())
       .build();
 
     return dateAggregationService.createProcessInstanceDateAggregation(dateAggContext)

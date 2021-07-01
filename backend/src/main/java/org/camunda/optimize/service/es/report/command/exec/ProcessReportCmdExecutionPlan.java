@@ -52,10 +52,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
   public BoolQueryBuilder setupBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
     final BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
     queryFilterEnhancer.addFilterToQuery(
-      boolQueryBuilder,
-      getAllFilters(context.getReportData()),
-      context.getTimezone(),
-      context.getReportData().isUserTaskReport()
+      boolQueryBuilder, getAllFilters(context.getReportData()), context.getFilterContext()
     );
 
     return boolQueryBuilder;
