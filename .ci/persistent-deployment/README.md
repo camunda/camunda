@@ -41,7 +41,7 @@ ES backup (or snapshot as it is known for ES users) is done manually using the `
 
 * Port-forward the ES http service to attach it to your localhost:
 ```shell script
-kubectl -n optimize-persistent svc/elasticsearch-es-http 9200:9200
+kubectl -n optimize-persistent port-forward svc/elasticsearch-es-http 9200:9200
 ```
 
 * Create a backup using `curl`:
