@@ -92,7 +92,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
 
 function findMaxDurationAcrossReports(result, durationKey = 'value') {
   let maxDurations;
-  if (result.measures.length > 1) {
+  if (result.measures?.length > 1) {
     const measuresDurationValues = result.measures
       .filter(({property}) => property === 'duration')
       .map((measure) => measure.data.map(({value}) => value))

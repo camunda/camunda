@@ -11,6 +11,36 @@ jest.mock('../defaultChart/createDefaultChartOptions', () => ({
   createBarOptions: jest.fn(),
 }));
 
+it('should find max duration for combined reports', () => {
+  const maxDuration = 99999999999;
+
+  createCombinedChartOptions({
+    report: {
+      data: {visualization: 'pie', configuration: {}},
+      result: {
+        data: {
+          report1: {
+            data: {
+              view: {entity: 'flowNode', properties: ['duration']},
+              groupBy: '',
+            },
+            result: {data: 13719846575},
+          },
+          report2: {
+            data: {
+              view: {entity: 'flowNode', properties: ['duration']},
+              groupBy: '',
+            },
+            result: {data: maxDuration},
+          },
+        },
+      },
+    },
+  });
+
+  expect(createBarOptions.mock.calls[0][0].maxDuration).toBe(maxDuration);
+});
+
 it('should find max duration for multi measure reports', () => {
   const maxDuration = 99999999999;
   const measures = [
