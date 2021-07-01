@@ -37,7 +37,10 @@ public interface PartitionListener {
    * @param logStream the corresponding log stream
    * @return future that should be completed by the listener
    */
-  ActorFuture<Void> onBecomingLeader(int partitionId, long term, LogStream logStream);
+  ActorFuture<Void> onBecomingLeader(
+      int partitionId,
+      long term,
+      @Deprecated LogStream logStream); // lookup of log stream will be changed in the future
 
   /**
    * Is called by the {@link io.camunda.zeebe.broker.system.partitions.ZeebePartition} on becoming
