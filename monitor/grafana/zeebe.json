@@ -26,7 +26,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "7.0.3"
+      "version": "7.4.5"
     },
     {
       "type": "panel",
@@ -89,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1623851067247,
+  "iteration": 1625146815175,
   "links": [],
   "panels": [
     {
@@ -109,48 +109,16 @@
           "fieldConfig": {
             "defaults": {
               "custom": {
-                "align": null,
-                "displayMode": "color-text"
+                "displayMode": "auto",
+                "filterable": false
               },
-              "mappings": [
-                {
-                  "from": "",
-                  "id": 0,
-                  "operator": "",
-                  "text": "Follower",
-                  "to": "",
-                  "type": 1,
-                  "value": "1"
-                },
-                {
-                  "from": "",
-                  "id": 1,
-                  "operator": "",
-                  "text": "Candidate",
-                  "to": "",
-                  "type": 1,
-                  "value": "2"
-                },
-                {
-                  "from": "",
-                  "id": 2,
-                  "operator": "",
-                  "text": "Leader",
-                  "to": "",
-                  "type": 1,
-                  "value": "3"
-                }
-              ],
+              "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
                     "color": "orange",
                     "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 3
                   }
                 ]
               }
@@ -211,7 +179,7 @@
               }
             ]
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "atomix_role{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} >= 3",
@@ -273,9 +241,7 @@
           "description": "Shows accumulated health per partition",
           "fieldConfig": {
             "defaults": {
-              "custom": {
-                "align": null
-              },
+              "custom": {},
               "mappings": [
                 {
                   "from": "",
@@ -334,9 +300,11 @@
               ],
               "fields": "",
               "values": false
-            }
+            },
+            "text": {},
+            "textMode": "auto"
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "min(zeebe_health{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (partition)",
@@ -361,7 +329,8 @@
           "description": "Shows when and how often a pod was restarted.  The graph is zero when the pod is ready. With this it is also possible to determine how long it take for the pod to come ready again.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -391,10 +360,10 @@
           "links": [],
           "nullPointMode": "null as zero",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": true,
-          "pluginVersion": "6.3.5",
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -474,7 +443,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -507,9 +477,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -592,7 +563,8 @@
           "description": "Requests which hit the gateway and a response have been sent to the client per second.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -619,9 +591,10 @@
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -697,7 +670,6 @@
                   "value": "null"
                 }
               ],
-              "nullValueMode": "connected",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -738,9 +710,11 @@
               ],
               "fields": "",
               "values": false
-            }
+            },
+            "text": {},
+            "textMode": "auto"
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m]))",
@@ -764,7 +738,8 @@
           "description": "Shows the current processed records",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -792,9 +767,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -919,7 +895,7 @@
             "ymax": null,
             "ymin": null
           },
-          "tableColumn": " ",
+          "tableColumn": "",
           "targets": [
             {
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m]))",
@@ -1011,7 +987,7 @@
             "ymax": null,
             "ymin": null
           },
-          "tableColumn": " ",
+          "tableColumn": "",
           "targets": [
             {
               "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m]))",
@@ -1044,7 +1020,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -1072,9 +1049,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -1149,7 +1127,6 @@
               "mappings": [],
               "max": 100,
               "min": 0,
-              "nullValueMode": "connected",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1186,9 +1163,11 @@
               ],
               "fields": "",
               "values": false
-            }
+            },
+            "text": {},
+            "textMode": "auto"
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "(sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) / sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) ) * 100",
@@ -1217,7 +1196,8 @@
           "description": "Memory limits and requests are taken from the k8 pod metrics.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -1246,9 +1226,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3378,7 +3359,8 @@
           "description": "Memory limits and requests are taken from the k8 pod metrics.",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -3388,7 +3370,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 261,
@@ -3407,9 +3389,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3507,7 +3490,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -3517,7 +3501,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 98,
@@ -3528,8 +3512,8 @@
             "hideZero": false,
             "max": false,
             "min": false,
-            "rightSide": true,
-            "show": true,
+            "rightSide": false,
+            "show": false,
             "total": false,
             "values": false
           },
@@ -3538,9 +3522,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3625,7 +3610,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -3635,7 +3621,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 64,
@@ -3652,9 +3638,10 @@
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3728,7 +3715,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -3738,7 +3726,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 35,
@@ -3756,9 +3744,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3824,7 +3813,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -3834,7 +3824,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 37,
@@ -3852,9 +3842,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3938,7 +3929,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -3948,7 +3940,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 40,
@@ -3966,9 +3958,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -4034,7 +4027,8 @@
           "datasource": "$DS_PROMETHEUS",
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {},
+              "links": []
             },
             "overrides": []
           },
@@ -4044,7 +4038,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 52
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 260,
@@ -4062,9 +4056,10 @@
           "links": [],
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.5",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -9799,7 +9794,7 @@
     }
   ],
   "refresh": false,
-  "schemaVersion": 25,
+  "schemaVersion": 27,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -9810,6 +9805,8 @@
           "text": "Prometheus",
           "value": "Prometheus"
         },
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": false,
         "label": "datasource",
@@ -9827,13 +9824,18 @@
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role, namespace)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": null,
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "label_values(atomix_role, namespace)",
+        "query": {
+          "query": "label_values(atomix_role, namespace)",
+          "refId": "Prometheus-namespace-Variable-Query"
+        },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -9849,13 +9851,18 @@
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": null,
         "multi": true,
         "name": "pod",
         "options": [],
-        "query": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
+        "query": {
+          "query": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
+          "refId": "Prometheus-pod-Variable-Query"
+        },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -9871,13 +9878,18 @@
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "description": null,
+        "error": null,
         "hide": 0,
         "includeAll": true,
         "label": null,
         "multi": true,
         "name": "partition",
         "options": [],
-        "query": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "query": {
+          "query": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+          "refId": "Prometheus-partition-Variable-Query"
+        },
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
@@ -9921,5 +9933,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 13
+  "version": 14
 }
