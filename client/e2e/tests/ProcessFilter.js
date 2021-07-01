@@ -415,3 +415,31 @@ test('add flow node status filter', async (t) => {
 
   await t.expect(Report.reportRenderer.visible).ok();
 });
+
+test('select which flow nodes to show from the configuration', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.expect(Report.nodeTableCell('Assign Approver Group').exists).ok();
+
+  await t.resizeWindow(1150, 800);
+
+  await t.click(Report.sectionToggle('Filters'));
+  await t.click(Report.flowNodeFilterButton);
+  await t.click(Report.filterOption('Flow Node Selection'));
+
+  await t.click(Report.deselectAllButton);
+
+  await t.click(Report.flowNode('approveInvoice'));
+  await t.click(Report.flowNode('reviewInvoice'));
+  await t.click(Report.flowNode('prepareBankTransfer'));
+
+  await t
+    .takeElementScreenshot(Report.modalContainer, 'process/filter/flowNodeSelection.png')
+    .maximizeWindow();
+
+  await t.click(Report.primaryModalButton);
+
+  await t.expect(Report.nodeTableCell('Assign Approver Group').exists).notOk();
+});
