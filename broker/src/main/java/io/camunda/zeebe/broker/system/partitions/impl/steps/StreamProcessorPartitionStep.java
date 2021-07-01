@@ -65,7 +65,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
   private StreamProcessor createStreamProcessor(final PartitionTransitionContext state) {
     return StreamProcessor.builder()
         .logStream(state.getLogStream())
-        .actorScheduler(state.getScheduler())
+        .actorSchedulingService(state.getActorSchedulingService())
         .zeebeDb(state.getZeebeDb())
         .eventApplierFactory(EventAppliers::new)
         .nodeId(state.getNodeId())

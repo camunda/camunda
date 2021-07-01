@@ -39,7 +39,7 @@ public final class DispatcherIntegrationTest {
 
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 
@@ -70,7 +70,7 @@ public final class DispatcherIntegrationTest {
 
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 
@@ -107,7 +107,7 @@ public final class DispatcherIntegrationTest {
 
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 
@@ -151,7 +151,7 @@ public final class DispatcherIntegrationTest {
     // given
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofKilobytes(10))
             .build();
 
@@ -170,7 +170,7 @@ public final class DispatcherIntegrationTest {
 
     final var builder =
         Dispatchers.create("test")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .maxFragmentLength(frameLength)
             .bufferSize(frameLength);
 
@@ -188,7 +188,7 @@ public final class DispatcherIntegrationTest {
 
     final Dispatcher dispatcher =
         Dispatchers.create("test")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .maxFragmentLength(frameLength)
             .build();
 
@@ -203,7 +203,7 @@ public final class DispatcherIntegrationTest {
     final int maxFragmentLength = (int) ByteValue.ofKilobytes(1);
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .maxFragmentLength(maxFragmentLength)
             .build();
 

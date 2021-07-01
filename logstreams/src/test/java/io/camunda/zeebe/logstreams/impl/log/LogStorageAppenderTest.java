@@ -73,7 +73,7 @@ public final class LogStorageAppenderTest {
 
     dispatcher =
         Dispatchers.create("0")
-            .actorScheduler(schedulerRule.get())
+            .actorSchedulingService(schedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(100 * MAX_FRAGMENT_SIZE))
             .maxFragmentLength(MAX_FRAGMENT_SIZE)
             .initialPosition(INITIAL_POSITION)

@@ -46,7 +46,7 @@ public final class FragmentBatchIntegrationTest {
     dispatcher =
         Dispatchers.create("default")
             .bufferSize((int) ByteValue.ofKilobytes(32))
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .build();
 
     subscription = dispatcher.openSubscription("test");

@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.channel.ActorConditions;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -20,14 +20,15 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   private int maxFragmentSize = 1024 * 1024 * 4;
   private int partitionId = -1;
-  private ActorScheduler actorScheduler;
+  private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
   private int nodeId = 0;
 
   @Override
-  public LogStreamBuilder withActorScheduler(final ActorScheduler actorScheduler) {
-    this.actorScheduler = actorScheduler;
+  public LogStreamBuilder withActorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
     return this;
   }
 
@@ -67,7 +68,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
 
     final var logStreamService =
         new LogStreamImpl(
-            actorScheduler,
+            actorSchedulingService,
             new ActorConditions(),
             logName,
             partitionId,
@@ -76,7 +77,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
             logStorage);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
-    actorScheduler
+    actorSchedulingService
         .submitActor(logStreamService)
         .onComplete(
             (v, t) -> {
@@ -91,7 +92,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(actorScheduler, "Must specify a actor scheduler");
+    Objects.requireNonNull(actorSchedulingService, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
