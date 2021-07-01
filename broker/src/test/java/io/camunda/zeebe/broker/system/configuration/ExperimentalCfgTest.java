@@ -40,4 +40,50 @@ public class ExperimentalCfgTest {
     // then
     assertThat(raft.getRequestTimeout()).isEqualTo(Duration.ofSeconds(15));
   }
+
+  @Test
+  public void shouldSetRaftMaxQuorumResponseTimeoutFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getMaxQuorumResponseTimeout()).isEqualTo(Duration.ofSeconds(8));
+  }
+
+  @Test
+  public void shouldSetRaftMaxQuorumResponseTimeoutFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.raft.maxQuorumResponseTimeout", "15s");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getMaxQuorumResponseTimeout()).isEqualTo(Duration.ofSeconds(15));
+  }
+
+  @Test
+  public void shouldSetRaftMinStepDownFailureCountFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getMinStepDownFailureCount()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldSetRaftMinStepDownFailureCountFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.raft.minStepDownFailureCount", "10");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getMinStepDownFailureCount()).isEqualTo(10);
+  }
 }

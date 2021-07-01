@@ -42,7 +42,6 @@ final class LeaderAppender extends AbstractAppender {
 
   private static final long MAX_HEARTBEAT_WAIT = 60000;
   private static final int MIN_BACKOFF_FAILURE_COUNT = 5;
-  private static final int MIN_STEP_DOWN_FAILURE_COUNT = 3;
 
   private final long leaderTime;
   private final long leaderIndex;
@@ -51,6 +50,8 @@ final class LeaderAppender extends AbstractAppender {
   private final Map<Long, CompletableFuture<Long>> appendFutures = new HashMap<>();
   private final List<TimestampedFuture<Long>> heartbeatFutures = new ArrayList<>();
   private final long heartbeatTime;
+  private final int minStepDownFailureCount;
+  private final long maxQuorumResponseTimeout;
 
   LeaderAppender(final LeaderRole leader) {
     super(leader.raft);
@@ -60,6 +61,11 @@ final class LeaderAppender extends AbstractAppender {
     heartbeatTime = leaderTime;
     electionTimeout = raft.getElectionTimeout().toMillis();
     heartbeatInterval = raft.getHeartbeatInterval().toMillis();
+    minStepDownFailureCount = raft.getMinStepDownFailureCount();
+    maxQuorumResponseTimeout =
+        raft.getMaxQuorumResponseTimeout().isZero()
+            ? electionTimeout * 2
+            : raft.getMaxQuorumResponseTimeout().toMillis();
   }
 
   /**
@@ -165,8 +171,7 @@ final class LeaderAppender extends AbstractAppender {
     // that a partition occurred and transition back to the FOLLOWER state.
     final long quorumResponseTime =
         System.currentTimeMillis() - Math.max(computeResponseTime(), leaderTime);
-    final long maxQuorumResponseTimeout = electionTimeout * 2;
-    if (member.getFailureCount() >= MIN_STEP_DOWN_FAILURE_COUNT
+    if (member.getFailureCount() >= minStepDownFailureCount
         && quorumResponseTime > maxQuorumResponseTimeout) {
       log.warn(
           "Suspected network partition after {} failures from {} over a period of time {} > {}, stepping down",

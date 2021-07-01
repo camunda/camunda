@@ -95,7 +95,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             getClass(),
             LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
     this.partitionMetadata = partitionMetadata;
-    requestTimeout = config.getRequestTimeout();
+    requestTimeout = config.getPartitionConfig().getRequestTimeout();
   }
 
   @Override
@@ -170,8 +170,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             .getPersistedSnapshotStoreFactory()
             .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partitionId);
 
+    final var partitionConfig = config.getPartitionConfig();
+
     final var electionConfig =
-        config.isPriorityElectionEnabled()
+        partitionConfig.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
                 partitionMetadata.getTargetPriority(), partitionMetadata.getPriority(localMemberId))
             : RaftElectionConfig.ofDefaultElection();
@@ -180,10 +182,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .withName(partition.name())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
-        .withHeartbeatInterval(config.getHeartbeatInterval())
-        .withElectionTimeout(config.getElectionTimeout())
-        .withMaxAppendBatchSize(config.getMaxAppendBatchSize())
-        .withMaxAppendsPerFollower(config.getMaxAppendsPerFollower())
+        .withPartitionConfig(partitionConfig)
         .withStorage(createRaftStorage())
         .withEntryValidator(config.getEntryValidator())
         .withElectionConfig(electionConfig)
