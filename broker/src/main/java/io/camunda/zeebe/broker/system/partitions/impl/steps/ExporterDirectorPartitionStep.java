@@ -34,7 +34,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
     context.setExporterDirector(director);
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
 
-    final var startFuture = director.startAsync(context.getScheduler());
+    final var startFuture = director.startAsync(context.getActorSchedulingService());
     startFuture.onComplete(
         (nothing, error) -> {
           if (error == null) {

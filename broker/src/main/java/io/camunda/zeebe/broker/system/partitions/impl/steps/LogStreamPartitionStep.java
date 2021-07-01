@@ -108,7 +108,7 @@ public class LogStreamPartitionStep implements PartitionStep {
         .withNodeId(context.getNodeId())
         .withPartitionId(context.getRaftPartition().id().id())
         .withMaxFragmentSize(context.getMaxFragmentSize())
-        .withActorScheduler(context.getScheduler())
+        .withActorSchedulingService(context.getActorSchedulingService())
         .buildAsync();
   }
 }

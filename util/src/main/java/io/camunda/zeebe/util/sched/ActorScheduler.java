@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class ActorScheduler implements AutoCloseable {
+public final class ActorScheduler implements AutoCloseable, ActorSchedulingService {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
 
@@ -28,6 +28,7 @@ public final class ActorScheduler implements AutoCloseable {
    *
    * @param actor the actor to submit
    */
+  @Override
   public ActorFuture<Void> submitActor(final Actor actor) {
     return actorTaskExecutor.submitCpuBound(actor.actor.task);
   }

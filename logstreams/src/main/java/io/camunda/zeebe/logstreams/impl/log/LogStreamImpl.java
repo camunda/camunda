@@ -22,7 +22,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorCondition;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.channel.ActorConditions;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -44,7 +44,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private final String logName;
   private final int partitionId;
   private final int maxFrameLength;
-  private final ActorScheduler actorScheduler;
+  private final ActorSchedulingService actorSchedulingService;
   private final List<LogStreamReader> readers;
   private final LogStorage logStorage;
   private final CompletableActorFuture<Void> closeFuture;
@@ -59,14 +59,14 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
 
   LogStreamImpl(
-      final ActorScheduler actorScheduler,
+      final ActorSchedulingService actorSchedulingService,
       final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
       final int partitionId,
       final int nodeId,
       final int maxFrameLength,
       final LogStorage logStorage) {
-    this.actorScheduler = actorScheduler;
+    this.actorSchedulingService = actorSchedulingService;
     this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
     this.logName = logName;
 
@@ -289,7 +289,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
             .maxFragmentLength(maxFrameLength)
             .initialPosition(initialPosition)
             .name(logName + "-write-buffer")
-            .actorScheduler(actorScheduler)
+            .actorSchedulingService(actorSchedulingService)
             .build();
 
     writeBuffer
@@ -306,7 +306,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                         maxFrameLength,
                         this::setCommitPosition);
 
-                actorScheduler
+                actorSchedulingService
                     .submitActor(appender)
                     .onComplete(
                         (v, t) -> {

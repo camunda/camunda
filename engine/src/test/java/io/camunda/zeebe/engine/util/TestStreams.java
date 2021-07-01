@@ -147,7 +147,7 @@ public final class TestStreams {
             .withLogName(name)
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
-            .withActorScheduler(actorScheduler)
+            .withActorSchedulingService(actorScheduler)
             .build();
 
     logStreamConsumer.accept(logStream);
@@ -239,7 +239,7 @@ public final class TestStreams {
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
-            .actorScheduler(actorScheduler)
+            .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)

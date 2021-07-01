@@ -30,7 +30,7 @@ public class LogDeletionPartitionStep implements PartitionStep {
                 .getPersistedSnapshotStore(context.getRaftPartition().id().id()));
 
     context.setLogDeletionService(deletionService);
-    return context.getScheduler().submitActor(deletionService);
+    return context.getActorSchedulingService().submitActor(deletionService);
   }
 
   @Override

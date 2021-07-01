@@ -24,7 +24,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class PartitionTransitionContext implements PartitionContext {
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
   private final PartitionMessagingService messagingService;
-  private final ActorScheduler scheduler;
+  private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
 
   private final SnapshotStoreSupplier snapshotStoreSupplier;
@@ -78,7 +78,7 @@ public class PartitionTransitionContext implements PartitionContext {
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
       final PartitionMessagingService messagingService,
-      final ActorScheduler actorScheduler,
+      final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
       final SnapshotStoreSupplier snapshotStoreSupplier,
@@ -94,7 +94,7 @@ public class PartitionTransitionContext implements PartitionContext {
     this.commandApiService = commandApiService;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     partitionId = raftPartition.id().id();
-    scheduler = actorScheduler;
+    this.actorSchedulingService = actorSchedulingService;
     maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     this.exporterRepository = exporterRepository;
     this.partitionProcessingState = partitionProcessingState;
@@ -212,8 +212,8 @@ public class PartitionTransitionContext implements PartitionContext {
     return messagingService;
   }
 
-  public ActorScheduler getScheduler() {
-    return scheduler;
+  public ActorSchedulingService getActorSchedulingService() {
+    return actorSchedulingService;
   }
 
   public BrokerCfg getBrokerCfg() {

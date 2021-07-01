@@ -16,7 +16,7 @@ import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.allocation.AllocatedBuffer;
 import io.camunda.zeebe.util.allocation.BufferAllocators;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import java.util.Objects;
 import org.agrona.BitUtil;
 
@@ -30,7 +30,7 @@ public final class DispatcherBuilder {
 
   private String dispatcherName;
 
-  private ActorScheduler actorScheduler;
+  private ActorSchedulingService actorSchedulingService;
 
   private String[] subscriptionNames;
 
@@ -53,8 +53,9 @@ public final class DispatcherBuilder {
     return this;
   }
 
-  public DispatcherBuilder actorScheduler(final ActorScheduler actorScheduler) {
-    this.actorScheduler = actorScheduler;
+  public DispatcherBuilder actorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
     return this;
   }
 
@@ -79,7 +80,7 @@ public final class DispatcherBuilder {
   }
 
   public Dispatcher build() {
-    Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
+    Objects.requireNonNull(actorSchedulingService, "Actor scheduling service must not be null.");
 
     bufferSize = calculateBufferSize();
     final int partitionSize = BitUtil.align(bufferSize / PARTITION_COUNT, 8);
@@ -114,7 +115,7 @@ public final class DispatcherBuilder {
     dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for
     // conductor to do this
 
-    actorScheduler.submitActor(dispatcher);
+    actorSchedulingService.submitActor(dispatcher);
 
     return dispatcher;
   }

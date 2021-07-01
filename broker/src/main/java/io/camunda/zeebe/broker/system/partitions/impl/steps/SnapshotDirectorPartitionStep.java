@@ -28,7 +28,7 @@ public class SnapshotDirectorPartitionStep implements PartitionStep {
 
     context.setSnapshotDirector(director);
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
-    return context.getScheduler().submitActor(director);
+    return context.getActorSchedulingService().submitActor(director);
   }
 
   @Override

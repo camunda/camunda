@@ -11,14 +11,14 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
   private final LogStreamBuilder delegate;
-  private ActorScheduler actorScheduler;
+  private ActorSchedulingService actorSchedulingService;
 
   SyncLogStreamBuilder() {
     this(LogStream.builder());
@@ -29,9 +29,10 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public SyncLogStreamBuilder withActorScheduler(final ActorScheduler actorScheduler) {
-    this.actorScheduler = actorScheduler;
-    delegate.withActorScheduler(actorScheduler);
+  public SyncLogStreamBuilder withActorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
+    delegate.withActorSchedulingService(actorSchedulingService);
     return this;
   }
 
@@ -73,8 +74,8 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   public SyncLogStream build() {
     final var scheduler =
         Objects.requireNonNull(
-            actorScheduler,
-            "must provide an actor scheduler through SyncLogStreamBuilder#withActorScheduler");
+            actorSchedulingService,
+            "must provide an actor scheduling service through SyncLogStreamBuilder#withActorSchedulingService");
 
     final var buildFuture = new CompletableActorFuture<SyncLogStream>();
     scheduler.submitActor(
