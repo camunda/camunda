@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -133,22 +134,29 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
     final Terms byIdentityAggregation = filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
-      final List<DistributedByResult> singleResult =
+      final String key = identityBucket.getKeyAsString();
+      List<DistributedByResult> distributedByResults =
         distributedByPart.retrieveResult(response, identityBucket.getAggregations(), context);
 
-      if (identityBucket.getKeyAsString().equals(GROUP_BY_IDENTITY_MISSING_KEY)) {
-        // ensure missing identity bucket is excluded if its empty
-        final boolean resultIsEmpty = singleResult.isEmpty() || singleResult.stream()
-          .map(DistributedByResult::getViewResult)
-          .map(CompositeCommandResult.ViewResult::getViewMeasures)
-          .flatMap(Collection::stream)
-          .allMatch(viewMeasure -> viewMeasure.getValue() == null || viewMeasure.getValue() == 0.0);
-        if (resultIsEmpty) {
-          continue;
-        }
+      if (GROUP_BY_IDENTITY_MISSING_KEY.equals(key)) {
+        distributedByResults.forEach(result -> result.getViewResult().getViewMeasures().forEach(measure -> {
+          if (AggregationType.SUM.equals(measure.getAggregationType()) && (measure.getValue() != null && measure.getValue() == 0)) {
+            measure.setValue(null);
+          }
+        }));
       }
-      final String key = identityBucket.getKeyAsString();
-      groupedData.add(GroupByResult.createGroupByResult(key, resolveIdentityName(key), singleResult));
+
+      // ensure missing identity bucket is excluded if its empty
+      final boolean resultIsEmpty = distributedByResults.isEmpty() || distributedByResults.stream()
+        .map(DistributedByResult::getViewResult)
+        .map(CompositeCommandResult.ViewResult::getViewMeasures)
+        .flatMap(Collection::stream)
+        .allMatch(viewMeasure -> viewMeasure.getValue() == null || viewMeasure.getValue() == 0.0);
+      if (resultIsEmpty) {
+        continue;
+      }
+
+      groupedData.add(GroupByResult.createGroupByResult(key, resolveIdentityName(key), distributedByResults));
     }
     return groupedData;
   }

@@ -588,7 +588,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
   }
 
   protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,

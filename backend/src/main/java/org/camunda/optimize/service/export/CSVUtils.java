@@ -181,6 +181,8 @@ public class CSVUtils {
         return "minimum";
       case MAX:
         return "maximum";
+      case SUM:
+        return "sum";
       default:
         throw new IllegalStateException("Uncovered type: " + aggregationType);
     }

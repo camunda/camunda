@@ -393,7 +393,7 @@ public class CompositeCommandResult {
   public static class ViewMeasure {
     private AggregationType aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
-    private final Double value;
+    private Double value;
 
     public ViewMeasureIdentifier getViewMeasureIdentifier() {
       return new ViewMeasureIdentifier(aggregationType, userTaskDurationTime);

@@ -191,7 +191,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(final Double setDuration,
-                                                            final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+                                                                    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
@@ -471,7 +471,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     assertDurationMapReportResults(
       result,
       ImmutableMap.of(
-        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]},
+        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
         SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[1]},
         DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[]{UNASSIGNED_TASK_DURATION}
       )
@@ -705,7 +705,10 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       .getResult();
 
     // then
-    assertDurationMapReportResults(result, ImmutableMap.of(FIRST_CANDIDATE_GROUP_ID, new Double[]{100., 300., 600.}));
+    assertDurationMapReportResults(
+      result,
+      ImmutableMap.of(FIRST_CANDIDATE_GROUP_ID, new Double[]{100., 300., 600.})
+    );
   }
 
   @Test
@@ -1206,7 +1209,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
   private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
@@ -1279,13 +1282,13 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
     Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
       List<MapResultEntryDto> measureResult = resultByAggregationType.get(aggType);
-      expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
-        MapResultUtil.getEntryForKey(measureResult, userTaskKey))
-        .isPresent().get()
-        .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
-      );
-    });
+        expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
+          MapResultUtil.getEntryForKey(measureResult, userTaskKey))
+          .isPresent().get()
+          .extracting(MapResultEntryDto::getValue)
+          .isEqualTo(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
+        );
+      });
   }
 
   protected String getIncorrectValueForKeyAssertionMsg(final String key) {

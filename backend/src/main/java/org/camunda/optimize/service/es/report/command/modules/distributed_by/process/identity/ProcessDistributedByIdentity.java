@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.DefinitionService;
@@ -105,10 +106,19 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
 
     for (Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
-      final CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
+      CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
         response, identityBucket.getAggregations(), context
       );
+
       final String key = identityBucket.getKeyAsString();
+      if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
+        for (CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
+          if (viewMeasure.getAggregationType() == AggregationType.SUM && (viewMeasure.getValue() != null && viewMeasure.getValue() == 0)) {
+            viewMeasure.setValue(null);
+          }
+        }
+      }
+
       distributedByIdentity.add(createDistributedByResult(key, resolveIdentityName(key), viewResult));
     }
 

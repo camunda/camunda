@@ -122,7 +122,7 @@ public class UserTaskWorkDurationByCandidateGroupReportEvaluationIT
     assertDurationMapReportResults(
       result,
       ImmutableMap.of(
-        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]},
+        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
         SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[1]}
       )
     );

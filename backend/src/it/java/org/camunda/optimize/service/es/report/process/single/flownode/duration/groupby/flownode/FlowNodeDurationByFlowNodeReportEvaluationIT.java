@@ -1171,7 +1171,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() {

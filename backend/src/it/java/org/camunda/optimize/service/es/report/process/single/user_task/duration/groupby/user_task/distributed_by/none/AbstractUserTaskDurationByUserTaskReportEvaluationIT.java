@@ -167,7 +167,10 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertDurationMapReportResults(result, ImmutableMap.of(USER_TASK_1, setDurations, USER_TASK_2, setDurations));
+    assertDurationMapReportResults(
+      result,
+      ImmutableMap.of(USER_TASK_1, setDurations, USER_TASK_2, setDurations)
+    );
   }
 
   @Test
@@ -247,19 +250,21 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
   @Test
   public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
     // given
+    double duration1 = 10.;
+    double duration2 = 20.;
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     finishAllUserTasks(processInstanceDto1);
-    changeDuration(processInstanceDto1, USER_TASK_1, 10.);
-    changeDuration(processInstanceDto1, USER_TASK_2, 20.);
+    changeDuration(processInstanceDto1, USER_TASK_1, duration1);
+    changeDuration(processInstanceDto1, USER_TASK_2, duration2);
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     finishAllUserTasks(processInstanceDto2);
-    changeDuration(processInstanceDto2, USER_TASK_1, 10.);
-    changeDuration(processInstanceDto2, USER_TASK_2, 20.);
+    changeDuration(processInstanceDto2, USER_TASK_1, duration1);
+    changeDuration(processInstanceDto2, USER_TASK_2, duration2);
 
     importAllEngineEntitiesFromScratch();
 
@@ -273,7 +278,8 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertDurationMapReportResults(
-      result, ImmutableMap.of(USER_TASK_1, new Double[]{10.}, USER_TASK_2, new Double[]{20.})
+      result,
+      ImmutableMap.of(USER_TASK_1, new Double[]{duration1, duration1}, USER_TASK_2, new Double[]{duration2, duration2})
     );
   }
 
@@ -622,7 +628,10 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       .getResult();
 
     // then
-    assertDurationMapReportResults(result, ImmutableMap.of(USER_TASK_1, new Double[]{100., 300., 600.}));
+    assertDurationMapReportResults(
+      result,
+      ImmutableMap.of(USER_TASK_1, new Double[]{100., 300., 600.})
+    );
   }
 
   @Test
@@ -1117,7 +1126,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
   }
 
   protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private void finishAllUserTasks(final ProcessInstanceEngineDto processInstanceDto1) {

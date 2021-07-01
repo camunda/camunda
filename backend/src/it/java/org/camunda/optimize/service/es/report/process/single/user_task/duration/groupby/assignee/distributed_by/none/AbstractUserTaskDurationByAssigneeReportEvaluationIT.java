@@ -435,7 +435,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertDurationMapReportResultsForAllAggregationTypes(
       result,
       ImmutableMap.of(
-        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0]},
+        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
         SECOND_USER, new Double[]{SET_DURATIONS[1]},
         DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[]{UNASSIGNED_TASK_DURATION}
       )
@@ -1184,7 +1184,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
   private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
@@ -1253,16 +1253,16 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       .containsExactly(getSupportedAggregationTypes());
     result.getMeasures().forEach(measureResult -> {
       final List<MapResultEntryDto> measureData = measureResult.getData();
-      expectedUserTaskValues.keySet().forEach(userTaskKey -> {
-        assertThat(MapResultUtil.getEntryForKey(measureData, userTaskKey))
-          .isPresent().get()
-          .extracting(MapResultEntryDto::getValue)
-          .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
-          .isEqualTo(
-            calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
-              .get(measureResult.getAggregationType())
-          );
-      });
+        expectedUserTaskValues.keySet().forEach(userTaskKey -> {
+          assertThat(MapResultUtil.getEntryForKey(measureData, userTaskKey))
+            .isPresent().get()
+            .extracting(MapResultEntryDto::getValue)
+            .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
+            .isEqualTo(
+              calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
+                .get(measureResult.getAggregationType())
+            );
+        });
     });
   }
 

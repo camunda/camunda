@@ -1248,7 +1248,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
   protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {

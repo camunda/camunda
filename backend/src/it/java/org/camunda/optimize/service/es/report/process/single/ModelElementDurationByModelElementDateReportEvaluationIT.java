@@ -468,7 +468,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
   protected abstract ProcessDefinitionEngineDto deploySimpleDefinition();
 
   protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
 }

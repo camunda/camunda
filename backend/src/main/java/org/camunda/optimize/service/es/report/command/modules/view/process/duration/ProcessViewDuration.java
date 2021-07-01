@@ -26,51 +26,51 @@ import static org.camunda.optimize.service.es.report.command.util.DurationScript
 
 public abstract class ProcessViewDuration extends ProcessViewMultiAggregation {
 
-  @Override
-  public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
-    return ViewProperty.DURATION;
-  }
+	@Override
+	public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
+		return ViewProperty.DURATION;
+	}
 
-  @Override
-  public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
-    return getAggregationStrategies(context.getReportData()).stream()
-      .map(strategy -> strategy.createAggregationBuilder().script(getScriptedAggregationField(context.getReportData())))
-      .collect(Collectors.toList());
-  }
+	@Override
+	public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
+		return getAggregationStrategies(context.getReportData()).stream()
+			.map(strategy -> strategy.createAggregationBuilder().script(getScriptedAggregationField(context.getReportData())))
+			.collect(Collectors.toList());
+	}
 
-  @Override
-  public ViewResult retrieveResult(final SearchResponse response,
-                                   final Aggregations aggs,
-                                   final ExecutionContext<ProcessReportDataDto> context) {
-    final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
-    getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
-      Double measureResult = aggregationStrategy.getValue(aggs);
-      if (measureResult != null) {
-        // rounding to closest integer since the lowest precision
-        // for duration in the data is milliseconds anyway for data types.
-        measureResult = Precision.round(measureResult, 0);
-      }
-      viewResultBuilder.viewMeasure(
-        ViewMeasure.builder().aggregationType(aggregationStrategy.getAggregationType()).value(measureResult).build()
-      );
-    });
-    return viewResultBuilder.build();
-  }
+	@Override
+	public ViewResult retrieveResult(final SearchResponse response,
+																	 final Aggregations aggs,
+																	 final ExecutionContext<ProcessReportDataDto> context) {
+		final ViewResult.ViewResultBuilder viewResultBuilder = ViewResult.builder();
+		getAggregationStrategies(context.getReportData()).forEach(aggregationStrategy -> {
+			Double measureResult = aggregationStrategy.getValue(aggs);
+			if (measureResult != null) {
+				// rounding to closest integer since the lowest precision
+				// for duration in the data is milliseconds anyway for data types.
+				measureResult = Precision.round(measureResult, 0);
+			}
+			viewResultBuilder.viewMeasure(
+				ViewMeasure.builder().aggregationType(aggregationStrategy.getAggregationType()).value(measureResult).build()
+			);
+		});
+		return viewResultBuilder.build();
+	}
 
-  protected abstract String getReferenceDateFieldName(final ProcessReportDataDto reportData);
+	protected abstract String getReferenceDateFieldName(final ProcessReportDataDto reportData);
 
-  protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
+	protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
 
-  private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
-    return reportData.isUserTaskReport()
-      ? getUserTaskDurationScript(
-      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      getDurationFieldName(reportData)
-    )
-      : getDurationScript(
-      LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      getDurationFieldName(reportData),
-      getReferenceDateFieldName(reportData)
-    );
-  }
+	private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
+		return reportData.isUserTaskReport()
+			? getUserTaskDurationScript(
+			LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+			getDurationFieldName(reportData)
+		)
+			: getDurationScript(
+			LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
+			getDurationFieldName(reportData),
+			getReferenceDateFieldName(reportData)
+		);
+	}
 }

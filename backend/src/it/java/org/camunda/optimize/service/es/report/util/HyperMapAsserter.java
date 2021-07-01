@@ -56,7 +56,7 @@ public class HyperMapAsserter {
     return new MeasureAdder(this, viewProperty, aggregationType, userTaskDurationTime);
   }
 
-  public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+  public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
     // this is done by hand since it's otherwise really hard to see where the
     // assert failed.
     assertThat(actualResult.getInstanceCount())
@@ -198,7 +198,7 @@ public class HyperMapAsserter {
       measure.getData().add(entry);
     }
 
-    public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+    public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
       add();
       asserter.doAssert(actualResult);
     }
@@ -254,7 +254,7 @@ public class HyperMapAsserter {
       return measureAdder;
     }
 
-    public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+    public void doAssert(ReportResultResponseDto<List<HyperMapResultEntryDto>> actualResult) {
       add();
       measureAdder.doAssert(actualResult);
     }

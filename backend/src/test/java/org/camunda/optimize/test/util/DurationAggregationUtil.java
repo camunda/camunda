@@ -18,6 +18,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.SUM;
 
 public class DurationAggregationUtil {
 
@@ -43,7 +44,8 @@ public class DurationAggregationUtil {
       MIN, Precision.round(statistics.getMin(), 0),
       MAX, Precision.round(statistics.getMax(), 0),
       AVERAGE, Precision.round(statistics.getMean(), 0),
-      MEDIAN, Precision.round(statistics.getPercentile(50.0D), 0)
+      MEDIAN, Precision.round(statistics.getPercentile(50.0D), 0),
+      SUM, Precision.round(statistics.getSum(), 0)
     );
   }
 }

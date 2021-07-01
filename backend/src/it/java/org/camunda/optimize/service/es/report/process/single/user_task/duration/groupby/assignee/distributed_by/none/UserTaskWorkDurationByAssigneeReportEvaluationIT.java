@@ -129,7 +129,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertDurationMapReportResultsForAllAggregationTypes(
       result,
       ImmutableMap.of(
-        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0]},
+        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
         SECOND_USER, new Double[]{SET_DURATIONS[1]}
       )
     );
