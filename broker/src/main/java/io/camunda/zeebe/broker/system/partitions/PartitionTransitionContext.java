@@ -22,7 +22,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
@@ -51,11 +52,12 @@ public class PartitionTransitionContext implements PartitionContext {
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
 
-  private final SnapshotStoreSupplier snapshotStoreSupplier;
   private final RaftPartition raftPartition;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
   private final Supplier<Consumer<TypedRecord>> onProcessedListenerSupplier;
+  private final ConstructableSnapshotStore constructableSnapshotStore;
+  private final ReceivableSnapshotStore receivableSnapshotStore;
   private final Integer partitionId;
   private final int maxFragmentSize;
   private final ExporterRepository exporterRepository;
@@ -86,7 +88,8 @@ public class PartitionTransitionContext implements PartitionContext {
       final BrokerCfg brokerCfg,
       final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
       final Supplier<Consumer<TypedRecord>> onProcessedListenerSupplier,
-      final SnapshotStoreSupplier snapshotStoreSupplier,
+      final ConstructableSnapshotStore constructableSnapshotStore,
+      final ReceivableSnapshotStore receivableSnapshotStore,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
       final PartitionProcessingState partitionProcessingState) {
@@ -94,10 +97,11 @@ public class PartitionTransitionContext implements PartitionContext {
     this.raftPartition = raftPartition;
     this.messagingService = messagingService;
     this.brokerCfg = brokerCfg;
-    this.snapshotStoreSupplier = snapshotStoreSupplier;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.onProcessedListenerSupplier = onProcessedListenerSupplier;
     this.commandResponseWriterSupplier = commandResponseWriterSupplier;
+    this.constructableSnapshotStore = constructableSnapshotStore;
+    this.receivableSnapshotStore = receivableSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     partitionId = raftPartition.id().id();
     this.actorSchedulingService = actorSchedulingService;
@@ -226,8 +230,12 @@ public class PartitionTransitionContext implements PartitionContext {
     return brokerCfg;
   }
 
-  public SnapshotStoreSupplier getSnapshotStoreSupplier() {
-    return snapshotStoreSupplier;
+  public ConstructableSnapshotStore getConstructableSnapshotStore() {
+    return constructableSnapshotStore;
+  }
+
+  public ReceivableSnapshotStore getReceivableSnapshotStore() {
+    return receivableSnapshotStore;
   }
 
   @Override

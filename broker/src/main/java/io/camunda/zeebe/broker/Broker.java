@@ -417,7 +417,8 @@ public final class Broker implements AutoCloseable {
                     brokerCfg,
                     () -> commandHandler.newCommandResponseWriter(),
                     () -> commandHandler.getOnProcessedListener(partitionId),
-                    snapshotStoreSupplier,
+                    snapshotStoreSupplier.getConstructableSnapshotStore(partitionId),
+                    snapshotStoreSupplier.getReceivableSnapshotStore(partitionId),
                     typedRecordProcessorsFactory,
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));

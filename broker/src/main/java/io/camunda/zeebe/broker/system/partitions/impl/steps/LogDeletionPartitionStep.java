@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.logstreams.LogDeletionService;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.List;
 
 public class LogDeletionPartitionStep implements PartitionStep {
 
@@ -25,9 +26,7 @@ public class LogDeletionPartitionStep implements PartitionStep {
             context.getNodeId(),
             context.getPartitionId(),
             logCompactor,
-            context
-                .getSnapshotStoreSupplier()
-                .getPersistedSnapshotStore(context.getRaftPartition().id().id()));
+            List.of(context.getConstructableSnapshotStore(), context.getReceivableSnapshotStore()));
 
     context.setLogDeletionService(deletionService);
     return context.getActorSchedulingService().submitActor(deletionService);

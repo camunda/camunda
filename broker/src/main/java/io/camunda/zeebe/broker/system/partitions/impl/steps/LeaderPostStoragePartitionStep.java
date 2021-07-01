@@ -16,20 +16,14 @@ public class LeaderPostStoragePartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> open(final PartitionTransitionContext context) {
-    context
-        .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
-        .addSnapshotListener(context.getSnapshotController());
+    context.getConstructableSnapshotStore().addSnapshotListener(context.getSnapshotController());
 
     return CompletableActorFuture.completed(null);
   }
 
   @Override
   public ActorFuture<Void> close(final PartitionTransitionContext context) {
-    context
-        .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
-        .removeSnapshotListener(context.getSnapshotController());
+    context.getConstructableSnapshotStore().removeSnapshotListener(context.getSnapshotController());
     return CompletableActorFuture.completed(null);
   }
 
