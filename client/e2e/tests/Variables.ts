@@ -408,7 +408,7 @@ test('Infinite scrolling', async (t) => {
 
   const withinVariablesList = within(screen.getByTestId('variables-list'));
 
-  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(52);
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(51);
 
   await t
     .expect(screen.getByText('aa').exists)
@@ -418,7 +418,7 @@ test('Infinite scrolling', async (t) => {
 
   await t.scrollIntoView(screen.getByText('bx'));
 
-  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(102);
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(101);
 
   await t
     .expect(screen.getByText('aa').exists)
@@ -428,7 +428,7 @@ test('Infinite scrolling', async (t) => {
 
   await t.scrollIntoView(screen.getByText('dv'));
 
-  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(152);
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(151);
 
   await t
     .expect(screen.getByText('aa').exists)
@@ -438,7 +438,7 @@ test('Infinite scrolling', async (t) => {
 
   await t.scrollIntoView(screen.getByText('ft'));
 
-  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(202);
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(201);
 
   await t
     .expect(screen.getByText('aa').exists)
@@ -448,7 +448,7 @@ test('Infinite scrolling', async (t) => {
 
   await t.scrollIntoView(screen.getByText('hr'));
 
-  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(202);
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(201);
 
   await t
     .expect(screen.queryByText('aa').exists)
@@ -459,7 +459,7 @@ test('Infinite scrolling', async (t) => {
     .ok();
 
   await t.scrollIntoView(screen.getByText('by'));
-  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(202);
+  await t.expect(withinVariablesList.queryAllByRole('row').count).eql(201);
 
   await t
     .expect(screen.queryByText('jp').exists)

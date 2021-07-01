@@ -36,9 +36,16 @@ const TR = styled.tr<TRProps>`
       }
 
       > td:first-child {
-        max-width: 226px;
-        min-width: 226px;
-        width: 226px;
+        width: 30%;
+        max-width: 0;
+      }
+      > td:nth-child(2) {
+        width: 60%;
+        padding-right: 0;
+      }
+      > td:last-child {
+        width: 10%;
+        min-width: 130px;
       }
 
       ${hasActiveOperation
@@ -53,6 +60,7 @@ const TR = styled.tr<TRProps>`
 
 const Table = styled.table`
   width: 100%;
+  min-width: 400px;
   margin-bottom: 3px;
   border-spacing: 0;
   border-collapse: collapse;

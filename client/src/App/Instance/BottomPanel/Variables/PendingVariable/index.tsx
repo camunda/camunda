@@ -5,7 +5,7 @@
  */
 
 import {Spinner} from '../styled';
-import {Container, Name, Value, DisplayText} from './styled';
+import {Container, Name, Value, DisplayText, SpinnerContainer} from './styled';
 
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
@@ -24,8 +24,10 @@ const PendingVariable: React.FC = observer(() => {
       <Name title={pendingItem.name}>{pendingItem.name}</Name>
       <Value>
         <DisplayText>{pendingItem.value}</DisplayText>
-        <Spinner data-testid="edit-variable-spinner" />
       </Value>
+      <SpinnerContainer>
+        <Spinner data-testid="edit-variable-spinner" />
+      </SpinnerContainer>
     </Container>
   );
 });

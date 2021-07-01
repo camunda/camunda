@@ -9,26 +9,27 @@ import styled from 'styled-components';
 const Container = styled.div`
   display: flex;
   justify-content: space-between;
-  flex-grow: 1;
-  padding-right: 20px;
+  width: 100%;
+  min-width: 400px;
 `;
 
 const EditButtonsContainer = styled.div`
   padding-top: 8px;
-`;
-
-const Fields = styled.div`
-  display: flex;
-  width: 100%;
-  margin-right: 2px;
+  width: 10%;
+  min-width: 127px;
 `;
 
 const Name = styled.div`
-  min-width: 227px;
+  width: 30%;
+  padding-right: 23px;
+  padding-left: 8px;
+  margin: 6px 0 6px 0px;
 `;
 
 const Value = styled.div`
-  width: 100%;
+  width: 60%;
+  margin-right: 2px;
+  margin: 6px 5px 6px 0px;
 `;
 
-export {Container, Fields, Name, Value, EditButtonsContainer};
+export {Container, Name, Value, EditButtonsContainer};

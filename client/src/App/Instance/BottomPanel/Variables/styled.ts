@@ -47,13 +47,16 @@ const VariablesContent = styled(Panel.Body)`
   top: 0;
   left: 0;
   border-top: none;
+  overflow-x: auto;
 `;
 
 const TableScroll = styled.div`
   overflow-y: auto;
+  overflow-x: hidden;
   height: 100%;
-  margin-top: 79px;
+  min-width: fit-content;
   margin-bottom: 40px;
+  margin-top: 45px;
 `;
 
 const Placeholder = styled.span`
@@ -79,17 +82,13 @@ const TD = styled.td`
     return css`
       color: ${colors.color};
 
-      padding-bottom: 5px;
-      padding-left: 16px;
-      padding-right: 9px;
-
+      padding: 6px 23px 6px 0;
       &:not(:nth-child(2)) {
         white-space: nowrap;
       }
-      vertical-align: top;
 
-      :first-child {
-        padding-top: 5px;
+      &:first-child {
+        vertical-align: top;
       }
     `;
   }}
@@ -97,39 +96,44 @@ const TD = styled.td`
 
 type THeadProps = {
   isVariableHeaderVisible: boolean;
+  scrollBarWidth: number;
 };
 
 const THead = styled.thead<THeadProps>`
-  ${({theme, isVariableHeaderVisible}) => {
+  ${({isVariableHeaderVisible, theme, scrollBarWidth}) => {
     const colors = theme.colors.variables.tHead;
 
     return css`
-      tr:first-child {
-        position: absolute;
-        top: 0;
-        height: 45px;
-        margin-top: 14px;
-        margin-left: 13.5px;
-        font-size: 15px;
-        font-weight: 500;
-        color: ${theme.colors.ui06};
-      }
-
       ${isVariableHeaderVisible &&
       css`
-        tr:last-child {
-          position: absolute;
+        tr:first-child {
+          display: flex;
+
           width: 100%;
-          top: 35px;
+          min-width: ${scrollBarWidth + 400}px;
+
+          border-top: none;
+          position: absolute;
+          top: 45px;
           border-bottom: 1px solid ${colors.borderColor};
           background: ${colors.backgroundColor};
-          border-top: none;
-          height: 45px;
+
           > th {
-            padding-top: 21px;
+            padding-top: 11px;
+            padding-bottom: 5px;
           }
           > th:first-child {
-            min-width: 230px;
+            width: 30%;
+            padding-right: 23px;
+          }
+          > th:nth-child(2) {
+            width: 60%;
+            padding-left: 7px;
+          }
+          > th:last-child {
+            width: 10%;
+            min-width: 130px;
+            flex-grow: 1;
           }
         }
       `}
@@ -137,26 +141,23 @@ const THead = styled.thead<THeadProps>`
   }}
 `;
 
-const VariableName = styled.span`
-  font-weight: bold;
+const VariableName = styled.div`
+  font-weight: 600;
   height: 100%;
-  padding: 4px 0;
-  margin: 3px 0;
+  padding-left: 14px;
+  padding-top: 4px;
   line-height: 18px;
-  display: block;
   text-overflow: ellipsis;
   overflow: hidden;
+  white-space: nowrap;
 `;
 
 const inputMargin = css`
-  margin: 4px 0 4px 7px;
+  padding: 3px 13px 3px 6px;
 `;
 
 const TextInput = styled(BasicInput)`
-  height: 30px;
-  padding-top: 7px;
   font-size: 14px;
-  max-width: 181px;
   ${inputMargin};
   ${errorBorders}
 `;
@@ -166,10 +167,10 @@ type DisplayTextProps = {hasBackdrop?: boolean};
 const DisplayText = styled.div<DisplayTextProps>`
   ${({hasBackdrop}) => {
     return css`
-      line-height: 18px;
+      line-height: normal;
       word-break: break-word;
-      margin: 11px 94px 11px 0;
-      max-height: 76px;
+      padding: 4px 0 4px 7px;
+      max-height: 78px;
       overflow-y: auto;
       overflow-wrap: break-word;
 
@@ -182,18 +183,17 @@ const DisplayText = styled.div<DisplayTextProps>`
 `;
 
 const textAreaStyles = css`
-  line-height: 18px;
+  line-height: normal;
   resize: vertical;
   font-size: 14px;
-  min-height: 30px;
-  max-height: 84px;
-  width: 100%;
+  min-height: 26px;
+  max-height: 78px;
   ${inputMargin};
 `;
 
 const AddTextarea = styled(BasicTextarea)`
   ${textAreaStyles};
-  ${errorBorders}
+  ${errorBorders};
 `;
 
 const EditTextarea = styled(BasicTextarea)`
@@ -201,25 +201,18 @@ const EditTextarea = styled(BasicTextarea)`
   ${errorBorders}
 `;
 
-const EditButtonsTD = styled.td`
-  padding-right: 21px;
-  padding-top: 8px;
+const EditButtonsTD = styled(TD)`
+  padding-right: 14px;
   display: flex;
   justify-content: flex-end;
 `;
 
-const EditInputTD = styled.td`
+const EditInputTD = styled(TD)`
   position: relative;
-
-  &:not(:nth-child(2)) {
-    white-space: nowrap;
-  }
 
   &:nth-child(2) {
     width: 100%;
   }
-
-  vertical-align: top;
 `;
 
 const DisplayTextTD = styled(TD)`
@@ -369,6 +362,7 @@ const Footer = styled(Panel.Footer)<FooterProps>`
       justify-content: space-between;
       max-height: initial;
       padding-right: ${scrollBarWidth}px;
+      min-width: ${scrollBarWidth + 400}px;
     `;
   }}
 `;
@@ -379,7 +373,7 @@ const TH = styled.th`
 
 const Warning = styled.div`
   display: flex;
-  margin: 0 11px 0 6px;
+  margin-right: 11px;
   width: 16px;
   height: 16px;
 `;
@@ -388,6 +382,17 @@ const EditButtonsContainer = styled.div`
   display: flex;
 `;
 
+const Header = styled.div`
+  ${({theme}) => {
+    return css`
+      margin-top: 15px;
+      margin-left: 14.5px;
+      font-size: 15px;
+      font-weight: 500;
+      color: ${theme.colors.ui06};
+    `;
+  }}
+`;
 export {
   Spinner,
   Variables,
@@ -419,4 +424,5 @@ export {
   Footer,
   Warning,
   EditButtonsContainer,
+  Header,
 };

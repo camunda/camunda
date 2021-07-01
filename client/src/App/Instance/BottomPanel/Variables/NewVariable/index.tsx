@@ -6,8 +6,8 @@
 
 import React, {useState} from 'react';
 import {TextInput, AddTextarea} from '../styled';
-import {Container, Fields, Name, Value, EditButtonsContainer} from './styled';
 import {Field, useForm, useFormState} from 'react-final-form';
+import {Container, Name, Value, EditButtonsContainer} from './styled';
 import {EditButtons} from '../EditButtons';
 import {
   validateNameCharacters,
@@ -25,46 +25,44 @@ const NewVariable: React.FC = () => {
 
   return (
     <Container data-testid="add-key-row">
-      <Fields>
-        <Name>
-          <Field
-            name="name"
-            validate={mergeValidators(
-              validateNameCharacters,
-              validateNameComplete
-            )}
-            allowNull={false}
-          >
-            {({input}) => (
-              <InjectAriaInvalid name={input.name}>
-                <TextInput
-                  {...input}
-                  autoFocus
-                  type="text"
-                  placeholder="Name"
-                  onChange={input.onChange}
-                />
-              </InjectAriaInvalid>
-            )}
-          </Field>
-        </Name>
-        <Value>
-          <Field name="value" validate={validateValueComplete}>
-            {({input}) => (
-              <InjectAriaInvalid name={input.name}>
-                <AddTextarea
-                  {...input}
-                  placeholder="Value"
-                  hasAutoSize
-                  minRows={1}
-                  maxRows={4}
-                  onChange={input.onChange}
-                />
-              </InjectAriaInvalid>
-            )}
-          </Field>
-        </Value>
-      </Fields>
+      <Name>
+        <Field
+          name="name"
+          validate={mergeValidators(
+            validateNameCharacters,
+            validateNameComplete
+          )}
+          allowNull={false}
+        >
+          {({input}) => (
+            <InjectAriaInvalid name={input.name}>
+              <TextInput
+                {...input}
+                autoFocus
+                type="text"
+                placeholder="Name"
+                onChange={input.onChange}
+              />
+            </InjectAriaInvalid>
+          )}
+        </Field>
+      </Name>
+      <Value>
+        <Field name="value" validate={validateValueComplete}>
+          {({input}) => (
+            <InjectAriaInvalid name={input.name}>
+              <AddTextarea
+                {...input}
+                placeholder="Value"
+                hasAutoSize
+                minRows={1}
+                maxRows={4}
+                onChange={input.onChange}
+              />
+            </InjectAriaInvalid>
+          )}
+        </Field>
+      </Value>
       <EditButtonsContainer>
         <EditButtons onModalButtonClick={() => setIsModalVisible(true)} />
       </EditButtonsContainer>

@@ -86,3 +86,7 @@ a {
   color: currentColor;
   text-decoration: none;
 }
+
+textarea {
+  margin: 0;
+}
