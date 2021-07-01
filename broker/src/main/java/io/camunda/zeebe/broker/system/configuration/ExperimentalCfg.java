@@ -27,10 +27,12 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
   private RocksdbCfg rocksdb = new RocksdbCfg();
+  private RaftCfg raft = new RaftCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     rocksdb.init(globalConfig, brokerBase);
+    raft.init(globalConfig, brokerBase);
   }
 
   public int getMaxAppendsPerFollower() {
@@ -89,5 +91,13 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + ", rocksdb="
         + rocksdb
         + '}';
+  }
+
+  public RaftCfg getRaft() {
+    return raft;
+  }
+
+  public void setRaft(final RaftCfg raft) {
+    this.raft = raft;
   }
 }

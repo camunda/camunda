@@ -117,7 +117,8 @@ public final class AtomixFactory {
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity())
-            .withPriorityElection(experimentalCfg.isEnablePriorityElection());
+            .withPriorityElection(experimentalCfg.isEnablePriorityElection())
+            .withRequestTimeout(experimentalCfg.getRaft().getRequestTimeout());
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 
