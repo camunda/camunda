@@ -7,33 +7,30 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import java.util.Optional;
 
 public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {
-  private final RaftLogReader reader;
+  private final RaftPartitionServer raftPartitionServer;
 
-  public AtomixRecordEntrySupplierImpl(final RaftLogReader reader) {
-    this.reader = reader;
+  public AtomixRecordEntrySupplierImpl(final RaftPartitionServer raftPartitionServer) {
+    this.raftPartitionServer = raftPartitionServer;
   }
 
   @Override
   public Optional<IndexedRaftLogEntry> getPreviousIndexedEntry(final long position) {
-    // Here we are seeking twice. Since this method is only called when taking a snapshot it is ok
-    // to be not very efficient.
-    final long recordIndex = reader.seekToAsqn(position);
-    final long prevIndex = recordIndex - 1;
-    if (reader.seek(prevIndex) == prevIndex) {
-      return Optional.of(reader.next());
+    try (final var reader = raftPartitionServer.openReader()) {
+      // Here we are seeking twice. Since this method is only called when taking a snapshot it is ok
+      // to be not very efficient.
+      final long recordIndex = reader.seekToAsqn(position);
+      final long prevIndex = recordIndex - 1;
+      if (reader.seek(prevIndex) == prevIndex) {
+        return Optional.of(reader.next());
+      }
+
+      return Optional.empty();
     }
-
-    return Optional.empty();
-  }
-
-  @Override
-  public void close() {
-    reader.close();
   }
 }
