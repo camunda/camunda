@@ -33,11 +33,11 @@ public class ReportAuthorizationService {
   private final AuthorizedCollectionService collectionAuthorizationService;
   private final ReportReader reportReader;
 
-  public boolean isAuthorizedToReport(final String userId, final ReportDefinitionDto report) {
+  public boolean isAuthorizedToReport(final String userId, final ReportDefinitionDto<?> report) {
     return getAuthorizedRole(userId, report).isPresent();
   }
 
-  public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
+  public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto<?> report) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
     final Optional<RoleType> authorizedRole = isSuperUser
       ? Optional.of(RoleType.EDITOR)
@@ -45,7 +45,7 @@ public class ReportAuthorizationService {
     return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, report));
   }
 
-  private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto report) {
+  private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto<?> report) {
     RoleType role = null;
     if (report.getCollectionId() != null) {
       role = collectionAuthorizationService.getUsersCollectionResourceRole(userId, report.getCollectionId())
@@ -57,7 +57,7 @@ public class ReportAuthorizationService {
   }
 
   public boolean isAuthorizedToAccessReportDefinition(final String userId,
-                                                      final ReportDefinitionDto report) {
+                                                      final ReportDefinitionDto<?> report) {
     final boolean authorizedToAccessDefinition;
     if (report instanceof SingleProcessReportDefinitionRequestDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionRequestDto) report).getData();
@@ -86,9 +86,10 @@ public class ReportAuthorizationService {
 
   private boolean isAuthorizedToAccessProcessReportDefinition(@NonNull final String userId,
                                                               @NonNull final ProcessReportDataDto reportData) {
-    return definitionAuthorizationService.isAuthorizedToAccessDefinition(
-      userId, DefinitionType.PROCESS, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
-    );
+    return reportData.getDefinitions().stream()
+      .allMatch(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
+        userId, DefinitionType.PROCESS, definition.getKey(), definition.getTenantIds()
+      ));
   }
 
 }

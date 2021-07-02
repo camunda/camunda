@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
-import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -54,8 +53,6 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   private static final Stream<Integer> definitionType() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
-
-  private final AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @ParameterizedTest
   @MethodSource("definitionType")

@@ -279,11 +279,16 @@ public class ReportClient {
       .getId();
   }
 
-  public String createSingleProcessReport(ProcessReportDataDto data) {
+  public String createSingleProcessReport(final ProcessReportDataDto data) {
+    return createSingleProcessReport(data, null);
+  }
+
+  public String createSingleProcessReport(final ProcessReportDataDto data, final String collectionId) {
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(TEST_REPORT_NAME);
     singleProcessReportDefinitionDto.setData(data);
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
@@ -369,14 +374,13 @@ public class ReportClient {
     }
   }
 
-  private Response createSingleProcessReportAsUserRawResponse(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto,
-                                                              final String user, final String pw) {
+  public Response createSingleProcessReportAsUserRawResponse(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto,
+                                                             final String user, final String pw) {
     return getRequestExecutor()
       .withUserAuthentication(user, pw)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute();
   }
-
 
   public String createSingleProcessReportAsUser(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto,
                                                 final String user, final String pw) {
@@ -484,6 +488,13 @@ public class ReportClient {
     return getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public Response getReportByIdAsUserRawResponse(final String id, final String username, final String password) {
+    return getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildGetReportRequest(id)
+      .execute();
   }
 
   public void deleteReport(final String reportId) {
