@@ -46,7 +46,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
@@ -374,7 +373,7 @@ public class RaftTest extends ConcurrentTestCase {
       final CountDownLatch transitionCompleted) {
     if (role == Role.LEADER) {
       final RaftLog raftLog = server.getContext().getLog();
-      final RaftLogReader raftLogReader = raftLog.openReader(Mode.COMMITS);
+      final RaftLogReader raftLogReader = raftLog.openCommittedReader();
       raftLogReader.seek(raftLog.getLastIndex());
       final IndexedRaftLogEntry entry = raftLogReader.next();
 
@@ -526,7 +525,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     // then
     final RaftLog raftLog = leader.getContext().getLog();
-    final RaftLogReader raftLogReader = raftLog.openReader(Mode.ALL);
+    final RaftLogReader raftLogReader = raftLog.openReader();
 
     assertThat(raftLog.getLastIndex()).isEqualTo(index - 1);
     raftLogReader.seek(raftLog.getLastIndex());

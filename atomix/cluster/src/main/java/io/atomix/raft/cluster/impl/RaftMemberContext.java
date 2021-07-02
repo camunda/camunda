@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -81,11 +80,13 @@ public final class RaftMemberContext {
 
     switch (member.getType()) {
       case PASSIVE:
-        openReaderAtEndOfLog(log, Mode.COMMITS);
+        reader = log.openCommittedReader();
+        resetReaderAtEndOfLog(reader);
         break;
       case PROMOTABLE:
       case ACTIVE:
-        openReaderAtEndOfLog(log, Mode.ALL);
+        reader = log.openReader();
+        resetReaderAtEndOfLog(reader);
         break;
       default:
         LoggerFactory.getLogger(RaftMemberContext.class)
@@ -94,8 +95,7 @@ public final class RaftMemberContext {
     }
   }
 
-  private void openReaderAtEndOfLog(final RaftLog log, final Mode all) {
-    reader = log.openReader();
+  private void resetReaderAtEndOfLog(final RaftLogReader reader) {
     reader.seekToLast();
     if (reader.hasNext()) {
       currentEntry = reader.next();

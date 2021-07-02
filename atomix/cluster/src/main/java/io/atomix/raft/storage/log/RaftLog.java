@@ -57,23 +57,21 @@ public final class RaftLog implements Closeable {
   }
 
   /**
-   * Opens the reader with {@link Mode} ALL.
+   * Opens the reader that can read both committed and uncommitted entries.
    *
    * @return the reader
    */
   public RaftLogReader openReader() {
-    return openReader(Mode.ALL);
+    return new RaftLogReader(this, journal.openReader(), Mode.ALL);
   }
 
   /**
-   * Opens the reader with given {@link Mode}.
+   * Opens the reader that can only read committed entries.
    *
-   * @param mode the mode of the reader
    * @return the reader
    */
-  public RaftLogReader openReader(final Mode mode) {
-    final RaftLogReader reader = new RaftLogReader(this, journal.openReader(), mode);
-    return reader;
+  public RaftLogReader openCommittedReader() {
+    return new RaftLogReader(this, journal.openReader(), Mode.COMMITS);
   }
 
   public boolean isOpen() {

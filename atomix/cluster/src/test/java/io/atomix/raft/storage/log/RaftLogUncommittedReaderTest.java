@@ -17,7 +17,6 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import java.io.File;
@@ -39,7 +38,7 @@ class RaftLogUncommittedReaderTest {
   @BeforeEach
   void setup(@TempDir final File directory) {
     raftlog = RaftLog.builder().withDirectory(directory).withName("test").build();
-    uncommittedReader = raftlog.openReader(Mode.ALL);
+    uncommittedReader = raftlog.openReader();
     data.order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
   }
 
