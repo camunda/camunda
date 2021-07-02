@@ -25,7 +25,7 @@ config.process.update = (type, data, props) => {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
 
     if (
-      data.entity !== 'variable' &&
+      data.entity === 'incident' &&
       props.report.data.configuration?.aggregationTypes?.includes('sum')
     ) {
       changes.configuration.aggregationTypes = {$set: ['avg']};

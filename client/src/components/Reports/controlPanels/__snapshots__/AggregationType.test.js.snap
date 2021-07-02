@@ -28,6 +28,13 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       <Switch
         checked={false}
         disabled={false}
+        key="sum"
+        label="Sum"
+        onChange={[Function]}
+      />
+      <Switch
+        checked={false}
+        disabled={false}
         key="min"
         label="Minimum"
         onChange={[Function]}
@@ -109,6 +116,13 @@ exports[`should render an user task duration selection for user task duration re
       Duration aggregations
     </h4>
     <fieldset>
+      <Switch
+        checked={false}
+        disabled={false}
+        key="sum"
+        label="Sum"
+        onChange={[Function]}
+      />
       <Switch
         checked={false}
         disabled={false}

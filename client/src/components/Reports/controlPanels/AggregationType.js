@@ -23,6 +23,7 @@ export default function AggregationType({report, onChange}) {
   const isDurationReport = report?.view?.properties.includes('duration');
   const isUserTaskReport = report?.view?.entity === 'userTask';
   const isVariableReport = report?.view?.entity === 'variable';
+  const isIncidentReport = report?.view?.entity === 'incident';
 
   function isLastAggregation(field, type) {
     return configuration[field].length === 1 && configuration[field][0] === type;
@@ -68,7 +69,7 @@ export default function AggregationType({report, onChange}) {
 
   if (isDurationReport || isVariableReport) {
     const availableAggregations = [];
-    if (isVariableReport) {
+    if (!isIncidentReport) {
       availableAggregations.push('sum');
     }
     availableAggregations.push('min', 'avg');

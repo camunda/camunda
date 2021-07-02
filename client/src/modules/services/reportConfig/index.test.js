@@ -9,10 +9,10 @@ import config from './index';
 jest.mock('./reportConfig', () => () => ({update: () => ({})}));
 
 describe('process update', () => {
-  it('should reset aggregation type if its incompatible outside variable reports', () => {
+  it('should reset aggregation type if its incompatible', () => {
     const changes = config.process.update(
       'view',
-      {properties: ['duration'], entity: 'processInstance'},
+      {properties: ['duration'], entity: 'incident'},
       {report: {data: {configuration: {aggregationTypes: ['sum']}}, configuration: {}}}
     );
 

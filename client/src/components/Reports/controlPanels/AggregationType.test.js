@@ -51,7 +51,7 @@ it('should render an user task duration selection for user task duration reports
   expect(node).toMatchSnapshot();
 });
 
-it('should render an additional sum field for variable reports', () => {
+it('should render sum field for variable reports', () => {
   const node = shallow(
     <AggregationType
       report={{
@@ -63,6 +63,20 @@ it('should render an additional sum field for variable reports', () => {
   );
 
   expect(node.find('Switch').first()).toHaveProp('label', 'Sum');
+});
+
+it('should hide sum field for incident reports', () => {
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'incident', properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['avg']},
+      }}
+    />
+  );
+
+  expect(node.find('Switch').first()).not.toHaveProp('label', 'Sum');
 });
 
 it('should reevaluate the report when changing the aggregation type', () => {
