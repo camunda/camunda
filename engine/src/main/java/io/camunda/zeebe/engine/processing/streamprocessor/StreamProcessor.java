@@ -125,9 +125,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      // disable writing to the log stream but for reprocessing checks
+      // disable writing to the log stream
       processingContext.disableLogStreamWriter();
-      processingContext.enableReprocessingStreamWriter();
 
       recoverFuture = reProcessingStateMachine.startRecover(snapshotPosition);
 

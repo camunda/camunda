@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
@@ -106,7 +105,6 @@ public final class ReProcessingStateMachine {
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(REPLAY_FILTER));
 
   private final LogStreamReader logStreamReader;
-  private final ReprocessingStreamWriter reprocessingStreamWriter;
   private final EventApplier eventApplier;
 
   private final TransactionContext transactionContext;
@@ -139,7 +137,6 @@ public final class ReProcessingStateMachine {
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
-    reprocessingStreamWriter = context.getReprocessingStreamWriter();
   }
 
   /**
@@ -354,9 +351,6 @@ public final class ReProcessingStateMachine {
   }
 
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
-    reprocessingStreamWriter.removeRecord(
-        currentEvent.getKey(), currentEvent.getSourceEventPosition());
-
     // do reprocessing until the last source event but read until the last follow-up event to check
     // for inconsistent reprocessing records
     if (currentEvent.getPosition() >= lastFollowUpEventPosition) {
