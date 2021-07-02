@@ -20,16 +20,14 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 public class CompletedInstancesOnlyQueryFilter implements QueryFilter<CompletedInstancesOnlyFilterDataDto> {
 
   public void addFilters(final BoolQueryBuilder query,
-                         final List<CompletedInstancesOnlyFilterDataDto> runningOnly,
+                         final List<CompletedInstancesOnlyFilterDataDto> completedInstancesData,
                          final FilterContext filterContext) {
-    if (runningOnly != null && !runningOnly.isEmpty()) {
-      List<QueryBuilder> filters = query.filter();
+    if (completedInstancesData != null && !completedInstancesData.isEmpty()) {
+      final List<QueryBuilder> filters = query.filter();
 
-      BoolQueryBuilder onlyRunningInstances =
-        boolQuery()
-          .must(existsQuery(END_DATE));
+      final BoolQueryBuilder onlyCompletedQuery = boolQuery().must(existsQuery(END_DATE));
 
-      filters.add(onlyRunningInstances);
+      filters.add(onlyCompletedQuery);
     }
   }
 

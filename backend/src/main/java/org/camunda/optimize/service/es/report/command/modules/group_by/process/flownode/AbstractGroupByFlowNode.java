@@ -31,10 +31,8 @@ public abstract class AbstractGroupByFlowNode extends ProcessGroupByPart {
     final AggregationBuilder subAggregation) {
     return nested(FLOW_NODES_AGGREGATION, FLOW_NODE_INSTANCES)
       .subAggregation(
-        filter(
-          FILTERED_FLOW_NODES_AGGREGATION,
-          createModelElementAggregationFilter(context.getReportData())
-        ).subAggregation(subAggregation)
+        filter(FILTERED_FLOW_NODES_AGGREGATION, createModelElementAggregationFilter(context.getReportData()))
+          .subAggregation(subAggregation)
       );
   }
 

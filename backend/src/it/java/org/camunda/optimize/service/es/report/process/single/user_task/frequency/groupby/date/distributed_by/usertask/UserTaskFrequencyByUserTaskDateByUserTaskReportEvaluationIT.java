@@ -766,8 +766,6 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    // We have to change both durations as the instance level filtering applies to the activities and the
-    // view level filtering applies to the user tasks
     engineDatabaseExtension.changeFlowNodeTotalDuration(instance.getId(), USER_TASK_1, 2000.);
     engineDatabaseExtension.changeFlowNodeTotalDuration(instance.getId(), USER_TASK_2, 1000.);
 

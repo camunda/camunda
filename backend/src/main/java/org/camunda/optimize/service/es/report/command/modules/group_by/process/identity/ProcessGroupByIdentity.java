@@ -86,8 +86,7 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
               // version.
               FILTERED_USER_TASKS_AGGREGATION,
               ModelElementFilterQueryUtil.createInclusiveFlowNodeIdFilterQuery(
-                context.getReportData(),
-                getUserTaskIds(context.getReportData())
+                context.getReportData(), getUserTaskIds(context.getReportData())
               )
             ).subAggregation(identityTermsAggregation)));
 

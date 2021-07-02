@@ -39,6 +39,7 @@ public class VariableFilterBuilder {
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
+  private List<String> appliedTo;
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -105,7 +106,11 @@ public class VariableFilterBuilder {
     return this;
   }
 
-  public VariableFilterBuilder values(List<String> values) {
+  public VariableFilterBuilder value(final String value) {
+    return values(List.of(value));
+  }
+
+  public VariableFilterBuilder values(final List<String> values) {
     if (values == null) {
       this.values = null;
       return this;
@@ -153,6 +158,15 @@ public class VariableFilterBuilder {
 
   public VariableFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
+    return this;
+  }
+
+  public VariableFilterBuilder appliedTo(final String appliedTo) {
+    return appliedTo(List.of(appliedTo));
+  }
+
+  public VariableFilterBuilder appliedTo(final List<String> appliedTo) {
+    this.appliedTo = appliedTo;
     return this;
   }
 
@@ -223,6 +237,7 @@ public class VariableFilterBuilder {
         break;
     }
     filter.setFilterLevel(filterLevel);
+    Optional.ofNullable(appliedTo).ifPresent(value -> filter.setAppliedTo(appliedTo));
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

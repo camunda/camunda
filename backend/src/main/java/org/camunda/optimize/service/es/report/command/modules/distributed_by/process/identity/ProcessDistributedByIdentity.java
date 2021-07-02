@@ -69,10 +69,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
         // one is used to decide which user tasks should be taken into account. To make sure that we only fetch
         // assignees related to this definition version we filter for userTasks that only occur in the latest version.
         FILTERED_USER_TASKS_AGGREGATION,
-        createInclusiveFlowNodeIdFilterQuery(
-          context.getReportData(),
-          getUserTaskIds(context.getReportData())
-        )
+        createInclusiveFlowNodeIdFilterQuery(context.getReportData(), getUserTaskIds(context.getReportData()))
       ).subAggregation(identityTermsAggregation)
     );
   }
