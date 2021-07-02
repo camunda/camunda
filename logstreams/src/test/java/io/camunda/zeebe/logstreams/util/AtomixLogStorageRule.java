@@ -13,7 +13,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
@@ -161,8 +160,8 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   @Override
-  public RaftLogReader create(final Mode mode) {
-    return raftLog.openReader(mode);
+  public RaftLogReader create() {
+    return raftLog.openReader();
   }
 
   public void setPositionListener(final LongConsumer positionListener) {

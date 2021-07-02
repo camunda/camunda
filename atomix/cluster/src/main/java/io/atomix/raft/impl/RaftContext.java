@@ -55,7 +55,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ComposableFuture;
@@ -171,7 +170,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // Construct the core log, reader, writer, and compactor.
     raftLog = storage.openLog();
-    logReader = raftLog.openReader(Mode.ALL);
+    logReader = raftLog.openReader();
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();

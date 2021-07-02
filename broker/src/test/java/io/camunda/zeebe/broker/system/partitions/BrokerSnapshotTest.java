@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.camunda.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
@@ -49,7 +48,7 @@ public class BrokerSnapshotTest {
                 .getClusterServices()
                 .getPartitionGroup()
                 .getPartition(PartitionId.from(AtomixFactory.GROUP_NAME, PARTITION_ID));
-    journalReader = raftPartition.getServer().openReader(Mode.COMMITS);
+    journalReader = raftPartition.getServer().openReader();
     brokerAdminService = brokerRule.getBroker().getBrokerAdminService();
 
     final String contactPoint = NetUtil.toSocketAddressString(brokerRule.getGatewayAddress());

@@ -206,8 +206,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     server.getContext().getLogCompactor().setCompactableIndex(index);
   }
 
-  public RaftLogReader openReader(final Mode mode) {
-    return server.getContext().getLog().openReader(mode);
+  public RaftLogReader openReader() {
+    return server.getContext().getLog().openReader(Mode.COMMITS);
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
