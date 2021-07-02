@@ -70,7 +70,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
-  /** Recover future is completed after reprocessing is done. */
+  /** Recover future is completed after replay is done. */
   private ActorFuture<Long> recoverFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {

@@ -35,12 +35,12 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
- * Represents the reprocessing state machine, which is executed on reprocessing.
+ * Represents the state machine to replay events.
  *
  * <pre>
  * +------------------+   +-------------+           +------------------------+
  * |                  |   |             |           |                        |
- * |  startRecover()  |--->  scanLog()  |---------->|  reprocessNextEvent()  |
+ * |  startRecover()  |--->  scanLog()  |---------->|  replayNextEvent()     |
  * |                  |   |             |           |                        |
  * +------------------+   +---+---------+           +-----^------+-----------+
  *                            |                           |      |
@@ -48,19 +48,19 @@ import org.slf4j.Logger;
  * |                 |        |                           |      |
  * |  onRecovered()  <--------+                           |      |    +--------------------+
  * |                 |                                    |      |    |                    |
- * +--------^--------+                hasNext             |      +--->|  reprocessEvent()  |
+ * +--------^--------+                hasNext             |      +--->|  replayEvent()     |
  *          |            +--------------------------------+           |                    |
  *          |            |                                            +----+----------+----+
  *          |            |                                                 |          |
  *   +------+------------+-----+                                           |          |
  *   |                         |               no event processor          |          |
- *   |  onRecordReprocessed()  |<------------------------------------------+          |
+ *   |  onRecordReplayed()     |<------------------------------------------+          |
  *   |                         |                                                      |
  *   +---------^---------------+                                                      |
  *             |                                                                      |
  *             |      +--------------------------+       +----------------------+     |
  *             |      |                          |       |                      |     |
- *             +------+  updateStateUntilDone()  <-------+  processUntilDone()  |<----+
+ *             +------+  updateStateUntilDone()  <-------+  replayUntilDone()   |<----+
  *                    |                          |       |                      |
  *                    +------^------------+------+       +---^------------+-----+
  *                           |            |                  |            |
@@ -140,10 +140,11 @@ public final class ReProcessingStateMachine {
   }
 
   /**
-   * Reprocess the records. It returns the position of the last successfully processed record. If
-   * there is nothing processed it returns {@link StreamProcessor#UNSET_POSITION}
+   * Replay events on the log stream to restore the state. It returns the position of the last
+   * command that was processed on the stream. If no command was processed it returns {@link
+   * StreamProcessor#UNSET_POSITION}.
    *
-   * @return a ActorFuture with last reprocessed position
+   * @return a ActorFuture with the position of the last processed command
    */
   ActorFuture<Long> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
@@ -156,12 +157,15 @@ public final class ReProcessingStateMachine {
 
     if (lastSourceEventPosition > snapshotPosition) {
       LOG.info(
-          "Processor starts reprocessing, until last source event position {}",
+          "Processor starts replay of events. [snapshot-position: {}, position-of-last-command: {}]",
+          snapshotPosition,
           lastSourceEventPosition);
       logStreamReader.seekToNextEvent(snapshotPosition);
-      reprocessNextEvent();
+      replayNextEvent();
+
     } else if (snapshotPosition > 0) {
       recoveryFuture.complete(snapshotPosition);
+
     } else {
       recoveryFuture.complete(StreamProcessor.UNSET_POSITION);
     }
@@ -195,7 +199,7 @@ public final class ReProcessingStateMachine {
 
         if (errorPosition >= 0) {
           LOG.debug(
-              "Found error-prone event {} on reprocessing, will add position {} to the blacklist.",
+              "Found error-prone record {} on replay, add position {} to the blacklist.",
               newEvent,
               errorPosition);
           failedEventPositions.add(errorPosition);
@@ -226,7 +230,7 @@ public final class ReProcessingStateMachine {
     return lastSourceEventPosition;
   }
 
-  private void readNextEvent() {
+  private void readNextRecord() {
     if (!logStreamReader.hasNext()) {
       throw new IllegalStateException(
           String.format(ERROR_MESSAGE_REPLAY_NO_NEXT_EVENT, lastFollowUpEventPosition));
@@ -242,24 +246,24 @@ public final class ReProcessingStateMachine {
     }
   }
 
-  private void reprocessNextEvent() {
+  private void replayNextEvent() {
     try {
-      readNextEvent();
+      readNextRecord();
 
       if (eventFilter.applies(currentEvent)) {
-        reprocessEvent(currentEvent);
+        replayEvent(currentEvent);
       } else {
-        onRecordReprocessed(currentEvent);
+        onRecordReplayed(currentEvent);
       }
 
     } catch (final RuntimeException e) {
-      final var processingException =
+      final var replayException =
           new ProcessingException("Unable to replay record", currentEvent, metadata, e);
-      recoveryFuture.completeExceptionally(processingException);
+      recoveryFuture.completeExceptionally(replayException);
     }
   }
 
-  private void reprocessEvent(final LoggedEvent currentEvent) {
+  private void replayEvent(final LoggedEvent currentEvent) {
 
     try {
       metadata.reset();
@@ -272,12 +276,11 @@ public final class ReProcessingStateMachine {
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
 
-    processUntilDone(currentEvent.getPosition(), typedEvent);
+    replayUntilDone(currentEvent.getPosition(), typedEvent);
   }
 
-  private void processUntilDone(final long position, final TypedRecord<?> currentEvent) {
-    final TransactionOperation operationOnProcessing =
-        chooseOperationForEvent(position, currentEvent);
+  private void replayUntilDone(final long position, final TypedRecord<?> currentEvent) {
+    final TransactionOperation operation = chooseOperationForEvent(position, currentEvent);
 
     final ActorFuture<Boolean> resultFuture =
         processRetryStrategy.runWithRetry(
@@ -287,7 +290,7 @@ public final class ReProcessingStateMachine {
                 zeebeDbTransaction.rollback();
               }
               zeebeDbTransaction = transactionContext.getCurrentTransaction();
-              zeebeDbTransaction.run(operationOnProcessing);
+              zeebeDbTransaction.run(operation);
               return true;
             },
             abortCondition);
@@ -295,7 +298,7 @@ public final class ReProcessingStateMachine {
     actor.runOnCompletion(
         resultFuture,
         (v, t) -> {
-          // processing should be retried endless until it worked
+          // replay should be retried endless until it worked
           assert t == null : "On replay there shouldn't be any exception thrown.";
           updateStateUntilDone();
         });
@@ -303,27 +306,27 @@ public final class ReProcessingStateMachine {
 
   private TransactionOperation chooseOperationForEvent(
       final long position, final TypedRecord<?> currentEvent) {
-    final TransactionOperation operationOnProcessing;
+    final TransactionOperation operation;
 
     if (failedEventPositions.contains(position)) {
       LOG.info(LOG_STMT_FAILED_ON_REPLAY, currentEvent);
-      operationOnProcessing =
+      operation =
           () -> zeebeState.getBlackListState().tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
     } else {
-      operationOnProcessing =
+      operation =
           () -> {
             final boolean isNotOnBlacklist =
                 !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
             if (isNotOnBlacklist) {
-              reprocessRecord(currentEvent);
+              replayEvent(currentEvent);
             }
             lastProcessedPositionState.markAsProcessed(position);
           };
     }
-    return operationOnProcessing;
+    return operation;
   }
 
-  private void reprocessRecord(final TypedRecord<?> currentEvent) {
+  private void replayEvent(final TypedRecord<?> currentEvent) {
     // skip events if the state changes are already applied to the state in the snapshot
     if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
       eventApplier.applyState(
@@ -346,13 +349,11 @@ public final class ReProcessingStateMachine {
         (bool, throwable) -> {
           // update state should be retried endless until it worked
           assert throwable == null : "On replay there shouldn't be any exception thrown.";
-          onRecordReprocessed(currentEvent);
+          onRecordReplayed(currentEvent);
         });
   }
 
-  private void onRecordReprocessed(final LoggedEvent currentEvent) {
-    // do reprocessing until the last source event but read until the last follow-up event to check
-    // for inconsistent reprocessing records
+  private void onRecordReplayed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() >= lastFollowUpEventPosition) {
       LOG.info(LOG_STMT_REPLAY_FINISHED, currentEvent.getPosition());
 
@@ -361,7 +362,7 @@ public final class ReProcessingStateMachine {
 
       onRecovered(lastSourceEventPosition);
     } else {
-      actor.submit(this::reprocessNextEvent);
+      actor.submit(this::replayNextEvent);
     }
   }
 
