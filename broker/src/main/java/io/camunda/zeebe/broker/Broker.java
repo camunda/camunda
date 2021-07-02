@@ -73,7 +73,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.LogUtil;
@@ -129,7 +128,7 @@ public final class Broker implements AutoCloseable {
   private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
   private final SpringBrokerBridge springBrokerBridge;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private SnapshotStoreSupplier snapshotStoreSupplier;
+  private FileBasedSnapshotStoreFactory snapshotStoreFactory;
   private final List<ZeebePartition> partitions = new ArrayList<>();
   private BrokerAdminService brokerAdminService;
 
@@ -256,9 +255,8 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
-    final var snapshotStoreFactory =
-        new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
-    snapshotStoreSupplier = snapshotStoreFactory;
+    snapshotStoreFactory = new FileBasedSnapshotStoreFactory(scheduler, localBroker.getNodeId());
+
     final var atomix = AtomixFactory.fromConfiguration(brokerCfg, snapshotStoreFactory);
     testCompanionObject.atomix = atomix;
     clusterServices = new ClusterServices(atomix);
@@ -417,7 +415,8 @@ public final class Broker implements AutoCloseable {
                     brokerCfg,
                     () -> commandHandler.newCommandResponseWriter(),
                     () -> commandHandler.getOnProcessedListener(partitionId),
-                    snapshotStoreSupplier,
+                    snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
+                    snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
                     typedRecordProcessorsFactory,
                     buildExporterRepository(brokerCfg),
                     new PartitionProcessingState(owningPartition));
