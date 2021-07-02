@@ -99,11 +99,6 @@
       "yarn lint"
     ]
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged && yarn coverage"
-    }
-  },
   "jest": {
     "coverageThreshold": {
       "global": {
