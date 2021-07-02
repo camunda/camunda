@@ -69,6 +69,7 @@ public final class ZeebePartition extends Actor
    * @param newRole the new role of the raft partition
    */
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onNewRole(final Role newRole, final long newTerm) {
     actor.run(() -> onRoleChange(newRole, newTerm));
   }
@@ -228,6 +229,7 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onFailure() {
     actor.run(
         () -> {
@@ -237,6 +239,7 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onRecovered() {
     actor.run(
         () -> {
@@ -246,6 +249,7 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // will be removed from public API of ZeebePartition
   public void onUnrecoverableFailure() {
     actor.run(this::handleUnrecoverableFailure);
   }
@@ -326,6 +330,8 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // currently the implementation forwards this to other components inside the
+  // partition; these components will be directly registered as listeners in the future
   public void onDiskSpaceNotAvailable() {
     actor.call(
         () -> {
@@ -339,6 +345,8 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
+  @Deprecated // currently the implementation forwards this to other components inside the
+  // partition; these components will be directly registered as listeners in the future
   public void onDiskSpaceAvailable() {
     actor.call(
         () -> {
@@ -351,6 +359,7 @@ public final class ZeebePartition extends Actor
         });
   }
 
+  @Deprecated // will be removed from public API of ZeebePartition
   public ActorFuture<Void> pauseProcessing() {
     final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
     actor.call(
@@ -371,6 +380,7 @@ public final class ZeebePartition extends Actor
     return completed;
   }
 
+  @Deprecated // will be removed from public API of ZeebePartition
   public void resumeProcessing() {
     actor.call(
         () -> {
@@ -393,6 +403,7 @@ public final class ZeebePartition extends Actor
     return context.getRaftPartition().getServer().getPersistedSnapshotStore();
   }
 
+  @Deprecated // will be removed from public API of ZeebePartition
   public void triggerSnapshot() {
     actor.call(
         () -> {
@@ -408,6 +419,7 @@ public final class ZeebePartition extends Actor
     return actor.call(() -> Optional.ofNullable(context.getExporterDirector()));
   }
 
+  @Deprecated // will be removed from public API of ZeebePartition
   public ActorFuture<Void> pauseExporting() {
     final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
     actor.call(
@@ -428,6 +440,7 @@ public final class ZeebePartition extends Actor
     return completed;
   }
 
+  @Deprecated // will be removed from public API of ZeebePartition
   public void resumeExporting() {
     actor.call(
         () -> {
