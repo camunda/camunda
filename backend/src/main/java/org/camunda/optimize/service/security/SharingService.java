@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -36,12 +35,11 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
@@ -107,7 +105,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     return new IdResponseDto(result);
   }
 
-  public IdResponseDto crateNewDashboardShare(DashboardShareRestDto createSharingDto, String userId) {
+  public IdResponseDto createNewDashboardShare(DashboardShareRestDto createSharingDto, String userId) {
     validateAndCheckAuthorization(createSharingDto.getDashboardId(), userId);
 
     String result;
@@ -136,39 +134,32 @@ public class SharingService implements ReportReferencingService, DashboardRefere
       DashboardDefinitionRestDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
 
-      List<String> authorizedReportIds = reportService
-        .findAndFilterReports(userId)
-        .stream()
-        .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
-        .collect(Collectors.toList());
+      final Set<String> authorizedReportIdsOnDashboard = reportService.filterAuthorizedReportIds(
+        userId,
+        dashboardDefinition.getReportIds()
+      );
+      final Set<String> unauthorizedReportIds = new HashSet<>(dashboardDefinition.getReportIds());
+      unauthorizedReportIds.removeAll(authorizedReportIdsOnDashboard);
 
-      for (ReportLocationDto reportLocationDto : dashboardDefinition.getReports()) {
-        if (!authorizedReportIds.contains(reportLocationDto.getId()) && !isAnExternalResourceReport(reportLocationDto)) {
-          String errorMessage = "User [" + userId + "] is not authorized to share dashboard [" +
-            dashboardDefinition.getName() + "] because he is not authorized to see contained report [" +
-            reportLocationDto.getId() + "]";
-          throw new ForbiddenException(errorMessage);
-        }
+      if (!unauthorizedReportIds.isEmpty()) {
+        String errorMessage = "User [" + userId + "] is not authorized to share dashboard [" +
+          dashboardDefinition.getName() + "] because they are not authorized to see contained report(s) [" +
+          unauthorizedReportIds + "]";
+        throw new ForbiddenException(errorMessage);
       }
-
     } catch (OptimizeRuntimeException | NotFoundException e) {
-      String errorMessage = "Could not retrieve dashboard [" +
-        dashboardId + "]. Probably it does not exist.";
+      String errorMessage = "Could not retrieve dashboard [" + dashboardId + "]. It probably does not exist.";
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
-  private boolean isAnExternalResourceReport(ReportLocationDto reportLocationDto) {
-    return reportLocationDto.getId().isEmpty();
-  }
-
   private void validateAndCheckAuthorization(ReportShareRestDto reportShare, String userId) {
-    ValidationHelper.ensureNotEmpty("reportId", reportShare.getReportId());
+    ValidationHelper.ensureNotEmpty(ReportShareRestDto.Fields.reportId, reportShare.getReportId());
     try {
       reportService.getReportDefinition(reportShare.getReportId(), userId);
     } catch (OptimizeRuntimeException | NotFoundException e) {
-      String errorMessage = "Could not retrieve report [" +
-        reportShare.getReportId() + "]. Probably it does not exist.";
+      String errorMessage = "Could not retrieve report [" + reportShare.getReportId() + "]. It probably does not " +
+        "exist.";
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }

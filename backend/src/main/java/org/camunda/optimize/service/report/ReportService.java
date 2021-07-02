@@ -62,9 +62,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
@@ -91,7 +91,7 @@ public class ReportService implements CollectionReferencingService {
       .map(reportDefinitionDto -> new ConflictedItemDto(
         reportDefinitionDto.getId(), ConflictedItemType.COLLECTION, reportDefinitionDto.getName()
       ))
-      .collect(Collectors.toSet());
+      .collect(toSet());
   }
 
   @Override
@@ -216,11 +216,6 @@ public class ReportService implements CollectionReferencingService {
         .getLastModified())
                 .reversed())
       .collect(toList());
-  }
-
-  public List<AuthorizedReportDefinitionResponseDto> findAndFilterReports(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml();
-    return filterAuthorizedReports(userId, reports);
   }
 
   public void deleteAllReportsForProcessDefinitionKey(String processDefinitionKey) {
@@ -432,7 +427,7 @@ public class ReportService implements CollectionReferencingService {
       .map(combinedReportDto -> new ConflictedItemDto(
         combinedReportDto.getId(), ConflictedItemType.COMBINED_REPORT, combinedReportDto.getName()
       ))
-      .collect(Collectors.toSet());
+      .collect(toSet());
   }
 
   private IdResponseDto copyAndMoveReport(final ReportDefinitionDto originalReportDefinition,
@@ -746,6 +741,14 @@ public class ReportService implements CollectionReferencingService {
                                      report.getName() + "].");
     }
     return report;
+  }
+
+  public Set<String> filterAuthorizedReportIds(final String userId,
+                                               final Set<String> reportIds) {
+    final List<ReportDefinitionDto> reports = reportReader.getAllReportsForIdsOmitXml(new ArrayList<>(reportIds));
+    return filterAuthorizedReports(userId, reports).stream()
+      .map(report -> report.getDefinitionDto().getId())
+      .collect(toSet());
   }
 
   private List<AuthorizedReportDefinitionResponseDto> filterAuthorizedReports(String userId,

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public abstract class AbstractSharingIT extends AbstractIT {
@@ -44,7 +45,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
   protected String createReportWithInstance(final String definitionKey) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
     importAllEngineEntitiesFromScratch();
-    return createReport(processInstance.getProcessDefinitionKey(), Collections.singletonList("ALL"));
+    return createReport(processInstance.getProcessDefinitionKey(), Collections.singletonList(ALL_VERSIONS));
   }
 
   protected String createReportWithInstance(String definitionKey, final String collectionId) {
