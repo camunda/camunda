@@ -16,7 +16,6 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
@@ -62,7 +61,7 @@ public final class RaftLog implements Closeable {
    * @return the reader
    */
   public RaftLogReader openReader() {
-    return new RaftLogReader(this, journal.openReader(), Mode.ALL);
+    return new RaftLogUncommittedReader(journal.openReader());
   }
 
   /**
@@ -71,7 +70,7 @@ public final class RaftLog implements Closeable {
    * @return the reader
    */
   public RaftLogReader openCommittedReader() {
-    return new RaftLogReader(this, journal.openReader(), Mode.COMMITS);
+    return new RaftLogCommittedReader(this);
   }
 
   public boolean isOpen() {
