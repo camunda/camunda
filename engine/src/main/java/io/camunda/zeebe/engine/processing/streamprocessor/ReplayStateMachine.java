@@ -70,7 +70,7 @@ import org.slf4j.Logger;
  *
  * See https://textik.com/#773271ce7ea2096a
  */
-public final class ReProcessingStateMachine {
+public final class ReplayStateMachine {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
@@ -123,7 +123,7 @@ public final class ReProcessingStateMachine {
   private LoggedEvent currentEvent;
   private ZeebeDbTransaction zeebeDbTransaction;
 
-  public ReProcessingStateMachine(final ProcessingContext context) {
+  public ReplayStateMachine(final ProcessingContext context) {
     actor = context.getActor();
     logStreamReader = context.getLogStreamReader();
     recordValues = context.getRecordValues();
