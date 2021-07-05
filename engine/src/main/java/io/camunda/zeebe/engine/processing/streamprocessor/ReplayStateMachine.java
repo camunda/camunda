@@ -309,12 +309,16 @@ public final class ReplayStateMachine {
     final TransactionOperation operation;
 
     if (failedEventPositions.contains(position)) {
+      // TODO (saig0): build the blacklist by applying error events (#7429)
+      // currently, we don't add instances to blacklist because we don't process the failed commands
       LOG.info(LOG_STMT_FAILED_ON_REPLAY, currentEvent);
       operation =
           () -> zeebeState.getBlackListState().tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
     } else {
       operation =
           () -> {
+            // TODO (saig0): ignore blacklist because we replay events only (#7430)
+            // these events were applied already
             final boolean isNotOnBlacklist =
                 !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
             if (isNotOnBlacklist) {
