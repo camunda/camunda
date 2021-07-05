@@ -20,7 +20,7 @@ import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {ErrorMessageModal} from './ErrorMessageModal';
 
 import * as Styled from './styled';
-const {THead, TBody, TH, TR, TD} = Table;
+const {THead, TBody, TR, TD} = Table;
 
 type Props = {
   incidents: unknown[];
@@ -66,34 +66,34 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                 table="instance"
               />
             </Styled.FirstTH>
-            <TH>
+            <Styled.TH>
               <ColumnHeader
                 sortKey="flowNodeName"
                 label="Flow Node"
                 table="instance"
               />
-            </TH>
-            <TH>
+            </Styled.TH>
+            <Styled.TH>
               <ColumnHeader
                 sortKey="jobId"
                 label="Job Id"
                 disabled={isJobIdPresent(sortedIncidents)}
                 table="instance"
               />
-            </TH>
-            <TH>
+            </Styled.TH>
+            <Styled.TH>
               <ColumnHeader
                 sortKey="creationTime"
                 label="Creation Time"
                 table="instance"
               />
-            </TH>
-            <TH>
+            </Styled.TH>
+            <Styled.TH>
               <ColumnHeader label="Error Message" />
-            </TH>
-            <TH>
+            </Styled.TH>
+            <Styled.TH>
               <ColumnHeader label="Operations" />
-            </TH>
+            </Styled.TH>
           </TR>
         </THead>
 

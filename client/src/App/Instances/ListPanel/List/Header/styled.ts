@@ -17,6 +17,7 @@ const THPositionStyles = css`
   position: sticky;
   top: 0;
   z-index: 1000;
+  white-space: nowrap;
 `;
 
 const OperationsTH = styled(Table.TH)`
@@ -32,10 +33,22 @@ const OperationsTH = styled(Table.TH)`
 
 const TH = styled(Table.TH)`
   ${({theme}) => {
+    const colors = theme.colors.list.header.th;
+
     return css`
       ${THPositionStyles}
       background-color: ${theme.colors.ui02};
       box-shadow: inset 0 -1px 0 ${theme.colors.ui05};
+
+      &:after {
+        content: ' ';
+        height: 31px;
+        margin-top: 3px;
+        width: 1px;
+        background: ${colors.borderColor};
+        position: absolute;
+        right: 0;
+      }
     `;
   }}
 `;

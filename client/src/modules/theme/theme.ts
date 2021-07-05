@@ -340,6 +340,11 @@ const theme = Object.freeze({
         selectionStatusIndicator: {
           borderColor: DARK_COLORS.ui04,
         },
+        header: {
+          th: {
+            borderColor: DARK_COLORS.ui04,
+          },
+        },
       },
       createOperationDropdown: {
         dropdownButtonStyles: {
@@ -1316,6 +1321,11 @@ const theme = Object.freeze({
       list: {
         selectionStatusIndicator: {
           borderColor: LIGHT_COLORS.ui05,
+        },
+        header: {
+          th: {
+            borderColor: LIGHT_COLORS.ui05,
+          },
         },
       },
       createOperationDropdown: {

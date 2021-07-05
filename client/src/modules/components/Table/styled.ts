@@ -21,15 +21,6 @@ const TH = styled.th`
       font-weight: 600;
       padding: 0 0 0 5px;
       color: ${colors.color};
-
-      &:not(:last-child):after {
-        content: ' ';
-        float: right;
-        height: 31px;
-        margin-top: 3px;
-        width: 1px;
-        background: ${colors.after.backgroundColor};
-      }
     `;
   }}
 `;

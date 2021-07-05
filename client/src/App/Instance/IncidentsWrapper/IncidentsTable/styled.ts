@@ -9,7 +9,6 @@ import styled, {css} from 'styled-components';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import Table from 'modules/components/Table';
-const {TH, TR} = Table;
 
 const FirstCell = styled.div`
   position: relative;
@@ -47,7 +46,7 @@ const Flex = styled.div`
   align-items: center;
 `;
 
-const FirstTH = styled(TH)`
+const FirstTH = styled(Table.TH)`
   ${({theme}) => {
     const colors = theme.colors.incidentsTable.firstTh;
 
@@ -79,7 +78,24 @@ const FirstTH = styled(TH)`
   }}
 `;
 
-const IncidentTR = styled(TR)`
+const TH = styled(Table.TH)`
+  ${({theme}) => {
+    const colors = theme.colors.incidentsTable.firstTh;
+
+    return css`
+      &:not(:last-child):after {
+        content: ' ';
+        float: right;
+        height: 31px;
+        margin-top: 3px;
+        width: 1px;
+        background: ${colors.after.backgroundColor};
+      }
+    `;
+  }}
+`;
+
+const IncidentTR = styled(Table.TR)`
   ${({theme, isSelected}) => {
     const colors = theme.colors.incidentsTable.incidentTr;
     const opacity = theme.opacity.incidentsTable.incidentTr;
@@ -191,4 +207,5 @@ export {
   IncidentTR,
   Fake,
   Transition,
+  TH,
 };
