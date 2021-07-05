@@ -51,7 +51,9 @@ const MetricPanel = observer(() => {
           )
         }
       >
-        {status === 'fetched' && `${running} `}Running Instances in total
+        {`${
+          status === 'fetched' ? `${running} ` : ''
+        }Running Instances in total`}
       </Title>
       {status === 'fetched' && (
         <InstancesBar
