@@ -59,6 +59,7 @@ pipeline {
       steps {
         container('node') {
           sh '''
+            apk add --no-cache git
             cd ./client
             yarn install --frozen-lockfile
             yarn lint
