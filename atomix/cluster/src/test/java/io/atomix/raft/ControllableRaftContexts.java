@@ -28,7 +28,6 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.util.collection.Tuple;
@@ -300,8 +299,7 @@ public final class ControllableRaftContexts {
   public void assertAllLogsEqual() {
     final var readers =
         raftServers.values().stream()
-            .collect(
-                Collectors.toMap(Function.identity(), s -> s.getLog().openReader(Mode.COMMITS)));
+            .collect(Collectors.toMap(Function.identity(), s -> s.getLog().openCommittedReader()));
     long index = 0;
     while (true) {
       final var entries =

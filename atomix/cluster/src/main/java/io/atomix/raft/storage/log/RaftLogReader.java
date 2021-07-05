@@ -1,12 +1,11 @@
 /*
- * Copyright 2017-present Open Networking Foundation
  * Copyright © 2020 camunda services GmbH (info@camunda.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,100 +15,38 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
-import io.atomix.raft.storage.serializer.RaftEntrySerializer;
-import io.camunda.zeebe.journal.JournalReader;
-import io.camunda.zeebe.journal.JournalRecord;
-import java.util.NoSuchElementException;
+public interface RaftLogReader extends java.util.Iterator<IndexedRaftLogEntry>, AutoCloseable {
 
-/** Raft log reader. */
-public class RaftLogReader implements java.util.Iterator<IndexedRaftLogEntry>, AutoCloseable {
-  private final RaftLog log;
-  private final JournalReader journalReader;
-  private final RaftLogReader.Mode mode;
-  private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
+  /**
+   * Reset the reader to the first index of the log.
+   *
+   * @return return the first index
+   */
+  long reset();
 
-  // NOTE: nextIndex is only used if the reader is in commit mode, hence why it's not subject to
-  // inconsistencies when the log is truncated/compacted/etc.
-  private long nextIndex;
+  /**
+   * Seeks to the given index.
+   *
+   * @param index the index to seeks to
+   * @return the index of the next record to be read
+   */
+  long seek(long index);
 
-  RaftLogReader(
-      final RaftLog log, final JournalReader journalReader, final RaftLogReader.Mode mode) {
-    this.log = log;
-    this.journalReader = journalReader;
-    this.mode = mode;
+  /**
+   * Seeks to the last index
+   *
+   * @return the index of the next record to be read
+   */
+  long seekToLast();
 
-    nextIndex = log.getFirstIndex();
-  }
-
-  @Override
-  public boolean hasNext() {
-    return (mode == Mode.ALL || nextIndex <= log.getCommitIndex()) && journalReader.hasNext();
-  }
-
-  @Override
-  public IndexedRaftLogEntry next() {
-    if (!hasNext()) {
-      throw new NoSuchElementException();
-    }
-
-    final JournalRecord journalRecord = journalReader.next();
-    final RaftLogEntry entry = serializer.readRaftLogEntry(journalRecord.data());
-
-    nextIndex = journalRecord.index() + 1;
-    return new IndexedRaftLogEntryImpl(entry.term(), entry.entry(), journalRecord);
-  }
-
-  public long reset() {
-    nextIndex = journalReader.seekToFirst();
-    return nextIndex;
-  }
-
-  public long seek(final long index) {
-    long boundedIndex = index;
-
-    if (mode == Mode.COMMITS) {
-      // allow seeking one past the commit index to simulate being at the end of the log
-      final long upperBoundIndex = log.getCommitIndex() + 1;
-      boundedIndex = Math.min(index, upperBoundIndex);
-    }
-
-    nextIndex = journalReader.seek(boundedIndex);
-    return nextIndex;
-  }
-
-  public long seekToLast() {
-    if (mode == Mode.ALL) {
-      nextIndex = journalReader.seekToLast();
-    } else {
-      seek(log.getCommitIndex());
-    }
-
-    return nextIndex;
-  }
-
-  public long seekToAsqn(final long asqn) {
-    if (mode == Mode.COMMITS) {
-      nextIndex = journalReader.seekToAsqn(asqn, log.getCommitIndex());
-    } else {
-      nextIndex = journalReader.seekToAsqn(asqn);
-    }
-    return nextIndex;
-  }
+  /**
+   * Seek to a record with the highest ASQN less than or equal to the given asqn.
+   *
+   * @param asqn the asqn to seek to
+   * @return the index of the record that will be returned by {@link #next()}
+   */
+  long seekToAsqn(final long asqn);
 
   @Override
-  public void close() {
-    journalReader.close();
-  }
-
-  /** Raft log reader mode. */
-  public enum Mode {
-
-    /** Reads all entries from the log. */
-    ALL,
-
-    /** Reads committed entries from the log. */
-    COMMITS,
-  }
+  void close();
 }

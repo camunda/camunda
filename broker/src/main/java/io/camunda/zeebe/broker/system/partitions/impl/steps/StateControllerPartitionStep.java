@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
@@ -34,8 +33,7 @@ public class StateControllerPartitionStep implements PartitionStep {
             context.getReceivableSnapshotStore(),
             runtimeDirectory,
             context.getSnapshotReplication(),
-            new AtomixRecordEntrySupplierImpl(
-                context.getRaftPartition().getServer().openReader(Mode.COMMITS)),
+            new AtomixRecordEntrySupplierImpl(context.getRaftPartition().getServer()),
             StatePositionSupplier::getHighestExportedPosition);
 
     context.setSnapshotController(stateController);
