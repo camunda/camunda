@@ -10,7 +10,7 @@ import equal from 'fast-deep-equal';
 
 import {DefinitionSelection, SelectionPreview} from 'components';
 import {Filter} from 'filter';
-import {getFlowNodeNames, loadVariables} from 'services';
+import {loadVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -22,13 +22,11 @@ export class BranchControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      flowNodeNames: null,
       variables: null,
     };
   }
 
   componentDidMount() {
-    this.loadFlowNodeNames();
     this.loadVariables();
   }
 
@@ -43,22 +41,11 @@ export class BranchControlPanel extends React.Component {
     }
   };
 
-  loadFlowNodeNames = async () => {
-    this.setState({
-      flowNodeNames: await getFlowNodeNames(
-        this.props.processDefinitionKey,
-        this.props.processDefinitionVersions[0],
-        this.props.tenantIds[0]
-      ),
-    });
-  };
-
   componentDidUpdate({processDefinitionKey, processDefinitionVersions}) {
     if (
       this.props.processDefinitionKey !== processDefinitionKey ||
       !equal(this.props.processDefinitionVersions, processDefinitionVersions)
     ) {
-      this.loadFlowNodeNames();
       this.loadVariables();
     }
   }
@@ -147,7 +134,6 @@ export class BranchControlPanel extends React.Component {
               xml={this.props.xml}
               definitions={definitions}
               filterLevel="instance"
-              flowNodeNames={this.state.flowNodeNames}
               variables={this.state.variables}
             />
           </li>

@@ -10,6 +10,7 @@ export async function loadFrequencyData(
   processDefinitionKey,
   processDefinitionVersions,
   tenantIds,
+  identifier,
   filter
 ) {
   const response = await post(
@@ -18,6 +19,7 @@ export async function loadFrequencyData(
       processDefinitionKey,
       processDefinitionVersions,
       tenantIds,
+      identifier,
       filter
     )
   );
@@ -25,12 +27,12 @@ export async function loadFrequencyData(
   return await response.json();
 }
 
-function createFlowNodeFrequencyReport(key, versions, tenantIds, filter) {
+function createFlowNodeFrequencyReport(key, versions, tenantIds, identifier, filter) {
   return {
     combined: false,
     reportType: 'process',
     data: {
-      definitions: [{key, versions, tenantIds}],
+      definitions: [{key, versions, tenantIds, identifier}],
       filter,
       view: {
         entity: 'flowNode',

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {shallow, render} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import FlowNodeResolver from './FlowNodeResolver';
 import FilterList from './FilterList';
