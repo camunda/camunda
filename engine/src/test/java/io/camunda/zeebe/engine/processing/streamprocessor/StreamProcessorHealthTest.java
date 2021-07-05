@@ -178,7 +178,7 @@ public class StreamProcessorHealthTest {
 
   private StreamProcessor getErrorProneStreamProcessor() {
     streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
+        streamProcessorRule.startTypedStreamProcessorNotAwaitOpening(
             processingContext -> {
               final MutableZeebeState zeebeState = processingContext.getZeebeState();
               mockedLogStreamWriter = new WrappedStreamWriter();
