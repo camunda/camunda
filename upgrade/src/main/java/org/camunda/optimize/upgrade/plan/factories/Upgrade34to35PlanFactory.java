@@ -345,8 +345,9 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
   }
 
   private UpgradeStep migrateProcessReports() {
+    //@formatter:off
     final String script =
-      //@formatter:off
+      // Migrate definitions
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.processDefinitionKey;\n" +
       "String appliedToValue = \"all\";\n" +
@@ -368,7 +369,26 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       "ctx._source.data.remove(\"processDefinitionKey\");\n" +
       "ctx._source.data.remove(\"processDefinitionName\");\n" +
       "ctx._source.data.remove(\"processDefinitionVersions\");\n" +
-      "ctx._source.data.remove(\"tenantIds\");\n";
+      "ctx._source.data.remove(\"tenantIds\");\n" +
+
+      // Migrate config flowNode selection to executedFlowNode viewLevel filter
+      "if (ctx._source.data.configuration.hiddenNodes.active " +
+      " && ctx._source.data.configuration.hiddenNodes.keys != null " +
+      " && !ctx._source.data.configuration.hiddenNodes.keys.isEmpty()) {\n" +
+      "   def excludedFlowNodes = ctx._source.data.configuration.hiddenNodes.keys;\n" +
+      "   if (ctx._source.data.filter == null) {" +
+      "     ctx._source.data.filter = [];" +
+      "   }" +
+      "   ctx._source.data.filter.add([" +
+      "   \"type\" : \"executedFlowNodes\",\n" +
+      "   \"data\" : [\n" +
+      "     \"operator\" : \"not in\",\n" +
+      "     \"values\" : excludedFlowNodes\n" +
+      "   ],\n" +
+      "   \"filterLevel\" : \"view\"" +
+      "   ]);\n" +
+      "}\n" +
+      "ctx._source.data.configuration.remove(\"hiddenNodes\")";
     //@formatter:on
     return new UpdateIndexStep(new SingleProcessReportIndex(), script);
   }
