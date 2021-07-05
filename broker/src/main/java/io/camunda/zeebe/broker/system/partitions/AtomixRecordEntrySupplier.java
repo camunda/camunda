@@ -17,9 +17,6 @@ import java.util.Optional;
  * position.
  */
 @FunctionalInterface
-public interface AtomixRecordEntrySupplier extends AutoCloseable {
+public interface AtomixRecordEntrySupplier {
   Optional<IndexedRaftLogEntry> getPreviousIndexedEntry(long position);
-
-  @Override
-  default void close() {}
 }
