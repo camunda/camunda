@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
@@ -20,9 +19,7 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -78,8 +75,6 @@ public final class ReplayStateMachine {
       "Expected to find last follow-up event position '%d', but found no next event. Failed to replay on processor";
   private static final String LOG_STMT_REPLAY_FINISHED =
       "Processor finished replay at event position {}";
-  private static final String LOG_STMT_FAILED_ON_REPLAY =
-      "Event {} failed on processing last time, will add process instance {} to blacklist.";
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
 
@@ -259,7 +254,6 @@ public final class ReplayStateMachine {
   }
 
   private void replayUntilDone(final long position, final TypedRecord<?> currentEvent) {
-    final TransactionOperation operation = chooseOperationForEvent(position, currentEvent);
 
     final ActorFuture<Boolean> resultFuture =
         processRetryStrategy.runWithRetry(
@@ -269,7 +263,16 @@ public final class ReplayStateMachine {
                 zeebeDbTransaction.rollback();
               }
               zeebeDbTransaction = transactionContext.getCurrentTransaction();
-              zeebeDbTransaction.run(operation);
+              zeebeDbTransaction.run(
+                  () -> {
+                    final boolean isNotOnBlacklist =
+                        !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
+                    if (isNotOnBlacklist) {
+                      replayEvent(currentEvent);
+                    }
+                    lastProcessedPositionState.markAsProcessed(position);
+                  });
+
               return true;
             },
             abortCondition);
@@ -281,32 +284,6 @@ public final class ReplayStateMachine {
           assert t == null : "On replay there shouldn't be any exception thrown.";
           updateStateUntilDone();
         });
-  }
-
-  private TransactionOperation chooseOperationForEvent(
-      final long position, final TypedRecord<?> currentEvent) {
-    final TransactionOperation operation;
-
-    if (currentEvent.getValueType() == ValueType.ERROR) {
-      final var errorRecord = (ErrorRecord) currentEvent.getValue();
-      final var blacklistedInstance = errorRecord.getProcessInstanceKey();
-      LOG.info(LOG_STMT_FAILED_ON_REPLAY, currentEvent, blacklistedInstance);
-      operation =
-          () -> zeebeState.getBlackListState().blacklistProcessInstance(blacklistedInstance);
-    } else {
-      operation =
-          () -> {
-            // TODO (saig0): ignore blacklist because we replay events only (#7430)
-            // these events were applied already
-            final boolean isNotOnBlacklist =
-                !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
-            if (isNotOnBlacklist) {
-              replayEvent(currentEvent);
-            }
-            lastProcessedPositionState.markAsProcessed(position);
-          };
-    }
-    return operation;
   }
 
   private void replayEvent(final TypedRecord<?> currentEvent) {
