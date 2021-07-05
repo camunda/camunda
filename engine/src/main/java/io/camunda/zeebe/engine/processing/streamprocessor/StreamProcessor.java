@@ -70,7 +70,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
-  /** Recover future is completed after reprocessing is done. */
+  /** Recover future is completed after replay is done. */
   private ActorFuture<Long> recoverFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
@@ -121,14 +121,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
       healthCheckTick();
 
-      final ReProcessingStateMachine reProcessingStateMachine =
-          new ReProcessingStateMachine(processingContext);
+      final ReplayStateMachine replayStateMachine = new ReplayStateMachine(processingContext);
 
-      // disable writing to the log stream but for reprocessing checks
+      // disable writing to the log stream
       processingContext.disableLogStreamWriter();
-      processingContext.enableReprocessingStreamWriter();
 
-      recoverFuture = reProcessingStateMachine.startRecover(snapshotPosition);
+      recoverFuture = replayStateMachine.startRecover(snapshotPosition);
 
       actor.runOnCompletion(
           recoverFuture,

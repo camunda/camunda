@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.TypedStreamWriterProxy;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.EventApplyingStateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.NoopTypedStreamWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.ReprocessingStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriterImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -31,7 +30,6 @@ import java.util.function.Consumer;
 public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
-  private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
   private final NoopTypedStreamWriter noopTypedStreamWriter = new NoopTypedStreamWriter();
 
   private ActorControl actor;
@@ -210,14 +208,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public Consumer<LoggedEvent> getOnSkippedListener() {
     return onSkippedListener;
-  }
-
-  public ReprocessingStreamWriter getReprocessingStreamWriter() {
-    return reprocessingStreamWriter;
-  }
-
-  public void enableReprocessingStreamWriter() {
-    streamWriterProxy.wrap(reprocessingStreamWriter);
   }
 
   public void enableLogStreamWriter() {

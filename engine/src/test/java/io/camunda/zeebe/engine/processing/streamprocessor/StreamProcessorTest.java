@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import static io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors.processors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -25,15 +24,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandRespons
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.sched.ActorControl;
@@ -43,7 +43,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -56,6 +55,9 @@ public final class StreamProcessorTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
+
+  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
+  private static final JobRecord JOB_RECORD = Records.job(1).setType("test");
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
   private ActorControl processingContextActor;
@@ -121,7 +123,10 @@ public final class StreamProcessorTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
             processors
-                .onEvent(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, typedRecordProcessor)
+                .onCommand(
+                    ValueType.PROCESS_INSTANCE,
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                    typedRecordProcessor)
                 .withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
@@ -148,14 +153,15 @@ public final class StreamProcessorTest {
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 typedRecordProcessor));
 
     // when
     final long position =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1));
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -188,16 +194,18 @@ public final class StreamProcessorTest {
             }))
         .when(typedRecordProcessor)
         .processRecord(anyLong(), any(), any(), any(), any());
+
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 typedRecordProcessor));
 
     // when
     final long position =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -215,16 +223,18 @@ public final class StreamProcessorTest {
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 typedRecordProcessor));
 
     // when
     final long firstPosition =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     final long secondPosition =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.TERMINATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
@@ -245,34 +255,31 @@ public final class StreamProcessorTest {
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors
-                .onCommand(
-                    ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                    typedRecordProcessor)
-                .onEvent(
-                    ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                    typedRecordProcessor));
-
-    final var record = new ProcessInstanceRecord().setBpmnElementType(BpmnElementType.TESTING_ONLY);
+            processors.onCommand(
+                ValueType.PROCESS_INSTANCE,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                typedRecordProcessor));
 
     // when
     final long commandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, record);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     final long eventPosition =
-        streamProcessorRule.writeEvent(ProcessInstanceIntent.ACTIVATE_ELEMENT, record);
+        streamProcessorRule.writeEvent(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     final var rejectionPosition =
-        streamProcessorRule.writeCommandRejection(ProcessInstanceIntent.ACTIVATE_ELEMENT, record);
+        streamProcessorRule.writeCommandRejection(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     final var nextCommandPosition =
-        streamProcessorRule.writeCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, record);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onRecovered(any());
+    inOrder.verify(typedRecordProcessor, TIMEOUT).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(eq(commandPosition), any(), any(), any(), any());
@@ -285,7 +292,6 @@ public final class StreamProcessorTest {
     inOrder
         .verify(typedRecordProcessor, TIMEOUT)
         .processRecord(eq(nextCommandPosition), any(), any(), any(), any());
-
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -295,9 +301,9 @@ public final class StreamProcessorTest {
     final StreamProcessor streamProcessor =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, state) ->
-                processors.onEvent(
+                processors.onCommand(
                     ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
@@ -306,19 +312,21 @@ public final class StreamProcessorTest {
                           final TypedResponseWriter responseWriter,
                           final TypedStreamWriter streamWriter,
                           final Consumer<SideEffectProducer> sideEffect) {
+
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
-                            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                            ProcessInstanceIntent.ELEMENT_ACTIVATING,
                             record.getValue());
                       }
                     }));
 
     // when
     final long position =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
-    final Record<ProcessInstanceRecord> activatedEvent = waitForActivated();
+    final Record<ProcessInstanceRecord> activatedEvent = waitForActivatingEvent();
     assertThat(activatedEvent).isNotNull();
     assertThat((activatedEvent).getSourceRecordPosition()).isEqualTo(position);
 
@@ -333,9 +341,9 @@ public final class StreamProcessorTest {
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
@@ -344,6 +352,7 @@ public final class StreamProcessorTest {
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
+
                     sideEffect.accept(
                         () -> {
                           processLatch.countDown();
@@ -353,7 +362,8 @@ public final class StreamProcessorTest {
                 }));
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -365,9 +375,9 @@ public final class StreamProcessorTest {
     final CountDownLatch processLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
@@ -385,7 +395,8 @@ public final class StreamProcessorTest {
                 }));
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -397,9 +408,9 @@ public final class StreamProcessorTest {
     final CountDownLatch processLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
@@ -408,6 +419,7 @@ public final class StreamProcessorTest {
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
+
                     sideEffect.accept(
                         () -> {
                           throw new RuntimeException("expected");
@@ -417,8 +429,10 @@ public final class StreamProcessorTest {
                 }));
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -427,47 +441,38 @@ public final class StreamProcessorTest {
   @Test
   public void shouldNotUpdateStateOnExceptionInProcessing() throws Exception {
     // given
-    final AtomicLong generatedKey = new AtomicLong(-1L);
+    final long jobKey = 1L;
     final CountDownLatch processLatch = new CountDownLatch(2);
+
     streamProcessorRule.startTypedStreamProcessor(
-        processingContext -> {
+        (builder, processingContext) -> {
           processingContextActor = processingContext.getActor();
           final MutableZeebeState state = processingContext.getZeebeState();
-          return processors(state.getKeyGenerator(), processingContext.getWriters())
-              .onEvent(
-                  ValueType.PROCESS_INSTANCE,
-                  ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                  new TypedRecordProcessor<>() {
-                    @Override
-                    public void processRecord(
-                        final long position,
-                        final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
-                        final TypedStreamWriter streamWriter,
-                        final Consumer<SideEffectProducer> sideEffect) {
-                      generatedKey.set(state.getKeyGenerator().nextKey());
-                      processLatch.countDown();
-                      throw new RuntimeException("expected");
-                    }
-                  })
-              .onEvent(
-                  ValueType.PROCESS_INSTANCE,
-                  ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                  new TypedRecordProcessor<>() {
-                    @Override
-                    public void processRecord(
-                        final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
-                        final TypedStreamWriter streamWriter,
-                        final Consumer<SideEffectProducer> sideEffect) {
-                      processLatch.countDown();
-                    }
-                  });
-        });
+          return builder.onCommand(
+              ValueType.PROCESS_INSTANCE,
+              ProcessInstanceIntent.ACTIVATE_ELEMENT,
+              new TypedRecordProcessor<>() {
+                @Override
+                public void processRecord(
+                    final long position,
+                    final TypedRecord<UnifiedRecordValue> record,
+                    final TypedResponseWriter responseWriter,
+                    final TypedStreamWriter streamWriter,
+                    final Consumer<SideEffectProducer> sideEffect) {
+
+                  state.getJobState().create(jobKey, JOB_RECORD);
+
+                  throw new RuntimeException("expected");
+                }
+              });
+        },
+        processedRecord -> processLatch.countDown());
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATED, 2);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     assertThat(processLatch.await(5, TimeUnit.SECONDS)).isTrue();
@@ -475,9 +480,10 @@ public final class StreamProcessorTest {
     processingContextActor
         .call(
             () -> {
-              final long newGenerated =
-                  streamProcessorRule.getZeebeState().getKeyGenerator().nextKey();
-              assertThat(generatedKey.get()).isEqualTo(newGenerated);
+              final var jobState = streamProcessorRule.getZeebeState().getJobState();
+              final var job = jobState.getJob(jobKey);
+
+              assertThat(job).isNull();
             })
         .join();
   }
@@ -485,56 +491,45 @@ public final class StreamProcessorTest {
   @Test
   public void shouldUpdateStateAfterProcessing() throws Exception {
     // given
-    final AtomicLong generatedKey = new AtomicLong(-1L);
-
+    final long jobKey = 1L;
     final CountDownLatch processingLatch = new CountDownLatch(1);
+
     streamProcessorRule.startTypedStreamProcessor(
-        processingContext -> {
+        (builder, processingContext) -> {
           processingContextActor = processingContext.getActor();
           final MutableZeebeState state = processingContext.getZeebeState();
-          return processors(state.getKeyGenerator(), processingContext.getWriters())
-              .onEvent(
-                  ValueType.PROCESS_INSTANCE,
-                  ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                  new TypedRecordProcessor<>() {
-                    @Override
-                    public void processRecord(
-                        final long position,
-                        final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
-                        final TypedStreamWriter streamWriter,
-                        final Consumer<SideEffectProducer> sideEffect) {
-                      generatedKey.set(state.getKeyGenerator().nextKey());
-                    }
-                  })
-              .onEvent(
-                  ValueType.PROCESS_INSTANCE,
-                  ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                  new TypedRecordProcessor<>() {
-                    @Override
-                    public void processRecord(
-                        final TypedRecord<UnifiedRecordValue> record,
-                        final TypedResponseWriter responseWriter,
-                        final TypedStreamWriter streamWriter,
-                        final Consumer<SideEffectProducer> sideEffect) {
-                      processingLatch.countDown();
-                    }
-                  });
-        });
+          return builder.onCommand(
+              ValueType.PROCESS_INSTANCE,
+              ProcessInstanceIntent.ACTIVATE_ELEMENT,
+              new TypedRecordProcessor<>() {
+                @Override
+                public void processRecord(
+                    final long position,
+                    final TypedRecord<UnifiedRecordValue> record,
+                    final TypedResponseWriter responseWriter,
+                    final TypedStreamWriter streamWriter,
+                    final Consumer<SideEffectProducer> sideEffect) {
+
+                  state.getJobState().create(jobKey, JOB_RECORD);
+                }
+              });
+        },
+        processedRecord -> processingLatch.countDown());
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATED, 2);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     assertThat(processingLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
     processingContextActor
         .call(
             () -> {
-              final long newGenerated =
-                  streamProcessorRule.getZeebeState().getKeyGenerator().nextKey();
-              assertThat(generatedKey.get()).isGreaterThan(0L);
-              assertThat(generatedKey.get()).isLessThan(newGenerated);
+              final var jobState = streamProcessorRule.getZeebeState().getJobState();
+              final var job = jobState.getJob(jobKey);
+
+              assertThat(job).isNotNull();
             })
         .join();
   }
@@ -544,9 +539,9 @@ public final class StreamProcessorTest {
     // given
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
@@ -555,13 +550,15 @@ public final class StreamProcessorTest {
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
+
                     responseWriter.writeEventOnCommand(
-                        3, ProcessInstanceIntent.ELEMENT_COMPLETING, record.getValue(), record);
+                        3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
                   }
                 }));
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final CommandResponseWriter commandResponseWriter =
@@ -572,20 +569,20 @@ public final class StreamProcessorTest {
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
     inOrder
         .verify(commandResponseWriter, TIMEOUT.times(1))
-        .intent(ProcessInstanceIntent.ELEMENT_COMPLETING);
+        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test
-  public void shouldNotWriteResponseOnFailedEventProcessing() {
+  public void shouldWriteResponseOnFailedEventProcessing() {
     // given
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 new TypedRecordProcessor<>() {
                   @Override
                   public void processRecord(
@@ -594,28 +591,38 @@ public final class StreamProcessorTest {
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
                       final Consumer<SideEffectProducer> sideEffect) {
+
                     responseWriter.writeEventOnCommand(
-                        3, ProcessInstanceIntent.ELEMENT_COMPLETING, record.getValue(), record);
+                        3, ProcessInstanceIntent.ELEMENT_ACTIVATING, record.getValue(), record);
+
                     throw new RuntimeException("expected");
                   }
                 }));
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     final CommandResponseWriter commandResponseWriter =
         streamProcessorRule.getCommandResponseWriter();
 
     final InOrder inOrder = inOrder(commandResponseWriter);
-
+    // it doesn't send the staged command response
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).key(3);
     inOrder
         .verify(commandResponseWriter, TIMEOUT.times(1))
-        .intent(ProcessInstanceIntent.ELEMENT_COMPLETING);
+        .intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.EVENT);
     inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.PROCESS_INSTANCE);
-    inOrder.verify(commandResponseWriter, never()).tryWriteResponse(anyInt(), anyLong());
+    // instead, it sends a rejection response because of the failure
+    inOrder
+        .verify(commandResponseWriter, TIMEOUT.times(1))
+        .recordType(RecordType.COMMAND_REJECTION);
+    inOrder
+        .verify(commandResponseWriter, TIMEOUT.times(1))
+        .rejectionType(RejectionType.PROCESSING_ERROR);
+    inOrder.verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
   }
 
   @Test
@@ -624,15 +631,16 @@ public final class StreamProcessorTest {
     final var onProcessedListener = new AwaitableProcessedListener();
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
-            processors.onEvent(
+            processors.onCommand(
                 ValueType.PROCESS_INSTANCE,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
                 mock(TypedRecordProcessor.class)),
         onProcessedListener.expect(1));
 
     // when
     final var position =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // then
     assertThat(onProcessedListener.await()).isTrue();
@@ -644,6 +652,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch pauseLatch = new CountDownLatch(1);
     final CountDownLatch resumeLatch = new CountDownLatch(1);
+
     final StreamProcessor streamProcessor =
         streamProcessorRule.startTypedStreamProcessor(
             (processors, state) ->
@@ -683,9 +692,9 @@ public final class StreamProcessorTest {
         streamProcessorRule.startTypedStreamProcessor(
             (processors, state) ->
                 processors
-                    .onEvent(
+                    .onCommand(
                         ValueType.PROCESS_INSTANCE,
-                        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT,
                         typedRecordProcessor)
                     .withListener(
                         new StreamProcessorLifecycleAware() {
@@ -701,14 +710,16 @@ public final class StreamProcessorTest {
                         }),
             onProcessedListener.expect(2));
 
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     // when
     streamProcessor.pauseProcessing();
     pauseLatch.await();
 
     final long positionProcessedAfterResume =
-        streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        streamProcessorRule.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
 
     streamProcessor.resumeProcessing();
     resumeLatch.await();
@@ -727,9 +738,9 @@ public final class StreamProcessorTest {
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
             processors
-                .onEvent(
+                .onCommand(
                     ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT,
                     new TypedRecordProcessor<>() {
                       @Override
                       public void processRecord(
@@ -738,44 +749,42 @@ public final class StreamProcessorTest {
                           final TypedResponseWriter responseWriter,
                           final TypedStreamWriter streamWriter,
                           final Consumer<SideEffectProducer> sideEffect) {
+
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
-                            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                            ProcessInstanceIntent.ELEMENT_ACTIVATING,
                             record.getValue());
                       }
                     })
-                .onEvent(
-                    ValueType.PROCESS_INSTANCE,
-                    ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                    mock(TypedRecordProcessor.class))
-                .onEvent(
+                .onCommand(
                     ValueType.PROCESS_INSTANCE,
                     ProcessInstanceIntent.CANCEL,
                     mock(TypedRecordProcessor.class)),
-        onProcessedListener.expect(2));
+        onProcessedListener.expect(1));
 
     // when
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.writeCommand(
+        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     assertThat(onProcessedListener.await()).isTrue();
-    final long activatedPosition = waitForActivated().getPosition();
+    final long position = waitForActivatingEvent().getPosition();
 
     onProcessedListener.expect(1);
-    streamProcessorRule.writeProcessInstanceEvent(ProcessInstanceIntent.CANCEL);
+    streamProcessorRule.writeCommand(ProcessInstanceIntent.CANCEL, PROCESS_INSTANCE_RECORD);
     assertThat(onProcessedListener.await()).isTrue();
 
     // then
     final long lastWrittenPos =
         streamProcessorRule.getStreamProcessor(0).getLastWrittenPositionAsync().get();
-    assertThat(lastWrittenPos).isEqualTo(activatedPosition);
+    assertThat(lastWrittenPos).isEqualTo(position);
   }
 
-  private Record<ProcessInstanceRecord> waitForActivated() {
+  private Record<ProcessInstanceRecord> waitForActivatingEvent() {
     return TestUtil.doRepeatedly(
             () ->
                 streamProcessorRule
                     .events()
                     .onlyProcessInstanceRecords()
-                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .findAny())
         .until(Optional::isPresent)
         .get();

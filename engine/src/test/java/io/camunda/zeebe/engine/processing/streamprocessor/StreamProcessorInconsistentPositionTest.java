@@ -8,10 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -19,9 +16,12 @@ import static org.mockito.Mockito.mock;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.ListLogStorage;
 import io.camunda.zeebe.engine.util.RecordStream;
+import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;
 import io.camunda.zeebe.engine.util.TestStreams;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -34,6 +34,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public final class StreamProcessorInconsistentPositionTest {
+
+  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
@@ -73,38 +75,43 @@ public final class StreamProcessorInconsistentPositionTest {
   public void shouldNotStartOnInconsistentLog() {
     // given
     final var position =
-        firstStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_ACTIVATING);
+        firstStreamProcessorComposite.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     final var secondPosition =
-        firstStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_ACTIVATED);
+        firstStreamProcessorComposite.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     waitUntil(
         () ->
             new RecordStream(testStreams.events(getLogName(1)))
-                .onlyProcessInstanceRecords()
-                .withIntent(ELEMENT_ACTIVATED)
-                .exists());
+                    .onlyProcessInstanceRecords()
+                    .withIntent(ACTIVATE_ELEMENT)
+                    .count()
+                == 2);
 
     final var otherPosition =
-        secondStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_COMPLETING);
+        secondStreamProcessorComposite.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     final var otherSecondPosition =
-        secondStreamProcessorComposite.writeProcessInstanceEvent(ELEMENT_COMPLETED);
+        secondStreamProcessorComposite.writeCommand(
+            ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     waitUntil(
         () ->
             new RecordStream(testStreams.events(getLogName(2)))
-                .onlyProcessInstanceRecords()
-                .withIntent(ELEMENT_COMPLETED)
-                .exists());
+                    .onlyProcessInstanceRecords()
+                    .withIntent(ACTIVATE_ELEMENT)
+                    .count()
+                == 4);
 
     assertThat(position).isEqualTo(otherPosition);
     assertThat(secondPosition).isEqualTo(otherSecondPosition);
 
     // when
-    final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
+    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
     final var streamProcessor =
         firstStreamProcessorComposite.startTypedStreamProcessorNotAwaitOpening(
             (processors, context) ->
-                processors
-                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.PROCESS_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+                processors.onCommand(
+                    ValueType.PROCESS_INSTANCE, ACTIVATE_ELEMENT, typedRecordProcessor));
 
     // then
     waitUntil(streamProcessor::isFailed);

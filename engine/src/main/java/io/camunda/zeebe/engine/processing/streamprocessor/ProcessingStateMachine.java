@@ -103,9 +103,7 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private static final MetadataFilter PROCESSING_FILTER =
-      recordMetadata ->
-          recordMetadata.getRecordType() == RecordType.COMMAND
-              || !MigratedStreamProcessors.isMigrated(recordMetadata.getValueType());
+      recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
 
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
@@ -215,15 +213,6 @@ public final class ProcessingStateMachine {
     try {
       final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
       typedEvent.wrap(event, metadata, value);
-
-      // process only commands - skip events and rejections
-      if (MigratedStreamProcessors.isMigrated(typedEvent)
-          && typedEvent.getRecordType() != RecordType.COMMAND) {
-
-        currentProcessor = null;
-        skipRecord();
-        return;
-      }
 
       metrics.processingLatency(event.getTimestamp(), processingStartTime);
 
@@ -344,11 +333,9 @@ public final class ProcessingStateMachine {
         String.format(PROCESSING_ERROR_MESSAGE, typedEvent, exception.getMessage());
     LOG.error(errorMessage, exception);
 
-    if (typedEvent.getRecordType() == RecordType.COMMAND) {
-      logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
-      responseWriter.writeRejectionOnCommand(
-          typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
-    }
+    logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
+    responseWriter.writeRejectionOnCommand(
+        typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
   private void writeEvent() {
