@@ -142,4 +142,8 @@ public class ReportConstants {
   // To differentiate between an activity/process instance took 0ms and no data available the
   // null result indicates that there's no data.
   public static final Double NO_DATA_AVAILABLE_RESULT = null;
+
+  // pagination
+  public static final int PAGINATION_DEFAULT_LIMIT = 20;
+  public static final int PAGINATION_DEFAULT_OFFSET = 0;
 }

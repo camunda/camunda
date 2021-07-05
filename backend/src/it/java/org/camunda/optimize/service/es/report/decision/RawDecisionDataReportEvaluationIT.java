@@ -43,10 +43,10 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
-import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_LIMIT;
-import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_OFFSET;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
@@ -54,6 +54,7 @@ import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_BEVERAGES;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
 import static org.camunda.optimize.util.DmnModels.createDecideDishDecisionDefinition;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitionIT {
 
@@ -135,6 +136,28 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDishDecisionInstance(decisionDefinitionEngineDto);
 
     reportEvaluation();
+  }
+
+  @Test
+  public void reportEvaluationForNoInstances() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto =
+      engineIntegrationExtension.deployDecisionDefinition(createDefaultDmnModel("aUniqueDefinitionKey"));
+    importAllEngineEntitiesFromScratch();
+
+    final DecisionReportDataDto reportData = createReport(
+      decisionDefinitionDto.getKey(),
+      decisionDefinitionDto.getVersionAsString()
+    );
+
+    // when
+    final AuthorizedDecisionReportEvaluationResponseDto<List<RawDataDecisionInstanceDto>> evaluationResult =
+      reportClient.evaluateDecisionRawReport(reportData, null);
+    final ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getPagination()).isNotNull();
   }
 
   @Test
@@ -700,7 +723,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
       .containsExactly(expectedDecisionInstanceId);
     assertThat(result.getPagination().getLimit()).isEqualTo(1);
-    assertThat(result.getPagination().getOffset()).isEqualTo(DEFAULT_OFFSET);
+    assertThat(result.getPagination().getOffset()).isEqualTo(PAGINATION_DEFAULT_OFFSET);
   }
 
   @Test
@@ -724,7 +747,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     ReportResultResponseDto<List<RawDataDecisionInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(30L);
     assertThat(result.getData()).hasSize(20);
-    assertThat(result.getPagination().getLimit()).isEqualTo(DEFAULT_LIMIT);
+    assertThat(result.getPagination().getLimit()).isEqualTo(PAGINATION_DEFAULT_LIMIT);
     assertThat(result.getPagination().getOffset()).isZero();
   }
 

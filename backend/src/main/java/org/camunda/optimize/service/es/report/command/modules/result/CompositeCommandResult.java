@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.result.HyperMapCommandResult;
 import org.camunda.optimize.service.es.report.result.MapCommandResult;
 import org.camunda.optimize.service.es.report.result.NumberCommandResult;
@@ -50,6 +51,8 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Data
@@ -180,6 +183,7 @@ public class CompositeCommandResult {
     final RawDataCommandResult<T> rawDataCommandResult = new RawDataCommandResult<>(reportDataDto);
     if (groups.isEmpty()) {
       rawDataCommandResult.addMeasure(createMeasureDto(Collections.emptyList()));
+      rawDataCommandResult.setPagination(new PaginationDto(PAGINATION_DEFAULT_LIMIT, PAGINATION_DEFAULT_OFFSET));
       return rawDataCommandResult;
     } else if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
