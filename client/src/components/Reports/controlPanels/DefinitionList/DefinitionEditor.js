@@ -35,19 +35,19 @@ export function DefinitionEditor({
   onRemove,
   onCopy,
 }) {
+  const {key, versions, tenantIds} = definition;
+  const firstVersion = versions[0];
+  const firstTenant = tenantIds[0];
+
   const [availableVersions, setAvailableVersions] = useState([]);
   const [selectedSpecificVersions, setSelectedSpecificVersions] = useState(
-    isSpecificVersion(definition.versions) ? definition.versions : []
+    isSpecificVersion(versions) ? versions : []
   );
-  const [availableTenants, setAvailableTenants] = useState(tenantInfo);
+  const [availableTenants, setAvailableTenants] = useState(versions.length ? tenantInfo : []);
   const [xml, setXml] = useState();
   const [loadingXml, setLoadingXml] = useState(true);
   const [displayName, setDisplayName] = useState(definition.displayName);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
-
-  const {key, versions, tenantIds} = definition;
-  const firstVersion = versions[0];
-  const firstTenant = tenantIds[0];
 
   useEffect(() => {
     mightFail(loadVersions(type, collection, key), setAvailableVersions, showError);
