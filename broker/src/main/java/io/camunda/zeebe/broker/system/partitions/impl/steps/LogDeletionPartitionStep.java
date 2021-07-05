@@ -10,14 +10,15 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.camunda.zeebe.broker.logstreams.AtomixLogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import java.util.List;
 
 public class LogDeletionPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContext context) {
     final LogCompactor logCompactor =
         new AtomixLogCompactor(context.getRaftPartition().getServer());
     final LogDeletionService deletionService =
@@ -25,16 +26,14 @@ public class LogDeletionPartitionStep implements PartitionStep {
             context.getNodeId(),
             context.getPartitionId(),
             logCompactor,
-            context
-                .getSnapshotStoreSupplier()
-                .getPersistedSnapshotStore(context.getRaftPartition().id().id()));
+            List.of(context.getConstructableSnapshotStore(), context.getReceivableSnapshotStore()));
 
     context.setLogDeletionService(deletionService);
-    return context.getScheduler().submitActor(deletionService);
+    return context.getActorSchedulingService().submitActor(deletionService);
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getLogDeletionService().closeAsync();
     context.setLogDeletionService(null);
     return future;

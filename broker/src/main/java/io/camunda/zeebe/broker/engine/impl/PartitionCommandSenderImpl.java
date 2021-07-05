@@ -46,7 +46,7 @@ public final class PartitionCommandSenderImpl implements PartitionCommandSender 
     final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
     command.write(buffer, 0);
 
-    communicationService.send("subscription", bytes, MemberId.from("" + partitionLeader));
+    communicationService.unicast("subscription", bytes, MemberId.from("" + partitionLeader));
     return true;
   }
 }

@@ -7,29 +7,23 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class LeaderPostStoragePartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
-    context
-        .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
-        .addSnapshotListener(context.getSnapshotController());
+  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+    context.getConstructableSnapshotStore().addSnapshotListener(context.getSnapshotController());
 
     return CompletableActorFuture.completed(null);
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
-    context
-        .getSnapshotStoreSupplier()
-        .getPersistedSnapshotStore(context.getRaftPartition().id().id())
-        .removeSnapshotListener(context.getSnapshotController());
+  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+    context.getConstructableSnapshotStore().removeSnapshotListener(context.getSnapshotController());
     return CompletableActorFuture.completed(null);
   }
 

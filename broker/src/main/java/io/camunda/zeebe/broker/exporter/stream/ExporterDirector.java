@@ -29,7 +29,7 @@ import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorCondition;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -89,8 +89,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
     isPaused = shouldPauseOnStart;
   }
 
-  public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
-    return actorScheduler.submitActor(this, SchedulingHints.ioBound());
+  public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
+    return actorSchedulingService.submitActor(this, SchedulingHints.ioBound());
   }
 
   public ActorFuture<Void> stopAsync() {

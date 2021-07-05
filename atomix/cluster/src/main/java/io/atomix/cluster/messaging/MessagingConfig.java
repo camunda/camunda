@@ -17,14 +17,17 @@
 package io.atomix.cluster.messaging;
 
 import io.atomix.utils.config.Config;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
+  private final int connectionPoolSize = 8;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
-  private final int connectionPoolSize = 8;
+  private Duration shutdownQuietPeriod = Duration.ofSeconds(2); // taken from Netty's default value
+  private Duration shutdownTimeout = Duration.ofSeconds(15); // taken from Netty's default value
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -73,5 +76,37 @@ public class MessagingConfig implements Config {
    */
   public int getConnectionPoolSize() {
     return connectionPoolSize;
+  }
+
+  /** @return the configured shutdown quiet period */
+  public Duration getShutdownQuietPeriod() {
+    return shutdownQuietPeriod;
+  }
+
+  /**
+   * Sets the shutdown quiet period. This is mostly useful to set a small value when testing,
+   * otherwise every tests takes an additional 2 second just to shutdown the executor.
+   *
+   * @param shutdownQuietPeriod the quiet period on shutdown
+   * @return this config
+   */
+  public MessagingConfig setShutdownQuietPeriod(final Duration shutdownQuietPeriod) {
+    this.shutdownQuietPeriod = shutdownQuietPeriod;
+    return this;
+  }
+
+  /** @return the configured shutdown timeout */
+  public Duration getShutdownTimeout() {
+    return shutdownTimeout;
+  }
+
+  /**
+   * Sets the shutdown timeout.
+   *
+   * @param shutdownTimeout the time to wait for an orderly shutdown of the messaging service
+   * @return this config
+   */
+  public void setShutdownTimeout(final Duration shutdownTimeout) {
+    this.shutdownTimeout = shutdownTimeout;
   }
 }

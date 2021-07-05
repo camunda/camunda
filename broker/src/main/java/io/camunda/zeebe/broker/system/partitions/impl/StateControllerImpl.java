@@ -35,6 +35,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private static final ReplicationContext INVALID_SNAPSHOT = new ReplicationContext(null, -1, null);
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
 
+  private final int partitionId;
+
   private final SnapshotReplication replication;
   private final Map<String, ReplicationContext> receivedSnapshots =
       new Object2NullableObjectHashMap<>();
@@ -59,6 +61,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       final SnapshotReplication replication,
       final AtomixRecordEntrySupplier entrySupplier,
       final ToLongFunction<ZeebeDb> exporterPositionSupplier) {
+    this.partitionId = partitionId;
     this.constructableSnapshotStore = constructableSnapshotStore;
     this.receivableSnapshotStore = receivableSnapshotStore;
     this.runtimeDirectory = runtimeDirectory;

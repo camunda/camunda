@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -20,7 +20,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 public class StateControllerPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContext context) {
     final var runtimeDirectory =
         context.getRaftPartition().dataDirectory().toPath().resolve("runtime");
     final var databaseCfg = context.getBrokerCfg().getExperimental().getRocksdb();
@@ -29,13 +29,11 @@ public class StateControllerPartitionStep implements PartitionStep {
         new StateControllerImpl(
             context.getPartitionId(),
             DefaultZeebeDbFactory.defaultFactory(databaseCfg.createRocksDbConfiguration()),
-            context
-                .getSnapshotStoreSupplier()
-                .getConstructableSnapshotStore(context.getPartitionId()),
-            context.getSnapshotStoreSupplier().getReceivableSnapshotStore(context.getPartitionId()),
+            context.getConstructableSnapshotStore(),
+            context.getReceivableSnapshotStore(),
             runtimeDirectory,
             context.getSnapshotReplication(),
-            new AtomixRecordEntrySupplierImpl(context.getRaftLogReader()),
+            new AtomixRecordEntrySupplierImpl(context.getRaftPartition().getServer()),
             StatePositionSupplier::getHighestExportedPosition);
 
     context.setSnapshotController(stateController);
@@ -43,7 +41,7 @@ public class StateControllerPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContext context) {
     try {
       context.getSnapshotController().close();
     } catch (final Exception e) {

@@ -41,11 +41,14 @@ public class ZeebeClientCloudBuilderImpl
   private static final String BASE_ADDRESS = "zeebe.camunda.io";
   private static final String BASE_AUTH_URL = "https://login.cloud.camunda.io/oauth/token";
 
+  private static final String DEFAULT_REGION = "bru-2";
+
   private final ZeebeClientBuilderImpl innerBuilder = new ZeebeClientBuilderImpl();
 
   private String clusterId;
   private String clientId;
   private String clientSecret;
+  private String region = DEFAULT_REGION;
 
   @Override
   public ZeebeClientCloudBuilderStep2 withClusterId(final String clusterId) {
@@ -62,6 +65,12 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientCloudBuilderStep4 withClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientCloudBuilderStep4 withRegion(final String region) {
+    this.region = region;
     return this;
   }
 
@@ -175,7 +184,7 @@ public class ZeebeClientCloudBuilderImpl
   private String determineGatewayAddress() {
     if (isNeedToSetCloudGatewayAddress()) {
       ensureNotNull("cluster id", clusterId);
-      return String.format("%s.%s:443", clusterId, BASE_ADDRESS);
+      return String.format("%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
     } else {
       Loggers.LOGGER.debug(
           "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
@@ -197,7 +206,7 @@ public class ZeebeClientCloudBuilderImpl
         Loggers.LOGGER.debug("Expected setting 'usePlaintext' to be 'false', but found 'true'.");
       }
       return builder
-          .audience(String.format("%s.%s", clusterId, BASE_ADDRESS))
+          .audience(String.format("%s.%s.%s", clusterId, region, BASE_ADDRESS))
           .clientId(clientId)
           .clientSecret(clientSecret)
           .authorizationServerUrl(BASE_AUTH_URL)
@@ -221,6 +230,7 @@ public class ZeebeClientCloudBuilderImpl
     final StringBuilder sb = new StringBuilder(innerBuilder.toString());
     appendProperty(sb, "clusterId", clusterId);
     appendProperty(sb, "clientId", clientId);
+    appendProperty(sb, "region", region);
     return sb.toString();
   }
 }

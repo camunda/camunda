@@ -45,6 +45,13 @@ public class RaftRoleMetrics extends RaftMetrics {
           .help("Time between heartbeats")
           .labelNames("partitionGroupName", "partition")
           .register();
+  private static final Gauge ELECTION_LATENCY =
+      Gauge.build()
+          .namespace("atomix")
+          .name("election_latency_in_ms")
+          .help("Duration for election")
+          .labelNames("partitionGroupName", "partition")
+          .register();
 
   public RaftRoleMetrics(final String partitionName) {
     super(partitionName);
@@ -72,5 +79,9 @@ public class RaftRoleMetrics extends RaftMetrics {
 
   public static double getHeartbeatMissCount(final String partition) {
     return HEARTBEAT_MISS.labels(partition, partition).get();
+  }
+
+  public void setElectionLatency(final long latencyMs) {
+    ELECTION_LATENCY.labels(partitionGroupName, partition).set(latencyMs);
   }
 }

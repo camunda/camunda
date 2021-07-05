@@ -8,7 +8,7 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.util.sched.ActorScheduler;
+import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
 /** Builder pattern for the {@link LogStream} */
@@ -17,10 +17,10 @@ public interface LogStreamBuilder {
   /**
    * The actor scheduler to use for the {@link LogStream} and its child actors
    *
-   * @param actorScheduler the scheduler to use
+   * @param actorSchedulingService the scheduler to use
    * @return this builder
    */
-  LogStreamBuilder withActorScheduler(ActorScheduler actorScheduler);
+  LogStreamBuilder withActorSchedulingService(ActorSchedulingService actorSchedulingService);
 
   /**
    * The maximum fragment size read from the shared write buffer; this should be aligned with the

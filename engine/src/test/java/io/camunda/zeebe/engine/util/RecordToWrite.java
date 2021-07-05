@@ -53,6 +53,11 @@ public final class RecordToWrite {
     return new RecordToWrite(recordMetadata.recordType(RecordType.EVENT));
   }
 
+  public static RecordToWrite rejection() {
+    final RecordMetadata recordMetadata = new RecordMetadata();
+    return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND_REJECTION));
+  }
+
   public RecordToWrite job(final JobIntent intent) {
     return job(intent, new JobRecord().setType("type").setRetries(3).setWorker("worker"));
   }

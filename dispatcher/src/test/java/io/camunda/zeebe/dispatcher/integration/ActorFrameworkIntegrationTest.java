@@ -30,7 +30,7 @@ public final class ActorFrameworkIntegrationTest {
   public void testClaim() throws InterruptedException {
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 
@@ -46,7 +46,7 @@ public final class ActorFrameworkIntegrationTest {
   public void testClaimAndPeek() throws InterruptedException {
     final Dispatcher dispatcher =
         Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
+            .actorSchedulingService(actorSchedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(10))
             .build();
 

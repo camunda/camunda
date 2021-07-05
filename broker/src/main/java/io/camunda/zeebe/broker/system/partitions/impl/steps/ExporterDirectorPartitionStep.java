@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
@@ -19,7 +19,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContext context) {
     final var exporterDescriptors = context.getExporterRepository().getExporters().values();
 
     final ExporterDirectorContext exporterCtx =
@@ -34,7 +34,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
     context.setExporterDirector(director);
     context.getComponentHealthMonitor().registerComponent(director.getName(), director);
 
-    final var startFuture = director.startAsync(context.getScheduler());
+    final var startFuture = director.startAsync(context.getActorSchedulingService());
     startFuture.onComplete(
         (nothing, error) -> {
           if (error == null) {
@@ -50,7 +50,7 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContext context) {
     final var director = context.getExporterDirector();
     context.getComponentHealthMonitor().removeComponent(director.getName());
     final ActorFuture<Void> future = director.closeAsync();

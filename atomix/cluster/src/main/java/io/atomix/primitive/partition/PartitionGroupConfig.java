@@ -23,7 +23,7 @@ import io.atomix.utils.config.TypedConfig;
 public abstract class PartitionGroupConfig<C extends PartitionGroupConfig<C>>
     implements TypedConfig<PartitionGroup.Type>, NamedConfig<C> {
   private String name;
-  private int partitions = getDefaultPartitions();
+  private int partitionCount = getDefaultPartitions();
 
   @Override
   public String getName() {
@@ -42,19 +42,19 @@ public abstract class PartitionGroupConfig<C extends PartitionGroupConfig<C>>
    *
    * @return the number of partitions in the group.
    */
-  public int getPartitions() {
-    return partitions;
+  public int getPartitionCount() {
+    return partitionCount;
   }
 
   /**
    * Sets the number of partitions in the group.
    *
-   * @param partitions the number of partitions in the group
+   * @param partitionCount the number of partitions in the group
    * @return the partition group configuration
    */
   @SuppressWarnings("unchecked")
-  public C setPartitions(final int partitions) {
-    this.partitions = partitions;
+  public C setPartitionCount(final int partitionCount) {
+    this.partitionCount = partitionCount;
     return (C) this;
   }
 

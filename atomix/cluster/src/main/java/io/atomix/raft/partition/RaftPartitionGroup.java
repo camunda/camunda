@@ -76,7 +76,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
             LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
     name = config.getName();
     this.config = config;
-    replicationFactor = config.getPartitionSize();
+    replicationFactor = config.getReplicationFactor();
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
@@ -94,8 +94,8 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
-    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitions());
-    for (int i = 0; i < config.getPartitions(); i++) {
+    final List<RaftPartition> partitions = new ArrayList<>(config.getPartitionCount());
+    for (int i = 0; i < config.getPartitionCount(); i++) {
       partitions.add(
           new RaftPartition(
               PartitionId.from(config.getName(), i + 1),
@@ -297,7 +297,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @throws IllegalArgumentException if the number of partitions is not positive
      */
     public Builder withNumPartitions(final int numPartitions) {
-      config.setPartitions(numPartitions);
+      config.setPartitionCount(numPartitions);
       return this;
     }
 
@@ -309,7 +309,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @throws IllegalArgumentException if the partition size is not positive
      */
     public Builder withPartitionSize(final int partitionSize) {
-      config.setPartitionSize(partitionSize);
+      config.setReplicationFactor(partitionSize);
       return this;
     }
 
@@ -321,7 +321,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
       checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
-      config.setMaxAppendsPerFollower(maxAppendsPerFollower);
+      config.getPartitionConfig().setMaxAppendsPerFollower(maxAppendsPerFollower);
       return this;
     }
 
@@ -333,7 +333,32 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
       checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
-      config.setMaxAppendBatchSize(maxAppendBatchSize);
+      config.getPartitionConfig().setMaxAppendBatchSize(maxAppendBatchSize);
+      return this;
+    }
+
+    /**
+     * Sets the heartbeatInterval. The leader will send heartbeats to a follower at this interval.
+     *
+     * @param heartbeatInterval the delay between two heartbeats
+     * @return the Raft partition group builder
+     */
+    public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
+      checkArgument(heartbeatInterval.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
+      config.getPartitionConfig().setHeartbeatInterval(heartbeatInterval);
+      return this;
+    }
+
+    /**
+     * Sets the election timeout. If a follower does not receive a heartbeat from the leader within
+     * election timeout, it can start a new leader election.
+     *
+     * @param electionTimeout the election timeout
+     * @return the Raft partition group builder
+     */
+    public Builder withElectionTimeout(final Duration electionTimeout) {
+      checkArgument(electionTimeout.toMillis() > 0, "heartbeatInterval must be atleast 1ms");
+      config.getPartitionConfig().setElectionTimeout(electionTimeout);
       return this;
     }
 
@@ -422,7 +447,47 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     public Builder withPriorityElection(final boolean enable) {
-      config.setPriorityElectionEnabled(enable);
+      config.getPartitionConfig().setPriorityElectionEnabled(enable);
+      return this;
+    }
+
+    /**
+     * Sets the timeout for all messages sent between raft replicas.
+     *
+     * @param requestTimeout the timeout
+     * @return the Raft Partition group builder
+     */
+    public Builder withRequestTimeout(final Duration requestTimeout) {
+      config.getPartitionConfig().setRequestTimeout(requestTimeout);
+      return this;
+    }
+
+    /**
+     * If the leader is not able to reach the quorum, the leader may step down. This is triggered
+     * after minStepDownFailureCount number of requests fails to get a response from the quorum of
+     * followers as well as if the last response was received before maxQuorumResponseTime.
+     *
+     * @param minStepDownFailureCount The number of failures after which a leader considers stepping
+     *     down.
+     * @return the Raft Partition group builder
+     */
+    public Builder withMinStepDownFailureCount(final int minStepDownFailureCount) {
+      config.getPartitionConfig().setMinStepDownFailureCount(minStepDownFailureCount);
+      return this;
+    }
+
+    /**
+     * If the leader is not able to reach the quorum, the leader may step down. This is triggered *
+     * after minStepDownFailureCount number of requests fails to get a response from the quorum of *
+     * followers as well as if the last response was received before maxQuorumResponseTime.
+     *
+     * <p>When this value is 0, it will use a default value of electionTimeout * 2.
+     *
+     * @param maxQuorumResponseTimeout the quorum response timeout
+     * @return the Raft Partition group builder
+     */
+    public Builder withMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
+      config.getPartitionConfig().setMaxQuorumResponseTimeout(maxQuorumResponseTimeout);
       return this;
     }
 

@@ -22,12 +22,12 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
+import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.util.collection.Tuple;
@@ -158,10 +158,9 @@ public final class ControllableRaftContexts {
             new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),
             createStorage(memberId),
             getRaftThreadContextFactory(memberId),
-            32 * 1024, // Copied from defaults
-            2, // Copied from defaults
             () -> random,
-            RaftElectionConfig.ofDefaultElection());
+            RaftElectionConfig.ofDefaultElection(),
+            new RaftPartitionConfig());
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
   }
@@ -300,8 +299,7 @@ public final class ControllableRaftContexts {
   public void assertAllLogsEqual() {
     final var readers =
         raftServers.values().stream()
-            .collect(
-                Collectors.toMap(Function.identity(), s -> s.getLog().openReader(Mode.COMMITS)));
+            .collect(Collectors.toMap(Function.identity(), s -> s.getLog().openCommittedReader()));
     long index = 0;
     while (true) {
       final var entries =

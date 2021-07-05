@@ -161,6 +161,47 @@ public final class SystemContextTest {
         .isEqualTo(Duration.ofMinutes(1));
   }
 
+  @Test
+  public void shouldThrowExceptionIfHeartbeatIntervalIsSmallerThanOneMs() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setHeartbeatInterval(Duration.ofMillis(0));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("heartbeatInterval PT0S must be at least 1ms");
+
+    initSystemContext(brokerCfg);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfElectionTimeoutIsSmallerThanOneMs() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(Duration.ofMillis(0));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("electionTimeout PT0S must be at least 1ms");
+
+    initSystemContext(brokerCfg);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfElectionTimeoutIsSmallerThanHeartbeatInterval() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setElectionTimeout(Duration.ofSeconds(1));
+    brokerCfg.getCluster().setHeartbeatInterval(Duration.ofSeconds(2));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage(
+        "electionTimeout PT1S must be greater than heartbeatInterval PT2S");
+
+    initSystemContext(brokerCfg);
+  }
+
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return new SystemContext(brokerCfg, "test", new ControlledActorClock());
   }

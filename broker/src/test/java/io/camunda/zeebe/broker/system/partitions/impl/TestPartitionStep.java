@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
@@ -30,7 +30,7 @@ public final class TestPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> open(final PartitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContext context) {
     if (throwOnOpen != null) {
       throw throwOnOpen;
     }
@@ -41,7 +41,7 @@ public final class TestPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContext context) {
     if (throwOnClose != null) {
       throw throwOnClose;
     }

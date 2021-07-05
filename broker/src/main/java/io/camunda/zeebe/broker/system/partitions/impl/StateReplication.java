@@ -56,7 +56,7 @@ public final class StateReplication implements SnapshotReplication {
 
   @Override
   public void consume(final Consumer<SnapshotChunk> consumer) {
-    executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
+    executorService = Executors.newSingleThreadExecutor(this::createReplicationThread);
     messagingService.subscribe(
         replicationTopic,
         message -> {
@@ -93,5 +93,15 @@ public final class StateReplication implements SnapshotReplication {
     chunk.wrap(readBuffer, 0, readBuffer.capacity());
 
     return chunk;
+  }
+
+  private void logUnexpectedError(final Thread thread, final Throwable error) {
+    LOG.error("Unexpected error occurred on state replication thread {}", thread, error);
+  }
+
+  private Thread createReplicationThread(final Runnable r) {
+    final var thread = new Thread(r, threadName);
+    thread.setUncaughtExceptionHandler(this::logUnexpectedError);
+    return thread;
   }
 }

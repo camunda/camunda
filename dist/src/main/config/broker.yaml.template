@@ -200,6 +200,20 @@
       # Example:
       # clusterName: zeebe-cluster
 
+      # Configure heartbeatInterval. The leader sends a heartbeat to a follower every heartbeatInterval.
+      # Note: This is an advanced setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_HEARTBEATINTERVAL.
+      # heartbeatInterval: 250ms
+
+      # Configure electionTimeout. If a follower does not receive a heartbeat from the leader with in an election timeout,
+      # it can start a new leader election. electionTimeout should be greater than configured heartbeatInterval.
+      # When the electionTimeout is large, there will be delay in detecting a leader failure.
+      # When the electionTimeout is small, it can lead to false positives when detecting leader failures and thus leading to unnecessary leader changes.
+      # If the network latency between the nodes is high, it is recommended to have a higher election latency.
+      # Note: This is an advanced setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_ELECTIONTIMEOUT.
+      # electionTimeout: 2500ms
+
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
       # membership:
@@ -464,6 +478,27 @@
       # It is not guaranteed to be a strictly uniform distribution.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
       # enablePriorityElection = false;
+
+      # Allows to configure specific raft properties
+      # raft:
+        # Sets the timeout for all requests send by raft leaders and followers.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
+        # requestTimeout = 5s
+
+        # If the leader is not able to reach the quorum, the leader may step down.
+        # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
+        # reached minStepDownFailureCount. The maxQuorumResponseTime also influences when the leader step down.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MINSTEPDOWNFAILURECOUNT
+        # minStepDownFailureCount = 3
+
+        # If the leader is not able to reach the quorum, the leader may step down.
+        # This is triggered if the leader is not able to reach the quorum of the followers for maxQuorumResponseTimeout.
+        # The minStepDownFailureCount also influences when the leader step down.
+        # Higher the timeout, slower the leader reacts to a partial network partition.
+        # When the timeout is lower, there might be false positives, and the leader might step down too quickly.
+        # When this value is 0, it will use a default value of electionTimeout * 2.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_MAXQUORUMRESPONSETIMEOUT
+        # maxQuorumResponseTimeout = 0ms
 
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:

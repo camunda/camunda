@@ -99,17 +99,11 @@ public final class ProcessingStateMachine {
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
-  private static final String LOG_ERROR_EVENT_COMMITTED =
-      "Error event was committed, we continue with processing.";
-  private static final String LOG_ERROR_EVENT_WRITTEN =
-      "Error record was written at {}, we will continue with processing if event was committed. Current commit position is {}.";
 
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
   private static final MetadataFilter PROCESSING_FILTER =
-      recordMetadata ->
-          recordMetadata.getRecordType() == RecordType.COMMAND
-              || !MigratedStreamProcessors.isMigrated(recordMetadata.getValueType());
+      recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
 
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
@@ -144,8 +138,6 @@ public final class ProcessingStateMachine {
   private long writtenEventPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedEventPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenEventPosition = StreamProcessor.UNSET_POSITION;
-  private boolean onErrorHandling;
-  private long errorRecordPosition = StreamProcessor.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
   private int onErrorRetries;
   // Used for processing duration metrics
@@ -190,25 +182,8 @@ public final class ProcessingStateMachine {
       onErrorHandlingLoop = false;
       onErrorRetries = 0;
     }
-    if (onErrorHandling) {
-      logStream
-          .getCommitPositionAsync()
-          .onComplete(
-              (commitPosition, error) -> {
-                if (error == null) {
-                  if (commitPosition >= errorRecordPosition) {
-                    LOG.info(LOG_ERROR_EVENT_COMMITTED);
-                    onErrorHandling = false;
 
-                    tryToReadNextEvent();
-                  }
-                } else {
-                  LOG.error("Error on retrieving commit position", error);
-                }
-              });
-    } else {
-      tryToReadNextEvent();
-    }
+    tryToReadNextEvent();
   }
 
   private void tryToReadNextEvent() {
@@ -238,15 +213,6 @@ public final class ProcessingStateMachine {
     try {
       final UnifiedRecordValue value = recordValues.readRecordValue(event, metadata.getValueType());
       typedEvent.wrap(event, metadata, value);
-
-      // process only commands - skip events and rejections
-      if (MigratedStreamProcessors.isMigrated(typedEvent)
-          && typedEvent.getRecordType() != RecordType.COMMAND) {
-
-        currentProcessor = null;
-        skipRecord();
-        return;
-      }
 
       metrics.processingLatency(event.getTimestamp(), processingStartTime);
 
@@ -336,7 +302,6 @@ public final class ProcessingStateMachine {
           try {
             errorHandlingInTransaction(processingException);
 
-            onErrorHandling = true;
             nextStep.run();
           } catch (final Exception ex) {
             onError(ex, nextStep);
@@ -368,11 +333,9 @@ public final class ProcessingStateMachine {
         String.format(PROCESSING_ERROR_MESSAGE, typedEvent, exception.getMessage());
     LOG.error(errorMessage, exception);
 
-    if (typedEvent.getRecordType() == RecordType.COMMAND) {
-      logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
-      responseWriter.writeRejectionOnCommand(
-          typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
-    }
+    logStreamWriter.appendRejection(typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
+    responseWriter.writeRejectionOnCommand(
+        typedEvent, RejectionType.PROCESSING_ERROR, errorMessage);
   }
 
   private void writeEvent() {
@@ -412,20 +375,6 @@ public final class ProcessingStateMachine {
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.commit();
-
-              // needs to be directly after commit
-              // so no other ActorJob can interfere between commit and update the positions
-              if (onErrorHandling) {
-                errorRecordPosition = writtenEventPosition;
-                logStream
-                    .getCommitPositionAsync()
-                    .onComplete(
-                        (commitPosition, error) -> {
-                          if (error == null) {
-                            LOG.info(LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, commitPosition);
-                          }
-                        });
-              }
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
               metrics.setLastProcessedPosition(lastSuccessfulProcessedEventPosition);
               lastWrittenEventPosition = writtenEventPosition;

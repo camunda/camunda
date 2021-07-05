@@ -34,7 +34,6 @@ import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.Managed;
 import io.atomix.utils.concurrent.Futures;
@@ -52,6 +51,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -72,6 +72,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> deferredFailureListeners = new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
+  private final Duration requestTimeout;
 
   private RaftServer server;
   private ReceivableSnapshotStore persistedSnapshotStore;
@@ -93,6 +94,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             getClass(),
             LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
     this.partitionMetadata = partitionMetadata;
+    requestTimeout = config.getPartitionConfig().getRequestTimeout();
   }
 
   @Override
@@ -167,8 +169,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
             .getPersistedSnapshotStoreFactory()
             .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partitionId);
 
+    final var partitionConfig = config.getPartitionConfig();
+
     final var electionConfig =
-        config.isPriorityElectionEnabled()
+        partitionConfig.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
                 partitionMetadata.getTargetPriority(), partitionMetadata.getPriority(localMemberId))
             : RaftElectionConfig.ofDefaultElection();
@@ -177,10 +181,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .withName(partition.name())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
-        .withHeartbeatInterval(config.getHeartbeatInterval())
-        .withElectionTimeout(config.getElectionTimeout())
-        .withMaxAppendBatchSize(config.getMaxAppendBatchSize())
-        .withMaxAppendsPerFollower(config.getMaxAppendsPerFollower())
+        .withPartitionConfig(partitionConfig)
         .withStorage(createRaftStorage())
         .withEntryValidator(config.getEntryValidator())
         .withElectionConfig(electionConfig)
@@ -204,8 +205,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     server.getContext().getLogCompactor().setCompactableIndex(index);
   }
 
-  public RaftLogReader openReader(final Mode mode) {
-    return server.getContext().getLog().openReader(mode);
+  public RaftLogReader openReader() {
+    return server.getContext().getLog().openCommittedReader();
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -306,7 +307,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
 
   private RaftServerCommunicator createServerProtocol() {
     return new RaftServerCommunicator(
-        partition.name(), Serializer.using(RaftNamespaces.RAFT_PROTOCOL), clusterCommunicator);
+        partition.name(),
+        Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
+        clusterCommunicator,
+        requestTimeout);
   }
 
   public CompletableFuture<Void> stepDown() {

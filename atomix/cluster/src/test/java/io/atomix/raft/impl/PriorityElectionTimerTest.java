@@ -15,6 +15,8 @@
  */
 package io.atomix.raft.impl;
 
+import static org.mockito.Mockito.spy;
+
 import io.atomix.utils.concurrent.SingleThreadContext;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +57,9 @@ public class PriorityElectionTimerTest {
   @Test
   public void shouldHighPriorityNodeStartElectionFirst() {
     // given
-    final AtomicBoolean highPrioElectionTriggered = new AtomicBoolean();
+    final AtomicBoolean highPrioElectionTriggered = spy(new AtomicBoolean());
+    final AtomicBoolean lowPrioElectionTriggered = spy(new AtomicBoolean());
+
     final int targetPriority = 4;
     final PriorityElectionTimer timerHighPrio =
         new PriorityElectionTimer(
@@ -67,13 +72,22 @@ public class PriorityElectionTimerTest {
 
     final PriorityElectionTimer timerLowPrio =
         new PriorityElectionTimer(
-            Duration.ofMillis(100), threadContext, timerHighPrio::cancel, log, targetPriority, 1);
+            Duration.ofMillis(100),
+            threadContext,
+            () -> lowPrioElectionTriggered.set(true),
+            log,
+            targetPriority,
+            1);
 
     // when
     timerLowPrio.reset();
     timerHighPrio.reset();
+    Awaitility.await().until(highPrioElectionTriggered::get);
+    Awaitility.await().until(lowPrioElectionTriggered::get);
 
     // then
-    Awaitility.await().until(highPrioElectionTriggered::get);
+    final var inorder = Mockito.inOrder(highPrioElectionTriggered, lowPrioElectionTriggered);
+    inorder.verify(highPrioElectionTriggered).set(true);
+    inorder.verify(lowPrioElectionTriggered).set(true);
   }
 }

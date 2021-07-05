@@ -11,7 +11,6 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
-import io.camunda.zeebe.snapshots.SnapshotStoreSupplier;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import java.nio.file.Path;
@@ -28,8 +27,7 @@ import org.agrona.collections.Int2ObjectHashMap;
  * <p>The metadata extraction is done by parsing the directory name using '%d-%d-%d-%d', where in
  * order we expect: index, term, processed position and exported position.
  */
-public final class FileBasedSnapshotStoreFactory
-    implements SnapshotStoreSupplier, ReceivableSnapshotStoreFactory {
+public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
   public static final String PENDING_DIRECTORY = "pending";
 
@@ -70,17 +68,14 @@ public final class FileBasedSnapshotStoreFactory
     return snapshotStore;
   }
 
-  @Override
   public ConstructableSnapshotStore getConstructableSnapshotStore(final int partitionId) {
     return partitionSnapshotStores.get(partitionId);
   }
 
-  @Override
   public ReceivableSnapshotStore getReceivableSnapshotStore(final int partitionId) {
     return partitionSnapshotStores.get(partitionId);
   }
 
-  @Override
   public PersistedSnapshotStore getPersistedSnapshotStore(final int partitionId) {
     return partitionSnapshotStores.get(partitionId);
   }

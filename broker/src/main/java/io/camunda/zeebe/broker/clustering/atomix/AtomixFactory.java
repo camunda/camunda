@@ -111,11 +111,16 @@ public final class AtomixFactory {
             .withSnapshotStoreFactory(snapshotStoreFactory)
             .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())
             .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
+            .withHeartbeatInterval(clusterCfg.getHeartbeatInterval())
+            .withElectionTimeout(clusterCfg.getElectionTimeout())
             .withEntryValidator(new ZeebeEntryValidator())
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity())
-            .withPriorityElection(experimentalCfg.isEnablePriorityElection());
+            .withPriorityElection(experimentalCfg.isEnablePriorityElection())
+            .withRequestTimeout(experimentalCfg.getRaft().getRequestTimeout())
+            .withMaxQuorumResponseTimeout(experimentalCfg.getRaft().getMaxQuorumResponseTimeout())
+            .withMinStepDownFailureCount(experimentalCfg.getRaft().getMinStepDownFailureCount());
 
     final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
 

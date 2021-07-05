@@ -57,7 +57,7 @@ class RaftLogTest {
   @BeforeEach
   void setup(@TempDir final File directory) {
     raftlog = RaftLog.builder().withDirectory(directory).withName("test").build();
-    reader = raftlog.openReader();
+    reader = raftlog.openUncommittedReader();
   }
 
   @AfterEach

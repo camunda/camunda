@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +24,8 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
+  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
@@ -32,6 +35,8 @@ public final class ClusterCfg implements ConfigurationEntry {
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
   private String clusterName = DEFAULT_CLUSTER_NAME;
+  private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
+  private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private MembershipCfg membership = new MembershipCfg();
 
   @Override
@@ -106,6 +111,14 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.membership = membership;
   }
 
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public void setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+  }
+
   @Override
   public String toString() {
     return "ClusterCfg{"
@@ -126,6 +139,18 @@ public final class ClusterCfg implements ConfigurationEntry {
         + '\''
         + ", membership="
         + membership
+        + ", heartbeatInterval="
+        + heartbeatInterval
+        + ", electionTimeout="
+        + electionTimeout
         + '}';
+  }
+
+  public Duration getElectionTimeout() {
+    return electionTimeout;
+  }
+
+  public void setElectionTimeout(final Duration electionTimeout) {
+    this.electionTimeout = electionTimeout;
   }
 }

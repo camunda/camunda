@@ -49,7 +49,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,6 +67,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -76,7 +79,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Netty based MessagingService. */
-public class NettyMessagingService implements ManagedMessagingService {
+public final class NettyMessagingService implements ManagedMessagingService {
+  private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(5);
 
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final Address advertisedAddress;
@@ -93,9 +97,12 @@ public class NettyMessagingService implements ManagedMessagingService {
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends Channel> clientChannelClass;
-  private ScheduledExecutorService timeoutExecutor;
   private Channel serverChannel;
   private final List<CompletableFuture> openFutures;
+  private final MessagingConfig config;
+
+  // a single thread executor which silently rejects tasks being submitted when it's shutdown
+  private ScheduledExecutorService timeoutExecutor;
 
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
@@ -110,6 +117,8 @@ public class NettyMessagingService implements ManagedMessagingService {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
+    this.config = config;
+
     openFutures = new CopyOnWriteArrayList<>();
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
     initAddresses(config);
@@ -151,7 +160,8 @@ public class NettyMessagingService implements ManagedMessagingService {
   @Override
   public CompletableFuture<byte[]> sendAndReceive(
       final Address address, final String type, final byte[] payload, final boolean keepAlive) {
-    return sendAndReceive(address, type, payload, keepAlive, null, MoreExecutors.directExecutor());
+    return sendAndReceive(
+        address, type, payload, keepAlive, DEFAULT_TIMEOUT, MoreExecutors.directExecutor());
   }
 
   @Override
@@ -161,7 +171,7 @@ public class NettyMessagingService implements ManagedMessagingService {
       final byte[] payload,
       final boolean keepAlive,
       final Executor executor) {
-    return sendAndReceive(address, type, payload, keepAlive, null, executor);
+    return sendAndReceive(address, type, payload, keepAlive, DEFAULT_TIMEOUT, executor);
   }
 
   @Override
@@ -191,13 +201,27 @@ public class NettyMessagingService implements ManagedMessagingService {
     final long messageId = messageIdGenerator.incrementAndGet();
     final ProtocolRequest message =
         new ProtocolRequest(messageId, advertisedAddress, type, payload);
+    final CompletableFuture<byte[]> responseFuture;
     if (keepAlive) {
-      return executeOnPooledConnection(
-          address, type, c -> c.sendAndReceive(message, timeout), executor);
+      responseFuture =
+          executeOnPooledConnection(address, type, c -> c.sendAndReceive(message), executor);
     } else {
-      return executeOnTransientConnection(
-          address, c -> c.sendAndReceive(message, timeout), executor);
+      responseFuture =
+          executeOnTransientConnection(address, c -> c.sendAndReceive(message), executor);
     }
+
+    final var timeoutFuture =
+        timeoutExecutor.schedule(
+            () ->
+                responseFuture.completeExceptionally(
+                    new TimeoutException(
+                        String.format(
+                            "Request %s to %s timed out in %s", message, address, timeout))),
+            timeout.toNanos(),
+            TimeUnit.NANOSECONDS);
+    responseFuture.whenComplete((ignored, error) -> timeoutFuture.cancel(true));
+
+    return responseFuture;
   }
 
   @Override
@@ -269,9 +293,9 @@ public class NettyMessagingService implements ManagedMessagingService {
         .thenRun(
             () -> {
               timeoutExecutor =
-                  Executors.newScheduledThreadPool(
-                      4, namedThreads("netty-messaging-timeout-%d", log));
-              localConnection = new LocalClientConnection(timeoutExecutor, handlers);
+                  Executors.newSingleThreadScheduledExecutor(
+                      new DefaultThreadFactory("netty-messaging-timeout-"));
+              localConnection = new LocalClientConnection(handlers);
               started.set(true);
               log.info("Started");
             })
@@ -295,8 +319,16 @@ public class NettyMessagingService implements ManagedMessagingService {
               } catch (final InterruptedException e) {
                 interrupted = true;
               }
-              final Future<?> serverShutdownFuture = serverGroup.shutdownGracefully();
-              final Future<?> clientShutdownFuture = clientGroup.shutdownGracefully();
+              final Future<?> serverShutdownFuture =
+                  serverGroup.shutdownGracefully(
+                      config.getShutdownQuietPeriod().toMillis(),
+                      config.getShutdownTimeout().toMillis(),
+                      TimeUnit.MILLISECONDS);
+              final Future<?> clientShutdownFuture =
+                  clientGroup.shutdownGracefully(
+                      config.getShutdownQuietPeriod().toMillis(),
+                      config.getShutdownTimeout().toMillis(),
+                      TimeUnit.MILLISECONDS);
               try {
                 serverShutdownFuture.sync();
               } catch (final InterruptedException e) {
@@ -509,8 +541,7 @@ public class NettyMessagingService implements ManagedMessagingService {
   private RemoteClientConnection getOrCreateClientConnection(final Channel channel) {
     RemoteClientConnection connection = connections.get(channel);
     if (connection == null) {
-      connection =
-          connections.computeIfAbsent(channel, c -> new RemoteClientConnection(timeoutExecutor, c));
+      connection = connections.computeIfAbsent(channel, RemoteClientConnection::new);
       channel
           .closeFuture()
           .addListener(
@@ -568,14 +599,34 @@ public class NettyMessagingService implements ManagedMessagingService {
     bootstrap.channel(clientChannelClass);
     bootstrap.remoteAddress(resolvedAddress, address.port());
     bootstrap.handler(new BasicClientChannelInitializer(future));
-    bootstrap
-        .connect()
+    final Channel channel =
+        bootstrap
+            .connect()
+            .addListener(
+                onConnect -> {
+                  if (!onConnect.isSuccess()) {
+                    future.completeExceptionally(
+                        new ConnectException(
+                            String.format("Failed to connect channel for address %s", address)));
+                  }
+                })
+            .channel();
+
+    // immediately ensure we're notified of the channel being closed. the common case is that the
+    // channel is closed after we've handled the request (and response in the case of a
+    // sendAndReceive operation), so the future is already completed by then. If it isn't, then the
+    // channel was closed too early, which should be handled as a failure from the consumer point
+    // of view.
+    channel
+        .closeFuture()
         .addListener(
-            f -> {
-              if (!f.isSuccess()) {
-                future.completeExceptionally(f.cause());
-              }
-            });
+            onClose ->
+                future.completeExceptionally(
+                    new ConnectException(
+                        String.format(
+                            "Channel %s for address %s was closed unexpectedly before the request was handled",
+                            channel, address))));
+
     return future;
   }
 

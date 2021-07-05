@@ -77,15 +77,6 @@ public final class MigratedStreamProcessors {
 
   private MigratedStreamProcessors() {}
 
-  public static boolean isMigrated(final TypedRecord<?> record) {
-    final var valueType = record.getValueType();
-    return MIGRATED_VALUE_TYPES.getOrDefault(valueType, NOT_MIGRATED).apply(record);
-  }
-
-  public static boolean isMigrated(final ValueType valueType) {
-    return MIGRATED_VALUE_TYPES.get(valueType) == MIGRATED;
-  }
-
   public static boolean isMigrated(final BpmnElementType bpmnElementType) {
     return MIGRATED_BPMN_PROCESSORS.contains(bpmnElementType);
   }

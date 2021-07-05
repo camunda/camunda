@@ -147,7 +147,7 @@ public final class TestStreams {
             .withLogName(name)
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
-            .withActorScheduler(actorScheduler)
+            .withActorSchedulingService(actorScheduler)
             .build();
 
     logStreamConsumer.accept(logStream);
@@ -217,13 +217,22 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final SynchronousLogStream stream = getLogStream(log);
-    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory);
+    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, true);
+  }
+
+  public StreamProcessor startStreamProcessorNotAwaitOpening(
+      final String log,
+      final ZeebeDbFactory zeebeDbFactory,
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+    final SynchronousLogStream stream = getLogStream(log);
+    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory, false);
   }
 
   private StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory factory) {
+      final TypedRecordProcessorFactory factory,
+      final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -239,13 +248,17 @@ public final class TestStreams {
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
-            .actorScheduler(actorScheduler)
+            .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
             .eventApplierFactory(eventApplierFactory)
             .build();
-    streamProcessor.openAsync(false).join(15, TimeUnit.SECONDS);
+    final var openFuture = streamProcessor.openAsync(false);
+
+    if (awaitOpening) {
+      openFuture.join(15, TimeUnit.SECONDS);
+    }
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =

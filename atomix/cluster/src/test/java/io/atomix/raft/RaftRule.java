@@ -32,7 +32,6 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
@@ -386,7 +385,7 @@ public final class RaftRule extends ExternalResource {
 
         final var log = server.getContext().getLog();
         final List<IndexedRaftLogEntry> entryList = new ArrayList<>();
-        try (final var raftLogReader = log.openReader(Mode.ALL)) {
+        try (final var raftLogReader = log.openUncommittedReader()) {
           while (raftLogReader.hasNext()) {
             final var indexedEntry = raftLogReader.next();
             entryList.add(indexedEntry);
