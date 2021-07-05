@@ -41,7 +41,7 @@ const singleReportData = {
     type: 'flowNodes',
     value: null,
   },
-  distributedBy: {},
+  distributedBy: {type: 'none'},
   configuration: {
     groupByDateVariableUnit: 'day',
     customBucket: {
@@ -49,6 +49,7 @@ const singleReportData = {
       bucketSize: '10',
       baseline: '-10',
     },
+    aggregationTypes: ['avg'],
   },
   visualization: 'bar',
 };
@@ -525,6 +526,7 @@ describe('isCompatible', () => {
         }}
       />
     );
+    node.setState({reports: [report1, report2]});
     expect(node.instance().isCompatible(report2)).toBeFalsy();
   });
 });
@@ -563,7 +565,6 @@ it('should update the color of a single report inside a combined report', async 
 });
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
-  const reportData = {data: {visualization: '', groupBy: {}}};
   const report = {
     id: 'combinedReport',
     name: 'Combined Report',
@@ -576,33 +577,26 @@ it('should generate new colors or preserve existing ones when selected/deselecti
         {id: 'report3', color: 'yellow'},
       ],
     },
-  };
-  const result = {
-    data: {
-      report1: {
-        id: 'report1',
-        ...reportData,
-      },
-      report2: {
-        id: 'report2',
-        ...reportData,
-      },
-      report3: {
-        id: 'report3',
-        ...reportData,
+    result: {
+      data: {
+        report1: {
+          id: 'report1',
+          ...singleReportData,
+        },
+        report2: {
+          id: 'report2',
+          ...singleReportData,
+        },
+        report3: {
+          id: 'report3',
+          ...singleReportData,
+        },
       },
     },
   };
 
-  const node = await shallow(
-    <CombinedReportPanel
-      {...props}
-      report={{
-        ...report,
-        result,
-      }}
-    />
-  );
+  const node = await shallow(<CombinedReportPanel {...props} report={report} />);
+  node.setState({reports: Object.values(report.result.data)});
   const updatedColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
 
   expect(updatedColors).toEqual(['blue', 'red']);

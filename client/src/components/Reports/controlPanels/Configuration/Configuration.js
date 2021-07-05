@@ -99,11 +99,11 @@ export default class Configuration extends React.Component {
   };
 
   render() {
-    const {report, type, loading} = this.props;
+    const {report, type, disabled} = this.props;
     const Component = visualizations[type];
 
     const enablePopover =
-      Component && !loading && (!Component.isDisabled || !Component.isDisabled(report));
+      Component && !disabled && (!Component.isDisabled || !Component.isDisabled(report));
 
     return (
       <div className="Configuration">

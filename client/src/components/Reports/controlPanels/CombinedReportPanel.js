@@ -48,7 +48,7 @@ export default withRouter(
     }
 
     update = (selectedReport, checked) => {
-      const selectedReports = this.getReportResult();
+      const selectedReports = this.getSelectedReports();
 
       let newSelected = [];
       if (checked) {
@@ -72,22 +72,14 @@ export default withRouter(
       this.props.updateReport(change, true);
     };
 
-    getReportResult = () => {
-      if (!this.props.report.result) {
-        return [];
-      }
-
-      // the new report might be in the reports array,
-      // but the report has not been evaluated yet,
-      // so that the report is not in the results structure yet.
-      // we filter all entries which are not truthy to get rid of them
+    getSelectedReports = () => {
       return this.props.report.data.reports
-        .map(({id}) => this.props.report.result.data[id])
+        .map(({id}) => this.state.reports.find((report) => report.id === id))
         .filter((v) => v);
     };
 
     getUpdatedColors = (newSelected) => {
-      const prevOrderReports = this.getReportResult();
+      const prevOrderReports = this.getSelectedReports();
       const {reports} = this.props.report.data;
       let colorsHash = {};
       if (reports.length) {
@@ -119,7 +111,7 @@ export default withRouter(
     };
 
     isCompatible = (report) => {
-      const referenceReport = this.getReportResult()[0];
+      const referenceReport = this.getSelectedReports()[0];
       if (!referenceReport) {
         return true;
       }
@@ -217,7 +209,7 @@ export default withRouter(
 
       let configurationType;
       if (reportsData.length) {
-        selectedReports = this.getReportResult();
+        selectedReports = this.getSelectedReports();
         configurationType = combinedReport.data.visualization;
         // combined number reports have bar chart visualization
         if (configurationType === 'number') {
@@ -233,7 +225,7 @@ export default withRouter(
             type={configurationType}
             report={combinedReport}
             onChange={updateReport}
-            loading={loading}
+            disabled={loading || !combinedReport.result}
           />
           <TypeaheadMultipleSelection
             availableValues={combinableReportList}
