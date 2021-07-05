@@ -240,6 +240,42 @@ pipeline {
             }
           }
         }
+        stage("Elasticsearch 7.12.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.12.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.12.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Elasticsearch 7.13.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.13.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.13.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            integrationTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
       }
     }
   }
