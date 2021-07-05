@@ -28,10 +28,7 @@ import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
@@ -86,8 +83,6 @@ public final class ReplayStateMachine {
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
 
-  private static final Consumer<Long> NOOP_LONG_CONSUMER = (instanceKey) -> {};
-
   private static final MetadataFilter REPLAY_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
 
@@ -96,7 +91,6 @@ public final class ReplayStateMachine {
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final ActorControl actor;
-  private final ErrorRecord errorRecord = new ErrorRecord();
   private final TypedEventImpl typedEvent;
 
   private final RecordValues recordValues;
@@ -112,7 +106,6 @@ public final class ReplayStateMachine {
   private final RetryStrategy processRetryStrategy;
 
   private final BooleanSupplier abortCondition;
-  private final Set<Long> failedEventPositions = new HashSet<>();
   // current iteration
   private long lastSourceEventPosition;
   private long lastFollowUpEventPosition;
@@ -191,20 +184,6 @@ public final class ReplayStateMachine {
 
         metadata.reset();
         newEvent.readMetadata(metadata);
-        long errorPosition = -1;
-        if (metadata.getValueType() == ValueType.ERROR) {
-          newEvent.readValue(errorRecord);
-          errorPosition = errorRecord.getErrorEventPosition();
-        }
-
-        if (errorPosition >= 0) {
-          LOG.debug(
-              "Found error-prone record {} on replay, add position {} to the blacklist.",
-              newEvent,
-              errorPosition);
-          failedEventPositions.add(errorPosition);
-        }
-
         final long sourceEventPosition = newEvent.getSourceEventPosition();
         if (sourceEventPosition > 0) {
           if (sourceEventPosition > lastSourceEventPosition) {
@@ -372,8 +351,6 @@ public final class ReplayStateMachine {
 
   private void onRecovered(final long lastProcessedPosition) {
     keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
-    failedEventPositions.clear();
 
     recoveryFuture.complete(lastProcessedPosition);
   }
