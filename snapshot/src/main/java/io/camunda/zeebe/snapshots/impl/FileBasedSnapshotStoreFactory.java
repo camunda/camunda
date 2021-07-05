@@ -11,10 +11,12 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.SchedulingHints;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
 /**
@@ -47,8 +49,12 @@ public final class FileBasedSnapshotStoreFactory implements ReceivableSnapshotSt
     final var snapshotDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     final var pendingDirectory = root.resolve(PENDING_DIRECTORY);
 
-    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "Snapshot directory");
-    IoUtil.ensureDirectoryExists(pendingDirectory.toFile(), "Pending snapshot directory");
+    try {
+      FileUtil.ensureDirectoryExists(snapshotDirectory);
+      FileUtil.ensureDirectoryExists(pendingDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create snapshot directories", e);
+    }
 
     return partitionSnapshotStores.computeIfAbsent(
         partitionId,

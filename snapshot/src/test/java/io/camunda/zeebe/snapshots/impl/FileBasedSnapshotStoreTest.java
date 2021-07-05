@@ -19,7 +19,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,7 +58,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadExistingSnapshot() {
+  public void shouldLoadExistingSnapshot() throws IOException {
     // given
     final var persistedSnapshot = takeTransientSnapshot().persist().join();
 
@@ -73,7 +72,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() {
+  public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
     final FileBasedSnapshotStore otherStore = createStore(snapshotsDir, pendingSnapshotsDir);
     final var olderSnapshot = takeTransientSnapshot(1L, otherStore).persist().join();
@@ -162,11 +161,12 @@ public class FileBasedSnapshotStoreTest {
     return transientSnapshot;
   }
 
-  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir) {
+  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir)
+      throws IOException {
     final var store =
         new FileBasedSnapshotStore(1, 1, new SnapshotMetrics(1 + "-" + 1), snapshotDir, pendingDir);
-    IoUtil.ensureDirectoryExists(snapshotDir.toFile(), "Snapshot directory");
-    IoUtil.ensureDirectoryExists(pendingSnapshotsDir.toFile(), "Pending snapshot directory");
+    FileUtil.ensureDirectoryExists(snapshotDir);
+    FileUtil.ensureDirectoryExists(pendingSnapshotsDir);
     scheduler.submitActor(store).join();
 
     return store;
