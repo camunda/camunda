@@ -35,10 +35,6 @@ public class LogStreamPartitionStep implements PartitionStep {
                 if (err == null) {
                   context.setLogStream(logStream);
 
-                  if (context.getDeferredCommitPosition() > 0) {
-                    context.getLogStream().setCommitPosition(context.getDeferredCommitPosition());
-                    context.setDeferredCommitPosition(-1);
-                  }
                   context
                       .getComponentHealthMonitor()
                       .registerComponent(logStream.getLogName(), logStream);

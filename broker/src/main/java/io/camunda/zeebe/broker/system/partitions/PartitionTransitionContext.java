@@ -65,7 +65,6 @@ public class PartitionTransitionContext implements PartitionContext {
 
   private StreamProcessor streamProcessor;
   private LogStream logStream;
-  private long deferredCommitPosition;
   private SnapshotReplication snapshotReplication;
   private StateControllerImpl stateController;
   private LogDeletionService logDeletionService;
@@ -182,14 +181,6 @@ public class PartitionTransitionContext implements PartitionContext {
 
   public void setSnapshotReplication(final SnapshotReplication snapshotReplication) {
     this.snapshotReplication = snapshotReplication;
-  }
-
-  public long getDeferredCommitPosition() {
-    return deferredCommitPosition;
-  }
-
-  public void setDeferredCommitPosition(final long deferredCommitPosition) {
-    this.deferredCommitPosition = deferredCommitPosition;
   }
 
   @Override
