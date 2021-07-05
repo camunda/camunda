@@ -27,10 +27,12 @@ import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.logstreams.impl.log.ZeebeEntryValidator;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public final class AtomixFactory {
@@ -81,7 +83,11 @@ public final class AtomixFactory {
 
     final DataCfg dataConfiguration = configuration.getData();
     final String rootDirectory = dataConfiguration.getDirectory();
-    IoUtil.ensureDirectoryExists(new File(rootDirectory), "Zeebe data directory");
+    try {
+      FileUtil.ensureDirectoryExists(new File(rootDirectory).toPath());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create data directory", e);
+    }
 
     final RaftPartitionGroup partitionGroup =
         createRaftPartitionGroup(configuration, rootDirectory, snapshotStoreFactory);
@@ -95,7 +101,11 @@ public final class AtomixFactory {
       final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final File raftDirectory = new File(rootDirectory, AtomixFactory.GROUP_NAME);
-    IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
+    try {
+      FileUtil.ensureDirectoryExists(raftDirectory.toPath());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create raft directory", e);
+    }
 
     final ClusterCfg clusterCfg = configuration.getCluster();
     final var experimentalCfg = configuration.getExperimental();

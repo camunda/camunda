@@ -24,11 +24,12 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 
 /**
  * Immutable log configuration and {@link RaftLog} factory.
@@ -73,7 +74,12 @@ public final class RaftStorage {
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
 
-    IoUtil.ensureDirectoryExists(directory, prefix + " raft partition storage");
+    try {
+      FileUtil.ensureDirectoryExists(directory.toPath());
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          String.format("Failed to create partition's directory %s", directory.toPath()), e);
+    }
   }
 
   /**
