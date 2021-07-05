@@ -137,6 +137,17 @@ public final class StreamProcessorRule implements TestRule {
     return startTypedStreamProcessor(startPartitionId, factory);
   }
 
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final StreamProcessorTestFactory factory) {
+    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(factory, r -> {});
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final TypedRecordProcessorFactory factory) {
+    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
+        startPartitionId, factory);
+  }
+
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId, final TypedRecordProcessorFactory factory) {
     return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);

@@ -53,15 +53,29 @@ public class StreamProcessingComposite {
   public StreamProcessor startTypedStreamProcessor(
       final StreamProcessorTestFactory factory, final Consumer<TypedRecord> onProcessedListener) {
     return startTypedStreamProcessor(
-        (processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
-          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
-          processingContext.onProcessedListener(onProcessedListener);
-          return factory.build(
-              TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters()),
-              processingContext);
-        });
+        (processingContext) ->
+            createTypedRecordProcessors(factory, onProcessedListener, processingContext));
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final StreamProcessorTestFactory factory, final Consumer<TypedRecord> onProcessedListener) {
+    return startTypedStreamProcessorNotAwaitOpening(
+        (processingContext) ->
+            createTypedRecordProcessors(factory, onProcessedListener, processingContext));
+  }
+
+  private TypedRecordProcessors createTypedRecordProcessors(
+      final StreamProcessorTestFactory factory,
+      final Consumer<TypedRecord> onProcessedListener,
+      final io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext
+          processingContext) {
+    zeebeState = processingContext.getZeebeState();
+    lastProcessedPositionState = processingContext.getLastProcessedPositionState();
+    processingContext.onProcessedListener(onProcessedListener);
+    return factory.build(
+        TypedRecordProcessors.processors(
+            zeebeState.getKeyGenerator(), processingContext.getWriters()),
+        processingContext);
   }
 
   public StreamProcessor startTypedStreamProcessor(final TypedRecordProcessorFactory factory) {
@@ -71,6 +85,28 @@ public class StreamProcessingComposite {
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId, final TypedRecordProcessorFactory factory) {
     return streams.startStreamProcessor(
+        getLogName(partitionId),
+        zeebeDbFactory,
+        (processingContext -> {
+          zeebeState = processingContext.getZeebeState();
+          lastProcessedPositionState = processingContext.getLastProcessedPositionState();
+          return factory.createProcessors(processingContext);
+        }));
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final StreamProcessorTestFactory factory) {
+    return startTypedStreamProcessorNotAwaitOpening(factory, r -> {});
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final TypedRecordProcessorFactory factory) {
+    return startTypedStreamProcessorNotAwaitOpening(partitionId, factory);
+  }
+
+  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
+      final int partitionId, final TypedRecordProcessorFactory factory) {
+    return streams.startStreamProcessorNotAwaitOpening(
         getLogName(partitionId),
         zeebeDbFactory,
         (processingContext -> {
