@@ -11,10 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.util.health.HealthMonitor;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Interface encapsulating all the information about a partition that are needed at runtime (i.e.
@@ -26,20 +23,9 @@ public interface PartitionContext {
 
   RaftPartition getRaftPartition();
 
-  @Deprecated // will be moved to transition logic and happen automatically
-  List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm);
-
-  @Deprecated // will be moved to transition logic and happen automatically
-  List<ActorFuture<Void>> notifyListenersOfBecomingFollower(final long newTerm);
-
-  @Deprecated // will be moved to transition logic and happen automatically
-  void notifyListenersOfBecomingInactive();
-
   Role getCurrentRole();
 
   long getCurrentTerm();
-
-  HealthMonitor getComponentHealthMonitor();
 
   StreamProcessor getStreamProcessor();
 

@@ -9,24 +9,30 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionBootstrapProcess;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
@@ -40,25 +46,32 @@ public final class ZeebePartition extends Actor
   private final HealthMetrics healthMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
 
-  private final PartitionContext context;
-  private final PartitionTransition transition;
+  private PartitionContext context;
+  private PartitionTransition transition;
   private CompletableActorFuture<Void> closeFuture;
-  private ActorFuture<Void> currentTransitionFuture;
+  private ActorFuture<PartitionContext> currentTransitionFuture;
+
+  private final HealthMonitor healthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
+  private final PartitionBootstrapProcess bootstrapProcess;
+  private final RaftPartition raftPartition;
 
   public ZeebePartition(
-      final PartitionTransitionContext transitionContext, final PartitionTransition transition) {
-    context = transitionContext.toPartitionContext();
-    this.transition = transition;
+      final int nodeId,
+      final int partitionId,
+      final RaftPartition raftPartition,
+      final BiFunction<ActorControl, HealthMonitor, PartitionBootstrapProcess>
+          bootstrapProcessFactory) {
+    // context = transitionContext.toPartitionContext();
+    // this.transition = transition;
 
-    transitionContext.setActor(actor);
-    transitionContext.setDiskSpaceAvailable(true);
+    // transitionContext.setDiskSpaceAvailable(true);
 
-    actorName =
-        buildActorName(
-            transitionContext.getNodeId(), "ZeebePartition", transitionContext.getPartitionId());
-    transitionContext.setComponentHealthMonitor(new CriticalComponentsHealthMonitor(actor, LOG));
-    zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId());
-    healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
+    this.raftPartition = raftPartition;
+    bootstrapProcess = bootstrapProcessFactory.apply(actor, healthMonitor);
+
+    actorName = buildActorName(nodeId, "ZeebePartition", partitionId);
+    zeebePartitionHealth = new ZeebePartitionHealth(partitionId);
+    healthMetrics = new HealthMetrics(partitionId);
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
   }
@@ -75,15 +88,19 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
-    ActorFuture<Void> nextTransitionFuture = null;
+    ActorFuture<PartitionContext> nextTransitionFuture = null;
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
-          nextTransitionFuture = leaderTransition(newTerm);
+          nextTransitionFuture =
+              transition.toRole(
+                  context.getCurrentTerm(), /*TODO provide*/ null, newTerm, PartitionRole.LEADER);
         }
         break;
       case INACTIVE:
-        nextTransitionFuture = transitionToInactive();
+        nextTransitionFuture =
+            transition.toRole(
+                context.getCurrentTerm(), /*TODO provide*/ null, newTerm, PartitionRole.INACTIVE);
         break;
       case PASSIVE:
       case PROMOTABLE:
@@ -91,7 +108,9 @@ public final class ZeebePartition extends Actor
       case FOLLOWER:
       default:
         if (raftRole == null || raftRole == Role.LEADER) {
-          nextTransitionFuture = followerTransition(newTerm);
+          nextTransitionFuture =
+              transition.toRole(
+                  context.getCurrentTerm(), /*TODO provide*/ null, newTerm, PartitionRole.FOLLOWER);
         }
         break;
     }
@@ -99,60 +118,29 @@ public final class ZeebePartition extends Actor
     if (nextTransitionFuture != null) {
       currentTransitionFuture = nextTransitionFuture;
     }
+
+    currentTransitionFuture.onComplete(
+        (partitionContext, error) -> {
+          if (error != null) {
+            onInstallFailure(error);
+          } else {
+            context = partitionContext;
+            // TODO notify listeners
+            onRecoveredInternal();
+          }
+        });
     LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
     raftRole = newRole;
   }
 
-  private ActorFuture<Void> leaderTransition(final long newTerm) {
-    final var leaderTransitionFuture = transition.toLeader(newTerm);
-    leaderTransitionFuture.onComplete(
-        (success, error) -> {
-          if (error == null) {
-            final List<ActorFuture<Void>> listenerFutures =
-                context.notifyListenersOfBecomingLeader(newTerm);
-            actor.runOnCompletion(
-                listenerFutures,
-                t -> {
-                  if (t != null) {
-                    onInstallFailure(t);
-                  }
-                });
-            onRecoveredInternal();
-          } else {
-            LOG.error("Failed to install leader partition {}", context.getPartitionId(), error);
-            onInstallFailure(error);
-          }
-        });
-    return leaderTransitionFuture;
-  }
-
-  private ActorFuture<Void> followerTransition(final long newTerm) {
-    final var followerTransitionFuture = transition.toFollower(newTerm);
-    followerTransitionFuture.onComplete(
-        (success, error) -> {
-          if (error == null) {
-            final List<ActorFuture<Void>> listenerFutures =
-                context.notifyListenersOfBecomingFollower(newTerm);
-            actor.runOnCompletion(
-                listenerFutures,
-                t -> {
-                  // Compare with the current term in case a new role transition happened
-                  if (t != null) {
-                    onInstallFailure(t);
-                  }
-                });
-            onRecoveredInternal();
-          } else {
-            LOG.error("Failed to install follower partition {}", context.getPartitionId(), error);
-            onInstallFailure(error);
-          }
-        });
-    return followerTransitionFuture;
-  }
-
-  private ActorFuture<Void> transitionToInactive() {
+  private ActorFuture<PartitionContext> transitionToInactive() {
     zeebePartitionHealth.setServicesInstalled(false);
-    final var inactiveTransitionFuture = transition.toInactive();
+    final var inactiveTransitionFuture =
+        transition.toRole(
+            context.getCurrentTerm(), /* TODO provide */
+            null,
+            context.getCurrentTerm(),
+            PartitionRole.INACTIVE);
     currentTransitionFuture = inactiveTransitionFuture;
     return inactiveTransitionFuture;
   }
@@ -165,22 +153,30 @@ public final class ZeebePartition extends Actor
   @Override
   public void onActorStarting() {
     context.getRaftPartition().addRoleChangeListener(this);
-    context.getComponentHealthMonitor().addFailureListener(this);
+    healthMonitor.addFailureListener(this);
+    bootstrapProcess
+        .bootstrap()
+        .onComplete(
+            (partitionTransition, error) -> {
+              if (error != null) {
+                handleFailure(error);
+              } else {
+                transition = partitionTransition;
+                onNewRole(raftPartition.getRole(), raftPartition.term());
+              }
+            });
+
     onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
   }
 
   @Override
   protected void onActorStarted() {
-    context.getComponentHealthMonitor().startMonitoring();
-    context
-        .getComponentHealthMonitor()
-        .registerComponent(context.getRaftPartition().name(), context.getRaftPartition());
+    healthMonitor.startMonitoring();
+    healthMonitor.registerComponent(context.getRaftPartition().name(), context.getRaftPartition());
     // Add a component that keep track of health of ZeebePartition. This way
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
-    context
-        .getComponentHealthMonitor()
-        .registerComponent(zeebePartitionHealth.getName(), zeebePartitionHealth);
+    healthMonitor.registerComponent(zeebePartitionHealth.getName(), zeebePartitionHealth);
   }
 
   @Override
@@ -190,9 +186,7 @@ public final class ZeebePartition extends Actor
             (nothing, err) -> {
               context.getRaftPartition().removeRoleChangeListener(this);
 
-              context
-                  .getComponentHealthMonitor()
-                  .removeComponent(context.getRaftPartition().name());
+              healthMonitor.removeComponent(context.getRaftPartition().name());
               closeFuture.complete(null);
             });
   }
@@ -200,7 +194,7 @@ public final class ZeebePartition extends Actor
   @Override
   protected void onActorCloseRequested() {
     LOG.debug("Closing ZeebePartition {}", context.getPartitionId());
-    context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
+    healthMonitor.removeComponent(zeebePartitionHealth.getName());
   }
 
   @Override
@@ -220,8 +214,7 @@ public final class ZeebePartition extends Actor
     return closeFuture;
   }
 
-  @Override
-  protected void handleFailure(final Exception failure) {
+  protected void handleFailure(final Throwable failure) {
     LOG.warn("Uncaught exception in {}.", actorName, failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
@@ -270,7 +263,6 @@ public final class ZeebePartition extends Actor
 
   private void handleRecoverableFailure() {
     zeebePartitionHealth.setServicesInstalled(false);
-    context.notifyListenersOfBecomingInactive();
 
     // If RaftPartition has already transition to a new role in a new term, we can ignore this
     // failure. The transition for the higher term will be already enqueued and services will be
@@ -299,7 +291,7 @@ public final class ZeebePartition extends Actor
     transitionToInactive();
     context.getRaftPartition().goInactive();
     failureListeners.forEach(FailureListener::onUnrecoverableFailure);
-    context.notifyListenersOfBecomingInactive();
+    closeAsync();
   }
 
   private void onRecoveredInternal() {
@@ -308,7 +300,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   public HealthStatus getHealthStatus() {
-    return context.getComponentHealthMonitor().getHealthStatus();
+    return healthMonitor.getHealthStatus();
   }
 
   @Override

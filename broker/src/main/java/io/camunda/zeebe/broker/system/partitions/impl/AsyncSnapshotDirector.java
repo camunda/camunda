@@ -17,6 +17,7 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorCondition;
+import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -54,6 +55,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
   private boolean takingSnapshot;
   private boolean persistingSnapshot;
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
+  private ScheduledTimer timer;
 
   public AsyncSnapshotDirector(
       final int nodeId,
@@ -79,13 +81,22 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     actor.setSchedulingHints(SchedulingHints.ioBound());
     final var firstSnapshotTime =
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
-    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
 
     lastWrittenEventPosition = null;
     commitCondition =
         actor.onCondition(
             getConditionNameForPosition(), this::persistSnapshotIfLastWrittenPositionCommitted);
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
+  }
+
+  public void takeSnapshots() {
+    scheduleSnapshotOnRate();
+  }
+
+  public void doNotTakeSnapshots() {
+    if (timer != null) {
+      timer.cancel();
+    }
   }
 
   @Override
@@ -119,7 +130,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
   }
 
   private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
+    timer = actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
     prepareTakingSnapshot();
   }
 

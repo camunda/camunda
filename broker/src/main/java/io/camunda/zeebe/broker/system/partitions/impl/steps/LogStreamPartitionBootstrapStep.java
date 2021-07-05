@@ -10,56 +10,69 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import static io.camunda.zeebe.util.Either.left;
 import static io.camunda.zeebe.util.Either.right;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class LogStreamPartitionStep implements PartitionStep {
+public class LogStreamPartitionBootstrapStep implements PartitionBootstrapStep {
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'AtomixLogStoragePartitionStep' on partition %d.";
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
-    final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
 
     final var logStorageOrException = buildAtomixLogStorage(context);
 
     if (logStorageOrException.isRight()) {
       buildLogstream(context, logStorageOrException.get())
           .onComplete(
-              ((logStream, err) -> {
-                if (err == null) {
+              ((logStream, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                }
+                if (error == null) {
                   context.setLogStream(logStream);
 
-                  if (context.getDeferredCommitPosition() > 0) {
-                    context.getLogStream().setCommitPosition(context.getDeferredCommitPosition());
-                    context.setDeferredCommitPosition(-1);
-                  }
                   context
                       .getComponentHealthMonitor()
                       .registerComponent(logStream.getLogName(), logStream);
-                  openFuture.complete(null);
+                  result.complete(context);
                 } else {
-                  openFuture.completeExceptionally(err);
+                  result.completeExceptionally(error);
                 }
               }));
     } else {
-      openFuture.completeExceptionally(logStorageOrException.getLeft());
+      result.completeExceptionally(logStorageOrException.getLeft());
     }
 
-    return openFuture;
+    return result;
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
-    context.getComponentHealthMonitor().removeComponent(context.getLogStream().getLogName());
+  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
+
     final ActorFuture<Void> future = context.getLogStream().closeAsync();
-    context.setLogStream(null);
-    return future;
+
+    future.onComplete(
+        (success, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            context
+                .getComponentHealthMonitor()
+                .removeComponent(context.getLogStream().getLogName());
+            context.setLogStream(null);
+            result.complete(context);
+          }
+        });
+
+    return result;
   }
 
   @Override
@@ -68,7 +81,7 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   private Either<? extends Exception, AtomixLogStorage> buildAtomixLogStorage(
-      final PartitionTransitionContext context) {
+      final PartitionBootstrapContext context) {
 
     final Either<? extends Exception, AtomixLogStorage> result;
     final var server = context.getRaftPartition().getServer();
@@ -80,7 +93,7 @@ public class LogStreamPartitionStep implements PartitionStep {
                 logAppender -> {
                   final var raftTerm = server.getTerm();
 
-                  if (raftTerm != context.getCurrentTerm()) {
+                  if (raftTerm != context.getRaftPartition().term()) {
                     return left(buildWrongTermException(context, raftTerm));
                   } else {
                     return right(AtomixLogStorage.ofPartition(server::openReader, logAppender));
@@ -94,20 +107,23 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   private IllegalStateException buildWrongTermException(
-      final PartitionTransitionContext context, final long raftTerm) {
+      final PartitionBootstrapContext context, final long raftTerm) {
     return new IllegalStateException(
         String.format(
-            WRONG_TERM_ERROR_MSG, context.getCurrentTerm(), raftTerm, context.getPartitionId()));
+            WRONG_TERM_ERROR_MSG,
+            context.getRaftPartition().term(),
+            raftTerm,
+            context.getPartitionId()));
   }
 
   private ActorFuture<LogStream> buildLogstream(
-      final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
+      final PartitionBootstrapContext context, final AtomixLogStorage atomixLogStorage) {
     return LogStream.builder()
         .withLogStorage(atomixLogStorage)
         .withLogName("logstream-" + context.getRaftPartition().name())
         .withNodeId(context.getNodeId())
         .withPartitionId(context.getRaftPartition().id().id())
-        .withMaxFragmentSize(context.getMaxFragmentSize())
+        .withMaxFragmentSize((int) context.getBrokerCfg().getNetwork().getMaxMessageSizeInBytes())
         .withActorSchedulingService(context.getActorSchedulingService())
         .buildAsync();
   }

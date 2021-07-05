@@ -7,14 +7,22 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
-public interface PartitionTransition {
+public interface PartitionBootstrap {
 
-  ActorFuture<PartitionContext> toRole(
-      final long currentTerm,
-      final PartitionRole currentRole,
-      final long nextTerm,
-      final PartitionRole targetRole);
+  /**
+   * Performs bootstrap actions required for the partition to function.
+   *
+   * @return future that contains {@link PartitionTransitionContext} which can subsequently be used
+   *     to transition the partition into a certain state
+   */
+  ActorFuture<PartitionTransitionContext> open();
+
+  /**
+   * Perform tear-down actions to shutdown the partition.
+   *
+   * @return future
+   */
+  ActorFuture<Void> close();
 }

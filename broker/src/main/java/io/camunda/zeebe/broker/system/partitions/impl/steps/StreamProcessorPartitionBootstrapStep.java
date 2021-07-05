@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -16,45 +16,54 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class StreamProcessorPartitionStep implements PartitionStep {
+public class StreamProcessorPartitionBootstrapStep implements PartitionBootstrapStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
+
     final StreamProcessor streamProcessor = createStreamProcessor(context);
-    final ActorFuture<Void> openFuture = streamProcessor.openAsync(!context.shouldProcess());
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final ActorFuture<Void> openFuture = streamProcessor.openAsync(true);
 
     openFuture.onComplete(
-        (nothing, err) -> {
-          if (err == null) {
+        (nothing, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
             context.setStreamProcessor(streamProcessor);
-
-            // Have to pause/resume it here in case the state changed after streamProcessor was
-            // created
-            if (!context.shouldProcess()) {
-              streamProcessor.pauseProcessing();
-            } else {
-              streamProcessor.resumeProcessing();
-            }
 
             context
                 .getComponentHealthMonitor()
                 .registerComponent(streamProcessor.getName(), streamProcessor);
-            future.complete(null);
-          } else {
-            future.completeExceptionally(err);
+            result.complete(context);
           }
         });
 
-    return future;
+    return result;
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
-    context.getComponentHealthMonitor().removeComponent(context.getStreamProcessor().getName());
+  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
+
     final ActorFuture<Void> future = context.getStreamProcessor().closeAsync();
-    context.setStreamProcessor(null);
-    return future;
+
+    future.onComplete(
+        (success, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            context
+                .getComponentHealthMonitor()
+                .removeComponent(context.getStreamProcessor().getName());
+
+            context.setStreamProcessor(null);
+
+            result.complete(context);
+          }
+        });
+
+    return result;
   }
 
   @Override
@@ -62,7 +71,7 @@ public class StreamProcessorPartitionStep implements PartitionStep {
     return "StreamProcessor";
   }
 
-  private StreamProcessor createStreamProcessor(final PartitionTransitionContext state) {
+  private StreamProcessor createStreamProcessor(final PartitionBootstrapContext state) {
     return StreamProcessor.builder()
         .logStream(state.getLogStream())
         .actorSchedulingService(state.getActorSchedulingService())

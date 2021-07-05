@@ -46,25 +46,29 @@ import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentReques
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContextImpl;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionBootstrapProcess;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.FollowerPostStoragePartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LeaderPostStoragePartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StoragePartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionBootstrapStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionBootstrapStep;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
@@ -78,6 +82,7 @@ import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorScheduler;
@@ -87,30 +92,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final List<PartitionStep> LEADER_STEPS =
+
+  private static final List<PartitionBootstrapStep> PARTITION_BOOTSTRAP_STEPS =
       List.of(
-          new SnapshotReplicationPartitionStep(),
-          new StateControllerPartitionStep(),
-          new LeaderPostStoragePartitionStep(),
-          new LogDeletionPartitionStep(),
-          new LogStreamPartitionStep(),
-          new ZeebeDbPartitionStep(),
-          new StreamProcessorPartitionStep(),
-          new SnapshotDirectorPartitionStep(),
-          new RocksDbMetricExporterPartitionStep(),
-          new ExporterDirectorPartitionStep());
-  private static final List<PartitionStep> FOLLOWER_STEPS =
+          new SnapshotReplicationPartitionBootstrapStep(),
+          new StateControllerPartitionBootstrapStep(),
+          new LogDeletionPartitionBootstrapStep(),
+          new LogStreamPartitionBootstrapStep(),
+          new ZeebeDbPartitionBootstrapStep(),
+          new StreamProcessorPartitionBootstrapStep(),
+          new SnapshotDirectorPartitionBootstrapStep(),
+          new RocksDbMetricExporterPartitionBootstrapStep(),
+          new ExporterDirectorPartitionBootstrapStep());
+
+  private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(
-          new SnapshotReplicationPartitionStep(),
-          new StateControllerPartitionStep(),
-          new FollowerPostStoragePartitionStep(),
-          new LogDeletionPartitionStep());
+          new StoragePartitionTransitionStep(),
+          new StreamProcessorPartitionTransitionStep(),
+          new SnapshotDirectorPartitionTransitionStep(),
+          new ExporterDirectorPartitionTransitionStep());
 
   private final SystemContext brokerContext;
   private final List<PartitionListener> partitionListeners;
@@ -405,25 +412,38 @@ public final class Broker implements AutoCloseable {
                     clusterServices.getEventService(),
                     managementRequestHandler);
 
-            final PartitionTransitionContext transitionContext =
-                new PartitionTransitionContext(
-                    localBroker.getNodeId(),
-                    owningPartition,
-                    partitionListeners,
-                    messagingService,
-                    scheduler,
-                    brokerCfg,
-                    () -> commandHandler.newCommandResponseWriter(),
-                    () -> commandHandler.getOnProcessedListener(partitionId),
-                    snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
-                    snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
-                    typedRecordProcessorsFactory,
-                    buildExporterRepository(brokerCfg),
-                    new PartitionProcessingState(owningPartition));
-            final PartitionTransitionImpl transitionBehavior =
-                new PartitionTransitionImpl(transitionContext, LEADER_STEPS, FOLLOWER_STEPS);
+            final BiFunction<ActorControl, HealthMonitor, PartitionBootstrapProcess>
+                boostrapContextFactory =
+                    (actorControl, healthMonitor) -> {
+                      final var bootstrapContext =
+                          new PartitionBootstrapContextImpl(
+                              localBroker.getNodeId(),
+                              brokerCfg,
+                              owningPartition,
+                              messagingService,
+                              snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
+                              snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
+                              scheduler,
+                              () -> commandHandler.newCommandResponseWriter(),
+                              () -> commandHandler.getOnProcessedListener(partitionId),
+                              typedRecordProcessorsFactory,
+                              buildExporterRepository(brokerCfg),
+                              new PartitionProcessingState(owningPartition),
+                              actorControl,
+                              healthMonitor,
+                              partitionListeners);
+
+                      return new PartitionBootstrapProcess(
+                          bootstrapContext,
+                          PARTITION_BOOTSTRAP_STEPS,
+                          (bsc) ->
+                              new PartitionTransitionImpl(
+                                  bsc.toTransitionContext(), TRANSITION_STEPS));
+                    };
+
             final ZeebePartition zeebePartition =
-                new ZeebePartition(transitionContext, transitionBehavior);
+                new ZeebePartition(
+                    localBroker.getNodeId(), partitionId, owningPartition, boostrapContextFactory);
             scheduleActor(zeebePartition);
             zeebePartition.addFailureListener(
                 new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));

@@ -10,18 +10,18 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.storage.log.RaftLogReader.Mode;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class StateControllerPartitionStep implements PartitionStep {
+public class StateControllerPartitionBootstrapStep implements PartitionBootstrapStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
     final var runtimeDirectory =
         context.getRaftPartition().dataDirectory().toPath().resolve("runtime");
     final var databaseCfg = context.getBrokerCfg().getExperimental().getRocksdb();
@@ -38,24 +38,28 @@ public class StateControllerPartitionStep implements PartitionStep {
                 context.getRaftPartition().getServer().openReader(Mode.COMMITS)),
             StatePositionSupplier::getHighestExportedPosition);
 
-    context.setSnapshotController(stateController);
-    return CompletableActorFuture.completed(null);
+    context.setStateController(stateController);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
     try {
-      context.getSnapshotController().close();
+      final var stateController = context.getStateController();
+
+      if (stateController != null) {
+        stateController.close();
+      }
     } catch (final Exception e) {
       Loggers.SYSTEM_LOGGER.error(
           "Unexpected error occurred while closing the state snapshot controller for partition {}.",
           context.getPartitionId(),
           e);
     } finally {
-      context.setSnapshotController(null);
+      context.setStateController(null);
     }
 
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override

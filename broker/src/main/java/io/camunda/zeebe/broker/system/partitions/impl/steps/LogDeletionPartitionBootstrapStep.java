@@ -10,15 +10,16 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.camunda.zeebe.broker.logstreams.AtomixLogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogCompactor;
 import io.camunda.zeebe.broker.logstreams.LogDeletionService;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;
 
-public class LogDeletionPartitionStep implements PartitionStep {
+public class LogDeletionPartitionBootstrapStep implements PartitionBootstrapStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
     final LogCompactor logCompactor =
         new AtomixLogCompactor(context.getRaftPartition().getServer());
     final LogDeletionService deletionService =
@@ -29,14 +30,38 @@ public class LogDeletionPartitionStep implements PartitionStep {
             List.of(context.getConstructableSnapshotStore(), context.getReceivableSnapshotStore()));
 
     context.setLogDeletionService(deletionService);
-    return context.getActorSchedulingService().submitActor(deletionService);
+    final var deletionServiceFuture =
+        context.getActorSchedulingService().submitActor(deletionService);
+
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
+
+    deletionServiceFuture.onComplete(
+        (success, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(context);
+          }
+        });
+    return result;
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
+
     final ActorFuture<Void> future = context.getLogDeletionService().closeAsync();
-    context.setLogDeletionService(null);
-    return future;
+
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
+    future.onComplete(
+        (success, error) -> {
+          if (error != null) {
+            future.completeExceptionally(error);
+          } else {
+            context.setLogDeletionService(null);
+            result.complete(context);
+          }
+        });
+    return result;
   }
 
   @Override

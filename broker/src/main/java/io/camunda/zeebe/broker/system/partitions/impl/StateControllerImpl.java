@@ -113,6 +113,11 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   }
 
   @Override
+  public void stopConsumeReplicatedSnapshots() {
+    replication.consume(null);
+  }
+
+  @Override
   public void recover() throws Exception {
     FileUtil.deleteFolderIfExists(runtimeDirectory);
 

@@ -9,17 +9,18 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.util.sched.Actor;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
+import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class ExporterDirectorPartitionStep implements PartitionStep {
+public class ExporterDirectorPartitionBootstrapStep implements PartitionBootstrapStep {
 
   private static final int EXPORTER_PROCESSOR_ID = 1003;
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
     final var exporterDescriptors = context.getExporterRepository().getExporters().values();
 
     final ExporterDirectorContext exporterCtx =
@@ -30,32 +31,45 @@ public class ExporterDirectorPartitionStep implements PartitionStep {
             .zeebeDb(context.getZeebeDb())
             .descriptors(exporterDescriptors);
 
-    final ExporterDirector director = new ExporterDirector(exporterCtx, !context.shouldExport());
-    context.setExporterDirector(director);
-    context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+    final ExporterDirector director = new ExporterDirector(exporterCtx, true);
+
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
 
     final var startFuture = director.startAsync(context.getActorSchedulingService());
     startFuture.onComplete(
         (nothing, error) -> {
-          if (error == null) {
-            // Pause/Resume here in case the state was changed after the director was created
-            if (!context.shouldExport()) {
-              director.pauseExporting();
-            } else {
-              director.resumeExporting();
-            }
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            context.setExporterDirector(director);
+            context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+
+            result.complete(context);
           }
         });
-    return startFuture;
+    return result;
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
     final var director = context.getExporterDirector();
-    context.getComponentHealthMonitor().removeComponent(director.getName());
+
     final ActorFuture<Void> future = director.closeAsync();
-    context.setExporterDirector(null);
-    return future;
+    final var result = new CompletableActorFuture<PartitionBootstrapContext>();
+
+    future.onComplete(
+        (nothing, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            context.getComponentHealthMonitor().removeComponent(director.getName());
+            context.setExporterDirector(null);
+
+            result.complete(context);
+          }
+        });
+
+    return result;
   }
 
   @Override

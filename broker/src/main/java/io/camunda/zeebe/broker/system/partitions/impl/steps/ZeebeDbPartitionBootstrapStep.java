@@ -8,22 +8,22 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
-public class ZeebeDbPartitionStep implements PartitionStep {
+public class ZeebeDbPartitionBootstrapStep implements PartitionBootstrapStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
-    context.getConstructableSnapshotStore().addSnapshotListener(context.getSnapshotController());
+  public ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context) {
+    context.getConstructableSnapshotStore().addSnapshotListener(context.getStateController());
 
     final ZeebeDb zeebeDb;
     try {
-      context.getSnapshotController().recover();
-      zeebeDb = context.getSnapshotController().openDb();
+      context.getStateController().recover();
+      zeebeDb = context.getStateController().openDb();
     } catch (final Exception e) {
       Loggers.SYSTEM_LOGGER.error("Failed to recover from snapshot", e);
 
@@ -36,14 +36,14 @@ public class ZeebeDbPartitionStep implements PartitionStep {
     }
 
     context.setZeebeDb(zeebeDb);
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context) {
     // ZeebeDb is closed in the StateController's close()
     context.setZeebeDb(null);
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed(context);
   }
 
   @Override
