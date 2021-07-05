@@ -28,11 +28,11 @@ public class RaftLogCommittedReader implements RaftLogReader {
   // NOTE: nextIndex is only used if the reader is in commit mode, hence why it's not subject to
   // inconsistencies when the log is truncated/compacted/etc.
   private long nextIndex;
-  private final RaftLogReader reader;
+  private final RaftLogUncommittedReader reader;
 
-  RaftLogCommittedReader(final RaftLog log) {
+  RaftLogCommittedReader(final RaftLog log, final RaftLogUncommittedReader reader) {
     this.log = log;
-    reader = log.openReader();
+    this.reader = reader;
     nextIndex = log.getFirstIndex();
   }
 
@@ -74,12 +74,6 @@ public class RaftLogCommittedReader implements RaftLogReader {
 
   public long seekToAsqn(final long asqn) {
     nextIndex = reader.seekToAsqn(asqn, log.getCommitIndex());
-    return nextIndex;
-  }
-
-  @Override
-  public long seekToAsqn(final long asqn, final long indexUpperBound) {
-    nextIndex = reader.seekToAsqn(asqn, Math.min(indexUpperBound, log.getCommitIndex()));
     return nextIndex;
   }
 

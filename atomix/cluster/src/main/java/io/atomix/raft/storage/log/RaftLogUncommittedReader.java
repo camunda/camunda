@@ -73,12 +73,11 @@ public class RaftLogUncommittedReader implements RaftLogReader {
   }
 
   @Override
-  public long seekToAsqn(final long asqn, final long indexUpperBound) {
-    return journalReader.seekToAsqn(asqn, indexUpperBound);
-  }
-
-  @Override
   public void close() {
     journalReader.close();
+  }
+
+  public long seekToAsqn(final long asqn, final long indexUpperBound) {
+    return journalReader.seekToAsqn(asqn, indexUpperBound);
   }
 }

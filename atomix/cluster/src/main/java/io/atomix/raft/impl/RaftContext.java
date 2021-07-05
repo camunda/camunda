@@ -170,7 +170,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     // Construct the core log, reader, writer, and compactor.
     raftLog = storage.openLog();
-    logReader = raftLog.openReader();
+    logReader = raftLog.openUncommittedReader();
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();

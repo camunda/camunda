@@ -60,7 +60,7 @@ public final class RaftLog implements Closeable {
    *
    * @return the reader
    */
-  public RaftLogReader openReader() {
+  public RaftLogReader openUncommittedReader() {
     return new RaftLogUncommittedReader(journal.openReader());
   }
 
@@ -70,7 +70,7 @@ public final class RaftLog implements Closeable {
    * @return the reader
    */
   public RaftLogReader openCommittedReader() {
-    return new RaftLogCommittedReader(this);
+    return new RaftLogCommittedReader(this, new RaftLogUncommittedReader(journal.openReader()));
   }
 
   public boolean isOpen() {
@@ -127,7 +127,7 @@ public final class RaftLog implements Closeable {
   }
 
   private void readLastEntry() {
-    try (final var reader = openReader()) {
+    try (final var reader = openUncommittedReader()) {
       reader.seekToLast();
       if (reader.hasNext()) {
         lastAppendedEntry = reader.next();

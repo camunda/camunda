@@ -47,17 +47,6 @@ public interface RaftLogReader extends java.util.Iterator<IndexedRaftLogEntry>, 
    */
   long seekToAsqn(final long asqn);
 
-  /**
-   * Seek to a record with the highest ASQN less than or equal to the given asqn, with the
-   * restriction that it seeks to a record with index less than or equal to the given
-   * indexUpperBound.
-   *
-   * @param asqn the asqn to seek to
-   * @param indexUpperBound the index until which it seeks
-   * @return the index of the record that will be returned by {@link #next()}
-   */
-  long seekToAsqn(final long asqn, final long indexUpperBound);
-
   @Override
   void close();
 }

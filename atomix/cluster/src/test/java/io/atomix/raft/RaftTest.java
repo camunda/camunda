@@ -525,7 +525,7 @@ public class RaftTest extends ConcurrentTestCase {
 
     // then
     final RaftLog raftLog = leader.getContext().getLog();
-    final RaftLogReader raftLogReader = raftLog.openReader();
+    final RaftLogReader raftLogReader = raftLog.openUncommittedReader();
 
     assertThat(raftLog.getLastIndex()).isEqualTo(index - 1);
     raftLogReader.seek(raftLog.getLastIndex());

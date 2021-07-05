@@ -385,7 +385,7 @@ public final class RaftRule extends ExternalResource {
 
         final var log = server.getContext().getLog();
         final List<IndexedRaftLogEntry> entryList = new ArrayList<>();
-        try (final var raftLogReader = log.openReader()) {
+        try (final var raftLogReader = log.openUncommittedReader()) {
           while (raftLogReader.hasNext()) {
             final var indexedEntry = raftLogReader.next();
             entryList.add(indexedEntry);

@@ -85,7 +85,7 @@ public final class RaftMemberContext {
         break;
       case PROMOTABLE:
       case ACTIVE:
-        reader = log.openReader();
+        reader = log.openUncommittedReader();
         resetReaderAtEndOfLog(reader);
         break;
       default:

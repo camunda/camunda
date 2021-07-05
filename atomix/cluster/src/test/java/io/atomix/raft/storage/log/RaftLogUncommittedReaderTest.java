@@ -38,7 +38,7 @@ class RaftLogUncommittedReaderTest {
   @BeforeEach
   void setup(@TempDir final File directory) {
     raftlog = RaftLog.builder().withDirectory(directory).withName("test").build();
-    uncommittedReader = raftlog.openReader();
+    uncommittedReader = raftlog.openUncommittedReader();
     data.order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
   }
 
