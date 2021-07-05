@@ -32,15 +32,20 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -319,7 +324,8 @@ public class CollectionHandlingIT extends AbstractIT {
   @Test
   public void singleProcessReportCanNotBeCreatedForInvalidCollection() {
     // given
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setCollectionId("invalidId");
 
     // when
@@ -335,7 +341,8 @@ public class CollectionHandlingIT extends AbstractIT {
   @Test
   public void singleDecisionReportCanNotBeCreatedForInvalidCollection() {
     // given
-    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+    SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto =
+      new SingleDecisionReportDefinitionRequestDto();
     singleDecisionReportDefinitionDto.setCollectionId("invalidId");
 
     // when
@@ -590,7 +597,8 @@ public class CollectionHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionRequestDto originalReport =
       reportClient.getSingleProcessReportDefinitionDto(originalReportId);
 
-    SingleProcessReportDefinitionRequestDto copiedReport = reportClient.getSingleProcessReportDefinitionDto(reportCopyId);
+    SingleProcessReportDefinitionRequestDto copiedReport =
+      reportClient.getSingleProcessReportDefinitionDto(reportCopyId);
 
     // then
     assertThat(originalReport.getData()).isEqualTo(copiedReport.getData());
@@ -681,7 +689,8 @@ public class CollectionHandlingIT extends AbstractIT {
 
     String copiedCollectionId = collectionClient.copyCollection(collectionId).getId();
     List<EntityResponseDto> copiedCollectionEntities = collectionClient.getEntitiesForCollection(copiedCollectionId);
-    SingleProcessReportDefinitionRequestDto originalSingleReportDefinition = reportClient.getSingleProcessReportDefinitionDto(
+    SingleProcessReportDefinitionRequestDto originalSingleReportDefinition =
+      reportClient.getSingleProcessReportDefinitionDto(
       originalReportId);
 
     assertThat(copiedCollectionEntities).hasSize(3);
@@ -747,7 +756,9 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     List<AuthorizedReportDefinitionResponseDto> copiedReports = collectionClient.getReportsForCollection(copy.getId());
     List<AlertDefinitionDto> copiedAlerts = collectionClient.getAlertsForCollection(copy.getId());
-    Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(AlertCreationRequestDto::getReportId).collect(toSet());
+    Set<String> copiedReportIdsWithAlert = copiedAlerts.stream()
+      .map(AlertCreationRequestDto::getReportId)
+      .collect(toSet());
 
     assertThat(copiedReports).hasSize(reportsToCopy.size());
     assertThat(copiedAlerts).hasSize(alertsToCopy.size());
@@ -788,9 +799,9 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void deleteSingleScopeOverrulesConflictsOnForceSet(DefinitionType definitionType) {
+  public void deleteSingleScopeOverrulesConflictsOnForceSet(final DefinitionType definitionType) {
     // given
-    String collectionId = collectionClient.createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto scopeEntry =
       new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
@@ -811,6 +822,43 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
     assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
     assertThat(collectionClient.getCollectionScope(collectionId)).isEmpty();
+  }
+
+  @Test
+  public void deleteSingleScopeOverrulesConflictsOnForceSetForMultiDefinitionProcessReport() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    final String definitionKey1 = DEFAULT_DEFINITION_KEY;
+    engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSimpleBpmnDiagram(definitionKey1));
+    final CollectionScopeEntryDto scopeEntry1 = new CollectionScopeEntryDto(PROCESS, definitionKey1, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+
+    final String definitionKey2 = "key2";
+    engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSimpleBpmnDiagram(definitionKey2));
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, definitionKey2, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(new ReportDataDefinitionDto(definitionKey1), new ReportDataDefinitionDto(definitionKey2)))
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(reportData, collectionId);
+    alertClient.createAlertForReport(reportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(reportId));
+
+    // when
+    collectionClient.deleteScopeEntry(collectionId, scopeEntry2, true);
+
+    // then
+    assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
+    assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
+    assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
+    assertThat(collectionClient.getCollectionScope(collectionId))
+      .extracting(CollectionScopeEntryResponseDto::getDefinitionKey)
+      .containsExactly(definitionKey1);
   }
 
   @Test

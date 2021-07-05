@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -547,7 +548,29 @@ public class ReportService implements CollectionReferencingService {
     }
   }
 
-  private void ensureCompliesWithCollectionScope(final String userId, final String collectionId,
+  public void ensureCompliesWithCollectionScope(final List<ReportDataDefinitionDto> definitions,
+                                                final DefinitionType definitionType,
+                                                final CollectionDefinitionDto collection) {
+    definitions.forEach(definitionDto -> ensureCompliesWithCollectionScope(
+      definitionDto.getKey(), definitionDto.getTenantIds(), definitionType, collection
+    ));
+  }
+
+  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> report,
+                                                   final CollectionDefinitionDto collection) {
+    return report.getData().getDefinitions().stream()
+      .allMatch(definitionDto -> COMPLIANT.equals(getScopeComplianceForReport(
+        definitionDto.getKey(), definitionDto.getTenantIds(), report.getReportType().toDefinitionType(), collection
+      )));
+  }
+
+  private void ensureCompliesWithCollectionScope(final CollectionDefinitionDto collection,
+                                                final SingleReportDefinitionDto<?> report) {
+    ensureCompliesWithCollectionScope(report.getData().getDefinitions(), report.getDefinitionType(), collection);
+  }
+
+  private void ensureCompliesWithCollectionScope(final String userId,
+                                                 final String collectionId,
                                                  final SingleReportDefinitionDto<?> definition) {
     if (collectionId == null) {
       return;
@@ -559,25 +582,12 @@ public class ReportService implements CollectionReferencingService {
     ensureCompliesWithCollectionScope(collection, definition);
   }
 
-  public void ensureCompliesWithCollectionScope(final CollectionDefinitionDto collection,
-                                                final SingleReportDefinitionDto<?> report) {
-    ensureCompliesWithCollectionScope(
-      report.getData().getDefinitionKey(),
-      report.getData().getTenantIds(),
-      report.getReportType().toDefinitionType(),
-      collection
-    );
-  }
-
-  public void ensureCompliesWithCollectionScope(final String definitionKey,
-                                                final List<String> tenantIds,
-                                                final DefinitionType definitionType,
-                                                final CollectionDefinitionDto collection) {
+  private void ensureCompliesWithCollectionScope(final String definitionKey,
+                                                 final List<String> tenantIds,
+                                                 final DefinitionType definitionType,
+                                                 final CollectionDefinitionDto collection) {
     final ScopeComplianceType complianceLevel = getScopeComplianceForReport(
-      definitionKey,
-      tenantIds,
-      definitionType,
-      collection
+      definitionKey, tenantIds, definitionType, collection
     );
     if (NON_TENANT_COMPLIANT.equals(complianceLevel)) {
       final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
@@ -594,16 +604,6 @@ public class ReportService implements CollectionReferencingService {
       );
       throw new OptimizeNonDefinitionScopeCompliantException(ImmutableSet.of(conflictedItemDto));
     }
-  }
-
-  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> report,
-                                                   final CollectionDefinitionDto collection) {
-    return COMPLIANT.equals(getScopeComplianceForReport(
-      report.getData().getDefinitionKey(),
-      report.getData().getTenantIds(),
-      report.getReportType().toDefinitionType(),
-      collection
-    ));
   }
 
   private ScopeComplianceType getScopeComplianceForReport(final String definitionKey,
@@ -685,7 +685,7 @@ public class ReportService implements CollectionReferencingService {
     reportUpdate.setData(updatedReport.getData());
     final String xml = reportUpdate.getData().getConfiguration().getXml();
     if (xml != null) {
-      final String definitionKey = reportUpdate.getData().getProcessDefinitionKey();
+      final String definitionKey = reportUpdate.getData().getDefinitionKey();
       reportUpdate.getData().setProcessDefinitionName(
         extractProcessDefinitionName(definitionKey, xml).orElse(definitionKey)
       );

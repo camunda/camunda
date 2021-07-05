@@ -35,20 +35,8 @@ public class ReportDataDefinitionDto {
     this.key = key;
   }
 
-  public ReportDataDefinitionDto(final String identifier, final String key) {
-    this.identifier = identifier;
+  public ReportDataDefinitionDto(final String key, final List<String> tenantIds) {
     this.key = key;
-  }
-
-  public ReportDataDefinitionDto(final String identifier, final String key, final List<String> versions) {
-    this.identifier = identifier;
-    this.key = key;
-    this.versions = versions;
-  }
-
-  public ReportDataDefinitionDto(final String key, final List<String> versions, final List<String> tenantIds) {
-    this.key = key;
-    this.versions = versions;
     this.tenantIds = tenantIds;
   }
 
@@ -58,6 +46,23 @@ public class ReportDataDefinitionDto {
     this.name = name;
     this.versions = versions;
     this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto(final String key, final List<String> versions, final List<String> tenantIds) {
+    this.key = key;
+    this.versions = versions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto(final String identifier, final String key) {
+    this.identifier = identifier;
+    this.key = key;
+  }
+
+  public ReportDataDefinitionDto(final String identifier, final String key, final List<String> versions) {
+    this.identifier = identifier;
+    this.key = key;
+    this.versions = versions;
   }
 
   @JsonIgnore

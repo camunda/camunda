@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -31,7 +32,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -40,7 +43,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
@@ -48,6 +50,8 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 // the @MethodSource method to be non-static.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReportCollectionScopeEnforcementIT extends AbstractIT {
+
+  private static final String DEFINITION_KEY_1 = "KEY_1";
 
   @SuppressWarnings(UNUSED)
   @ParameterizedTest(name = "enforcing the scope with one tenant works for {2}")
@@ -62,11 +66,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final String reportId = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, "KEY_1", tenants)
+      new ScopeScenario(collectionId, DEFINITION_KEY_1, tenants)
     );
     final List<AuthorizedReportDefinitionResponseDto> reportsForCollection =
       collectionClient.getReportsForCollection(collectionId);
@@ -94,11 +98,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final String reportId = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, "KEY_1", singletonList(null))
+      new ScopeScenario(collectionId, DEFINITION_KEY_1, singletonList(null))
     );
     final List<AuthorizedReportDefinitionResponseDto> reportsForCollection =
       collectionClient.getReportsForCollection(collectionId);
@@ -123,11 +127,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "NOT_AUTHORIZED_KEY_1", tenants, definitionType);
     collectionClient.createScopeWithTenants(collectionId, "NOT_AUTHORIZED_KEY_2", tenants, definitionType);
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final String reportId = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, "KEY_1", tenants)
+      new ScopeScenario(collectionId, DEFINITION_KEY_1, tenants)
     );
     final List<AuthorizedReportDefinitionResponseDto> reportsForCollection =
       collectionClient.getReportsForCollection(collectionId);
@@ -150,11 +154,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final List<String> tenants = singletonList(null);
 
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final String reportId = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, null, tenants)
+      new ScopeScenario(collectionId, tenants)
     );
     final List<AuthorizedReportDefinitionResponseDto> reportsForCollection =
       collectionClient.getReportsForCollection(collectionId);
@@ -181,11 +185,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
     // the collection is created to make sure that there are no side effects
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final String reportId = functionToEnforceScopeFor.apply(
-      new ScopeScenario(null, "KEY_1", singletonList(null))
+      new ScopeScenario(null, DEFINITION_KEY_1, singletonList(null))
     );
     final List<AuthorizedReportDefinitionResponseDto> privateReports = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -207,7 +211,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   public void enforceScope_alwaysAllowToCreateReportsIfKeyIsUndefined(final DefinitionType definitionType) {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", DEFAULT_TENANTS, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, DEFAULT_TENANTS, definitionType);
 
     // when
     final String reportId = createEmptyReport(collectionId, definitionType);
@@ -232,11 +236,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final List<String> tenants = singletonList(null);
 
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final Response response = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, "KEY_1", null)
+      new ScopeScenario(collectionId, DEFINITION_KEY_1, null)
     );
 
     // then
@@ -260,11 +264,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, tenants, definitionType);
 
     // when
     final Response response = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, "KEY_1", newArrayList(authorizedTenant, unauthorizedTenant))
+      new ScopeScenario(collectionId, DEFINITION_KEY_1, newArrayList(authorizedTenant, unauthorizedTenant))
     );
 
     // then
@@ -280,16 +284,36 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
                                                    final DefinitionType definitionType,
                                                    final String parameterizedTestInfo) {
     // given
-    final List<String> tenants = singletonList(null);
-    importAllEngineEntitiesFromScratch();
-
     final String collectionId = collectionClient.createNewCollection();
     DefinitionType otherType = definitionType == PROCESS ? DECISION : PROCESS;
-    collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, otherType);
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, DEFAULT_TENANTS, otherType);
 
     // when
     final Response response = functionToEnforceScopeFor.apply(
-      new ScopeScenario(collectionId, "KEY_1", tenants)
+      new ScopeScenario(collectionId, DEFINITION_KEY_1, DEFAULT_TENANTS)
+    );
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+    final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonDefinitionScopeCompliantErrorCode());
+  }
+
+  @SuppressWarnings(UNUSED)
+  @ParameterizedTest(name = "enforcing the scope on multi definition reports for {2}")
+  @MethodSource("scopeEnforcedForEndpointAndTypeRequest")
+  public void enforceScope_multiDefinitionProcessReportOneDefinitionNotInScope(final Function<ScopeScenario,
+    Response> functionToEnforceScopeFor,
+                                                                               final DefinitionType definitionType,
+                                                                               final String parameterizedTestInfo) {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.createScopeWithTenants(collectionId, DEFINITION_KEY_1, DEFAULT_TENANTS, definitionType);
+
+    // when
+    final Response response = functionToEnforceScopeFor.apply(
+      // second definition is not within scope and should cause a conflict
+      new ScopeScenario(collectionId, Set.of(DEFINITION_KEY_1, "KEY_2"), DEFAULT_TENANTS)
     );
 
     // then
@@ -300,17 +324,20 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
   private boolean singleReportHasDefinitionKey(ReportDefinitionDto<?> reportDefinition) {
     if (reportDefinition instanceof SingleReportDefinitionDto) {
-      return ((SingleReportDataDto) reportDefinition.getData()).getDefinitionKey() != null;
+      return ((SingleReportDataDto) reportDefinition.getData()).getDefinitions().stream()
+        .anyMatch(definitionDto -> definitionDto.getKey() != null);
     }
     return true;
   }
 
   private Response updateProcessReportRequest(final String reportId, final ScopeScenario scopeScenario) {
-    SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
-    ProcessReportDataDto data = new ProcessReportDataDto();
-    data.setProcessDefinitionVersion(ALL_VERSIONS);
-    data.setProcessDefinitionKey(scopeScenario.getDefinitionKey());
-    data.setTenantIds(scopeScenario.getTenants());
+    final SingleProcessReportDefinitionRequestDto reportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    final ProcessReportDataDto data = new ProcessReportDataDto();
+    data.setDefinitions(
+      scopeScenario.getDefinitionKeys().stream()
+        .map(key -> new ReportDataDefinitionDto(key, scopeScenario.getTenants()))
+        .collect(Collectors.toList())
+    );
     reportDefinitionDto.setData(data);
     return reportClient.updateSingleProcessReport(reportId, reportDefinitionDto);
   }
@@ -320,31 +347,37 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   }
 
   private Response updateDecisionReportRequest(final String reportId, final ScopeScenario scopeScenario) {
-    SingleDecisionReportDefinitionRequestDto reportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
-    DecisionReportDataDto data = new DecisionReportDataDto();
-    data.setDecisionDefinitionVersion(ALL_VERSIONS);
-    data.setDecisionDefinitionKey(scopeScenario.getDefinitionKey());
-    data.setTenantIds(scopeScenario.getTenants());
+    final SingleDecisionReportDefinitionRequestDto reportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+    final DecisionReportDataDto data = new DecisionReportDataDto();
+    data.setDefinitions(
+      scopeScenario.getDefinitionKeys()
+        .stream()
+        .map(key -> new ReportDataDefinitionDto(key, scopeScenario.getTenants()))
+        .collect(Collectors.toList())
+    );
     reportDefinitionDto.setData(data);
     return reportClient.updateDecisionReport(reportId, reportDefinitionDto);
   }
 
-  private String createProcessReport(final String collectionId, final String processDefinitionKey,
+  private String createProcessReport(final String collectionId,
+                                     final Set<String> processDefinitionKeys,
                                      final List<String> tenants) {
     return reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, processDefinitionKey, tenants)
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, processDefinitionKeys, tenants)
     );
   }
 
-  private String createCombinedReport(final String collectionId, final String processDefinitionKey,
+  private String createCombinedReport(final String collectionId,
+                                      final Set<String> processDefinitionKeys,
                                       final List<String> tenants) {
-    String singleReportId = createProcessReport(collectionId, processDefinitionKey, tenants);
+    String singleReportId = createProcessReport(collectionId, processDefinitionKeys, tenants);
     return reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
   }
 
-  private String updateCombinedReport(final String collectionId, final String processDefinitionKey,
+  private String updateCombinedReport(final String collectionId,
+                                      final Set<String> processDefinitionKeys,
                                       final List<String> tenants) {
-    String singleReportId = createProcessReport(collectionId, processDefinitionKey, tenants);
+    String singleReportId = createProcessReport(collectionId, processDefinitionKeys, tenants);
     final String combinedReportId = reportClient.createCombinedReport(collectionId, emptyList());
     reportClient.updateCombinedReport(combinedReportId, singletonList(singleReportId));
     return combinedReportId;
@@ -361,31 +394,37 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     }
   }
 
-  private Response createProcessReportRequest(final String collectionId, final String processDefinitionKey,
+  private Response createProcessReportRequest(final String collectionId,
+                                              final Set<String> processDefinitionKeys,
                                               final List<String> tenants) {
-    SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+    final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
+      new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    singleProcessReportDefinitionDto.getData().setProcessDefinitionKey(processDefinitionKey);
-    singleProcessReportDefinitionDto.getData().setTenantIds(tenants);
+    singleProcessReportDefinitionDto.getData().setDefinitions(
+      processDefinitionKeys.stream().map(key -> new ReportDataDefinitionDto(key, tenants)).collect(Collectors.toList())
+    );
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute();
   }
 
-  private String createDecisionReport(final String collectionId, final String decisionDefinitionKey,
+  private String createDecisionReport(final String collectionId,
+                                      final Set<String> definitionKeys,
                                       final List<String> tenants) {
     return reportClient.createSingleDecisionReport(
-      reportClient.createSingleDecisionReportDefinitionDto(collectionId, decisionDefinitionKey, tenants)
+      reportClient.createSingleDecisionReportDefinitionDto(collectionId, definitionKeys, tenants)
     );
   }
 
-  private Response createDecisionReportRequest(final String collectionId, final String decisionDefinitionKey,
+  private Response createDecisionReportRequest(final String collectionId,
+                                               final Set<String> definitionKeys,
                                                final List<String> tenants) {
-    SingleDecisionReportDefinitionRequestDto decisionDefinition = new SingleDecisionReportDefinitionRequestDto();
+    final SingleDecisionReportDefinitionRequestDto decisionDefinition = new SingleDecisionReportDefinitionRequestDto();
     decisionDefinition.setCollectionId(collectionId);
-    decisionDefinition.getData().setDecisionDefinitionKey(decisionDefinitionKey);
-    decisionDefinition.getData().setTenantIds(tenants);
+    decisionDefinition.getData().setDefinitions(
+      definitionKeys.stream().map(key -> new ReportDataDefinitionDto(key, tenants)).collect(Collectors.toList())
+    );
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(decisionDefinition)
@@ -420,42 +459,32 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
   private Function<ScopeScenario, String> createProcessReportFromScopeScenario() {
     return (scenario) -> createProcessReport(
-      scenario.getCollectionIdToAddReportTo(),
-      scenario.getDefinitionKey(),
-      scenario.getTenants()
+      scenario.getCollectionIdToAddReportTo(), scenario.getDefinitionKeys(), scenario.getTenants()
     );
   }
 
   private Function<ScopeScenario, Response> createProcessReportFromScopeScenarioRequest() {
     return (scenario) -> createProcessReportRequest(
-      scenario.getCollectionIdToAddReportTo(),
-      scenario.getDefinitionKey(),
-      scenario.getTenants()
+      scenario.getCollectionIdToAddReportTo(), scenario.getDefinitionKeys(), scenario.getTenants()
     );
   }
 
   private Function<ScopeScenario, String> createCombinedReportFromScopeScenario() {
     return (scenario) -> createCombinedReport(
-      scenario.getCollectionIdToAddReportTo(),
-      scenario.getDefinitionKey(),
-      scenario.getTenants()
+      scenario.getCollectionIdToAddReportTo(), scenario.getDefinitionKeys(), scenario.getTenants()
     );
   }
 
   private Function<ScopeScenario, String> updateCombinedReportFromScopeScenario() {
     return (scenario) -> updateCombinedReport(
-      scenario.getCollectionIdToAddReportTo(),
-      scenario.getDefinitionKey(),
-      scenario.getTenants()
+      scenario.getCollectionIdToAddReportTo(), scenario.getDefinitionKeys(), scenario.getTenants()
     );
   }
 
   private Function<ScopeScenario, String> updateProcessReportFromScopeScenario() {
     return (scenario) -> {
       final String processReportId = createProcessReport(
-        scenario.getCollectionIdToAddReportTo(),
-        null,
-        singletonList(null)
+        scenario.getCollectionIdToAddReportTo(), Set.of(), singletonList(null)
       );
       final Response response = updateProcessReportRequest(processReportId, scenario);
       assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -466,9 +495,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private Function<ScopeScenario, Response> updateProcessReportFromScopeScenarioRequest() {
     return (scenario) -> {
       final String processReportId = createProcessReport(
-        scenario.getCollectionIdToAddReportTo(),
-        null,
-        singletonList(null)
+        scenario.getCollectionIdToAddReportTo(), Set.of(), singletonList(null)
       );
       return updateProcessReportRequest(processReportId, scenario);
     };
@@ -477,9 +504,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private Function<ScopeScenario, String> copyAndMoveProcessReportScenario() {
     return (scenario) -> {
       final String privateReportId = createProcessReport(
-        null, // private report
-        scenario.getDefinitionKey(),
-        scenario.getTenants()
+        // private report
+        null, scenario.getDefinitionKeys(), scenario.getTenants()
       );
       return copyAndMoveReport(privateReportId, scenario.getCollectionIdToAddReportTo());
     };
@@ -489,9 +515,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     return (scenario) -> {
       final String combinedReportId = reportClient.createEmptyCombinedReport(null);
       final String privateReportId = createProcessReport(
-        null, // private report
-        scenario.getDefinitionKey(),
-        scenario.getTenants()
+        // private report
+        null, scenario.getDefinitionKeys(), scenario.getTenants()
       );
       addSingleReportToCombinedReport(combinedReportId, privateReportId);
       return copyAndMoveReport(combinedReportId, scenario.getCollectionIdToAddReportTo());
@@ -502,9 +527,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     return (scenario) -> {
       final String combinedReportId = reportClient.createEmptyCombinedReport(null);
       final String privateReportId = createProcessReport(
-        null, // private report
-        scenario.getDefinitionKey(),
-        scenario.getTenants()
+        // private report
+        null, scenario.getDefinitionKeys(), scenario.getTenants()
       );
       addSingleReportToCombinedReport(combinedReportId, privateReportId);
       return reportClient.copyReportToCollection(combinedReportId, scenario.getCollectionIdToAddReportTo());
@@ -518,9 +542,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private Function<ScopeScenario, Response> copyAndMoveProcessReportScenarioRequest() {
     return (scenario) -> {
       final String privateReportId = createProcessReport(
-        null, // private report
-        scenario.getDefinitionKey(),
-        scenario.getTenants()
+        // private report
+        null, scenario.getDefinitionKeys(), scenario.getTenants()
       );
       return reportClient.copyReportToCollection(privateReportId, scenario.getCollectionIdToAddReportTo());
     };
@@ -528,26 +551,20 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
   private Function<ScopeScenario, String> createDecisionReportFromScopeScenario() {
     return (scenario) -> createDecisionReport(
-      scenario.getCollectionIdToAddReportTo(),
-      scenario.getDefinitionKey(),
-      scenario.getTenants()
+      scenario.getCollectionIdToAddReportTo(), scenario.getDefinitionKeys(), scenario.getTenants()
     );
   }
 
   private Function<ScopeScenario, Response> createDecisionReportFromScopeScenarioRequest() {
     return (scenario) -> createDecisionReportRequest(
-      scenario.getCollectionIdToAddReportTo(),
-      scenario.getDefinitionKey(),
-      scenario.getTenants()
+      scenario.getCollectionIdToAddReportTo(), scenario.getDefinitionKeys(), scenario.getTenants()
     );
   }
 
   private Function<ScopeScenario, String> updateDecisionReportFromScopeScenario() {
     return (scenario) -> {
       final String decisionReportId = createDecisionReport(
-        scenario.getCollectionIdToAddReportTo(),
-        null,
-        singletonList(null)
+        scenario.getCollectionIdToAddReportTo(), Set.of(), singletonList(null)
       );
       final Response response = updateDecisionReportRequest(decisionReportId, scenario);
       assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -558,9 +575,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private Function<ScopeScenario, Response> updateDecisionReportFromScopeScenarioRequest() {
     return (scenario) -> {
       final String decisionReportId = createDecisionReport(
-        scenario.getCollectionIdToAddReportTo(),
-        null,
-        singletonList(null)
+        scenario.getCollectionIdToAddReportTo(), Set.of(), singletonList(null)
       );
       return updateDecisionReportRequest(decisionReportId, scenario);
     };
@@ -569,9 +584,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private Function<ScopeScenario, String> copyAndMoveDecisionReportScenario() {
     return (scenario) -> {
       final String privateReportId = createDecisionReport(
-        null, // private report
-        scenario.getDefinitionKey(),
-        scenario.getTenants()
+        // private report
+        null, scenario.getDefinitionKeys(), scenario.getTenants()
       );
       return copyAndMoveReport(privateReportId, scenario.getCollectionIdToAddReportTo());
     };
@@ -580,20 +594,19 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private Function<ScopeScenario, Response> copyAndMoveDecisionReportScenarioRequest() {
     return (scenario) -> {
       final String privateReportId = createDecisionReport(
-        null, // private report
-        scenario.getDefinitionKey(),
-        scenario.getTenants()
+        // private report
+        null, scenario.getDefinitionKeys(), scenario.getTenants()
       );
       return reportClient.copyReportToCollection(privateReportId, scenario.getCollectionIdToAddReportTo());
     };
   }
 
   private String getNonTenantScopeCompliantErrorCode() {
-    return new OptimizeNonTenantScopeCompliantException(Collections.emptySet()).getErrorCode();
+    return new OptimizeNonTenantScopeCompliantException(Set.of()).getErrorCode();
   }
 
   private String getNonDefinitionScopeCompliantErrorCode() {
-    return new OptimizeNonDefinitionScopeCompliantException(Collections.emptySet()).getErrorCode();
+    return new OptimizeNonDefinitionScopeCompliantException(Set.of()).getErrorCode();
   }
 
   @Data
@@ -602,8 +615,22 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   protected static class ScopeScenario {
 
     String collectionIdToAddReportTo;
-    String definitionKey;
+    Set<String> definitionKeys;
     List<String> tenants;
+
+    public ScopeScenario(final String collectionIdToAddReportTo, final List<String> tenants) {
+      this.collectionIdToAddReportTo = collectionIdToAddReportTo;
+      this.definitionKeys = Set.of();
+      this.tenants = tenants;
+    }
+
+    public ScopeScenario(final String collectionIdToAddReportTo,
+                         final String definitionKey,
+                         final List<String> tenants) {
+      this.collectionIdToAddReportTo = collectionIdToAddReportTo;
+      this.definitionKeys = Set.of(definitionKey);
+      this.tenants = tenants;
+    }
   }
 
 }

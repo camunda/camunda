@@ -129,7 +129,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
         Collections.emptyList()
       ));
     String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, null, Collections.emptyList()));
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, Collections.emptyList()));
     reportClient.createCombinedReport(
       collectionId,
       Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
@@ -545,7 +545,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
         Collections.emptyList()
       ));
     String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, null, Collections.emptyList()));
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, Collections.emptyList()));
     reportClient.createCombinedReport(
       collectionId,
       Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)

@@ -267,15 +267,28 @@ public abstract class AbstractExportImportIT extends AbstractIT {
 
   protected void createAndSaveDefinition(final DefinitionType definitionType,
                                          final String tenantId) {
-    createAndSaveDefinition(definitionType, tenantId, DEFINITION_VERSION);
+    createAndSaveDefinition(DEFINITION_KEY, definitionType, tenantId);
+  }
+
+  protected void createAndSaveDefinition(final String key,
+                                         final DefinitionType definitionType,
+                                         final String tenantId) {
+    createAndSaveDefinition(key, definitionType, tenantId, DEFINITION_VERSION);
   }
 
   protected void createAndSaveDefinition(final DefinitionType definitionType,
                                          final String tenantId,
                                          final String version) {
+    createAndSaveDefinition(DEFINITION_KEY, definitionType, tenantId, version);
+  }
+
+  protected void createAndSaveDefinition(final String key,
+                                         final DefinitionType definitionType,
+                                         final String tenantId,
+                                         final String version) {
     switch (definitionType) {
       case PROCESS:
-        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(tenantId, version);
+        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(key, tenantId, version);
         elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
           PROCESS_DEFINITION_INDEX_NAME,
           processDefinition.getId(),
@@ -439,9 +452,13 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   }
 
   private static ProcessDefinitionOptimizeDto createProcessDefinition(final String tenantId, final String version) {
+    return createProcessDefinition(DEFINITION_KEY, tenantId, version);
+  }
+
+  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String key, final String tenantId, final String version) {
     return ProcessDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
-      .key(DEFINITION_KEY)
+      .key(key)
       .name(DEFINITION_NAME)
       .version(version)
       .versionTag(version)

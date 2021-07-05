@@ -443,10 +443,7 @@ public class ReportImportService {
                                              final SingleProcessReportDefinitionExportDto reportToImport) {
     if (collection != null) {
       reportService.ensureCompliesWithCollectionScope(
-        reportToImport.getData().getProcessDefinitionKey(),
-        reportToImport.getData().getTenantIds(),
-        DefinitionType.PROCESS,
-        collection
+        reportToImport.getData().getDefinitions(), DefinitionType.PROCESS, collection
       );
     }
   }
@@ -455,10 +452,7 @@ public class ReportImportService {
                                              final SingleDecisionReportDefinitionExportDto reportToImport) {
     if (collection != null) {
       reportService.ensureCompliesWithCollectionScope(
-        reportToImport.getData().getDecisionDefinitionKey(),
-        reportToImport.getData().getTenantIds(),
-        DefinitionType.DECISION,
-        collection
+        reportToImport.getData().getDefinitions(), DefinitionType.DECISION, collection
       );
     }
   }
