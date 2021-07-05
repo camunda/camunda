@@ -22,6 +22,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -245,6 +246,11 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   /** @see io.atomix.raft.impl.RaftContext#addCommitListener(RaftCommitListener) */
   public void addCommitListener(final RaftCommitListener commitListener) {
     server.getContext().addCommitListener(commitListener);
+  }
+
+  /** @see io.atomix.raft.impl.RaftContext#addCommittedEntryListener(RaftCommittedEntryListener) */
+  public void addCommittedEntryListener(final RaftCommittedEntryListener commitListener) {
+    server.getContext().addCommittedEntryListener(commitListener);
   }
 
   public PersistedSnapshotStore getPersistedSnapshotStore() {
