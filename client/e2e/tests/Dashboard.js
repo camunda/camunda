@@ -256,12 +256,13 @@ test('filters', async (t) => {
     crop: {bottom: 250},
   });
 
+  await t.click(e.instanceStateFilter);
+  await t.click(e.switchElement('Running'));
+
   await u.save(t);
 
   await t.expect(e.report.visible).ok();
-
-  await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Running'));
+  await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
   await t.click(e.selectionFilter);
   await t.click(e.switchElement('Software License Costs'));
@@ -278,4 +279,26 @@ test('filters', async (t) => {
   await t.maximizeWindow();
 
   await t.expect(e.report.visible).ok();
+
+  await u.gotoOverview(t);
+  await t.click(Homepage.dashboardItem);
+  await t.expect(e.report.visible).ok();
+  await t.expect(e.instanceStateFilter.textContent).contains('Running');
+
+  await t.click(e.editButton);
+  await t.click(e.instanceStateFilter);
+  await t.click(e.switchElement('Running'));
+  await t.click(e.switchElement('Suspended'));
+
+  await u.save(t);
+
+  await t.click(e.shareButton);
+  await t.click(e.shareSwitch);
+
+  const shareUrl = await e.shareUrl.value;
+
+  await t.navigateTo(shareUrl);
+
+  await t.expect(e.report.visible).ok();
+  await t.expect(e.report.textContent).contains('No data');
 });
