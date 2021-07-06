@@ -16,8 +16,8 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
  */
 public interface PartitionTransitionStep {
 
-  ActorFuture<PartitionBoostrapAndTransitionContextImpl> transitionTo(
-      final PartitionBoostrapAndTransitionContextImpl context, final long term, final Role role);
+  ActorFuture<Void> transitionTo(
+      final PartitionTransitionContext context, final long term, final Role role);
 
   /** @return A log-friendly identification of the PartitionTransitionStep. */
   String getName();

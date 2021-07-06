@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  */
 @Deprecated // will be split up according to interfaces
 public class PartitionBoostrapAndTransitionContextImpl
-    implements PartitionContext, PartitionBootstrapContext {
+    implements PartitionContext, PartitionBootstrapContext, PartitionTransitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -182,6 +182,7 @@ public class PartitionBoostrapAndTransitionContextImpl
     this.logDeletionService = logDeletionService;
   }
 
+  @Override
   public StateControllerImpl getSnapshotController() {
     return stateController;
   }
@@ -285,6 +286,11 @@ public class PartitionBoostrapAndTransitionContextImpl
   @Override
   public List<PartitionListener> getPartitionListeners() {
     return partitionListeners;
+  }
+
+  @Override
+  public PartitionContext createPartitionContext() {
+    return this;
   }
 
   @Override
