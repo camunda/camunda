@@ -117,7 +117,7 @@ describe('<Variables />', () => {
     );
 
     userEvent.click(await screen.findByText(/Add Variable/));
-    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.click(screen.getByText(/Add Variable/));
 
     expect(screen.getAllByPlaceholderText(/name/i)).toHaveLength(2);
     expect(screen.getAllByPlaceholderText(/value/i)).toHaveLength(2);
