@@ -41,32 +41,26 @@ const Table = styled.table`
   border-spacing: 0;
   position: relative;
   left: -2px;
+  table-layout: fixed;
 `;
 
-const Tr = styled.tr`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+const Th = styled.th`
+  text-align: left;
+  font-size: 12px;
+  font-weight: normal;
 `;
 
 const Td = styled.td`
-  display: inline-block;
+  font-weight: 500;
 `;
 
-const OperationsWrapper = styled.div`
-  width: 250px;
+const StateIconWrapper = styled.div`
+  padding-right: 8px;
 `;
 
 const StateIcon = styled(StateIconDefault)`
-  margin-right: 8px;
+  width: 21px;
+  height: 21px;
 `;
 
-export {
-  SplitPane,
-  SplitPaneHeader,
-  Table,
-  Tr,
-  Td,
-  OperationsWrapper,
-  StateIcon,
-};
+export {SplitPane, SplitPaneHeader, Table, Td, Th, StateIcon, StateIconWrapper};

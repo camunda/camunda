@@ -11,6 +11,17 @@ import {
   MULTI_INSTANCE_TYPE,
 } from 'modules/constants';
 
+type NodeMetaDataMap = {
+  [flowNodeId: string]: {
+    name: string;
+    type: {
+      elementType: string;
+      eventType: string;
+      multiInstanceType?: string;
+    };
+  };
+};
+
 const getSelectableFlowNodes = (bpmnElements: any) => {
   if (!bpmnElements) {
     return {};
@@ -28,9 +39,9 @@ const getSelectableFlowNodes = (bpmnElements: any) => {
 };
 
 const createNodeMetaDataMap = (bpmnElements: any) => {
-  return Object.entries(bpmnElements).reduce(
+  return Object.entries(bpmnElements).reduce<NodeMetaDataMap>(
     (map, [activityId, bpmnElement]) => {
-      map.set(activityId, {
+      map[activityId] = {
         // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         name: bpmnElement.name,
         type: {
@@ -38,11 +49,10 @@ const createNodeMetaDataMap = (bpmnElements: any) => {
           eventType: getEventType(bpmnElement),
           multiInstanceType: getMultiInstanceType(bpmnElement),
         },
-      });
-
+      };
       return map;
     },
-    new Map()
+    {}
   );
 };
 
@@ -101,3 +111,5 @@ export {
   getProcessedSequenceFlows,
   mapify,
 };
+
+export type {NodeMetaDataMap};

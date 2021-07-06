@@ -15,7 +15,11 @@ import {
 } from 'mobx';
 import {fetchProcessXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
-import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
+import {
+  createNodeMetaDataMap,
+  getSelectableFlowNodes,
+  NodeMetaDataMap,
+} from './mappers';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
@@ -32,7 +36,7 @@ type FlowNodeMetaData = {
 type State = {
   diagramModel: unknown;
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
-  nodeMetaDataMap?: Map<string, FlowNodeMetaData>;
+  nodeMetaDataMap?: NodeMetaDataMap;
 };
 
 const DEFAULT_STATE: State = {
@@ -54,6 +58,7 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
       startFetch: action,
       handleFetchSuccess: action,
       areDiagramDefinitionsAvailable: computed,
+      hasCalledInstances: computed,
       handleFetchFailure: action,
       reset: override,
     });
@@ -109,7 +114,7 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
     if (flowNodeId === null) {
       return;
     }
-    return this.state.nodeMetaDataMap?.get(flowNodeId);
+    return this.state.nodeMetaDataMap?.[flowNodeId];
   };
 
   get areDiagramDefinitionsAvailable() {
@@ -120,6 +125,18 @@ class SingleInstanceDiagram extends NetworkReconnectionHandler {
       // @ts-expect-error
       diagramModel?.definitions !== undefined
     );
+  }
+
+  get hasCalledInstances() {
+    const {nodeMetaDataMap} = this.state;
+
+    if (nodeMetaDataMap === undefined) {
+      return false;
+    }
+
+    return Object.values(nodeMetaDataMap).some(({type}) => {
+      return type.elementType === 'TASK_CALL_ACTIVITY';
+    });
   }
 
   handleFetchFailure = (error?: Error) => {

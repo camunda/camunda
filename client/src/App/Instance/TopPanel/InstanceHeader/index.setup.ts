@@ -22,6 +22,10 @@ const mockInstanceWithActiveOperation = createInstance({
   hasActiveOperation: true,
 });
 
+const mockInstanceWithParentInstance = createInstance({
+  parentInstanceId: '8724390842390124',
+});
+
 const mockInstanceWithoutOperations = {
   ...mockInstanceWithActiveOperation,
   hasActiveOperation: false,
@@ -31,5 +35,6 @@ const mockInstanceWithoutOperations = {
 export {
   mockOperationCreated,
   mockInstanceWithActiveOperation,
+  mockInstanceWithParentInstance,
   mockInstanceWithoutOperations,
 };

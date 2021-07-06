@@ -71,7 +71,9 @@ const TopPanel: React.FC<Props> = observer(({expandState}) => {
 
   return (
     <Styled.Pane expandState={expandState}>
-      <InstanceHeader />
+      <Styled.SplitPaneHeader data-testid="instance-header">
+        <InstanceHeader />
+      </Styled.SplitPaneHeader>
       <Styled.SplitPaneBody data-testid="diagram-panel-body">
         {['initial', 'first-fetch', 'fetching'].includes(status) && (
           <SpinnerSkeleton data-testid="diagram-spinner" />

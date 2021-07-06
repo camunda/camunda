@@ -29,8 +29,8 @@ import {OverlayType} from 'modules/types/modeler';
 import {beautifyMetadata} from './beautifyMetadata';
 import {getModalHeadline} from './getModalHeadline';
 import {getPopoverPosition} from './getPopoverPosition';
-import {InstanceAnchor} from 'App/Instances/ListPanel/List/Instances/styled';
 import {Locations} from 'modules/routes';
+import {Link} from 'modules/components/Link';
 
 const InstanceMetaData: React.FC<{
   metaData: InstanceMetaDataEntity;
@@ -74,14 +74,14 @@ const InstanceMetaData: React.FC<{
       <SummaryDataKey>calledProcessInstanceId:</SummaryDataKey>
       <SummaryDataValue>
         {calledProcessInstanceId ? (
-          <InstanceAnchor
+          <Link
             to={(location) =>
               Locations.instance(calledProcessInstanceId, location)
             }
             title={`View called instance ${calledProcessInstanceId}`}
           >
             {calledProcessInstanceId}
-          </InstanceAnchor>
+          </Link>
         ) : (
           'None'
         )}

@@ -22,16 +22,22 @@ import {operationsStore} from 'modules/stores/operations';
 import {
   mockInstanceWithActiveOperation,
   mockInstanceWithoutOperations,
+  mockInstanceWithParentInstance,
   mockOperationCreated,
 } from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {MemoryRouter} from 'react-router';
+import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
+import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 
 const Wrapper: React.FC = ({children}) => {
   return (
     <ThemeProvider>
-      <NotificationProvider>{children}</NotificationProvider>
+      <MemoryRouter>
+        <NotificationProvider>{children}</NotificationProvider>
+      </MemoryRouter>
     </ThemeProvider>
   );
 };
@@ -41,12 +47,16 @@ describe('InstanceHeader', () => {
     operationsStore.reset();
     variablesStore.reset();
     currentInstanceStore.reset();
+    singleInstanceDiagramStore.reset();
   });
 
   it('should show skeleton before instance data is available', async () => {
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
 
@@ -54,6 +64,7 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
+    singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
 
     await waitForElementToBeRemoved(
@@ -65,10 +76,14 @@ describe('InstanceHeader', () => {
     mockServer.use(
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
     render(<InstanceHeader />, {wrapper: Wrapper});
 
+    singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -83,13 +98,68 @@ describe('InstanceHeader', () => {
       screen.getByText(mockInstanceWithActiveOperation.id)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        `Version ${mockInstanceWithActiveOperation.processVersion}`
-      )
+      screen.getByText(mockInstanceWithActiveOperation.processVersion)
     ).toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
     expect(screen.getByTestId(`${instanceState}-icon`)).toBeInTheDocument();
+    expect(screen.getByText('Process')).toBeInTheDocument();
+    expect(screen.getByText('Instance Id')).toBeInTheDocument();
+    expect(screen.getByText('Version')).toBeInTheDocument();
+    expect(screen.getByText('Start Date')).toBeInTheDocument();
+    expect(screen.getByText('End Date')).toBeInTheDocument();
+    expect(screen.getByText('Parent Instance Id')).toBeInTheDocument();
+    expect(screen.getByText('Called Instances')).toBeInTheDocument();
+    expect(screen.getAllByText('None').length).toBe(2);
+    expect(
+      screen.queryByRole('link', {name: /view all/i})
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render "View All" link for call activity process', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockCallActivityProcessXML))
+      )
+    );
+
+    render(<InstanceHeader />, {wrapper: Wrapper});
+
+    singleInstanceDiagramStore.init();
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+    expect(
+      await screen.findByRole('link', {name: /view all/i})
+    ).toBeInTheDocument();
+  });
+
+  it('should render parent instance id', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithParentInstance))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      )
+    );
+    render(<InstanceHeader />, {wrapper: Wrapper});
+
+    singleInstanceDiagramStore.init();
+    currentInstanceStore.init(mockInstanceWithParentInstance.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.getByRole('link', {
+        name: `View parent instance ${mockInstanceWithParentInstance.parentInstanceId}`,
+      })
+    ).toBeInTheDocument();
   });
 
   it('should show spinner based on instance having active operations', async () => {
@@ -101,10 +171,14 @@ describe('InstanceHeader', () => {
       ),
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
 
     jest.useFakeTimers();
+    singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -126,11 +200,15 @@ describe('InstanceHeader', () => {
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(mockOperationCreated))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
 
     render(<InstanceHeader />, {wrapper: Wrapper});
 
+    singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -159,10 +237,14 @@ describe('InstanceHeader', () => {
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(null))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
 
     render(<InstanceHeader />, {wrapper: Wrapper});
+    singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
@@ -196,10 +278,13 @@ describe('InstanceHeader', () => {
       ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.json({error: 'an error occured'}))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
       )
     );
     render(<InstanceHeader />, {wrapper: Wrapper});
-
+    singleInstanceDiagramStore.init();
     currentInstanceStore.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')

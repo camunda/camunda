@@ -8,7 +8,11 @@ import {singleInstanceDiagramStore} from './singleInstanceDiagram';
 import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {createInstance, mockProcessXML} from 'modules/testUtils';
+import {
+  createInstance,
+  mockProcessXML,
+  mockCallActivityProcessXML,
+} from 'modules/testUtils';
 import {waitFor} from '@testing-library/react';
 
 describe('stores/singleInstanceDiagram', () => {
@@ -163,5 +167,55 @@ describe('stores/singleInstanceDiagram', () => {
     );
 
     window.addEventListener = originalEventListener;
+  });
+
+  describe('hasCalledInstances', () => {
+    it('should return true for processes with call activity', async () => {
+      mockServer.use(
+        rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+          res.once(ctx.text(mockCallActivityProcessXML))
+        )
+      );
+
+      currentInstanceStore.setCurrentInstance(
+        createInstance({
+          id: '123',
+          state: 'ACTIVE',
+          processId: '10',
+        })
+      );
+
+      singleInstanceDiagramStore.init();
+
+      await waitFor(() =>
+        expect(singleInstanceDiagramStore.state.status).toEqual('fetched')
+      );
+
+      expect(singleInstanceDiagramStore.hasCalledInstances).toBe(true);
+    });
+
+    it('should return false for processes without call activity', async () => {
+      mockServer.use(
+        rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
+          res.once(ctx.text(mockProcessXML))
+        )
+      );
+
+      currentInstanceStore.setCurrentInstance(
+        createInstance({
+          id: '123',
+          state: 'ACTIVE',
+          processId: '10',
+        })
+      );
+
+      singleInstanceDiagramStore.init();
+
+      await waitFor(() =>
+        expect(singleInstanceDiagramStore.state.status).toEqual('fetched')
+      );
+
+      expect(singleInstanceDiagramStore.hasCalledInstances).toBe(false);
+    });
   });
 });

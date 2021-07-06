@@ -6,7 +6,6 @@
 
 import styled, {css} from 'styled-components';
 import Table from 'modules/components/Table';
-import {Link} from 'react-router-dom';
 
 const TR = styled(Table.TR)`
   &:first-child {
@@ -53,28 +52,4 @@ const ProcessName = styled.span`
   margin-left: 6px;
 `;
 
-const InstanceAnchor = styled(Link)`
-  ${({theme}) => {
-    return css`
-      text-decoration: underline;
-
-      &:link {
-        color: ${theme.colors.linkDefault};
-      }
-
-      &:hover {
-        color: ${theme.colors.linkHover};
-      }
-
-      &:active {
-        color: ${theme.colors.linkActive};
-      }
-
-      &:visited {
-        color: ${theme.colors.linkVisited};
-      }
-    `;
-  }}
-`;
-
-export {TR, Cell, SelectionStatusIndicator, ProcessName, InstanceAnchor};
+export {TR, Cell, SelectionStatusIndicator, ProcessName};

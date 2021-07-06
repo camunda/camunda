@@ -166,7 +166,7 @@ export const createActivity = (options = {}) => {
  * @returns a mocked instance Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const createInstance = (options = {}) => {
+export const createInstance = (options = {}): ProcessInstanceEntity => {
   return {
     id: randomIdIterator.next().value,
     processId: '2',
@@ -478,6 +478,46 @@ export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
+
+export const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1e4hrq2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.8.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.15.0">
+  <bpmn:process id="Process_0r3smqt" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1mxj2rr</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="Event_1db567d">
+      <bpmn:incoming>Flow_0p62350</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0p62350" sourceRef="Activity_0zqism7" targetRef="Event_1db567d" />
+    <bpmn:sequenceFlow id="Flow_1mxj2rr" sourceRef="StartEvent_1" targetRef="Activity_0zqism7" />
+    <bpmn:callActivity id="Activity_0zqism7">
+      <bpmn:incoming>Flow_1mxj2rr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0p62350</bpmn:outgoing>
+    </bpmn:callActivity>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_0r3smqt">
+      <bpmndi:BPMNEdge id="Flow_0p62350_di" bpmnElement="Flow_0p62350">
+        <di:waypoint x="360" y="117" />
+        <di:waypoint x="412" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mxj2rr_di" bpmnElement="Flow_1mxj2rr">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="260" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1db567d_di" bpmnElement="Event_1db567d">
+        <dc:Bounds x="412" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_11fxkyy_di" bpmnElement="Activity_0zqism7">
+        <dc:Bounds x="260" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+`;
 
 export const mockProcessInstances = {
   processInstances: [

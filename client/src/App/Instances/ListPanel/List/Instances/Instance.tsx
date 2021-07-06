@@ -9,13 +9,8 @@ import {Operations} from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import {getProcessName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
-import {
-  TR,
-  Cell,
-  SelectionStatusIndicator,
-  ProcessName,
-  InstanceAnchor,
-} from './styled';
+import {TR, Cell, SelectionStatusIndicator, ProcessName} from './styled';
+import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
 import {instancesStore} from 'modules/stores/instances';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
@@ -55,24 +50,24 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
         </Cell>
       </TD>
       <TD>
-        <InstanceAnchor
+        <Link
           to={(location) => Locations.instance(instance.id, location)}
           title={`View instance ${instance.id}`}
         >
           {instance.id}
-        </InstanceAnchor>
+        </Link>
       </TD>
       <TD>{`Version ${instance.processVersion}`}</TD>
       <TD data-testid="start-time">{formatDate(instance.startDate)}</TD>
       <TD data-testid="end-time">{formatDate(instance.endDate)}</TD>
       <TD data-testid="parent-process-id">
         {parentInstanceId !== null ? (
-          <InstanceAnchor
+          <Link
             to={(location) => Locations.instance(parentInstanceId, location)}
             title={`View parent instance ${parentInstanceId}`}
           >
             {parentInstanceId}
-          </InstanceAnchor>
+          </Link>
         ) : (
           'None'
         )}

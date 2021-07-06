@@ -9,6 +9,7 @@ import styled from 'styled-components';
 const Operations = styled.div`
   display: flex;
   align-items: center;
+  margin-right: 37px;
 `;
 
 export {Operations};

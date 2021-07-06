@@ -15,10 +15,6 @@ const SkeletonTD = styled(Header.Td)`
   align-items: center;
 `;
 
-const OperationSkeletonTD = styled(Header.Td)`
-  width: 250px;
-`;
-
 const Skeleton = styled.div`
   width: 100%;
   overflow: hidden;
@@ -30,7 +26,8 @@ const Row = styled.div`
 `;
 
 const Block = styled(BaseBlock)`
-  height: 14px;
+  margin-top: 3px;
+  height: 16px;
 `;
 
 const InitialBlock = styled(Block)`
@@ -54,16 +51,25 @@ const RoundedBlock = styled(Block)`
   width: 45px;
   height: 20px;
   border-radius: 20px;
+  margin-right: 37px;
+`;
+
+const CalledInstanceBlock = styled(Block)`
+  width: 80px;
 `;
 
 const Circle = styled(BaseCircle)`
-  height: 14px;
-  width: 14px;
+  height: 21px;
+  width: 21px;
+`;
+
+const CircleWrapper = styled.div`
+  margin-top: 4px;
+  margin-right: 13px;
 `;
 
 export {
   SkeletonTD,
-  OperationSkeletonTD,
   Skeleton,
   Row,
   InitialBlock,
@@ -71,5 +77,7 @@ export {
   VersionBlock,
   TimeStampBlock,
   RoundedBlock,
+  CalledInstanceBlock,
   Circle,
+  CircleWrapper,
 };

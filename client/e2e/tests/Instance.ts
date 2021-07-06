@@ -52,7 +52,7 @@ test('Instance with an incident - header and instance header', async (t) => {
     .ok()
     .expect(withinInstanceHeader.queryByText(instanceId).exists)
     .ok()
-    .expect(withinInstanceHeader.queryByText('Version 1').exists)
+    .expect(withinInstanceHeader.queryByText('1').exists)
     .ok()
     .expect(
       withinInstanceHeader.queryByRole('button', {name: /retry instance/i})

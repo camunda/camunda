@@ -118,7 +118,7 @@ describe('Instance', () => {
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+    expect(screen.queryByTestId('skeleton-rows')).not.toBeInTheDocument();
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-panel-body')).toBeInTheDocument();
     expect(screen.getByText('Instance History')).toBeInTheDocument();
@@ -164,14 +164,12 @@ describe('Instance', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
+    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')
     );
-
-    expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('skeleton-rows')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument();

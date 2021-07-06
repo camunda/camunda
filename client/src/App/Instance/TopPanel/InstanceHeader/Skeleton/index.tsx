@@ -11,30 +11,49 @@ import * as Header from '../styled';
 
 export default React.memo(function Skeleton(props) {
   return (
-    <Header.Table {...props} data-testid="instance-header-skeleton">
-      <tbody>
-        <Header.Tr>
-          <Styled.SkeletonTD>
-            <Styled.Circle />
-            <Styled.InitialBlock />
-          </Styled.SkeletonTD>
-          <Header.Td>
-            <Styled.IdBlock />
-          </Header.Td>
-          <Header.Td>
-            <Styled.VersionBlock />
-          </Header.Td>
-          <Header.Td>
-            <Styled.TimeStampBlock />
-          </Header.Td>
-          <Header.Td>
-            <Styled.TimeStampBlock />
-          </Header.Td>
-          <Styled.OperationSkeletonTD>
-            <Styled.RoundedBlock />
-          </Styled.OperationSkeletonTD>
-        </Header.Tr>
-      </tbody>
-    </Header.Table>
+    <>
+      <Styled.CircleWrapper>
+        <Styled.Circle />
+      </Styled.CircleWrapper>
+      <Header.Table {...props} data-testid="instance-header-skeleton">
+        <thead>
+          <tr>
+            <Header.Th>Process</Header.Th>
+            <Header.Th>Instance Id</Header.Th>
+            <Header.Th>Version</Header.Th>
+            <Header.Th>Start Date</Header.Th>
+            <Header.Th>End Date</Header.Th>
+            <Header.Th>Parent Instance Id</Header.Th>
+            <Header.Th>Called Instances</Header.Th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <Header.Td>
+              <Styled.IdBlock />
+            </Header.Td>
+            <Header.Td>
+              <Styled.VersionBlock />
+            </Header.Td>
+            <Header.Td>
+              <Styled.TimeStampBlock />
+            </Header.Td>
+            <Header.Td>
+              <Styled.TimeStampBlock />
+            </Header.Td>
+            <Header.Td>
+              <Styled.TimeStampBlock />
+            </Header.Td>
+            <Header.Td>
+              <Styled.IdBlock />
+            </Header.Td>
+            <Header.Td>
+              <Styled.CalledInstanceBlock />
+            </Header.Td>
+          </tr>
+        </tbody>
+      </Header.Table>
+      <Styled.RoundedBlock />
+    </>
   );
 });
