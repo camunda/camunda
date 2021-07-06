@@ -89,7 +89,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1625146815175,
+  "iteration": 1625552874210,
   "links": [],
   "panels": [
     {
@@ -9525,7 +9525,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 48
+            "y": 13
           },
           "id": 170,
           "maxPerRow": 6,
@@ -9539,16 +9539,17 @@
               "fields": "",
               "values": false
             },
-            "showUnfilled": true
+            "showUnfilled": true,
+            "text": {}
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "repeat": "pod",
           "repeatDirection": "h",
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "medic-cw-20-f8b1a83e1-benchmark-zeebe-0",
-              "value": "medic-cw-20-f8b1a83e1-benchmark-zeebe-0"
+              "text": "dd-leader-latency-zeebe-0",
+              "value": "dd-leader-latency-zeebe-0"
             }
           },
           "targets": [
@@ -9603,9 +9604,9 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 48
+            "y": 13
           },
-          "id": 248,
+          "id": 262,
           "maxPerRow": 6,
           "options": {
             "displayMode": "basic",
@@ -9617,18 +9618,18 @@
               "fields": "",
               "values": false
             },
-            "showUnfilled": true
+            "showUnfilled": true,
+            "text": {}
           },
-          "pluginVersion": "7.0.3",
-          "repeat": null,
+          "pluginVersion": "7.4.5",
           "repeatDirection": "h",
-          "repeatIteration": 1621341468031,
+          "repeatIteration": 1625552874204,
           "repeatPanelId": 170,
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "medic-cw-20-f8b1a83e1-benchmark-zeebe-1",
-              "value": "medic-cw-20-f8b1a83e1-benchmark-zeebe-1"
+              "text": "dd-leader-latency-zeebe-1",
+              "value": "dd-leader-latency-zeebe-1"
             }
           },
           "targets": [
@@ -9683,9 +9684,9 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 48
+            "y": 13
           },
-          "id": 249,
+          "id": 263,
           "maxPerRow": 6,
           "options": {
             "displayMode": "basic",
@@ -9697,18 +9698,18 @@
               "fields": "",
               "values": false
             },
-            "showUnfilled": true
+            "showUnfilled": true,
+            "text": {}
           },
-          "pluginVersion": "7.0.3",
-          "repeat": null,
+          "pluginVersion": "7.4.5",
           "repeatDirection": "h",
-          "repeatIteration": 1621341468031,
+          "repeatIteration": 1625552874204,
           "repeatPanelId": 170,
           "scopedVars": {
             "pod": {
               "selected": false,
-              "text": "medic-cw-20-f8b1a83e1-benchmark-zeebe-2",
-              "value": "medic-cw-20-f8b1a83e1-benchmark-zeebe-2"
+              "text": "dd-leader-latency-zeebe-2",
+              "value": "dd-leader-latency-zeebe-2"
             }
           },
           "targets": [
@@ -9735,6 +9736,9 @@
           "description": "Time taken to recover and reprocess events",
           "fieldConfig": {
             "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
               "custom": {},
               "mappings": [],
               "min": 0,
@@ -9751,15 +9755,15 @@
                   }
                 ]
               },
-              "unit": "dtdurationms"
+              "unit": "ms"
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 5,
-            "w": 24,
+            "h": 6,
+            "w": 12,
             "x": 0,
-            "y": 54
+            "y": 19
           },
           "id": 174,
           "options": {
@@ -9772,20 +9776,82 @@
               "fields": "",
               "values": false
             },
-            "showUnfilled": true
+            "showUnfilled": true,
+            "text": {}
           },
-          "pluginVersion": "7.0.3",
+          "pluginVersion": "7.4.5",
           "targets": [
             {
               "expr": "zeebe_stream_processor_startup_recovery_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "interval": "",
-              "legendFormat": "{{pod}} p{{partition}}",
+              "legendFormat": "{{pod}}:Partition {{partition}}",
               "refId": "A"
             }
           ],
           "timeFrom": null,
           "timeShift": null,
           "title": "Streamprocessor Recovery Time",
+          "type": "bargauge"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "The time needed to install all leader services on a newly elected leader until it is ready to process new requests.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 60000
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 19
+          },
+          "id": 265,
+          "options": {
+            "displayMode": "basic",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "text": {}
+          },
+          "pluginVersion": "7.4.5",
+          "targets": [
+            {
+              "expr": "zeebe_leader_transition_latency{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}}: Partition {{ partition }}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Leader transition duration",
           "type": "bargauge"
         }
       ],
@@ -9933,5 +9999,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 14
+  "version": 15
 }
