@@ -47,8 +47,10 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
+import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
+import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
@@ -61,7 +63,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartition
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
@@ -93,9 +95,16 @@ import org.slf4j.Logger;
 public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
+  // preparation for future steps
+  private static final List<PartitionBootstrapStep> BOOTSTRAP_STEPS =
+      List.of(new SnapshotReplicationPartitionBootstrapStep());
+  // preparation for future step
+
   private static final List<PartitionStep> LEADER_STEPS =
       List.of(
-          new SnapshotReplicationPartitionStep(),
+          PartitionStepMigrationHelper.fromBootstrapStep(
+              new SnapshotReplicationPartitionBootstrapStep()),
           new StateControllerPartitionStep(),
           new LeaderPostStoragePartitionStep(),
           new LogDeletionPartitionStep(),
@@ -107,7 +116,8 @@ public final class Broker implements AutoCloseable {
           new ExporterDirectorPartitionStep());
   private static final List<PartitionStep> FOLLOWER_STEPS =
       List.of(
-          new SnapshotReplicationPartitionStep(),
+          PartitionStepMigrationHelper.fromBootstrapStep(
+              new SnapshotReplicationPartitionBootstrapStep()),
           new StateControllerPartitionStep(),
           new FollowerPostStoragePartitionStep(),
           new LogDeletionPartitionStep());
