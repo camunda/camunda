@@ -14,7 +14,11 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
@@ -288,6 +292,39 @@ public class AssigneeRestServiceIT extends AbstractIT {
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN),
         new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN),
         new UserDto(userIdNotInEngine, null, null, null)
+      );
+  }
+
+  @Test
+  public void searchForAssignees_forReportsWithMultipleDefinitions_noSearchTerm() {
+    // given
+    final String key1 = "key1";
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(key1, ASSIGNEE_ID_JOHN);
+    final String key2 = "key2";
+    engineIntegrationExtension.addUser(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME);
+    startSimpleUserTaskProcessWithAssigneeAndImport(key2, ASSIGNEE_ID_JEAN);
+
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)))
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(reportDataDto);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = assigneesClient.searchForAssignees(
+      AssigneeCandidateGroupReportSearchRequestDto.builder()
+        .reportIds(Collections.singletonList(reportId))
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getResult())
+      .hasSize(2)
+      .containsExactlyInAnyOrder(
+        new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN),
+        new UserDto(ASSIGNEE_ID_JEAN, JEAN_FIRST_NAME, JEAN_LAST_NAME, ASSIGNEE_ID_JEAN + DEFAULT_EMAIL_DOMAIN)
       );
   }
 

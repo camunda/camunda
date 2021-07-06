@@ -13,7 +13,11 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
@@ -244,6 +248,39 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS),
         new GroupDto(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS),
         new GroupDto(candidateGroupNotInEngine, candidateGroupNotInEngine)
+      );
+  }
+
+  @Test
+  public void searchForCandidateGroupsNoSearchTerm_forReportsWithMultipleDefinitions() {
+    // given
+    final String key1 = "key1";
+    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS);
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(key1, CANDIDATE_GROUP_ID_IMPOSTERS);
+    final String key2 = "key2";
+    engineIntegrationExtension.createGroup(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(key2, CANDIDATE_GROUP_ID_CREW_MEMBERS);
+
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)))
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(reportDataDto);
+
+    // when
+    final IdentitySearchResultResponseDto searchResponse = candidateGroupClient.searchForCandidateGroups(
+      AssigneeCandidateGroupReportSearchRequestDto.builder()
+        .reportIds(Collections.singletonList(reportId))
+        .build()
+    );
+
+    // then
+    assertThat(searchResponse.getTotal()).isEqualTo(2);
+    assertThat(searchResponse.getResult())
+      .hasSize(2)
+      .containsExactlyInAnyOrder(
+        new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS),
+        new GroupDto(CANDIDATE_GROUP_ID_CREW_MEMBERS, CANDIDATE_GROUP_NAME_CREW_MEMBERS)
       );
   }
 
