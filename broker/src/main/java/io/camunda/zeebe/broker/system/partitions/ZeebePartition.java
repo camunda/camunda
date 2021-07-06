@@ -152,7 +152,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    context.getRaftPartition().addRoleChangeListener(this);
+    raftPartition.addRoleChangeListener(this);
     healthMonitor.addFailureListener(this);
     bootstrapProcess
         .bootstrap()
@@ -165,8 +165,6 @@ public final class ZeebePartition extends Actor
                 onNewRole(raftPartition.getRole(), raftPartition.term());
               }
             });
-
-    onRoleChange(context.getRaftPartition().getRole(), context.getRaftPartition().term());
   }
 
   @Override
