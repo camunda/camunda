@@ -265,6 +265,8 @@ public final class ReplayStateMachine {
               zeebeDbTransaction = transactionContext.getCurrentTransaction();
               zeebeDbTransaction.run(
                   () -> {
+                    // TODO (saig0): ignore blacklist because we replay events only (#7430)
+                    // these events were applied already
                     final boolean isNotOnBlacklist =
                         !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
                     if (isNotOnBlacklist) {
