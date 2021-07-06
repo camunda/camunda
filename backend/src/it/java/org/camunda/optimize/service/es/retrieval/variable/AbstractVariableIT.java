@@ -59,12 +59,12 @@ public abstract class AbstractVariableIT extends AbstractIT {
   }
 
   protected void startInstanceAndImportEngineEntities(final ProcessDefinitionEngineDto processDefinition,
-                                                    final Map<String, Object> variables) {
+                                                      final Map<String, Object> variables) {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
   }
 
-  protected DecisionDefinitionEngineDto startDecisionInstanceAndImportEngineEntities(Map<String, Object> variables) {
+  protected DecisionDefinitionEngineDto startDecisionInstanceAndImportEngineEntities(final Map<String, Object> variables) {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
       DmnHelper.createSimpleDmnModel("someKey"));
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId(), variables);
@@ -72,8 +72,12 @@ public abstract class AbstractVariableIT extends AbstractIT {
     return decisionDefinitionEngineDto;
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleProcessDefinition(String tenantId) {
-    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY);
+  protected ProcessDefinitionEngineDto deploySimpleProcessDefinition(final String tenantId) {
+    return deploySimpleProcessDefinition(PROCESS_DEFINITION_KEY, tenantId);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleProcessDefinition(final String key, final String tenantId) {
+    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(key);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 

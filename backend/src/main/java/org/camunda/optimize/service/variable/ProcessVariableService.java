@@ -8,7 +8,9 @@ package org.camunda.optimize.service.variable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -40,37 +43,36 @@ public class ProcessVariableService {
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;
 
-  public List<ProcessVariableNameResponseDto> getVariableNames(List<ProcessVariableNameRequestDto> variableRequestDtos) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(final List<ProcessVariableNameRequestDto> variableRequestDtos) {
     return processVariableReader.getVariableNames(variableRequestDtos);
   }
 
-  public List<ProcessVariableNameResponseDto> getVariableNamesForReports(List<String> reportIds) {
+  public List<ProcessVariableNameResponseDto> getVariableNamesForReports(final List<String> reportIds) {
     final List<ProcessVariableNameRequestDto> processVariableNameRequestDtos = convertReportsToVariableQuery(
-      reportIds,
-      definitionDto -> convertToProcessVariableNameRequest((SingleProcessReportDefinitionRequestDto) definitionDto)
+      reportService.getAllReportsForIds(reportIds), this::convertToProcessVariableNameRequest
     );
     return processVariableReader.getVariableNames(processVariableNameRequestDtos);
   }
 
-  public List<ProcessVariableNameResponseDto> getVariableNamesForAuthorizedReports(String userId,
-                                                                                   List<String> reportIds) {
+  public List<ProcessVariableNameResponseDto> getVariableNamesForAuthorizedReports(final String userId,
+                                                                                   final List<String> reportIds) {
     final List<ProcessVariableNameRequestDto> processVariableNameRequestDtos = convertAuthorizedReportsToVariableQuery(
-      userId,
-      reportIds,
-      definitionDto -> convertToProcessVariableNameRequest((SingleProcessReportDefinitionRequestDto) definitionDto)
+      userId, reportIds, this::convertToProcessVariableNameRequest
     );
     return processVariableReader.getVariableNames(processVariableNameRequestDtos);
   }
 
-  public List<ProcessVariableNameResponseDto> getVariableNamesForReportDefinitions(List<SingleProcessReportDefinitionRequestDto> definitions) {
+  public List<ProcessVariableNameResponseDto> getVariableNamesForReportDefinitions(
+    final List<SingleProcessReportDefinitionRequestDto> definitions) {
     final List<ProcessVariableNameRequestDto> processVariableNameRequests = definitions.stream()
       .filter(definition -> definition.getData().getProcessDefinitionKey() != null)
       .map(this::convertToProcessVariableNameRequest)
+      .flatMap(Collection::stream)
       .collect(Collectors.toList());
     return processVariableReader.getVariableNames(processVariableNameRequests);
   }
 
-  public List<String> getVariableValues(String userId, ProcessVariableValueRequestDto requestDto) {
+  public List<String> getVariableValues(final String userId, final ProcessVariableValueRequestDto requestDto) {
     ensureNotEmpty("process definition key", requestDto.getProcessDefinitionKey());
     ensureNotEmpty("variable name", requestDto.getName());
     ensureNotEmpty("variable type", requestDto.getType());
@@ -86,24 +88,23 @@ public class ProcessVariableService {
     }
   }
 
-  public List<String> getVariableValuesForReports(String userId, ProcessVariableReportValuesRequestDto requestDto) {
+  public List<String> getVariableValuesForReports(final String userId,
+                                                  final ProcessVariableReportValuesRequestDto requestDto) {
     ensureNotEmpty("report IDs", requestDto.getReportIds());
     ensureNotEmpty("variable name", requestDto.getName());
     ensureNotEmpty("variable type", requestDto.getType());
 
-    final List<SingleProcessReportDefinitionRequestDto> authorizedReports = convertAuthorizedReportsToVariableQuery(
-      userId,
-      requestDto.getReportIds(),
-      SingleProcessReportDefinitionRequestDto.class::cast
+    final List<ReportDefinitionDto> authorizedReports = getAllAuthorizedReportsRecursively(
+      userId, requestDto.getReportIds()
     );
     return processVariableReader.getVariableValues(
       ProcessVariableValuesQueryDto.fromProcessVariableReportValuesRequest(requestDto, authorizedReports)
     );
   }
 
-  private <T> List<T> convertReportsToVariableQuery(final List<String> reportIds,
-                                                    final Function<ReportDefinitionDto, T> mappingFunction) {
-    final List<ReportDefinitionDto> allReportsForIds = reportService.getAllReportsForIds(reportIds);
+  private <T> List<T> convertReportsToVariableQuery(final List<ReportDefinitionDto> reportDefinitions,
+                                                    final Function<SingleReportDefinitionDto<?>, List<T>> mappingFunction) {
+    final List<ReportDefinitionDto> allReportsForIds = new ArrayList<>(reportDefinitions);
     allReportsForIds.addAll(
       allReportsForIds.stream()
         .filter(reportDefinitionDto -> reportDefinitionDto instanceof CombinedReportDefinitionRequestDto)
@@ -119,10 +120,15 @@ public class ProcessVariableService {
 
   private <T> List<T> convertAuthorizedReportsToVariableQuery(final String userId,
                                                               final List<String> reportIds,
-                                                              final Function<ReportDefinitionDto, T> mappingFunction) {
+                                                              final Function<SingleReportDefinitionDto<?>, List<T>> mappingFunction) {
+    final List<ReportDefinitionDto> allAuthorizedReportsForIds = getAllAuthorizedReportsRecursively(userId, reportIds);
+    return convertReportsToVariableQuery(mappingFunction, allAuthorizedReportsForIds);
+  }
+
+  private List<ReportDefinitionDto> getAllAuthorizedReportsRecursively(final String userId,
+                                                                       final List<String> reportIds) {
     final List<ReportDefinitionDto> allAuthorizedReportsForIds = reportService.getAllAuthorizedReportsForIds(
-      userId,
-      reportIds
+      userId, reportIds
     );
     allAuthorizedReportsForIds.addAll(
       allAuthorizedReportsForIds.stream()
@@ -132,26 +138,33 @@ public class ProcessVariableService {
             .getReportIds();
           return reportService.getAllAuthorizedReportsForIds(userId, reportIdsFromCombined).stream();
         }).collect(Collectors.toList()));
-    return convertReportsToVariableQuery(mappingFunction, allAuthorizedReportsForIds);
+    return allAuthorizedReportsForIds;
   }
 
-  private <T> List<T> convertReportsToVariableQuery(final Function<ReportDefinitionDto, T> mappingFunction,
+  private <T> List<T> convertReportsToVariableQuery(final Function<SingleReportDefinitionDto<?>, List<T>> mappingFunction,
                                                     final List<ReportDefinitionDto> reportDefinitionDtos) {
-    return reportDefinitionDtos
-      .stream()
+    return reportDefinitionDtos.stream()
       .distinct()
-      .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
+      .filter(SingleReportDefinitionDto.class::isInstance)
+      .map(definition -> (SingleReportDefinitionDto<?>) definition)
       .map(mappingFunction)
+      .flatMap(Collection::stream)
       .collect(Collectors.toList());
   }
 
-  private ProcessVariableNameRequestDto convertToProcessVariableNameRequest(final SingleProcessReportDefinitionRequestDto reportDefinitionDto) {
-    final ProcessVariableNameRequestDto variableNameRequest = new ProcessVariableNameRequestDto();
-    variableNameRequest.setProcessDefinitionKey(reportDefinitionDto.getData().getDefinitionKey());
-    variableNameRequest.setProcessDefinitionVersions(reportDefinitionDto.getData().getProcessDefinitionVersions());
-    variableNameRequest.setTenantIds(Optional.ofNullable(reportDefinitionDto.getData().getTenantIds())
-                                       .orElse(new ArrayList<>(Collections.singletonList(null))));
-    return variableNameRequest;
+  private List<ProcessVariableNameRequestDto> convertToProcessVariableNameRequest(
+    final SingleReportDefinitionDto<?> reportDefinitionDto) {
+    return reportDefinitionDto.getData().getDefinitions().stream()
+      .map(definitionDto -> {
+        final ProcessVariableNameRequestDto variableNameRequest = new ProcessVariableNameRequestDto();
+        variableNameRequest.setProcessDefinitionKey(definitionDto.getKey());
+        variableNameRequest.setProcessDefinitionVersions(definitionDto.getVersions());
+        variableNameRequest.setTenantIds(
+          Optional.ofNullable(definitionDto.getTenantIds()).orElse(ReportConstants.DEFAULT_TENANT_IDS)
+        );
+        return variableNameRequest;
+      })
+      .collect(Collectors.toList());
   }
 
 }

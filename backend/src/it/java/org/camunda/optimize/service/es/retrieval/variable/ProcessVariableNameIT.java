@@ -11,9 +11,13 @@ import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -59,12 +63,14 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   @Test
   public void getVariableNames_multipleDefinitions() {
     // given
-    final ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition();
+    final String key1 = "key1";
+    final ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
     Map<String, Object> variables1 = new HashMap<>();
     variables1.put("var1", "value1");
     variables1.put("var2", "value2");
     engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables1);
-    final ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition();
+    final String key2 = "key2";
+    final ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition(key2, null);
     Map<String, Object> variables2 = new HashMap<>();
     // duplicate variable "var2" should not appear twice
     variables2.put("var2", "value4");
@@ -76,12 +82,8 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(Arrays.asList(
-      new ProcessVariableNameRequestDto(
-        processDefinition1.getKey(), Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
-      ),
-      new ProcessVariableNameRequestDto(
-        processDefinition2.getKey(), Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS
-      )
+      new ProcessVariableNameRequestDto(key1, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS),
+      new ProcessVariableNameRequestDto(key2, Collections.singletonList(ALL_VERSIONS), DEFAULT_TENANT_IDS)
     ));
 
     // then
@@ -378,6 +380,44 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
         Tuple.tuple("var2", VariableType.LONG),
         Tuple.tuple("var3", VariableType.DOUBLE)
       );
+  }
+
+  @Test
+  public void getVariableNamesForReport_singleReportWithMultipleDefinitions() {
+    // given
+    final String key1 = "key1";
+    final ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition(key1, null);
+    Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("var1", "value1");
+    variables1.put("var2", "value2");
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables1);
+    final String key2 = "key2";
+    final ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition(key2, null);
+    Map<String, Object> variables2 = new HashMap<>();
+    // duplicate variable "var2" should not appear twice
+    variables2.put("var2", "value4");
+    variables2.put("var3", "value4");
+    variables2.put("var4", "value4");
+    engineIntegrationExtension.startProcessInstance(processDefinition2.getId(), variables2);
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(
+        new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
+      ))
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(reportData);
+
+    // when
+    final List<ProcessVariableNameResponseDto> variableResponse =
+      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+
+    // then
+    assertThat(variableResponse)
+      .extracting(ProcessVariableNameResponseDto::getName)
+      .containsExactly("var1", "var2", "var3", "var4");
   }
 
   @Test

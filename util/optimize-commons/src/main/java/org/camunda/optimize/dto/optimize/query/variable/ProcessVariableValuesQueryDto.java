@@ -8,8 +8,10 @@ package org.camunda.optimize.dto.optimize.query.variable;
 import lombok.Builder;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,13 +45,17 @@ public class ProcessVariableValuesQueryDto {
 
   public static ProcessVariableValuesQueryDto fromProcessVariableReportValuesRequest(
     final ProcessVariableReportValuesRequestDto requestDto,
-    final List<? extends SingleProcessReportDefinitionRequestDto> reports) {
+    final List<ReportDefinitionDto> reports) {
     final List<ProcessVariableSourceDto> reportSources = reports.stream()
-      .map(ReportDefinitionDto::getData)
-      .map(reportData -> ProcessVariableSourceDto.builder()
-        .processDefinitionKey(reportData.getProcessDefinitionKey())
-        .processDefinitionVersions(reportData.getDefinitionVersions())
-        .tenantIds(reportData.getTenantIds())
+      .filter(SingleReportDefinitionDto.class::isInstance)
+      .map(report -> (SingleReportDefinitionDto<?>) report)
+      .map(SingleReportDefinitionDto::getData)
+      .map(SingleReportDataDto::getDefinitions)
+      .flatMap(Collection::stream)
+      .map(definitionDto -> ProcessVariableSourceDto.builder()
+        .processDefinitionKey(definitionDto.getKey())
+        .processDefinitionVersions(definitionDto.getVersions())
+        .tenantIds(definitionDto.getTenantIds())
         .build()
       )
       .collect(Collectors.toList());
