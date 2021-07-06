@@ -25,6 +25,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftCommittedEntryListener;
 import io.atomix.raft.RaftException.ProtocolException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
@@ -53,6 +54,7 @@ import io.atomix.raft.roles.PromotableRole;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.system.MetaStore;
@@ -99,6 +101,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
+  private final Set<RaftCommittedEntryListener> committedEntryListeners =
+      new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
   private final RaftReplicationMetrics replicationMetrics;
@@ -347,12 +351,36 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
+   * Adds a new committed entry listener, which will be notified when the Leader commits a new
+   * entry. If RAFT runs currently in a Follower role this listeners are not called.
+   *
+   * <p>Note that it will be called on the Raft thread, and as such should not perform any heavy
+   * computation.
+   *
+   * @param raftCommittedEntryListener the listener to add
+   */
+  public void addCommittedEntryListener(
+      final RaftCommittedEntryListener raftCommittedEntryListener) {
+    committedEntryListeners.add(raftCommittedEntryListener);
+  }
+
+  /**
    * Notifies all listeners of the latest entry.
    *
    * @param lastCommitIndex index of the most recently committed entry
    */
   public void notifyCommitListeners(final long lastCommitIndex) {
     commitListeners.forEach(listener -> listener.onCommit(lastCommitIndex));
+  }
+
+  /**
+   * Notifies all listeners of the latest entry.
+   *
+   * @param committedEntry the most recently committed entry
+   */
+  public void notifyCommitListeners(final IndexedRaftLogEntry committedEntry) {
+    commitListeners.forEach(listener -> listener.onCommit(committedEntry.index()));
+    committedEntryListeners.forEach(listener -> listener.onCommit(committedEntry));
   }
 
   /**

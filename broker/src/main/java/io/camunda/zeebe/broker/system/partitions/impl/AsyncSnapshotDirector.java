@@ -7,16 +7,16 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
+import io.atomix.raft.RaftCommittedEntryListener;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -25,7 +25,8 @@ import java.util.HashSet;
 import java.util.Set;
 import org.slf4j.Logger;
 
-public final class AsyncSnapshotDirector extends Actor implements HealthMonitorable {
+public final class AsyncSnapshotDirector extends Actor
+    implements RaftCommittedEntryListener, HealthMonitorable {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -40,33 +41,31 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
       "Unexpected exception occurred on moving valid snapshot.";
 
   private final StateController stateController;
-  private final LogStream logStream;
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
   private final String actorName;
   private final Set<FailureListener> listeners = new HashSet<>();
 
-  private ActorCondition commitCondition;
   private Long lastWrittenEventPosition;
   private TransientSnapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
   private boolean persistingSnapshot;
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
+  private long commitPosition;
 
   public AsyncSnapshotDirector(
       final int nodeId,
+      final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
-      final LogStream logStream,
       final Duration snapshotRate) {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
-    this.logStream = logStream;
     processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    actorName = buildActorName(nodeId, "SnapshotDirector", logStream.getPartitionId());
+    actorName = buildActorName(nodeId, "SnapshotDirector", partitionId);
   }
 
   @Override
@@ -82,15 +81,6 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
 
     lastWrittenEventPosition = null;
-    commitCondition =
-        actor.onCondition(
-            getConditionNameForPosition(), this::persistSnapshotIfLastWrittenPositionCommitted);
-    logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
-  }
-
-  @Override
-  protected void onActorCloseRequested() {
-    logStream.removeOnCommitPositionUpdatedCondition(commitCondition);
   }
 
   @Override
@@ -121,10 +111,6 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
   private void scheduleSnapshotOnRate() {
     actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
     prepareTakingSnapshot();
-  }
-
-  private String getConditionNameForPosition() {
-    return getName() + "-wait-for-endPosition-committed";
   }
 
   public void forceSnapshot() {
@@ -165,19 +151,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
             }
 
             lowerBoundSnapshotPosition = lastProcessedPosition;
-            logStream
-                .getCommitPositionAsync()
-                .onComplete(
-                    (commitPosition, errorOnRetrievingCommitPosition) -> {
-                      if (errorOnRetrievingCommitPosition != null) {
-                        takingSnapshot = false;
-                        LOG.error(
-                            "Unexpected error on retrieving commit position",
-                            errorOnRetrievingCommitPosition);
-                        return;
-                      }
-                      takeSnapshot(commitPosition);
-                    });
+            takeSnapshot();
 
           } else {
             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
@@ -186,7 +160,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
         });
   }
 
-  private void takeSnapshot(final long initialCommitPosition) {
+  private void takeSnapshot() {
     final var optionalPendingSnapshot =
         stateController.takeTransientSnapshot(lowerBoundSnapshotPosition);
     if (optionalPendingSnapshot.isEmpty()) {
@@ -216,8 +190,7 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
                           lastWrittenPosition,
                           (endPosition, error) -> {
                             if (error == null) {
-                              LOG.info(
-                                  LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, initialCommitPosition);
+                              LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
                               lastWrittenEventPosition = endPosition;
                               persistingSnapshot = false;
                               persistSnapshotIfLastWrittenPositionCommitted();
@@ -236,36 +209,49 @@ public final class AsyncSnapshotDirector extends Actor implements HealthMonitora
     }
   }
 
+  @Override
+  public void onCommit(final IndexedRaftLogEntry indexedRaftLogEntry) {
+    // is called by the Leader Role and gives the last committed entry, where we
+    // can extract the highest position, which corresponds to the last committed position
+    if (indexedRaftLogEntry.isApplicationEntry()) {
+      final var committedPosition = indexedRaftLogEntry.getApplicationEntry().highestPosition();
+      newPositionCommitted(committedPosition);
+    }
+  }
+
+  public void newPositionCommitted(final long currentCommitPosition) {
+    actor.run(
+        () -> {
+          commitPosition = currentCommitPosition;
+          persistSnapshotIfLastWrittenPositionCommitted();
+        });
+  }
+
   private void persistSnapshotIfLastWrittenPositionCommitted() {
-    logStream
-        .getCommitPositionAsync()
-        .onComplete(
-            (currentCommitPosition, error) -> {
-              if (pendingSnapshot != null
-                  && lastWrittenEventPosition != null
-                  && currentCommitPosition >= lastWrittenEventPosition
-                  && !persistingSnapshot) {
-                persistingSnapshot = true;
+    if (pendingSnapshot != null
+        && lastWrittenEventPosition != null
+        && commitPosition >= lastWrittenEventPosition
+        && !persistingSnapshot) {
+      persistingSnapshot = true;
 
-                LOG.debug(
-                    "Current commit position {} >= {}, committing snapshot {}.",
-                    currentCommitPosition,
-                    lastWrittenEventPosition,
-                    pendingSnapshot);
-                final var snapshotPersistFuture = pendingSnapshot.persist();
+      LOG.debug(
+          "Current commit position {} >= {}, committing snapshot {}.",
+          commitPosition,
+          lastWrittenEventPosition,
+          pendingSnapshot);
+      final var snapshotPersistFuture = pendingSnapshot.persist();
 
-                snapshotPersistFuture.onComplete(
-                    (snapshot, persistError) -> {
-                      if (persistError != null) {
-                        LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
-                      }
-                      lastWrittenEventPosition = null;
-                      takingSnapshot = false;
-                      pendingSnapshot = null;
-                      persistingSnapshot = false;
-                    });
-              }
-            });
+      snapshotPersistFuture.onComplete(
+          (snapshot, persistError) -> {
+            if (persistError != null) {
+              LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
+            }
+            lastWrittenEventPosition = null;
+            takingSnapshot = false;
+            pendingSnapshot = null;
+            persistingSnapshot = false;
+          });
+    }
   }
 
   private void resetStateOnFailure() {

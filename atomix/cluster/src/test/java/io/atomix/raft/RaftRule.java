@@ -574,6 +574,16 @@ public final class RaftRule extends ExternalResource {
     return servers.get(followerB).getContext().getPersistedSnapshotStore();
   }
 
+  public void addCommitListener(final RaftCommitListener raftCommitListener) {
+    servers.forEach((id, raft) -> raft.getContext().addCommitListener(raftCommitListener));
+  }
+
+  public void addCommittedEntryListener(
+      final RaftCommittedEntryListener raftCommittedEntryListener) {
+    servers.forEach(
+        (id, raft) -> raft.getContext().addCommittedEntryListener(raftCommittedEntryListener));
+  }
+
   private static final class CommitAwaiter {
 
     private final long awaitedIndex;

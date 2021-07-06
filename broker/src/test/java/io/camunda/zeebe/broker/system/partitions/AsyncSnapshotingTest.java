@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -23,20 +21,16 @@ import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -58,10 +52,8 @@ public final class AsyncSnapshotingTest {
       RuleChain.outerRule(autoCloseableRule).around(tempFolderRule).around(actorSchedulerRule);
 
   private StateControllerImpl snapshotController;
-  private LogStream logStream;
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
-  private List<ActorCondition> conditionList;
   private ConstructableSnapshotStore persistedSnapshotStore;
 
   @Before
@@ -90,27 +82,13 @@ public final class AsyncSnapshotingTest {
     autoCloseableRule.manage(snapshotController);
     snapshotController = spy(snapshotController);
 
-    logStream = mock(LogStream.class);
-    when(logStream.getCommitPositionAsync()).thenReturn(CompletableActorFuture.completed(25L));
-    conditionList = new ArrayList<>();
-    doAnswer(
-            invocationOnMock -> {
-              final Object[] arguments = invocationOnMock.getArguments();
-              conditionList.add((ActorCondition) arguments[0]);
-              return null;
-            })
-        .when(logStream)
-        .registerOnCommitPositionUpdatedCondition(any());
-
     final ActorScheduler actorScheduler = actorSchedulerRule.get();
     createStreamProcessorControllerMock();
     createAsyncSnapshotDirector(actorScheduler);
   }
 
   private void setCommitPosition(final long commitPosition) {
-    when(logStream.getCommitPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(commitPosition));
-    conditionList.forEach(ActorCondition::signal);
+    asyncSnapshotDirector.newPositionCommitted(commitPosition);
   }
 
   private void createStreamProcessorControllerMock() {
@@ -128,7 +106,7 @@ public final class AsyncSnapshotingTest {
   private void createAsyncSnapshotDirector(final ActorScheduler actorScheduler) {
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            0, mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1));
+            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
     actorScheduler.submitActor(asyncSnapshotDirector).join();
   }
 
@@ -216,7 +194,6 @@ public final class AsyncSnapshotingTest {
                 new RuntimeException("getLastProcessedPositionAsync fails")));
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    setCommitPosition(commitPosition);
     clock.addTime(Duration.ofMinutes(1));
     verify(mockStreamProcessor, timeout(5000).times(1)).getLastProcessedPositionAsync();
 
@@ -224,33 +201,7 @@ public final class AsyncSnapshotingTest {
     when(mockStreamProcessor.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
     clock.addTime(Duration.ofMinutes(1));
-
-    // then
-    waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
-    assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldSucceedToTakeSnapshotOnNextIntervalWhenCommitPositionRetrievingFailed() {
-    // given
-    final long lastProcessedPosition = 25L;
-    final long lastWrittenPosition = 26L;
-
-    when(mockStreamProcessor.getLastProcessedPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastProcessedPosition));
-    when(mockStreamProcessor.getLastWrittenPositionAsync())
-        .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
-    when(logStream.getCommitPositionAsync())
-        .thenReturn(
-            CompletableActorFuture.completedExceptionally(
-                new RuntimeException("getCommitPositionAsync fails")));
-    clock.addTime(Duration.ofMinutes(1));
-    verify(logStream, timeout(5000).times(1)).getCommitPositionAsync();
-
-    // when
-
-    setCommitPosition(100L);
-    clock.addTime(Duration.ofMinutes(1));
+    setCommitPosition(commitPosition);
 
     // then
     waitUntil(() -> snapshotController.getValidSnapshotsCount() == 1);
