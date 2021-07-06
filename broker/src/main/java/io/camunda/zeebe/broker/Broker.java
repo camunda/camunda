@@ -46,9 +46,9 @@ import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentReques
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
+import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
@@ -405,8 +405,8 @@ public final class Broker implements AutoCloseable {
                     clusterServices.getEventService(),
                     managementRequestHandler);
 
-            final PartitionTransitionContextImpl transitionContext =
-                new PartitionTransitionContextImpl(
+            final PartitionBoostrapAndTransitionContextImpl transitionContext =
+                new PartitionBoostrapAndTransitionContextImpl(
                     localBroker.getNodeId(),
                     owningPartition,
                     partitionListeners,

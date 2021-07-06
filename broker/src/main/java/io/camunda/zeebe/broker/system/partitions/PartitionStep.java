@@ -19,26 +19,27 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 public interface PartitionStep {
   /**
    * Performs some action required for the partition to function. This may include opening
-   * components (e.g., logstream), setting their values in {@link PartitionTransitionContextImpl},
-   * etc. The subsequent partition steps will only be opened after the returned future is completed.
+   * components (e.g., logstream), setting their values in {@link
+   * PartitionBoostrapAndTransitionContextImpl}, etc. The subsequent partition steps will only be
+   * opened after the returned future is completed.
    *
    * @param context the partition context
    * @return future
    */
-  default ActorFuture<Void> open(final PartitionTransitionContextImpl context) {
+  default ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
     return CompletableActorFuture.completed(null);
   }
 
   /**
    * Perform tear-down actions to clear the partition and prepare for another one to be installed.
    * This includes closing components, clearing their values from {@link
-   * PartitionTransitionContextImpl} so they may be garbage-collected, etc. The subsequent partition
-   * steps will only be closed after the returned future is completed.
+   * PartitionBoostrapAndTransitionContextImpl} so they may be garbage-collected, etc. The
+   * subsequent partition steps will only be closed after the returned future is completed.
    *
    * @param context the partition context
    * @return future
    */
-  ActorFuture<Void> close(final PartitionTransitionContextImpl context);
+  ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context);
 
   /** @return A log-friendly identification of the PartitionStep. */
   String getName();

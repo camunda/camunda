@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.camunda.zeebe.broker.system.partitions.PartitionBoostrapAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -20,7 +20,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 public class StateControllerPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContextImpl context) {
+  public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
     final var runtimeDirectory =
         context.getRaftPartition().dataDirectory().toPath().resolve("runtime");
     final var databaseCfg = context.getBrokerCfg().getExperimental().getRocksdb();
@@ -41,7 +41,7 @@ public class StateControllerPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContextImpl context) {
+  public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
     try {
       context.getSnapshotController().close();
     } catch (final Exception e) {

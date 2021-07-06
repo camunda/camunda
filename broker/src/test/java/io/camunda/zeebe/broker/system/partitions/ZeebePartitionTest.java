@@ -39,14 +39,14 @@ public class ZeebePartitionTest {
 
   @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
-  private PartitionTransitionContextImpl ctx;
+  private PartitionBoostrapAndTransitionContextImpl ctx;
   private PartitionTransition transition;
   private CriticalComponentsHealthMonitor healthMonitor;
   private RaftPartition raft;
 
   @Before
   public void setup() {
-    ctx = mock(PartitionTransitionContextImpl.class);
+    ctx = mock(PartitionBoostrapAndTransitionContextImpl.class);
     transition = spy(new NoopTransition());
 
     raft = mock(RaftPartition.class);

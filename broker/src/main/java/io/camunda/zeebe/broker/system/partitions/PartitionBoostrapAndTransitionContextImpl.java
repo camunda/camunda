@@ -37,14 +37,11 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Class encapsulating all the information about a partition that are needed during transition to
- * the role of the partition
- *
- * <p><strong>Note:</strong> Currently this class implements {@code PartitionConcept}. This is for
- * legacy reasons to keep the change set small. In the future the transition should be the process
- * by which the partition context is created.
+ * Class encapsulating all the information about a partition that are needed during bootstrap and
+ * transition to the role of the partition
  */
-public class PartitionTransitionContextImpl implements PartitionContext {
+@Deprecated // will be split up according to interfaces
+public class PartitionBoostrapAndTransitionContextImpl implements PartitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -78,7 +75,7 @@ public class PartitionTransitionContextImpl implements PartitionContext {
   private long currentTerm;
   private Role currentRole;
 
-  public PartitionTransitionContextImpl(
+  public PartitionBoostrapAndTransitionContextImpl(
       final int nodeId,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,

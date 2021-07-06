@@ -113,5 +113,5 @@ public interface PartitionBootstrapContext {
   void setExporterDirector(ExporterDirector director);
 
   // can be called any time after bootstrap has completed
-  PartitionTransitionContextImpl createTransitionContext();
+  PartitionBoostrapAndTransitionContextImpl createTransitionContext();
 }
