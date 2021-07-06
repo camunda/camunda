@@ -86,11 +86,7 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: 'Complete Task',
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Complete Task')).toBeInTheDocument();
   });
 
   it('should render created task with embedded form', async () => {
@@ -119,11 +115,7 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', {
-        name: 'Complete Task',
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Complete Task')).toBeInTheDocument();
   });
 
   it('should render completed task', async () => {
@@ -149,11 +141,7 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name: 'Complete Task',
-      }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Complete Task')).not.toBeInTheDocument();
   });
 
   it('should render completed task with embedded form', async () => {
@@ -182,11 +170,7 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name: 'Complete Task',
-      }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Complete Task')).not.toBeInTheDocument();
   });
 
   it('should complete task without variables', async () => {
@@ -216,11 +200,7 @@ describe('<Task />', () => {
       wrapper: getWrapper(history),
     });
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: 'Complete Task',
-      }),
-    );
+    userEvent.click(await screen.findByText('Complete Task'));
 
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
@@ -255,11 +235,7 @@ describe('<Task />', () => {
       wrapper: getWrapper(history),
     });
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: 'Complete Task',
-      }),
-    );
+    userEvent.click(await screen.findByText('Complete Task'));
 
     await waitFor(() => {
       expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
@@ -296,11 +272,7 @@ describe('<Task />', () => {
       wrapper: getWrapper(history),
     });
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: 'Complete Task',
-      }),
-    );
+    userEvent.click(await screen.findByText('Complete Task'));
 
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
@@ -380,58 +352,22 @@ describe('<Task />', () => {
       wrapper: getWrapper(mockHistory),
     });
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
+
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
 
     userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'valid_name',
-    );
-
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
+      screen.getByLabelText('New variable 0 value'),
       '"valid_value"',
     );
 
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
 
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'Unclaim',
-      }),
-    );
-    expect(
-      await screen.findByRole('button', {
-        name: 'Claim',
-      }),
-    ).toBeInTheDocument();
+    userEvent.click(screen.getByText('Unclaim'));
+    userEvent.click(await screen.findByText('Claim'));
 
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'Claim',
-      }),
-    );
-    expect(
-      await screen.findByRole('button', {
-        name: 'Unclaim',
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Unclaim')).toBeInTheDocument();
 
     expect(screen.getByText(/Task has no Variables/)).toBeInTheDocument();
   });
@@ -469,52 +405,25 @@ describe('<Task />', () => {
       ),
     });
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
 
     // try to add a variable with a same name from one of the existing variables
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'myVar',
-    );
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar');
 
     expect(
       screen.getByTitle('Name must be unique and Value has to be JSON'),
     ).toBeInTheDocument();
 
-    userEvent.clear(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'myVar2',
-    );
+    userEvent.clear(screen.getByLabelText('New variable 0 name'));
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
 
     expect(
       await screen.findByTitle('Value has to be JSON'),
     ).toBeInTheDocument();
 
     // try to add a variable with a same name from one of the new added variables
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 1 name',
-      }),
-      'myVar2',
-    );
+    userEvent.click(screen.getByText(/Add Variable/));
+    userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
 
     expect(
       within(screen.getByTestId('newVariables[1]')).getByTitle(
@@ -529,11 +438,7 @@ describe('<Task />', () => {
       ),
     ).not.toBeInTheDocument();
 
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'Remove new variable 0',
-      }),
-    );
+    userEvent.click(screen.getByLabelText('Remove new variable 0'));
 
     expect(
       screen.queryByTitle('Name must be unique and Value has to be JSON'),

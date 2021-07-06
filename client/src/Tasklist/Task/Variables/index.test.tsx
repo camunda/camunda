@@ -116,81 +116,28 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.click(await screen.findByText(/Add Variable/));
+
+    expect(screen.getAllByPlaceholderText(/name/i)).toHaveLength(2);
+    expect(screen.getAllByPlaceholderText(/value/i)).toHaveLength(2);
+    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 1 name')).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 1 value')).toBeInTheDocument();
+
+    userEvent.click(screen.getByLabelText('Remove new variable 1'));
+
+    expect(screen.getAllByPlaceholderText(/name/i)).toHaveLength(1);
+    expect(screen.getAllByPlaceholderText(/value/i)).toHaveLength(1);
+    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
 
     expect(
-      screen.getAllByRole('textbox', {
-        name: /new variable/i,
-      }),
-    ).toHaveLength(4);
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 1 name',
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 1 value',
-      }),
-    ).toBeInTheDocument();
-
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'Remove new variable 1',
-      }),
-    );
-
-    expect(
-      screen.getAllByRole('textbox', {
-        name: /new variable/i,
-      }),
-    ).toHaveLength(2);
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('textbox', {
-        name: 'New variable 1 name',
-      }),
+      screen.queryByLabelText('New variable 1 name'),
     ).not.toBeInTheDocument();
-
     expect(
-      screen.queryByRole('textbox', {
-        name: 'New variable 1 value',
-      }),
+      screen.queryByLabelText('New variable 1 value'),
     ).not.toBeInTheDocument();
   });
 
@@ -208,23 +155,10 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
 
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
+    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
   });
 
   it('should validate an empty variable name', async () => {
@@ -241,15 +175,9 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
     userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
+      screen.getByLabelText('New variable 0 value'),
       '"valid_value"',
     );
 
@@ -270,17 +198,8 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'valid_name',
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
 
     expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
   });
@@ -299,14 +218,10 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
+    userEvent.click(await screen.findByText(/Add Variable/));
 
     userEvent.type(
-      screen.getByRole('textbox', {name: 'New variable 0 value'}),
+      screen.getByLabelText('New variable 0 value'),
       'invalid_value}}}',
     );
 
@@ -329,23 +244,10 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /Add Variable/,
-      }),
-    );
-
+    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
     userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'valid_name',
-    );
-
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
+      screen.getByLabelText('New variable 0 value'),
       '"valid_value"',
     );
 
@@ -373,37 +275,15 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /complete task/i,
-      }),
-    );
+    userEvent.click(await screen.findByText(/complete task/i));
 
     await waitFor(() => expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []));
     expect(mockOnSubmit).toHaveBeenCalledTimes(1);
 
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'var',
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
-      '1',
-    );
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    );
+    userEvent.click(await screen.findByText(/add variable/i));
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'var');
+    userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
+    userEvent.click(await screen.findByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
@@ -421,28 +301,10 @@ describe('<Variables />', () => {
 
     expect(await screen.findByLabelText('myVar')).toBeInTheDocument();
 
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
-      'name',
-    );
-    userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
-      '"Jon"',
-    );
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    );
+    userEvent.click(await screen.findByText(/add variable/i));
+    userEvent.type(screen.getByLabelText('New variable 0 name'), 'name');
+    userEvent.type(screen.getByLabelText('New variable 0 value'), '"Jon"');
+    userEvent.click(await screen.findByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
@@ -470,11 +332,7 @@ describe('<Variables />', () => {
 
     userEvent.clear(await screen.findByLabelText('myVar'));
     userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'Complete Task',
-      }),
-    );
+    userEvent.click(await screen.findByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -501,22 +359,14 @@ describe('<Variables />', () => {
 
     userEvent.click(await screen.findByText('Add Variable'));
     userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 name',
-      }),
+      screen.getByLabelText('New variable 0 name'),
       'newVariableName',
     );
     userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
+      screen.getByLabelText('New variable 0 value'),
       '"newVariableValue"',
     );
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'Complete Task',
-      }),
-    );
+    userEvent.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -542,21 +392,12 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.type(
-      await screen.findByRole('textbox', {
-        name: 'myVar',
-      }),
-      '{{ invalid value',
-    );
+    userEvent.type(await screen.findByLabelText('myVar'), '{{ invalid value');
 
     expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
     expect(screen.getByTestId('warning-icon-myVar')).toBeInTheDocument();
     expect(screen.getByTitle('Value has to be JSON')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: 'Complete Task',
-      }),
-    ).toBeDisabled();
+    expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
   it('should disable submit button on form errors for new variables', async () => {
@@ -573,15 +414,9 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /add variable/i,
-      }),
-    );
+    userEvent.click(await screen.findByText(/add variable/i));
     userEvent.type(
-      screen.getByRole('textbox', {
-        name: 'New variable 0 value',
-      }),
+      screen.getByLabelText('New variable 0 value'),
       '{{ invalid value',
     );
 
@@ -589,11 +424,7 @@ describe('<Variables />', () => {
     expect(
       screen.getByTestId('warning-icon-newVariables[0].value'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: 'Complete Task',
-      }),
-    ).toBeDisabled();
+    expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
   it('should disable completion button', async () => {
@@ -610,17 +441,9 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(
-      await screen.findByRole('button', {
-        name: /add variable/i,
-      }),
-    );
+    userEvent.click(await screen.findByText(/add variable/i));
 
-    expect(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    ).toBeDisabled();
+    expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
   it('should complete a task with a truncated variable', async () => {
@@ -650,11 +473,7 @@ describe('<Variables />', () => {
 
     userEvent.clear(screen.getByDisplayValue('"0001"'));
     userEvent.type(screen.getByLabelText('myVar'), '"newVariableValue"');
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    );
+    userEvent.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
