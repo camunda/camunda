@@ -16,7 +16,7 @@ import {
 import {fetchProcessInstanceIncidents} from 'modules/api/instances';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
-import {addFlowNodeName, mapify} from './mappers';
+import {mapify} from './mappers';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type FlowNode = {
@@ -126,15 +126,26 @@ class Incidents extends NetworkReconnectionHandler {
     this.disposer?.();
   }
 
+  getIncidentType = (flowNodeInstanceId: string) => {
+    const incident = this.incidents.find(
+      (incident) => incident.flowNodeInstanceId === flowNodeInstanceId
+    );
+
+    return incident?.errorType;
+  };
+
   get incidents() {
     if (this.state.response === null) {
       return [];
     }
-    return this.state.response.incidents.map((incident: any) => {
+    return this.state.response.incidents.map((incident) => {
       const metaData = singleInstanceDiagramStore.getMetaData(
         incident.flowNodeId
       );
-      return addFlowNodeName(incident, metaData);
+      return {
+        ...incident,
+        flowNodeName: metaData?.name || incident.flowNodeId,
+      };
     });
   }
 
@@ -142,11 +153,14 @@ class Incidents extends NetworkReconnectionHandler {
     return this.state.response === null
       ? new Map()
       : mapify(
-          this.state.response.flowNodes.map((flowNode: any) => {
+          this.state.response.flowNodes.map((flowNode) => {
             const metaData = singleInstanceDiagramStore.getMetaData(
               flowNode.flowNodeId
             );
-            return addFlowNodeName(flowNode, metaData);
+            return {
+              ...flowNode,
+              flowNodeName: metaData?.name || flowNode.flowNodeId,
+            };
           }),
           'flowNodeId'
         );

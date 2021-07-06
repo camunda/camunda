@@ -95,17 +95,9 @@ const mapify = (arrayOfObjects: any, uniqueKey: any) => {
   }, new Map());
 };
 
-const addFlowNodeName = (object: any, nodeMetaData: any) => {
-  const modifiedObject = {...object};
-  modifiedObject.flowNodeName =
-    (nodeMetaData && nodeMetaData.name) || object.flowNodeId;
-  return modifiedObject;
-};
-
 export {
   getSelectableFlowNodes,
   createNodeMetaDataMap,
   getProcessedSequenceFlows,
   mapify,
-  addFlowNodeName,
 };

@@ -12,13 +12,14 @@ import {currentInstanceStore} from 'modules/stores/currentInstance';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockServer} from 'modules/mock-server/node';
 import {PopoverOverlay} from './';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, mockIncidents} from 'modules/testUtils';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router';
+import {incidentsStore} from 'modules/stores/incidents';
 
 const FLOW_NODE_ID = 'startEvent';
-const FLOW_NODE_INSTANCE_ID = '2251799813686348';
+const FLOW_NODE_INSTANCE_ID = '2251799813699889';
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -110,18 +111,13 @@ describe('PopoverOverlay', () => {
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
-    currentInstanceStore.setCurrentInstance(
-      createInstance({
-        id: FLOW_NODE_ID,
-        state: 'ACTIVE',
-      })
-    );
   });
 
   afterEach(() => {
     flowNodeMetaDataStore.reset();
     flowNodeSelectionStore.reset();
     currentInstanceStore.reset();
+    incidentsStore.reset();
   });
 
   it('should render meta data for incident flow node', async () => {
@@ -129,8 +125,19 @@ describe('PopoverOverlay', () => {
       rest.post(
         `/api/process-instances/${FLOW_NODE_ID}/flow-node-metadata`,
         (_, res, ctx) => res.once(ctx.json(incidentFlowNodeMetaData))
+      ),
+      rest.get(
+        `http://localhost/api/process-instances/${FLOW_NODE_ID}/incidents`,
+        (_, res, ctx) => res.once(ctx.json(mockIncidents))
       )
     );
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: FLOW_NODE_ID,
+        state: 'INCIDENT',
+      })
+    );
+    incidentsStore.init();
 
     flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
 
@@ -147,13 +154,13 @@ describe('PopoverOverlay', () => {
       screen.getByRole('button', {name: 'Show more metadata'})
     ).toBeInTheDocument();
 
-    const {incidentErrorMessage, incidentErrorType, jobId, flowNodeInstanceId} =
+    const {incidentErrorMessage, jobId, flowNodeInstanceId} =
       incidentFlowNodeMetaData.instanceMetadata;
 
     expect(screen.getByText(flowNodeInstanceId)).toBeInTheDocument();
     expect(screen.getByText(jobId)).toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    expect(screen.getByText(incidentErrorType)).toBeInTheDocument();
+    expect(screen.getByText('No more retries left')).toBeInTheDocument();
     expect(screen.getByText(incidentErrorMessage)).toBeInTheDocument();
     expect(screen.getByText('None')).toBeInTheDocument();
   });
@@ -165,7 +172,12 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
       )
     );
-
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: FLOW_NODE_ID,
+        state: 'ACTIVE',
+      })
+    );
     flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
 
     renderPopover();
@@ -202,7 +214,12 @@ describe('PopoverOverlay', () => {
         (_, res, ctx) => res.once(ctx.json(completedFlowNodeMetaData))
       )
     );
-
+    currentInstanceStore.setCurrentInstance(
+      createInstance({
+        id: FLOW_NODE_ID,
+        state: 'ACTIVE',
+      })
+    );
     flowNodeSelectionStore.selectFlowNode({flowNodeId: FLOW_NODE_ID});
 
     renderPopover();
@@ -220,7 +237,7 @@ describe('PopoverOverlay', () => {
 
     expect(screen.getByText(/"flowNodeId": "startEvent"/)).toBeInTheDocument();
     expect(
-      screen.getByText(/"flowNodeInstanceId": "2251799813686348"/)
+      screen.getByText(/"flowNodeInstanceId": "2251799813699889"/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"flowNodeType": "START_EVENT"/)

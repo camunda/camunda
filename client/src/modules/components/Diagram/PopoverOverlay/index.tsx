@@ -40,9 +40,9 @@ const InstanceMetaData: React.FC<{
     jobId,
     startDate,
     endDate,
-    incidentErrorType,
     incidentErrorMessage,
     calledProcessInstanceId,
+    incidentErrorType,
   },
 }) => {
   return (

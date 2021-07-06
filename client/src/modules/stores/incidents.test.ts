@@ -9,37 +9,9 @@ import {currentInstanceStore} from './currentInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/react';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, mockIncidents} from 'modules/testUtils';
 
 describe('stores/incidents', () => {
-  const mockIncidents = {
-    count: 1,
-    incidents: [
-      {
-        id: '2251799813700301',
-        errorType: 'No more retries left',
-        errorMessage: 'Cannot connect to server delivery05',
-        flowNodeId: 'Task_162x79i',
-        flowNodeInstanceId: '2251799813699889',
-        jobId: '2251799813699901',
-        creationTime: '2020-10-08T09:18:58.258+0000',
-        hasActiveOperation: false,
-        lastOperation: null,
-      },
-    ],
-    errorTypes: [
-      {
-        errorType: 'No more retries left',
-        count: 1,
-      },
-    ],
-    flowNodes: [
-      {
-        flowNodeId: 'Task_162x79i',
-        count: 1,
-      },
-    ],
-  };
   afterEach(() => {
     currentInstanceStore.reset();
     incidentsStore.reset();

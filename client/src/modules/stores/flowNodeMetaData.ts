@@ -20,6 +20,7 @@ import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {formatDate} from 'modules/utils/date';
+import {incidentsStore} from './incidents';
 
 type InstanceMetaData = {
   startDate: string;
@@ -133,13 +134,23 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
           const metaData = await response.json();
 
           if (metaData.instanceMetadata !== null) {
-            const {startDate, endDate, jobDeadline} = metaData.instanceMetadata;
+            const {
+              startDate,
+              endDate,
+              jobDeadline,
+              incidentErrorType,
+              flowNodeInstanceId,
+            } = metaData.instanceMetadata;
 
             metaData.instanceMetadata = {
               ...metaData.instanceMetadata,
               startDate: formatDate(startDate, null),
               endDate: formatDate(endDate, null),
               jobDeadline: formatDate(jobDeadline, null),
+              incidentErrorType:
+                incidentErrorType === null
+                  ? null
+                  : incidentsStore.getIncidentType(flowNodeInstanceId),
             };
           }
 
