@@ -58,23 +58,18 @@ describe('<FlowNodeInstancesTree />', () => {
         )
       );
       await singleInstanceDiagramStore.fetchProcessXml(processId);
-
-      jest.useFakeTimers();
-
-      currentInstanceStore.init(processInstanceId);
-      flowNodeInstanceStore.init();
     });
 
     afterEach(() => {
       currentInstanceStore.reset();
       singleInstanceDiagramStore.reset();
       flowNodeInstanceStore.reset();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
     });
 
     it('should load the instance history', async () => {
+      currentInstanceStore.init(processInstanceId);
+      flowNodeInstanceStore.init();
+
       mockServer.use(
         rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
           res.once(ctx.json(flowNodeInstances.level1))
@@ -104,6 +99,9 @@ describe('<FlowNodeInstancesTree />', () => {
     });
 
     it('should be able to unfold and fold subprocesses', async () => {
+      currentInstanceStore.init(processInstanceId);
+      flowNodeInstanceStore.init();
+
       mockServer.use(
         rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
           res.once(ctx.json(flowNodeInstances.level1))
@@ -145,13 +143,9 @@ describe('<FlowNodeInstancesTree />', () => {
       );
 
       expect(
-        await screen.findByRole(
-          'button',
-          {
-            name: 'Fold Filter-Map Sub Process (Multi Instance)',
-          },
-          {timeout: 2000}
-        )
+        await screen.findByRole('button', {
+          name: 'Fold Filter-Map Sub Process (Multi Instance)',
+        })
       ).toBeInTheDocument();
 
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
@@ -162,15 +156,7 @@ describe('<FlowNodeInstancesTree />', () => {
         })
       );
 
-      expect(
-        await screen.findByText(
-          'Start Filter-Map',
-          {},
-          {
-            timeout: 2000,
-          }
-        )
-      ).toBeInTheDocument();
+      expect(await screen.findByText('Start Filter-Map')).toBeInTheDocument();
       expect(
         screen.getByRole('button', {
           name: 'Fold Filter-Map Sub Process (Multi Instance)',
@@ -192,6 +178,11 @@ describe('<FlowNodeInstancesTree />', () => {
     });
 
     it('should poll for instances on root level', async () => {
+      jest.useFakeTimers();
+
+      currentInstanceStore.init(processInstanceId);
+      flowNodeInstanceStore.init();
+
       mockServer.use(
         rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
           res.once(ctx.json(flowNodeInstances.level1))
@@ -243,6 +234,9 @@ describe('<FlowNodeInstancesTree />', () => {
       expect(
         withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon')
       ).not.toBeInTheDocument();
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     });
   });
 
@@ -258,8 +252,6 @@ describe('<FlowNodeInstancesTree />', () => {
       );
       await singleInstanceDiagramStore.fetchProcessXml(processId);
 
-      jest.useFakeTimers();
-
       currentInstanceStore.init(processInstanceId);
       flowNodeInstanceStore.init();
     });
@@ -268,9 +260,6 @@ describe('<FlowNodeInstancesTree />', () => {
       currentInstanceStore.reset();
       singleInstanceDiagramStore.reset();
       flowNodeInstanceStore.reset();
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
     });
 
     it('should be able to unfold and fold event subprocesses', async () => {
@@ -312,13 +301,9 @@ describe('<FlowNodeInstancesTree />', () => {
       );
 
       expect(
-        await screen.findByRole(
-          'button',
-          {
-            name: 'Fold Event Subprocess',
-          },
-          {timeout: 2000}
-        )
+        await screen.findByRole('button', {
+          name: 'Fold Event Subprocess',
+        })
       ).toBeInTheDocument();
 
       expect(screen.getByText('Interrupting timer')).toBeInTheDocument();
