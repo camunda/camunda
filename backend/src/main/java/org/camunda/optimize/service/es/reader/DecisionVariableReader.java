@@ -72,13 +72,20 @@ public class DecisionVariableReader {
       return Collections.emptyList();
     }
 
-    return decisionDefinitionReader.getDecisionDefinition(
+    List<DecisionVariableNameResponseDto> decisionDefinitions = decisionDefinitionReader.getDecisionDefinition(
       decisionDefinitionKey,
       decisionDefinitionVersions,
       tenantIds
     ).orElseThrow(() -> new OptimizeRuntimeException(
       "Could not extract input variables. Requested decision definition not found!"))
       .getInputVariableNames();
+
+    decisionDefinitions.forEach(definition -> {
+      if (definition.getName() == null) {
+        definition.setName(definition.getId());
+      }
+    });
+    return decisionDefinitions;
   }
 
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(final String decisionDefinitionKey,
@@ -87,13 +94,20 @@ public class DecisionVariableReader {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
       return Collections.emptyList();
     } else {
-      return decisionDefinitionReader.getDecisionDefinition(
+      List<DecisionVariableNameResponseDto> decisionDefinitions = decisionDefinitionReader.getDecisionDefinition(
         decisionDefinitionKey,
         decisionDefinitionVersions,
         tenantIds
       ).orElseThrow(() -> new OptimizeRuntimeException(
         "Could not extract output variables. Requested decision definition not found!"))
         .getOutputVariableNames();
+
+      decisionDefinitions.forEach(definition -> {
+        if (definition.getName() == null) {
+          definition.setName(definition.getId());
+        }
+      });
+      return decisionDefinitions;
     }
   }
 
@@ -216,14 +230,18 @@ public class DecisionVariableReader {
     return filter(FILTERED_VARIABLES_AGGREGATION, filterQuery);
   }
 
-  private void addValueFilter(final String variablePath, final String valueFilter, final BoolQueryBuilder filterQuery) {
+  private void addValueFilter(final String variablePath, final String valueFilter,
+                              final BoolQueryBuilder filterQuery) {
     if (valueFilter != null && !valueFilter.isEmpty()) {
       final String lowerCaseValue = valueFilter.toLowerCase();
       QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */
-        ? wildcardQuery(getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE), buildWildcardQuery(lowerCaseValue))
+        ? wildcardQuery(
+        getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE),
+        buildWildcardQuery(lowerCaseValue)
+      )
           /*
             using Elasticsearch ngrams to filter for strings < 10 chars,
             because it's fast but increasing the number of chars makes the index bigger

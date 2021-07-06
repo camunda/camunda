@@ -63,6 +63,55 @@ public class DmnModels {
     return createDefaultDmnModel("invoiceClassification");
   }
 
+  public static DmnModelInstance createDefaultDmnModelNoInputAndOutputLabels() {
+    return createDefaultDmnModelNoInputAndOutputLabels("invoiceClassification");
+  }
+
+  public static DmnModelInstance createDefaultDmnModelNoInputAndOutputLabels(final String key) {
+    return DmnModelGenerator
+      .create()
+        .decision()
+          .decisionDefinitionVersionTag("aVersionTag")
+          .decisionDefinitionKey(key)
+          .decisionDefinitionName("Invoice Classification")
+          .addInput(null, INPUT_AMOUNT_ID, INPUT_VARIABLE_AMOUNT, DecisionTypeRef.DOUBLE)
+          .addInput(null, INPUT_CATEGORY_ID, INPUT_VARIABLE_INVOICE_CATEGORY, DecisionTypeRef.STRING)
+          .addOutput(null, OUTPUT_CLASSIFICATION_ID,OUTPUT_VARIABLE_CLASSIFICATION, DecisionTypeRef.STRING)
+          .addOutput(null, OUTPUT_AUDIT_ID, OUTPUT_VARIABLE_AUDIT,  DecisionTypeRef.BOOLEAN)
+          .rule()
+            .addStringInputEntry("< 250")
+            .addStringInputEntry("\"Misc\"")
+            .addStringOutputEntry("\"day-to-day expense\"")
+            .addStringOutputEntry("false")
+          .buildRule(INVOICE_RULE_1_ID)
+          .rule()
+            .addStringInputEntry("[250..1000]")
+            .addStringInputEntry("\"Misc\"")
+            .addStringOutputEntry("\"budget\"")
+            .addStringOutputEntry("false")
+          .buildRule(INVOICE_RULE_2_ID)
+          .rule()
+            .addStringInputEntry("> 1000")
+            .addStringInputEntry("\"Misc\"")
+            .addStringOutputEntry("\"exceptional\"")
+            .addStringOutputEntry("true")
+          .buildRule(INVOICE_RULE_3_ID)
+          .rule()
+            .addStringInputEntry("")
+            .addStringInputEntry("\"Travel Expenses\"")
+            .addStringOutputEntry("\"day-to-day expense\"")
+            .addStringOutputEntry("false")
+          .buildRule(INVOICE_RULE_4_ID)
+          .rule()
+            .addStringInputEntry("")
+            .addStringInputEntry("\"Software License Costs\"")
+            .addStringOutputEntry("\"budget\"")
+            .addStringOutputEntry("false")
+          .buildRule("row-49839158-2")
+        .buildDecision()
+      .build();
+  }
+
   public static DmnModelInstance createDefaultDmnModel(final String key) {
     return DmnModelGenerator
       .create()
@@ -299,5 +348,6 @@ public class DmnModels {
         .buildDecision()
       .build();
   }
-    // @formatter:on
+
+  // @formatter:on
 }

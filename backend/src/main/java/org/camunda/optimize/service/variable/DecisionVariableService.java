@@ -62,7 +62,8 @@ public class DecisionVariableService {
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER,
+                                                                requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return decisionVariableReader.getInputVariableValues(requestDto);
@@ -73,7 +74,8 @@ public class DecisionVariableService {
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER,
+                                                                requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return decisionVariableReader.getOutputVariableValues(requestDto);
