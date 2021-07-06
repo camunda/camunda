@@ -55,6 +55,8 @@ public class MarkDownDependencyCreator {
           }
           if (licenseLink.isProperLicense()) {
             dependencyMarkdownPage.append(licenseLink.toMarkDown());
+          } else {
+            System.err.println("Could not resolve valid license entry for :" + licenseLink.toMarkDown());
           }
         }
       }
@@ -70,9 +72,6 @@ public class MarkDownDependencyCreator {
       LICENSE_TO_URL_MAP.put(licenseName, licenseUrl);
     } else {
       licenseUrl = LICENSE_TO_URL_MAP.get(licenseName);
-    }
-    if (licenseUrl == null) {
-      throw new RuntimeException("Could not obtain url for license " + licenseName + ".");
     }
     return licenseUrl;
   }
