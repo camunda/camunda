@@ -41,7 +41,8 @@ import java.util.stream.Collectors;
  * transition to the role of the partition
  */
 @Deprecated // will be split up according to interfaces
-public class PartitionBoostrapAndTransitionContextImpl implements PartitionContext {
+public class PartitionBoostrapAndTransitionContextImpl
+    implements PartitionContext, PartitionBootstrapContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -52,7 +53,7 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
   private final RaftPartition raftPartition;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
-  private final Supplier<Consumer<TypedRecord>> onProcessedListenerSupplier;
+  private final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier;
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ReceivableSnapshotStore receivableSnapshotStore;
   private final Integer partitionId;
@@ -68,7 +69,7 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
   private AsyncSnapshotDirector snapshotDirector;
   private HealthMonitor criticalComponentsHealthMonitor;
   private ZeebeDb zeebeDb;
-  private ActorControl actor;
+  private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
 
@@ -83,7 +84,7 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
       final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
-      final Supplier<Consumer<TypedRecord>> onProcessedListenerSupplier,
+      final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
       final ConstructableSnapshotStore constructableSnapshotStore,
       final ReceivableSnapshotStore receivableSnapshotStore,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
@@ -111,30 +112,42 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     return exporterDirector;
   }
 
+  @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {
     this.exporterDirector = exporterDirector;
   }
 
+  @Override
+  public PartitionBoostrapAndTransitionContextImpl createTransitionContext() {
+    return this;
+  }
+
+  @Override
   public ScheduledTimer getMetricsTimer() {
     return metricsTimer;
   }
 
+  @Override
   public void setMetricsTimer(final ScheduledTimer metricsTimer) {
     this.metricsTimer = metricsTimer;
   }
 
-  public ActorControl getActor() {
-    return actor;
+  @Override
+  public ActorControl getActorControl() {
+    return actorControl;
   }
 
-  public void setActor(final ActorControl actor) {
-    this.actor = actor;
+  @Override
+  public void setActorControl(final ActorControl actorControl) {
+    this.actorControl = actorControl;
   }
 
+  @Override
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
   }
 
+  @Override
   public void setZeebeDb(final ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
   }
@@ -144,22 +157,27 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     return criticalComponentsHealthMonitor;
   }
 
+  @Override
   public void setComponentHealthMonitor(final HealthMonitor criticalComponentsHealthMonitor) {
     this.criticalComponentsHealthMonitor = criticalComponentsHealthMonitor;
   }
 
+  @Override
   public AsyncSnapshotDirector getSnapshotDirector() {
     return snapshotDirector;
   }
 
+  @Override
   public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
     this.snapshotDirector = snapshotDirector;
   }
 
+  @Override
   public LogDeletionService getLogDeletionService() {
     return logDeletionService;
   }
 
+  @Override
   public void setLogDeletionService(final LogDeletionService logDeletionService) {
     this.logDeletionService = logDeletionService;
   }
@@ -172,31 +190,45 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     stateController = controller;
   }
 
+  @Override
   public SnapshotReplication getSnapshotReplication() {
     return snapshotReplication;
   }
 
+  @Override
   public void setSnapshotReplication(final SnapshotReplication snapshotReplication) {
     this.snapshotReplication = snapshotReplication;
   }
+
+  @Override
+  public StateControllerImpl getStateController() {
+    return null;
+  }
+
+  @Override
+  public void setStateController(final StateControllerImpl stateController) {}
 
   @Override
   public StreamProcessor getStreamProcessor() {
     return streamProcessor;
   }
 
+  @Override
   public void setStreamProcessor(final StreamProcessor streamProcessor) {
     this.streamProcessor = streamProcessor;
   }
 
+  @Override
   public LogStream getLogStream() {
     return logStream;
   }
 
+  @Override
   public void setLogStream(final LogStream logStream) {
     this.logStream = logStream;
   }
 
+  @Override
   public int getNodeId() {
     return nodeId;
   }
@@ -206,22 +238,27 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     return partitionId;
   }
 
+  @Override
   public PartitionMessagingService getMessagingService() {
     return messagingService;
   }
 
+  @Override
   public ActorSchedulingService getActorSchedulingService() {
     return actorSchedulingService;
   }
 
+  @Override
   public BrokerCfg getBrokerCfg() {
     return brokerCfg;
   }
 
+  @Override
   public ConstructableSnapshotStore getConstructableSnapshotStore() {
     return constructableSnapshotStore;
   }
 
+  @Override
   public ReceivableSnapshotStore getReceivableSnapshotStore() {
     return receivableSnapshotStore;
   }
@@ -231,6 +268,7 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     return raftPartition;
   }
 
+  @Override
   public TypedRecordProcessorsFactory getTypedRecordProcessorsFactory() {
     return typedRecordProcessorsFactory;
   }
@@ -239,8 +277,19 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     return maxFragmentSize;
   }
 
+  @Override
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
+  }
+
+  @Override
+  public List<PartitionListener> getPartitionListeners() {
+    return partitionListeners;
+  }
+
+  @Override
+  public PartitionProcessingState getPartitionProcessingState() {
+    return partitionProcessingState;
   }
 
   @Override
@@ -296,10 +345,6 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     this.currentRole = currentRole;
   }
 
-  public PartitionContext toPartitionContext() {
-    return this;
-  }
-
   @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingFollower(final long newTerm) {
     return partitionListeners.stream()
@@ -326,10 +371,12 @@ public class PartitionBoostrapAndTransitionContextImpl implements PartitionConte
     }
   }
 
-  public Consumer<TypedRecord> getOnProcessedListener() {
+  @Override
+  public Consumer<TypedRecord<?>> getOnProcessedListener() {
     return onProcessedListenerSupplier.get();
   }
 
+  @Override
   public CommandResponseWriter getCommandResponseWriter() {
     return commandResponseWriterSupplier.get();
   }

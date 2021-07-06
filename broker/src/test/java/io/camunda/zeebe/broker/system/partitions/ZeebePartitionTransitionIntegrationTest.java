@@ -48,7 +48,7 @@ public class ZeebePartitionTransitionIntegrationTest {
         mock(CriticalComponentsHealthMonitor.class);
 
     when(ctx.getRaftPartition()).thenReturn(raftPartition);
-    when(ctx.toPartitionContext()).thenReturn(ctx);
+    when(ctx.createTransitionContext()).thenReturn(ctx);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
   }
 

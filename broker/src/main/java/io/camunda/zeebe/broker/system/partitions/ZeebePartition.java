@@ -50,10 +50,10 @@ public final class ZeebePartition extends Actor
   public ZeebePartition(
       final PartitionBoostrapAndTransitionContextImpl transitionContext,
       final PartitionTransition transition) {
-    context = transitionContext.toPartitionContext();
+    context = transitionContext.createTransitionContext();
     this.transition = transition;
 
-    transitionContext.setActor(actor);
+    transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
 
     actorName =

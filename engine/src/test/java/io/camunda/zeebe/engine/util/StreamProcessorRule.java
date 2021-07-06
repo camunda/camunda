@@ -129,7 +129,8 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessor startTypedStreamProcessor(
-      final StreamProcessorTestFactory factory, final Consumer<TypedRecord> onProcessedListener) {
+      final StreamProcessorTestFactory factory,
+      final Consumer<TypedRecord<?>> onProcessedListener) {
     return streamProcessingComposite.startTypedStreamProcessor(factory, onProcessedListener);
   }
 
@@ -177,7 +178,7 @@ public final class StreamProcessorRule implements TestRule {
     return streams.getMockedResponseWriter();
   }
 
-  public Consumer<TypedRecord> getProcessedListener() {
+  public Consumer<TypedRecord<?>> getProcessedListener() {
     return streams.getMockedOnProcessedListener();
   }
 

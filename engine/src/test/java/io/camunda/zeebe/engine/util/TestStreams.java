@@ -73,7 +73,7 @@ public final class TestStreams {
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
-  private final Consumer<TypedRecord> mockOnProcessedListener;
+  private final Consumer<TypedRecord<?>> mockOnProcessedListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
@@ -111,7 +111,7 @@ public final class TestStreams {
     return mockCommandResponseWriter;
   }
 
-  public Consumer<TypedRecord> getMockedOnProcessedListener() {
+  public Consumer<TypedRecord<?>> getMockedOnProcessedListener() {
     return mockOnProcessedListener;
   }
 

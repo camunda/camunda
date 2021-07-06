@@ -24,7 +24,7 @@ public class RocksDbMetricExporterPartitionStep implements PartitionStep {
             Integer.toString(context.getPartitionId()), context.getZeebeDb());
     final var metricsTimer =
         context
-            .getActor()
+            .getActorControl()
             .runAtFixedRate(
                 Duration.ofSeconds(5),
                 () -> {
