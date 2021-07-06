@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContextImpl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
@@ -17,7 +17,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 public class ZeebeDbPartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContextImpl context) {
     context.getConstructableSnapshotStore().addSnapshotListener(context.getSnapshotController());
 
     final ZeebeDb zeebeDb;
@@ -40,7 +40,7 @@ public class ZeebeDbPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContextImpl context) {
     // ZeebeDb is closed in the StateController's close()
     context.setZeebeDb(null);
     return CompletableActorFuture.completed(null);

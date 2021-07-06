@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * legacy reasons to keep the change set small. In the future the transition should be the process
  * by which the partition context is created.
  */
-public class PartitionTransitionContext implements PartitionContext {
+public class PartitionTransitionContextImpl implements PartitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
@@ -78,7 +78,7 @@ public class PartitionTransitionContext implements PartitionContext {
   private long currentTerm;
   private Role currentRole;
 
-  public PartitionTransitionContext(
+  public PartitionTransitionContextImpl(
       final int nodeId,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,

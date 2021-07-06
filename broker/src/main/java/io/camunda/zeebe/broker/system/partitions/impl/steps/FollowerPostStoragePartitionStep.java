@@ -8,20 +8,20 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContextImpl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 
 public class FollowerPostStoragePartitionStep implements PartitionStep {
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContextImpl context) {
     context.getSnapshotController().consumeReplicatedSnapshots();
     return CompletableActorFuture.completed(null);
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContextImpl context) {
     return CompletableActorFuture.completed(null);
   }
 

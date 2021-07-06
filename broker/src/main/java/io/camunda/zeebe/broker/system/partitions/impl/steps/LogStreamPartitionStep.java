@@ -13,7 +13,7 @@ import static io.camunda.zeebe.util.Either.right;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
-import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContextImpl;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.util.Either;
@@ -27,7 +27,7 @@ public class LogStreamPartitionStep implements PartitionStep {
   private AtomixLogStorage logStorage;
 
   @Override
-  public ActorFuture<Void> open(final PartitionTransitionContext context) {
+  public ActorFuture<Void> open(final PartitionTransitionContextImpl context) {
     final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
     final var logStorageOrException = buildAtomixLogStorage(context);
@@ -55,7 +55,7 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   @Override
-  public ActorFuture<Void> close(final PartitionTransitionContext context) {
+  public ActorFuture<Void> close(final PartitionTransitionContextImpl context) {
     if (logStorage != null) {
       context.getRaftPartition().getServer().removeCommitListener(logStorage);
       logStorage = null;
@@ -72,7 +72,7 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   private Either<Exception, AtomixLogStorage> buildAtomixLogStorage(
-      final PartitionTransitionContext context) {
+      final PartitionTransitionContextImpl context) {
 
     final var server = context.getRaftPartition().getServer();
 
@@ -87,7 +87,7 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   private Either<Exception, AtomixLogStorage> checkAndCreateAtomixLogStorage(
-      final PartitionTransitionContext context,
+      final PartitionTransitionContextImpl context,
       final RaftPartitionServer server,
       final ZeebeLogAppender logAppender) {
     final var raftTerm = server.getTerm();
@@ -103,14 +103,14 @@ public class LogStreamPartitionStep implements PartitionStep {
   }
 
   private IllegalStateException buildWrongTermException(
-      final PartitionTransitionContext context, final long raftTerm) {
+      final PartitionTransitionContextImpl context, final long raftTerm) {
     return new IllegalStateException(
         String.format(
             WRONG_TERM_ERROR_MSG, context.getCurrentTerm(), raftTerm, context.getPartitionId()));
   }
 
   private ActorFuture<LogStream> buildLogstream(
-      final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
+      final PartitionTransitionContextImpl context, final AtomixLogStorage atomixLogStorage) {
     return LogStream.builder()
         .withLogStorage(atomixLogStorage)
         .withLogName("logstream-" + context.getRaftPartition().name())
