@@ -42,7 +42,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     },
     labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
     afterTitle: (data, {datasets}) =>
-      data.length && datasets[data[data.length - 1].datasetIndex].label,
+      !isNumber && data.length && datasets[data[data.length - 1].datasetIndex].label,
   };
 
   if (isPersistedTooltips) {
