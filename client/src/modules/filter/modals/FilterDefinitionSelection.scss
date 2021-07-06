@@ -6,4 +6,16 @@
   .Labeled .label.before {
     font-size: 14px;
   }
+
+  .MultiSelect .Tag {
+    font-size: 12px;
+
+    .tagText {
+      padding-top: 2px;
+    }
+
+    svg {
+      vertical-align: middle;
+    }
+  }
 }
