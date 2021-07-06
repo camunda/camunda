@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
@@ -20,18 +19,13 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
@@ -81,12 +75,8 @@ public final class ReplayStateMachine {
       "Expected to find last follow-up event position '%d', but found no next event. Failed to replay on processor";
   private static final String LOG_STMT_REPLAY_FINISHED =
       "Processor finished replay at event position {}";
-  private static final String LOG_STMT_FAILED_ON_REPLAY =
-      "Event {} failed on replay last time, will call #onError to update process instance blacklist.";
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
-
-  private static final Consumer<Long> NOOP_LONG_CONSUMER = (instanceKey) -> {};
 
   private static final MetadataFilter REPLAY_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
@@ -96,7 +86,6 @@ public final class ReplayStateMachine {
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final ActorControl actor;
-  private final ErrorRecord errorRecord = new ErrorRecord();
   private final TypedEventImpl typedEvent;
 
   private final RecordValues recordValues;
@@ -112,7 +101,6 @@ public final class ReplayStateMachine {
   private final RetryStrategy processRetryStrategy;
 
   private final BooleanSupplier abortCondition;
-  private final Set<Long> failedEventPositions = new HashSet<>();
   // current iteration
   private long lastSourceEventPosition;
   private long lastFollowUpEventPosition;
@@ -191,20 +179,6 @@ public final class ReplayStateMachine {
 
         metadata.reset();
         newEvent.readMetadata(metadata);
-        long errorPosition = -1;
-        if (metadata.getValueType() == ValueType.ERROR) {
-          newEvent.readValue(errorRecord);
-          errorPosition = errorRecord.getErrorEventPosition();
-        }
-
-        if (errorPosition >= 0) {
-          LOG.debug(
-              "Found error-prone record {} on replay, add position {} to the blacklist.",
-              newEvent,
-              errorPosition);
-          failedEventPositions.add(errorPosition);
-        }
-
         final long sourceEventPosition = newEvent.getSourceEventPosition();
         if (sourceEventPosition > 0) {
           if (sourceEventPosition > lastSourceEventPosition) {
@@ -280,7 +254,6 @@ public final class ReplayStateMachine {
   }
 
   private void replayUntilDone(final long position, final TypedRecord<?> currentEvent) {
-    final TransactionOperation operation = chooseOperationForEvent(position, currentEvent);
 
     final ActorFuture<Boolean> resultFuture =
         processRetryStrategy.runWithRetry(
@@ -290,7 +263,18 @@ public final class ReplayStateMachine {
                 zeebeDbTransaction.rollback();
               }
               zeebeDbTransaction = transactionContext.getCurrentTransaction();
-              zeebeDbTransaction.run(operation);
+              zeebeDbTransaction.run(
+                  () -> {
+                    // TODO (saig0): ignore blacklist because we replay events only (#7430)
+                    // these events were applied already
+                    final boolean isNotOnBlacklist =
+                        !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
+                    if (isNotOnBlacklist) {
+                      replayEvent(currentEvent);
+                    }
+                    lastProcessedPositionState.markAsProcessed(position);
+                  });
+
               return true;
             },
             abortCondition);
@@ -302,32 +286,6 @@ public final class ReplayStateMachine {
           assert t == null : "On replay there shouldn't be any exception thrown.";
           updateStateUntilDone();
         });
-  }
-
-  private TransactionOperation chooseOperationForEvent(
-      final long position, final TypedRecord<?> currentEvent) {
-    final TransactionOperation operation;
-
-    if (failedEventPositions.contains(position)) {
-      // TODO (saig0): build the blacklist by applying error events (#7429)
-      // currently, we don't add instances to blacklist because we don't process the failed commands
-      LOG.info(LOG_STMT_FAILED_ON_REPLAY, currentEvent);
-      operation =
-          () -> zeebeState.getBlackListState().tryToBlacklist(currentEvent, NOOP_LONG_CONSUMER);
-    } else {
-      operation =
-          () -> {
-            // TODO (saig0): ignore blacklist because we replay events only (#7430)
-            // these events were applied already
-            final boolean isNotOnBlacklist =
-                !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
-            if (isNotOnBlacklist) {
-              replayEvent(currentEvent);
-            }
-            lastProcessedPositionState.markAsProcessed(position);
-          };
-    }
-    return operation;
   }
 
   private void replayEvent(final TypedRecord<?> currentEvent) {
@@ -372,8 +330,6 @@ public final class ReplayStateMachine {
 
   private void onRecovered(final long lastProcessedPosition) {
     keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
-    failedEventPositions.clear();
 
     recoveryFuture.complete(lastProcessedPosition);
   }
