@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
  * opening/closing a component of the partition). The steps are opened in a pre-defined order and
  * will be closed in the reverse order.
  */
+@Deprecated // will be replaced by PartitionBootstrapStep and PartitionTransitionStep
 public interface PartitionStep {
   /**
    * Performs some action required for the partition to function. This may include opening
