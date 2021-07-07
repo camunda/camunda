@@ -32,5 +32,19 @@ export async function setup() {
     1
   );
 
-  return {instanceToCancel, instanceToCancelForOperations};
+  await deploy([
+    './e2e/tests/resources/callActivityProcess.bpmn',
+    './e2e/tests/resources/calledProcess.bpmn',
+  ]);
+
+  const callActivityProcessInstance = await createSingleInstance(
+    'CallActivityProcess',
+    1
+  );
+
+  return {
+    instanceToCancel,
+    instanceToCancelForOperations,
+    callActivityProcessInstance,
+  };
 }

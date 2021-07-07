@@ -168,6 +168,54 @@ test('Instance IDs filter', async (t) => {
     );
 });
 
+test('Parent Instance Id filter', async (t) => {
+  const {
+    initialData: {callActivityProcessInstance},
+  } = t.fixtureCtx;
+
+  await t.click(screen.queryByRole('checkbox', {name: 'Completed'}));
+
+  await t.typeText(
+    screen.queryByRole('textbox', {name: 'Parent Instance Id'}),
+    callActivityProcessInstance.processInstanceKey,
+    {paste: true}
+  );
+
+  // wait for filter to be applied, see there is only 1 result
+  await t
+    .expect(
+      within(screen.queryByTestId('instances-list')).queryAllByRole('row').count
+    )
+    .eql(1);
+
+  // result is the one we filtered
+  await t
+    .expect(
+      await within(screen.queryByTestId('instances-list'))
+        .getAllByRole('link', {name: /View parent instance/i})
+        .nth(0).innerText
+    )
+    .eql(callActivityProcessInstance.processInstanceKey);
+
+  await t.click(screen.queryByRole('button', {name: /reset filters/i}));
+
+  // wait for reset filter to be applied, see there is more than one result again
+  await t
+    .expect(
+      within(screen.queryByTestId('instances-list')).getAllByRole('row').count
+    )
+    .gt(1);
+
+  // filter has been reset
+  await t
+    .expect(
+      await screen.queryByRole('textbox', {
+        name: 'Parent Instance Id',
+      }).value
+    )
+    .eql('');
+});
+
 test('Error Message filter', async (t) => {
   await t.expect(screen.queryByTestId('instances-list').exists).ok();
 
@@ -1025,6 +1073,7 @@ test('Should set filters from url', async (t) => {
       variableValue: '123',
       operationId: '5be8a137-fbb4-4c54-964c-9c7be98b80e6',
       flowNodeId: 'alwaysFails',
+      parentInstanceId: '2251799813685731',
     })}`
   );
 
@@ -1043,6 +1092,8 @@ test('Should set filters from url', async (t) => {
       }).value
     )
     .eql('2251799813685255')
+    .expect(screen.queryByRole('textbox', {name: 'Parent Instance Id'}).value)
+    .eql('2251799813685731')
     .expect(screen.queryByRole('textbox', {name: /error message/i}).value)
     .eql('some error message')
     .expect(screen.queryByRole('textbox', {name: /start date/i}).value)
@@ -1092,6 +1143,8 @@ test('Should set filters from url', async (t) => {
       }).value
     )
     .eql('2251799813685255')
+    .expect(screen.queryByRole('textbox', {name: 'Parent Instance Id'}).value)
+    .eql('2251799813685731')
     .expect(screen.queryByRole('textbox', {name: /error message/i}).value)
     .eql('some error message')
     .expect(screen.queryByRole('textbox', {name: /start date/i}).value)

@@ -33,6 +33,7 @@ const Label = styled.label<LabelProps>`
 
 const Input = styled.input`
   position: absolute;
+  z-index: 1;
   opacity: 0;
   height: 100%;
   width: 15px;
