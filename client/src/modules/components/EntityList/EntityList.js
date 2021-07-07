@@ -87,9 +87,23 @@ export default function EntityList({
             <Input
               className={classnames({hidden: !filteredEntriesWithActions.length})}
               type="checkbox"
-              checked={selected.length === filteredEntriesWithActions.length}
+              checked={filteredEntriesWithActions.every((entry) =>
+                selected.some(({id}) => entry.id === id)
+              )}
               onChange={({target: {checked}}) =>
-                checked ? setSelected(filteredEntriesWithActions) : setSelected([])
+                checked
+                  ? setSelected(
+                      selected.concat(
+                        filteredEntriesWithActions.filter(
+                          (entry) => !selected.some(({id}) => entry.id === id)
+                        )
+                      )
+                    )
+                  : setSelected(
+                      selected.filter(
+                        (entry) => !filteredEntriesWithActions.some(({id}) => entry.id === id)
+                      )
+                    )
               }
             />
             {columns
