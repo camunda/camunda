@@ -841,7 +841,6 @@
               different branches which need to compare to different versions
               -->
             <oldVersion>${backwards.compat.version}</oldVersion>
-            <skip>${skipChecks}</skip>
           </configuration>
         </plugin>
 
