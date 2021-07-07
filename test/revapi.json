@@ -62,6 +62,32 @@
           "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
           "oldArchiveRole": "supplementary",
           "breaksSemanticVersioning": "true"
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void io.camunda.zeebe.logstreams.log.LogStream::registerOnCommitPositionUpdatedCondition(io.camunda.zeebe.util.sched.ActorCondition)",
+          "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
+          "package": "io.camunda.zeebe.logstreams.log",
+          "classQualifiedName": "io.camunda.zeebe.logstreams.log.LogStream",
+          "classSimpleName": "LogStream",
+          "methodName": "registerOnCommitPositionUpdatedCondition",
+          "elementKind": "method",
+          "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
+          "oldArchiveRole": "supplementary",
+          "breaksSemanticVersioning": "true"
+        },
+        {
+          "code": "java.method.removed",
+          "old": "method void io.camunda.zeebe.logstreams.log.LogStream::removeOnCommitPositionUpdatedCondition(io.camunda.zeebe.util.sched.ActorCondition)",
+          "justification": "LogStream is an internal api. Changes to this interface is acceptable.",
+          "package": "io.camunda.zeebe.logstreams.log",
+          "classQualifiedName": "io.camunda.zeebe.logstreams.log.LogStream",
+          "classSimpleName": "LogStream",
+          "methodName": "removeOnCommitPositionUpdatedCondition",
+          "elementKind": "method",
+          "oldArchive": "io.camunda:zeebe-logstreams:jar:1.0.0",
+          "oldArchiveRole": "supplementary",
+          "breaksSemanticVersioning": "true"
         }
       ]
     }
