@@ -65,4 +65,8 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    * @param condition the condition which should be removed
    */
   void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
+
+  void registerRecordAvailableListener(LogRecordAwaiter recordAwaiter);
+
+  void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
 }

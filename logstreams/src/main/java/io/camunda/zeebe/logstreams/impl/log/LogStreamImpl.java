@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.dispatcher.Dispatchers;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -39,6 +40,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
   private final ActorConditions onCommitPositionUpdatedConditions;
+  private final Set<LogRecordAwaiter> recordAwaiters = new HashSet<>();
   private final String logName;
   private final int partitionId;
   private final int maxFrameLength;
@@ -128,6 +130,20 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   @Override
+  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.add(recordAwaiter));
+  }
+
+  @Override
+  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.remove(recordAwaiter));
+  }
+
+  private void notifyRecordAwaiters() {
+    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
+  }
+
+  @Override
   public String getName() {
     return actorName;
   }
@@ -186,6 +202,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
   private void onCommit() {
     actor.call(onCommitPositionUpdatedConditions::signalConsumers);
+    actor.call(this::notifyRecordAwaiters);
   }
 
   private <T extends LogStreamWriter> void createWriter(
