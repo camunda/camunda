@@ -5,7 +5,12 @@
  */
 
 import * as React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {
   mockGetTaskVariables,
@@ -469,7 +474,13 @@ describe('<Variables />', () => {
 
     userEvent.click(screen.getByDisplayValue('"000'));
 
-    expect(await screen.findByDisplayValue('"0001"')).toBeInTheDocument();
+    expect(screen.getByTestId('textarea-loading-overlay')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('textarea-loading-overlay'),
+    );
+
+    expect(screen.getByDisplayValue('"0001"')).toBeInTheDocument();
 
     userEvent.clear(screen.getByDisplayValue('"0001"'));
     userEvent.type(screen.getByLabelText('myVar'), '"newVariableValue"');

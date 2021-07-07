@@ -54,6 +54,7 @@ import {FormValues} from './types';
 import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useTaskVariables} from 'modules/queries/get-task-variables';
+import {LoadingTextarea} from './LoadingTextarea';
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
@@ -67,6 +68,7 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
     variables,
     loading: areVariablesLoading,
     queryFullVariable,
+    variablesLoadingFullValue,
   } = useTaskVariables(task.id);
 
   if (loading || areVariablesLoading) {
@@ -222,7 +224,10 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
                                     }
                                   >
                                     {({input, meta}) => (
-                                      <EditTextarea
+                                      <LoadingTextarea
+                                        isLoading={variablesLoadingFullValue.includes(
+                                          variable.id,
+                                        )}
                                         {...input}
                                         id={variable.name}
                                         aria-invalid={meta.error !== undefined}

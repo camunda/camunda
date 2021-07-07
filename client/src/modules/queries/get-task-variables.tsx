@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {gql, useLazyQuery, useQuery} from '@apollo/client';
+import {gql, useQuery} from '@apollo/client';
 import {Task, Variable} from 'modules/types';
-import {useEffect} from 'react';
+import {useState} from 'react';
 
 type TaskVariablesQueryVariables = Pick<Task, 'id'>;
 
@@ -147,31 +147,57 @@ function useTaskVariables(id: Task['id']) {
       id,
     },
   });
-  const [getFullVariable, {data: fullVariableData}] = useLazyQuery<
-    GetFullVariableValueVariables,
-    FullVariableQueryVariables
-  >(GET_FULL_VARIABLE_VALUE);
+  const [variablesLoadingFullValue, setVariablesLoadingFullValue] = useState<
+    Variable['id'][]
+  >([]);
 
-  useEffect(() => {
-    if (fullVariableData && data) {
-      client.writeQuery({
-        query: GET_TASK_VARIABLES,
-        data: {
-          task: {
-            variables: data.task.variables.map((variable) =>
-              variable.id === fullVariableData.variable.id
-                ? {
-                    ...variable,
-                    isValueTruncated: false,
-                    previewValue: fullVariableData.variable.value,
-                  }
-                : variable,
-            ),
-          },
-        },
-      });
+  async function queryFullVariable(id: Variable['id']) {
+    if (data === undefined) {
+      return;
     }
-  }, [fullVariableData, client, data]);
+
+    setVariablesLoadingFullValue((ids) => {
+      if (ids.includes(id)) {
+        return ids;
+      }
+
+      return [...ids, id];
+    });
+    const {data: fullVariableData} = await client.query<
+      GetFullVariableValueVariables,
+      FullVariableQueryVariables
+    >({
+      query: GET_FULL_VARIABLE_VALUE,
+      variables: {
+        id,
+      },
+    });
+
+    setVariablesLoadingFullValue((ids) =>
+      ids.filter((id) => id !== fullVariableData.variable.id),
+    );
+
+    if (fullVariableData === undefined) {
+      return;
+    }
+
+    client.writeQuery({
+      query: GET_TASK_VARIABLES,
+      data: {
+        task: {
+          variables: data.task.variables.map((variable) =>
+            variable.id === fullVariableData.variable.id
+              ? {
+                  ...variable,
+                  isValueTruncated: false,
+                  previewValue: fullVariableData.variable.value,
+                }
+              : variable,
+          ),
+        },
+      },
+    });
+  }
 
   return {
     variables:
@@ -180,9 +206,8 @@ function useTaskVariables(id: Task['id']) {
         value: previewValue,
       })) ?? [],
     loading: loading || data?.task?.variables === undefined,
-    queryFullVariable(id: Variable['id']) {
-      getFullVariable({variables: {id}});
-    },
+    queryFullVariable,
+    variablesLoadingFullValue,
   };
 }
 
