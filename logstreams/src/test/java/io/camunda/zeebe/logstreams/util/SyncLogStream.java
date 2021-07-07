@@ -16,6 +16,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 public class SyncLogStream implements SynchronousLogStream {
 
   private final LogStream logStream;
+  private long commitPosition = -1;
 
   public SyncLogStream(final LogStream logStream) {
     this.logStream = logStream;
@@ -51,12 +52,12 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public long getCommitPosition() {
-    return logStream.getCommitPositionAsync().join();
+    return commitPosition;
   }
 
   @Override
   public void setCommitPosition(final long position) {
-    logStream.setCommitPosition(position);
+    commitPosition = position;
   }
 
   @Override

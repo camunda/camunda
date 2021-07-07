@@ -53,7 +53,7 @@ public final class LogStorageAppenderHealthTest {
 
     appender =
         new LogStorageAppender(
-            "appender", PARTITION_ID, failingLogStorage, subscription, MAX_FRAGMENT_SIZE, l -> {});
+            "appender", PARTITION_ID, failingLogStorage, subscription, MAX_FRAGMENT_SIZE, () -> {});
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
   }
 

@@ -48,7 +48,6 @@ public final class LogStreamTest {
     // then
     assertThat(logStream.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(logStream.getLogName()).isEqualTo("0");
-    assertThat(logStream.getCommitPosition()).isEqualTo(-1L);
 
     assertThat(logStream.newLogStreamReader()).isNotNull();
     assertThat(logStream.newLogStreamBatchWriter()).isNotNull();
