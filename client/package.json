@@ -67,7 +67,7 @@
     "@testing-library/react": "^11.2.7",
     "@testing-library/testcafe": "^4.4.0",
     "@testing-library/user-event": "^13.1.9",
-    "@types/history": "^4.7.8",
+    "@types/history": "^4.7.9",
     "@types/jest": "^26.0.23",
     "@types/node": "^15.14.0",
     "@types/react": "^17.0.13",
