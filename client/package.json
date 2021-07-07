@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@storybook/addons": "^6.3.2",
-    "@storybook/preset-create-react-app": "^3.1.6",
+    "@storybook/preset-create-react-app": "^3.2.0",
     "@storybook/react": "^6.1.20",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^11.2.7",
