@@ -46,6 +46,7 @@ public class NonInterruptingEventSubprocessTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "proc";
+  private static final String CORRELATION_KEY = "123";
 
   private static String messageName;
 
@@ -60,6 +61,7 @@ public class NonInterruptingEventSubprocessTest {
   public Consumer<Long> triggerEventSubprocess;
 
   private ProcessMetadataValue currentProcess;
+  private String correlationKey;
 
   @Parameterized.Parameters(name = "{0} event subprocess")
   public static Object[][] parameters() {
@@ -88,7 +90,11 @@ public class NonInterruptingEventSubprocessTest {
                   .withProcessInstanceKey(key)
                   .withMessageName(messageName)
                   .await();
-              ENGINE.message().withName(messageName).withCorrelationKey("123").publish();
+              ENGINE
+                  .message()
+                  .withName(messageName)
+                  .withCorrelationKey("message-" + CORRELATION_KEY)
+                  .publish();
             })
       },
     };
@@ -106,6 +112,7 @@ public class NonInterruptingEventSubprocessTest {
   @Before
   public void init() {
     messageName = helper.getMessageName();
+    correlationKey = String.format("%s-%s", testName, CORRELATION_KEY);
   }
 
   @Test
@@ -248,6 +255,50 @@ public class NonInterruptingEventSubprocessTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  /** Specifically reproduces https://github.com/camunda-cloud/zeebe/issues/7097 */
+  @Test
+  public void shouldInterruptEmbeddedSubProcess() {
+    // when
+    final BpmnModelInstance model = eventSubprocModelWithEmbeddedSubWithBoundaryEvent(builder);
+    final long processInstanceKey = createInstanceAndTriggerEvent(model);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withElementId("embedded_sub_task")
+        .await();
+
+    // when
+    ENGINE.message().withName("bndr").withCorrelationKey(correlationKey).publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
+                .limit(
+                    r ->
+                        r.getValue().getBpmnElementType() == BpmnElementType.EVENT_SUB_PROCESS
+                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   @Test
   public void shouldNotPropagateVariablesToScope() {
     // given
@@ -274,7 +325,7 @@ public class NonInterruptingEventSubprocessTest {
         job.getValue().getJobs().iterator().next().getVariables();
 
     // when
-    assertThat(jobVariables).containsOnly(Map.entry("key", 123));
+    assertThat(jobVariables).containsOnly(Map.entry("key", correlationKey));
   }
 
   private static void assertEventSubprocessLifecycle(final long processInstanceKey) {
@@ -320,7 +371,7 @@ public class NonInterruptingEventSubprocessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(Map.of("key", 123))
+            .withVariables(Map.of("key", correlationKey))
             .create();
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -385,6 +436,38 @@ public class NonInterruptingEventSubprocessTest {
     return modelBuilder
         .startEvent("start_proc")
         .serviceTask("task", t -> t.zeebeJobType(procTaskType))
+        .endEvent("end_proc")
+        .done();
+  }
+
+  private static BpmnModelInstance eventSubprocModelWithEmbeddedSubWithBoundaryEvent(
+      final Function<StartEventBuilder, StartEventBuilder> startBuilder) {
+    final var builder = Bpmn.createExecutableProcess(PROCESS_ID);
+    startBuilder
+        .apply(
+            builder
+                .eventSubProcess("event_sub_proc")
+                .startEvent("event_sub_start")
+                .interrupting(false))
+        .subProcess(
+            "embedded",
+            s ->
+                s.boundaryEvent(
+                    "boundary-msg",
+                    msg ->
+                        msg.message(m -> m.name("bndr").zeebeCorrelationKeyExpression("key"))
+                            .cancelActivity(true)
+                            .endEvent("boundary-end")))
+        .embeddedSubProcess()
+        .startEvent("embedded_sub_start")
+        .serviceTask("embedded_sub_task", t -> t.zeebeJobType("embed"))
+        .endEvent("embedded_sub_end")
+        .moveToNode("embedded")
+        .endEvent("event_sub_end");
+
+    return builder
+        .startEvent("start_proc")
+        .serviceTask("task", t -> t.zeebeJobType("type"))
         .endEvent("end_proc")
         .done();
   }

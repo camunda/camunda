@@ -26,11 +26,13 @@ import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -189,10 +191,10 @@ public interface RaftServer {
   void removeRoleChangeListener(RaftRoleChangeListener listener);
 
   /** Adds a failure listener */
-  void addFailureListener(Runnable failureListener);
+  void addFailureListener(FailureListener listener);
 
   /** Removes a failure listener */
-  void removeFailureListener(Runnable failureListener);
+  void removeFailureListener(FailureListener listener);
 
   /**
    * Bootstraps a single-node cluster.
@@ -421,6 +423,7 @@ public interface RaftServer {
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected int maxAppendsPerFollower = 2;
     protected int maxAppendBatchSize = 32 * 1024;
+    protected RaftElectionConfig electionConfig = RaftElectionConfig.ofDefaultElection();
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -483,17 +486,6 @@ public interface RaftServer {
     public Builder withThreadContextFactory(final RaftThreadContextFactory threadContextFactory) {
       this.threadContextFactory =
           checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
-      return this;
-    }
-
-    /**
-     * Sets the factory that creates a {@link Random}. Raft uses it to randomize election timeouts.
-     * This factory is useful in testing, when we want to control the execution.
-     *
-     * @return The Raft server builder.
-     */
-    public Builder withRandomFactory(final Supplier<Random> randomFactory) {
-      this.randomFactory = checkNotNull(randomFactory, "randomFactory cannot be null");
       return this;
     }
 
@@ -563,6 +555,11 @@ public interface RaftServer {
 
     public Builder withEntryValidator(final EntryValidator entryValidator) {
       this.entryValidator = entryValidator;
+      return this;
+    }
+
+    public Builder withElectionConfig(final RaftElectionConfig electionConfig) {
+      this.electionConfig = electionConfig;
       return this;
     }
   }

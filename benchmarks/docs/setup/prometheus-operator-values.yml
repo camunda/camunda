@@ -2,7 +2,30 @@ alertmanager:
   enabled: false
 
 grafana:
-  adminPassword: camunda
+  image:
+    tag: 7.4.5
+  admin:
+    existingSecret: grafana-admin-password
+    userKey: admin-user
+    passwordKey: admin-password
+  grafana.ini:
+    auth.github:
+      enabled: true
+      allow_sign_up: true
+      scopes: user:email,read:org
+      auth_url: https://github.com/login/oauth/authorize
+      token_url: https://github.com/login/oauth/access_token
+      api_url: https://api.github.com/user
+      allowed_organizations: zeebe-io camunda camunda-cloud
+      client_id: "$__file{/etc/secrets/auth-github-oauth/client_id}"
+      client_secret: "$__file{/etc/secrets/auth-github-oauth/client_secret}"
+      role_attribute_path: "editor"
+  extraSecretMounts:
+    - name: auth-github-oauth
+      secretName: auth-github-oauth
+      defaultMode: 0440
+      mountPath: /etc/secrets/auth-github-oauth
+      readOnly: true
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1

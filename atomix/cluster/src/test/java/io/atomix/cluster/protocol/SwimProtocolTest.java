@@ -255,7 +255,9 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     startProtocol(member);
 
     // then - verify that version 1 is removed and version 2 is added.
-    checkEvent(member1, MEMBER_REMOVED, member2);
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
     checkEvent(member1, MEMBER_ADDED, member);
   }
 

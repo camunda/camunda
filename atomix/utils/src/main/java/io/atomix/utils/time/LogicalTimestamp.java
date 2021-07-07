@@ -54,15 +54,6 @@ public class LogicalTimestamp implements Timestamp {
     return value;
   }
 
-  /**
-   * Returns the timestamp as a version.
-   *
-   * @return the timestamp as a version
-   */
-  public Version asVersion() {
-    return new Version(value);
-  }
-
   @Override
   public int compareTo(final Timestamp o) {
     Preconditions.checkArgument(o instanceof LogicalTimestamp, "Must be LogicalTimestamp", o);

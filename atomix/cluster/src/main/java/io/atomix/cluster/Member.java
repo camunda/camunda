@@ -26,6 +26,7 @@ import java.util.Properties;
 
 /** Represents a node as a member in a cluster. */
 public class Member extends Node {
+  private static final int UNKNOWN_TIMESTAMP = 0;
 
   private final MemberId id;
   private final String zone;
@@ -153,26 +154,29 @@ public class Member extends Node {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id(), address(), zone(), rack(), host(), properties());
+    return Objects.hash(super.hashCode(), id, zone, rack, host, properties);
   }
 
   @Override
-  public boolean equals(final Object object) {
-
-    if (object instanceof Member) {
-      final Member member = (Member) object;
-      return member.id().equals(id())
-          && member.address().equals(address())
-          && Objects.equals(member.zone(), zone())
-          && Objects.equals(member.rack(), rack())
-          && Objects.equals(member.host(), host())
-          && Objects.equals(member.properties(), properties());
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
 
-    if (object instanceof Node) {
-      return object.equals(this);
+    if (!(o instanceof Member)) {
+      return false;
     }
-    return false;
+
+    if (!super.equals(o)) {
+      return false;
+    }
+
+    final Member member = (Member) o;
+    return Objects.equals(id, member.id)
+        && Objects.equals(zone, member.zone)
+        && Objects.equals(rack, member.rack)
+        && Objects.equals(host, member.host)
+        && Objects.equals(properties, member.properties);
   }
 
   @Override
@@ -257,6 +261,6 @@ public class Member extends Node {
    * @return the member timestamp
    */
   public long timestamp() {
-    return 0;
+    return UNKNOWN_TIMESTAMP;
   }
 }

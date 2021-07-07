@@ -11,8 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
@@ -48,20 +48,21 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   public void transform(final UserTask element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
-    final ExecutableServiceTask userTask =
-        process.getElementById(element.getId(), ExecutableServiceTask.class);
+    final ExecutableJobWorkerTask userTask =
+        process.getElementById(element.getId(), ExecutableJobWorkerTask.class);
 
     transformTaskDefinition(userTask);
 
     transformTaskHeaders(element, userTask);
   }
 
-  private void transformTaskDefinition(final ExecutableServiceTask userTask) {
+  private void transformTaskDefinition(final ExecutableJobWorkerTask userTask) {
     userTask.setType(new StaticExpression(Protocol.USER_TASK_JOB_TYPE));
     userTask.setRetries(new StaticExpression("1"));
   }
 
-  private void transformTaskHeaders(final UserTask element, final ExecutableServiceTask userTask) {
+  private void transformTaskHeaders(
+      final UserTask element, final ExecutableJobWorkerTask userTask) {
     final Map<String, String> taskHeaders = new HashMap<>();
 
     collectModelTaskHeaders(element, taskHeaders);

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.exporter.repo;
 
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 public class ExporterDescriptor {
@@ -25,8 +26,11 @@ public class ExporterDescriptor {
 
   public Exporter newInstance() throws ExporterInstantiationException {
     try {
-      return exporterClass.newInstance();
-    } catch (final InstantiationException | IllegalAccessException e) {
+      return exporterClass.getDeclaredConstructor().newInstance();
+    } catch (final InstantiationException
+        | IllegalAccessException
+        | NoSuchMethodException
+        | InvocationTargetException e) {
       throw new ExporterInstantiationException(getId(), e);
     }
   }

@@ -3,14 +3,14 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Workflow Engine</name>
   <artifactId>zeebe-workflow-engine</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <version>1.2.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <dependencies>
@@ -150,6 +150,13 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <scope>test</scope>
+    </dependency>
+
 
     <!-- TEMPORARY -->
 

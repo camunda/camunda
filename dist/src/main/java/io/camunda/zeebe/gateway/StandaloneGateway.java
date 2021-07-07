@@ -17,12 +17,14 @@ import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
@@ -44,12 +46,22 @@ public class StandaloneGateway {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     actorScheduler = createActorScheduler(gatewayCfg);
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
-        cfg -> new BrokerClientImpl(cfg, atomixCluster, actorScheduler, false);
+        cfg ->
+            new BrokerClientImpl(
+                cfg,
+                atomixCluster.getMessagingService(),
+                atomixCluster.getMembershipService(),
+                atomixCluster.getEventService(),
+                actorScheduler,
+                false);
     gateway = new Gateway(gatewayCfg, brokerClientFactory, actorScheduler);
 
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
-        () -> gateway.getBrokerClient().getTopologyManager().getTopology());
+        () ->
+            Optional.ofNullable(gateway.getBrokerClient())
+                .map(BrokerClient::getTopologyManager)
+                .map(BrokerTopologyManager::getTopology));
   }
 
   private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {

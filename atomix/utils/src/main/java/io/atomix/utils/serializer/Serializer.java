@@ -30,16 +30,6 @@ public interface Serializer {
   }
 
   /**
-   * Creates a new serializer builder.
-   *
-   * @param name the serializer name
-   * @return a new serializer builder
-   */
-  static SerializerBuilder builder(final String name) {
-    return new SerializerBuilder(name);
-  }
-
-  /**
    * Serialize the specified object.
    *
    * @param object object to serialize.

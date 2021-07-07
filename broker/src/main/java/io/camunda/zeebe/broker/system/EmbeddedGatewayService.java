@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.broker.system;
 
-import io.atomix.core.Atomix;
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -22,9 +24,15 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   private final Gateway gateway;
 
   public EmbeddedGatewayService(
-      final BrokerCfg configuration, final ActorScheduler actorScheduler, final Atomix atomix) {
+      final BrokerCfg configuration,
+      final ActorScheduler actorScheduler,
+      final MessagingService messagingService,
+      final ClusterMembershipService membershipService,
+      final ClusterEventService eventService) {
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
-        cfg -> new BrokerClientImpl(cfg, atomix, actorScheduler, false);
+        cfg ->
+            new BrokerClientImpl(
+                cfg, messagingService, membershipService, eventService, actorScheduler, false);
     gateway = new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);
     startGateway();
   }

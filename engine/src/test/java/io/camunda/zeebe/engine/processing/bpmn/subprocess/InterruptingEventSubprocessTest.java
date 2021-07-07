@@ -377,22 +377,20 @@ public class InterruptingEventSubprocessTest {
 
     // then
     assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .messageSubscriptionRecords()
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withMessageName("other-message"))
-        .extracting(Record::getIntent)
-        .contains(MessageSubscriptionIntent.DELETED);
+                .withMessageName("other-message")
+                .findFirst())
+        .describedAs("Expected the message subscription to be deleted")
+        .isPresent();
 
     assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .timerRecords()
+            RecordingExporter.timerRecords(TimerIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withHandlerNodeId("other-timer"))
-        .extracting(Record::getIntent)
-        .contains(TimerIntent.CANCELED);
+                .withHandlerNodeId("other-timer")
+                .findFirst())
+        .describedAs("Expected the timer to be canceled")
+        .isPresent();
   }
 
   private static void assertEventSubprocessLifecycle(final long processInstanceKey) {

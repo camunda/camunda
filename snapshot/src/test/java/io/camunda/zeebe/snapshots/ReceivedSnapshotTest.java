@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
+import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class ReceivedSnapshotTest {
+
   private static final Map<String, String> SNAPSHOT_FILE_CONTENTS =
       Map.of(
           "file1", "file1 contents",
@@ -75,7 +77,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldNotCommitUntilPersisted() throws IOException {
+  public void shouldNotCommitUntilPersisted() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -90,7 +92,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldPurgePendingOnPersist() throws IOException {
+  public void shouldPurgePendingOnPersist() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -108,7 +110,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReceiveSnapshot() throws Exception {
+  public void shouldReceiveSnapshot() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -128,7 +130,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldDeletePendingSnapshotDirOnAbort() throws Exception {
+  public void shouldDeletePendingSnapshotDirOnAbort() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot = receiveSnapshot(persistedSnapshot);
@@ -143,7 +145,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldNotDeletePersistedSnapshotOnPurgePendingOnStore() throws Exception {
+  public void shouldNotDeletePersistedSnapshotOnPurgePendingOnStore() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot = receiveSnapshot(persistedSnapshot).persist().join();
@@ -162,37 +164,18 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReturnTrueOnConsumingChunk() throws Exception {
+  public void shouldPersistEvenIfSameChunkIsConsumedMultipleTimes() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
     // when
-    final boolean chunkApplied;
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
-
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      chunkApplied = receivedSnapshot.apply(snapshotChunkReader.next()).join();
-    }
-
-    // then
-    assertThat(chunkApplied).as("the chunk should be successfully applied").isTrue();
-  }
-
-  @Test
-  public void shouldPersistEvenIfSameChunkIsConsumedMultipleTimes() throws Exception {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final boolean chunkApplied;
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final SnapshotChunk chunk = snapshotChunkReader.next();
       receivedSnapshot.apply(chunk).join();
-      chunkApplied = receivedSnapshot.apply(chunk).join();
+      receivedSnapshot.apply(chunk).join();
 
       while (snapshotChunkReader.hasNext()) {
         receivedSnapshot.apply(snapshotChunkReader.next()).join();
@@ -202,14 +185,13 @@ public class ReceivedSnapshotTest {
     final var receivedPersistedSnapshot = receivedSnapshot.persist().join();
 
     // then
-    assertThat(chunkApplied).as("the chunk was successfully applied twice in a row").isTrue();
     assertThat(receivedPersistedSnapshot)
         .as("the snapshot was persisted even if one chunk was applied more than once")
         .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
   }
 
   @Test
-  public void shouldReturnAlreadyExistingSnapshotOnPersist() throws Exception {
+  public void shouldReturnAlreadyExistingSnapshotOnPersist() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var firstReceivedSnapshot = receiveSnapshot(persistedSnapshot);
@@ -238,7 +220,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldBeAbleToAbortAfterPersistFails() throws Exception {
+  public void shouldBeAbleToAbortAfterPersistFails() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot =
@@ -271,7 +253,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReceiveConcurrentlyWithoutOverwritingEachOther() throws Exception {
+  public void shouldReceiveConcurrentlyWithoutOverwritingEachOther() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -288,7 +270,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReceiveConcurrentlyAndPersist() throws Exception {
+  public void shouldReceiveConcurrentlyAndPersist() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -310,7 +292,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldDoNothingOnPersistOfAlreadyCommittedSnapshot() throws Exception {
+  public void shouldDoNothingOnPersistOfAlreadyCommittedSnapshot() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot = receiveSnapshot(persistedSnapshot);
@@ -333,12 +315,11 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReturnFalseOnConsumingChunkWithInvalidSnapshotChecksum() throws Exception {
+  public void shouldCompleteExceptionallyOnConsumingChunkWithInvalidSnapshotChecksum() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
     // when
-    final boolean chunkApplied;
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
 
@@ -348,39 +329,36 @@ public class ReceivedSnapshotTest {
       final var originalChunk = snapshotChunkReader.next();
       final SnapshotChunk corruptedChunk =
           SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xCAFEL);
-      chunkApplied = receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    // then
-    assertThat(chunkApplied)
-        .as("the snapshot chunk should not be applied as it had a different snapshot checksum")
-        .isFalse();
+      // then
+      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .as("the snapshot chunk should not be applied as it had a different snapshot checksum")
+          .hasCauseInstanceOf(SnapshotWriteException.class);
+    }
   }
 
   @Test
-  public void shouldReturnFalseOnConsumingChunkWithInvalidChunkChecksum() throws Exception {
+  public void shouldCompleteExceptionallyOnConsumingChunkWithInvalidChunkChecksum() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
     // when
-    final boolean chunkApplied;
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final SnapshotChunk originalChunk = snapshotChunkReader.next();
       final SnapshotChunk corruptedChunk =
           SnapshotChunkWrapper.withChecksum(originalChunk, 0xCAFEL);
-      chunkApplied = receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    // then
-    assertThat(chunkApplied)
-        .as("the chunk should not be applied as its content checksum is not 0xCAFEL")
-        .isFalse();
+      // then
+      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .as("the chunk should not be applied as its content checksum is not 0xCAFEL")
+          .hasCauseInstanceOf(SnapshotWriteException.class);
+    }
   }
 
   @Test
-  public void shouldNotPersistWhenSnapshotChecksumIsWrong() throws Exception {
+  public void shouldNotPersistWhenSnapshotChecksumIsWrong() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -404,7 +382,7 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldNotPersistWhenSnapshotIsPartial() throws Exception {
+  public void shouldNotPersistWhenSnapshotIsPartial() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -423,12 +401,11 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReturnFalseOnConsumingChunkWithNotEqualTotalCount() throws Exception {
+  public void shouldCompleteExceptionallyOnConsumingChunkWithNotEqualTotalCount() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
     // when
-    final boolean chunkApplied;
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
@@ -437,17 +414,16 @@ public class ReceivedSnapshotTest {
 
       final var corruptedChunk =
           SnapshotChunkWrapper.withTotalCount(snapshotChunkReader.next(), 55);
-      chunkApplied = receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    // then
-    assertThat(chunkApplied)
-        .as("the second chunk should not be applied as it reports a different chunk count")
-        .isFalse();
+      // then
+      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .as("the second chunk should not be applied as it reports a different chunk count")
+          .hasCauseInstanceOf(SnapshotWriteException.class);
+    }
   }
 
   @Test
-  public void shouldNotPersistWhenTotalCountIsWrong() throws Exception {
+  public void shouldNotPersistWhenTotalCountIsWrong() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
@@ -472,28 +448,25 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldReturnFalseOnConsumingChunkWithNotEqualSnapshotId() throws Exception {
+  public void shouldCompleteExceptionallyOnConsumingChunkWithNotEqualSnapshotId() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
 
     // when
-    final boolean chunkApplied;
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final var originalChunk = snapshotChunkReader.next();
       final SnapshotChunk corruptedChunk = SnapshotChunkWrapper.withSnapshotId(originalChunk, "id");
-      chunkApplied = receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    // then
-    assertThat(chunkApplied)
-        .as("the chunk should not be applied since it has a different snapshot ID than expected")
-        .isFalse();
+      // then
+      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .as("the chunk should not be applied since it has a different snapshot ID than expected")
+          .hasCauseInstanceOf(SnapshotWriteException.class);
+    }
   }
 
-  private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot)
-      throws IOException {
+  private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
 

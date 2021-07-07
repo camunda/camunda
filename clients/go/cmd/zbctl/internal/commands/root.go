@@ -19,6 +19,7 @@ import (
 	"github.com/camunda-cloud/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -27,15 +28,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	DefaultAddressHost = "127.0.0.1"
-	DefaultAddressPort = "26500"
-	defaultTimeout     = 10 * time.Second
-)
+const defaultTimeout = 10 * time.Second
 
 var client zbc.Client
 
 var addressFlag string
+var hostFlag string
+var portFlag string
 var caCertPathFlag string
 var clientIDFlag string
 var clientSecretFlag string
@@ -77,7 +76,9 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+zbc.GatewayAddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", DefaultAddressHost, DefaultAddressPort)+"')")
+	rootCmd.PersistentFlags().StringVar(&hostFlag, "host", "", fmt.Sprintf("Specify the host part of the gateway address. If omitted, will read from the environment variable '%s' (default '%s')", zbc.GatewayHostEnvVar, zbc.DefaultAddressHost))
+	rootCmd.PersistentFlags().StringVar(&portFlag, "port", "", fmt.Sprintf("Specify the port part of the gateway address. If omitted, will read from the environment variable '%s' (default '%s')", zbc.GatewayPortEnvVar, zbc.DefaultAddressPort))
+	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+zbc.GatewayAddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", zbc.DefaultAddressHost, zbc.DefaultAddressPort)+"')")
 	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable '"+zbc.CaCertificatePath+"'")
 	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientIdEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
@@ -92,7 +93,10 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 	var err error
 	var credsProvider zbc.CredentialsProvider
 
-	host, port := parseAddress()
+	host, port, err := parseAddress()
+	if err != nil {
+		return err
+	}
 
 	// override env vars with CLI parameters, if any
 	if err := setSecurityParamsAsEnv(); err != nil {
@@ -166,23 +170,68 @@ func shouldOverwriteEnvVar(cliParam, envVar string) bool {
 	return cliParameterSet || !exists
 }
 
-func parseAddress() (address string, port string) {
-	address = DefaultAddressHost
-	port = DefaultAddressPort
+func parseAddress() (host string, port string, err error) {
+
+	if shouldUseAddress() {
+		return getHostPortFromAddress()
+	}
+	host, port = getHostPort()
+	return host, port, nil
+}
+
+func parseHostAndPortFromAddress(parsedAddress string) (string, string, error) {
+	host, port, err := net.SplitHostPort(parsedAddress)
+	if err != nil && strings.Contains(err.Error(), "missing port in address") {
+		host = parsedAddress
+		port = zbc.DefaultAddressPort
+		err = nil
+	}
+	return host, port, err
+}
+
+func shouldUseAddress() bool {
+	_, hostEnvExists := os.LookupEnv(zbc.GatewayHostEnvVar)
+	_, portEnvExists := os.LookupEnv(zbc.GatewayPortEnvVar)
+	return len(hostFlag) == 0 && len(portFlag) == 0 && !portEnvExists && !hostEnvExists
+}
+
+func getHostPortFromAddress() (host string, port string, err error) {
+	host = zbc.DefaultAddressHost
+	port = zbc.DefaultAddressPort
 
 	if len(addressFlag) > 0 {
-		address = addressFlag
-	} else if addressEnv, exists := os.LookupEnv(zbc.GatewayAddressEnvVar); exists {
-		address = addressEnv
+		host, port, err = parseHostAndPortFromAddress(addressFlag)
+	} else {
+		addressEnv, addressEnvExists := os.LookupEnv(zbc.GatewayAddressEnvVar)
+		if addressEnvExists {
+			host, port, err = parseHostAndPortFromAddress(addressEnv)
+		}
+	}
+	return host, port, err
+}
+
+func getHostPort() (host string, port string) {
+	host = zbc.DefaultAddressHost
+	port = zbc.DefaultAddressPort
+
+	lenOfHostFlag := len(hostFlag)
+	lenOfPortFlag := len(portFlag)
+	hostEnv, hostEnvExists := os.LookupEnv(zbc.GatewayHostEnvVar)
+	portEnv, portEnvExists := os.LookupEnv(zbc.GatewayPortEnvVar)
+
+	if lenOfHostFlag > 0 {
+		host = hostFlag
+	} else if hostEnvExists {
+		host = hostEnv
 	}
 
-	if strings.Contains(address, ":") {
-		parts := strings.Split(address, ":")
-		address = parts[0]
-		port = parts[1]
+	if lenOfPortFlag > 0 {
+		port = portFlag
+	} else if portEnvExists {
+		port = portEnv
 	}
 
-	return
+	return host, port
 }
 
 func keyArg(key *int64) cobra.PositionalArgs {

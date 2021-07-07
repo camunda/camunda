@@ -9,86 +9,64 @@ package io.camunda.zeebe.broker.exporter.jar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assume.assumeTrue;
 
-import io.camunda.zeebe.broker.exporter.util.JarCreatorRule;
-import io.camunda.zeebe.broker.exporter.util.TestJarExporter;
+import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
 import java.io.File;
 import java.io.IOException;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-public final class ExporterJarRepositoryTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class ExporterJarRepositoryTest {
   private final ExporterJarRepository jarRepository = new ExporterJarRepository();
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
-  @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
 
   @Test
-  public void shouldThrowExceptionOnLoadIfNotAJar() throws IOException {
+  void shouldThrowExceptionOnLoadIfNotAJar(final @TempDir Path tempDir) throws IOException {
     // given
-    final File fake = temporaryFolder.newFile("fake-file");
+    final var fake = tempDir.resolve("fake-file");
+    Files.writeString(fake, "foo");
 
     // then
-    assertThatThrownBy(() -> jarRepository.load(fake.getAbsolutePath()))
+    assertThatThrownBy(() -> jarRepository.load(fake)).isInstanceOf(ExporterJarLoadException.class);
+  }
+
+  @Test
+  void shouldThrowExceptionIfJarMissing(final @TempDir Path tempDir) {
+    // given
+    final var dummy = tempDir.resolve("missing.jar");
+
+    // then
+    assertThatThrownBy(() -> jarRepository.load(dummy))
         .isInstanceOf(ExporterJarLoadException.class);
   }
 
   @Test
-  @Ignore // Temporary disable.. doesn't work on gcloud
-  public void shouldThrowExceptionOnLoadIfNotReadable() throws Exception {
+  void shouldLoadClassLoaderForJar(final @TempDir File tempDir) throws IOException {
     // given
-    final File dummy = temporaryFolder.newFile("unreadable.jar");
-
-    // when (ignoring test if file cannot be set to not be readable)
-    assumeTrue(dummy.setReadable(false));
-
-    // then
-    // System.out.println("was set = " + isSet);
-    assertThatThrownBy(() -> jarRepository.load(dummy.getAbsolutePath()))
-        .isInstanceOf(ExporterJarLoadException.class);
-  }
-
-  @Test
-  public void shouldThrowExceptionIfJarMissing() throws IOException {
-    // given
-    final File dummy = temporaryFolder.newFile("missing.jar");
+    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
 
     // when
-    assertThat(dummy.delete()).isTrue();
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
 
     // then
-    assertThatThrownBy(() -> jarRepository.load(dummy.getAbsolutePath()))
-        .isInstanceOf(ExporterJarLoadException.class);
-  }
-
-  @Test
-  public void shouldLoadClassLoaderForJar() throws IOException {
-    // given
-    final File dummy = temporaryFolder.newFile("readable.jar");
-
-    // when (ignoring test if file cannot be set to be readable)
-    assumeTrue(dummy.setReadable(true));
-
-    // then
-    assertThat(jarRepository.load(dummy.getAbsolutePath()))
+    assertThat(jarRepository.load(jarFile.getAbsolutePath()))
         .isInstanceOf(ExporterJarClassLoader.class);
   }
 
   @Test
-  public void shouldLoadClassLoaderCorrectlyOnlyOnce() throws Exception {
+  void shouldLoadClassLoaderCorrectlyOnlyOnce(final @TempDir File tempDir) throws Exception {
     // given
-    final Class exportedClass = TestJarExporter.class;
-    final File jarFile = jarCreator.create(exportedClass);
+    final var exporterClass = ExternalExporter.createUnloadedExporterClass();
+    final var jarFile = exporterClass.toJar(new File(tempDir, "exporter.jar"));
 
     // when
-    final ExporterJarClassLoader classLoader = jarRepository.load(jarFile.toPath());
+    final var classLoader = jarRepository.load(jarFile.toPath());
 
     // then
-    assertThat(classLoader.loadClass(exportedClass.getCanonicalName())).isNotEqualTo(exportedClass);
     assertThat(jarRepository.load(jarFile.toPath())).isEqualTo(classLoader);
   }
 }

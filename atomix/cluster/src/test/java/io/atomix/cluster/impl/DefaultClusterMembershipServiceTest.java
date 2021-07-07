@@ -16,249 +16,177 @@
  */
 package io.atomix.cluster.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.BootstrapService;
 import io.atomix.cluster.ClusterMembershipEvent;
-import io.atomix.cluster.ClusterMembershipEventListener;
-import io.atomix.cluster.ManagedClusterMembershipService;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.MemberId;
-import io.atomix.cluster.Node;
 import io.atomix.cluster.TestBootstrapService;
+import io.atomix.cluster.TestGroupMembershipProtocol;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.cluster.discovery.ManagedNodeDiscoveryService;
 import io.atomix.cluster.messaging.impl.TestMessagingServiceFactory;
 import io.atomix.cluster.messaging.impl.TestUnicastServiceFactory;
-import io.atomix.cluster.protocol.HeartbeatMembershipProtocol;
-import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
+import io.atomix.cluster.protocol.GroupMembershipEvent;
 import io.atomix.utils.Version;
-import io.atomix.utils.net.Address;
-import java.time.Duration;
-import java.util.Collection;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-/** Default cluster service test. */
-public class DefaultClusterMembershipServiceTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class DefaultClusterMembershipServiceTest {
 
-  private Member buildMember(final int memberId) {
-    return Member.builder(String.valueOf(memberId))
-        .withHost("localhost")
-        .withPort(memberId)
-        .build();
-  }
+  private final TestMessagingServiceFactory messagingServiceFactory =
+      new TestMessagingServiceFactory();
+  private final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
+  private final Member localMember = Member.member("0", "localhost:5000");
+  private final Version version = Version.from("1.0.0");
+  private final BootstrapService bootstrapService =
+      new TestBootstrapService(
+          messagingServiceFactory.newMessagingService(localMember.address()),
+          unicastServiceFactory.newUnicastService(localMember.address()));
+  private final ManagedNodeDiscoveryService discoveryService =
+      new DefaultNodeDiscoveryService(
+          bootstrapService, localMember, BootstrapDiscoveryProvider.builder().build());
 
-  private Collection<Node> buildBootstrapNodes(final int nodes) {
-    return IntStream.range(1, nodes + 1)
-        .mapToObj(
-            id ->
-                Node.builder()
-                    .withId(String.valueOf(id))
-                    .withAddress(Address.from("localhost", id))
-                    .build())
-        .collect(Collectors.toList());
+  // keep the type as a test type so we can use its test utilities
+  private final TestGroupMembershipProtocol protocol = new TestGroupMembershipProtocol();
+
+  @Test
+  void shouldManageDiscoveryService() {
+    // given
+    final var membershipService =
+        new DefaultClusterMembershipService(
+            localMember, version, discoveryService, bootstrapService, protocol);
+
+    // when - then
+    membershipService.start().join();
+    assertThat(discoveryService.isRunning()).as("the discovery service is now running").isTrue();
+
+    // when - then
+    membershipService.stop().join();
+    assertThat(discoveryService.isRunning())
+        .as("the discovery service is not running anymore")
+        .isFalse();
   }
 
   @Test
-  public void testClusterService() throws Exception {
-    final TestMessagingServiceFactory messagingServiceFactory = new TestMessagingServiceFactory();
-    final TestUnicastServiceFactory unicastServiceFactory = new TestUnicastServiceFactory();
-
-    final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
-
-    final Member localMember1 = buildMember(1);
-    final BootstrapService bootstrapService1 =
-        new TestBootstrapService(
-            messagingServiceFactory.newMessagingService(localMember1.address()).start().join(),
-            unicastServiceFactory.newUnicastService(localMember1.address()).start().join());
-    final ManagedClusterMembershipService clusterService1 =
+  void shouldGetLocalMember() {
+    // given
+    final var membershipService =
         new DefaultClusterMembershipService(
-            localMember1,
-            Version.from("1.0.0"),
-            new DefaultNodeDiscoveryService(
-                bootstrapService1,
-                localMember1,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            bootstrapService1,
-            new HeartbeatMembershipProtocol(
-                new HeartbeatMembershipProtocolConfig().setFailureTimeout(Duration.ofSeconds(2))));
+            localMember, version, discoveryService, bootstrapService, protocol);
 
-    final Member localMember2 = buildMember(2);
-    final BootstrapService bootstrapService2 =
-        new TestBootstrapService(
-            messagingServiceFactory.newMessagingService(localMember2.address()).start().join(),
-            unicastServiceFactory.newUnicastService(localMember2.address()).start().join());
-    final ManagedClusterMembershipService clusterService2 =
-        new DefaultClusterMembershipService(
-            localMember2,
-            Version.from("1.0.0"),
-            new DefaultNodeDiscoveryService(
-                bootstrapService2,
-                localMember2,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            bootstrapService2,
-            new HeartbeatMembershipProtocol(
-                new HeartbeatMembershipProtocolConfig().setFailureTimeout(Duration.ofSeconds(2))));
+    // when
+    membershipService.start().join();
 
-    final Member localMember3 = buildMember(3);
-    final BootstrapService bootstrapService3 =
-        new TestBootstrapService(
-            messagingServiceFactory.newMessagingService(localMember3.address()).start().join(),
-            unicastServiceFactory.newUnicastService(localMember3.address()).start().join());
-    final ManagedClusterMembershipService clusterService3 =
-        new DefaultClusterMembershipService(
-            localMember3,
-            Version.from("1.0.1"),
-            new DefaultNodeDiscoveryService(
-                bootstrapService3,
-                localMember3,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            bootstrapService3,
-            new HeartbeatMembershipProtocol(
-                new HeartbeatMembershipProtocolConfig().setFailureTimeout(Duration.ofSeconds(2))));
-
-    assertNull(clusterService1.getMember(MemberId.from("1")));
-    assertNull(clusterService1.getMember(MemberId.from("2")));
-    assertNull(clusterService1.getMember(MemberId.from("3")));
-
-    CompletableFuture.allOf(
-            new CompletableFuture[] {
-              clusterService1.start(), clusterService2.start(), clusterService3.start()
-            })
-        .join();
-
-    Thread.sleep(5000);
-
-    assertEquals(3, clusterService1.getMembers().size());
-    assertEquals(3, clusterService2.getMembers().size());
-    assertEquals(3, clusterService3.getMembers().size());
-
-    assertTrue(clusterService1.getLocalMember().isActive());
-    assertTrue(clusterService1.getMember(MemberId.from("1")).isActive());
-    assertTrue(clusterService1.getMember(MemberId.from("2")).isActive());
-    assertTrue(clusterService1.getMember(MemberId.from("3")).isActive());
-
-    assertEquals("1.0.0", clusterService1.getMember("1").version().toString());
-    assertEquals("1.0.0", clusterService1.getMember("2").version().toString());
-    assertEquals("1.0.1", clusterService1.getMember("3").version().toString());
-
-    final Member anonymousMember = buildMember(4);
-    final BootstrapService ephemeralBootstrapService =
-        new TestBootstrapService(
-            messagingServiceFactory.newMessagingService(anonymousMember.address()).start().join(),
-            unicastServiceFactory.newUnicastService(anonymousMember.address()).start().join());
-    final ManagedClusterMembershipService ephemeralClusterService =
-        new DefaultClusterMembershipService(
-            anonymousMember,
-            Version.from("1.1.0"),
-            new DefaultNodeDiscoveryService(
-                ephemeralBootstrapService,
-                anonymousMember,
-                new BootstrapDiscoveryProvider(bootstrapLocations)),
-            ephemeralBootstrapService,
-            new HeartbeatMembershipProtocol(
-                new HeartbeatMembershipProtocolConfig().setFailureTimeout(Duration.ofSeconds(2))));
-
-    assertFalse(ephemeralClusterService.getLocalMember().isActive());
-
-    assertNull(ephemeralClusterService.getMember(MemberId.from("1")));
-    assertNull(ephemeralClusterService.getMember(MemberId.from("2")));
-    assertNull(ephemeralClusterService.getMember(MemberId.from("3")));
-    assertNull(ephemeralClusterService.getMember(MemberId.from("4")));
-    assertNull(ephemeralClusterService.getMember(MemberId.from("5")));
-
-    ephemeralClusterService.start().join();
-
-    Thread.sleep(1000);
-
-    assertEquals(4, clusterService1.getMembers().size());
-    assertEquals(4, clusterService2.getMembers().size());
-    assertEquals(4, clusterService3.getMembers().size());
-    assertEquals(4, ephemeralClusterService.getMembers().size());
-
-    assertEquals("1.0.0", clusterService1.getMember("1").version().toString());
-    assertEquals("1.0.0", clusterService1.getMember("2").version().toString());
-    assertEquals("1.0.1", clusterService1.getMember("3").version().toString());
-    assertEquals("1.1.0", clusterService1.getMember("4").version().toString());
-
-    clusterService1.stop().join();
-
-    Thread.sleep(5000);
-
-    assertEquals(3, clusterService2.getMembers().size());
-
-    assertNull(clusterService2.getMember(MemberId.from("1")));
-    assertTrue(clusterService2.getMember(MemberId.from("2")).isActive());
-    assertTrue(clusterService2.getMember(MemberId.from("3")).isActive());
-    assertTrue(clusterService2.getMember(MemberId.from("4")).isActive());
-
-    ephemeralClusterService.stop().join();
-
-    Thread.sleep(5000);
-
-    assertEquals(2, clusterService2.getMembers().size());
-    assertNull(clusterService2.getMember(MemberId.from("1")));
-    assertTrue(clusterService2.getMember(MemberId.from("2")).isActive());
-    assertTrue(clusterService2.getMember(MemberId.from("3")).isActive());
-    assertNull(clusterService2.getMember(MemberId.from("4")));
-
-    Thread.sleep(2500);
-
-    assertEquals(2, clusterService2.getMembers().size());
-
-    assertNull(clusterService2.getMember(MemberId.from("1")));
-    assertTrue(clusterService2.getMember(MemberId.from("2")).isActive());
-    assertTrue(clusterService2.getMember(MemberId.from("3")).isActive());
-    assertNull(clusterService2.getMember(MemberId.from("4")));
-
-    final TestClusterMembershipEventListener eventListener =
-        new TestClusterMembershipEventListener();
-    clusterService2.addListener(eventListener);
-
-    ClusterMembershipEvent event;
-    clusterService3.getLocalMember().properties().put("foo", "bar");
-
-    event = eventListener.nextEvent();
-    assertEquals(ClusterMembershipEvent.Type.METADATA_CHANGED, event.type());
-    assertEquals("bar", event.subject().properties().get("foo"));
-
-    clusterService3.getLocalMember().properties().put("foo", "baz");
-
-    event = eventListener.nextEvent();
-    assertEquals(ClusterMembershipEvent.Type.METADATA_CHANGED, event.type());
-    assertEquals("baz", event.subject().properties().get("foo"));
-
-    CompletableFuture.allOf(
-            new CompletableFuture[] {
-              clusterService1.stop(), clusterService2.stop(), clusterService3.stop()
-            })
-        .join();
+    // then
+    final var expectedMember = new StatefulMember(localMember, version);
+    assertThat(membershipService.getLocalMember())
+        .as("the local member is member 0")
+        .isEqualTo(expectedMember);
   }
 
-  private class TestClusterMembershipEventListener implements ClusterMembershipEventListener {
+  @Test
+  void shouldGetMembers() {
+    // given
+    final var membershipService =
+        new DefaultClusterMembershipService(
+            localMember, version, discoveryService, bootstrapService, protocol);
 
-    private final BlockingQueue<ClusterMembershipEvent> queue =
-        new ArrayBlockingQueue<ClusterMembershipEvent>(10);
+    // when
+    protocol.getMembers().add(Member.member("1", "localhost:5001"));
+    membershipService.start().join();
 
-    @Override
-    public void event(final ClusterMembershipEvent event) {
-      queue.add(event);
-    }
+    // then
+    assertThat(membershipService.getMembers())
+        .as("there should be at least one member")
+        .isNotEmpty()
+        .as("the reported members are exactly the same as the protocol's")
+        .containsExactlyInAnyOrderElementsOf(protocol.getMembers());
+  }
 
-    ClusterMembershipEvent nextEvent() {
-      try {
-        return queue.poll(5, TimeUnit.SECONDS);
-      } catch (final InterruptedException e) {
-        return null;
-      }
-    }
+  @Test
+  void shouldTrackLocalMemberReachability() {
+    // given
+    final var membershipService =
+        new DefaultClusterMembershipService(
+            localMember, version, discoveryService, bootstrapService, protocol);
+
+    // when - then
+    membershipService.start().join();
+    assertThat(membershipService.getLocalMember().isActive())
+        .as("local member is active after starting")
+        .isTrue();
+
+    // when - then
+    membershipService.stop().join();
+    assertThat(membershipService.getLocalMember().isActive())
+        .as("local member is not active after stopping")
+        .isFalse();
+  }
+
+  @Test
+  void shouldTrackReachabilityOfLocalMember() {
+    // given
+    final var membershipService =
+        new DefaultClusterMembershipService(
+            localMember, version, discoveryService, bootstrapService, protocol);
+
+    // when - then
+    membershipService.start().join();
+    assertThat(membershipService.getLocalMember().isReachable())
+        .as("local member is reachable after starting")
+        .isTrue();
+
+    // when - then
+    membershipService.stop().join();
+    assertThat(membershipService.getLocalMember().isReachable())
+        .as("local member is not reachable after stopping")
+        .isFalse();
+  }
+
+  @Test
+  void shouldManageGroupMembershipOfLocalMember() {
+    // given
+    final var membershipService =
+        new DefaultClusterMembershipService(
+            localMember, version, discoveryService, bootstrapService, protocol);
+
+    // when - then
+    membershipService.start().join();
+    assertThat(protocol.getMembers())
+        .as("local member has joined the group protocol")
+        .containsExactly(membershipService.getLocalMember());
+
+    // when - then
+    membershipService.stop().join();
+    assertThat(protocol.getMembers()).as("local member has left the group protocol").isEmpty();
+  }
+
+  @Test
+  void shouldForwardGroupEvents() {
+    // given
+    final var membershipService =
+        new DefaultClusterMembershipService(
+            localMember, version, discoveryService, bootstrapService, protocol);
+    membershipService.start().join();
+
+    // when
+    final var event =
+        new GroupMembershipEvent(
+            GroupMembershipEvent.Type.MEMBER_REMOVED, Member.member("1", "localhost:5001"));
+    final var receivedEvent = new AtomicReference<ClusterMembershipEvent>();
+    membershipService.addListener(receivedEvent::set);
+    protocol.sendEvent(event);
+
+    // then
+    final var expectedEvent =
+        new ClusterMembershipEvent(
+            ClusterMembershipEvent.Type.MEMBER_REMOVED, event.member(), event.time());
+    assertThat(receivedEvent)
+        .as("the received event is the same as the one sent")
+        .hasValue(expectedEvent);
   }
 }

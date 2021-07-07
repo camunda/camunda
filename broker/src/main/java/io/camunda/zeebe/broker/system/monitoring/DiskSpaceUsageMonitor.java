@@ -13,13 +13,13 @@ import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.util.sched.Actor;
 import java.io.File;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 public class DiskSpaceUsageMonitor extends Actor {
 
-  private final List<DiskSpaceUsageListener> diskSpaceUsageListeners = new ArrayList<>();
+  private final Set<DiskSpaceUsageListener> diskSpaceUsageListeners = new HashSet<>();
   private boolean currentDiskAvailableStatus = true;
   private LongSupplier freeDiskSpaceSupplier;
   private final Duration monitoringDelay;

@@ -1,0 +1,16 @@
+[
+  {
+    "extension": "revapi.semver.ignore",
+    "configuration": {
+      "enabled": true,
+      "versionIncreaseAllows": {
+        "major": "breaking",
+        "minor": "nonBreaking",
+        "patch": "nonBreaking"
+      },
+      "passThroughDifferences": [
+        "java.class.nonPublicPartOfAPI"
+      ]
+    }
+  }
+]

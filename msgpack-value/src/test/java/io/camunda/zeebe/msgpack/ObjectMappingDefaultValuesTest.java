@@ -121,11 +121,7 @@ public final class ObjectMappingDefaultValuesTest {
   @Test
   public void shouldSupportDefaultValuesForAllPropertyTypes() {
     // given
-    final MutableDirectBuffer msgPackBuffer =
-        encodeMsgPack(
-            (w) -> {
-              w.writeMapHeader(0);
-            });
+    final MutableDirectBuffer msgPackBuffer = encodeMsgPack((w) -> w.writeMapHeader(0));
 
     final MutableDirectBuffer packedMsgPackBuffer =
         encodeMsgPack(
@@ -143,7 +139,7 @@ public final class ObjectMappingDefaultValuesTest {
             "defaultString",
             packedMsgPackBuffer,
             wrapString("defaultBinary"),
-            new POJONested().setLong(12L));
+            new POJONested());
 
     // when
     pojo.wrap(msgPackBuffer);
@@ -155,6 +151,6 @@ public final class ObjectMappingDefaultValuesTest {
     assertThatBuffer(pojo.getString()).hasBytes(wrapString("defaultString"));
     assertThatBuffer(pojo.getPacked()).hasBytes(packedMsgPackBuffer);
     assertThatBuffer(pojo.getBinary()).hasBytes(wrapString("defaultBinary"));
-    assertThat(pojo.getNestedObject().getLong()).isEqualTo(12L);
+    assertThat(pojo.getNestedObject().getLong()).isEqualTo(-1L);
   }
 }

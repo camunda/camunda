@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.Level;
@@ -33,12 +34,16 @@ import org.slf4j.helpers.NOPLogger;
 
 final class GrpcErrorMapperTest {
   private final RecordingAppender recorder = new RecordingAppender();
-  private final Logger log = (Logger) LogManager.getLogger(GrpcErrorMapperTest.class);
-  private final Log4jLogger logger = new Log4jLogger(log, log.getName());
   private final GrpcErrorMapper errorMapper = new GrpcErrorMapper();
 
+  private Logger log;
+  private Log4jLogger logger;
+
   @BeforeEach
-  void setUp() {
+  void beforeEach() {
+    log = (Logger) LogManager.getLogger(UUID.randomUUID().toString());
+    logger = new Log4jLogger(log, log.getName());
+
     recorder.start();
     log.addAppender(recorder);
   }
@@ -85,10 +90,8 @@ final class GrpcErrorMapperTest {
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
-    assertThat(recorder.getAppendedEvents()).hasSize(2);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
     assertThat(recorder.getAppendedEvents().get(0).getLevel())
-        .isEqualTo(Level.TRACE); // partition leader mismatch
-    assertThat(recorder.getAppendedEvents().get(1).getLevel())
         .isEqualTo(Level.TRACE); // resource exhausted
     assertThat(status.getDetailsCount()).isEqualTo(1);
 

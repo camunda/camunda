@@ -58,8 +58,13 @@ public class ObjectWriterFactory {
         final JsonGenerator jsonGenerator,
         final SerializerProvider serializerProvider)
         throws IOException {
-
-      jsonGenerator.writeString(dataSize.toMegabytes() + "MB");
+      if (dataSize.toMegabytes() > 0) {
+        jsonGenerator.writeString(dataSize.toMegabytes() + "MB");
+      } else if (dataSize.toKilobytes() > 0) {
+        jsonGenerator.writeString(dataSize.toKilobytes() + "KB");
+      } else {
+        jsonGenerator.writeString(dataSize.toBytes() + "B");
+      }
     }
   }
 

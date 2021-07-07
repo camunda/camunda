@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ScheduledTimer;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
@@ -24,7 +24,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender commandSender;
-  private final MutableProcessMessageSubscriptionState subscriptionState;
+  private final MutablePendingProcessMessageSubscriptionState pendingState;
   private final long subscriptionTimeoutInMillis;
 
   private ActorControl actor;
@@ -32,9 +32,9 @@ public final class PendingProcessMessageSubscriptionChecker
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final MutableProcessMessageSubscriptionState subscriptionState) {
+      final MutablePendingProcessMessageSubscriptionState pendingState) {
     this.commandSender = commandSender;
-    this.subscriptionState = subscriptionState;
+    this.pendingState = pendingState;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();
   }
 
@@ -45,8 +45,13 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   @Override
-  public void onResumed() {
-    scheduleTimer();
+  public void onClose() {
+    cancelTimer();
+  }
+
+  @Override
+  public void onFailed() {
+    cancelTimer();
   }
 
   @Override
@@ -55,13 +60,8 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   @Override
-  public void onClose() {
-    cancelTimer();
-  }
-
-  @Override
-  public void onFailed() {
-    cancelTimer();
+  public void onResumed() {
+    scheduleTimer();
   }
 
   private void scheduleTimer() {
@@ -78,7 +78,7 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private void checkPendingSubscriptions() {
-    subscriptionState.visitSubscriptionBefore(
+    pendingState.visitSubscriptionBefore(
         ActorClock.currentTimeMillis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
   }
 
@@ -93,9 +93,8 @@ public final class PendingProcessMessageSubscriptionChecker
     }
 
     if (success) {
-      // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
       final var sentTime = ActorClock.currentTimeMillis();
-      subscriptionState.updateSentTimeInTransaction(subscription, sentTime);
+      pendingState.updateSentTime(subscription.getRecord(), sentTime);
     }
 
     return success;

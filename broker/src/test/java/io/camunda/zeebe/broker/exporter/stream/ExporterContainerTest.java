@@ -11,9 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -21,43 +20,33 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorControl;
-import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
-public class ExporterContainerTest {
+@Execution(ExecutionMode.CONCURRENT)
+final class ExporterContainerTest {
 
-  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-  @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
-  private TestActor testActor;
-  private ExportersState exportersState;
+  private ExporterContainerRuntime runtime;
   private FakeExporter exporter;
   private ExporterContainer exporterContainer;
 
-  @Before
-  public void setup() throws IOException {
-    testActor = new TestActor();
-    actorSchedulerRule.submitActor(testActor).join();
-    final var dbFactory = DefaultZeebeDbFactory.defaultFactory();
-    final var db = dbFactory.createDb(tempFolder.newFolder());
-    exportersState = new ExportersState(db, db.createContext());
-    final ExporterMetrics exporterMetrics = new ExporterMetrics(1);
+  @BeforeEach
+  void beforeEach(final @TempDir Path storagePath) throws ExporterLoadException {
+    runtime = new ExporterContainerRuntime(storagePath);
 
-    final var exporterDescriptor =
-        new ExporterDescriptor("fakeExporter", FakeExporter.class, Map.of("key", "value"));
-    exporterContainer = new ExporterContainer(exporterDescriptor);
+    final var descriptor =
+        runtime.getRepository().load("fakeExporter", FakeExporter.class, Map.of("key", "value"));
+    exporterContainer = runtime.newContainer(descriptor);
     exporter = (FakeExporter) exporterContainer.getExporter();
-    exporterContainer.initContainer(testActor.getActor(), exporterMetrics, exportersState);
   }
 
   @Test
-  public void shouldConfigureExporter() throws Exception {
+  void shouldConfigureExporter() throws Exception {
     // given
 
     // when
@@ -73,7 +62,7 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldOpenExporter() throws Exception {
+  void shouldOpenExporter() throws Exception {
     // given
     exporterContainer.configureExporter();
 
@@ -86,7 +75,7 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldInitPositionToDefaultIfNotExistInState() throws Exception {
+  void shouldInitPositionToDefaultIfNotExistInState() throws Exception {
     // given
     exporterContainer.configureExporter();
 
@@ -99,10 +88,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldInitPositionWithStateValues() throws Exception {
+  void shouldInitPositionWithStateValues() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0xCAFE);
+    runtime.getState().setPosition("fakeExporter", 0xCAFE);
 
     // when
     exporterContainer.initPosition();
@@ -113,10 +102,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldNotExportWhenRecordPositionIsSmaller() throws Exception {
+  void shouldNotExportWhenRecordPositionIsSmaller() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0xCAFE);
+    runtime.getState().setPosition("fakeExporter", 0xCAFE);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -131,10 +120,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldUpdateUnacknowledgedPositionOnExport() throws Exception {
+  void shouldUpdateUnacknowledgedPositionOnExport() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -152,10 +141,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldUpdateUnacknowledgedPositionMultipleTimes() throws Exception {
+  void shouldUpdateUnacknowledgedPositionMultipleTimes() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -176,10 +165,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldUpdateExporterPosition() throws Exception {
+  void shouldUpdateExporterPosition() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
     exporterContainer.openExporter();
 
@@ -190,19 +179,19 @@ public class ExporterContainerTest {
 
     // when
     exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
-    testActor.awaitPreviousCall();
+    awaitPreviousCall();
 
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
     assertThat(exporterContainer.getPosition()).isEqualTo(1);
-    assertThat(exportersState.getPosition("fakeExporter")).isEqualTo(1);
+    assertThat(runtime.getState().getPosition("fakeExporter")).isEqualTo(1);
   }
 
   @Test
-  public void shouldNotUpdateExporterPositionToSmallerValue() throws Exception {
+  void shouldNotUpdateExporterPositionToSmallerValue() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
     exporterContainer.openExporter();
 
@@ -213,19 +202,19 @@ public class ExporterContainerTest {
 
     // when
     exporterContainer.updateLastExportedRecordPosition(-1);
-    testActor.awaitPreviousCall();
+    awaitPreviousCall();
 
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
     assertThat(exporterContainer.getPosition()).isEqualTo(0);
-    assertThat(exportersState.getPosition("fakeExporter")).isEqualTo(0);
+    assertThat(runtime.getState().getPosition("fakeExporter")).isEqualTo(0);
   }
 
   @Test
-  public void shouldNotUpdateExporterPositionInDifferentOrder() throws Exception {
+  void shouldNotUpdateExporterPositionInDifferentOrder() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
     exporterContainer.openExporter();
 
@@ -239,20 +228,20 @@ public class ExporterContainerTest {
     // when
     exporterContainer.updateLastExportedRecordPosition(2);
     exporterContainer.updateLastExportedRecordPosition(1);
-    testActor.awaitPreviousCall();
+    awaitPreviousCall();
 
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
     assertThat(exporterContainer.getPosition()).isEqualTo(2);
-    assertThat(exportersState.getPosition("fakeExporter")).isEqualTo(2);
+    assertThat(runtime.getState().getPosition("fakeExporter")).isEqualTo(2);
   }
 
   @Test
-  public void shouldUpdatePositionsWhenRecordIsFiltered() throws Exception {
+  void shouldUpdatePositionsWhenRecordIsFiltered() throws Exception {
     // given
     exporterContainer.configureExporter();
     exporter.getContext().setFilter(new AlwaysRejectingFilter());
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -269,10 +258,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldUpdatePositionsWhenRecordIsFilteredAndPositionsAreEqual() throws Exception {
+  void shouldUpdatePositionsWhenRecordIsFilteredAndPositionsAreEqual() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -280,7 +269,7 @@ public class ExporterContainerTest {
     final var recordMetadata = new RecordMetadata();
     exporterContainer.exportRecord(recordMetadata, mockedRecord);
     exporterContainer.updateLastExportedRecordPosition(mockedRecord.getPosition());
-    testActor.awaitPreviousCall();
+    awaitPreviousCall();
 
     // when
     exporter.getContext().setFilter(new AlwaysRejectingFilter());
@@ -294,11 +283,11 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldNotUpdatePositionsWhenRecordIsFilteredAndLastEventWasUnacknowledged()
+  void shouldNotUpdatePositionsWhenRecordIsFilteredAndLastEventWasUnacknowledged()
       throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
 
     final var firstRecord = mock(TypedRecord.class);
@@ -320,10 +309,10 @@ public class ExporterContainerTest {
   }
 
   @Test
-  public void shouldCloseExporter() throws Exception {
+  void shouldCloseExporter() throws Exception {
     // given
     exporterContainer.configureExporter();
-    exportersState.setPosition("fakeExporter", 0);
+    runtime.getState().setPosition("fakeExporter", 0);
     exporterContainer.initPosition();
 
     // when
@@ -333,30 +322,10 @@ public class ExporterContainerTest {
     assertThat(exporter.isClosed()).isTrue();
   }
 
-  private static final class AlwaysRejectingFilter implements Context.RecordFilter {
-
-    @Override
-    public boolean acceptType(final RecordType recordType) {
-      return false;
-    }
-
-    @Override
-    public boolean acceptValue(final ValueType valueType) {
-      return false;
-    }
-  }
-
-  private static final class TestActor extends Actor {
-
-    public ActorControl getActor() {
-      return actor;
-    }
-
-    public void awaitPreviousCall() {
-      // call is enqueued in queue and will be run after the previous call
-      // when we await the call we can be sure that the previous call is also done
-      actor.call(() -> null).join();
-    }
+  private void awaitPreviousCall() {
+    // call is enqueued in queue and will be run after the previous call
+    // when we await the call we can be sure that the previous call is also done
+    runtime.getActor().getActorControl().call(() -> null).join();
   }
 
   public static final class FakeExporter implements Exporter {
@@ -400,6 +369,19 @@ public class ExporterContainerTest {
     @Override
     public void export(final Record<?> record) {
       this.record = record;
+    }
+  }
+
+  private static final class AlwaysRejectingFilter implements Context.RecordFilter {
+
+    @Override
+    public boolean acceptType(final RecordType recordType) {
+      return false;
+    }
+
+    @Override
+    public boolean acceptValue(final ValueType valueType) {
+      return false;
     }
   }
 }

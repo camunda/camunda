@@ -45,13 +45,13 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    * @param element the instance of the BPMN element container
    * @param flowScopeContext process instance-related data of the element container
    * @param childContext process instance-related data of the child element that is completed. At
-   *     this point in time the element is still present in the state
+   * @return either a failure (Left) or any success value (Right)
    */
-  default void beforeExecutionPathCompleted(
+  default Either<Failure, ?> beforeExecutionPathCompleted(
       final T element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
-    // nothing to do
+    return Either.right(null);
   }
 
   /**

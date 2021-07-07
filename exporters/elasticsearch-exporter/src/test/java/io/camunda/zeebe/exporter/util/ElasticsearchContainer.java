@@ -141,7 +141,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
         .withEnv("cluster.name", "zeebe")
         .withEnv("ELASTIC_PASSWORD", "changeme")
         .withNetworkAliases("elasticsearch-" + Base58.randomString(6))
-        .withEnv("discovery.type", "single-node");
+        .withEnv("ES_JAVA_OPTS", "-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1073741824");
 
     addExposedPorts(DEFAULT_HTTP_PORT, DEFAULT_TCP_PORT);
     setWaitStrategy(waitStrategy);

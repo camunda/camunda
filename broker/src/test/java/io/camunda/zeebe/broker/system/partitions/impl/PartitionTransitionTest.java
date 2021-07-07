@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionContext;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.sched.Actor;
@@ -245,5 +247,28 @@ public class PartitionTransitionTest {
     order.verify(leaderStep).close(ctx);
     order.verify(leaderStep).getName();
     order.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSetTermAndRoleInContext() {
+    // given
+    final TestPartitionStep leaderStep = spy(TestPartitionStep.builder().build());
+
+    final PartitionTransitionImpl transition =
+        new PartitionTransitionImpl(ctx, List.of(leaderStep), List.of());
+
+    // when
+    final Actor actor =
+        Actor.wrap(
+            actorCtrl -> {
+              transition.toLeader(3);
+            });
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(ctx).setCurrentRole(Role.LEADER);
+    verify(ctx).setCurrentTerm(3);
   }
 }

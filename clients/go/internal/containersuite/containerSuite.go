@@ -155,6 +155,8 @@ type ContainerSuite struct {
 	ContainerImage string
 	// GatewayAddress is the contact point of the spawned Zeebe container specified in the format 'host:port'
 	GatewayAddress string
+	GatewayHost    string
+	GatewayPort    int
 
 	suite.Suite
 	container testcontainers.Container
@@ -205,6 +207,8 @@ func (s *ContainerSuite) SetupSuite() {
 	}
 
 	s.GatewayAddress = fmt.Sprintf("%s:%d", host, port.Int())
+	s.GatewayHost = host
+	s.GatewayPort = port.Int()
 }
 
 func (s *ContainerSuite) TearDownSuite() {

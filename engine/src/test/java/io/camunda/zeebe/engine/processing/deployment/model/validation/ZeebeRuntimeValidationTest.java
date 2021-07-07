@@ -23,7 +23,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.io.InputStream;
@@ -262,23 +261,6 @@ public final class ZeebeRuntimeValidationTest {
                                 .zeebeOutputElement(STATIC_EXPRESSION)))
             .done(),
         Arrays.asList(expect(ZeebeLoopCharacteristics.class, STATIC_EXPRESSION_MESSAGE))
-      },
-      {
-        // invalid job type expression
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobTypeExpression(INVALID_EXPRESSION))
-            .done(),
-        Arrays.asList(expect(ZeebeTaskDefinition.class, INVALID_EXPRESSION_MESSAGE))
-      },
-      {
-        // invalid job retries expression
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "task", t -> t.zeebeJobType("test").zeebeJobRetriesExpression(INVALID_EXPRESSION))
-            .done(),
-        Arrays.asList(expect(ZeebeTaskDefinition.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // output element expression is not supported

@@ -26,6 +26,7 @@ import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
 import java.util.Optional;
@@ -46,6 +47,7 @@ public final class StateControllerImplTest {
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
   private StateControllerImpl snapshotController;
   private ConstructableSnapshotStore store;
+  private Path runtimeDirectory;
 
   @Before
   public void setup() throws IOException {
@@ -55,13 +57,14 @@ public final class StateControllerImplTest {
     factory.createReceivableSnapshotStore(rootDirectory, 1);
     store = factory.getConstructableSnapshotStore(1);
 
+    runtimeDirectory = rootDirectory.resolve("runtime");
     snapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(),
             store,
             factory.getReceivableSnapshotStore(1),
-            rootDirectory.resolve("runtime"),
+            runtimeDirectory,
             new NoneSnapshotReplication(),
             l ->
                 Optional.of(
@@ -112,8 +115,9 @@ public final class StateControllerImplTest {
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
-    tmpSnapshot.orElseThrow().persist();
+    tmpSnapshot.orElseThrow().persist().join();
     snapshotController.close();
+    snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -148,6 +152,7 @@ public final class StateControllerImplTest {
     wrapper.putInt(key, value);
     takeSnapshot(snapshotPosition);
     snapshotController.close();
+    snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -300,6 +305,18 @@ public final class StateControllerImplTest {
 
     // when/then
     assertThat(snapshotController.getValidSnapshotsCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldDeleteRuntimeFolderOnClose() throws Exception {
+    // given
+    snapshotController.openDb();
+
+    // when
+    snapshotController.close();
+
+    // then
+    assertThat(runtimeDirectory).doesNotExist();
   }
 
   private File takeSnapshot(final long position) {

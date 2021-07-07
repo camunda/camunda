@@ -8,7 +8,6 @@
 package io.camunda.zeebe.snapshots;
 
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.io.IOException;
 
 /**
  * A received volatile snapshot, which consist of several {@link SnapshotChunk}'s. It can be
@@ -25,10 +24,10 @@ public interface ReceivedSnapshot extends PersistableSnapshot {
 
   /**
    * Applies the next {@link SnapshotChunk} to the snapshot. Based on the implementation the chunk
-   * can be validated before applied to the snapshot.
+   * can be validated before applied to the snapshot. In case of failure, the future will be
+   * completed with a SnapshotWriteException.
    *
    * @param chunk the {@link SnapshotChunk} which should be applied
-   * @return returns true if everything succeeds, false otherwise
    */
-  ActorFuture<Boolean> apply(SnapshotChunk chunk) throws IOException;
+  ActorFuture<Void> apply(SnapshotChunk chunk);
 }

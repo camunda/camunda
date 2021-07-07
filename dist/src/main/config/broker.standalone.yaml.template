@@ -241,6 +241,20 @@
       # Example:
       # clusterName: zeebe-cluster
 
+      # Configure heartbeatInterval. The leader sends a heartbeat to a follower every heartbeatInterval.
+      # Note: This is an advanced setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_HEARTBEATINTERVAL.
+      # heartbeatInterval: 250ms
+
+      # Configure electionTimeout. If a follower does not receive a heartbeat from the leader with in an election timeout,
+      # it can start a new leader election. electionTimeout should be greater than configured heartbeatInterval.
+      # When the electionTimeout is large, there will be delay in detecting a leader failure.
+      # When the electionTimeout is small, it can lead to false positives when detecting leader failures and thus leading to unnecessary leader changes.
+      # If the network latency between the nodes is high, it is recommended to have a higher election latency.
+      # Note: This is an advanced setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_ELECTIONTIMEOUT.
+      # electionTimeout: 2500ms
+
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
       # membership:
@@ -491,12 +505,24 @@
       # It might be that also some of them are actually dangerous so be aware when you change one of these!
 
       # Sets the maximum of appends which are send per follower.
-      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDSPERFOLLOWER
       # maxAppendsPerFollower = 2
 
       # Sets the maximum batch size, which is send per append request to a follower.
-      # This setting can also be overridden using the environment variable ZEEBE_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
       # maxAppendBatchSize = 32KB;
+
+      # When this flag is enabled, the leader election algorithm attempts to elect the leaders based on a pre-defined priority.
+      # As a result, it tries to distributed the leaders uniformly across the brokers. Note that it is only a best-effort strategy.
+      # It is not guaranteed to be a strictly uniform distribution.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENABLEPRIORITYELECTION
+      # enablePriorityElection = false;
+
+      # Allows to configure specific raft properties
+      # raft:
+        # Sets the timeout for all requests send by raft leaders and followers.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_REQUESTTIMEOUT
+        # requestTimeout = 5s
 
       # Allows to configure RocksDB properties, which is used for state management.
       # rocksdb:

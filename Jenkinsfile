@@ -132,7 +132,6 @@ pipeline {
             when { not { expression { params.SKIP_VERIFY } } }
             parallel {
                 stage('Analyse') {
-                    when { expression { return false } } // disable SonarCloud until new artifact id is linked to project
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
                             runMavenContainerCommand('.ci/scripts/distribution/analyse-java.sh')
@@ -514,7 +513,7 @@ def templatePodspec(String podspecPath, flags = [:]) {
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags
 
-    def nodePoolName = "agents-n1-standard-32-netssd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
+    def nodePoolName = "agents-n1-standard-32-physsd-${effectiveFlags.useStableNodePool ? 'stable' : 'preempt'}"
 
     String templateString = readTrusted(podspecPath)
 

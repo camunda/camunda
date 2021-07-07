@@ -62,32 +62,4 @@ class RaftMessageContext {
       return String.format("%s-%s", prefix, type);
     }
   }
-
-  /**
-   * Returns the publish subject for the given session.
-   *
-   * @param sessionId the session for which to return the publish subject
-   * @return the publish subject for the given session
-   */
-  String publishSubject(final long sessionId) {
-    if (prefix == null) {
-      return String.format("publish-%d", sessionId);
-    } else {
-      return String.format("%s-publish-%d", prefix, sessionId);
-    }
-  }
-
-  /**
-   * Returns the reset subject for the given session.
-   *
-   * @param sessionId the session for which to return the reset subject
-   * @return the reset subject for the given session
-   */
-  String resetSubject(final long sessionId) {
-    if (prefix == null) {
-      return String.format("reset-%d", sessionId);
-    } else {
-      return String.format("%s-reset-%d", prefix, sessionId);
-    }
-  }
 }

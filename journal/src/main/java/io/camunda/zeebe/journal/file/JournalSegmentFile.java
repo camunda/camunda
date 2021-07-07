@@ -18,11 +18,7 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.camunda.zeebe.journal.JournalException;
 import java.io.File;
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
 
 /**
  * Segment file utility.
@@ -30,6 +26,7 @@ import java.nio.file.StandardOpenOption;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 final class JournalSegmentFile {
+
   private static final char PART_SEPARATOR = '-';
   private static final char EXTENSION_SEPARATOR = '.';
   private static final String EXTENSION = "log";
@@ -62,29 +59,45 @@ final class JournalSegmentFile {
     checkNotNull(journalName, "journalName cannot be null");
     checkNotNull(fileName, "fileName cannot be null");
 
-    final int partSeparator = fileName.lastIndexOf(PART_SEPARATOR);
-    final int extensionSeparator = fileName.lastIndexOf(EXTENSION_SEPARATOR);
-
-    if (extensionSeparator == -1
-        || partSeparator == -1
-        || extensionSeparator < partSeparator
-        || !fileName.endsWith(EXTENSION)) {
+    if (getSegmentIdFromPath(fileName) == -1) {
       return false;
-    }
-
-    for (int i = partSeparator + 1; i < extensionSeparator; i++) {
-      if (!Character.isDigit(fileName.charAt(i))) {
-        return false;
-      }
     }
 
     return fileName.startsWith(journalName);
   }
 
+  /** Returns the segment's id or -1 if the log segment name was not correctly formatted. */
+  static int getSegmentIdFromPath(final String name) {
+    checkNotNull(name, "name cannot be null");
+
+    final int partSeparator = name.lastIndexOf(PART_SEPARATOR);
+    final int extensionSeparator = name.lastIndexOf(EXTENSION_SEPARATOR);
+
+    if (extensionSeparator == -1
+        || partSeparator == -1
+        || extensionSeparator < partSeparator
+        || !name.endsWith(EXTENSION)) {
+      return -1;
+    }
+
+    try {
+      return Integer.parseInt(name.substring(partSeparator + 1, extensionSeparator));
+    } catch (final NumberFormatException e) {
+      return -1;
+    }
+  }
+
   /** Creates a segment file for the given directory, log name, segment ID, and segment version. */
   static File createSegmentFile(final String name, final File directory, final long id) {
     return new File(
-        directory, String.format("%s-%d.log", checkNotNull(name, "name cannot be null"), id));
+        directory,
+        String.format(
+            "%s%s%d%s%s",
+            checkNotNull(name, "name cannot be null"),
+            PART_SEPARATOR,
+            id,
+            EXTENSION_SEPARATOR,
+            EXTENSION));
   }
 
   /**
@@ -94,14 +107,6 @@ final class JournalSegmentFile {
    */
   public File file() {
     return file;
-  }
-
-  FileChannel openChannel(final StandardOpenOption... options) {
-    try {
-      return FileChannel.open(file.toPath(), options);
-    } catch (final IOException e) {
-      throw new JournalException(e);
-    }
   }
 
   public String name() {

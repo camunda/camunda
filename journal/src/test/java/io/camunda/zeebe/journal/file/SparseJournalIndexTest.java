@@ -23,10 +23,10 @@ import io.camunda.zeebe.journal.JournalRecord;
 import org.junit.jupiter.api.Test;
 
 /** Sparse journal index test. */
-public class SparseJournalIndexTest {
+class SparseJournalIndexTest {
 
   @Test
-  public void shouldNotFindIndexWhenNotReachedDensity() {
+  void shouldNotFindIndexWhenNotReachedDensity() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
 
@@ -42,7 +42,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldFindIndexWhenReachedDensity() {
+  void shouldFindIndexWhenReachedDensity() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
 
@@ -60,7 +60,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldFindLowerIndexWhenNotReachedDensity() {
+  void shouldFindLowerIndexWhenNotReachedDensity() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
     // index entries
@@ -82,7 +82,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldFindNextIndexWhenReachedDensity() {
+  void shouldFindNextIndexWhenReachedDensity() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
     // index entries
@@ -106,7 +106,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldTruncateIndex() {
+  void shouldTruncateIndex() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
     // index entries
@@ -134,7 +134,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldTruncateCompleteIndex() {
+  void shouldTruncateCompleteIndex() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
     // index entries
@@ -165,7 +165,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldNotCompactIndex() {
+  void shouldNotCompactIndex() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
     // index entries
@@ -190,7 +190,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldCompactIndex() {
+  void shouldCompactIndex() {
     // given - every 5 index is added
     final JournalIndex index = new SparseJournalIndex(5);
     // index entries
@@ -217,7 +217,7 @@ public class SparseJournalIndexTest {
   }
 
   @Test
-  public void shouldFindAsqnWithInBound() {
+  void shouldFindAsqnWithInBound() {
     // given - every 2nd index is added
     final JournalIndex index = new SparseJournalIndex(2);
 

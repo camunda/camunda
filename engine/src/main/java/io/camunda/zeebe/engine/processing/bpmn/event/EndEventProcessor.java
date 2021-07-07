@@ -17,8 +17,11 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
   private static final String TRANSITION_TO_COMPLETED_PRECONDITION_ERROR =
@@ -42,7 +45,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   @Override
   public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
     if (!element.hasError()) {
-      transitionUntilCompleted(element, activating);
+      transitionUntilCompleted(element, activating).ifLeft(incidentBehavior::createIncident);
       return;
     }
 
@@ -75,7 +78,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   // there's some duplication here with ExclusiveGatewayProcessor where we want to short circuit and
   // go directly from activated -> completed, which could be dry'd up
   // TODO(npepinpe): candidate for clean up for https://github.com/camunda-cloud/zeebe/issues/6202
-  private void transitionUntilCompleted(
+  private Either<Tuple<Failure, BpmnElementContext>, BpmnElementContext> transitionUntilCompleted(
       final ExecutableEndEvent element, final BpmnElementContext activating) {
     if (activating.getIntent() != ProcessInstanceIntent.ELEMENT_ACTIVATING) {
       throw new BpmnProcessingException(activating, TRANSITION_TO_COMPLETED_PRECONDITION_ERROR);
@@ -83,7 +86,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     final var activated = stateTransitionBehavior.transitionToActivated(activating);
     final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-
-    stateTransitionBehavior.transitionToCompletedWithParentNotification(element, completing);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, completing)
+        .mapLeft(failure -> new Tuple<>(failure, completing));
   }
 }

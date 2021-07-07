@@ -37,6 +37,7 @@ import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.utils.serializer.Serializer;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -48,16 +49,19 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   private final ClusterCommunicationService clusterCommunicator;
   private final String partitionName;
   private final RaftRequestMetrics metrics;
+  private final Duration requestTimeout;
 
   public RaftServerCommunicator(
       final String prefix,
       final Serializer serializer,
-      final ClusterCommunicationService clusterCommunicator) {
+      final ClusterCommunicationService clusterCommunicator,
+      final Duration requestTimeout) {
     context = new RaftMessageContext(prefix);
     partitionName = prefix;
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
         Preconditions.checkNotNull(clusterCommunicator, "clusterCommunicator cannot be null");
+    this.requestTimeout = requestTimeout;
     metrics = new RaftRequestMetrics(partitionName);
   }
 
@@ -210,7 +214,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
       final String subject, final T request, final MemberId memberId) {
     metrics.sendMessage(memberId.id(), request.getClass().getSimpleName());
     return clusterCommunicator.send(
-        subject, request, serializer::encode, serializer::decode, MemberId.from(memberId.id()));
+        subject,
+        request,
+        serializer::encode,
+        serializer::decode,
+        MemberId.from(memberId.id()),
+        requestTimeout);
   }
 
   private <T extends RaftMessage> T recordReceivedMetrics(final T m) {

@@ -19,7 +19,6 @@ package io.atomix.utils.concurrent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -75,20 +74,6 @@ public final class Futures {
   }
 
   /**
-   * Creates a future that is asynchronously completed.
-   *
-   * @param result The future result.
-   * @param executor The executor on which to complete the future.
-   * @return The completed future.
-   */
-  public static <T> CompletableFuture<T> completedFutureAsync(
-      final T result, final Executor executor) {
-    final CompletableFuture<T> future = new CompletableFuture<>();
-    executor.execute(() -> future.complete(result));
-    return future;
-  }
-
-  /**
    * Creates a future that is synchronously completed exceptionally.
    *
    * @param t The future exception.
@@ -101,79 +86,6 @@ public final class Futures {
   }
 
   /**
-   * Creates a future that is asynchronously completed exceptionally.
-   *
-   * @param t The future exception.
-   * @param executor The executor on which to complete the future.
-   * @return The exceptionally completed future.
-   */
-  public static <T> CompletableFuture<T> exceptionalFutureAsync(
-      final Throwable t, final Executor executor) {
-    final CompletableFuture<T> future = new CompletableFuture<>();
-    executor.execute(
-        () -> {
-          future.completeExceptionally(t);
-        });
-    return future;
-  }
-
-  /**
-   * Returns a future that completes callbacks in add order.
-   *
-   * @param <T> future value type
-   * @return a new completable future that will complete added callbacks in the order in which they
-   *     were added
-   */
-  public static <T> CompletableFuture<T> orderedFuture() {
-    return new OrderedFuture<>();
-  }
-
-  /**
-   * Returns a future that completes callbacks in add order.
-   *
-   * @param <T> future value type
-   * @return a new completable future that will complete added callbacks in the order in which they
-   *     were added
-   */
-  public static <T> CompletableFuture<T> orderedFuture(final CompletableFuture<T> future) {
-    final CompletableFuture<T> newFuture = new OrderedFuture<>();
-    future.whenComplete(
-        (r, e) -> {
-          if (e == null) {
-            newFuture.complete(r);
-          } else {
-            newFuture.completeExceptionally(e);
-          }
-        });
-    return newFuture;
-  }
-
-  /**
-   * Returns a wrapped future that will be completed on the given executor.
-   *
-   * @param future the future to be completed on the given executor
-   * @param executor the executor with which to complete the future
-   * @param <T> the future value type
-   * @return a wrapped future to be completed on the given executor
-   */
-  public static <T> CompletableFuture<T> asyncFuture(
-      final CompletableFuture<T> future, final Executor executor) {
-    final CompletableFuture<T> newFuture = new AtomixFuture<>();
-    future.whenComplete(
-        (result, error) -> {
-          executor.execute(
-              () -> {
-                if (error == null) {
-                  newFuture.complete(result);
-                } else {
-                  newFuture.completeExceptionally(error);
-                }
-              });
-        });
-    return newFuture;
-  }
-
-  /**
    * Returns a new CompletableFuture completed with a list of computed values when all of the given
    * CompletableFuture complete.
    *
@@ -182,7 +94,6 @@ public final class Futures {
    * @return a new CompletableFuture that is completed when all of the given CompletableFutures
    *     complete
    */
-  @SuppressWarnings("unchecked")
   public static <T> CompletableFuture<Stream<T>> allOf(final Stream<CompletableFuture<T>> futures) {
     final CompletableFuture<T>[] futuresArray = futures.toArray(CompletableFuture[]::new);
     return AtomixFuture.wrap(

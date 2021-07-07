@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.MDC;
 
 public final class LogUtil {
+  private LogUtil() {}
+
   /** see https://logback.qos.ch/manual/mdc.html */
   public static void doWithMDC(final Map<String, String> context, final Runnable r) {
     final Map<String, String> currentContext = MDC.getCopyOfContextMap();
@@ -28,16 +30,11 @@ public final class LogUtil {
     }
   }
 
-  public static void catchAndLog(final Logger log, final ThrowingRunnable r) {
+  public static void catchAndLog(final Logger log, final CheckedRunnable r) {
     try {
       r.run();
-    } catch (final Throwable e) {
+    } catch (final Exception e) {
       log.error(e.getMessage(), e);
     }
-  }
-
-  @FunctionalInterface
-  public interface ThrowingRunnable {
-    void run() throws Exception;
   }
 }

@@ -77,13 +77,4 @@ public class WallClockTimestamp implements Timestamp {
   public String toString() {
     return new TimestampPrinter(unixTimestamp).toString();
   }
-
-  /**
-   * Returns the unixTimestamp.
-   *
-   * @return unix timestamp
-   */
-  public long unixTimestamp() {
-    return unixTimestamp;
-  }
 }

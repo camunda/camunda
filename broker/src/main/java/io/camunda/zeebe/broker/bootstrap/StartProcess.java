@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
+import io.camunda.zeebe.util.CheckedRunnable;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;

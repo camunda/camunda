@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
@@ -31,9 +33,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.verification.VerificationWithTimeout;
 
 @RunWith(Parameterized.class)
 public final class SuccessfulDeploymentTest {
+
+  private static final VerificationWithTimeout VERIFICATION_TIMEOUT =
+      timeout(Duration.ofSeconds(10).toMillis());
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -95,7 +101,8 @@ public final class SuccessfulDeploymentTest {
     verify(engine.getCommandResponseWriter()).valueType(ValueType.DEPLOYMENT);
     verify(engine.getCommandResponseWriter()).intent(DeploymentIntent.CREATED);
     verify(engine.getCommandResponseWriter()).key(deployment.getKey());
-    verify(engine.getCommandResponseWriter()).tryWriteResponse(anyInt(), anyLong());
+    verify(engine.getCommandResponseWriter(), VERIFICATION_TIMEOUT)
+        .tryWriteResponse(anyInt(), anyLong());
   }
 
   private static Function<DeploymentClient, Record<DeploymentRecordValue>> deploy(

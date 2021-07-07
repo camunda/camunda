@@ -23,12 +23,12 @@ else
   fi
 
   if [ "${GIT_BRANCH}" == "master" ] || [ "${GIT_BRANCH}" == "develop" ]; then
-    TARGET_BRANCH="master"
+    TARGET_BRANCH="${GIT_BRANCH}"
   else
     TARGET_BRANCH="develop"
+    PROPERTIES+=("-Dsonar.branch.target=${TARGET_BRANCH}")
   fi
 
-  PROPERTIES+=("-Dsonar.branch.target=${TARGET_BRANCH}")
   git fetch --no-tags "${GIT_URL}" "+refs/heads/${TARGET_BRANCH}:refs/remotes/origin/${TARGET_BRANCH}"
 fi
 

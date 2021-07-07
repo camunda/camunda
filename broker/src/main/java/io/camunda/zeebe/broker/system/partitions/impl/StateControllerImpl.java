@@ -22,8 +22,6 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -86,8 +84,10 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     final var optionalIndexed = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
     if (optionalIndexed.isEmpty()) {
       LOG.warn(
-          "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {}, but found no matching indexed entry which contains this position.",
-          snapshotPosition);
+          "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {} (processedPosition = {}, exportedPosition={}), but found no matching indexed entry which contains this position.",
+          snapshotPosition,
+          lowerBoundSnapshotPosition,
+          exportedPosition);
       return Optional.empty();
     }
 
@@ -109,10 +109,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public void recover() throws Exception {
-
-    if (Files.exists(runtimeDirectory)) {
-      FileUtil.deleteFolder(runtimeDirectory);
-    }
+    FileUtil.deleteFolderIfExists(runtimeDirectory);
 
     final var optLatestSnapshot = constructableSnapshotStore.getLatestSnapshot();
     if (optLatestSnapshot.isPresent()) {
@@ -156,9 +153,11 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   public void close() throws Exception {
     if (db != null) {
       db.close();
-      LOG.debug("Closed database from '{}'.", runtimeDirectory);
       db = null;
+      LOG.debug("Closed database from '{}'.", runtimeDirectory);
     }
+
+    FileUtil.deleteFolderIfExists(runtimeDirectory);
   }
 
   boolean isDbOpened() {
@@ -187,7 +186,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
-    LOG.debug("New snapshot {} was persisted. Start replicating.", newPersistedSnapshot.getId());
+    LOG.debug("Start replicating new snapshot {}", newPersistedSnapshot.getId());
     // replicate snapshots when new snapshot was committed
     try (final var snapshotChunkReader = newPersistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
@@ -213,6 +212,10 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
               final var startTimestamp = System.currentTimeMillis();
               final ReceivedSnapshot transientSnapshot =
                   receivableSnapshotStore.newReceivedSnapshot(snapshotChunk.getSnapshotId());
+              LOG.debug(
+                  "Started receiving new snapshot {} with {} chunks.",
+                  transientSnapshot.snapshotId(),
+                  snapshotChunk.getTotalCount());
               return newReplication(startTimestamp, transientSnapshot);
             });
     if (context == INVALID_SNAPSHOT) {
@@ -224,12 +227,9 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     }
 
     try {
-      if (context.apply(snapshotChunk)) {
-        validateWhenReceivedAllChunks(snapshotChunk, context);
-      } else {
-        markSnapshotAsInvalid(context, snapshotChunk);
-      }
-    } catch (final IOException e) {
+      context.apply(snapshotChunk);
+      validateWhenReceivedAllChunks(snapshotChunk, context);
+    } catch (final Exception e) {
       LOG.warn(
           "Unexpected error on writing the received snapshot chunk {}, marking snapshot {} as invalid",
           snapshotChunk,
@@ -252,15 +252,15 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
     if (context.incrementCount() == totalChunkCount) {
       LOG.debug(
-          "Received all snapshot chunks ({}/{}), snapshot {} is valid",
+          "Received all snapshot chunks ({}/{}) of snapshot {}. Committing snapshot.",
           context.getChunkCount(),
           totalChunkCount,
           snapshotChunk.getSnapshotId());
       if (!tryToMarkSnapshotAsValid(snapshotChunk, context)) {
-        LOG.debug("Failed to mark snapshot {} as valid", snapshotChunk.getSnapshotId());
+        LOG.debug("Failed to commit snapshot {}", snapshotChunk.getSnapshotId());
       }
     } else {
-      LOG.debug(
+      LOG.trace(
           "Waiting for more snapshot chunks of snapshot {}, currently have {}/{}",
           snapshotChunk.getSnapshotId(),
           context.getChunkCount(),
@@ -290,7 +290,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   private long determineSnapshotPosition(
       final long lowerBoundSnapshotPosition, final long exportedPosition) {
     final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
-    LOG.debug(
+    LOG.trace(
         "Based on lowest exporter position '{}' and last processed position '{}', determined '{}' as snapshot position.",
         exportedPosition,
         lowerBoundSnapshotPosition,
@@ -344,8 +344,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
       }
     }
 
-    public boolean apply(final SnapshotChunk snapshotChunk) throws IOException {
-      return receivedSnapshot.apply(snapshotChunk).join();
+    public void apply(final SnapshotChunk snapshotChunk) {
+      receivedSnapshot.apply(snapshotChunk).join();
     }
   }
 }

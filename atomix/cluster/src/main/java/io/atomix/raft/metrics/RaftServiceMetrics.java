@@ -20,14 +20,6 @@ import io.prometheus.client.Histogram;
 
 public class RaftServiceMetrics extends RaftMetrics {
 
-  private static final Histogram SNAPSHOTING_TIME =
-      Histogram.build()
-          .namespace("atomix")
-          .name("snapshot_time_ms")
-          .help("Time spend to take a snapshot")
-          .labelNames("partitionGroupName", "partition")
-          .register();
-
   private static final Histogram COMPACTION_TIME =
       Histogram.build()
           .namespace("atomix")
@@ -38,11 +30,6 @@ public class RaftServiceMetrics extends RaftMetrics {
 
   public RaftServiceMetrics(final String partitionName) {
     super(partitionName);
-  }
-
-  public void snapshotTime(final long latencyms) {
-    // Historgram class expect seconds not milliseconds, for that we need to divied by 1000
-    SNAPSHOTING_TIME.labels(partitionGroupName, partition).observe(latencyms / 1000f);
   }
 
   public void compactionTime(final long latencyms) {

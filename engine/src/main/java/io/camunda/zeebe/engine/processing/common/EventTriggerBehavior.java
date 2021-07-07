@@ -304,14 +304,10 @@ public class EventTriggerBehavior {
         eventScopeKey,
         triggeredEvent.getId());
 
-    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
-      if (triggeredEvent instanceof ExecutableStartEvent) {
-        activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope);
-        return;
-      } else {
-        throw new IllegalStateException(
-            String.format(ERROR_MSG_EXPECTED_START_EVENT, triggeredEvent.getClass()));
-      }
+    if (flowScope.getElementType() == BpmnElementType.EVENT_SUB_PROCESS
+        && triggeredEvent.getElementType() == BpmnElementType.START_EVENT) {
+      activateEventSubProcess((ExecutableStartEvent) triggeredEvent, flowScope);
+      return;
     }
 
     eventRecord

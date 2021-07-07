@@ -77,6 +77,9 @@ public final class MessageEventProcessors {
             new MessageSubscriptionRejectProcessor(
                 messageState, subscriptionState, subscriptionCommandSender, writers))
         .withListener(
-            new MessageObserver(messageState, subscriptionState, subscriptionCommandSender));
+            new MessageObserver(
+                messageState,
+                zeebeState.getPendingMessageSubscriptionState(),
+                subscriptionCommandSender));
   }
 }

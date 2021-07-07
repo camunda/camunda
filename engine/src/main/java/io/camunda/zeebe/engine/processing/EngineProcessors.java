@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -55,6 +56,11 @@ public final class EngineProcessors {
     final var writers = processingContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
         TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
+
+    // register listener that handles migrations immediately, so it is the first to be called
+    typedRecordProcessors.withListener(new DbMigrationController());
+
+    typedRecordProcessors.withListener(processingContext.getZeebeState());
 
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
@@ -120,7 +126,12 @@ public final class EngineProcessors {
         maxFragmentSize,
         writers);
 
-    addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
+    addIncidentProcessors(
+        zeebeState,
+        bpmnStreamProcessor,
+        typedRecordProcessors,
+        writers,
+        zeebeState.getKeyGenerator());
 
     return typedRecordProcessors;
   }
@@ -200,12 +211,13 @@ public final class EngineProcessors {
   }
 
   private static void addIncidentProcessors(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers) {
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
     IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers);
+        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers, keyGenerator);
   }
 
   private static void addMessageProcessors(

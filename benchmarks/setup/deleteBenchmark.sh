@@ -7,12 +7,12 @@ then
   exit 1
 fi
 
+
 ### Benchmark helper script
 ### First parameter is used as namespace name
 ### Given namespace will be completely deleted.
 
-
-namespace=$1
+namespace=${1//\//} # remove trailing slashes
 
 kubens default
 kubectl delete namespace $namespace --wait=false

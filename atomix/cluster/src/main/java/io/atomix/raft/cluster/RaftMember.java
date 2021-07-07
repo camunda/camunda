@@ -56,13 +56,6 @@ public interface RaftMember {
   void addTypeChangeListener(Consumer<Type> listener);
 
   /**
-   * Removes a type change listener from the member.
-   *
-   * @param listener The listener to remove from the member.
-   */
-  void removeTypeChangeListener(Consumer<Type> listener);
-
-  /**
    * Promotes the member to the next highest type.
    *
    * <p>If the member is promoted to {@link Type#ACTIVE} the Raft quorum size will increase.

@@ -68,19 +68,6 @@ public class AtomixFuture<T> extends CompletableFuture<T> {
     return future;
   }
 
-  /**
-   * Returns a new exceptionally completed Atomix future.
-   *
-   * @param t the future exception
-   * @param <T> the future result type
-   * @return the completed future
-   */
-  public static <T> CompletableFuture<T> exceptionalFuture(final Throwable t) {
-    final CompletableFuture<T> future = new AtomixFuture<>();
-    future.completeExceptionally(t);
-    return future;
-  }
-
   private ThreadContext getThreadContext() {
     final ThreadContext context = ThreadContext.currentContext();
     return context != null ? context : NULL_CONTEXT;

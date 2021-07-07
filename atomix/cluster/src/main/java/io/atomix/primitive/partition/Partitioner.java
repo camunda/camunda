@@ -26,9 +26,6 @@ import java.util.List;
 @FunctionalInterface
 public interface Partitioner<K> {
 
-  /** Murmur 3 partitioner. */
-  Partitioner<String> MURMUR3 = new Murmur3Partitioner();
-
   /**
    * Returns the partition ID to which the specified object maps.
    *

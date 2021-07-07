@@ -53,6 +53,7 @@ import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.record.CorruptedLogException;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -388,11 +389,11 @@ public class RaftTest extends ConcurrentTestCase {
     // given
     final List<RaftServer> servers = createServers(1);
     final RaftServer server = servers.get(0);
-    final CountDownLatch firstListener = new CountDownLatch(1);
-    final CountDownLatch secondListener = new CountDownLatch(1);
+    final CountDownLatch firstLatch = new CountDownLatch(1);
+    final CountDownLatch secondLatch = new CountDownLatch(1);
 
-    server.addFailureListener(firstListener::countDown);
-    server.addFailureListener(secondListener::countDown);
+    server.addFailureListener(new LatchFailureListener(firstLatch));
+    server.addFailureListener(new LatchFailureListener(secondLatch));
 
     // when
     // inject failures
@@ -405,8 +406,8 @@ public class RaftTest extends ConcurrentTestCase {
             });
 
     // then
-    assertThat(firstListener.await(2, TimeUnit.SECONDS)).isTrue();
-    assertThat(secondListener.await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(firstLatch.await(2, TimeUnit.SECONDS)).isTrue();
+    assertThat(secondLatch.await(1, TimeUnit.SECONDS)).isTrue();
 
     assertEquals(Role.INACTIVE, server.getRole());
   }
@@ -656,5 +657,25 @@ public class RaftTest extends ConcurrentTestCase {
     public long awaitCommit() throws Exception {
       return commitFuture.get(30, TimeUnit.SECONDS);
     }
+  }
+
+  private static class LatchFailureListener implements FailureListener {
+
+    private final CountDownLatch latch;
+
+    LatchFailureListener(final CountDownLatch latch) {
+      this.latch = latch;
+    }
+
+    @Override
+    public void onFailure() {
+      latch.countDown();
+    }
+
+    @Override
+    public void onRecovered() {}
+
+    @Override
+    public void onUnrecoverableFailure() {}
   }
 }

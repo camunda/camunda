@@ -31,7 +31,9 @@ import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -52,7 +54,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final Environment env;
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
   private final AppenderMetrics appenderMetrics;
-  private FailureListener failureListener;
+  private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
   private final LongConsumer commitPositionListener;
 
@@ -197,15 +199,18 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListener = failureListener);
+    actor.run(() -> failureListeners.add(failureListener));
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   private void onFailure(final Throwable error) {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
     actor.fail();
-    if (failureListener != null) {
-      failureListener.onFailure();
-    }
+    failureListeners.forEach(FailureListener::onFailure);
   }
 
   void runOnFailure(final Throwable error) {

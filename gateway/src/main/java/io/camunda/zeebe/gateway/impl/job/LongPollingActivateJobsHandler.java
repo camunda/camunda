@@ -238,11 +238,6 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
         actor.runDelayed(
             requestTimeout,
             () -> {
-              LOG.debug(
-                  "Remove blocking request {} for job type {} after timeout of {}",
-                  request.getRequest(),
-                  request.getType(),
-                  requestTimeout);
               state.removeRequest(request);
               request.timeout();
             });

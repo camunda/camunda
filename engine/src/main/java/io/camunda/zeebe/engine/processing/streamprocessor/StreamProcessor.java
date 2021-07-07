@@ -29,7 +29,9 @@ import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -46,6 +48,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
   private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
+  private final Set<FailureListener> failureListeners = new HashSet<>();
 
   // log stream
   private final LogStream logStream;
@@ -65,7 +68,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
-  private FailureListener failureListener;
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   /** Recover future is completed after reprocessing is done. */
@@ -309,12 +311,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       openFuture.completeExceptionally(throwable);
     }
 
-    if (failureListener != null) {
-      if (throwable instanceof UnrecoverableException) {
-        failureListener.onUnrecoverableFailure();
-      } else {
-        failureListener.onFailure();
-      }
+    if (throwable instanceof UnrecoverableException) {
+      failureListeners.forEach(FailureListener::onUnrecoverableFailure);
+    } else {
+      failureListeners.forEach(FailureListener::onFailure);
     }
   }
 
@@ -360,7 +360,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   @Override
   public void addFailureListener(final FailureListener failureListener) {
-    actor.run(() -> this.failureListener = failureListener);
+    actor.run(() -> failureListeners.add(failureListener));
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   public ActorFuture<Phase> getCurrentPhase() {

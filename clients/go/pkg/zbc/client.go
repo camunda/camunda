@@ -37,10 +37,14 @@ import (
 
 const DefaultRequestTimeout = 15 * time.Second
 const DefaultKeepAlive = 45 * time.Second
+const DefaultAddressHost = "127.0.0.1"
+const DefaultAddressPort = "26500"
 const InsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
 const CaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
 const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
 const GatewayAddressEnvVar = "ZEEBE_ADDRESS"
+const GatewayHostEnvVar = "ZEEBE_HOST"
+const GatewayPortEnvVar = "ZEEBE_PORT"
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
@@ -171,7 +175,15 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 		config.CaCertificatePath = caCertificatePath
 	}
 
-	if gatewayAddress := env.get(GatewayAddressEnvVar); gatewayAddress != "" {
+	if gatewayHost := env.get(GatewayHostEnvVar); gatewayHost != "" {
+		if gatewayPort := env.get(GatewayPortEnvVar); gatewayPort != "" {
+			config.GatewayAddress = fmt.Sprintf("%s:%s", gatewayHost, gatewayPort)
+		} else {
+			config.GatewayAddress = fmt.Sprintf("%s:%s", gatewayHost, DefaultAddressPort)
+		}
+	} else if gatewayPort := env.get(GatewayPortEnvVar); gatewayPort != "" {
+		config.GatewayAddress = fmt.Sprintf("%s:%s", DefaultAddressHost, gatewayPort)
+	} else if gatewayAddress := env.get(GatewayAddressEnvVar); gatewayAddress != "" {
 		config.GatewayAddress = gatewayAddress
 	}
 

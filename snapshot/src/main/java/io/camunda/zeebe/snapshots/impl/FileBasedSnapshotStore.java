@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore {
+
   // first is the metadata and the second the the received snapshot count
   private static final String RECEIVING_DIR_FORMAT = "%s-%d";
 
@@ -161,7 +163,7 @@ public final class FileBasedSnapshotStore extends Actor
       final var actualChecksum = SnapshotChecksum.calculate(path);
       if (expectedChecksum != actualChecksum) {
         LOGGER.warn(
-            "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted",
+            "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
             path,
             expectedChecksum,
             actualChecksum);
@@ -344,9 +346,9 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   private void purgePendingSnapshots(final SnapshotId cutoffIndex) {
-    LOGGER.debug(
+    LOGGER.trace(
         "Search for orphaned snapshots below oldest valid snapshot with index {} in {}",
-        cutoffIndex,
+        cutoffIndex.getSnapshotIdAsString(),
         pendingDirectory);
 
     pendingSnapshots.stream()
@@ -393,7 +395,10 @@ public final class FileBasedSnapshotStore extends Actor
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
     if (isCurrentSnapshotNewer(metadata)) {
-      LOGGER.debug("Snapshot is older then {} already exists", currentPersistedSnapshot);
+      LOGGER.debug(
+          "Snapshot is older than the latest snapshot {}. Snapshot {} won't be committed.",
+          currentPersistedSnapshot.getMetadata(),
+          metadata);
       purgePendingSnapshots(metadata);
       return currentPersistedSnapshot;
     }
@@ -433,23 +438,28 @@ public final class FileBasedSnapshotStore extends Actor
           String.format(
               errorMessage,
               currentPersistedSnapshot,
-              newPersistedSnapshot,
+              newPersistedSnapshot.getMetadata(),
               currentPersistedSnapshotRef.get()));
     }
+
+    LOGGER.info("Committed new snapshot {}", newPersistedSnapshot.getId());
 
     snapshotMetrics.incrementSnapshotCount();
     observeSnapshotSize(newPersistedSnapshot);
 
-    LOGGER.debug("Purging snapshots older than {}", newPersistedSnapshot);
+    LOGGER.trace(
+        "Purging snapshots older than {}",
+        newPersistedSnapshot.getMetadata().getSnapshotIdAsString());
     if (currentPersistedSnapshot != null) {
-      LOGGER.debug("Deleting snapshot {}", currentPersistedSnapshot);
+      LOGGER.debug(
+          "Deleting previous snapshot {}",
+          currentPersistedSnapshot.getMetadata().getSnapshotIdAsString());
       currentPersistedSnapshot.delete();
     }
     purgePendingSnapshots(newPersistedSnapshot.getMetadata());
 
     listeners.forEach(listener -> listener.onNewSnapshot(newPersistedSnapshot));
 
-    LOGGER.debug("Created new snapshot {}", newPersistedSnapshot);
     return newPersistedSnapshot;
   }
 
@@ -496,6 +506,10 @@ public final class FileBasedSnapshotStore extends Actor
     } catch (final AtomicMoveNotSupportedException e) {
       LOGGER.warn("Atomic move not supported. Moving the snapshot files non-atomically.");
       Files.move(directory, destination);
+    }
+
+    try (var channel = FileChannel.open(destination)) {
+      channel.force(true);
     }
   }
 

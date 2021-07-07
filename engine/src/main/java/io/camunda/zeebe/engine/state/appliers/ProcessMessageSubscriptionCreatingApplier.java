@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.util.sched.clock.ActorClock;
 
 public final class ProcessMessageSubscriptionCreatingApplier
     implements TypedEventApplier<
@@ -26,15 +25,12 @@ public final class ProcessMessageSubscriptionCreatingApplier
 
   @Override
   public void applyState(final long key, final ProcessMessageSubscriptionRecord value) {
-    // TODO (saig0): the send time for the retry should be deterministic (#6364)
-    final var sentTime = ActorClock.currentTimeMillis();
-
     if (subscriptionState.existSubscriptionForElementInstance(
         value.getElementInstanceKey(), value.getMessageNameBuffer())) {
       // TODO (saig0): avoid state change on reprocessing of a not yet migrated processor (#6200)
       return;
     }
 
-    subscriptionState.put(key, value, sentTime);
+    subscriptionState.put(key, value);
   }
 }

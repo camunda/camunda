@@ -7,8 +7,8 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
-    <relativePath>../parent</relativePath>
+    <version>1.2.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <dependencies>
@@ -34,6 +34,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
@@ -45,6 +52,13 @@
       <scope>test</scope>
     </dependency>
 
-</dependencies>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+
+  </dependencies>
 
 </project>

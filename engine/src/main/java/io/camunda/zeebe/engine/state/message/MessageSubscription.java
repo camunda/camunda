@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -20,10 +21,10 @@ public final class MessageSubscription extends UnpackedObject implements DbValue
 
   private final LongProperty keyProp = new LongProperty("key");
 
-  private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
+  private final BooleanProperty correlatingProp = new BooleanProperty("correlating", false);
 
   public MessageSubscription() {
-    declareProperty(recordProp).declareProperty(keyProp).declareProperty(commandSentTimeProp);
+    declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
   }
 
   public MessageSubscriptionRecord getRecord() {
@@ -44,15 +45,12 @@ public final class MessageSubscription extends UnpackedObject implements DbValue
     return this;
   }
 
-  public long getCommandSentTime() {
-    return commandSentTimeProp.getValue();
-  }
-
-  public void setCommandSentTime(final long commandSentTime) {
-    commandSentTimeProp.setValue(commandSentTime);
-  }
-
   public boolean isCorrelating() {
-    return commandSentTimeProp.getValue() > 0;
+    return correlatingProp.getValue();
+  }
+
+  public MessageSubscription setCorrelating(final boolean correlating) {
+    correlatingProp.setValue(correlating);
+    return this;
   }
 }

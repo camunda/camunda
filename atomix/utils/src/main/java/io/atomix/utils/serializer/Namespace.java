@@ -21,7 +21,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.ByteBufferInput;
 import com.esotericsoftware.kryo.io.ByteBufferOutput;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.util.Pool;
@@ -106,7 +105,7 @@ public class Namespace {
    * @param friendlyName friendly name for the namespace
    */
   public Namespace(final List<RegistrationBlock> registeredTypes, final String friendlyName) {
-    this.registeredBlocks = ImmutableList.copyOf(registeredTypes);
+    registeredBlocks = ImmutableList.copyOf(registeredTypes);
     this.friendlyName = checkNotNull(friendlyName);
 
     final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -158,7 +157,6 @@ public class Namespace {
    * @param <T> deserialized Object type
    * @return deserialized Object
    */
-  @SuppressWarnings("unchecked")
   public <T> T deserialize(final byte[] bytes) {
     final Input input = inputPool.obtain();
     try {
@@ -172,23 +170,6 @@ public class Namespace {
       }
     } finally {
       inputPool.free(input);
-    }
-  }
-
-  /**
-   * Deserializes given byte buffer to Object using Kryo instance in pool.
-   *
-   * @param buffer input with serialized bytes
-   * @param <T> deserialized Object type
-   * @return deserialized Object
-   */
-  @SuppressWarnings("unchecked")
-  public <T> T deserialize(final ByteBuffer buffer) {
-    final Kryo kryo = kryoPool.obtain();
-    try (final ByteBufferInput input = new ByteBufferInput(buffer)) {
-      return (T) kryo.readClassAndObject(input);
-    } finally {
-      kryoPool.free(kryo);
     }
   }
 

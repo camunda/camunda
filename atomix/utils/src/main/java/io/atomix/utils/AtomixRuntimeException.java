@@ -24,10 +24,6 @@ public class AtomixRuntimeException extends RuntimeException {
     super(message);
   }
 
-  public AtomixRuntimeException(final String message, final Object... args) {
-    super(String.format(message, args));
-  }
-
   public AtomixRuntimeException(final String message, final Throwable cause) {
     super(message, cause);
   }

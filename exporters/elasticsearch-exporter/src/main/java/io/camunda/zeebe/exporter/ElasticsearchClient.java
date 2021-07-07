@@ -38,6 +38,8 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.common.xcontent.DeprecationHandler;
@@ -120,51 +122,59 @@ public class ElasticsearchClient {
     final var bulkMemorySize = getBulkMemorySize();
     metrics.recordBulkMemorySize(bulkMemorySize);
 
-    final BulkResponse bulkResponse;
-    try {
-      bulkResponse = exportBulk();
+    try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
+      exportBulk();
+      // all records where flushed, create new bulk request, otherwise retry next time
+      bulkRequest = new ArrayList<>();
+    } catch (final ElasticsearchExporterException e) {
+      metrics.recordFailedFlush();
+      throw e;
+    }
+  }
 
+  private void exportBulk() {
+    final Response httpResponse;
+    try {
+      httpResponse = sendBulkRequest();
+    } catch (final ResponseException e) {
+      throw new ElasticsearchExporterException("Elastic returned an error response on flush", e);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to flush bulk", e);
     }
 
-    final var success = checkBulkResponse(bulkResponse);
-    if (!success) {
-      throw new ElasticsearchExporterException("Failed to flush all items of the bulk");
+    final BulkResponse bulkResponse;
+    try {
+      bulkResponse = MAPPER.readValue(httpResponse.getEntity().getContent(), BulkResponse.class);
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to parse response when flushing", e);
     }
 
-    // all records where flushed, create new bulk request, otherwise retry next time
-    bulkRequest = new ArrayList<>();
+    if (bulkResponse.hasErrors()) {
+      throwCollectedBulkError(bulkResponse);
+    }
   }
 
-  private boolean checkBulkResponse(final BulkResponse bulkResponse) {
-    final var hasErrors = bulkResponse.hasErrors();
-    if (hasErrors) {
-      bulkResponse.getItems().stream()
-          .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
-          .flatMap(index -> Optional.ofNullable(index.getError()).stream())
-          .collect(Collectors.groupingBy(BulkItemError::getType))
-          .forEach(
-              (errorType, errors) ->
-                  log.warn(
-                      "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
-                      errors.size(),
-                      errorType,
-                      errors.get(0).getReason()));
-    }
+  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
+    final var collectedErrors = new ArrayList<String>();
+    bulkResponse.getItems().stream()
+        .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
+        .flatMap(index -> Optional.ofNullable(index.getError()).stream())
+        .collect(Collectors.groupingBy(BulkItemError::getType))
+        .forEach(
+            (errorType, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
+                        errors.size(), errorType, errors.get(0).getReason())));
 
-    return !hasErrors;
+    throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
-  private BulkResponse exportBulk() throws IOException {
-    try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
-      final var request = new Request("POST", "/_bulk");
-      request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
+  private Response sendBulkRequest() throws IOException {
+    final var request = new Request("POST", "/_bulk");
+    request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
 
-      final var response = client.performRequest(request);
-
-      return MAPPER.readValue(response.getEntity().getContent(), BulkResponse.class);
-    }
+    return client.performRequest(request);
   }
 
   public boolean shouldFlush() {

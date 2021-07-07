@@ -1,0 +1,34 @@
+[
+  {
+    "extension": "revapi.differences",
+    "configuration": {
+      "justification": "Ignore new methods for Zeebe extensions, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
+      "ignore": true,
+      "differences": [
+        {
+          "code": "java.method.addedToInterface",
+          "new": {
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.model\\.bpmn\\.instance\\.zeebe(\\..*)?/"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "extension": "revapi.differences",
+    "configuration": {
+      "justification": "The abstract builders are usually not used outside of this project; a caller uses the concrete builder that inherits from the abstract builder.",
+      "ignore": true,
+      "differences": [
+        {
+          "code": "java.class.nonFinalClassInheritsFromNewClass",
+          "new": {
+            "matcher": "java-package",
+            "match": "io.camunda.zeebe.model.bpmn.builder"
+          }
+        }
+      ]
+    }
+  }
+]

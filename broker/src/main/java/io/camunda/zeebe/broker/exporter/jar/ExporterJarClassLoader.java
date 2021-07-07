@@ -11,18 +11,18 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a class loader which isolates external exporters from other exporters, while exposing
  * our own code to ensure versions match at runtime.
  */
 public final class ExporterJarClassLoader extends URLClassLoader {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExporterJarClassLoader.class);
+
   private static final String JAVA_PACKAGE_PREFIX = "java.";
   private static final String JAR_URL_FORMAT = "jar:%s!/";
-
-  /** lists of packages from broker base that are exposed at runtime to the external exporters */
-  private static final String[] EXPOSED_PACKAGE_PREFIXES =
-      new String[] {"io.camunda.zeebe.exporter.api", "org.slf4j.", "org.apache.logging.log4j."};
 
   private ExporterJarClassLoader(final URL[] urls) {
     super(urls);
@@ -48,30 +48,17 @@ public final class ExporterJarClassLoader extends URLClassLoader {
         return findSystemClass(name);
       }
 
-      if (isProvidedByBroker(name)) {
-        return getSystemClassLoader().loadClass(name);
-      }
-
       Class<?> clazz = findLoadedClass(name);
       if (clazz == null) {
         try {
           clazz = findClass(name);
         } catch (final ClassNotFoundException ex) {
+          LOGGER.trace("Failed to load class {}, falling back to parent class loader", name, ex);
           clazz = super.loadClass(name);
         }
       }
 
       return clazz;
     }
-  }
-
-  private boolean isProvidedByBroker(final String name) {
-    for (final String prefix : EXPOSED_PACKAGE_PREFIXES) {
-      if (name.startsWith(prefix)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 }

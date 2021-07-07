@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealt
 import io.camunda.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
 import io.camunda.zeebe.util.health.MemoryHealthIndicator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Test;
@@ -90,7 +91,8 @@ public class GatewayHealthIndicatorsIntegrationTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(1));
 
-    final Supplier<BrokerClusterState> stateSupplier = () -> mockClusterState;
+    final Supplier<Optional<BrokerClusterState>> stateSupplier =
+        () -> Optional.of(mockClusterState);
 
     // when
     final Health actualHealthBeforeRegisteringStatusSupplier =
@@ -118,7 +120,8 @@ public class GatewayHealthIndicatorsIntegrationTest {
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
     when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
 
-    final Supplier<BrokerClusterState> stateSupplier = () -> mockClusterState;
+    final Supplier<Optional<BrokerClusterState>> stateSupplier =
+        () -> Optional.of(mockClusterState);
 
     // when
     final Health actualHealthBeforeRegisteringStatusSupplier =

@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -112,7 +113,7 @@ class JournalTest {
   }
 
   @Test
-  public void shouldReadMultipleRecord() {
+  void shouldReadMultipleRecord() {
     // given
     final var firstRecord = journal.append(1, data);
     final var secondRecord = journal.append(20, dataOther);
@@ -128,7 +129,7 @@ class JournalTest {
   }
 
   @Test
-  public void shouldAppendAndReadMultipleRecordsInOrder() {
+  void shouldAppendAndReadMultipleRecordsInOrder() {
     // when
     for (int i = 0; i < 10; i++) {
       final var recordAppended = journal.append(i + 10, data);
@@ -185,7 +186,7 @@ class JournalTest {
     // then
     assertThat(journal.isEmpty()).isTrue();
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    final var record = journal.append(asqn++, data);
+    final var record = journal.append(asqn, data);
     assertThat(record.index()).isEqualTo(2);
   }
 
@@ -205,7 +206,7 @@ class JournalTest {
 
     // then
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    final var record = journal.append(asqn++, data);
+    final var record = journal.append(asqn, data);
     assertThat(record.index()).isEqualTo(2);
 
     // then
@@ -541,7 +542,7 @@ class JournalTest {
   }
 
   @Test
-  public void shouldInvalidateAllEntries() throws Exception {
+  void shouldInvalidateAllEntries() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
     final var firstRecord = copyRecord(journal.append(data));
@@ -565,14 +566,13 @@ class JournalTest {
   }
 
   @Test
-  public void shouldDetectCorruptedEntry() throws Exception {
+  void shouldDetectCorruptedEntry() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
     journal.append(data);
     final var secondRecord = copyRecord(journal.append(data));
-    assertThat(directory.toFile().listFiles()).hasSize(1);
-    assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
-    final File log = directory.toFile().listFiles()[0].listFiles()[0];
+    final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
+    final File log = Objects.requireNonNull(dataFile.listFiles())[0];
 
     // when
     journal.close();
@@ -585,14 +585,13 @@ class JournalTest {
   }
 
   @Test
-  public void shouldDeletePartiallyWrittenEntry() throws Exception {
+  void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
     data.wrap("000".getBytes(StandardCharsets.UTF_8));
     final var firstRecord = copyRecord(journal.append(data));
     final var secondRecord = copyRecord(journal.append(data));
-    assertThat(directory.toFile().listFiles()).hasSize(1);
-    assertThat(directory.toFile().listFiles()[0].listFiles()).hasSize(1);
-    final File log = directory.toFile().listFiles()[0].listFiles()[0];
+    final File dataFile = Objects.requireNonNull(directory.toFile().listFiles())[0];
+    final File log = Objects.requireNonNull(dataFile.listFiles())[0];
 
     // when
     journal.close();
@@ -607,7 +606,7 @@ class JournalTest {
     assertThat(reader.next()).isEqualTo(lastRecord);
   }
 
-  private PersistedJournalRecord copyRecord(final JournalRecord record) {
+  static PersistedJournalRecord copyRecord(final JournalRecord record) {
     final DirectBuffer data = record.data();
     final byte[] buffer = new byte[data.capacity()];
     data.getBytes(0, buffer);

@@ -195,7 +195,8 @@ public final class EventAppliers implements EventApplier {
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
     register(
         IncidentIntent.RESOLVED,
-        new IncidentResolvedApplier(state.getIncidentState(), state.getJobState()));
+        new IncidentResolvedApplier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
   }
 
   private void registerProcessMessageSubscriptionEventAppliers(final MutableZeebeState state) {

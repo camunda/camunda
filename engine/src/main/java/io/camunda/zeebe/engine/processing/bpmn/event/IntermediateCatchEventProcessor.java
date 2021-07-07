@@ -52,14 +52,13 @@ public class IntermediateCatchEventProcessor
       final ExecutableCatchEventElement element, final BpmnElementContext completing) {
     variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .ifRightOrLeft(
+        .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              final var completed =
-                  stateTransitionBehavior.transitionToCompletedWithParentNotification(
-                      element, completing);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-            },
+              return stateTransitionBehavior.transitionToCompleted(element, completing);
+            })
+        .ifRightOrLeft(
+            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, completing));
   }
 

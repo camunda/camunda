@@ -40,25 +40,35 @@ public final class ErrorEventIncidentTest {
           .boundaryEvent("error", b -> b.error(ERROR_CODE))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance END_EVENT_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .endEvent("error", e -> e.error(ERROR_CODE))
           .done();
+  private static final BpmnModelInstance EVENT_SUB_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .eventSubProcess(
+              "error",
+              subprocess ->
+                  subprocess
+                      .startEvent("error-start", s -> s.error(ERROR_CODE).interrupting(true))
+                      .serviceTask("task-in-subprocess", t -> t.zeebeJobType(JOB_TYPE))
+                      .endEvent())
+          .startEvent()
+          .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+          .endEvent()
+          .done();
 
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCreateIncident() {
-    // given
+  public void shouldCreateIncidentWhenThrownErrorIsUncaught() {
+    // given process with boundary error event
     ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when
+    // when error thrown with different error code
     final var jobEvent =
         ENGINE
             .job()
@@ -69,13 +79,12 @@ public final class ErrorEventIncidentTest {
             .throwError();
 
     // then
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(incidentEvent.getValue())
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("unhandled error event incident created")
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage("error thrown")
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
@@ -117,21 +126,7 @@ public final class ErrorEventIncidentTest {
   @Test
   public void shouldCreateIncidentIfErrorIsThrownFromInterruptingEventSubprocess() {
     // given
-    final var process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .eventSubProcess(
-                "error",
-                subprocess ->
-                    subprocess
-                        .startEvent("error-start", s -> s.error(ERROR_CODE).interrupting(true))
-                        .serviceTask("task-in-subprocess", t -> t.zeebeJobType(JOB_TYPE))
-                        .endEvent())
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
+    ENGINE.deployment().withXmlResource(EVENT_SUB_PROCESS).deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -154,13 +149,11 @@ public final class ErrorEventIncidentTest {
     ENGINE.job().withKey(jobKey).withType(JOB_TYPE).withErrorCode(ERROR_CODE).throwError();
 
     // then
-    final Record<IncidentRecordValue> incidentEvent =
-        RecordingExporter.incidentRecords()
-            .withIntent(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(incidentEvent.getValue())
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .hasErrorMessage(
             String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
@@ -243,19 +236,76 @@ public final class ErrorEventIncidentTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    final Record<IncidentRecordValue> incidentEvent =
+    final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords()
             .withIntent(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
     // when
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentEvent.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then
     assertThat(
-            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(5))
+            RecordingExporter.incidentRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
+                .limit(3))
         .extracting(Record::getIntent)
+        .describedAs("incident is created, resolved and recreated")
         .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED, IncidentIntent.CREATED);
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
+                .filter(r -> r.getKey() != incident.getKey())
+                .findFirst())
+        .describedAs("incident is recreated as new incident")
+        .isPresent()
+        .hasValueSatisfying(
+            newIncident -> assertThat(newIncident.getValue()).isEqualTo(incident.getValue()));
+  }
+
+  @Test
+  public void shouldResolveIncidentForJob() {
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // given an unhandled error event incident is raised for a job
+    final var job =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(JOB_TYPE)
+            .withErrorCode("other-error")
+            .throwError();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
+            .getFirst();
+
+    // when that incident is resolved
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyEvents()
+                .limit(2))
+        .extracting(Record::getIntent)
+        .describedAs("incident is created and resolved")
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+
+    // then the job can now be completed again
+    ENGINE.job().withKey(job.getKey()).complete();
+
+    assertThat(RecordingExporter.jobRecords().withRecordKey(job.getKey()).onlyEvents().limit(3))
+        .extracting(Record::getIntent)
+        .describedAs("job that had error_thrown is completed")
+        .containsExactly(JobIntent.CREATED, JobIntent.ERROR_THROWN, JobIntent.COMPLETED);
   }
 }

@@ -47,9 +47,7 @@ public final class SecurityTest {
             cfg.getSecurity().getCertificateChainPath()));
 
     // when
-    gateway =
-        new Gateway(
-            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
+    gateway = buildGateway(cfg);
     gateway.start();
   }
 
@@ -69,9 +67,7 @@ public final class SecurityTest {
             cfg.getSecurity().getPrivateKeyPath()));
 
     // when
-    gateway =
-        new Gateway(
-            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
+    gateway = buildGateway(cfg);
     gateway.start();
   }
 
@@ -88,9 +84,7 @@ public final class SecurityTest {
             + "Edit the gateway configuration file to provide one or to disable TLS.");
 
     // when
-    gateway =
-        new Gateway(
-            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
+    gateway = buildGateway(cfg);
     gateway.start();
   }
 
@@ -107,9 +101,7 @@ public final class SecurityTest {
             + "Edit the gateway configuration file to provide one or to disable TLS.");
 
     // when
-    gateway =
-        new Gateway(
-            cfg, AtomixCluster.builder().build(), ActorScheduler.newActorScheduler().build());
+    gateway = buildGateway(cfg);
     gateway.start();
   }
 
@@ -129,5 +121,15 @@ public final class SecurityTest {
                         .getClassLoader()
                         .getResource("security/test-server.key.pem")
                         .getPath()));
+  }
+
+  private Gateway buildGateway(final GatewayCfg gatewayCfg) {
+    final var atomix = AtomixCluster.builder().build();
+    return new Gateway(
+        gatewayCfg,
+        atomix.getMessagingService(),
+        atomix.getMembershipService(),
+        atomix.getEventService(),
+        ActorScheduler.newActorScheduler().build());
   }
 }

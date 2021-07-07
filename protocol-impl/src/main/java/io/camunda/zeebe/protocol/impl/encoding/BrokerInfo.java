@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.function.BiConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.ObjLongConsumer;
 import org.agrona.DirectBuffer;
@@ -49,7 +50,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-@SuppressWarnings({"squid:S1200", "squid:S1448"})
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
@@ -212,6 +212,11 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
+  public BrokerInfo setPartitionDead(final Integer partitionId) {
+    addPartitionHealth(partitionId, PartitionHealthStatus.DEAD);
+    return this;
+  }
+
   public BrokerInfo setFollowerForPartition(final int partitionId) {
     partitionLeaderTerms.remove(partitionId);
     return addPartitionRole(partitionId, PartitionRole.FOLLOWER);
@@ -228,7 +233,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-  @SuppressWarnings("squid:S138")
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
@@ -324,7 +328,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
-  @SuppressWarnings("squid:S138")
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder
@@ -452,23 +455,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public BrokerInfo consumePartitionsHealth(
-      final IntConsumer partitionConsumer,
-      final IntConsumer partitionHealthyConsumer,
-      final IntConsumer partitionUnhealthyConsumer) {
-    partitionHealthStatuses.forEach(
-        (partition, health) -> {
-          partitionConsumer.accept(partition);
-          switch (health) {
-            case HEALTHY:
-              partitionHealthyConsumer.accept(partition);
-              break;
-            case UNHEALTHY:
-              partitionUnhealthyConsumer.accept(partition);
-              break;
-            default:
-              LOG.warn("Failed to decode broker info, found unknown health status: {}", health);
-          }
-        });
+      final BiConsumer<Integer, PartitionHealthStatus> partitionConsumer) {
+    partitionHealthStatuses.forEach(partitionConsumer);
     return this;
   }
 

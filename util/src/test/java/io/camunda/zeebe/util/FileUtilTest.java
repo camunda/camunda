@@ -8,11 +8,13 @@
 package io.camunda.zeebe.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -45,5 +47,17 @@ public final class FileUtilTest {
               FileUtil.deleteFolder(root.getAbsolutePath());
             })
         .isInstanceOf(NoSuchFileException.class);
+  }
+
+  // regression test
+  @Test
+  public void shouldNotThrowErrorIfFolderDoesNotExist() {
+    // given
+    final Path nonExistent = tempFolder.getRoot().toPath().resolve("something");
+
+    // when - then
+    assertThatCode(() -> FileUtil.deleteFolderIfExists(nonExistent))
+        .as("no error if folder does not exist")
+        .doesNotThrowAnyException();
   }
 }

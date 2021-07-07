@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 
-public interface ZeebeState {
+public interface ZeebeState extends StreamProcessorLifecycleAware {
 
   DeploymentState getDeploymentState();
 

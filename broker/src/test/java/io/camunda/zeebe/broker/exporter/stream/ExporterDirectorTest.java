@@ -177,7 +177,7 @@ public final class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldUpdateIfRecordSkipsSingleUpToDateExporter() throws InterruptedException {
+  public void shouldUpdateIfRecordSkipsSingleUpToDateExporter() {
     final ControlledTestExporter filteringExporter = exporters.get(0);
     final ControlledTestExporter tailingExporter = exporters.get(1);
     tailingExporter
@@ -297,13 +297,13 @@ public final class ExporterDirectorTest {
         .onConfigure(
             withFilter(
                 Arrays.asList(RecordType.COMMAND, RecordType.EVENT),
-                Arrays.asList(ValueType.DEPLOYMENT)));
+                Collections.singletonList(ValueType.DEPLOYMENT)));
 
     exporters
         .get(1)
         .onConfigure(
             withFilter(
-                Arrays.asList(RecordType.EVENT),
+                Collections.singletonList(RecordType.EVENT),
                 Arrays.asList(ValueType.DEPLOYMENT, ValueType.JOB)));
 
     startExporterDirector(exporterDescriptors);
@@ -381,7 +381,7 @@ public final class ExporterDirectorTest {
 
     writeEvent();
 
-    timerScheduledLatch.await(5, TimeUnit.SECONDS);
+    assertThat(timerScheduledLatch.await(5, TimeUnit.SECONDS)).isTrue();
 
     rule.getClock().addTime(delay);
 
@@ -408,7 +408,7 @@ public final class ExporterDirectorTest {
 
     writeEvent();
 
-    timerScheduledLatch.await(5, TimeUnit.SECONDS);
+    assertThat(timerScheduledLatch.await(5, TimeUnit.SECONDS)).isTrue();
 
     rule.getClock().addTime(delay);
 
@@ -441,7 +441,7 @@ public final class ExporterDirectorTest {
 
     writeEvent();
 
-    timerScheduledLatch.await(5, TimeUnit.SECONDS);
+    assertThat(timerScheduledLatch.await(5, TimeUnit.SECONDS)).isTrue();
 
     rule.getClock().addTime(delay);
 
@@ -473,7 +473,7 @@ public final class ExporterDirectorTest {
 
     // then
     waitUntil(() -> exporters.get(1).getExportedRecords().size() >= 1);
-    assertThat(exporters.get(0).getExportedRecords()).hasSize(0);
+    assertThat(exporters.get(0).getExportedRecords()).isEmpty();
     assertThat(exporters.get(1).getExportedRecords())
         .extracting(Record::getPosition)
         .hasSize(1)
@@ -594,19 +594,18 @@ public final class ExporterDirectorTest {
 
   private Consumer<Context> withFilter(
       final List<RecordType> acceptedTypes, final List<ValueType> valueTypes) {
-    return context -> {
-      context.setFilter(
-          new Context.RecordFilter() {
-            @Override
-            public boolean acceptType(final RecordType recordType) {
-              return acceptedTypes.contains(recordType);
-            }
+    return context ->
+        context.setFilter(
+            new Context.RecordFilter() {
+              @Override
+              public boolean acceptType(final RecordType recordType) {
+                return acceptedTypes.contains(recordType);
+              }
 
-            @Override
-            public boolean acceptValue(final ValueType valueType) {
-              return valueTypes.contains(valueType);
-            }
-          });
-    };
+              @Override
+              public boolean acceptValue(final ValueType valueType) {
+                return valueTypes.contains(valueType);
+              }
+            });
   }
 }

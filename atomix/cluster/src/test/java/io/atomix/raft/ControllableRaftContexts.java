@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
@@ -159,7 +160,8 @@ public final class ControllableRaftContexts {
             getRaftThreadContextFactory(memberId),
             32 * 1024, // Copied from defaults
             2, // Copied from defaults
-            () -> random);
+            () -> random,
+            RaftElectionConfig.ofDefaultElection());
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
   }

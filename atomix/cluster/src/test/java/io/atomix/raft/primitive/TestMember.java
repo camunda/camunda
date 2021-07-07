@@ -46,9 +46,6 @@ public class TestMember implements RaftMember {
   public void addTypeChangeListener(final Consumer<Type> listener) {}
 
   @Override
-  public void removeTypeChangeListener(final Consumer<Type> listener) {}
-
-  @Override
   public CompletableFuture<Void> promote() {
     return null;
   }

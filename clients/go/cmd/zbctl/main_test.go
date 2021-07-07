@@ -48,12 +48,13 @@ type integrationTestSuite struct {
 }
 
 type testCase struct {
-	name       string
-	setupCmds  [][]string
-	envVars    []string
-	cmd        []string
-	goldenFile string
-	jsonOutput bool
+	name           string
+	setupCmds      [][]string
+	envVars        []string
+	cmd            []string
+	goldenFile     string
+	jsonOutput     bool
+	useHostAndPort bool
 }
 
 var tests = []testCase{
@@ -89,6 +90,15 @@ var tests = []testCase{
 		envVars:    []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
 		goldenFile: "testdata/topology_json.golden",
 		jsonOutput: true,
+	},
+	{
+		name: "using json flag and host and port arguments",
+		cmd:  strings.Fields("status --output=json"),
+		// we need to set the path so it evaluates $HOME before we overwrite it
+		envVars:        []string{fmt.Sprintf("%s=true", zbc.InsecureEnvVar), fmt.Sprintf("PATH=%s", os.Getenv("PATH"))},
+		goldenFile:     "testdata/topology_json.golden",
+		jsonOutput:     true,
+		useHostAndPort: true,
 	},
 	{
 		name:       "deploy process",
@@ -168,7 +178,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
 		s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
-				if _, err := s.runCommand(cmd); err != nil {
+				if _, err := s.runCommand(cmd, false); err != nil {
 					t.Fatalf("failed while executing set up command '%s': %v", strings.Join(cmd, " "), err)
 				}
 			}
@@ -178,7 +188,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				<-time.After(time.Second)
 			}
 
-			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
+			cmdOut, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
 			if errors.Is(err, context.DeadlineExceeded) {
 				t.Fatalf("timed out while executing command '%s': %v", strings.Join(test.cmd, " "), err)
 			}
@@ -265,11 +275,17 @@ func cmpIgnoreNums(x, y string) bool {
 }
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
-func (s *integrationTestSuite) runCommand(command []string, envVars ...string) ([]byte, error) {
+func (s *integrationTestSuite) runCommand(command []string, useHostAndPort bool, envVars ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	args := append(command, "--address", s.GatewayAddress)
+	args := command
+	if useHostAndPort {
+		args = append(args, "--host", s.GatewayHost)
+		args = append(args, "--port", fmt.Sprint(s.GatewayPort))
+	} else {
+		args = append(args, "--address", s.GatewayAddress)
+	}
 	cmd := exec.CommandContext(ctx, fmt.Sprintf("./dist/%s", zbctl), args...)
 
 	cmd.Env = append(cmd.Env, envVars...)

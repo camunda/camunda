@@ -54,15 +54,15 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
   protected final Supplier<InputStream> configSupplier;
-  protected final Consumer<BrokerCfg>[] configurators;
-  protected BrokerCfg brokerCfg;
-  protected Broker broker;
-  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
   protected long startTime;
+  private final Consumer<BrokerCfg>[] configurators;
+  private final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+  private final BrokerCfg brokerCfg;
+  private Broker broker;
+  private final ControlledActorClock controlledActorClock = new ControlledActorClock();
+  private final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
   private final Duration timeout;
   private final File newTemporaryFolder;
   private String dataDirectory;
@@ -182,10 +182,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public InetSocketAddress getGatewayAddress() {
     return brokerCfg.getGateway().getNetwork().toSocketAddress();
-  }
-
-  public Broker getBroker() {
-    return broker;
   }
 
   public ControlledActorClock getClock() {

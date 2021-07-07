@@ -17,12 +17,14 @@
 package io.atomix.primitive.partition;
 
 import com.google.common.hash.Hashing;
-import io.atomix.utils.ConfiguredType;
+import io.atomix.cluster.MemberId;
+import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.serializer.Namespace;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** Primitive partition group. */
 public interface PartitionGroup extends Configured<PartitionGroupConfig> {
@@ -68,6 +70,12 @@ public interface PartitionGroup extends Configured<PartitionGroupConfig> {
    */
   List<PartitionId> getPartitionIds();
 
+  default List<Partition> getPartitionsWithMember(final MemberId memberId) {
+    return getPartitions().stream()
+        .filter(partition -> partition.members().contains(memberId))
+        .collect(Collectors.toList());
+  }
+
   /** Partition group builder. */
   abstract class Builder<C extends PartitionGroupConfig<C>>
       implements io.atomix.utils.Builder<ManagedPartitionGroup> {
@@ -79,7 +87,7 @@ public interface PartitionGroup extends Configured<PartitionGroupConfig> {
   }
 
   /** Partition group type. */
-  interface Type<C extends PartitionGroupConfig<C>> extends ConfiguredType<C> {
+  interface Type<C extends PartitionGroupConfig<C>> extends NamedType {
 
     /**
      * Returns the partition group namespace.

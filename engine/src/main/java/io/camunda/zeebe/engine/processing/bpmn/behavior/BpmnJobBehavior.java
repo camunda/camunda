@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableServiceTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -38,7 +38,7 @@ public final class BpmnJobBehavior {
 
   public void createNewJob(
       final BpmnElementContext context,
-      final ExecutableServiceTask serviceTask,
+      final ExecutableJobWorkerTask serviceTask,
       final String jobType,
       final int retries) {
 

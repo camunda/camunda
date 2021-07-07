@@ -16,8 +16,11 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -36,6 +39,10 @@ public final class ZeebeDesignTimeValidators {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
     validators.add(new BoundaryEventValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(BusinessRuleTask.class)
+            .hasSingleExtensionElement(
+                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     validators.add(
         ExtensionElementsValidator.verifyThat(CallActivity.class)
             .hasSingleExtensionElement(
@@ -56,7 +63,15 @@ public final class ZeebeDesignTimeValidators {
             .hasSingleExtensionElement(
                 ZeebeLoopCharacteristics.class, ZeebeConstants.ELEMENT_LOOP_CHARACTERISTICS));
     validators.add(new ProcessValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(ScriptTask.class)
+            .hasSingleExtensionElement(
+                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     validators.add(new SequenceFlowValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(SendTask.class)
+            .hasSingleExtensionElement(
+                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     validators.add(
         ExtensionElementsValidator.verifyThat(ServiceTask.class)
             .hasSingleExtensionElement(

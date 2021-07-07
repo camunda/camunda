@@ -42,9 +42,6 @@ public class RaftStorageTest {
     final RaftStorage storage = RaftStorage.builder().build();
     assertEquals("atomix", storage.prefix());
     assertEquals(new File(System.getProperty("user.dir")), storage.directory());
-    assertEquals(1024 * 1024 * 32, storage.maxLogSegmentSize());
-    assertEquals(1024L * 1024 * 1024, storage.freeDiskSpace());
-    assertTrue(storage.isFlushExplicitly());
   }
 
   @Test
@@ -59,20 +56,6 @@ public class RaftStorageTest {
             .build();
     assertEquals("foo", storage.prefix());
     assertEquals(new File(PATH.toFile(), "foo"), storage.directory());
-    assertEquals(1024 * 1024, storage.maxLogSegmentSize());
-    assertEquals(100, storage.freeDiskSpace());
-    assertFalse(storage.isFlushExplicitly());
-  }
-
-  @Test
-  public void testCustomConfiguration2() throws Exception {
-    final RaftStorage storage =
-        RaftStorage.builder()
-            .withDirectory(PATH.toString() + "/baz")
-            .withFlushExplicitly(true)
-            .build();
-    assertEquals(new File(PATH.toFile(), "baz"), storage.directory());
-    assertTrue(storage.isFlushExplicitly());
   }
 
   @Test

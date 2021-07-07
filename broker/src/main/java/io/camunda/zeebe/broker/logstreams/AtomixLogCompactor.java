@@ -27,7 +27,7 @@ public final class AtomixLogCompactor implements LogCompactor {
    */
   @Override
   public CompletableFuture<Void> compactLog(final long compactionBound) {
-    Loggers.DELETION_SERVICE.debug("Compacting Atomix log up to index {}", compactionBound);
+    Loggers.DELETION_SERVICE.debug("Scheduling log compaction up to index {}", compactionBound);
     partitionServer.setCompactableIndex(compactionBound);
     return partitionServer.snapshot();
   }

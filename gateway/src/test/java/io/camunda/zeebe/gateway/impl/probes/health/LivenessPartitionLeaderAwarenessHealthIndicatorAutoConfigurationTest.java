@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +51,8 @@ public class LivenessPartitionLeaderAwarenessHealthIndicatorAutoConfigurationTes
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
     when(mockClusterState.getLeaderForPartition(1)).thenReturn(42);
 
-    final Supplier<BrokerClusterState> stateSupplier = () -> mockClusterState;
+    final Supplier<Optional<BrokerClusterState>> stateSupplier =
+        () -> Optional.of(mockClusterState);
     final var healthIndicator =
         sutAutoConfig.gatewayPartitionLeaderAwarenessHealthIndicator(helperGatewayBridge);
 

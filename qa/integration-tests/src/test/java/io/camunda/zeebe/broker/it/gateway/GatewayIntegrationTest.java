@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.it.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
@@ -52,8 +52,14 @@ public final class GatewayIntegrationTest {
     configuration.init();
 
     final ControlledActorClock clock = new ControlledActorClock();
-    final AtomixCluster atomixCluster = broker.getAtomix();
-    client = new BrokerClientImpl(configuration, atomixCluster, clock);
+    final ClusterServices clusterServices = broker.getClusterServices();
+    client =
+        new BrokerClientImpl(
+            configuration,
+            clusterServices.getMessagingService(),
+            clusterServices.getMembershipService(),
+            clusterServices.getEventService(),
+            clock);
   }
 
   @After

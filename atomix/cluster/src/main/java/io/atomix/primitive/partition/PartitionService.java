@@ -16,23 +16,13 @@
  */
 package io.atomix.primitive.partition;
 
-import java.util.Collection;
-
 /** Partition service. */
 public interface PartitionService {
 
   /**
    * Returns a partition group by name.
    *
-   * @param name the name of the partition group
    * @return the partition group
    */
-  PartitionGroup getPartitionGroup(String name);
-
-  /**
-   * Returns a collection of all partition groups.
-   *
-   * @return a collection of all partition groups
-   */
-  Collection<PartitionGroup> getPartitionGroups();
+  ManagedPartitionGroup getPartitionGroup();
 }

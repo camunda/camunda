@@ -44,8 +44,8 @@ public final class StreamProcessorMetrics {
           .namespace(NAMESPACE)
           .name("stream_processor_latency")
           .help(
-              "Time between a record is written until it is picked up for processing (in seconds)")
-          .labelNames(LABEL_NAME_RECORD_TYPE, LABEL_NAME_PARTITION)
+              "Time between a command is written until it is picked up for processing (in seconds)")
+          .labelNames(LABEL_NAME_PARTITION)
           .register();
   private static final Histogram PROCESSING_DURATION =
       Histogram.build()
@@ -72,11 +72,8 @@ public final class StreamProcessorMetrics {
     STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
   }
 
-  public void processingLatency(
-      final RecordType recordType, final long written, final long processed) {
-    PROCESSING_LATENCY
-        .labels(recordType.name(), partitionIdLabel)
-        .observe((processed - written) / 1000f);
+  public void processingLatency(final long written, final long processed) {
+    PROCESSING_LATENCY.labels(partitionIdLabel).observe((processed - written) / 1000f);
   }
 
   public void processingDuration(

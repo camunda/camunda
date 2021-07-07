@@ -27,10 +27,6 @@ public class GroupMembershipEvent extends AbstractEvent<GroupMembershipEvent.Typ
     super(type, subject);
   }
 
-  public GroupMembershipEvent(final Type type, final Member subject, final long time) {
-    super(type, subject, time);
-  }
-
   /**
    * Returns the member.
    *

@@ -89,11 +89,9 @@ public final class ObjectMappingTest {
             entry("stringProp", "foo"),
             entry("binaryProp", BUF2.byteArray()));
 
-    @SuppressWarnings("unchecked")
     final Map<String, Object> packedProp = (Map<String, Object>) msgPackMap.get("packedProp");
     assertThat(packedProp).containsExactly(entry("foo", 123123L));
 
-    @SuppressWarnings("unchecked")
     final Map<String, Object> objectProp = (Map<String, Object>) msgPackMap.get("objectProp");
     assertThat(objectProp).containsExactly(entry("foo", 24L));
   }
@@ -159,7 +157,8 @@ public final class ObjectMappingTest {
 
     // then
     exception.expect(RuntimeException.class);
-    exception.expectMessage("Could not deserialize object. Deserialization stuck at offset 13");
+    exception.expectMessage(
+        "Could not deserialize object [POJO]. Deserialization stuck at offset 13");
 
     // when
     pojo.wrap(buffer);
@@ -181,7 +180,8 @@ public final class ObjectMappingTest {
 
     // then
     exception.expect(RuntimeException.class);
-    exception.expectMessage("Could not deserialize object. Deserialization stuck at offset 2");
+    exception.expectMessage(
+        "Could not deserialize object [POJO]. Deserialization stuck at offset 2");
 
     // when
     pojo.wrap(buffer);
@@ -201,7 +201,8 @@ public final class ObjectMappingTest {
 
     // then
     exception.expect(RuntimeException.class);
-    exception.expectMessage("Could not deserialize object. Deserialization stuck at offset 1");
+    exception.expectMessage(
+        "Could not deserialize object [POJO]. Deserialization stuck at offset 1");
 
     // when
     pojo.wrap(buffer);
@@ -240,7 +241,7 @@ public final class ObjectMappingTest {
 
     // then
     exception.expect(RuntimeException.class);
-    exception.expectMessage("Could not deserialize object.");
+    exception.expectMessage("Could not deserialize object");
 
     // when
     pojo.wrap(buffer);
@@ -277,7 +278,7 @@ public final class ObjectMappingTest {
 
     // then
     exception.expect(RuntimeException.class);
-    exception.expectMessage("Could not deserialize object.");
+    exception.expectMessage("Could not deserialize object");
 
     // when
     pojo.wrap(buffer);

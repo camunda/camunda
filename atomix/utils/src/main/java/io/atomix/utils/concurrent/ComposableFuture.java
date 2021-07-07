@@ -17,7 +17,6 @@
 package io.atomix.utils.concurrent;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -50,38 +49,5 @@ public class ComposableFuture<T> extends CompletableFuture<T> implements BiConsu
             consumer.accept(error);
           }
         });
-  }
-
-  /**
-   * Sets a consumer to be called asynchronously when the future is failed.
-   *
-   * @param consumer The consumer to call.
-   * @return A new future.
-   */
-  public CompletableFuture<T> exceptAsync(final Consumer<Throwable> consumer) {
-    return whenCompleteAsync(
-        (result, error) -> {
-          if (error != null) {
-            consumer.accept(error);
-          }
-        });
-  }
-
-  /**
-   * Sets a consumer to be called asynchronously when the future is failed.
-   *
-   * @param consumer The consumer to call.
-   * @param executor The executor with which to call the consumer.
-   * @return A new future.
-   */
-  public CompletableFuture<T> exceptAsync(
-      final Consumer<Throwable> consumer, final Executor executor) {
-    return whenCompleteAsync(
-        (result, error) -> {
-          if (error != null) {
-            consumer.accept(error);
-          }
-        },
-        executor);
   }
 }

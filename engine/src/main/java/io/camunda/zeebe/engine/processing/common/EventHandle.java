@@ -115,7 +115,8 @@ public final class EventHandle {
       if (isElementActivated(catchEvent)) {
         commandWriter.appendFollowUpCommand(
             eventScopeKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
-      } else if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS) {
+      } else if (catchEvent.getFlowScope().getElementType() == BpmnElementType.EVENT_SUB_PROCESS
+          && catchEvent.getElementType() == BpmnElementType.START_EVENT) {
         final var startEvent = (ExecutableStartEvent) catchEvent;
         eventTriggerBehavior.triggerEventSubProcess(
             startEvent, eventScopeKey, elementRecord, variables);

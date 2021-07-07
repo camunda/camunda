@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
@@ -96,16 +95,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
         }
       }
     }
-  }
-
-  @Override
-  public void addLeaderElectionListener(final Consumer<RaftMember> callback) {
-    raft.addLeaderElectionListener(callback);
-  }
-
-  @Override
-  public void removeLeaderElectionListener(final Consumer<RaftMember> listener) {
-    raft.removeLeaderElectionListener(listener);
   }
 
   @Override

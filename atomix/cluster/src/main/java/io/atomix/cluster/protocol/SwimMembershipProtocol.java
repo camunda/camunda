@@ -856,11 +856,6 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public SwimMembershipProtocolConfig newConfig() {
-      return new SwimMembershipProtocolConfig();
-    }
-
-    @Override
     public GroupMembershipProtocol newProtocol(final SwimMembershipProtocolConfig config) {
       return new SwimMembershipProtocol(config);
     }

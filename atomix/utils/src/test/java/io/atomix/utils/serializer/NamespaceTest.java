@@ -21,7 +21,6 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import java.nio.ByteBuffer;
 import org.junit.Test;
 
 public class NamespaceTest {
@@ -35,22 +34,6 @@ public class NamespaceTest {
     // when
     final byte[] ser = ns.serialize(want);
     final Object got = ns.deserialize(ser);
-
-    // then
-    assertEquals(want, got);
-  }
-
-  @Test
-  public void shouldDeserializeObjectWithBuffer() {
-    // given
-    final Namespace ns = new Namespace.Builder().register(Integer.class).build();
-    final Integer want = 99;
-
-    // when
-    final ByteBuffer buffer = ByteBuffer.allocate(4);
-    ns.serialize(want, buffer);
-    buffer.flip();
-    final Object got = ns.deserialize(buffer);
 
     // then
     assertEquals(want, got);

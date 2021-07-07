@@ -21,7 +21,6 @@ import io.atomix.raft.RaftServer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 /**
  * Raft server cluster API.
@@ -73,38 +72,6 @@ import java.util.function.Consumer;
  * full cluster shutdown.
  */
 public interface RaftCluster {
-
-  /**
-   * Adds a listener to be called when a leader is elected.
-   *
-   * <p>The provided {@code callback} will be called when a new leader is elected for a term.
-   * Because Raft ensures only a single leader can be elected for any given term, each election
-   * callback will be called at most once per term. However, note that a leader may not be elected
-   * for a term as well.
-   *
-   * <pre>{@code
-   * server.cluster().onLeaderElection(member -> {
-   *   System.out.println(member.address() + " elected for term " + server.cluster().term());
-   * });
-   *
-   * }</pre>
-   *
-   * The {@link RaftMember} provided to the callback represents the member that was elected leader.
-   * Raft guarantees that this member is a member of the {@link RaftCluster}. When a leader election
-   * callback is called, the correct {@link #getTerm()} for the leader is guaranteed to have already
-   * been set. Thus, to get the term for the provided leader, simply read the cluster {@link
-   * #getTerm()}.
-   *
-   * @param listener The listener to be called when a new leader is elected.
-   */
-  void addLeaderElectionListener(Consumer<RaftMember> listener);
-
-  /**
-   * Removes a leader election listener from the cluster.
-   *
-   * @param listener The leader election listener to remove.
-   */
-  void removeLeaderElectionListener(Consumer<RaftMember> listener);
 
   /**
    * Returns a member by ID.

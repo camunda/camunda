@@ -175,7 +175,7 @@ public final class DocumentPropertyTest {
     // then
     assertThat(throwable).isExactlyInstanceOf(RuntimeException.class);
     assertThat(throwable)
-        .hasMessageContaining("Could not deserialize object. Deserialization stuck");
+        .hasMessageContaining("Could not deserialize object [Document]. Deserialization stuck");
 
     final Throwable cause = throwable.getCause();
     assertThat(cause).isExactlyInstanceOf(RuntimeException.class);

@@ -28,7 +28,6 @@ import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.PartitionGroupConfig;
-import io.atomix.primitive.partition.PartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
@@ -38,8 +37,6 @@ import io.atomix.utils.concurrent.Threads;
 import io.atomix.utils.config.ConfigurationException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -97,12 +94,12 @@ public class Atomix extends AtomixCluster {
   private final ScheduledExecutorService executorService;
   private final ManagedPartitionService partitions;
   private final ThreadContext threadContext = new SingleThreadContext("atomix-%d");
+  private final ManagedPartitionGroup partitionGroup;
 
   protected Atomix(final AtomixConfig config) {
     this(config, null, null);
   }
 
-  @SuppressWarnings("unchecked")
   protected Atomix(
       final AtomixConfig config,
       final ManagedMessagingService messagingService,
@@ -112,6 +109,14 @@ public class Atomix extends AtomixCluster {
         Executors.newScheduledThreadPool(
             Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
             Threads.namedThreads("atomix-primitive-%d", LOGGER));
+
+    final PartitionGroupConfig<?> partitionGroupConfig = config.getPartitionGroup();
+
+    partitionGroup =
+        partitionGroupConfig != null
+            ? partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig)
+            : null;
+
     partitions = buildPartitionService(config, getMembershipService(), getCommunicationService());
   }
 
@@ -139,16 +144,8 @@ public class Atomix extends AtomixCluster {
     return new AtomixBuilder(config);
   }
 
-  /**
-   * Returns the partition service.
-   *
-   * <p>The partition service is responsible for managing the lifecycle of primitive partitions and
-   * can provide information about active partition groups and partitions in the cluster.
-   *
-   * @return the partition service
-   */
-  public PartitionService getPartitionService() {
-    return partitions;
+  public ManagedPartitionGroup getPartitionGroup() {
+    return partitionGroup;
   }
 
   /**
@@ -180,7 +177,6 @@ public class Atomix extends AtomixCluster {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   protected CompletableFuture<Void> stopServices() {
     return partitions
         .stop()
@@ -197,21 +193,15 @@ public class Atomix extends AtomixCluster {
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("partitions", getPartitionService()).toString();
+    return toStringHelper(this).add("partitionGroup", partitionGroup).toString();
   }
 
   /** Builds a partition service. */
-  @SuppressWarnings("unchecked")
-  private static ManagedPartitionService buildPartitionService(
+  private ManagedPartitionService buildPartitionService(
       final AtomixConfig config,
       final ClusterMembershipService clusterMembershipService,
       final ClusterCommunicationService messagingService) {
-    final List<ManagedPartitionGroup> partitionGroups = new ArrayList<>();
-    for (final PartitionGroupConfig<?> partitionGroupConfig :
-        config.getPartitionGroups().values()) {
-      partitionGroups.add(partitionGroupConfig.getType().newPartitionGroup(partitionGroupConfig));
-    }
 
-    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroups);
+    return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroup);
   }
 }

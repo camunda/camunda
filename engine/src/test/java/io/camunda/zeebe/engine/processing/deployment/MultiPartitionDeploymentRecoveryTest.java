@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,14 +52,13 @@ public class MultiPartitionDeploymentRecoveryTest {
     ENGINE.start();
 
     // then
-    final var list =
+
+    final var fullyDistributedDeployment =
         RecordingExporter.deploymentRecords()
             .withRecordKey(deployment.getKey())
             .withIntent(DeploymentIntent.FULLY_DISTRIBUTED)
-            .collect(Collectors.toList());
-    assertThat(list).hasSize(1);
+            .getFirst();
 
-    final var fullyDistributedDeployment = list.get(0);
     assertThat(fullyDistributedDeployment.getKey()).isNotNegative();
     assertThat(fullyDistributedDeployment.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(fullyDistributedDeployment.getRecordType()).isEqualTo(RecordType.EVENT);

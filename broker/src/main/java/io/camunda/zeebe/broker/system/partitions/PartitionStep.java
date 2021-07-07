@@ -16,20 +16,6 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
  * will be closed in the reverse order.
  */
 public interface PartitionStep {
-
-  /**
-   * Performs some action required for the partition to function. This may include opening
-   * components (e.g., logstream), setting their values in {@link PartitionContext}, etc. The
-   * subsequent partition steps will only be opened after the returned future is completed.
-   *
-   * @param currentTerm the current term of the transition
-   * @param context the partition context
-   * @return future
-   */
-  default ActorFuture<Void> open(final long currentTerm, final PartitionContext context) {
-    return open(context);
-  }
-
   /**
    * Performs some action required for the partition to function. This may include opening
    * components (e.g., logstream), setting their values in {@link PartitionContext}, etc. The

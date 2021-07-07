@@ -16,11 +16,10 @@
  */
 package io.atomix.primitive.partition;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
 import io.atomix.cluster.MemberId;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -30,10 +29,18 @@ import java.util.Objects;
 public class PartitionMetadata {
   private final PartitionId id;
   private final List<MemberId> members;
+  private final Map<MemberId, Integer> priority;
+  private final int targetPriority;
 
-  public PartitionMetadata(final PartitionId id, final List<MemberId> members) {
+  public PartitionMetadata(
+      final PartitionId id,
+      final List<MemberId> members,
+      final Map<MemberId, Integer> priority,
+      final int targetPriority) {
     this.id = id;
     this.members = members;
+    this.priority = priority;
+    this.targetPriority = targetPriority;
   }
 
   /**
@@ -54,6 +61,21 @@ public class PartitionMetadata {
     return members;
   }
 
+  /**
+   * Return the priority of the node if the node is a member of the replication group for this
+   * partition. Otherwise return -1.
+   *
+   * @param member
+   * @return the priority of the member
+   */
+  public int getPriority(final MemberId member) {
+    return priority.getOrDefault(member, -1);
+  }
+
+  public int getTargetPriority() {
+    return targetPriority;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(id, members);
@@ -70,6 +92,15 @@ public class PartitionMetadata {
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("id", id).add("members", members).toString();
+    return "PartitionMetadata{"
+        + "id="
+        + id
+        + ", members="
+        + members
+        + ", priority="
+        + priority
+        + ", targetPriority="
+        + targetPriority
+        + '}';
   }
 }

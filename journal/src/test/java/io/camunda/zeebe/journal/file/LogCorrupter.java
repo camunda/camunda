@@ -19,8 +19,6 @@ import java.nio.ByteBuffer;
 
 public class LogCorrupter {
 
-  private static final int BUFFER_SIZE = 8 * 1024;
-
   /**
    * Corrupts the record associated with the specified index, if it's present in the file.
    *
@@ -29,12 +27,16 @@ public class LogCorrupter {
    * @return true if the specified record was successfully corrupted; otherwise, returns false
    */
   public static boolean corruptRecord(final File file, final long index) throws IOException {
-    final byte[] bytes = new byte[BUFFER_SIZE];
-    int read = 0;
+    final byte[] bytes = new byte[Math.toIntExact(file.length())];
+    int read;
 
     try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
-      while (in.available() > 0 && read < bytes.length) {
-        read += in.read(bytes, read, Math.min(bytes.length, in.available()) - read);
+      final int available = in.available();
+      read = in.read(bytes, 0, bytes.length);
+
+      // reached EOF
+      if (read == -1) {
+        read = available;
       }
     }
 
@@ -47,6 +49,28 @@ public class LogCorrupter {
     }
 
     return true;
+  }
+
+  public static void corruptDescriptor(final File file) throws IOException {
+    final byte[] bytes = new byte[JournalSegmentDescriptor.getEncodingLength()];
+    int read;
+
+    try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
+      final int available = in.available();
+      read = in.read(bytes, 0, bytes.length);
+
+      // reached EOF
+      if (read == -1) {
+        read = available;
+      }
+    }
+
+    final byte schemaId = bytes[MessageHeaderDecoder.schemaIdEncodingOffset() + 1];
+    bytes[MessageHeaderDecoder.schemaIdEncodingOffset() + 1] = (byte) ~schemaId;
+
+    try (final BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+      out.write(bytes, 0, read);
+    }
   }
 
   private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {
