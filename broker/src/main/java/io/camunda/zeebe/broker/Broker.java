@@ -51,20 +51,20 @@ import io.camunda.zeebe.broker.system.partitions.PartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionStepMigrationHelper;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.FollowerPostStoragePartitionStep;
-import io.camunda.zeebe.broker.system.partitions.impl.steps.LeaderPostStoragePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogDeletionPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RocksDbMetricExporterPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotReplicationPartitionBootstrapStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StateControllerPartitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.StoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
@@ -97,8 +97,13 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   // preparation for future steps
+  // will be executed in the order they are defined in this list
   private static final List<PartitionBootstrapStep> BOOTSTRAP_STEPS =
       List.of(new SnapshotReplicationPartitionBootstrapStep());
+
+  // will probably be executed in parallel
+  private static final List<PartitionTransitionStep> TRANSITION_STEPS =
+      List.of(new StoragePartitionTransitionStep());
   // preparation for future step
 
   private static final List<PartitionStep> LEADER_STEPS =
@@ -106,7 +111,7 @@ public final class Broker implements AutoCloseable {
           PartitionStepMigrationHelper.fromBootstrapStep(
               new SnapshotReplicationPartitionBootstrapStep()),
           new StateControllerPartitionStep(),
-          new LeaderPostStoragePartitionStep(),
+          PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep(),
           new LogStreamPartitionStep(),
           new ZeebeDbPartitionStep(),
@@ -119,7 +124,7 @@ public final class Broker implements AutoCloseable {
           PartitionStepMigrationHelper.fromBootstrapStep(
               new SnapshotReplicationPartitionBootstrapStep()),
           new StateControllerPartitionStep(),
-          new FollowerPostStoragePartitionStep(),
+          PartitionStepMigrationHelper.fromTransitionStep(new StoragePartitionTransitionStep()),
           new LogDeletionPartitionStep());
 
   private final SystemContext brokerContext;

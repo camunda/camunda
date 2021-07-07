@@ -25,4 +25,6 @@ public interface SnapshotReplication extends AutoCloseable {
    * @param consumer the consumer which should be called
    */
   void consume(Consumer<SnapshotChunk> consumer);
+
+  void stopConsuming();
 }
