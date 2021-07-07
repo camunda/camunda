@@ -35,8 +35,6 @@ import org.slf4j.Logger;
 
 public final class LogStreamImpl extends Actor implements LogStream, FailureListener {
 
-  private static final long INVALID_ADDRESS = -1L;
-
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
@@ -53,7 +51,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
-  private long commitPosition;
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
@@ -78,13 +75,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     this.logStorage = logStorage;
     closeFuture = new CompletableActorFuture<>();
 
-    commitPosition = INVALID_ADDRESS;
     readers = new ArrayList<>();
-
-    try (final LogStorageReader storageReader = logStorage.newReader();
-        final LogStreamReader reader = new LogStreamReaderImpl(storageReader)) {
-      internalSetCommitPosition(reader.seekToEnd());
-    }
   }
 
   @Override
@@ -134,10 +125,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   @Override
   public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     actor.call(() -> onCommitPositionUpdatedConditions.removeConsumer(condition));
-  }
-
-  public void setCommitPosition(final long commitPosition) {
-    actor.call(() -> internalSetCommitPosition(commitPosition));
   }
 
   @Override
@@ -197,11 +184,8 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     return newReader;
   }
 
-  private void internalSetCommitPosition(final long commitPosition) {
-    if (commitPosition > this.commitPosition) {
-      this.commitPosition = commitPosition;
-      onCommitPositionUpdatedConditions.signalConsumers();
-    }
+  private void onCommit() {
+    actor.call(onCommitPositionUpdatedConditions::signalConsumers);
   }
 
   private <T extends LogStreamWriter> void createWriter(
@@ -272,7 +256,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
     final long initialPosition;
     if (lastPosition > 0) {
-      internalSetCommitPosition(lastPosition);
       initialPosition = lastPosition + 1;
     } else {
       initialPosition = 1;
@@ -298,7 +281,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                         logStorage,
                         subscription,
                         maxFrameLength,
-                        this::setCommitPosition);
+                        this::onCommit);
 
                 actorSchedulingService
                     .submitActor(appender)
