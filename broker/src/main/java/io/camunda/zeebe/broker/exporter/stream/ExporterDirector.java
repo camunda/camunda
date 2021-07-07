@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.EventFilter;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.util.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.util.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.util.retry.RetryStrategy;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.SchedulingHints;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
-public final class ExporterDirector extends Actor implements HealthMonitorable {
+public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
@@ -69,7 +69,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   private ExportersState state;
   private volatile HealthStatus healthStatus = HealthStatus.HEALTHY;
 
-  private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
   private boolean isPaused;
   private ExporterPhase exporterPhase;
@@ -173,10 +172,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   @Override
   protected void onActorClosing() {
     logStreamReader.close();
-    if (onCommitPositionUpdatedCondition != null) {
-      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
-      onCommitPositionUpdatedCondition = null;
-    }
+    logStream.removeRecordAvailableListener(this);
   }
 
   @Override
@@ -255,10 +251,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   }
 
   private void onSnapshotRecovered() {
-    onCommitPositionUpdatedCondition =
-        actor.onCondition(
-            getName() + "-on-commit-lastExportedPosition-updated", this::readNextEvent);
-    logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+    logStream.registerRecordAvailableListener(this);
 
     // start reading
     for (final ExporterContainer container : containers) {
@@ -381,6 +374,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   @Override
   public void removeFailureListener(final FailureListener failureListener) {
     actor.run(() -> listeners.remove(failureListener));
+  }
+
+  @Override
+  public void onRecordAvailable() {
+    actor.run(this::readNextEvent);
   }
 
   private static class RecordExporter {
