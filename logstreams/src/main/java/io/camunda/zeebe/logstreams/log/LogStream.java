@@ -37,15 +37,6 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    */
   String getLogName();
 
-  /**
-   * @return a future, when successfully completed it returns the current commit position, or a
-   *     negative value if no entry is committed
-   */
-  ActorFuture<Long> getCommitPositionAsync();
-
-  /** sets the new commit position * */
-  void setCommitPosition(long position);
-
   /** @return a future, when successfully completed it returns a newly created log stream reader */
   ActorFuture<LogStreamReader> newLogStreamReader();
 

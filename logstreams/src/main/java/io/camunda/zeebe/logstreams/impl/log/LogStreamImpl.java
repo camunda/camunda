@@ -98,16 +98,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   @Override
-  public ActorFuture<Long> getCommitPositionAsync() {
-    return actor.call(() -> commitPosition);
-  }
-
-  @Override
-  public void setCommitPosition(final long commitPosition) {
-    actor.call(() -> internalSetCommitPosition(commitPosition));
-  }
-
-  @Override
   public ActorFuture<LogStreamReader> newLogStreamReader() {
     return actor.call(this::createLogStreamReader);
   }
@@ -144,6 +134,10 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   @Override
   public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     actor.call(() -> onCommitPositionUpdatedConditions.removeConsumer(condition));
+  }
+
+  public void setCommitPosition(final long commitPosition) {
+    actor.call(() -> internalSetCommitPosition(commitPosition));
   }
 
   @Override
