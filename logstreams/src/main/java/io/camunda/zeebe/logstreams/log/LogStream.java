@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.AsyncClosable;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 
@@ -53,20 +52,17 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
   ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
 
   /**
-   * Registers for on commit updates.
+   * Registers a listener that will be notified when new records are available to read from the
+   * logstream.
    *
-   * @param condition the condition which should be signalled.
+   * @param recordAwaiter the listener to be notified
    */
-  void registerOnCommitPositionUpdatedCondition(ActorCondition condition);
-
-  /**
-   * Removes the registered condition.
-   *
-   * @param condition the condition which should be removed
-   */
-  void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
-
   void registerRecordAvailableListener(LogRecordAwaiter recordAwaiter);
 
+  /**
+   * Removes the listener.
+   *
+   * @param recordAwaiter the listener to remove
+   */
   void removeRecordAvailableListener(LogRecordAwaiter recordAwaiter);
 }

@@ -22,9 +22,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.channel.ActorConditions;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
@@ -39,7 +37,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
-  private final ActorConditions onCommitPositionUpdatedConditions;
   private final Set<LogRecordAwaiter> recordAwaiters = new HashSet<>();
   private final String logName;
   private final int partitionId;
@@ -59,14 +56,12 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
   LogStreamImpl(
       final ActorSchedulingService actorSchedulingService,
-      final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
       final int partitionId,
       final int nodeId,
       final int maxFrameLength,
       final LogStorage logStorage) {
     this.actorSchedulingService = actorSchedulingService;
-    this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -117,16 +112,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     final var writerFuture = new CompletableActorFuture<LogStreamBatchWriter>();
     actor.run(() -> createWriter(writerFuture, LogStreamBatchWriterImpl::new));
     return writerFuture;
-  }
-
-  @Override
-  public void registerOnCommitPositionUpdatedCondition(final ActorCondition condition) {
-    actor.call(() -> onCommitPositionUpdatedConditions.registerConsumer(condition));
-  }
-
-  @Override
-  public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
-    actor.call(() -> onCommitPositionUpdatedConditions.removeConsumer(condition));
   }
 
   @Override
@@ -201,7 +186,6 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   private void onCommit() {
-    actor.call(onCommitPositionUpdatedConditions::signalConsumers);
     actor.call(this::notifyRecordAwaiters);
   }
 
