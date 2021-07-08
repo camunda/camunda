@@ -8,7 +8,6 @@
 package io.camunda.zeebe.logstreams.storage.atomix;
 
 import io.atomix.raft.RaftCommitListener;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import java.nio.ByteBuffer;
@@ -65,7 +64,7 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   }
 
   @Override
-  public <T extends RaftLogEntry> void onCommit(final long index) {
+  public void onCommit(final long index) {
     commitListeners.forEach(CommitListener::onCommit);
   }
 }
