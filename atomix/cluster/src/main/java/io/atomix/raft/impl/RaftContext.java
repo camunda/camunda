@@ -351,6 +351,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
+   * Removes registered commit listener
+   *
+   * @param commitListener the listenere to remove
+   */
+  public void removeCommitListener(final RaftCommitListener commitListener) {
+    commitListeners.remove(commitListener);
+  }
+
+  /**
    * Adds a new committed entry listener, which will be notified when the Leader commits a new
    * entry. If RAFT runs currently in a Follower role this listeners are not called.
    *
