@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.dispatcher.Dispatchers;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -21,9 +22,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.channel.ActorConditions;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
@@ -38,7 +37,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
-  private final ActorConditions onCommitPositionUpdatedConditions;
+  private final Set<LogRecordAwaiter> recordAwaiters = new HashSet<>();
   private final String logName;
   private final int partitionId;
   private final int maxFrameLength;
@@ -57,14 +56,12 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
   LogStreamImpl(
       final ActorSchedulingService actorSchedulingService,
-      final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
       final int partitionId,
       final int nodeId,
       final int maxFrameLength,
       final LogStorage logStorage) {
     this.actorSchedulingService = actorSchedulingService;
-    this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -118,13 +115,17 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   @Override
-  public void registerOnCommitPositionUpdatedCondition(final ActorCondition condition) {
-    actor.call(() -> onCommitPositionUpdatedConditions.registerConsumer(condition));
+  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.add(recordAwaiter));
   }
 
   @Override
-  public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
-    actor.call(() -> onCommitPositionUpdatedConditions.removeConsumer(condition));
+  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    actor.call(() -> recordAwaiters.remove(recordAwaiter));
+  }
+
+  private void notifyRecordAwaiters() {
+    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
   }
 
   @Override
@@ -185,7 +186,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   private void onCommit() {
-    actor.call(onCommitPositionUpdatedConditions::signalConsumers);
+    actor.call(this::notifyRecordAwaiters);
   }
 
   private <T extends LogStreamWriter> void createWriter(

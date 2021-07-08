@@ -16,6 +16,8 @@ import static org.junit.Assert.assertNotNull;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.test.util.TestUtil;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -110,6 +112,37 @@ public final class LogStreamTest {
 
     // then
     assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
+  }
+
+  @Test
+  public void shouldNotifyWhenNewRecordsAreAvailable() throws InterruptedException {
+    // given
+    final CountDownLatch latch = new CountDownLatch(1);
+    logStream.getAsyncLogStream().registerRecordAvailableListener(() -> latch.countDown());
+
+    // when
+    writeEvent(logStream);
+
+    // then
+    assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
+  public void shouldNotifyMultipleListenersWhenNewRecordsAreAvailable()
+      throws InterruptedException {
+    // given
+    final CountDownLatch firstListener = new CountDownLatch(1);
+    logStream.getAsyncLogStream().registerRecordAvailableListener(() -> firstListener.countDown());
+
+    final CountDownLatch secondListener = new CountDownLatch(1);
+    logStream.getAsyncLogStream().registerRecordAvailableListener(() -> secondListener.countDown());
+
+    // when
+    writeEvent(logStream);
+
+    // then
+    assertThat(firstListener.await(2, TimeUnit.SECONDS)).isTrue();
+    assertThat(secondListener.await(2, TimeUnit.SECONDS)).isTrue();
   }
 
   static long writeEvent(final SynchronousLogStream logStream) {

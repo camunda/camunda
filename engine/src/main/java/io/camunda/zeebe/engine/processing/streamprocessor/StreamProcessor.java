@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
-import io.camunda.zeebe.util.sched.ActorCondition;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
-public class StreamProcessor extends Actor implements HealthMonitorable {
+public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
@@ -60,7 +60,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final String actorName;
   private LogStreamReader logStreamReader;
-  private ActorCondition onCommitPositionUpdatedCondition;
   private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
 
@@ -192,11 +191,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   private void tearDown() {
     processingContext.getLogStreamReader().close();
-
-    if (onCommitPositionUpdatedCondition != null) {
-      logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
-      onCommitPositionUpdatedCondition = null;
-    }
+    logStream.removeRecordAvailableListener(this);
   }
 
   private void healthCheckTick() {
@@ -288,10 +283,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     // enable writing records to the stream
     processingContext.enableLogStreamWriter();
 
-    onCommitPositionUpdatedCondition =
-        actor.onCondition(
-            getName() + "-on-commit-position-updated", processingStateMachine::readNextEvent);
-    logStream.registerOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
+    logStream.registerRecordAvailableListener(this);
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
@@ -402,6 +394,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
                     LOG.debug("Resumed processing for partition {}", partitionId);
                   }
                 }));
+  }
+
+  @Override
+  public void onRecordAvailable() {
+    actor.run(processingStateMachine::readNextEvent);
   }
 
   public enum Phase {
