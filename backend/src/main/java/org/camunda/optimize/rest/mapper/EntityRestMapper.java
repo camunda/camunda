@@ -18,10 +18,6 @@ public class EntityRestMapper {
   private final IdentityService identityService;
 
   public void prepareRestResponse(final EntityResponseDto entityDto) {
-    resolveOwnerAndModifierNames(entityDto);
-  }
-
-  private void resolveOwnerAndModifierNames(EntityResponseDto entityDto) {
     Optional.ofNullable(entityDto.getOwner())
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(entityDto::setOwner);
@@ -29,4 +25,5 @@ public class EntityRestMapper {
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(entityDto::setLastModifier);
   }
+
 }
