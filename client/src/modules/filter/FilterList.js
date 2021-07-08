@@ -408,6 +408,10 @@ function getStateFilterFilterText({type}) {
 }
 
 function checkDefinition(definitions, identifier) {
+  if (identifier === 'all') {
+    return true;
+  }
+
   const definition = definitions?.find((definition) => definition.identifier === identifier);
   return definition?.versions.length && definition?.tenantIds.length;
 }
