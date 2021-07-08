@@ -48,10 +48,10 @@ sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.t
 sha1sum ${ARTIFACT}-${RELEASE_VERSION}.zip > ${ARTIFACT}-${RELEASE_VERSION}.zip.sha1sum
 
 # upload to github release
-curl -sL https://github.com/meterup/github-release/releases/download/v0.7.5/linux-amd64-github-release.bz2 | bzip2 -fd - > github-release
+curl -sL https://github.com/github-release/github-release/releases/download/v0.10.0/linux-amd64-github-release.bz2 | bzip2 -fd - > github-release
 chmod +x github-release
 for f in ${ARTIFACT}-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
-	./github-release upload --user zeebe-io --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
+	./github-release upload --user camunda-cloud --repo zeebe --tag ${ZEEBE_VERSION} --name "${f}" --file "${f}"
 done
 '''
 
