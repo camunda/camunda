@@ -138,6 +138,16 @@ public final class LogStorageAppenderHealthTest {
     }
 
     @Override
+    public void addCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void removeCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
     public void close() {
       actor.close();
     }

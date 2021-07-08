@@ -47,6 +47,20 @@ public interface LogStorage {
       long lowestPosition, long highestPosition, ByteBuffer blockBuffer, AppendListener listener);
 
   /**
+   * Register a commit listener
+   *
+   * @param listener the listener which will be notified when a new record is committed.
+   */
+  void addCommitListener(CommitListener listener);
+
+  /**
+   * Remove a commit listener
+   *
+   * @param listener the listener to remove
+   */
+  void removeCommitListener(CommitListener listener);
+
+  /**
    * An append listener can be added to an append call to be notified of different events that can
    * occur during the append operation.
    */
@@ -80,5 +94,18 @@ public interface LogStorage {
      * @param error the error that occurred
      */
     default void onCommitError(final long address, final Throwable error) {}
+  }
+
+  /**
+   * Consumers of LogStorage can use this listener to get notified when new records are committed.
+   * The difference between this and {@link AppendListener} is that {@link AppendListener} can only
+   * be used by the writer of a record. {@link CommitListener} can be used by any consumers of
+   * LogStorage, and get notified of new records committed even if it did not write the record
+   * itself.
+   */
+  interface CommitListener {
+
+    /** Called when a new record is committed in the storage */
+    void onCommit();
   }
 }

@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.logstreams.storage.atomix;
 
+import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import java.nio.ByteBuffer;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Implementation of {@link LogStorage} for the Atomix {@link io.atomix.raft.storage.log.RaftLog}.
@@ -18,10 +22,11 @@ import java.nio.ByteBuffer;
  * should be changed when the log storage implementation is taken out of this module, at which point
  * it can be made final.
  */
-public class AtomixLogStorage implements LogStorage {
+public class AtomixLogStorage implements LogStorage, RaftCommitListener {
 
   private final AtomixReaderFactory readerFactory;
   private final ZeebeLogAppender logAppender;
+  private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
 
   public AtomixLogStorage(
       final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
@@ -47,5 +52,20 @@ public class AtomixLogStorage implements LogStorage {
       final AppendListener listener) {
     final var adapter = new AtomixAppendListenerAdapter(listener);
     logAppender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
+  }
+
+  @Override
+  public void addCommitListener(final CommitListener listener) {
+    commitListeners.add(listener);
+  }
+
+  @Override
+  public void removeCommitListener(final CommitListener listener) {
+    commitListeners.remove(listener);
+  }
+
+  @Override
+  public <T extends RaftLogEntry> void onCommit(final long index) {
+    commitListeners.forEach(CommitListener::onCommit);
   }
 }
