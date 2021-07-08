@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import static io.camunda.zeebe.util.Either.left;
 import static io.camunda.zeebe.util.Either.right;
 
+import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.system.partitions.PartitionStep;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -69,33 +71,35 @@ public class LogStreamPartitionStep implements PartitionStep {
     return "logstream";
   }
 
-  private Either<? extends Exception, AtomixLogStorage> buildAtomixLogStorage(
+  private Either<Exception, AtomixLogStorage> buildAtomixLogStorage(
       final PartitionTransitionContext context) {
 
-    final Either<? extends Exception, AtomixLogStorage> result;
     final var server = context.getRaftPartition().getServer();
 
     final var appenderOptional = server.getAppender();
-    return (Either<? extends Exception, AtomixLogStorage>)
-        appenderOptional
-            .map(
-                logAppender -> {
-                  final var raftTerm = server.getTerm();
+    return appenderOptional
+        .map(logAppender -> checkAndCreateAtomixLogStorage(context, server, logAppender))
+        .orElseGet(
+            () ->
+                left(
+                    new IllegalStateException(
+                        "Not leader of partition " + context.getPartitionId())));
+  }
 
-                  if (raftTerm != context.getCurrentTerm()) {
-                    return left(buildWrongTermException(context, raftTerm));
-                  } else {
-                    logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
-                    server.addCommitListener(logStorage);
+  private Either<Exception, AtomixLogStorage> checkAndCreateAtomixLogStorage(
+      final PartitionTransitionContext context,
+      final RaftPartitionServer server,
+      final ZeebeLogAppender logAppender) {
+    final var raftTerm = server.getTerm();
 
-                    return right(logStorage);
-                  }
-                })
-            .orElseGet(
-                () ->
-                    left(
-                        new IllegalStateException(
-                            "Not leader of partition " + context.getPartitionId())));
+    if (raftTerm != context.getCurrentTerm()) {
+      return left(buildWrongTermException(context, raftTerm));
+    } else {
+      logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
+      server.addCommitListener(logStorage);
+
+      return right(logStorage);
+    }
   }
 
   private IllegalStateException buildWrongTermException(
