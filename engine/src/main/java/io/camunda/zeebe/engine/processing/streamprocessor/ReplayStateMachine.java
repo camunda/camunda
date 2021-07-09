@@ -179,8 +179,8 @@ public final class ReplayStateMachine {
             recordValues.readRecordValue(currentEvent, metadata.getValueType());
         typedEvent.wrap(currentEvent, metadata, value);
 
-        final ActorFuture<Boolean> resultFuture =
-            processRetryStrategy.runWithRetry(
+        processRetryStrategy
+            .runWithRetry(
                 () -> {
                   final boolean onRetry = zeebeDbTransaction != null;
                   if (onRetry) {
@@ -199,30 +199,27 @@ public final class ReplayStateMachine {
 
                   return true;
                 },
-                abortCondition);
-
-        actor.runOnCompletion(
-            resultFuture,
-            (v, t) -> {
-              // replay should be retried endless until it worked
-              assert t == null : "On replay there shouldn't be any exception thrown.";
-              final ActorFuture<Boolean> retryFuture =
-                  updateStateRetryStrategy.runWithRetry(
-                      () -> {
-                        zeebeDbTransaction.commit();
-                        zeebeDbTransaction = null;
-                        return true;
-                      },
-                      abortCondition);
-
-              actor.runOnCompletion(
-                  retryFuture,
-                  (bool, throwable) -> {
-                    // update state should be retried endless until it worked
-                    assert throwable == null : "On replay there shouldn't be any exception thrown.";
-                    onRecordReplayed(currentEvent);
-                  });
-            });
+                abortCondition)
+            .onComplete(
+                (v, t) -> {
+                  // replay should be retried endless until it worked
+                  assert t == null : "On replay there shouldn't be any exception thrown.";
+                  updateStateRetryStrategy
+                      .runWithRetry(
+                          () -> {
+                            zeebeDbTransaction.commit();
+                            zeebeDbTransaction = null;
+                            return true;
+                          },
+                          abortCondition)
+                      .onComplete(
+                          (bool, throwable) -> {
+                            // update state should be retried endless until it worked
+                            assert throwable == null
+                                : "On replay there shouldn't be any exception thrown.";
+                            onRecordReplayed(currentEvent);
+                          });
+                });
       } else {
         onRecordReplayed(currentEvent);
       }
