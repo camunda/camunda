@@ -67,15 +67,16 @@ import org.slf4j.Logger;
 public final class ReplayStateMachine {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
+
   private static final String LOG_STMT_REPLAY_FINISHED =
       "Processor finished replay at event position {}";
   private static final String ERROR_INCONSISTENT_LOG =
       "Expected that position '%d' of current event is higher then position '%d' of last event, but was not. Inconsistent log detected!";
+  private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
+      "Expected to read the metadata for the record '%s', but an exception was thrown.";
 
   private static final MetadataFilter REPLAY_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
-  private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
-      "Expected to read the metadata for the record '%s', but an exception was thrown.";
 
   private final RecordMetadata metadata = new RecordMetadata();
   private final MutableZeebeState zeebeState;
@@ -171,48 +172,14 @@ public final class ReplayStateMachine {
         typedEvent.wrap(currentEvent, metadata, value);
 
         processRetryStrategy
-            .runWithRetry(
-                () -> {
-                  final boolean onRetry = zeebeDbTransaction != null;
-                  if (onRetry) {
-                    zeebeDbTransaction.rollback();
-                  }
-
-                  zeebeDbTransaction = transactionContext.getCurrentTransaction();
-                  zeebeDbTransaction.run(
-                      () -> {
-                        if (typedEvent.getSourceRecordPosition() > snapshotPosition) {
-                          eventApplier.applyState(
-                              typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
-                        }
-                        lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
-                      });
-
-                  return true;
-                },
-                abortCondition)
+            .runWithRetry(this::tryToApplyCurrentEvent, abortCondition)
             .onComplete(
-                (v, t) -> {
-                  // replay should be retried endless until it worked
-                  assert t == null : "On replay there shouldn't be any exception thrown.";
-                  updateStateRetryStrategy
-                      .runWithRetry(
-                          () -> {
-                            zeebeDbTransaction.commit();
-                            zeebeDbTransaction = null;
-                            return true;
-                          },
-                          abortCondition)
-                      .onComplete(
-                          (bool, throwable) -> {
-                            // update state should be retried endless until it worked
-                            assert throwable == null
-                                : "On replay there shouldn't be any exception thrown.";
-                            onRecordReplayed(currentEvent);
-                          });
-                });
+                (v, t) ->
+                    updateStateRetryStrategy
+                        .runWithRetry(this::commitCurrentAppliedStateChanges, abortCondition)
+                        .onComplete((bool, throwable) -> onRecordReplayed()));
       } else {
-        onRecordReplayed(currentEvent);
+        onRecordReplayed();
       }
 
     } catch (final RuntimeException e) {
@@ -222,6 +189,50 @@ public final class ReplayStateMachine {
     }
   }
 
+  /**
+   * Commits the current transaction. The transaction holds the state changes, which have been
+   * caused by applying the current event.
+   *
+   * @return true on success
+   * @throws Exception if the commit fails
+   */
+  private boolean commitCurrentAppliedStateChanges() throws Exception {
+    zeebeDbTransaction.commit();
+    zeebeDbTransaction = null;
+    return true;
+  }
+
+  /**
+   * Tries to apply the current read event to the state. If this method is called multiple times,
+   * because of previous errors, then it will reset the current transaction before it tries to apply
+   * the event again.
+   *
+   * @return true on success
+   * @throws Exception if the applying of the event fails
+   */
+  private boolean tryToApplyCurrentEvent() throws Exception {
+    final boolean onRetry = zeebeDbTransaction != null;
+    if (onRetry) {
+      zeebeDbTransaction.rollback();
+    }
+
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
+    zeebeDbTransaction.run(
+        () -> {
+          if (typedEvent.getSourceRecordPosition() > snapshotPosition) {
+            eventApplier.applyState(
+                typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
+          }
+          lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
+        });
+
+    return true;
+  }
+
+  /**
+   * Ends the replay and sets some important properties, especially completes the replay future with
+   * the last source event, which has caused the last applied event.
+   */
   private void endReplay() {
     // Replay ends at the end of the log
     // reset the position to the first event where the processing should start
@@ -249,7 +260,11 @@ public final class ReplayStateMachine {
     return true;
   }
 
-  private void onRecordReplayed(final LoggedEvent currentEvent) {
+  /**
+   * Stages meta data details of the current applied event. The stored properties are later used
+   * after the replay is done.
+   */
+  private void onRecordReplayed() {
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
     final var currentRecordKey = currentEvent.getKey();
