@@ -160,7 +160,7 @@ public final class TestStreams {
   }
 
   public long getLastWrittenPosition(final String name) {
-    return getStreamProcessor(name).getLastWrittenPositionAsync().join();
+    return getLogStream(name).getLastWrittenPosition();
   }
 
   public SynchronousLogStream getLogStream(final String name) {

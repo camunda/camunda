@@ -157,6 +157,9 @@ public class ReplayStateRandomizedPropertyTest {
         .untilAsserted(
             () ->
                 assertThat(engineRule.getLastProcessedPosition())
+                    .describedAs(
+                        "Last written %d has to be processed %d",
+                        engineRule.getLastWrittenPosition(1), engineRule.getLastProcessedPosition())
                     .isEqualTo(engineRule.getLastWrittenPosition(1)));
   }
 
