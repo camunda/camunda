@@ -69,10 +69,6 @@ public final class ReplayStateMachine {
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
       "Expected to find event processor for event '{} {}', but caught an exception. Skip this event.";
-  private static final String ERROR_MESSAGE_REPLAY_NO_FOLLOW_UP_EVENT =
-      "Expected to find last follow-up event position '%d', but last position was '%d'. Failed to replay on processor";
-  private static final String ERROR_MESSAGE_REPLAY_NO_NEXT_EVENT =
-      "Expected to find last follow-up event position '%d', but found no next event. Failed to replay on processor";
   private static final String LOG_STMT_REPLAY_FINISHED =
       "Processor finished replay at event position {}";
   private static final String ERROR_INCONSISTENT_LOG =
@@ -103,9 +99,9 @@ public final class ReplayStateMachine {
   private final BooleanSupplier abortCondition;
   // current iteration
   private long lastSourceEventPosition;
-  private long lastFollowUpEventPosition;
   private long snapshotPosition;
   private long highestRecordKey = -1L;
+  private long lastPosition;
 
   private ActorFuture<Long> recoveryFuture;
   private LoggedEvent currentEvent;
@@ -136,86 +132,41 @@ public final class ReplayStateMachine {
    */
   ActorFuture<Long> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
-
     this.snapshotPosition = snapshotPosition;
+    lastSourceEventPosition = snapshotPosition;
 
-    LOG.trace("Start scanning the log for error events.");
-    long lastSourceEventPosition1 = -1L;
+    // start after snapshot
+    logStreamReader.seekToNextEvent(snapshotPosition);
 
     if (logStreamReader.hasNext()) {
-      lastSourceEventPosition1 = snapshotPosition;
-
-      long lastPosition = snapshotPosition;
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent newEvent = logStreamReader.next();
-
-        final var currentPosition = newEvent.getPosition();
-        if (lastPosition >= currentPosition) {
-          throw new IllegalStateException(
-              String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
-        }
-        lastPosition = currentPosition;
-
-        metadata.reset();
-        newEvent.readMetadata(metadata);
-        final long sourceEventPosition = newEvent.getSourceEventPosition();
-        if (sourceEventPosition > 0) {
-          if (sourceEventPosition > lastSourceEventPosition1) {
-            lastSourceEventPosition1 = sourceEventPosition;
-          }
-          if (currentPosition > lastFollowUpEventPosition) {
-            lastFollowUpEventPosition = currentPosition;
-          }
-        }
-
-        final var recordKey = newEvent.getKey();
-        // records from other partitions should not influence the key generator of this partition
-        if (Protocol.decodePartitionId(recordKey) == zeebeState.getPartitionId()) {
-          // remember the highest key on the stream to restore the key generator after replay
-          highestRecordKey = Math.max(recordKey, highestRecordKey);
-        }
-      }
-
-      // reset position
-      logStreamReader.seek(snapshotPosition + 1);
-    }
-
-    lastSourceEventPosition = lastSourceEventPosition1;
-    LOG.trace("Finished scanning the log for error events.");
-
-    if (lastSourceEventPosition > snapshotPosition) {
-      LOG.info(
-          "Processor starts replay of events. [snapshot-position: {}, position-of-last-command: {}]",
-          snapshotPosition,
-          lastSourceEventPosition);
-      logStreamReader.seekToNextEvent(snapshotPosition);
+      LOG.info("Processor starts replay of events. [snapshot-position: {}]", snapshotPosition);
       replayNextEvent();
-
     } else if (snapshotPosition > 0) {
       recoveryFuture.complete(snapshotPosition);
-
     } else {
       recoveryFuture.complete(StreamProcessor.UNSET_POSITION);
     }
+
     return recoveryFuture;
   }
 
   private void replayNextEvent() {
     try {
+
       if (!logStreamReader.hasNext()) {
-        throw new IllegalStateException(
-            String.format(ERROR_MESSAGE_REPLAY_NO_NEXT_EVENT, lastFollowUpEventPosition));
+        // Replay ends at the end of the log
+        // reset the position to the first event where the processing should start
+        logStreamReader.seekToNextEvent(lastSourceEventPosition);
+
+        // restore the key generate with the highest key from the log
+        keyGeneratorControls.setKeyIfHigher(highestRecordKey);
+
+        LOG.info(LOG_STMT_REPLAY_FINISHED, lastPosition);
+        recoveryFuture.complete(lastSourceEventPosition);
+        return;
       }
 
       currentEvent = logStreamReader.next();
-      if (currentEvent.getPosition() > lastFollowUpEventPosition) {
-        throw new IllegalStateException(
-            String.format(
-                ERROR_MESSAGE_REPLAY_NO_FOLLOW_UP_EVENT,
-                lastFollowUpEventPosition,
-                currentEvent.getPosition()));
-      }
-
       if (eventFilter.applies(currentEvent)) {
 
         try {
@@ -296,17 +247,30 @@ public final class ReplayStateMachine {
   }
 
   private void onRecordReplayed(final LoggedEvent currentEvent) {
-    if (currentEvent.getPosition() >= lastFollowUpEventPosition) {
-      LOG.info(LOG_STMT_REPLAY_FINISHED, currentEvent.getPosition());
+    final var sourceEventPosition = currentEvent.getSourceEventPosition();
+    final var currentPosition = currentEvent.getPosition();
+    final var currentRecordKey = currentEvent.getKey();
 
-      // reset the position to the first event where the processing should start
-      logStreamReader.seekToNextEvent(lastSourceEventPosition);
-
-      keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
-      recoveryFuture.complete(lastSourceEventPosition);
-    } else {
-      actor.submit(this::replayNextEvent);
+    // positions should always increase
+    // if this is not the case we have some inconsistency in our log
+    if (lastPosition >= currentPosition) {
+      throw new IllegalStateException(
+          String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
     }
+    lastPosition = currentPosition;
+
+    // we need to keep track of the last source event position to know where to start with
+    // processing after replay
+    if (sourceEventPosition > 0) {
+      lastSourceEventPosition = sourceEventPosition;
+    }
+
+    // records from other partitions should not influence the key generator of this partition
+    if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
+      // remember the highest key on the stream to restore the key generator after replay
+      highestRecordKey = Math.max(currentRecordKey, highestRecordKey);
+    }
+
+    actor.submit(this::replayNextEvent);
   }
 }
