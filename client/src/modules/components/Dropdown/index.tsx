@@ -11,8 +11,6 @@ import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
-import Option from './Option';
-
 import * as Styled from './styled';
 
 type OwnProps = {
@@ -33,8 +31,6 @@ export default class Dropdown extends React.Component<Props, State> {
   static defaultProps = {
     placement: DROPDOWN_PLACEMENT.BOTTOM,
   };
-
-  static Option = Option;
 
   container: any;
 

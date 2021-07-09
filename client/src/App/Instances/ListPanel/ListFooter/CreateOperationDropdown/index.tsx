@@ -9,6 +9,7 @@ import React, {useState, useContext} from 'react';
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
+import Option from 'modules/components/Dropdown/Option';
 import {instanceSelectionStore} from 'modules/stores/instanceSelection';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
@@ -69,11 +70,11 @@ const CreateOperationDropdown = ({label, selectedCount}: Props) => {
         label={label}
         calculateWidth={setDropdownWidth}
       >
-        <Dropdown.Option
+        <Option
           onClick={() => setModalMode(OPERATION_TYPE.RESOLVE_INCIDENT)}
           label="Retry"
         />
-        <Dropdown.Option
+        <Option
           onClick={() => setModalMode(OPERATION_TYPE.CANCEL_PROCESS_INSTANCE)}
           label="Cancel"
         />

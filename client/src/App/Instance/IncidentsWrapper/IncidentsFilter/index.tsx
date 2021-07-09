@@ -7,7 +7,7 @@
 import React from 'react';
 import Pill from 'modules/components/Pill';
 
-import Dropdown from 'modules/components/Dropdown';
+import Option from 'modules/components/Dropdown/Option';
 import * as Styled from './styled';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
@@ -65,7 +65,7 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                   >
                     {groupedErrorTypes[1].map((item) => {
                       return (
-                        <Dropdown.Option key={item.errorType}>
+                        <Option key={item.errorType}>
                           <Pill
                             data-testid={item.errorType}
                             type="FILTER"
@@ -78,7 +78,7 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                           >
                             {item.errorType}
                           </Pill>
-                        </Dropdown.Option>
+                        </Option>
                       );
                     })}
                   </Styled.MoreDropdown>
@@ -111,7 +111,7 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                   >
                     {groupedFlowNodes[1].map((item) => {
                       return (
-                        <Dropdown.Option key={item.flowNodeId}>
+                        <Option key={item.flowNodeId}>
                           <Pill
                             type="FILTER"
                             count={item.count}
@@ -123,7 +123,7 @@ const IncidentsFilter: React.FC<Props> = observer(function IncidentsFilter({
                           >
                             {item.flowNodeName}
                           </Pill>
-                        </Dropdown.Option>
+                        </Option>
                       );
                     })}
                   </Styled.MoreDropdown>

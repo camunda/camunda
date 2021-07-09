@@ -6,7 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import Dropdown from 'modules/components/Dropdown';
+import Option from 'modules/components/Dropdown/Option';
 import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
 import * as api from 'modules/api/header';
 import * as Styled from './styled';
@@ -43,14 +43,14 @@ function User({handleRedirect}: Props) {
     <Styled.ProfileDropdown data-testid="profile-dropdown">
       {displayName ? (
         <Styled.Dropdown label={displayName}>
-          <Dropdown.Option
+          <Option
             label="Toggle Theme"
             data-testid="toggle-theme-button"
             onClick={currentTheme.toggle}
           />
 
           {canLogout && (
-            <Dropdown.Option
+            <Option
               label="Logout"
               data-testid="logout-button"
               onClick={async () => {

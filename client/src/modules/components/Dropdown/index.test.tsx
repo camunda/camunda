@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Dropdown from './index';
+import Option from './Option';
 
 const stringLabel = 'Some Label';
 
@@ -27,7 +28,7 @@ describe('Dropdown', () => {
   it('should show/hide dropdown option', () => {
     render(
       <Dropdown placement={'top'} label={stringLabel} onOpen={mockOnOpen}>
-        <Dropdown.Option
+        <Option
           disabled={false}
           onClick={mockOnClick}
           label="Create New Selection"
@@ -50,7 +51,7 @@ describe('Dropdown', () => {
   it('should display label as string / component', () => {
     const {rerender} = render(
       <Dropdown placement={'top'} label={stringLabel} onOpen={mockOnOpen}>
-        <Dropdown.Option
+        <Option
           disabled={false}
           onClick={mockOnClick}
           label="Create New Selection"
@@ -67,7 +68,7 @@ describe('Dropdown', () => {
         label={<div>{'some other label'}</div>}
         onOpen={mockOnOpen}
       >
-        <Dropdown.Option
+        <Option
           disabled={false}
           onClick={mockOnClick}
           label="Create New Selection"
@@ -82,7 +83,7 @@ describe('Dropdown', () => {
     render(
       <>
         <Dropdown placement={'top'} label={stringLabel} onOpen={mockOnOpen}>
-          <Dropdown.Option
+          <Option
             disabled={false}
             onClick={mockOnClick}
             label="Create New Selection"
