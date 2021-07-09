@@ -170,14 +170,8 @@ public final class ReplayStateMachine {
       currentEvent = logStreamReader.next();
       if (eventFilter.applies(currentEvent)) {
 
-        try {
-          metadata.reset();
-          currentEvent.readMetadata(metadata);
-        } catch (final Exception e) {
-          final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
-          LOG.error(errorMsg, currentEvent, e);
-          final var replayException = new ProcessingException(errorMsg, currentEvent, null, e);
-          recoveryFuture.completeExceptionally(replayException);
+        if (!readMetadata()) {
+          // failure on reading metadata
           return;
         }
 
@@ -238,6 +232,20 @@ public final class ReplayStateMachine {
           new ProcessingException("Unable to replay record", currentEvent, metadata, e);
       recoveryFuture.completeExceptionally(replayException);
     }
+  }
+
+  private boolean readMetadata() {
+    try {
+      metadata.reset();
+      currentEvent.readMetadata(metadata);
+    } catch (final Exception e) {
+      final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
+      LOG.error(errorMsg, currentEvent, e);
+      final var replayException = new ProcessingException(errorMsg, currentEvent, null, e);
+      recoveryFuture.completeExceptionally(replayException);
+      return false;
+    }
+    return true;
   }
 
   private void onRecordReplayed(final LoggedEvent currentEvent) {
