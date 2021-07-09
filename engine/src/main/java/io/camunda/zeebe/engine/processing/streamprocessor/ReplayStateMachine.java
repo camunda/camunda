@@ -156,6 +156,7 @@ public final class ReplayStateMachine {
       if (!logStreamReader.hasNext()) {
         // Replay ends at the end of the log
         // reset the position to the first event where the processing should start
+        // TODO(zell): this should probably done outside; makes no sense here
         logStreamReader.seekToNextEvent(lastSourceEventPosition);
 
         // restore the key generate with the highest key from the log
