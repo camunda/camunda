@@ -185,23 +185,75 @@ public final class ReplayStateMachine {
     }
   }
 
+  /**
+   * Ends the replay and sets some important properties, especially completes the replay future with
+   * the last source event, which has caused the last applied event.
+   */
+  private void endReplay() {
+    // Replay ends at the end of the log
+    // reset the position to the first event where the processing should start
+    // TODO(zell): this should probably done outside; makes no sense here
+    logStreamReader.seekToNextEvent(lastSourceEventPosition);
+
+    // restore the key generate with the highest key from the log
+    keyGeneratorControls.setKeyIfHigher(highestRecordKey);
+
+    LOG.info(LOG_STMT_REPLAY_FINISHED, lastPosition);
+    recoveryFuture.complete(lastSourceEventPosition);
+  }
+
+  /**
+   * Stages meta data details of the current applied event. The stored properties are later used
+   * after the replay is done.
+   *
+   * <p>It will schedule the next replay iteration.
+   */
+  private void onRecordReplayed() {
+    final var sourceEventPosition = currentEvent.getSourceEventPosition();
+    final var currentPosition = currentEvent.getPosition();
+    final var currentRecordKey = currentEvent.getKey();
+
+    // positions should always increase
+    // if this is not the case we have some inconsistency in our log
+    if (lastPosition >= currentPosition) {
+      throw new IllegalStateException(
+          String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
+    }
+    lastPosition = currentPosition;
+
+    // we need to keep track of the last source event position to know where to start with
+    // processing after replay
+    if (sourceEventPosition > 0) {
+      lastSourceEventPosition = sourceEventPosition;
+    }
+
+    // records from other partitions should not influence the key generator of this partition
+    if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
+      // remember the highest key on the stream to restore the key generator after replay
+      highestRecordKey = Math.max(currentRecordKey, highestRecordKey);
+    }
+
+    actor.submit(this::replayNextEvent);
+  }
+
+  private boolean readMetadata() {
+    try {
+      metadata.reset();
+      currentEvent.readMetadata(metadata);
+    } catch (final Exception e) {
+      final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
+      LOG.error(errorMsg, currentEvent, e);
+      final var replayException = new ProcessingException(errorMsg, currentEvent, null, e);
+      recoveryFuture.completeExceptionally(replayException);
+      return false;
+    }
+    return true;
+  }
+
   private void wrapCurrentEvent() {
     final UnifiedRecordValue value =
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
-  }
-
-  /**
-   * Commits the current transaction. The transaction holds the state changes, which have been
-   * caused by applying the current event.
-   *
-   * @return true on success
-   * @throws Exception if the commit fails
-   */
-  private boolean commitCurrentAppliedStateChanges() throws Exception {
-    zeebeDbTransaction.commit();
-    zeebeDbTransaction = null;
-    return true;
   }
 
   /**
@@ -232,65 +284,15 @@ public final class ReplayStateMachine {
   }
 
   /**
-   * Ends the replay and sets some important properties, especially completes the replay future with
-   * the last source event, which has caused the last applied event.
+   * Commits the current transaction. The transaction holds the state changes, which have been
+   * caused by applying the current event.
+   *
+   * @return true on success
+   * @throws Exception if the commit fails
    */
-  private void endReplay() {
-    // Replay ends at the end of the log
-    // reset the position to the first event where the processing should start
-    // TODO(zell): this should probably done outside; makes no sense here
-    logStreamReader.seekToNextEvent(lastSourceEventPosition);
-
-    // restore the key generate with the highest key from the log
-    keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
-    LOG.info(LOG_STMT_REPLAY_FINISHED, lastPosition);
-    recoveryFuture.complete(lastSourceEventPosition);
-  }
-
-  private boolean readMetadata() {
-    try {
-      metadata.reset();
-      currentEvent.readMetadata(metadata);
-    } catch (final Exception e) {
-      final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
-      LOG.error(errorMsg, currentEvent, e);
-      final var replayException = new ProcessingException(errorMsg, currentEvent, null, e);
-      recoveryFuture.completeExceptionally(replayException);
-      return false;
-    }
+  private boolean commitCurrentAppliedStateChanges() throws Exception {
+    zeebeDbTransaction.commit();
+    zeebeDbTransaction = null;
     return true;
-  }
-
-  /**
-   * Stages meta data details of the current applied event. The stored properties are later used
-   * after the replay is done.
-   */
-  private void onRecordReplayed() {
-    final var sourceEventPosition = currentEvent.getSourceEventPosition();
-    final var currentPosition = currentEvent.getPosition();
-    final var currentRecordKey = currentEvent.getKey();
-
-    // positions should always increase
-    // if this is not the case we have some inconsistency in our log
-    if (lastPosition >= currentPosition) {
-      throw new IllegalStateException(
-          String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
-    }
-    lastPosition = currentPosition;
-
-    // we need to keep track of the last source event position to know where to start with
-    // processing after replay
-    if (sourceEventPosition > 0) {
-      lastSourceEventPosition = sourceEventPosition;
-    }
-
-    // records from other partitions should not influence the key generator of this partition
-    if (Protocol.decodePartitionId(currentRecordKey) == zeebeState.getPartitionId()) {
-      // remember the highest key on the stream to restore the key generator after replay
-      highestRecordKey = Math.max(currentRecordKey, highestRecordKey);
-    }
-
-    actor.submit(this::replayNextEvent);
   }
 }
