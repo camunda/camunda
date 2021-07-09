@@ -67,8 +67,6 @@ import org.slf4j.Logger;
 public final class ReplayStateMachine {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
-  private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
-      "Expected to find event processor for event '{} {}', but caught an exception. Skip this event.";
   private static final String LOG_STMT_REPLAY_FINISHED =
       "Processor finished replay at event position {}";
   private static final String ERROR_INCONSISTENT_LOG =
@@ -76,6 +74,8 @@ public final class ReplayStateMachine {
 
   private static final MetadataFilter REPLAY_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
+  private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
+      "Expected to read the metadata for the record '%s', but an exception was thrown.";
 
   private final RecordMetadata metadata = new RecordMetadata();
   private final MutableZeebeState zeebeState;
@@ -173,7 +173,11 @@ public final class ReplayStateMachine {
           metadata.reset();
           currentEvent.readMetadata(metadata);
         } catch (final Exception e) {
-          LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, metadata, e);
+          final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
+          LOG.error(errorMsg, currentEvent, e);
+          final var replayException = new ProcessingException(errorMsg, currentEvent, null, e);
+          recoveryFuture.completeExceptionally(replayException);
+          return;
         }
 
         final UnifiedRecordValue value =
