@@ -160,33 +160,35 @@ public final class ReplayStateMachine {
       }
 
       currentEvent = logStreamReader.next();
-      if (eventFilter.applies(currentEvent)) {
-
-        if (!readMetadata()) {
-          // failure on reading metadata
-          return;
-        }
-
-        final UnifiedRecordValue value =
-            recordValues.readRecordValue(currentEvent, metadata.getValueType());
-        typedEvent.wrap(currentEvent, metadata, value);
-
-        processRetryStrategy
-            .runWithRetry(this::tryToApplyCurrentEvent, abortCondition)
-            .onComplete(
-                (v, t) ->
-                    updateStateRetryStrategy
-                        .runWithRetry(this::commitCurrentAppliedStateChanges, abortCondition)
-                        .onComplete((bool, throwable) -> onRecordReplayed()));
-      } else {
+      if (!eventFilter.applies(currentEvent)) {
         onRecordReplayed();
+        return;
       }
+
+      if (!readMetadata()) {
+        return; // failure on reading metadata
+      }
+      wrapCurrentEvent();
+
+      processRetryStrategy
+          .runWithRetry(this::tryToApplyCurrentEvent, abortCondition)
+          .onComplete(
+              (v, t) ->
+                  updateStateRetryStrategy
+                      .runWithRetry(this::commitCurrentAppliedStateChanges, abortCondition)
+                      .onComplete((bool, throwable) -> onRecordReplayed()));
 
     } catch (final RuntimeException e) {
       final var replayException =
           new ProcessingException("Unable to replay record", currentEvent, metadata, e);
       recoveryFuture.completeExceptionally(replayException);
     }
+  }
+
+  private void wrapCurrentEvent() {
+    final UnifiedRecordValue value =
+        recordValues.readRecordValue(currentEvent, metadata.getValueType());
+    typedEvent.wrap(currentEvent, metadata, value);
   }
 
   /**
