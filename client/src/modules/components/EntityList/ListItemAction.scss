@@ -19,7 +19,7 @@
     }
   }
 
-  &.Dropdown.is-open .menu {
+  &.Dropdown .menu {
     transform: translateY(-6px);
     left: auto !important; // the calculateMenuStyle method of the Dropdown sets inline styles
     right: 0;
