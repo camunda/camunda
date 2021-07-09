@@ -55,17 +55,14 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final AppenderMetrics appenderMetrics;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
-  private final Runnable commitListener;
 
   public LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
-      final int maxBlockSize,
-      final Runnable commitListener) {
+      final int maxBlockSize) {
     appenderMetrics = new AppenderMetrics(Integer.toString(partitionId));
-    this.commitListener = commitListener;
     env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
@@ -231,7 +228,6 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   void notifyCommitPosition(final long highestPosition, final long startTime) {
     actor.run(
         () -> {
-          commitListener.run();
           appenderMetrics.setLastCommittedPosition(highestPosition);
           appenderMetrics.commitLatency(startTime, ActorClock.currentTimeMillis());
         });

@@ -247,6 +247,11 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     server.getContext().addCommitListener(commitListener);
   }
 
+  /** @see io.atomix.raft.impl.RaftContext#removeCommitListener(RaftCommitListener) */
+  public void removeCommitListener(final RaftCommitListener commitListener) {
+    server.getContext().removeCommitListener(commitListener);
+  }
+
   /** @see io.atomix.raft.impl.RaftContext#addCommittedEntryListener(RaftCommittedEntryListener) */
   public void addCommittedEntryListener(final RaftCommittedEntryListener commitListener) {
     server.getContext().addCommittedEntryListener(commitListener);

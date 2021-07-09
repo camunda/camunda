@@ -53,7 +53,7 @@ public final class LogStorageAppenderHealthTest {
 
     appender =
         new LogStorageAppender(
-            "appender", PARTITION_ID, failingLogStorage, subscription, MAX_FRAGMENT_SIZE, () -> {});
+            "appender", PARTITION_ID, failingLogStorage, subscription, MAX_FRAGMENT_SIZE);
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
   }
 
@@ -135,6 +135,16 @@ public final class LogStorageAppenderHealthTest {
         final ByteBuffer blockBuffer,
         final AppendListener listener) {
       actor.run(() -> onAppend.accept(highestPosition, listener));
+    }
+
+    @Override
+    public void addCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void removeCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,6 +28,7 @@ public class ListLogStorage implements LogStorage {
   private final ConcurrentNavigableMap<Long, Integer> positionIndexMapping;
   private final List<Entry> entries;
   private LongConsumer positionListener;
+  private final Set<CommitListener> commitListeners = new HashSet<>();
 
   public ListLogStorage() {
     entries = new CopyOnWriteArrayList<>();
@@ -58,9 +61,20 @@ public class ListLogStorage implements LogStorage {
         positionListener.accept(entry.getHighestPosition());
       }
       listener.onCommit(index);
+      commitListeners.forEach(CommitListener::onCommit);
     } catch (final Exception e) {
       listener.onWriteError(e);
     }
+  }
+
+  @Override
+  public void addCommitListener(final CommitListener listener) {
+    commitListeners.add(listener);
+  }
+
+  @Override
+  public void removeCommitListener(final CommitListener listener) {
+    commitListeners.remove(listener);
   }
 
   private static final class Entry {

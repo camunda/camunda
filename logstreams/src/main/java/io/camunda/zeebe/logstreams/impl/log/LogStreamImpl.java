@@ -17,6 +17,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -32,7 +33,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
-public final class LogStreamImpl extends Actor implements LogStream, FailureListener {
+public final class LogStreamImpl extends Actor
+    implements LogStream, FailureListener, CommitListener {
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
@@ -134,9 +136,15 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
   }
 
   @Override
+  protected void onActorStarted() {
+    logStorage.addCommitListener(this);
+  }
+
+  @Override
   protected void onActorClosing() {
     LOG.info("On closing logstream {} close {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
+    logStorage.removeCommitListener(this);
   }
 
   @Override
@@ -179,14 +187,15 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     super.handleFailure(failure);
   }
 
+  @Override
+  public void onCommit() {
+    actor.call(this::notifyRecordAwaiters);
+  }
+
   private LogStreamReader createLogStreamReader() {
     final LogStreamReader newReader = new LogStreamReaderImpl(logStorage.newReader());
     readers.add(newReader);
     return newReader;
-  }
-
-  private void onCommit() {
-    actor.call(this::notifyRecordAwaiters);
   }
 
   private <T extends LogStreamWriter> void createWriter(
@@ -281,8 +290,7 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                         partitionId,
                         logStorage,
                         subscription,
-                        maxFrameLength,
-                        this::onCommit);
+                        maxFrameLength);
 
                 actorSchedulingService
                     .submitActor(appender)
