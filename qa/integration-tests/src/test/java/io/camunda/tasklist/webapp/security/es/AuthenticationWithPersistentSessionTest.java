@@ -16,6 +16,7 @@ import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.metric.MetricIT;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.json.JSONException;
@@ -39,6 +40,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
+    classes = {TestApplication.class},
     properties = {
       TasklistProperties.PREFIX + ".persistentSessionsEnabled = true",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",

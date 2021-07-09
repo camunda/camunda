@@ -19,7 +19,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.NoBeansTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.tasklist.zeebeimport.v100.processors.ElasticsearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.v110.processors.ElasticsearchBulkProcessor;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;

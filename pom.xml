@@ -14,8 +14,8 @@
     <module>els-schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-100</module>
     <module>importer-110</module>
+    <module>importer-120</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
@@ -24,7 +24,7 @@
   </modules>
 
   <properties>
-    <project.previous_version>1.0.0</project.previous_version>
+    <project.previous_version>1.1.0</project.previous_version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

@@ -8,7 +8,7 @@ package io.camunda.tasklist.util.apps.retry_after_failure;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
-import io.camunda.tasklist.zeebeimport.v100.processors.ElasticsearchBulkProcessor;
+import io.camunda.tasklist.zeebeimport.v110.processors.ElasticsearchBulkProcessor;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class RetryAfterFailureTestConfig {
 
-  @Bean("io.camunda.tasklist.zeebeimport.v26.processors.ElasticsearchBulkProcessor")
+  @Bean("io.camunda.tasklist.zeebeimport.v110.processors.ElasticsearchBulkProcessor")
   @Primary
   public CustomElasticsearchBulkProcessor elasticsearchBulkProcessor() {
     return new CustomElasticsearchBulkProcessor();
