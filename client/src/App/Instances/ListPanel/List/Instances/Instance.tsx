@@ -30,7 +30,11 @@ const Instance: React.FC<Props> = React.memo(({instance, isSelected}) => {
   const {parentInstanceId} = instance;
 
   return (
-    <TR key={instance.id} selected={isSelected}>
+    <TR
+      key={instance.id}
+      selected={isSelected}
+      aria-label={`Instance ${instance.id}`}
+    >
       <TD>
         <Cell>
           <SelectionStatusIndicator selected={isSelected} />

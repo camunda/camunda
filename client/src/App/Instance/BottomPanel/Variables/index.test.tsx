@@ -236,9 +236,9 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+      userEvent.click(screen.getByTitle(/add variable/i));
       expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
-      userEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
+      userEvent.click(screen.getByTitle(/exit edit mode/i));
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
@@ -260,21 +260,15 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+      userEvent.click(screen.getByTitle(/add variable/i));
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'test');
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
+      userEvent.type(screen.getByLabelText(/name/i), 'test');
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-      userEvent.type(screen.getByRole('textbox', {name: /value/i}), '    ');
+      userEvent.type(screen.getByLabelText(/value/i), '    ');
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
         screen.queryByTitle('Value has to be JSON')
       ).not.toBeInTheDocument();
@@ -302,15 +296,11 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+      userEvent.click(screen.getByTitle(/add variable/i));
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      userEvent.type(screen.getByRole('textbox', {name: /value/i}), '123', {});
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
+      userEvent.type(screen.getByLabelText(/value/i), '123', {});
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
         screen.queryByTitle('Name has to be filled')
       ).not.toBeInTheDocument();
@@ -318,12 +308,10 @@ describe('Variables', () => {
         await screen.findByTitle('Name has to be filled')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: /value/i}));
-      userEvent.type(screen.getByRole('textbox', {name: /value/i}), 'test');
+      userEvent.clear(screen.getByLabelText(/value/i));
+      userEvent.type(screen.getByLabelText(/value/i), 'test');
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
         screen.queryByTitle('Name has to be filled and Value has to be JSON')
       ).not.toBeInTheDocument();
@@ -333,28 +321,26 @@ describe('Variables', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByRole('textbox', {name: /name/i}), '   ');
+      userEvent.type(screen.getByLabelText(/name/i), '   ');
 
       expect(
         screen.getByTitle('Name is invalid and Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.type(screen.getByRole('textbox', {name: /name/i}), ' test');
+      userEvent.type(screen.getByLabelText(/name/i), ' test');
 
       expect(
         screen.getByTitle('Name is invalid and Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: /value/i}));
-      userEvent.type(
-        screen.getByRole('textbox', {name: /value/i}),
-        '"valid value"'
-      );
+      userEvent.clear(screen.getByLabelText(/value/i));
+      userEvent.type(screen.getByLabelText(/value/i), '"valid value"');
 
       expect(screen.getByTitle('Name is invalid')).toBeInTheDocument();
     });
 
     it('should not allow to add duplicate variables', async () => {
+      jest.useFakeTimers();
       currentInstanceStore.setCurrentInstance(instanceMock);
 
       mockServer.use(
@@ -373,19 +359,12 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+      userEvent.click(screen.getByTitle(/add variable/i));
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      userEvent.type(
-        screen.getByRole('textbox', {name: /name/i}),
-        mockVariables[0].name
-      );
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
+      userEvent.type(screen.getByLabelText(/name/i), mockVariables[0].name);
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(
         screen.queryByTitle('Name should be unique and Value has to be JSON')
       ).not.toBeInTheDocument();
@@ -395,25 +374,20 @@ describe('Variables', () => {
         )
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: /value/i}));
-      userEvent.type(screen.getByRole('textbox', {name: /value/i}), '123');
+      userEvent.clear(screen.getByLabelText(/value/i));
+      userEvent.type(screen.getByLabelText(/value/i), '123');
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       expect(screen.getByTitle('Name should be unique')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: /name/i}));
-      userEvent.type(
-        screen.getByRole('textbox', {name: /name/i}),
-        'someOtherName'
-      );
+      userEvent.clear(screen.getByLabelText(/name/i));
+      userEvent.type(screen.getByLabelText(/name/i), 'someOtherName');
 
       await waitFor(() =>
-        expect(
-          screen.getByRole('button', {name: 'Save variable'})
-        ).toBeEnabled()
+        expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
+      jest.clearAllTimers();
+      jest.useRealTimers();
     });
 
     it('should not allow to add variable with invalid name', async () => {
@@ -436,17 +410,13 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+      userEvent.click(screen.getByTitle(/add variable/i));
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
-      userEvent.type(screen.getByRole('textbox', {name: /name/i}), '"invalid"');
-      userEvent.type(screen.getByRole('textbox', {name: /value/i}), '123');
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
+      userEvent.type(screen.getByLabelText(/name/i), '"invalid"');
+      userEvent.type(screen.getByLabelText(/value/i), '123');
 
-      expect(
-        screen.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
       expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
 
@@ -454,18 +424,13 @@ describe('Variables', () => {
 
       expect(await screen.findByTitle('Name is invalid')).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: /name/i}));
-      userEvent.type(
-        screen.getByRole('textbox', {name: /name/i}),
-        'someOtherName'
-      );
+      userEvent.clear(screen.getByLabelText(/name/i));
+      userEvent.type(screen.getByLabelText(/name/i), 'someOtherName');
 
       jest.runOnlyPendingTimers();
 
       await waitFor(() =>
-        expect(
-          screen.getByRole('button', {name: 'Save variable'})
-        ).toBeEnabled()
+        expect(screen.getByTitle(/save variable/i)).toBeEnabled()
       );
 
       expect(screen.queryByTitle('Name is invalid')).not.toBeInTheDocument();
@@ -488,7 +453,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+      userEvent.click(screen.getByTitle(/add variable/i));
 
       const withinVariable = within(screen.getByTestId('clientNo'));
       userEvent.click(withinVariable.getByTestId('edit-variable-button'));
@@ -598,33 +563,29 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(
-        screen.queryByRole('textbox', {name: 'Value'})
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
       );
       expect(
-        withinFirstVariable.queryByRole('textbox', {name: 'Value'})
+        withinFirstVariable.queryByLabelText(/value/i)
       ).not.toBeInTheDocument();
       expect(
-        withinFirstVariable.queryByRole('button', {name: 'Exit edit mode'})
+        withinFirstVariable.queryByTitle(/exit edit mode/i)
       ).not.toBeInTheDocument();
       expect(
-        withinFirstVariable.queryByRole('button', {name: 'Save variable'})
+        withinFirstVariable.queryByTitle(/save variable/i)
       ).not.toBeInTheDocument();
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
+      expect(withinFirstVariable.getByLabelText(/value/i)).toBeInTheDocument();
       expect(
-        withinFirstVariable.getByRole('textbox', {name: 'Value'})
+        withinFirstVariable.getByTitle(/exit edit mode/i)
       ).toBeInTheDocument();
       expect(
-        withinFirstVariable.getByRole('button', {name: 'Exit edit mode'})
-      ).toBeInTheDocument();
-      expect(
-        withinFirstVariable.getByRole('button', {name: 'Save variable'})
+        withinFirstVariable.getByTitle(/save variable/i)
       ).toBeInTheDocument();
     });
 
@@ -646,9 +607,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(
-        screen.queryByRole('textbox', {name: 'Value'})
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -656,9 +615,7 @@ describe('Variables', () => {
 
       userEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
-      expect(
-        withinFirstVariable.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
     });
 
     it('should validate when editing variables', async () => {
@@ -684,9 +641,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(
-        screen.queryByRole('textbox', {name: 'Value'})
-      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
 
       const withinFirstVariable = within(
         screen.getByTestId(variablesStore.state.items[0].name)
@@ -696,15 +651,10 @@ describe('Variables', () => {
 
       const invalidJSONObject = "{invalidKey: 'value'}";
 
-      userEvent.clear(screen.getByRole('textbox', {name: 'Value'}));
-      userEvent.type(
-        screen.getByRole('textbox', {name: 'Value'}),
-        invalidJSONObject
-      );
+      userEvent.clear(screen.getByLabelText(/value/i));
+      userEvent.type(screen.getByLabelText(/value/i), invalidJSONObject);
 
-      expect(
-        withinFirstVariable.getByRole('button', {name: 'Save variable'})
-      ).toBeDisabled();
+      expect(withinFirstVariable.getByTitle(/save variable/i)).toBeDisabled();
 
       expect(
         screen.queryByTitle('Value has to be JSON')
@@ -715,10 +665,10 @@ describe('Variables', () => {
         await screen.findByTitle('Value has to be JSON')
       ).toBeInTheDocument();
 
-      userEvent.clear(screen.getByRole('textbox', {name: 'Value'}));
-      userEvent.type(screen.getByRole('textbox', {name: 'Value'}), '123');
+      userEvent.clear(screen.getByLabelText(/value/i));
+      userEvent.type(screen.getByLabelText(/value/i), '123');
 
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled();
 
       global.console.error = originalConsoleError;
       jest.clearAllTimers();
@@ -783,15 +733,11 @@ describe('Variables', () => {
       );
 
       userEvent.click(
-        within(screen.getByTestId('clientNo')).getByRole('button', {
-          name: /Enter edit mode/,
-        })
+        within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
       );
       expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
       expect(
-        within(screen.getByTestId('mwst')).getByRole('button', {
-          name: 'Enter edit mode',
-        })
+        within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i)
       ).toBeDisabled();
 
       await waitForElementToBeRemoved(screen.getByTestId('variable-backdrop'));
@@ -799,9 +745,7 @@ describe('Variables', () => {
       expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
       expect(screen.getByText('"full-value"')).toBeInTheDocument();
       expect(
-        within(screen.getByTestId('mwst')).getByRole('button', {
-          name: 'Enter edit mode',
-        })
+        within(screen.getByTestId('mwst')).getByTitle(/enter edit mode/i)
       ).toBeEnabled();
       expect(mockDisplayNotification).not.toHaveBeenCalled();
     });
@@ -846,9 +790,7 @@ describe('Variables', () => {
       );
 
       userEvent.click(
-        within(screen.getByTestId('clientNo')).getByRole('button', {
-          name: /Enter edit mode/,
-        })
+        within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
       );
       expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
 
@@ -896,9 +838,7 @@ describe('Variables', () => {
       expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
       userEvent.click(
-        within(screen.getByTestId('clientNo')).getByRole('button', {
-          name: /Enter edit mode/,
-        })
+        within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
       );
 
       expect(screen.queryByTestId('variable-backdrop')).not.toBeInTheDocument();
@@ -923,9 +863,9 @@ describe('Variables', () => {
 
       render(<Variables />, {wrapper: Wrapper});
 
-      expect(screen.getByText('Add Variable')).toBeDisabled();
+      expect(screen.getByText(/add variable/i)).toBeDisabled();
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-      expect(screen.getByText('Add Variable')).toBeEnabled();
+      expect(screen.getByText(/add variable/i)).toBeEnabled();
     });
 
     it('should disable add variable button if instance state is cancelled', async () => {
@@ -950,7 +890,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.getByText('Add Variable')).toBeDisabled();
+      expect(screen.getByText(/add variable/i)).toBeDisabled();
     });
 
     it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
@@ -971,17 +911,17 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-      expect(screen.queryByText('Add Variable')).not.toBeInTheDocument();
+      userEvent.click(screen.getByTitle(/add variable/i));
+      expect(screen.queryByText(/add variable/i)).not.toBeInTheDocument();
 
-      userEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
-      expect(screen.getByText('Add Variable')).toBeEnabled();
+      userEvent.click(screen.getByTitle(/exit edit mode/i));
+      expect(screen.getByText(/add variable/i)).toBeEnabled();
 
       userEvent.click(screen.getAllByTestId('edit-variable-button')[0]);
-      expect(screen.getByText('Add Variable')).toBeDisabled();
+      expect(screen.getByText(/add variable/i)).toBeDisabled();
 
-      userEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
-      expect(screen.getByText('Add Variable')).toBeEnabled();
+      userEvent.click(screen.getByTitle(/exit edit mode/i));
+      expect(screen.getByText(/add variable/i)).toBeEnabled();
     });
 
     it('should disable add variable button when selected flow node is not running', async () => {
@@ -1003,7 +943,7 @@ describe('Variables', () => {
       render(<Variables />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      expect(screen.getByText('Add Variable')).toBeEnabled();
+      expect(screen.getByText(/add variable/i)).toBeEnabled();
 
       mockServer.use(
         rest.post(
@@ -1031,7 +971,7 @@ describe('Variables', () => {
         ).toEqual(null)
       );
 
-      expect(screen.getByText('Add Variable')).toBeEnabled();
+      expect(screen.getByText(/add variable/i)).toBeEnabled();
 
       mockServer.use(
         rest.post(
@@ -1059,7 +999,7 @@ describe('Variables', () => {
         ).toEqual(MOCK_TIMESTAMP)
       );
 
-      expect(screen.getByText('Add Variable')).toBeDisabled();
+      expect(screen.getByText(/add variable/i)).toBeDisabled();
 
       flowNodeMetaDataStore.reset();
     });
@@ -1082,16 +1022,14 @@ describe('Variables', () => {
     render(<Variables />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    userEvent.click(screen.getByRole('button', {name: /add variable/i}));
-    userEvent.click(
-      screen.getByRole('button', {name: /open json editor modal/i})
-    );
+    userEvent.click(screen.getByTitle(/add variable/i));
+    userEvent.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /close/i})
+      within(screen.getByTestId('modal')).getByTitle(/close/i)
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /save/i})
+      within(screen.getByTestId('modal')).getByTitle(/save/i)
     ).toBeEnabled();
     expect(
       within(screen.getByTestId('modal')).getByTestId('json-editor-container')
@@ -1115,16 +1053,14 @@ describe('Variables', () => {
     render(<Variables />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    userEvent.click(screen.getByRole('button', {name: /enter edit mode/i}));
-    userEvent.click(
-      screen.getByRole('button', {name: /open json editor modal/i})
-    );
+    userEvent.click(screen.getByTitle(/enter edit mode/i));
+    userEvent.click(screen.getByTitle(/open json editor modal/i));
 
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /close/i})
+      within(screen.getByTestId('modal')).getByTitle(/close/i)
     ).toBeEnabled();
     expect(
-      within(screen.getByTestId('modal')).getByRole('button', {name: /save/i})
+      within(screen.getByTestId('modal')).getByTitle(/save/i)
     ).toBeEnabled();
     expect(
       within(screen.getByTestId('modal')).getByTestId('json-editor-container')

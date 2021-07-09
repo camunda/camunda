@@ -123,6 +123,7 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                         isMultiInstance: false,
                       })
                     }
+                    aria-label={`Incident ${incident.errorType}`}
                   >
                     <TD>
                       <Styled.FirstCell>

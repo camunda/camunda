@@ -82,11 +82,16 @@ describe('Filters', () => {
 
     processesStore.fetchProcesses();
     instancesDiagramStore.fetchProcessXml('bigVarProcess');
+
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
     processesStore.reset();
     instancesDiagramStore.reset();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should load the process and version fields', async () => {
@@ -571,11 +576,7 @@ describe('Filters', () => {
       wrapper: getWrapper(MOCK_HISTORY),
     });
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Reset Filters',
-      })
-    ).toBeDisabled();
+    expect(screen.getByTitle(/reset filters/i)).toBeDisabled();
 
     userEvent.click(screen.getByLabelText('Incidents'));
 
@@ -583,23 +584,10 @@ describe('Filters', () => {
       expect(MOCK_HISTORY.location.search).toBe('?active=true')
     );
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Reset Filters',
-      })
-    ).toBeEnabled();
+    expect(screen.getByTitle(/reset filters/i)).toBeEnabled();
   });
 
   describe('Interaction with other fields during validation', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    });
-
     it('validation for Instance IDs field should not affect other fields validation errors', async () => {
       const MOCK_HISTORY = createMemoryHistory({
         initialEntries: ['/'],

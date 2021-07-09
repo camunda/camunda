@@ -130,49 +130,35 @@ describe('<FlowNodeInstancesTree />', () => {
       );
 
       expect(
-        screen.queryByRole('button', {
-          name: 'Unfold Filter-Map Sub Process',
-        })
+        screen.queryByLabelText('Unfold Filter-Map Sub Process')
       ).not.toBeInTheDocument();
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
       userEvent.click(
-        screen.getByRole('button', {
-          name: 'Unfold Filter-Map Sub Process (Multi Instance)',
-        })
+        screen.getByLabelText('Unfold Filter-Map Sub Process (Multi Instance)')
       );
 
       expect(
-        await screen.findByRole('button', {
-          name: 'Fold Filter-Map Sub Process (Multi Instance)',
-        })
+        await screen.findByLabelText(
+          'Fold Filter-Map Sub Process (Multi Instance)'
+        )
       ).toBeInTheDocument();
 
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
       userEvent.click(
-        await screen.findByRole('button', {
-          name: 'Unfold Filter-Map Sub Process',
-        })
+        await screen.findByLabelText('Unfold Filter-Map Sub Process')
       );
 
       expect(await screen.findByText('Start Filter-Map')).toBeInTheDocument();
       expect(
-        screen.getByRole('button', {
-          name: 'Fold Filter-Map Sub Process (Multi Instance)',
-        })
+        screen.getByLabelText('Fold Filter-Map Sub Process (Multi Instance)')
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('button', {
-          name: 'Fold Filter-Map Sub Process',
-        })
+        screen.getByLabelText('Fold Filter-Map Sub Process')
       ).toBeInTheDocument();
 
-      userEvent.click(
-        screen.getByRole('button', {
-          name: 'Fold Filter-Map Sub Process',
-        })
-      );
+      userEvent.click(screen.getByLabelText('Fold Filter-Map Sub Process'));
 
       expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
     });
@@ -288,31 +274,19 @@ describe('<FlowNodeInstancesTree />', () => {
       );
 
       expect(
-        screen.queryByRole('button', {
-          name: 'Fold Event Subprocess',
-        })
+        screen.queryByLabelText('Fold Event Subprocess')
       ).not.toBeInTheDocument();
       expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
 
-      userEvent.click(
-        screen.getByRole('button', {
-          name: 'Unfold Event Subprocess',
-        })
-      );
+      userEvent.click(screen.getByLabelText('Unfold Event Subprocess'));
 
       expect(
-        await screen.findByRole('button', {
-          name: 'Fold Event Subprocess',
-        })
+        await screen.findByLabelText('Fold Event Subprocess')
       ).toBeInTheDocument();
 
       expect(screen.getByText('Interrupting timer')).toBeInTheDocument();
 
-      userEvent.click(
-        screen.getByRole('button', {
-          name: 'Fold Event Subprocess',
-        })
-      );
+      userEvent.click(screen.getByLabelText('Fold Event Subprocess'));
 
       expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
     });

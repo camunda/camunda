@@ -9,7 +9,6 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
-  within,
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -148,13 +147,6 @@ describe('ListPanel', () => {
       render(<ListPanel />, {wrapper: createWrapper()});
       await waitForElementToBeRemoved(screen.getByTestId('listpanel-skeleton'));
 
-      const withinFirstRow = within(
-        screen.getByRole('row', {
-          name: /instance 1/i,
-        })
-      );
-
-      expect(withinFirstRow.getByText('someProcessName')).toBeInTheDocument();
       expect(
         screen.getByText(/^© Camunda Services GmbH \d{4}. All rights reserved./)
       ).toBeInTheDocument();
@@ -217,7 +209,7 @@ describe('ListPanel', () => {
     expect(
       screen.queryByTitle(/has scheduled operations/i)
     ).not.toBeInTheDocument();
-    userEvent.click(screen.getByRole('button', {name: 'Cancel Instance 1'}));
+    userEvent.click(screen.getByTitle('Cancel Instance 1'));
     expect(
       screen.getByTitle(/instance 1 has scheduled operations/i)
     ).toBeInTheDocument();
@@ -271,13 +263,11 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      userEvent.click(
-        screen.getByRole('checkbox', {name: 'Select all instances'})
-      );
-      userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
-      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-      userEvent.click(screen.getByRole('button', {name: 'Apply'}));
-      expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+      userEvent.click(screen.getByLabelText(/select all instances/i));
+      userEvent.click(screen.getByText(/apply operation on/i));
+      userEvent.click(screen.getByText(/cancel/i));
+      userEvent.click(screen.getByText(/^apply$/i));
+      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(2);
 
       mockServer.use(
         rest.post('/api/process-instances', (_, res, ctx) =>
@@ -288,12 +278,12 @@ describe('ListPanel', () => {
       instancesStore.fetchInstancesFromFilters();
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
-      expect(screen.queryAllByTestId('operation-spinner').length).toBe(0);
+      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0);
       expect(expandOperationsMock).toHaveBeenCalledTimes(1);
 
       jest.clearAllTimers();
       jest.useRealTimers();
-    }, 20000);
+    });
 
     it('should remove spinners after batch operation if a server error occurs', async () => {
       mockServer.use(
@@ -317,15 +307,13 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      userEvent.click(
-        screen.getByRole('checkbox', {name: 'Select all instances'})
-      );
-      userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
-      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-      userEvent.click(screen.getByRole('button', {name: 'Apply'}));
-      expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+      userEvent.click(screen.getByLabelText(/select all instances/i));
+      userEvent.click(screen.getByText(/apply operation on/i));
+      userEvent.click(screen.getByText(/cancel/i));
+      userEvent.click(screen.getByText(/^apply$/i));
+      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(2);
       await waitFor(() =>
-        expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)
+        expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
       );
 
       // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
@@ -334,7 +322,7 @@ describe('ListPanel', () => {
       );
 
       expect(expandOperationsMock).not.toHaveBeenCalled();
-    }, 20000);
+    });
 
     it('should remove spinners after batch operation if a network error occurs', async () => {
       jest.useFakeTimers();
@@ -359,17 +347,14 @@ describe('ListPanel', () => {
 
       await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-      userEvent.click(
-        screen.getByRole('checkbox', {name: 'Select all instances'})
-      );
-
-      userEvent.click(screen.getByRole('button', {name: /Apply Operation on/}));
-      userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
-      userEvent.click(screen.getByRole('button', {name: 'Apply'}));
-      expect(screen.getAllByTestId('operation-spinner').length).toBe(2);
+      userEvent.click(screen.getByLabelText(/select all instances/i));
+      userEvent.click(screen.getByText(/apply operation on/i));
+      userEvent.click(screen.getByText(/cancel/i));
+      userEvent.click(screen.getByText(/^apply$/i));
+      expect(screen.getAllByTestId('operation-spinner')).toHaveLength(2);
 
       await waitFor(() =>
-        expect(screen.queryAllByTestId('operation-spinner').length).toBe(0)
+        expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
       );
 
       // TODO: Normally this should not be necessary. all the ongoing requests should be canceled and state should not be updated if state is reset. this should also be removed when this problem is solved with https://jira.camunda.com/browse/OPE-1169
@@ -379,7 +364,7 @@ describe('ListPanel', () => {
 
       jest.clearAllTimers();
       jest.useRealTimers();
-    }, 20000);
+    });
   });
 
   it('should show an error message', async () => {

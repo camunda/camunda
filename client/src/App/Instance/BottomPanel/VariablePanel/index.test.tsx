@@ -172,16 +172,14 @@ describe('VariablePanel', () => {
 
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/add variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
-    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+    userEvent.type(screen.getByLabelText(/name/i), 'foo');
+    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
@@ -206,7 +204,7 @@ describe('VariablePanel', () => {
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
 
     mockServer.use(
@@ -253,10 +251,8 @@ describe('VariablePanel', () => {
         }
       })
     );
-    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/save variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
     expect(
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
@@ -271,9 +267,7 @@ describe('VariablePanel', () => {
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
     );
 
-    expect(
-      screen.getByRole('button', {name: 'Add variable'})
-    ).toBeInTheDocument();
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
     expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
       headline: 'Variable added',
     });
@@ -302,16 +296,14 @@ describe('VariablePanel', () => {
 
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/add variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
-    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+    userEvent.type(screen.getByLabelText(/name/i), 'foo');
+    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -327,12 +319,10 @@ describe('VariablePanel', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
-    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/save variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
     expect(
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
@@ -348,24 +338,20 @@ describe('VariablePanel', () => {
       screen.queryByTestId('edit-variable-spinner')
     ).not.toBeInTheDocument();
 
-    expect(
-      screen.getByRole('button', {name: 'Add variable'})
-    ).toBeInTheDocument();
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
   });
 
   it('should display validation error if backend validation fails while adding variable', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/add variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
-    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+    userEvent.type(screen.getByLabelText(/name/i), 'foo');
+    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -374,17 +360,15 @@ describe('VariablePanel', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
-    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+    userEvent.click(screen.getByTitle(/save variable/i));
 
     await waitForElementToBeRemoved(
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
     );
 
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
     expect(mockDisplayNotification).not.toHaveBeenCalledWith('error', {
       headline: 'Variable could not be saved',
@@ -392,28 +376,26 @@ describe('VariablePanel', () => {
 
     expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), '2');
+    userEvent.type(screen.getByLabelText(/name/i), '2');
     expect(
       screen.queryByTitle('Variable should be unique')
     ).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), '{backspace}');
+    userEvent.type(screen.getByLabelText(/name/i), '{backspace}');
     expect(screen.getByTitle('Variable should be unique')).toBeInTheDocument();
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/add variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
-    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+    userEvent.type(screen.getByLabelText(/name/i), 'foo');
+    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
@@ -422,18 +404,16 @@ describe('VariablePanel', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+    userEvent.click(screen.getByTitle(/save variable/i));
 
     await waitForElementToBeRemoved(
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
     );
 
-    expect(
-      screen.getByRole('button', {name: 'Add variable'})
-    ).toBeInTheDocument();
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
       headline: 'Variable could not be saved',
@@ -445,16 +425,14 @@ describe('VariablePanel', () => {
 
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/add variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
-    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+    userEvent.type(screen.getByLabelText(/name/i), 'foo');
+    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
@@ -479,7 +457,7 @@ describe('VariablePanel', () => {
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
 
     mockServer.use(
@@ -519,7 +497,7 @@ describe('VariablePanel', () => {
       })
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
+    userEvent.click(screen.getByTitle(/save variable/i));
 
     expect(
       within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
@@ -529,9 +507,7 @@ describe('VariablePanel', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('foo'));
 
-    expect(
-      screen.getByRole('button', {name: 'Add variable'})
-    ).toBeInTheDocument();
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
       headline: 'Variable could not be saved',
@@ -546,14 +522,14 @@ describe('VariablePanel', () => {
 
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Add variable'})).toBeEnabled()
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Add variable'}));
+    userEvent.click(screen.getByTitle(/add variable/i));
 
-    userEvent.type(screen.getByRole('textbox', {name: /name/i}), 'foo');
+    userEvent.type(screen.getByLabelText(/name/i), 'foo');
 
-    userEvent.type(screen.getByRole('textbox', {name: /value/i}), '"bar"');
+    userEvent.type(screen.getByLabelText(/value/i), '"bar"');
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
@@ -581,13 +557,11 @@ describe('VariablePanel', () => {
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
-      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled()
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Save variable'}));
-    expect(
-      screen.queryByRole('button', {name: 'Add variable'})
-    ).not.toBeInTheDocument();
+    userEvent.click(screen.getByTitle(/save variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
     expect(screen.getByTestId('edit-variable-spinner')).toBeInTheDocument();
 

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import {IncidentsWrapper} from './index';
@@ -87,70 +87,47 @@ describe('IncidentsWrapper', () => {
     });
     expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();
     expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'View 2 Incidents in Instance 1',
-      })
-    );
+    userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
   });
 
-  it('should render the IncidentsTable', () => {
+  it('should render the table', () => {
     render(<IncidentsWrapper {...testData.props.default} />, {
       wrapper: Wrapper,
     });
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'View 2 Incidents in Instance 1',
-      })
-    );
+    userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
 
-    expect(
-      screen.getByRole('columnheader', {name: /^Incident Type/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('columnheader', {name: /^Flow Node/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('columnheader', {name: /^Job Id/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('columnheader', {name: /^Creation Time/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('columnheader', {name: /^Error Message/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('columnheader', {name: /^Operations/})
-    ).toBeInTheDocument();
+    const table = within(screen.getByTestId('incidents-table'));
+
+    expect(table.getByText(/^Incident Type/)).toBeInTheDocument();
+    expect(table.getByText(/^Flow Node/)).toBeInTheDocument();
+    expect(table.getByText(/^Job Id/)).toBeInTheDocument();
+    expect(table.getByText(/^Creation Time/)).toBeInTheDocument();
+    expect(table.getByText(/^Error Message/)).toBeInTheDocument();
+    expect(table.getByText(/^Operations/)).toBeInTheDocument();
   });
 
-  it('should render the IncidentsFilter', () => {
+  it('should render the filters', () => {
     render(<IncidentsWrapper {...testData.props.default} />, {
       wrapper: Wrapper,
     });
-    userEvent.click(
-      screen.getByRole('button', {
-        name: 'View 2 Incidents in Instance 1',
-      })
+    userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
+
+    const errorFilters = within(screen.getByTestId(/incidents-by-errortype/i));
+    const flowNodeFilters = within(
+      screen.getByTestId(/incidents-by-flownode/i)
     );
 
+    expect(errorFilters.getByText(/^condition error/i)).toBeInTheDocument();
+    expect(errorFilters.getByText(/^Extract value error/)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /^Condition error/})
+      flowNodeFilters.getByText(/^flowNodeId_exclusiveGateway/)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /^Extract value error/})
+      flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /^Clear All/})
-    ).toBeInTheDocument();
+    expect(screen.getByText(/^Clear All/)).toBeInTheDocument();
   });
 
   describe('Filtering', () => {
@@ -160,88 +137,96 @@ describe('IncidentsWrapper', () => {
         wrapper: Wrapper,
       });
       rerender = wrapper.rerender;
-      userEvent.click(
-        screen.getByRole('button', {
-          name: 'View 2 Incidents in Instance 1',
-        })
-      );
+      userEvent.click(screen.getByTitle('View 2 Incidents in Instance 1'));
     });
 
     it('should not have active filters by default', () => {
-      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
     });
 
     it('should filter the incidents when errorTypes are selected', () => {
-      expect(screen.getAllByRole('row').length).toBe(3);
-      expect(
-        screen.getByRole('row', {name: /Condition errortype/})
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('row', {name: /Extract value errortype/})
-      ).toBeInTheDocument();
+      const table = within(screen.getByTestId('incidents-table'));
+
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
+      expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
+      expect(table.getByText(/Extract value errortype/)).toBeInTheDocument();
 
       userEvent.click(
-        screen.getByRole('button', {name: /^Condition errortype/})
+        within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
+          /^Condition errortype/
+        )
       );
 
-      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
+      expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
       expect(
-        screen.getByRole('row', {name: /Condition errortype/})
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole('row', {name: /Extract value errortype/})
+        table.queryByText(/Extract value errortype/)
       ).not.toBeInTheDocument();
     });
 
     it('should filter the incidents when flowNodes are selected', () => {
-      expect(screen.getAllByRole('row').length).toBe(3);
+      const table = within(screen.getByTestId('incidents-table'));
+
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       expect(
-        screen.getByRole('row', {name: /flowNodeId_exclusiveGateway/})
+        table.getByText(/flowNodeId_exclusiveGateway/)
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('row', {name: /flowNodeId_alwaysFailingTask/})
+        table.getByText(/flowNodeId_alwaysFailingTask/)
       ).toBeInTheDocument();
 
       userEvent.click(
-        screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+        within(screen.getByTestId(/incidents-by-flownode/i)).getByText(
+          /^flowNodeId_exclusiveGateway/
+        )
       );
 
-      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
       expect(
-        screen.getByRole('row', {name: /flowNodeId_exclusiveGateway/})
+        table.getByText(/flowNodeId_exclusiveGateway/)
       ).toBeInTheDocument();
       expect(
-        screen.queryByRole('row', {name: /flowNodeId_alwaysFailingTask/})
+        table.queryByText(/flowNodeId_alwaysFailingTask/)
       ).not.toBeInTheDocument();
     });
 
     it('should filter the incidents when both errorTypes & flowNodes are selected', () => {
-      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       userEvent.click(
-        screen.getByRole('button', {name: /^Condition errortype/})
+        within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
+          /^Condition errortype/
+        )
       );
-      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
+
+      const flowNodeFilters = within(
+        screen.getByTestId(/incidents-by-flownode/i)
+      );
 
       userEvent.click(
-        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+        flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       );
-      expect(screen.getAllByRole('row').length).toBe(1);
+      expect(screen.queryAllByLabelText(/^incident/i)).toHaveLength(0);
       userEvent.click(
-        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+        flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       );
-      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
     });
 
     it('should remove filter when only related incident gets resolved', async () => {
-      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
+
+      const flowNodeFilters = within(
+        screen.getByTestId(/incidents-by-flownode/i)
+      );
 
       userEvent.click(
-        screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+        flowNodeFilters.getByText(/^flowNodeId_exclusiveGateway/)
       );
       userEvent.click(
-        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+        flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       );
-      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
       // incident is resolved
       mockServer.use(
@@ -256,30 +241,32 @@ describe('IncidentsWrapper', () => {
       rerender(<IncidentsWrapper {...testData.props.default} />);
 
       expect(
-        screen.queryByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+        flowNodeFilters.queryByText(/^flowNodeId_exclusiveGateway/)
       ).not.toBeInTheDocument();
-
       expect(
-        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+        flowNodeFilters.getByText(/^flowNodeId_alwaysFailingTask/)
       ).toBeInTheDocument();
-
-      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
     });
 
     it('should drop all filters when clicking the clear all button', () => {
-      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
 
       userEvent.click(
-        screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+        within(screen.getByTestId(/incidents-by-flownode/i)).getByText(
+          /^flowNodeId_exclusiveGateway/
+        )
       );
       userEvent.click(
-        screen.getByRole('button', {name: /^Condition errortype/})
+        within(screen.getByTestId(/incidents-by-errortype/i)).getByText(
+          /^Condition errortype/
+        )
       );
-      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(1);
 
-      userEvent.click(screen.getByRole('button', {name: /^Clear All/}));
+      userEvent.click(screen.getByText(/^Clear All/));
 
-      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
     });
   });
 });
