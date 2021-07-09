@@ -140,7 +140,47 @@ public final class ReplayStateMachine {
     this.snapshotPosition = snapshotPosition;
 
     LOG.trace("Start scanning the log for error events.");
-    lastSourceEventPosition = scanLog(snapshotPosition);
+    long lastSourceEventPosition1 = -1L;
+
+    if (logStreamReader.hasNext()) {
+      lastSourceEventPosition1 = snapshotPosition;
+
+      long lastPosition = snapshotPosition;
+      while (logStreamReader.hasNext()) {
+        final LoggedEvent newEvent = logStreamReader.next();
+
+        final var currentPosition = newEvent.getPosition();
+        if (lastPosition >= currentPosition) {
+          throw new IllegalStateException(
+              String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
+        }
+        lastPosition = currentPosition;
+
+        metadata.reset();
+        newEvent.readMetadata(metadata);
+        final long sourceEventPosition = newEvent.getSourceEventPosition();
+        if (sourceEventPosition > 0) {
+          if (sourceEventPosition > lastSourceEventPosition1) {
+            lastSourceEventPosition1 = sourceEventPosition;
+          }
+          if (currentPosition > lastFollowUpEventPosition) {
+            lastFollowUpEventPosition = currentPosition;
+          }
+        }
+
+        final var recordKey = newEvent.getKey();
+        // records from other partitions should not influence the key generator of this partition
+        if (Protocol.decodePartitionId(recordKey) == zeebeState.getPartitionId()) {
+          // remember the highest key on the stream to restore the key generator after replay
+          highestRecordKey = Math.max(recordKey, highestRecordKey);
+        }
+      }
+
+      // reset position
+      logStreamReader.seek(snapshotPosition + 1);
+    }
+
+    lastSourceEventPosition = lastSourceEventPosition1;
     LOG.trace("Finished scanning the log for error events.");
 
     if (lastSourceEventPosition > snapshotPosition) {
@@ -160,72 +200,90 @@ public final class ReplayStateMachine {
     return recoveryFuture;
   }
 
-  private long scanLog(final long snapshotPosition) {
-    long lastSourceEventPosition = -1L;
-
-    if (logStreamReader.hasNext()) {
-      lastSourceEventPosition = snapshotPosition;
-
-      long lastPosition = snapshotPosition;
-      while (logStreamReader.hasNext()) {
-        final LoggedEvent newEvent = logStreamReader.next();
-
-        final var currentPosition = newEvent.getPosition();
-        if (lastPosition >= currentPosition) {
-          throw new IllegalStateException(
-              String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
-        }
-        lastPosition = currentPosition;
-
-        metadata.reset();
-        newEvent.readMetadata(metadata);
-        final long sourceEventPosition = newEvent.getSourceEventPosition();
-        if (sourceEventPosition > 0) {
-          if (sourceEventPosition > lastSourceEventPosition) {
-            lastSourceEventPosition = sourceEventPosition;
-          }
-          if (currentPosition > lastFollowUpEventPosition) {
-            lastFollowUpEventPosition = currentPosition;
-          }
-        }
-
-        final var recordKey = newEvent.getKey();
-        // records from other partitions should not influence the key generator of this partition
-        if (Protocol.decodePartitionId(recordKey) == zeebeState.getPartitionId()) {
-          // remember the highest key on the stream to restore the key generator after replay
-          highestRecordKey = Math.max(recordKey, highestRecordKey);
-        }
-      }
-
-      // reset position
-      logStreamReader.seek(snapshotPosition + 1);
-    }
-
-    return lastSourceEventPosition;
-  }
-
-  private void readNextRecord() {
-    if (!logStreamReader.hasNext()) {
-      throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_REPLAY_NO_NEXT_EVENT, lastFollowUpEventPosition));
-    }
-
-    currentEvent = logStreamReader.next();
-    if (currentEvent.getPosition() > lastFollowUpEventPosition) {
-      throw new IllegalStateException(
-          String.format(
-              ERROR_MESSAGE_REPLAY_NO_FOLLOW_UP_EVENT,
-              lastFollowUpEventPosition,
-              currentEvent.getPosition()));
-    }
-  }
-
   private void replayNextEvent() {
     try {
-      readNextRecord();
+      if (!logStreamReader.hasNext()) {
+        throw new IllegalStateException(
+            String.format(ERROR_MESSAGE_REPLAY_NO_NEXT_EVENT, lastFollowUpEventPosition));
+      }
+
+      currentEvent = logStreamReader.next();
+      if (currentEvent.getPosition() > lastFollowUpEventPosition) {
+        throw new IllegalStateException(
+            String.format(
+                ERROR_MESSAGE_REPLAY_NO_FOLLOW_UP_EVENT,
+                lastFollowUpEventPosition,
+                currentEvent.getPosition()));
+      }
 
       if (eventFilter.applies(currentEvent)) {
-        replayEvent(currentEvent);
+
+        try {
+          metadata.reset();
+          currentEvent.readMetadata(metadata);
+        } catch (final Exception e) {
+          LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, metadata, e);
+        }
+
+        final UnifiedRecordValue value =
+            recordValues.readRecordValue(currentEvent, metadata.getValueType());
+        typedEvent.wrap(currentEvent, metadata, value);
+
+        final ActorFuture<Boolean> resultFuture =
+            processRetryStrategy.runWithRetry(
+                () -> {
+                  final boolean onRetry = zeebeDbTransaction != null;
+                  if (onRetry) {
+                    zeebeDbTransaction.rollback();
+                  }
+                  zeebeDbTransaction = transactionContext.getCurrentTransaction();
+                  zeebeDbTransaction.run(
+                      () -> {
+                        // TODO (saig0): ignore blacklist because we replay events only (#7430)
+                        // these events were applied already
+                        final boolean isNotOnBlacklist =
+                            !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
+                        if (isNotOnBlacklist) {
+                          // skip events if the state changes are already applied to the state in
+                          // the
+                          // snapshot
+                          if (((TypedRecord<?>) typedEvent).getSourceRecordPosition()
+                              > snapshotPosition) {
+                            eventApplier.applyState(
+                                ((TypedRecord<?>) typedEvent).getKey(),
+                                ((TypedRecord<?>) typedEvent).getIntent(),
+                                ((TypedRecord<?>) typedEvent).getValue());
+                          }
+                        }
+                        lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
+                      });
+
+                  return true;
+                },
+                abortCondition);
+
+        actor.runOnCompletion(
+            resultFuture,
+            (v, t) -> {
+              // replay should be retried endless until it worked
+              assert t == null : "On replay there shouldn't be any exception thrown.";
+              final ActorFuture<Boolean> retryFuture =
+                  updateStateRetryStrategy.runWithRetry(
+                      () -> {
+                        zeebeDbTransaction.commit();
+                        zeebeDbTransaction = null;
+                        return true;
+                      },
+                      abortCondition);
+
+              actor.runOnCompletion(
+                  retryFuture,
+                  (bool, throwable) -> {
+                    // update state should be retried endless until it worked
+                    assert throwable == null : "On replay there shouldn't be any exception thrown.";
+                    onRecordReplayed(currentEvent);
+                  });
+            });
       } else {
         onRecordReplayed(currentEvent);
       }
@@ -237,84 +295,6 @@ public final class ReplayStateMachine {
     }
   }
 
-  private void replayEvent(final LoggedEvent currentEvent) {
-
-    try {
-      metadata.reset();
-      currentEvent.readMetadata(metadata);
-    } catch (final Exception e) {
-      LOG.error(ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT, currentEvent, metadata, e);
-    }
-
-    final UnifiedRecordValue value =
-        recordValues.readRecordValue(currentEvent, metadata.getValueType());
-    typedEvent.wrap(currentEvent, metadata, value);
-
-    replayUntilDone(currentEvent.getPosition(), typedEvent);
-  }
-
-  private void replayUntilDone(final long position, final TypedRecord<?> currentEvent) {
-
-    final ActorFuture<Boolean> resultFuture =
-        processRetryStrategy.runWithRetry(
-            () -> {
-              final boolean onRetry = zeebeDbTransaction != null;
-              if (onRetry) {
-                zeebeDbTransaction.rollback();
-              }
-              zeebeDbTransaction = transactionContext.getCurrentTransaction();
-              zeebeDbTransaction.run(
-                  () -> {
-                    // TODO (saig0): ignore blacklist because we replay events only (#7430)
-                    // these events were applied already
-                    final boolean isNotOnBlacklist =
-                        !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
-                    if (isNotOnBlacklist) {
-                      replayEvent(currentEvent);
-                    }
-                    lastProcessedPositionState.markAsProcessed(position);
-                  });
-
-              return true;
-            },
-            abortCondition);
-
-    actor.runOnCompletion(
-        resultFuture,
-        (v, t) -> {
-          // replay should be retried endless until it worked
-          assert t == null : "On replay there shouldn't be any exception thrown.";
-          updateStateUntilDone();
-        });
-  }
-
-  private void replayEvent(final TypedRecord<?> currentEvent) {
-    // skip events if the state changes are already applied to the state in the snapshot
-    if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
-      eventApplier.applyState(
-          currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
-    }
-  }
-
-  private void updateStateUntilDone() {
-    final ActorFuture<Boolean> retryFuture =
-        updateStateRetryStrategy.runWithRetry(
-            () -> {
-              zeebeDbTransaction.commit();
-              zeebeDbTransaction = null;
-              return true;
-            },
-            abortCondition);
-
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          // update state should be retried endless until it worked
-          assert throwable == null : "On replay there shouldn't be any exception thrown.";
-          onRecordReplayed(currentEvent);
-        });
-  }
-
   private void onRecordReplayed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() >= lastFollowUpEventPosition) {
       LOG.info(LOG_STMT_REPLAY_FINISHED, currentEvent.getPosition());
@@ -322,15 +302,11 @@ public final class ReplayStateMachine {
       // reset the position to the first event where the processing should start
       logStreamReader.seekToNextEvent(lastSourceEventPosition);
 
-      onRecovered(lastSourceEventPosition);
+      keyGeneratorControls.setKeyIfHigher(highestRecordKey);
+
+      recoveryFuture.complete(lastSourceEventPosition);
     } else {
       actor.submit(this::replayNextEvent);
     }
-  }
-
-  private void onRecovered(final long lastProcessedPosition) {
-    keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
-    recoveryFuture.complete(lastProcessedPosition);
   }
 }
