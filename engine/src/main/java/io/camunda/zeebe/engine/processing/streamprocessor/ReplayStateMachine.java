@@ -191,24 +191,13 @@ public final class ReplayStateMachine {
                   if (onRetry) {
                     zeebeDbTransaction.rollback();
                   }
+
                   zeebeDbTransaction = transactionContext.getCurrentTransaction();
                   zeebeDbTransaction.run(
                       () -> {
-                        // TODO (saig0): ignore blacklist because we replay events only (#7430)
-                        // these events were applied already
-                        final boolean isNotOnBlacklist =
-                            !zeebeState.getBlackListState().isOnBlacklist(typedEvent);
-                        if (isNotOnBlacklist) {
-                          // skip events if the state changes are already applied to the state in
-                          // the
-                          // snapshot
-                          if (((TypedRecord<?>) typedEvent).getSourceRecordPosition()
-                              > snapshotPosition) {
-                            eventApplier.applyState(
-                                ((TypedRecord<?>) typedEvent).getKey(),
-                                ((TypedRecord<?>) typedEvent).getIntent(),
-                                ((TypedRecord<?>) typedEvent).getValue());
-                          }
+                        if (typedEvent.getSourceRecordPosition() > snapshotPosition) {
+                          eventApplier.applyState(
+                              typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
                         }
                         lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
                       });
