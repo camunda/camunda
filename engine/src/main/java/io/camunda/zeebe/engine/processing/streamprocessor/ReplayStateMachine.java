@@ -154,16 +154,7 @@ public final class ReplayStateMachine {
     try {
 
       if (!logStreamReader.hasNext()) {
-        // Replay ends at the end of the log
-        // reset the position to the first event where the processing should start
-        // TODO(zell): this should probably done outside; makes no sense here
-        logStreamReader.seekToNextEvent(lastSourceEventPosition);
-
-        // restore the key generate with the highest key from the log
-        keyGeneratorControls.setKeyIfHigher(highestRecordKey);
-
-        LOG.info(LOG_STMT_REPLAY_FINISHED, lastPosition);
-        recoveryFuture.complete(lastSourceEventPosition);
+        endReplay();
         return;
       }
 
@@ -229,6 +220,19 @@ public final class ReplayStateMachine {
           new ProcessingException("Unable to replay record", currentEvent, metadata, e);
       recoveryFuture.completeExceptionally(replayException);
     }
+  }
+
+  private void endReplay() {
+    // Replay ends at the end of the log
+    // reset the position to the first event where the processing should start
+    // TODO(zell): this should probably done outside; makes no sense here
+    logStreamReader.seekToNextEvent(lastSourceEventPosition);
+
+    // restore the key generate with the highest key from the log
+    keyGeneratorControls.setKeyIfHigher(highestRecordKey);
+
+    LOG.info(LOG_STMT_REPLAY_FINISHED, lastPosition);
+    recoveryFuture.complete(lastSourceEventPosition);
   }
 
   private boolean readMetadata() {
