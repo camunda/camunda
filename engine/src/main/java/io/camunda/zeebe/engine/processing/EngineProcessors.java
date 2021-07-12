@@ -86,7 +86,8 @@ public final class EngineProcessors {
             zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
 
     final var eventPublicationBehavior =
-        new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
+        new BpmnEventPublicationBehavior(
+            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
 
     addDeploymentRelatedProcessorAndServices(
         catchEventBehavior,

@@ -11,12 +11,12 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -24,14 +24,13 @@ import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
 
-  private final MutableElementInstanceState elementInstanceState;
-  private final MutableVariableState variablesState;
+  private final ElementInstanceState elementInstanceState;
+  private final VariableState variablesState;
   private final JobState jobState;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
-  public BpmnStateBehavior(
-      final MutableZeebeState zeebeState, final VariableBehavior variableBehavior) {
+  public BpmnStateBehavior(final ZeebeState zeebeState, final VariableBehavior variableBehavior) {
     this.variableBehavior = variableBehavior;
 
     processState = zeebeState.getProcessState();

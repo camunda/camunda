@@ -18,14 +18,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.camunda.zeebe.engine.processing.message.MessageNameException;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -40,12 +38,9 @@ public final class BpmnEventSubscriptionBehavior {
 
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
 
-  private final BpmnStateBehavior stateBehavior;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableElementInstanceState elementInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
-  private final StateWriter stateWriter;
   private final SideEffects sideEffects;
 
   private final KeyGenerator keyGenerator;
@@ -54,24 +49,20 @@ public final class BpmnEventSubscriptionBehavior {
   private final EventTriggerBehavior eventTriggerBehavior;
 
   public BpmnEventSubscriptionBehavior(
-      final BpmnStateBehavior stateBehavior,
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final SideEffects sideEffects,
-      final MutableZeebeState zeebeState) {
-    this.stateBehavior = stateBehavior;
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
     this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
-    elementInstanceState = zeebeState.getElementInstanceState();
-    keyGenerator = zeebeState.getKeyGenerator();
+    this.keyGenerator = keyGenerator;
   }
 
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(

@@ -15,11 +15,12 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
@@ -31,13 +32,14 @@ public final class BpmnEventPublicationBehavior {
   private final CatchEventAnalyzer catchEventAnalyzer;
 
   public BpmnEventPublicationBehavior(
-      final MutableZeebeState zeebeState,
+      final ZeebeState zeebeState,
+      final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final Writers writers) {
     elementInstanceState = zeebeState.getElementInstanceState();
     eventHandle =
         new EventHandle(
-            zeebeState.getKeyGenerator(),
+            keyGenerator,
             zeebeState.getEventScopeInstanceState(),
             writers,
             zeebeState.getProcessState(),

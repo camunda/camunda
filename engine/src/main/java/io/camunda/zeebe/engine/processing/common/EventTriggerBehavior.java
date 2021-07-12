@@ -18,9 +18,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -37,8 +37,8 @@ public class EventTriggerBehavior {
   private final CatchEventBehavior catchEventBehavior;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
-  private final MutableElementInstanceState elementInstanceState;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final ElementInstanceState elementInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   private final VariableBehavior variableBehavior;
 
@@ -46,7 +46,7 @@ public class EventTriggerBehavior {
       final KeyGenerator keyGenerator,
       final CatchEventBehavior catchEventBehavior,
       final Writers writers,
-      final MutableZeebeState zeebeState) {
+      final ZeebeState zeebeState) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
