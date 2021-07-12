@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.util.stream.Collectors.toMap;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +62,6 @@ public final class CatchEventBehavior {
       new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
-  private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
 
@@ -111,8 +112,13 @@ public final class CatchEventBehavior {
     // we might need to raise an incident. This works the same for timers
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
         extractMessageCorrelationKeys(events, context);
-    final Map<DirectBuffer, Timer> evaluatedTimers =
+    final Either<Failure, Map<DirectBuffer, Timer>> evaluatedTimers =
         evaluateTimers(events, context.getElementInstanceKey());
+
+    if (evaluatedTimers.isLeft()) {
+      // todo: don't throw here, but return an either
+      throw new EvaluationException(evaluatedTimers.getLeft().getMessage());
+    }
 
     // if all subscriptions are valid then open the subscriptions
     for (final ExecutableCatchEvent event : events) {
@@ -122,7 +128,7 @@ public final class CatchEventBehavior {
             context.getProcessInstanceKey(),
             context.getProcessDefinitionKey(),
             event.getId(),
-            evaluatedTimers.get(event.getId()),
+            evaluatedTimers.get().get(event.getId()),
             commandWriter,
             sideEffects);
       } else if (event.isMessage()) {
@@ -312,23 +318,27 @@ public final class CatchEventBehavior {
     return extractedCorrelationKeys;
   }
 
-  private Map<DirectBuffer, Timer> evaluateTimers(
-      final List<ExecutableCatchEvent> events, final long key) {
-    evaluatedTimers.clear();
+  /**
+   * Evaluates all timer events
+   *
+   * @param events All catch events to evaluate to timers, any non-timer catch events are skipped
+   * @param scopeKey scope at which to evaluate the respective timer expressions
+   * @return either the first failure it encounters or a mapping of event-ids to timers
+   */
+  private Either<Failure, Map<DirectBuffer, Timer>> evaluateTimers(
+      final List<ExecutableCatchEvent> events, final long scopeKey) {
+    return events.stream()
+        .filter(ExecutableCatchEvent::isTimer)
+        .map(event -> evaluateTimer(event, scopeKey).map(timer -> Tuple.of(event.getId(), timer)))
+        .collect(Either.collector())
+        .mapLeft(failures -> failures.get(0))
+        .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
+  }
 
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isTimer()) {
-        final Either<Failure, Timer> timerOrError =
-            event.getTimerFactory().apply(expressionProcessor, key);
-        if (timerOrError.isLeft()) {
-          // todo(#4323): deal with this exceptional case without throwing an exception
-          throw new EvaluationException(timerOrError.getLeft().getMessage());
-        }
-        evaluatedTimers.put(event.getId(), timerOrError.get());
-      }
-    }
-
-    return evaluatedTimers;
+  /** @return either a failure or an evaluated timer */
+  private Either<Failure, Timer> evaluateTimer(
+      final ExecutableCatchEvent event, final long scopeKey) {
+    return event.getTimerFactory().apply(expressionProcessor, scopeKey);
   }
 
   private Map<DirectBuffer, DirectBuffer> extractMessageNames(
