@@ -74,11 +74,14 @@ public class CamundaPlatformTenantAuthorizationService
     } else {
       final Stream<ResolvedResourceTypeAuthorizations> relevantEngineAuthorizations = Optional
         .ofNullable(getCachedAuthorizationsForId(identityId, identityType))
-        .map(authorizationsByEngine -> Optional.ofNullable(dataSourceName)
-          .flatMap(alias -> Optional.ofNullable(authorizationsByEngine.get(alias)))
-          .map(Stream::of)
-          .orElseGet(() -> authorizationsByEngine.values().stream())
-        )
+        .map(authorizationsByDataSource -> {
+          if (dataSourceName == null) {
+            // no specific data source, return all
+            return authorizationsByDataSource.values().stream();
+          } else {
+            return Optional.ofNullable(authorizationsByDataSource.get(dataSourceName)).stream();
+          }
+        })
         .orElseGet(Stream::empty);
 
       return relevantEngineAuthorizations
