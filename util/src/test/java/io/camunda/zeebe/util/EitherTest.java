@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util;
 
+import static io.camunda.zeebe.util.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -57,14 +58,14 @@ public class EitherTest {
 
   @Test
   public void onlyARightIsRight() {
-    assertThat(Either.right(value).isRight()).isTrue();
-    assertThat(Either.left(value).isRight()).isFalse();
+    assertThat(Either.right(value)).isRight();
+    assertThat(Either.left(value)).isNotRight();
   }
 
   @Test
   public void onlyALeftIsLeft() {
-    assertThat(Either.left(value).isLeft()).isTrue();
-    assertThat(Either.right(value).isLeft()).isFalse();
+    assertThat(Either.left(value)).isLeft();
+    assertThat(Either.right(value)).isNotLeft();
   }
 
   @Test
