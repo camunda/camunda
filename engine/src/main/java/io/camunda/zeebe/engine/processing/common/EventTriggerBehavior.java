@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -31,8 +30,6 @@ import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
 
-  private static final String ERROR_MSG_EXPECTED_START_EVENT =
-      "Expected an start event to be triggered on EventSubProcess scope, but was %s";
   private final ProcessInstanceRecord eventRecord = new ProcessInstanceRecord();
   private final ProcessEventRecord processEventRecord = new ProcessEventRecord();
 
@@ -140,59 +137,6 @@ public class EventTriggerBehavior {
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
 
     return activeChildInstances == 0;
-  }
-
-  // https://github.com/camunda-cloud/zeebe/issues/6202
-  // todo(zell): should be removed or replaced -
-  // it is currently duplication of BpmnTransitionBehavior
-  // ideally this class/behavior will be merged with others
-  public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
-    return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-  }
-
-  public void registerStateTransition(
-      final BpmnElementContext context, final ProcessInstanceIntent newState) {
-    switch (newState) {
-      case ELEMENT_ACTIVATING:
-      case ELEMENT_ACTIVATED:
-      case ELEMENT_COMPLETING:
-      case ELEMENT_COMPLETED:
-      case ELEMENT_TERMINATING:
-      case ELEMENT_TERMINATED:
-        updateElementInstanceState(context, newState);
-        break;
-
-      default:
-        // other transitions doesn't change the state of an element instance
-        break;
-    }
-  }
-
-  private void updateElementInstanceState(
-      final BpmnElementContext context, final ProcessInstanceIntent newState) {
-    elementInstanceState.updateInstance(
-        context.getElementInstanceKey(), elementInstance -> elementInstance.setState(newState));
-  }
-
-  private void verifyTransition(
-      final BpmnElementContext context, final ProcessInstanceIntent transition) {
-
-    if (!ProcessInstanceLifecycle.canTransition(context.getIntent(), transition)) {
-      throw new BpmnProcessingException(
-          context,
-          String.format(
-              "Expected to take transition to '%s' but element instance is in state '%s'.",
-              transition, context.getIntent()));
-    }
-  }
-
-  private BpmnElementContext transitionTo(
-      final BpmnElementContext context, final ProcessInstanceIntent transition) {
-    final var key = context.getElementInstanceKey();
-    final var value = context.getRecordValue();
-
-    stateWriter.appendFollowUpEvent(key, transition, value);
-    return context.copy(key, value, transition);
   }
 
   /**

@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -41,7 +40,6 @@ public final class BpmnStateTransitionBehavior {
   private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final ProcessInstanceRecord followUpInstanceRecord = new ProcessInstanceRecord();
 
-  private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
@@ -53,7 +51,6 @@ public final class BpmnStateTransitionBehavior {
   private final MutableElementInstanceState elementInstanceState;
 
   public BpmnStateTransitionBehavior(
-      final TypedStreamWriter streamWriter,
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
       final ProcessEngineMetrics metrics,
@@ -62,7 +59,6 @@ public final class BpmnStateTransitionBehavior {
       final Writers writers,
       final MutableElementInstanceState elementInstanceState) {
     // todo (@korthout): replace streamWriter by writers
-    this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;

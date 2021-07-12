@@ -23,10 +23,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BpmnEventPublicationBehavior {
-  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;

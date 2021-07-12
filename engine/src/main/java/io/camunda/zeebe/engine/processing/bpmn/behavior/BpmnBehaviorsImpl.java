@@ -65,7 +65,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
-            streamWriter,
             zeebeState.getKeyGenerator(),
             stateBehavior,
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
