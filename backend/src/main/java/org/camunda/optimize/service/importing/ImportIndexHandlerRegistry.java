@@ -29,10 +29,12 @@ import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefiniti
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
@@ -52,227 +54,120 @@ public class ImportIndexHandlerRegistry {
   }
 
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
-    List<AllEntitiesBasedImportIndexHandler> result = new ArrayList<>();
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
-      engineImportIndexHandlerProviderMap.get(engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getAllEntitiesBasedHandlers();
-    }
-    return result;
+    return getEngineHandlers(engineAlias, EngineImportIndexHandlerProvider::getAllEntitiesBasedHandlers);
   }
 
   public List<TimestampBasedEngineImportIndexHandler> getTimestampEngineBasedHandlers(String engineAlias) {
-    List<TimestampBasedEngineImportIndexHandler> result = new ArrayList<>();
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
-      engineImportIndexHandlerProviderMap.get(engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getTimestampBasedEngineHandlers();
-    }
-    return result;
-  }
-
-  public CompletedProcessInstanceImportIndexHandler getCompletedProcessInstanceImportIndexHandler(String engineAlias) {
-    CompletedProcessInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedProcessInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public CompletedActivityInstanceImportIndexHandler getCompletedActivityInstanceImportIndexHandler(String engineAlias) {
-    CompletedActivityInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result =
-        engineImportIndexHandlerProvider.getImportIndexHandler(CompletedActivityInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public RunningActivityInstanceImportIndexHandler getRunningActivityInstanceImportIndexHandler(String engineAlias) {
-    RunningActivityInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningActivityInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public CompletedIncidentImportIndexHandler getCompletedIncidentImportIndexHandler(String engineAlias) {
-    CompletedIncidentImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
-      engineImportIndexHandlerProviderMap.get(engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedIncidentImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public OpenIncidentImportIndexHandler getOpenIncidentImportIndexHandler(String engineAlias) {
-    OpenIncidentImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(OpenIncidentImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public UserOperationLogImportIndexHandler getUserOperationsLogImportIndexHandler(String engineAlias) {
-    UserOperationLogImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(UserOperationLogImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public RunningProcessInstanceImportIndexHandler getRunningProcessInstanceImportIndexHandler(String engineAlias) {
-    RunningProcessInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningProcessInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public VariableUpdateInstanceImportIndexHandler getRunningVariableInstanceImportIndexHandler(String engineAlias) {
-    VariableUpdateInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(VariableUpdateInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler(String engineAlias) {
-    ProcessDefinitionImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(ProcessDefinitionImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public CompletedUserTaskInstanceImportIndexHandler getCompletedUserTaskInstanceImportIndexHandler(String engineAlias) {
-    CompletedUserTaskInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result =
-        engineImportIndexHandlerProvider.getImportIndexHandler(CompletedUserTaskInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public RunningUserTaskInstanceImportIndexHandler getRunningUserTaskInstanceImportIndexHandler(String engineAlias) {
-    RunningUserTaskInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(RunningUserTaskInstanceImportIndexHandler.class);
-    }
-    return result;
-  }
-
-  public IdentityLinkLogImportIndexHandler getIdentityLinkImportIndexHandler(String engineAlias) {
-    IdentityLinkLogImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(IdentityLinkLogImportIndexHandler.class);
-    }
-    return result;
+    return getEngineHandlers(engineAlias, EngineImportIndexHandlerProvider::getTimestampBasedEngineHandlers);
   }
 
   public List<EngineImportIndexHandler<?, ?>> getAllHandlers() {
-    List<EngineImportIndexHandler<?, ?>> result = new ArrayList<>();
-    for (EngineImportIndexHandlerProvider provider : engineImportIndexHandlerProviderMap.values()) {
-      result.addAll(provider.getAllHandlers());
-    }
-    return result;
+    return engineImportIndexHandlerProviderMap.values()
+      .stream()
+      .flatMap(provider -> provider.getAllHandlers().stream())
+      .collect(Collectors.toList());
+  }
+
+  public CompletedProcessInstanceImportIndexHandler getCompletedProcessInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, CompletedProcessInstanceImportIndexHandler.class);
+  }
+
+  public CompletedActivityInstanceImportIndexHandler getCompletedActivityInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, CompletedActivityInstanceImportIndexHandler.class);
+  }
+
+  public RunningActivityInstanceImportIndexHandler getRunningActivityInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, RunningActivityInstanceImportIndexHandler.class);
+  }
+
+  public CompletedIncidentImportIndexHandler getCompletedIncidentImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, CompletedIncidentImportIndexHandler.class);
+  }
+
+  public OpenIncidentImportIndexHandler getOpenIncidentImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, OpenIncidentImportIndexHandler.class);
+  }
+
+  public UserOperationLogImportIndexHandler getUserOperationsLogImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, UserOperationLogImportIndexHandler.class);
+  }
+
+  public RunningProcessInstanceImportIndexHandler getRunningProcessInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, RunningProcessInstanceImportIndexHandler.class);
+  }
+
+  public VariableUpdateInstanceImportIndexHandler getVariableUpdateInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, VariableUpdateInstanceImportIndexHandler.class);
+  }
+
+  public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, ProcessDefinitionImportIndexHandler.class);
+  }
+
+  public CompletedUserTaskInstanceImportIndexHandler getCompletedUserTaskInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, CompletedUserTaskInstanceImportIndexHandler.class);
+  }
+
+  public RunningUserTaskInstanceImportIndexHandler getRunningUserTaskInstanceImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, RunningUserTaskInstanceImportIndexHandler.class);
+  }
+
+  public IdentityLinkLogImportIndexHandler getIdentityLinkImportIndexHandler(String engineAlias) {
+    return getEngineImportIndexHandler(engineAlias, IdentityLinkLogImportIndexHandler.class);
   }
 
   public ProcessDefinitionXmlImportIndexHandler getProcessDefinitionXmlImportIndexHandler(String engineAlias) {
-    ProcessDefinitionXmlImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(ProcessDefinitionXmlImportIndexHandler.class);
-    }
-    return result;
+    return getEngineImportIndexHandler(engineAlias, ProcessDefinitionXmlImportIndexHandler.class);
   }
 
   public DecisionDefinitionImportIndexHandler getDecisionDefinitionImportIndexHandler(String engineAlias) {
-    final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    DecisionDefinitionImportIndexHandler result = null;
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(DecisionDefinitionImportIndexHandler.class);
-    }
-    return result;
+    return getEngineImportIndexHandler(engineAlias, DecisionDefinitionImportIndexHandler.class);
   }
 
   public DecisionDefinitionXmlImportIndexHandler getDecisionDefinitionXmlImportIndexHandler(String engineAlias) {
-    DecisionDefinitionXmlImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(DecisionDefinitionXmlImportIndexHandler.class);
-    }
-    return result;
+    return getEngineImportIndexHandler(engineAlias, DecisionDefinitionXmlImportIndexHandler.class);
   }
 
   public DecisionInstanceImportIndexHandler getDecisionInstanceImportIndexHandler(String engineAlias) {
-    DecisionInstanceImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(DecisionInstanceImportIndexHandler.class);
-    }
-    return result;
+    return getEngineImportIndexHandler(engineAlias, DecisionInstanceImportIndexHandler.class);
   }
 
   public TenantImportIndexHandler getTenantImportIndexHandler(String engineAlias) {
-    final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap
-      .get(engineAlias);
-    TenantImportIndexHandler result = null;
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getImportIndexHandler(TenantImportIndexHandler.class);
-    }
-    return result;
+    return getEngineImportIndexHandler(engineAlias, TenantImportIndexHandler.class);
   }
 
   public ZeebeProcessDefinitionImportIndexHandler getZeebeProcessDefinitionImportIndexHandler(Integer partitionId) {
-    final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider =
-      zeebeImportIndexHandlerProviderMap.get(partitionId);
-    ZeebeProcessDefinitionImportIndexHandler result = null;
-    if (zeebeImportIndexHandlerProvider != null) {
-      result = zeebeImportIndexHandlerProvider.getImportIndexHandler(ZeebeProcessDefinitionImportIndexHandler.class);
-    }
-    return result;
+    return getZeebeImportIndexHandler(partitionId, ZeebeProcessDefinitionImportIndexHandler.class);
   }
 
   public ZeebeProcessInstanceImportIndexHandler getZeebeProcessInstanceImportIndexHandler(Integer partitionId) {
-    final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider =
-      zeebeImportIndexHandlerProviderMap.get(partitionId);
-    ZeebeProcessInstanceImportIndexHandler result = null;
-    if (zeebeImportIndexHandlerProvider != null) {
-      result = zeebeImportIndexHandlerProvider.getImportIndexHandler(ZeebeProcessInstanceImportIndexHandler.class);
-    }
-    return result;
+    return getZeebeImportIndexHandler(partitionId, ZeebeProcessInstanceImportIndexHandler.class);
   }
 
   public void reloadConfiguration() {
     this.engineImportIndexHandlerProviderMap = new HashMap<>();
     this.zeebeImportIndexHandlerProviderMap = new HashMap<>();
   }
+
+  private <T extends EngineImportIndexHandler> List<T> getEngineHandlers(
+    String engineAlias, Function<EngineImportIndexHandlerProvider, List<T>> getHandlerFunction) {
+    return Optional.ofNullable(engineImportIndexHandlerProviderMap.get(engineAlias))
+      .map(getHandlerFunction)
+      .orElse(null);
+  }
+
+  private <T extends EngineImportIndexHandler> T getEngineImportIndexHandler(final String engineAlias,
+                                                                             final Class<T> handlerClass) {
+    return Optional.ofNullable(engineImportIndexHandlerProviderMap.get(engineAlias))
+      .map(provider -> provider.getImportIndexHandler(handlerClass))
+      .orElse(null);
+  }
+
+  private <T extends ZeebeImportIndexHandler> T getZeebeImportIndexHandler(final Integer partitionId,
+                                                                           final Class<T> handlerClass) {
+    return Optional.ofNullable(zeebeImportIndexHandlerProviderMap.get(partitionId))
+      .map(provider -> provider.getImportIndexHandler(handlerClass))
+      .orElse(null);
+  }
+
 }

@@ -55,7 +55,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
 
     return new VariableUpdateEngineImportMediator(
-      importIndexHandlerRegistry.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias()),
+      importIndexHandlerRegistry.getVariableUpdateInstanceImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
       new VariableUpdateInstanceImportService(
         elasticsearchImportJobExecutor,
