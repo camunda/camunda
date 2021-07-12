@@ -94,7 +94,7 @@ public final class BpmnStateBehavior {
               activePaths, flowScopeInstance));
     }
 
-    return hasActivePaths(context, activePaths);
+    return activePaths == 0;
   }
 
   public boolean canBeCompleted(final BpmnElementContext context) {
@@ -115,18 +115,6 @@ public final class BpmnStateBehavior {
               activePaths, flowScopeInstance));
     }
 
-    return hasActivePaths(context, activePaths);
-  }
-
-  private boolean hasActivePaths(final BpmnElementContext context, final long activePaths) {
-    // todo (#6202): change the name of this method to `wasLastActiveExecutionPathInScope`
-    // previously, the last active token was decreased after this method was called,
-    // this made sure the token does not drop to 0 before the flowscope is set to completing.
-    // However, the token must now be consumed when the ELEMENT_COMPLETED is written (by the event
-    // applier). So either the number of active paths in the flowscope have to be already
-    // decreased or the container scope must be completed before the child element is completed.
-    // The only reasonable choice is to decrease the active paths before the flowscope is
-    // completed. As a result, this method has changed it's semantics.
     return activePaths == 0;
   }
 

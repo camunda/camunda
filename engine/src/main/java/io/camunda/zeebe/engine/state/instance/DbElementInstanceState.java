@@ -145,8 +145,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
         if (parentInstance == null) {
-          handleMissingParentInstance(parentKey);
-          return;
+          final var errorMsg =
+              "Expected to find parent instance for element instance with key %d, but none was found.";
+          throw new IllegalStateException(String.format(errorMsg, parentKey));
         }
         parentInstance.decrementChildCount();
         updateInstance(parentInstance);
@@ -211,12 +212,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             numberOfTakenSequenceFlowsColumnFamily.delete(key);
           }
         });
-  }
-
-  private void handleMissingParentInstance(final long parentKey) {
-    final var errorMsg =
-        "Expected to find parent instance for element instance with key %d, but none was found.";
-    throw new IllegalStateException(String.format(errorMsg, parentKey));
   }
 
   private void writeElementInstance(final ElementInstance instance) {
