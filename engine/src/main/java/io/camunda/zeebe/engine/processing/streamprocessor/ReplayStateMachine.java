@@ -67,7 +67,7 @@ public final class ReplayStateMachine {
   private long lastSourceEventPosition;
   private long snapshotPosition;
   private long highestRecordKey = -1L;
-  private long lastPosition;
+  private long lastReadRecordPosition;
 
   private ActorFuture<Long> recoveryFuture;
   private LoggedEvent currentEvent;
@@ -120,7 +120,7 @@ public final class ReplayStateMachine {
     try {
 
       if (!logStreamReader.hasNext()) {
-        endReplay();
+        onRecordsReplayed();
         return;
       }
 
@@ -133,14 +133,14 @@ public final class ReplayStateMachine {
       if (!readMetadata()) {
         return; // failure on reading metadata
       }
-      wrapCurrentEvent();
+      readRecordValue();
 
       processRetryStrategy
           .runWithRetry(this::tryToApplyCurrentEvent, abortCondition)
           .onComplete(
               (v, t) ->
                   updateStateRetryStrategy
-                      .runWithRetry(this::commitCurrentAppliedStateChanges, abortCondition)
+                      .runWithRetry(this::tryToCommitStateChanges, abortCondition)
                       .onComplete((bool, throwable) -> onRecordReplayed()));
 
     } catch (final RuntimeException e) {
@@ -154,7 +154,7 @@ public final class ReplayStateMachine {
    * Ends the replay and sets some important properties, especially completes the replay future with
    * the last source event, which has caused the last applied event.
    */
-  private void endReplay() {
+  private void onRecordsReplayed() {
     // Replay ends at the end of the log
     // reset the position to the first event where the processing should start
     // TODO(zell): this should probably done outside; makes no sense here
@@ -163,7 +163,7 @@ public final class ReplayStateMachine {
     // restore the key generate with the highest key from the log
     keyGeneratorControls.setKeyIfHigher(highestRecordKey);
 
-    LOG.info(LOG_STMT_REPLAY_FINISHED, lastPosition);
+    LOG.info(LOG_STMT_REPLAY_FINISHED, lastReadRecordPosition);
     recoveryFuture.complete(lastSourceEventPosition);
   }
 
@@ -180,11 +180,11 @@ public final class ReplayStateMachine {
 
     // positions should always increase
     // if this is not the case we have some inconsistency in our log
-    if (lastPosition >= currentPosition) {
+    if (lastReadRecordPosition >= currentPosition) {
       throw new IllegalStateException(
-          String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastPosition));
+          String.format(ERROR_INCONSISTENT_LOG, currentPosition, lastReadRecordPosition));
     }
-    lastPosition = currentPosition;
+    lastReadRecordPosition = currentPosition;
 
     // we need to keep track of the last source event position to know where to start with
     // processing after replay
@@ -215,7 +215,7 @@ public final class ReplayStateMachine {
     return true;
   }
 
-  private void wrapCurrentEvent() {
+  private void readRecordValue() {
     final UnifiedRecordValue value =
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
@@ -255,7 +255,7 @@ public final class ReplayStateMachine {
    * @return true on success
    * @throws Exception if the commit fails
    */
-  private boolean commitCurrentAppliedStateChanges() throws Exception {
+  private boolean tryToCommitStateChanges() throws Exception {
     zeebeDbTransaction.commit();
     zeebeDbTransaction = null;
     return true;
