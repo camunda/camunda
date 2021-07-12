@@ -15,61 +15,65 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class EitherTest {
+class EitherTest {
 
-  @Parameter(0)
-  public Object value;
-
-  @Parameterized.Parameters(name = "Either value {0}")
-  public static Object[][] parameters() {
-    return new Object[][] {
-      {1},
-      {123L},
-      {123.456},
-      {'c'},
-      {"something"},
-      {"bytes".getBytes()},
-      {List.of(1, 2, 3)},
-      {new Object[] {1, 2L, "3"}},
-      {Either.right(1)},
-      {Either.left(1)},
-    };
+  static Stream<Object> parameters() {
+    return Stream.of(
+        1,
+        123L,
+        123.456,
+        'c',
+        "something",
+        "bytes".getBytes(),
+        List.of(1, 2, 3),
+        new Object[] {1, 2L, "3"},
+        Either.right(1),
+        Either.left(1));
   }
 
-  @Test
-  public void onlyARightValueCanBeRetrievedWithGet() {
+  @DisplayName("Only a Right value can be retrieved with .get()")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyARightValueCanBeRetrievedWithGet(final Object value) {
     assertThat(Either.right(value).get()).isEqualTo(value);
     assertThatThrownBy(() -> Either.left(value).get()).isInstanceOf(NoSuchElementException.class);
   }
 
-  @Test
-  public void onlyALeftValueCanBeRetrievedWithGetLeft() {
+  @DisplayName("Only a Left value can be retrieved with .getLeft()")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyALeftValueCanBeRetrievedWithGetLeft(final Object value) {
     assertThat(Either.left(value).getLeft()).isEqualTo(value);
     assertThatThrownBy(() -> Either.right(value).getLeft())
         .isInstanceOf(NoSuchElementException.class);
   }
 
-  @Test
-  public void onlyARightIsRight() {
+  @DisplayName("Only a Right is Right")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyARightIsRight(final Object value) {
     assertThat(Either.right(value)).isRight();
     assertThat(Either.left(value)).isNotRight();
   }
 
-  @Test
-  public void onlyALeftIsLeft() {
+  @DisplayName("Only a Left is Left")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyALeftIsLeft(final Object value) {
     assertThat(Either.left(value)).isLeft();
     assertThat(Either.right(value)).isNotLeft();
   }
 
-  @Test
-  public void onlyARightIsTransformedByMap() {
+  @DisplayName("Only a Right is transformed by .map(..)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyARightIsTransformedByMap(final Object value) {
     final Function<Object, String> mapper = o -> "Transformed-" + o.toString();
     final String mappedValue = mapper.apply(value);
     assertThat(mappedValue).isNotEqualTo(value);
@@ -77,8 +81,10 @@ public class EitherTest {
     assertThat(Either.left(value).map(mapper)).isEqualTo(Either.left(value));
   }
 
-  @Test
-  public void onlyALeftIsTransformedByMapLeft() {
+  @DisplayName("Only a Left is transformed by .mapLeft(..)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyALeftIsTransformedByMapLeft(final Object value) {
     final Function<Object, String> mapper = o -> "Transformed-" + o.toString();
     final String mappedValue = mapper.apply(value);
     assertThat(mappedValue).isNotEqualTo(value);
@@ -86,30 +92,38 @@ public class EitherTest {
     assertThat(Either.right(value).mapLeft(mapper)).isEqualTo(Either.right(value));
   }
 
-  @Test
-  public void onlyARightIsTransformedByFlatMap() {
+  @DisplayName("Only a Right is transformed by .flatMap(..)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyARightIsTransformedByFlatMap(final Object value) {
     assertThat(Either.right(value).flatMap(Either::left)).isEqualTo(Either.left(value));
     assertThat(Either.left(value).flatMap(Either::right)).isEqualTo(Either.left(value));
   }
 
-  @Test
-  public void onlyARightIsConsumedByIfRight() {
+  @DisplayName("Only a Right is consumed by .ifRight(..)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyARightIsConsumedByIfRight(final Object value) {
     final var verifiableConsumer = new VerifiableConsumer();
     Either.right(value).ifRight(verifiableConsumer);
     assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
     Either.left(value).ifRight(new FailConsumer());
   }
 
-  @Test
-  public void onlyALeftIsConsumedByIfLeft() {
+  @DisplayName("Only a Left is consumed by .ifLeft(..)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyALeftIsConsumedByIfLeft(final Object value) {
     final var verifiableConsumer = new VerifiableConsumer();
     Either.left(value).ifLeft(verifiableConsumer);
     assertThat(verifiableConsumer.hasBeenExecuted).isTrue();
     Either.right(value).ifLeft(new FailConsumer());
   }
 
-  @Test
-  public void onlyOneSideIsConsumedByIfRightOrLeft() {
+  @DisplayName("Only one side is consumed by .ifRightOrLeft(..)")
+  @ParameterizedTest
+  @MethodSource("parameters")
+  void onlyOneSideIsConsumedByIfRightOrLeft(final Object value) {
     final var rightConsumer = new VerifiableConsumer();
     Either.right(value).ifRightOrLeft(rightConsumer, new FailConsumer());
     assertThat(rightConsumer.hasBeenExecuted).isTrue();
