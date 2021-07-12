@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {Button} from 'components';
 
 import VariableFilter from './VariableFilter';
+import AssigneeFilter from './AssigneeFilter';
 
 import FiltersView from './FiltersView';
 
@@ -52,12 +53,21 @@ it('should have a button to reset all filters', () => {
   expect(props.setFilter).toHaveBeenCalledWith([]);
 });
 
-it('should pass a resetTrigger to DateFilters to help manage internal state', () => {
-  const node = shallow(<FiltersView {...props} availableFilters={[{type: 'startDate'}]} />);
+it('should pass a resetTrigger to Assignee and Variable Filters to help manage internal state', () => {
+  const node = shallow(
+    <FiltersView
+      {...props}
+      availableFilters={[
+        {type: 'assignee', data: {operator: 'in', values: ['user']}},
+        {type: 'variable', data: {name: 'boolVar', type: 'Boolean'}, filterLevel: 'instance'},
+      ]}
+    />
+  );
 
   node.find(Button).simulate('click');
 
-  expect(node.find('DateFilter')).toHaveProp('resetTrigger', true);
+  expect(node.find(AssigneeFilter)).toHaveProp('resetTrigger', true);
+  expect(node.find(VariableFilter)).toHaveProp('resetTrigger', true);
 });
 
 it('should add a variable filter', () => {

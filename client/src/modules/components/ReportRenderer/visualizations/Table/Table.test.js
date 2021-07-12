@@ -118,7 +118,7 @@ it('should load report when updating sorting', () => {
   });
 });
 
-it('should reload report with correct pagination parameters', async () => {
+it('should reload report with correct pagination parameters', () => {
   const spy = jest.fn();
   const node = shallow(
     <Table
@@ -137,7 +137,27 @@ it('should reload report with correct pagination parameters', async () => {
   expect(spy).toHaveBeenCalledWith({limit: 50, offset: 100});
 });
 
-it('should update configuration when arranging columns', async () => {
+it('should show an error when loading more than the first 10.000 instances', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Table
+      {...props}
+      loadReport={spy}
+      report={{
+        ...report,
+        data: {...report.data, view: {properties: ['rawData']}},
+        result: {data: [1, 2, 3], pagination: {limit: 1000}},
+      }}
+    />
+  );
+  runLastEffect();
+
+  await node.find('Table').prop('fetchData')({pageIndex: 11, pageSize: 1000});
+  expect(node.find('Table').prop('error')).toBeDefined();
+  expect(spy).not.toHaveBeenCalled();
+});
+
+it('should update configuration when arranging columns', () => {
   const spy = jest.fn();
   const node = shallow(<Table {...props} updateReport={spy} />);
 

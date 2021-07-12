@@ -144,7 +144,7 @@ pipeline {
 
             sh("""
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/optimize-branch \
+              ${WORKSPACE}/infra-core/camunda-ci/deployments/optimize-branch \
               ${WORKSPACE}/optimize/.ci/branch-deployment \
               ${params.BRANCH} \
               optimize

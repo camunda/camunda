@@ -314,6 +314,38 @@ function getDateFormat(unit) {
   return dateFormat;
 }
 
+export function formatVersions(versions) {
+  if (versions.length === 1 && versions[0] === 'all') {
+    return t('common.all');
+  } else if (versions.length === 1 && versions[0] === 'latest') {
+    return t('common.definitionSelection.latest');
+  } else if (versions.length) {
+    return versions.join(', ');
+  }
+
+  return t('common.none');
+}
+
+export function formatTenants(tenantIds, tenantInfo) {
+  if (tenantIds.length === 0) {
+    return t('common.none');
+  }
+
+  if (tenantInfo && tenantInfo.length > 1) {
+    if (tenantInfo.length === tenantIds.length) {
+      return t('common.all');
+    } else {
+      return tenantIds
+        .map((tenantId) =>
+          formatTenantName(tenantInfo.find(({id}) => id === tenantId) ?? {id: tenantId})
+        )
+        .join(', ');
+    }
+  }
+
+  return '';
+}
+
 export function formatTenantName({id, name}) {
   if (!id) {
     return t('common.definitionSelection.tenant.notDefined');

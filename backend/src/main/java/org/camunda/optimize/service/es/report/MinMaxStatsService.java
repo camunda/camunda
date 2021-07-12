@@ -26,6 +26,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
@@ -51,33 +52,33 @@ public class MinMaxStatsService {
 
   public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
                                           final QueryBuilder query,
-                                          final String indexName,
+                                          final String[] indexNames,
                                           final String field) {
-    return getMinMaxDateRangeForNestedField(context, query, indexName, field, field, null, null);
+    return getMinMaxDateRangeForNestedField(context, query, indexNames, field, field, null, null);
   }
 
   public MinMaxStatDto getMinMaxDateRangeForCrossField(final ExecutionContext<? extends SingleReportDataDto> context,
                                                        final QueryBuilder query,
-                                                       final String indexName,
+                                                       final String[] indexNames,
                                                        final String firstField,
                                                        final String secondField) {
-    return getMinMaxDateRangeForNestedField(context, query, indexName, firstField, secondField, null, null);
+    return getMinMaxDateRangeForNestedField(context, query, indexNames, firstField, secondField, null, null);
   }
 
   public MinMaxStatDto getMinMaxDateRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
                                                         final QueryBuilder query,
-                                                        final String indexName,
+                                                        final String[] indexNames,
                                                         final String field,
                                                         final String pathForNestedStatsAgg,
                                                         final QueryBuilder filterQueryToWrapStatsWith) {
     return getMinMaxDateRangeForNestedField(
-      context, query, indexName, field, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith
+      context, query, indexNames, field, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
   }
 
   private MinMaxStatDto getMinMaxDateRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
                                                          final QueryBuilder query,
-                                                         final String indexName,
+                                                         final String[] indexNames,
                                                          final String firstField,
                                                          final String secondField,
                                                          final String pathForNestedStatsAgg,
@@ -85,7 +86,7 @@ public class MinMaxStatsService {
     return context.getCombinedRangeMinMaxStats()
       .orElseGet(
         () -> getCrossFieldMinMaxStats(
-          query, indexName, firstField, secondField, OPTIMIZE_DATE_FORMAT,
+          query, indexNames, firstField, secondField, OPTIMIZE_DATE_FORMAT,
           pathForNestedStatsAgg, filterQueryToWrapStatsWith
         )
       );
@@ -93,45 +94,45 @@ public class MinMaxStatsService {
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
                                                           final QueryBuilder query,
-                                                          final String indexName,
+                                                          final String[] indexNames,
                                                           final String field,
                                                           final String pathForNestedStatsAgg,
                                                           final BoolQueryBuilder filterQueryToWrapStatsWith) {
     return context.getCombinedRangeMinMaxStats()
       .orElseGet(
-        () -> getSingleFieldMinMaxStats(query, indexName, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith)
+        () -> getSingleFieldMinMaxStats(query, indexNames, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith)
       );
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForScriptedField(final ExecutionContext<? extends SingleReportDataDto> context,
                                                             final QueryBuilder query,
-                                                            final String indexName,
+                                                            final String[] indexNames,
                                                             final Script script) {
     return context.getCombinedRangeMinMaxStats()
-      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, null, script));
+      .orElseGet(() -> getScriptedMinMaxStats(query, indexNames, null, script));
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
     final ExecutionContext<? extends SingleReportDataDto> context,
     final QueryBuilder query,
-    final String indexName,
+    final String[] indexNames,
     final String pathForNestedStatsAgg,
     final Script script) {
     return context.getCombinedRangeMinMaxStats()
-      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, pathForNestedStatsAgg, script, null));
+      .orElseGet(() -> getScriptedMinMaxStats(query, indexNames, pathForNestedStatsAgg, script, null));
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
     final ExecutionContext<? extends SingleReportDataDto> context,
     final QueryBuilder query,
-    final String indexName,
+    final String[] indexNames,
     final String pathForNestedStatsAgg,
     final Script script,
     final BoolQueryBuilder filterQueryToWrapStatsWith) {
     return context.getCombinedRangeMinMaxStats()
       .orElseGet(() -> getScriptedMinMaxStats(
         query,
-        indexName,
+        indexNames,
         pathForNestedStatsAgg,
         script,
         filterQueryToWrapStatsWith
@@ -139,14 +140,14 @@ public class MinMaxStatsService {
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
-                                              final String indexName,
+                                              final String[] indexNames,
                                               final String pathForNestedStatsAgg,
                                               final Script script) {
-    return getScriptedMinMaxStats(query, indexName, pathForNestedStatsAgg, script, null);
+    return getScriptedMinMaxStats(query, indexNames, pathForNestedStatsAgg, script, null);
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
-                                              final String indexName,
+                                              final String[] indexNames,
                                               final String pathForNestedStatsAgg,
                                               final Script script,
                                               final BoolQueryBuilder filterQueryToWrapStatsWith) {
@@ -169,18 +170,18 @@ public class MinMaxStatsService {
       )
       .size(0);
 
-    final SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not retrieve stats for script %s on index %s", script.toString(), indexName
+        "Could not retrieve stats for script %s on indices %s", script.toString(), Arrays.toString(indexNames)
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      return returnEmptyResultIfInstanceIndexNotFound(e, indexName);
+      return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
     final Stats minMaxStats = retrieveNestedWrappedStatsAggregation(
@@ -193,28 +194,28 @@ public class MinMaxStatsService {
   }
 
   public MinMaxStatDto getSingleFieldMinMaxStats(final QueryBuilder query,
-                                                 final String indexName,
+                                                 final String[] indexNames,
                                                  final String field,
                                                  final String pathForNestedStatsAgg,
                                                  final BoolQueryBuilder filterQueryToWrapStatsWith) {
     return getCrossFieldMinMaxStats(
-      query, indexName, field, field, null, pathForNestedStatsAgg, filterQueryToWrapStatsWith
+      query, indexNames, field, field, null, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
   }
 
   public MinMaxStatDto getSingleFieldMinMaxStats(final QueryBuilder query,
-                                                 final String indexName,
+                                                 final String[] indexNames,
                                                  final String field,
                                                  final String format,
                                                  final String pathForNestedStatsAgg,
                                                  final BoolQueryBuilder filterQueryToWrapStatsWith) {
     return getCrossFieldMinMaxStats(
-      query, indexName, field, field, format, pathForNestedStatsAgg, filterQueryToWrapStatsWith
+      query, indexNames, field, field, format, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
-                                                 final String indexName,
+                                                 final String[] indexNames,
                                                  final String firstField,
                                                  final String secondField,
                                                  final String format,
@@ -241,7 +242,7 @@ public class MinMaxStatsService {
       .aggregation(statsAggField1)
       .aggregation(statsAggField2)
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
 
     SearchResponse response;
     try {
@@ -251,12 +252,12 @@ public class MinMaxStatsService {
         "Could not retrieve stats for firstField %s and secondField %s on index %s",
         firstField,
         secondField,
-        indexName
+        indexNames
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (ElasticsearchStatusException e) {
-      return returnEmptyResultIfInstanceIndexNotFound(e, indexName);
+      return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);
   }
@@ -315,12 +316,12 @@ public class MinMaxStatsService {
   }
 
   private MinMaxStatDto returnEmptyResultIfInstanceIndexNotFound(final ElasticsearchStatusException e,
-                                                                 final String indexName) {
+                                                                 final String[] indexNames) {
     if (isInstanceIndexNotFoundException(e)) {
       log.info(
-        "Could not calculate minMaxStats because required instance index with name {} does not exist. " +
+        "Could not calculate minMaxStats because at least one required instance indices from {} does not exist. " +
           "Returning min and max 0 instead.",
-        indexName
+        Arrays.toString(indexNames)
       );
       return new MinMaxStatDto(0, 0);
     }

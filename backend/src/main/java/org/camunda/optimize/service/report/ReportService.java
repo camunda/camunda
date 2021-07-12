@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
@@ -62,9 +63,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
@@ -91,7 +92,7 @@ public class ReportService implements CollectionReferencingService {
       .map(reportDefinitionDto -> new ConflictedItemDto(
         reportDefinitionDto.getId(), ConflictedItemType.COLLECTION, reportDefinitionDto.getName()
       ))
-      .collect(Collectors.toSet());
+      .collect(toSet());
   }
 
   @Override
@@ -216,11 +217,6 @@ public class ReportService implements CollectionReferencingService {
         .getLastModified())
                 .reversed())
       .collect(toList());
-  }
-
-  public List<AuthorizedReportDefinitionResponseDto> findAndFilterReports(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml();
-    return filterAuthorizedReports(userId, reports);
   }
 
   public void deleteAllReportsForProcessDefinitionKey(String processDefinitionKey) {
@@ -422,12 +418,17 @@ public class ReportService implements CollectionReferencingService {
       ));
   }
 
+  public Set<ConflictedItemDto> getConflictedItemsFromReportDefinition(String userId, String reportId) {
+    ReportDefinitionDto reportDefinitionDto = getReportDefinition(reportId, userId).getDefinitionDto();
+    return getConflictedItemsForDeleteReport(reportDefinitionDto);
+  }
+
   private Set<ConflictedItemDto> mapCombinedReportsToConflictingItems(List<CombinedReportDefinitionRequestDto> combinedReportDtos) {
     return combinedReportDtos.stream()
       .map(combinedReportDto -> new ConflictedItemDto(
         combinedReportDto.getId(), ConflictedItemType.COMBINED_REPORT, combinedReportDto.getName()
       ))
-      .collect(Collectors.toSet());
+      .collect(toSet());
   }
 
   private IdResponseDto copyAndMoveReport(final ReportDefinitionDto originalReportDefinition,
@@ -524,7 +525,6 @@ public class ReportService implements CollectionReferencingService {
     return reportWriter.createNewCombinedReport(userId, newCombinedReportData, newName, newCollectionId);
   }
 
-
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     if (!reportDefinition.isCombined()) {
@@ -548,7 +548,29 @@ public class ReportService implements CollectionReferencingService {
     }
   }
 
-  private void ensureCompliesWithCollectionScope(final String userId, final String collectionId,
+  public void ensureCompliesWithCollectionScope(final List<ReportDataDefinitionDto> definitions,
+                                                final DefinitionType definitionType,
+                                                final CollectionDefinitionDto collection) {
+    definitions.forEach(definitionDto -> ensureCompliesWithCollectionScope(
+      definitionDto.getKey(), definitionDto.getTenantIds(), definitionType, collection
+    ));
+  }
+
+  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> report,
+                                                   final CollectionDefinitionDto collection) {
+    return report.getData().getDefinitions().stream()
+      .allMatch(definitionDto -> COMPLIANT.equals(getScopeComplianceForReport(
+        definitionDto.getKey(), definitionDto.getTenantIds(), report.getReportType().toDefinitionType(), collection
+      )));
+  }
+
+  private void ensureCompliesWithCollectionScope(final CollectionDefinitionDto collection,
+                                                final SingleReportDefinitionDto<?> report) {
+    ensureCompliesWithCollectionScope(report.getData().getDefinitions(), report.getDefinitionType(), collection);
+  }
+
+  private void ensureCompliesWithCollectionScope(final String userId,
+                                                 final String collectionId,
                                                  final SingleReportDefinitionDto<?> definition) {
     if (collectionId == null) {
       return;
@@ -560,25 +582,12 @@ public class ReportService implements CollectionReferencingService {
     ensureCompliesWithCollectionScope(collection, definition);
   }
 
-  public void ensureCompliesWithCollectionScope(final CollectionDefinitionDto collection,
-                                                final SingleReportDefinitionDto<?> report) {
-    ensureCompliesWithCollectionScope(
-      report.getData().getDefinitionKey(),
-      report.getData().getTenantIds(),
-      report.getReportType().toDefinitionType(),
-      collection
-    );
-  }
-
-  public void ensureCompliesWithCollectionScope(final String definitionKey,
-                                                final List<String> tenantIds,
-                                                final DefinitionType definitionType,
-                                                final CollectionDefinitionDto collection) {
+  private void ensureCompliesWithCollectionScope(final String definitionKey,
+                                                 final List<String> tenantIds,
+                                                 final DefinitionType definitionType,
+                                                 final CollectionDefinitionDto collection) {
     final ScopeComplianceType complianceLevel = getScopeComplianceForReport(
-      definitionKey,
-      tenantIds,
-      definitionType,
-      collection
+      definitionKey, tenantIds, definitionType, collection
     );
     if (NON_TENANT_COMPLIANT.equals(complianceLevel)) {
       final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
@@ -595,16 +604,6 @@ public class ReportService implements CollectionReferencingService {
       );
       throw new OptimizeNonDefinitionScopeCompliantException(ImmutableSet.of(conflictedItemDto));
     }
-  }
-
-  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> report,
-                                                   final CollectionDefinitionDto collection) {
-    return COMPLIANT.equals(getScopeComplianceForReport(
-      report.getData().getDefinitionKey(),
-      report.getData().getTenantIds(),
-      report.getReportType().toDefinitionType(),
-      collection
-    ));
   }
 
   private ScopeComplianceType getScopeComplianceForReport(final String definitionKey,
@@ -686,7 +685,7 @@ public class ReportService implements CollectionReferencingService {
     reportUpdate.setData(updatedReport.getData());
     final String xml = reportUpdate.getData().getConfiguration().getXml();
     if (xml != null) {
-      final String definitionKey = reportUpdate.getData().getProcessDefinitionKey();
+      final String definitionKey = reportUpdate.getData().getDefinitionKey();
       reportUpdate.getData().setProcessDefinitionName(
         extractProcessDefinitionName(definitionKey, xml).orElse(definitionKey)
       );
@@ -742,6 +741,14 @@ public class ReportService implements CollectionReferencingService {
                                      report.getName() + "].");
     }
     return report;
+  }
+
+  public Set<String> filterAuthorizedReportIds(final String userId,
+                                               final Set<String> reportIds) {
+    final List<ReportDefinitionDto> reports = reportReader.getAllReportsForIdsOmitXml(new ArrayList<>(reportIds));
+    return filterAuthorizedReports(userId, reports).stream()
+      .map(report -> report.getDefinitionDto().getId())
+      .collect(toSet());
   }
 
   private List<AuthorizedReportDefinitionResponseDto> filterAuthorizedReports(String userId,

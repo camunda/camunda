@@ -49,6 +49,30 @@ export async function createNewReport(t) {
   await t.click(Selector('.Modal .primary.confirm.Button'));
 }
 
+export async function selectReportDefinition(t, name, version = 'Specific version') {
+  await t
+    .click('.AddDefinition')
+    .click(Selector('.Checklist .label').withText(name))
+    .click('.Modal .primary.Button');
+
+  await t.click(Selector('.DefinitionList li').withText(name).find('.Popover__button'));
+  await t.click('.VersionPopover');
+  await t.click(Selector('.label').withText('Specific versions'));
+  await t.click(Selector('.specificVersions input[type="checkbox"]').nth(0));
+
+  if (typeof version === 'string') {
+    await t.click(Selector('.label').withText(version));
+  } else {
+    await t.click(Selector('.label').withText('Specific versions'));
+    await t.click(Selector('.specificVersions input[type="checkbox"]').nth(0));
+    for (let i = 0; i < version.length; i++) {
+      await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
+    }
+  }
+
+  await t.click(Selector('.DefinitionList li').withText(name).find('.Popover__button'));
+}
+
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')

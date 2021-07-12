@@ -20,7 +20,7 @@ exports[`should match snapshot 1`] = `
       >
         <Icon
           size="15"
-          type="close-large"
+          type="close-small"
         />
       </ForwardRef(Button)>
     </div>

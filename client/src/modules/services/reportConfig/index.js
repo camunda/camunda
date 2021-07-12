@@ -25,7 +25,7 @@ config.process.update = (type, data, props) => {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
 
     if (
-      data.entity !== 'variable' &&
+      data.entity === 'incident' &&
       props.report.data.configuration?.aggregationTypes?.includes('sum')
     ) {
       changes.configuration.aggregationTypes = {$set: ['avg']};
@@ -33,10 +33,6 @@ config.process.update = (type, data, props) => {
 
     if (data.properties[0] !== 'duration' || data.entity !== 'processInstance') {
       changes.configuration.processPart = {$set: null};
-    }
-
-    if (data.entity === 'userTask' && props.report.data.view?.entity !== 'userTask') {
-      changes.configuration.hiddenNodes = {$set: {active: false, keys: []}};
     }
 
     if (data.properties.length > 1) {

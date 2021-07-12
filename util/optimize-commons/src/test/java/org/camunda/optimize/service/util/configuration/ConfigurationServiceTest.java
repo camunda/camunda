@@ -63,7 +63,7 @@ public class ConfigurationServiceTest {
   @Test
   public void getTokenLifeTimeMinutes() {
     ConfigurationService underTest = createDefaultConfiguration();
-    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(60);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(60);
   }
 
   @Test
@@ -293,7 +293,7 @@ public class ConfigurationServiceTest {
   public void testOverride() {
     String[] locations = {defaultConfigFile(), "environment-config.yaml", "override-test-config.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(10);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(10);
   }
 
   @Test
@@ -334,7 +334,7 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatPlaceholderDefaultValuesAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(DEFAULT_AUTH_TOKEN_LIFEMIN);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(DEFAULT_AUTH_TOKEN_LIFEMIN);
     assertThat(
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
       .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
@@ -361,7 +361,7 @@ public class ConfigurationServiceTest {
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
-    assertThat(underTest.getTokenLifeTimeMinutes()).isEqualTo(CUSTOM_AUTH_TOKEN_LIFEMIN);
+    assertThat(underTest.getAuthConfiguration().getTokenLifeTimeMinutes()).isEqualTo(CUSTOM_AUTH_TOKEN_LIFEMIN);
     assertThat(
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
       .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
@@ -385,8 +385,8 @@ public class ConfigurationServiceTest {
     ));
     assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isEqualTo(SECRET);
     assertThat(underTest.getContainerAccessUrl()).isPresent().get().isEqualTo(ACCESS_URL);
-    assertThat(
-      underTest.getSuperUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"));
+    assertThat(underTest.getAuthConfiguration().getSuperUserIds())
+      .isEqualTo(ImmutableList.of("demo", "kermit"));
   }
 
 }

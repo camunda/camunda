@@ -43,9 +43,14 @@ it('should return correct cominbed chart repot data properties for single report
     },
     result: {
       instanceCount: 100,
-      data: [
-        {key: '2015-03-25T12:00:00Z', value: 2},
-        {key: '2015-03-26T12:00:00Z', value: 3},
+      measures: [
+        {
+          property: 'frequency',
+          data: [
+            {key: '2015-03-25T12:00:00Z', value: 2},
+            {key: '2015-03-26T12:00:00Z', value: 3},
+          ],
+        },
       ],
     },
   };
@@ -63,7 +68,7 @@ it('should return correct cominbed chart repot data properties for single report
     ],
   };
 
-  const chartProps = getCombinedChartProps(result, data);
+  const chartProps = getCombinedChartProps(result, data, 0);
 
   expect(chartProps).toEqual({
     resultArr: [

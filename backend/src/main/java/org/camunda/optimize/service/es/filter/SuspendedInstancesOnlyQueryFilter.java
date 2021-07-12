@@ -10,7 +10,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
@@ -23,7 +22,7 @@ public class SuspendedInstancesOnlyQueryFilter implements QueryFilter<SuspendedI
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<SuspendedInstancesOnlyFilterDataDto> suspendedInstancesOnlyFilters,
-                         final ZoneId timezone) {
+                         final FilterContext filterContext) {
     if (suspendedInstancesOnlyFilters != null && !suspendedInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

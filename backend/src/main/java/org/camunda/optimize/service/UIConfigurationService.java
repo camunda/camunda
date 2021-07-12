@@ -15,18 +15,21 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointD
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetriever.readLogoAsBase64;
-
 
 @Component
 @Slf4j
@@ -37,6 +40,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
   private final SettingsService settingService;
+  @Autowired
+  private final Environment environment;
 
   // cached version
   private String logoAsBase64;
@@ -49,6 +54,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
+    uiConfigurationDto.setOptimizeCloudEnvironment(
+      Arrays.asList(environment.getActiveProfiles()).contains(ConfigurationServiceConstants.CLOUD_PROFILE));
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
 
@@ -82,8 +89,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
   }
 
   private HeaderCustomizationDto getHeaderCustomization() {
-    UIConfiguration uiConfiguration = configurationService.getUiConfiguration();
-    HeaderCustomization headerCustomization = uiConfiguration.getHeader();
+    HeaderCustomization headerCustomization = configurationService.getUiConfiguration().getHeader();
     return new HeaderCustomizationDto(
       headerCustomization.getTextColor(),
       headerCustomization.getBackgroundColor(),

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
 
 import {Popover, Form, Switch, Button, Icon, Typeahead} from 'components';
@@ -19,10 +19,19 @@ import './SelectionFilter.scss';
 
 const debounceRequest = debouncePromise();
 
-export default function SelectionFilter({filter, type, config, setFilter, reports}) {
+export default function SelectionFilter({filter, type, config, setFilter, reports, resetTrigger}) {
+  const {
+    defaultValues,
+    data: {operator, values, allowCustomValues},
+  } = config;
+
   const [customValues, setCustomValues] = useState([]);
   const [loadingVariableValues, setLoadingVariableValues] = useState(false);
   const [variableValues, setVariableValues] = useState(['']);
+
+  useEffect(() => {
+    setCustomValues((defaultValues ?? []).filter((value) => !values.includes(value)));
+  }, [defaultValues, values, resetTrigger]);
 
   const loadValues = async (value) => {
     const values = await debounceRequest(async () => {
@@ -64,8 +73,6 @@ export default function SelectionFilter({filter, type, config, setFilter, report
 
     return newFilter;
   }
-
-  const {operator, values, allowCustomValues} = config.data;
 
   let hintText = '';
   if (operator === 'in' || operator === 'contains') {

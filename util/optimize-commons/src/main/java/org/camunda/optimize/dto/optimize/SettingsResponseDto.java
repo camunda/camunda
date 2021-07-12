@@ -17,7 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.time.OffsetDateTime;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor
 @Builder
 @Data
 @FieldNameConstants(asEnum = true)

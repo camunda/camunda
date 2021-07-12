@@ -109,7 +109,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 

@@ -59,7 +59,7 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
       context,
       searchSourceBuilder.query(),
-      getIndexName(context),
+      getIndexNames(context),
       EVALUATION_DATE_TIME
     );
 
@@ -71,6 +71,7 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
       .subAggregations(distributedByPart.createAggregations(context))
       .decisionFilters(context.getReportData().getFilter())
       .decisionQueryFilterEnhancer(queryFilterEnhancer)
+      .filterContext(context.getFilterContext())
       .build();
 
     return dateAggregationService.createDecisionEvaluationDateAggregation(dateAggContext)

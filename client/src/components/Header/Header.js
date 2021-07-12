@@ -9,7 +9,7 @@ import {Link, withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {getHeader} from 'config';
+import {getHeader, isOptimizeCloudEnvironment} from 'config';
 import {withErrorHandling} from 'HOC';
 import {addNotification, showError} from 'notifications';
 
@@ -30,7 +30,13 @@ export function Header({mightFail, location, noActions}) {
       addNotification({type: 'error', text: t('navigation.configLoadingError')})
     );
 
-    mightFail(isEventBasedProcessEnabled(), setShowEventBased, showError);
+    mightFail(
+      Promise.all([isEventBasedProcessEnabled(), isOptimizeCloudEnvironment()]),
+      ([enabled, isOptimizeCloud]) => {
+        setShowEventBased(enabled && !isOptimizeCloud);
+      },
+      showError
+    );
   }, [mightFail]);
 
   const name = t('appName');

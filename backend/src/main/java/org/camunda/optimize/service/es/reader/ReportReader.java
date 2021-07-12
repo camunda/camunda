@@ -174,23 +174,6 @@ public class ReportReader {
     );
   }
 
-  public List<ReportDefinitionDto> getAllReportsOmitXml() {
-    log.debug("Fetching all available reports");
-    QueryBuilder qb = QueryBuilders.matchAllQuery();
-    SearchResponse searchResponse = performGetReportRequestOmitXml(
-      qb,
-      ALL_REPORT_INDICES,
-      LIST_FETCH_LIMIT
-    );
-    return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      searchResponse,
-      ReportDefinitionDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
-    );
-  }
-
   public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(final String definitionKey) {
     final List<ReportDefinitionDto> processReportsForKey = getAllProcessReportsForDefinitionKeyOmitXml(definitionKey);
     final List<String> processReportIds = processReportsForKey.stream()

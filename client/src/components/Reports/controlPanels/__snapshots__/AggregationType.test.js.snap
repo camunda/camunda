@@ -3,6 +3,7 @@
 exports[`should render an aggregation selection for duration reports 1`] = `
 <Popover
   className="AggregationType"
+  renderInPortal="AggregationType"
   title={
     <React.Fragment>
       <span
@@ -12,7 +13,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       </span>
       <Icon
         className="editIcon"
-        type="edit"
+        type="edit-small"
       />
     </React.Fragment>
   }
@@ -24,6 +25,13 @@ exports[`should render an aggregation selection for duration reports 1`] = `
       Duration aggregations
     </h4>
     <fieldset>
+      <Switch
+        checked={false}
+        disabled={false}
+        key="sum"
+        label="Sum"
+        onChange={[Function]}
+      />
       <Switch
         checked={false}
         disabled={false}
@@ -60,6 +68,7 @@ exports[`should render an aggregation selection for duration reports 1`] = `
 exports[`should render an user task duration selection for user task duration reports 1`] = `
 <Popover
   className="AggregationType"
+  renderInPortal="AggregationType"
   title={
     <React.Fragment>
       <span
@@ -69,7 +78,7 @@ exports[`should render an user task duration selection for user task duration re
       </span>
       <Icon
         className="editIcon"
-        type="edit"
+        type="edit-small"
       />
     </React.Fragment>
   }
@@ -107,6 +116,13 @@ exports[`should render an user task duration selection for user task duration re
       Duration aggregations
     </h4>
     <fieldset>
+      <Switch
+        checked={false}
+        disabled={false}
+        key="sum"
+        label="Sum"
+        onChange={[Function]}
+      />
       <Switch
         checked={false}
         disabled={false}

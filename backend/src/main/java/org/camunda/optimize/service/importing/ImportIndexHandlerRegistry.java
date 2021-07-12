@@ -26,6 +26,7 @@ import org.camunda.optimize.service.importing.engine.handler.UserOperationLogImp
 import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefinitionImportIndexHandler;
+import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -256,6 +257,16 @@ public class ImportIndexHandlerRegistry {
     ZeebeProcessDefinitionImportIndexHandler result = null;
     if (zeebeImportIndexHandlerProvider != null) {
       result = zeebeImportIndexHandlerProvider.getImportIndexHandler(ZeebeProcessDefinitionImportIndexHandler.class);
+    }
+    return result;
+  }
+
+  public ZeebeProcessInstanceImportIndexHandler getZeebeProcessInstanceImportIndexHandler(Integer partitionId) {
+    final ZeebeImportIndexHandlerProvider zeebeImportIndexHandlerProvider =
+      zeebeImportIndexHandlerProviderMap.get(partitionId);
+    ZeebeProcessInstanceImportIndexHandler result = null;
+    if (zeebeImportIndexHandlerProvider != null) {
+      result = zeebeImportIndexHandlerProvider.getImportIndexHandler(ZeebeProcessInstanceImportIndexHandler.class);
     }
     return result;
   }

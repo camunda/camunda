@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.jetty;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.license.OptimizeLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -22,31 +19,25 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 
+@Slf4j
 public class LicenseFilter implements Filter {
+  private static final Set<String> EXCLUDED_EXTENSIONS = Set.of("css", "html", "js", "ico");
+  private static final Set<String> EXCLUDED_API_CALLS = Set.of(
+    "authentication",
+    "localization",
+    "ui-configuration",
+    "license/validate-and-store",
+    "license/validate",
+    "status",
+    "readyz"
+  );
 
-  private static final Logger logger = LoggerFactory.getLogger(LicenseFilter.class);
-
-  private LicenseManager licenseManager;
-
-  private SpringAwareServletConfiguration awareDelegate;
-
-  private static final Set<String> EXCLUDED_EXTENSIONS = Sets.newHashSet("css", "html", "js", "ico");
-
-  private static final List<String> EXCLUDED_API_CALLS =
-    Lists.newArrayList(
-      "authentication",
-      "localization",
-      "ui-configuration",
-      "license/validate-and-store",
-      "license/validate",
-      "status",
-      "readyz"
-    );
-
+  private final SpringAwareServletConfiguration awareDelegate;
 
   public LicenseFilter(SpringAwareServletConfiguration awareDelegate) {
     this.awareDelegate = awareDelegate;
@@ -65,15 +56,14 @@ public class LicenseFilter implements Filter {
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
                                                                                             IOException,
                                                                                             ServletException {
-    setLicenseManager();
     HttpServletResponse servletResponse = (HttpServletResponse) response;
     HttpServletRequest servletRequest = (HttpServletRequest) request;
 
     if (isLicenseCheckNeeded(servletRequest)) {
       try {
-        licenseManager.validateLicenseStoredInOptimize();
+        getLicenseManager().validateLicenseStoredInOptimize();
       } catch (OptimizeLicenseException e) {
-        logger.warn("Given License is invalid or not available!");
+        log.warn("Given License is invalid or not available!");
         constructForbiddenResponse(servletResponse, e);
         return;
       }
@@ -89,20 +79,24 @@ public class LicenseFilter implements Filter {
     servletResponse.setStatus(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  private void setLicenseManager() {
-    if (licenseManager == null) {
-      licenseManager = awareDelegate.getApplicationContext().getBean(LicenseManager.class);
-    }
+  private LicenseManager getLicenseManager() {
+    return awareDelegate.getApplicationContext().getBean(LicenseManager.class);
   }
 
-  private static boolean isLicenseCheckNeeded(HttpServletRequest servletRequest) {
+  private boolean isLicenseCheckNeeded(HttpServletRequest servletRequest) {
     String requestPath = servletRequest.getServletPath().toLowerCase();
     String pathInfo = servletRequest.getPathInfo();
 
     return !isStaticResource(requestPath)
       && !isRootRequest(requestPath)
+      && !isCloudEnvironment()
       && !isExcludedApiPath(pathInfo)
       && !isStatusRequest(requestPath);
+  }
+
+  private boolean isCloudEnvironment() {
+    return Arrays.stream(awareDelegate.getApplicationContext().getEnvironment().getActiveProfiles())
+      .anyMatch(CLOUD_PROFILE::equalsIgnoreCase);
   }
 
   private static boolean isStatusRequest(String requestPath) {

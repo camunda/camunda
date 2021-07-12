@@ -77,7 +77,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
   }
 
   protected AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,

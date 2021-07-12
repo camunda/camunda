@@ -15,7 +15,7 @@ import {getWebhooks} from 'config';
 
 import AlertModal from './modals/AlertModal';
 import CopyAlertModal from './modals/CopyAlertModal';
-import {loadAlerts, addAlert, editAlert, removeAlert} from './service';
+import {loadAlerts, addAlert, editAlert, removeAlert, removeAlerts} from './service';
 
 import './AlertList.scss';
 
@@ -128,13 +128,22 @@ export default withErrorHandling(
               t('common.condition'),
               t('alert.recipient'),
             ]}
+            bulkActions={[
+              {
+                type: 'delete',
+                action: removeAlerts,
+              },
+            ]}
+            onChange={this.loadAlerts}
             data={
               !isLoading &&
               this.state.alerts.map((alert) => {
-                const {name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
+                const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
                 const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
 
                 return {
+                  id,
+                  entityType: 'alert',
                   icon: 'alert',
                   type: t('alert.label'),
                   name,

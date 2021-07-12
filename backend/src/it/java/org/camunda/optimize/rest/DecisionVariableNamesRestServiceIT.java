@@ -8,16 +8,20 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.DmnModels.createDefaultDmnModelNoInputAndOutputLabels;
 
 public class DecisionVariableNamesRestServiceIT extends AbstractIT {
 
@@ -87,6 +91,38 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
+  @Test
+  public void missingDecisionDefinitionInputVariableNameGetsReplacedById() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      deployDefinitionWithoutInputAndOutputLabelsAndStartInstance();
+    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+
+    // when
+    List<DecisionVariableNameResponseDto> responseList = variablesClient.getDecisionInputVariableNames(request);
+
+    // then
+    assertThat(responseList).isNotEmpty();
+    assertThat(responseList.get(0).getName()).isEqualTo(responseList.get(0).getId());
+    assertThat(responseList.get(1).getName()).isEqualTo(responseList.get(1).getId());
+  }
+
+  @Test
+  public void missingDecisionDefinitionOutputVariableNameGetsReplacedById() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      deployDefinitionWithoutInputAndOutputLabelsAndStartInstance();
+    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
+
+    // when
+    List<DecisionVariableNameResponseDto> responseList = variablesClient.getDecisionOutputVariableNames(request);
+
+    // then
+    assertThat(responseList).isNotEmpty();
+    assertThat(responseList.get(0).getName()).isEqualTo(responseList.get(0).getId());
+    assertThat(responseList.get(1).getName()).isEqualTo(responseList.get(1).getId());
+  }
+
   private DecisionVariableNameRequestDto generateDefaultVariableNameRequest(final DecisionDefinitionEngineDto definition) {
     DecisionVariableNameRequestDto requestDto = new DecisionVariableNameRequestDto();
     requestDto.setDecisionDefinitionKey(definition.getKey());
@@ -97,6 +133,21 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
   private DecisionDefinitionEngineDto deployDefinitionAndStartInstance() {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+    return decisionDefinitionEngineDto;
+  }
+
+  private DecisionDefinitionEngineDto deployDefinitionWithoutInputAndOutputLabelsAndStartInstance() {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
+      createDefaultDmnModelNoInputAndOutputLabels()
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionEngineDto.getId(),
+      new HashMap<>() {{
+        put("amount", 200);
+        put("invoiceCategory", "Misc");
+      }}
+    );
     importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }

@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.es.filter.process;
 
+import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +19,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 
 public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
 
@@ -62,7 +67,10 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
 
     // then
     assertThat(result.getData())
@@ -98,7 +106,10 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
 
     // then
     assertThat(result.getData())
@@ -128,7 +139,10 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
     // then
     assertThat(result.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
@@ -161,7 +175,10 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
 
     // then
     assertThat(result.getData())
@@ -172,20 +189,23 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
   @Test
   public void filterByUnassignedCandidateGroup() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
 
-    final ProcessInstanceEngineDto assignedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
-    engineIntegrationExtension.finishAllRunningUserTasks(assignedProcessInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
-    final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
       .filter()
       .candidateGroups()
       .id(null)
@@ -193,12 +213,22 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataResult =
+      evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
+      evaluateUserTaskReportWithFilter(processDefinition, candidateGroupFilter);
 
-    // then
-    assertThat(result.getData())
+    // then raw data report has both instances (because flowNodes without candidateGroups exist on both)
+    assertThat(rawDataResult.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactly(unassignedProcessInstance.getId());
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
+    // and userTask report has only the instance that has not yet reached the second userTask
+    // (because userTasks without candidateGroups only exist on processInstance2)
+    assertThat(userTaskResult.getInstanceCount()).isEqualTo(1L);
+    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(userTaskResult.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 1.0), Tuple.tuple(USER_TASK_2, null));
   }
 
   @Test
@@ -206,23 +236,25 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess();
 
-    final ProcessInstanceEngineDto assignedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
-    engineIntegrationExtension.finishAllRunningUserTasks(assignedProcessInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
-    final ProcessInstanceEngineDto differentAssigneeProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
-    engineIntegrationExtension.finishAllRunningUserTasks(differentAssigneeProcessInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
 
-    final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
       .filter()
       .candidateGroups()
       .ids(CANDIDATE_GROUP1, null)
@@ -230,12 +262,24 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
+    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
+      evaluateUserTaskReportWithFilter(processDefinition, candidateGroupFilter);
 
-    // then
+    // then rawData report has all instances (because flowNodes with no candidateGroup exist on both instances)
     assertThat(result.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(assignedProcessInstance.getId(), unassignedProcessInstance.getId());
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId(), processInstance3.getId());
+    // and userTask report only has 2 instances because processInstance3 only has a userTask with a candidateGroup
+    // that does not match the filter
+    assertThat(userTaskResult.getInstanceCount()).isEqualTo(2L);
+    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(userTaskResult.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 2.0));
   }
 
   @Test
@@ -253,13 +297,13 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.finishAllRunningUserTasks(assignedProcessInstance2.getId());
 
-    final ProcessInstanceEngineDto unassignedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
+    final List<ProcessFilterDto<?>> candidateGroupFilter = ProcessFilterBuilder
       .filter()
       .candidateGroups()
       .ids(CANDIDATE_GROUP1, null)
@@ -267,7 +311,8 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result =
+      evaluateReportWithFilter(processDefinition, candidateGroupFilter);
 
     // then
     assertThat(result.getData())
@@ -280,18 +325,23 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess();
 
-    final ProcessInstanceEngineDto expectedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
-    engineIntegrationExtension.finishAllRunningUserTasks(expectedProcessInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
-    final ProcessInstanceEngineDto unexpectedProcessInstance = engineIntegrationExtension
+    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP1);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP2);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP3);
-    engineIntegrationExtension.finishAllRunningUserTasks(expectedProcessInstance.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+
+    final ProcessInstanceEngineDto unexpectedProcessInstance = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(CANDIDATE_GROUP3);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -308,12 +358,24 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> rawDataResult = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
+    final ReportResultResponseDto<List<MapResultEntryDto>> userTaskResult =
+      evaluateUserTaskReportWithFilter(processDefinition, candidateGroupFilter);
 
-    // then
-    assertThat(result.getData())
+    // then raw data report has both instances (because flowNodes without candidateGroups exist on both)
+    assertThat(rawDataResult.getData())
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
-      .containsExactlyInAnyOrder(expectedProcessInstance.getId());
+      .containsExactlyInAnyOrder(processInstance1.getId(), processInstance2.getId());
+    // and userTask report has only the instance that has not yet reached the second userTask
+    // (because userTasks without candidateGroups only exist on processInstance2)
+    assertThat(userTaskResult.getInstanceCount()).isEqualTo(1L);
+    assertThat(userTaskResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(userTaskResult.getData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrder(Tuple.tuple(USER_TASK_1, 1.0));
   }
 
   @Test
@@ -348,7 +410,10 @@ public class CandidateGroupQueryFilterIT extends AbstractFilterIT {
       .add()
       .buildList();
 
-    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(processDefinition, candidateGroupFilter);
+    ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluateReportWithFilter(
+      processDefinition,
+      candidateGroupFilter
+    );
 
     // then
     assertThat(result.getData())

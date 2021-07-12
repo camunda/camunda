@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
 import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -19,7 +20,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 
@@ -66,8 +66,8 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
   }
 
   @Override
-  protected String getIndexName(final ExecutionContext<ProcessReportDataDto> context) {
-    return getProcessInstanceIndexAliasName(context.getReportData().getProcessDefinitionKey());
+  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
 
   @Override

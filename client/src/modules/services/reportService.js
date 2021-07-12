@@ -46,8 +46,7 @@ export function processResult(report) {
   const data = report.data;
   const result = getReportResult(report);
 
-  const filteredResult = filterResult(result, data);
-  const formattedResult = formatResult(filteredResult, data);
+  const formattedResult = formatResult(result, data);
   if (data.view.properties[0].toLowerCase?.().includes('duration')) {
     if (formattedResult.type === 'number') {
       return {...formattedResult, data: formattedResult.data};
@@ -61,19 +60,6 @@ export function processResult(report) {
     }
   }
   return formattedResult;
-}
-
-function filterResult(result, {groupBy: {type}, configuration: {hiddenNodes}}) {
-  if (type === 'flowNodes' || type === 'userTasks') {
-    return {
-      ...result,
-      data: result.data.filter(
-        ({key}) => !(hiddenNodes.active ? hiddenNodes.keys : []).includes(key)
-      ),
-    };
-  }
-
-  return result;
 }
 
 function formatResult(result, {groupBy: {type}}) {

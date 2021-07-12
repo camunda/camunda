@@ -70,7 +70,7 @@ public class TerminatedSessionService extends AbstractScheduledService {
     log.debug("Cleaning up terminated user sessions.");
     terminatedUserSessionWriter.deleteTerminatedUserSessionsOlderThan(
       LocalDateUtil.getCurrentDateTime()
-        .minus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES)
+        .minus(configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES)
     );
   }
 }

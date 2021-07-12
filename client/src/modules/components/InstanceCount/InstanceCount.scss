@@ -10,117 +10,118 @@
   .Popover {
     display: inline;
 
-    .countString {
-      margin-bottom: 14px;
-      color: var(--grey-darken-33);
-      font-weight: bold;
-    }
-
-    .filterListHeading {
-      font-size: 12px;
-      color: var(--grey-lighten-56);
-      margin-bottom: 8px;
-    }
-
-    .Popover__button {
-      font-size: 12px;
-      font-weight: bold;
-      padding: 0;
-      width: auto;
-      background: transparent;
-      border: 0;
-
-      .downIcon {
-        display: none;
-      }
-
-      &.icon {
-        width: 20px;
-        height: 20px;
-
-        &:hover {
-          background-color: var(--silver-darken-94);
-        }
-
-        &:active,
-        &.active {
-          background-color: var(--silver-darken-80);
-        }
-
-        .Icon {
-          margin: 2px;
-        }
-      }
-
-      &:not(.icon) {
-        color: var(--grey-lighten-56);
-
-        &::after {
-          content: '.';
-        }
-
-        &:disabled {
-          cursor: text;
-        }
-
-        &:not(:disabled):hover {
-          text-decoration: underline;
-        }
-      }
-    }
-
     > .buttonWrapper {
       display: inline-block;
-    }
-    > .overlay {
-      position: absolute;
-      left: 50%;
+      .Popover__button {
+        font-size: 12px;
+        font-weight: bold;
+        padding: 0;
+        width: auto;
+        background: transparent;
+        border: 0;
 
-      .dialogContainer {
-        margin-left: -40px;
-        min-width: 397px;
-        transform: translate(16px, 0);
-        .Popover__dialog {
-          padding-top: 20px;
-        }
-      }
-    }
-
-    .FilterList {
-      margin-top: 0;
-      display: block;
-      margin-bottom: 20px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .listItem {
-        width: 100%;
-        margin: 0;
-        margin-bottom: 5px;
-        cursor: unset;
-      }
-
-      .ActionItem {
-        min-height: 41px;
-
-        .Button {
+        .downIcon {
           display: none;
         }
 
-        .parameterName {
-          max-width: unset;
-          overflow: unset;
+        &.icon {
+          width: 20px;
+          height: 20px;
+
+          &:hover {
+            background-color: var(--silver-darken-94);
+          }
+
+          &:active,
+          &.active {
+            background-color: var(--silver-darken-80);
+          }
+
+          .Icon {
+            margin: 2px;
+          }
         }
 
-        .filterValues {
-          width: max-content;
+        &:not(.icon) {
+          color: var(--grey-lighten-56);
+
+          &::after {
+            content: '.';
+          }
+
+          &:disabled {
+            cursor: text;
+          }
+
+          &:not(:disabled):hover {
+            text-decoration: underline;
+          }
         }
       }
+    }
+  }
+}
 
-      .listItemConnector {
-        display: none;
+.instanceCountPopover {
+  position: absolute;
+  left: 50%;
+
+  .dialogContainer {
+    margin-left: -40px;
+    min-width: 397px;
+    transform: translate(16px, 0);
+    .Popover__dialog {
+      padding-top: 20px;
+
+      .countString {
+        font-size: 12px;
+        margin-bottom: 14px;
+        color: var(--grey-darken-33);
+        font-weight: bold;
+      }
+
+      .filterListHeading {
+        font-size: 12px;
+        color: var(--grey-lighten-56);
+        margin-bottom: 8px;
+      }
+
+      .FilterList {
+        margin-top: 0;
+        display: block;
+        margin-bottom: 20px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .listItem {
+          width: 100%;
+          margin: 0;
+          margin-bottom: 5px;
+          cursor: unset;
+        }
+
+        .ActionItem {
+          min-height: 41px;
+
+          .Button {
+            display: none;
+          }
+
+          .parameterName {
+            max-width: unset;
+            overflow: unset;
+          }
+
+          .filterValues {
+            width: max-content;
+          }
+        }
+
+        .listItemConnector {
+          display: none;
+        }
       }
     }
   }

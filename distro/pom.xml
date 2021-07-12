@@ -110,7 +110,7 @@
       <plugin>
         <groupId>com.googlecode.maven-download-plugin</groupId>
         <artifactId>download-maven-plugin</artifactId>
-        <version>1.6.3</version>
+        <version>1.6.6</version>
         <executions>
           <execution>
             <phase>process-resources</phase>

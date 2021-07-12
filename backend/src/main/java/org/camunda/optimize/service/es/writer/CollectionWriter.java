@@ -309,6 +309,39 @@ public class CollectionWriter {
     }
   }
 
+  public void removeScopeEntries(String collectionId, List<String> scopeEntryIds, String userId) throws NotFoundException {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("ids", scopeEntryIds);
+    params.put("lastModifier", userId);
+    params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+
+    final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+      // @formatter:off
+        "for (id in params.ids) {" +
+        "  ctx._source.data.scope.removeIf(scope -> scope.id.equals(id));" +
+        "}" +
+        "ctx._source.lastModifier = params.lastModifier;" +
+        "ctx._source.lastModified = params.lastModified;",
+      // @formatter:on
+      params
+    );
+    try {
+      executeUpdateRequest(
+        collectionId,
+        updateEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
+    } catch (IOException e) {
+      String errorMessage = String.format(
+        "The scope with ids %s could not be removed from the collection %s.",
+        scopeEntryIds,
+        collectionId
+      );
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
   public void updateScopeEntity(String collectionId,
                                 CollectionScopeEntryUpdateDto scopeEntry,
                                 String userId,

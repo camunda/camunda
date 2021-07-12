@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,11 +28,13 @@ public class TemplatedProcessReportDataBuilder {
 
   private ProcessReportDataType reportDataType;
 
-  private List<ReportDataDefinitionDto> definitions =
-    Collections.singletonList(ReportDataDefinitionDto.builder().build());
+  // we want a modifiable list here
+  private List<ReportDataDefinitionDto> definitions = new ArrayList<>(
+    Arrays.asList(new ReportDataDefinitionDto())
+  );
   private String variableName;
   private VariableType variableType;
-  private AggregateByDateUnit groupByDateInterval;
+  private AggregateByDateUnit groupByDateInterval = AggregateByDateUnit.AUTOMATIC;
   private AggregateByDateUnit distributeByDateInterval;
   private AggregateByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;

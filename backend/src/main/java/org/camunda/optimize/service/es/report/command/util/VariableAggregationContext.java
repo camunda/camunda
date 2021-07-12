@@ -7,9 +7,11 @@ package org.camunda.optimize.service.es.report.command.util;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -29,11 +31,13 @@ public class VariableAggregationContext {
   private final ZoneId timezone;
   private final CustomBucketDto customBucketDto;
   private final AggregateByDateUnit dateUnit;
-  private final String indexName;
+  private final String[] indexNames;
   private final QueryBuilder baseQueryForMinMaxStats;
   private final List<AggregationBuilder> subAggregations;
   private MinMaxStatDto variableRangeMinMaxStats;
   private final MinMaxStatDto combinedRangeMinMaxStats;
+  @NonNull
+  private final FilterContext filterContext;
 
   public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
     return Optional.ofNullable(combinedRangeMinMaxStats);

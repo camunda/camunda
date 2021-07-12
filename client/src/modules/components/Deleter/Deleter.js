@@ -38,15 +38,21 @@ export default withErrorHandling(
           this.setState({loading: true});
           this.props.mightFail(
             checkConflicts(entity),
-            ({conflictedItems}) => {
-              this.setState({
-                conflicts: conflictedItems.reduce((obj, conflict) => {
-                  obj[conflict.type] = obj[conflict.type] || [];
-                  obj[conflict.type].push(conflict);
-                  return obj;
-                }, {}),
-                loading: false,
-              });
+            (response) => {
+              if (typeof response === 'boolean') {
+                if (response) {
+                  this.props.onConflict?.();
+                }
+              } else {
+                this.setState({
+                  conflicts: response.conflictedItems.reduce((obj, conflict) => {
+                    obj[conflict.type] = obj[conflict.type] || [];
+                    obj[conflict.type].push(conflict);
+                    return obj;
+                  }, {}),
+                });
+              }
+              this.setState({loading: false});
             },
             (error) => {
               showError(error);
@@ -60,7 +66,7 @@ export default withErrorHandling(
       }
 
       if (prevState.loading && !this.state.loading) {
-        this.cancelButton.current.focus();
+        this.cancelButton.current?.focus();
       }
     }
 

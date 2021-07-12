@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.filter.FilterContext;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -213,7 +214,9 @@ public class BranchAnalysisReader {
   private long executeQuery(final BranchAnalysisRequestDto request,
                             final BoolQueryBuilder query,
                             final ZoneId timezone) {
-    queryFilterEnhancer.addFilterToQuery(query, request.getFilter(), timezone);
+    queryFilterEnhancer.addFilterToQuery(
+      query, request.getFilter(), FilterContext.builder().timezone(timezone).build()
+    );
     final CountRequest searchRequest =
       new CountRequest(getProcessInstanceIndexAliasName(request.getProcessDefinitionKey())).query(query);
     try {

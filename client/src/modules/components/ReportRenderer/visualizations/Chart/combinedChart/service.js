@@ -29,7 +29,7 @@ export function generateLegendLabels(chart) {
     : [];
 }
 
-export function getCombinedChartProps(reports, data) {
+export function getCombinedChartProps(reports, data, measureIdx) {
   return data.reports.reduce(
     (prev, {id, color}) => {
       const report = reports[id];
@@ -41,7 +41,7 @@ export function getCombinedChartProps(reports, data) {
       if (data.visualization === 'number') {
         singleReportResult = [{key: report.id, value: report.result.data}];
       } else {
-        singleReportResult = formatReportResult(data, report.result.data);
+        singleReportResult = formatReportResult(data, report.result.measures[measureIdx].data);
       }
 
       return {

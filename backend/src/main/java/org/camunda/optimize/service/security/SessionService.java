@@ -17,6 +17,7 @@ import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.security.AuthConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -203,7 +204,7 @@ public class SessionService implements ConfigurationReloadable {
     return Optional.ofNullable(decodedJWT.getIssuedAt())
       .map(Date::toInstant)
       .map(instant -> instant.atZone(ZoneId.systemDefault()).toLocalDateTime())
-      .map(localDateTime -> localDateTime.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
+      .map(localDateTime -> localDateTime.plus(getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
   }
 
   private String generateAuthToken(final String sessionId, final String userId) {
@@ -217,13 +218,17 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   private void initJwtVerifier() {
-    final byte[] secretBytes = configurationService.getTokenSecret()
+    final byte[] secretBytes = getAuthConfiguration().getTokenSecret()
       .map(secretString -> secretString.getBytes(StandardCharsets.UTF_8))
       .orElse(DEFAULT_SECRET_BYTES);
 
     this.hashingAlgorithm = Algorithm.HMAC256(secretBytes);
     // ignore issued at validation, we validate that in #isStillValid
     this.jwtVerifier = JWT.require(hashingAlgorithm).withIssuer(ISSUER).ignoreIssuedAt().build();
+  }
+
+  private AuthConfiguration getAuthConfiguration() {
+    return configurationService.getAuthConfiguration();
   }
 
 }

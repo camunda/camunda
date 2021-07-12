@@ -16,6 +16,8 @@ import {
   createDurationFormattingOptions,
   formatFileName,
   getRelativeValue,
+  formatVersions,
+  formatTenants,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -393,5 +395,59 @@ describe('getRelativeValue', () => {
 
   it('should return -- if value is null or not defined', () => {
     expect(getRelativeValue(null, 5)).toBe('--');
+  });
+});
+
+describe('formatVersions', () => {
+  it('should work with an empty versions array', () => {
+    expect(formatVersions([])).toBe('None');
+  });
+  it('should work with special versions', () => {
+    expect(formatVersions(['latest'])).toBe('Latest');
+    expect(formatVersions(['all'])).toBe('All');
+  });
+  it('should work with explicit versions', () => {
+    expect(formatVersions(['3'])).toBe('3');
+    expect(formatVersions(['1', '2', '3'])).toBe('1, 2, 3');
+  });
+});
+
+describe('formatTenants', () => {
+  const tenantInfo = [
+    {id: null, name: 'Not Defined'},
+    {id: 'a', name: 'Tenant A'},
+    {id: 'b', name: 'Tenant B'},
+    {id: 'c', name: null},
+    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
+    {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'},
+  ];
+
+  it('should correctly identify a selection of all tenants', () => {
+    expect(
+      formatTenants(
+        [null, 'a', 'b', 'c', '__unauthorizedTenantId__', '__unauthorizedTenantId__'],
+        tenantInfo
+      )
+    ).toBe('All');
+  });
+
+  it('should work with no tenants selected', () => {
+    expect(formatTenants([], tenantInfo)).toBe('None');
+  });
+
+  it('should correctly format unauthorized tenants', () => {
+    expect(formatTenants(['__unauthorizedTenantId__'], tenantInfo)).toBe('(Unauthorized Tenant)');
+  });
+
+  it('should correctly format special "null" tenant', () => {
+    expect(formatTenants([null], tenantInfo)).toBe('Not defined');
+  });
+
+  it('should use tenant names', () => {
+    expect(formatTenants(['a', 'b'], tenantInfo)).toBe('Tenant A, Tenant B');
+  });
+
+  it('should fall back to tenant ids if no name is set', () => {
+    expect(formatTenants(['b', 'c'], tenantInfo)).toBe('Tenant B, c');
   });
 });

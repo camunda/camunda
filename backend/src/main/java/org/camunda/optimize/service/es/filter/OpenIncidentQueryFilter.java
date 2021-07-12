@@ -12,7 +12,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil.createOpenIncidentTermQuery;
@@ -25,7 +24,7 @@ public class OpenIncidentQueryFilter implements QueryFilter<OpenIncidentFilterDa
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<OpenIncidentFilterDataDto> withOpenIncident,
-                         final ZoneId timezone) {
+                         final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(withOpenIncident)) {
       List<QueryBuilder> filters = query.filter();
       filters.add(nestedQuery(INCIDENTS, createOpenIncidentTermQuery(), ScoreMode.None));

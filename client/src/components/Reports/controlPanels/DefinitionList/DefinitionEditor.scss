@@ -1,0 +1,21 @@
+.DefinitionEditor {
+  .diagram {
+    height: 240px;
+    padding: 20px 40px;
+    border-top: 1px solid var(--silver-darken-80);
+    display: flex;
+    position: relative;
+
+    .Button {
+      position: absolute;
+      top: 15px;
+      left: 40px;
+    }
+  }
+
+  &.diagramModal {
+    .Modal__content {
+      display: flex;
+    }
+  }
+}

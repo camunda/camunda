@@ -58,12 +58,13 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
 
   @Override
   protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
-                                                              final List<ProcessFilterDto<?>> processFilter) {
+                                                              final List<ProcessFilterDto<?>> processFilter,
+                                                              final long expectedInstanceCount) {
     if (isSingleFilterOfType(processFilter, RunningFlowNodesOnlyFilterDto.class) ||
       isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
@@ -75,7 +76,7 @@ public class UserTaskTotalDurationByUserTaskByCandidateGroupReportEvaluationIT
     } else if (isSingleFilterOfType(processFilter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)

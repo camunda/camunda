@@ -101,7 +101,7 @@ export class OptimizeReport extends React.Component {
             >
               {data.name}
             </EntityName>
-            <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
+            <InstanceCount report={data} additionalFilter={filter} useIcon="filter" showHeader />
           </div>
         )}
         <div className="visualization">

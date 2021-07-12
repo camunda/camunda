@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
@@ -375,6 +376,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildBulkDeleteAlertsRequest(List<String> alertIds) {
+    this.path = ALERT + "/delete";
+    this.method = POST;
+    this.body = getBody(alertIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildUpdateSingleReportRequest(String id,
                                                                 ReportDefinitionDto entity) {
     switch (entity.getReportType()) {
@@ -466,6 +474,20 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetReportDeleteConflictsRequest(String id) {
     this.path = "report/" + id + "/delete-conflicts";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCheckEntityDeleteConflictsRequest(EntitiesDeleteRequestDto entities) {
+    this.path = "entities/delete-conflicts";
+    this.method = POST;
+    this.body = getBody(entities);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildBulkDeleteEntitiesRequest(EntitiesDeleteRequestDto entities) {
+    this.path = "entities/delete";
+    this.method = POST;
+    this.body = getBody(entities);
     return this;
   }
 
@@ -660,6 +682,13 @@ public class OptimizeRequestExecutor {
     return buildGetCollectionEntitiesRequest(id, null);
   }
 
+  public OptimizeRequestExecutor bulkDeleteEventProcessMappingsRequest(List<String> eventProcessIds) {
+    this.path = "eventBasedProcess/delete";
+    this.body = getBody(eventProcessIds);
+    this.method = POST;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id, EntitySorter sorter) {
     this.path = "collection/" + id + "/entities";
     this.method = GET;
@@ -722,6 +751,13 @@ public class OptimizeRequestExecutor {
     this.path = "collection/" + id;
     this.method = DELETE;
     Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteCollectionRolesRequest(List<String> roleIds, String collectionId) {
+    this.path = "collection/" + collectionId + "/roles/delete";
+    this.method = POST;
+    this.body = getBody(roleIds);
     return this;
   }
 
@@ -1376,6 +1412,14 @@ public class OptimizeRequestExecutor {
     return buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntryId, false);
   }
 
+  public OptimizeRequestExecutor buildBulkDeleteScopeEntriesFromCollectionRequest(List<String> collectionScopeIds,
+                                                                                  String collectionId) {
+    this.path = "collection/" + collectionId + "/scope/delete";
+    this.method = POST;
+    this.body = getBody(collectionScopeIds);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
                                                                             String scopeEntryId,
                                                                             Boolean force) {
@@ -1392,7 +1436,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckScopeBulkDeletionConflictsRequest(final String collectionId, final List<String> collectionScopeIds) {
+  public OptimizeRequestExecutor buildCheckScopeBulkDeletionConflictsRequest(final String collectionId,
+                                                                             final List<String> collectionScopeIds) {
     this.path = "collection/" + collectionId + "/scope/delete-conflicts";
     this.method = POST;
     this.body = getBody(collectionScopeIds);

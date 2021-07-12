@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.migrate34To35;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate34To35.indices.DecisionDefinitionIndexV4Old;
@@ -48,6 +49,7 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
     new SingleProcessReportIndexV6Old();
   protected static final SingleDecisionReportIndexV6Old SINGLE_DECISION_REPORT_INDEX =
     new SingleDecisionReportIndexV6Old();
+  protected static final DashboardIndex DASHBOARD_INDEX = new DashboardIndex();
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -58,7 +60,8 @@ public class AbstractUpgrade34IT extends AbstractUpgradeIT {
         DECISION_DEFINITION_INDEX,
         EVENT_PROCESS_DEFINITION_INDEX,
         SINGLE_PROCESS_REPORT_INDEX,
-        SINGLE_DECISION_REPORT_INDEX
+        SINGLE_DECISION_REPORT_INDEX,
+        DASHBOARD_INDEX
       )
     );
     createIndicesWithAdditionalReadOnlyAliases(

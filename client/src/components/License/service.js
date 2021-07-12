@@ -7,21 +7,13 @@
 import {get, post} from 'request';
 
 export async function validateLicense() {
-  try {
-    const response = await get('api/license/validate');
-    return await response.json();
-  } catch (response) {
-    return await response.json();
-  }
+  const response = await get('api/license/validate');
+  return await response.json();
 }
 
 export async function storeLicense(license) {
-  try {
-    const response = await post('api/license/validate-and-store', license, {
-      headers: {'Content-Type': 'text/plain'},
-    });
-    return await response.json();
-  } catch (response) {
-    return await response.json();
-  }
+  const response = await post('api/license/validate-and-store', license, {
+    headers: {'Content-Type': 'text/plain'},
+  });
+  return await response.json();
 }

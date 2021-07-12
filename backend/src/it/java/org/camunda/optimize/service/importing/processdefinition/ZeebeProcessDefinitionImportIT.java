@@ -30,32 +30,33 @@ import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
 
-  private static final String START_EVENT = "start";
-  private static final String SERVICE_TASK = "service_task";
-  private static final String END_EVENT = "end";
-
   @Test
   public void importZeebeProcess_allDataSavedToDefinition() {
     // given
     final String processName = "someProcess";
-    final BpmnModelInstance simpleProcess = createSimpleBpmmProcess(processName);
-    final Process deployedProcess = zeebeExtension.deployProcess(simpleProcess);
+    final BpmnModelInstance simpleProcess = createSimpleServiceTaskProcess(processName);
+    final Process deployedProcess = deployProcessAndStartInstance(simpleProcess);
     waitUntilNumberOfDefinitionsExported(1);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(importedDef -> {
         assertThat(importedDef.getId()).isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
-        assertThat(importedDef.getKey()).isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
+        assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
         assertThat(importedDef.getVersion()).isEqualTo(String.valueOf(deployedProcess.getVersion()));
         assertThat(importedDef.getVersionTag()).isNull();
         assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
@@ -80,18 +81,18 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     // given
     final BpmnModelInstance noNameStartEventProcess = Bpmn.createExecutableProcess()
       .startEvent(START_EVENT).name(START_EVENT).done();
-    final Process deployedProcess = zeebeExtension.deployProcess(noNameStartEventProcess);
+    final Process deployedProcess = deployProcessAndStartInstance(noNameStartEventProcess);
     waitUntilNumberOfDefinitionsExported(1);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(importedDef -> {
         assertThat(importedDef.getId()).isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
-        assertThat(importedDef.getKey()).isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
+        assertThat(importedDef.getKey()).isEqualTo(deployedProcess.getBpmnProcessId());
         assertThat(importedDef.getVersion()).isEqualTo(String.valueOf(deployedProcess.getVersion()));
         assertThat(importedDef.getVersionTag()).isNull();
         assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
@@ -113,13 +114,13 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
   public void importZeebeProcess_multipleProcessesDeployed() {
     // given
     final String firstProcessName = "firstProcess";
-    zeebeExtension.deployProcess(createSimpleBpmmProcess(firstProcessName));
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
     final String secondProcessName = "secondProcess";
-    zeebeExtension.deployProcess(createSimpleBpmmProcess(secondProcessName));
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -131,15 +132,15 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
   public void importZeebeProcess_multipleProcessesDeployedOnDifferentDays() {
     // given
     final String firstProcessName = "firstProcess";
-    zeebeExtension.deployProcess(createSimpleBpmmProcess(firstProcessName));
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
 
     zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
     final String secondProcessName = "secondProcess";
-    zeebeExtension.deployProcess(createSimpleBpmmProcess(secondProcessName));
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -151,13 +152,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
   public void importZeebeProcess_multipleVersionsOfSameProcess() {
     // given
     final String processName = "someProcess";
-    final BpmnModelInstance simpleProcess = createSimpleBpmmProcess(processName);
-    final Process firstVersion = zeebeExtension.deployProcess(simpleProcess);
-    final Process secondVersion = zeebeExtension.deployProcess(createStartEndProcess(processName));
+    final Process firstVersion = deployProcessAndStartInstance(createSimpleServiceTaskProcess(processName));
+    final Process secondVersion = deployProcessAndStartInstance(createStartEndProcess(processName));
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -174,20 +174,20 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
 
     final String firstProcessName = "firstProcess";
-    zeebeExtension.deployProcess(createSimpleBpmmProcess(firstProcessName));
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess(firstProcessName));
     final String secondProcessName = "secondProcess";
-    zeebeExtension.deployProcess(createSimpleBpmmProcess(secondProcessName));
+    deployProcessAndStartInstance(createSimpleServiceTaskProcess(secondProcessName));
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(1)
       .extracting(DefinitionOptimizeResponseDto::getName).containsExactlyInAnyOrder(firstProcessName);
 
     // when
-    importAllZeebeEntitiesFromScratch();
+    importAllZeebeEntities();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -195,30 +195,14 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
 
-  private BpmnModelInstance createSimpleBpmmProcess(final String processName) {
-    return Bpmn.createExecutableProcess(processName)
-      .name(processName)
-      .startEvent(START_EVENT).name(START_EVENT)
-      .serviceTask(SERVICE_TASK).zeebeJobType(SERVICE_TASK).name(SERVICE_TASK)
-      .endEvent(END_EVENT).name(null)
-      .done();
-  }
-
-  private BpmnModelInstance createStartEndProcess(final String processName) {
-    return Bpmn.createExecutableProcess(processName)
-      .name(processName)
-      .startEvent(START_EVENT).name(START_EVENT)
-      .endEvent(END_EVENT).name(null)
-      .done();
-  }
-
   @SneakyThrows
   private void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
     final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INDEX_NAME;
+      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    Awaitility.dontCatchUncaughtExceptions()
+    Awaitility.given().ignoreExceptions()
+      .await()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
@@ -229,7 +213,8 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     final CountRequest definitionCountRequest =
       new CountRequest(expectedIndex)
         .query(boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED)));
-    Awaitility.catchUncaughtExceptions()
+    Awaitility.given().ignoreExceptions()
+      .await()
       .timeout(5, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
@@ -237,6 +222,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
           .count(definitionCountRequest, esClient.requestOptions())
           .getCount())
         .isEqualTo(expectedDefinitionsCount));
+  }
+
+  private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {
+    final Process deployedProcess = zeebeExtension.deployProcess(simpleProcess);
+    zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
+    return deployedProcess;
   }
 
 }

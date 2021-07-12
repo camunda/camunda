@@ -11,13 +11,16 @@ import org.camunda.optimize.plugin.elasticsearch.ElasticsearchCustomHeaderSuppli
 
 public class DynamicElasticsearchCustomHeaderSupplierPlugin implements ElasticsearchCustomHeaderSupplier {
 
+  private final Object lock = new Object();
   private int counter = 0;
 
   @Override
   public CustomHeader getElasticsearchCustomHeader() {
-    final CustomHeader customHeader = new CustomHeader("Authorization", "Bearer dynamicToken_" + counter);
-    counter += 1;
-    return customHeader;
+    synchronized (lock) {
+      final CustomHeader customHeader = new CustomHeader("Authorization", "Bearer dynamicToken_" + counter);
+      counter += 1;
+      return customHeader;
+    }
   }
 
 }

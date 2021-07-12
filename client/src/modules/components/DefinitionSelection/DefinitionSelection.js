@@ -108,6 +108,7 @@ export class DefinitionSelection extends React.Component {
       versions: latestVersion,
       tenantIds: availableTenants.map(({id}) => id),
       name: this.getName(key),
+      identifier: 'definition', // this component only allows selection of a single definition, so we keep the identifier static
     });
   };
 
@@ -136,6 +137,7 @@ export class DefinitionSelection extends React.Component {
       versions,
       tenantIds,
       name: this.getName(definitionKey),
+      identifier: 'definition',
     });
   };
 
@@ -146,6 +148,7 @@ export class DefinitionSelection extends React.Component {
       versions: versions,
       tenantIds: tenantSelection,
       name: this.getName(definitionKey),
+      identifier: 'definition',
     });
   };
 

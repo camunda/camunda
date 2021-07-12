@@ -208,7 +208,9 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
     // given
     final String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
-    final int expiryTime = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    final int expiryTime = embeddedOptimizeExtension.getConfigurationService()
+      .getAuthConfiguration()
+      .getTokenLifeTimeMinutes();
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());

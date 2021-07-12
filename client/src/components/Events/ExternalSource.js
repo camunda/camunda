@@ -84,8 +84,8 @@ export function ExternalSource({
 
   return (
     <div className="ExternalSource">
-      <span className="title">{t('events.sources.eventGroups')}</span>
       <Checklist
+        customHeader={t('events.sources.eventGroups')}
         preItems={
           !loading &&
           !query && (

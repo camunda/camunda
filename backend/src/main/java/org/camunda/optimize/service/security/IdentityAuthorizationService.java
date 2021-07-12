@@ -75,8 +75,9 @@ public class IdentityAuthorizationService
     ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
     List<String> engineAliases = applicationAuthorizationService.getAuthorizedEnginesForUser(userId);
     for (String engineAlias : engineAliases) {
-      final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
-      authorizations.merge(resolveUserAuthorizations(identitytype, userId, engineContext));
+      engineContextFactory.getConfiguredEngineByAlias(engineAlias).ifPresent(
+        engineContext -> authorizations.merge(resolveUserAuthorizations(identitytype, userId, engineContext))
+      );
     }
     return authorizations;
   }
@@ -86,8 +87,9 @@ public class IdentityAuthorizationService
     ResolvedResourceTypeAuthorizations authorizations = new ResolvedResourceTypeAuthorizations();
     List<String> engineAliases = applicationAuthorizationService.getAuthorizedEnginesForUser(groupId);
     for (String engineAlias : engineAliases) {
-      final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
-      authorizations.merge(resolveGroupAuthorizations(identitytype, groupId, engineContext));
+      engineContextFactory.getConfiguredEngineByAlias(engineAlias).ifPresent(
+        engineContext -> authorizations.merge(resolveGroupAuthorizations(identitytype, groupId, engineContext))
+      );
     }
     return authorizations;
   }

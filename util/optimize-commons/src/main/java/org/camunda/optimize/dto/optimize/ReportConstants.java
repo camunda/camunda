@@ -100,6 +100,9 @@ public class ReportConstants {
   public static final String INSTANCE = "instance";
   public static final String VIEW = "view";
 
+  // filter applied to special values
+  public static final String APPLIED_TO_ALL_DEFINITIONS = "all";
+
   // date filter
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";
@@ -139,4 +142,8 @@ public class ReportConstants {
   // To differentiate between an activity/process instance took 0ms and no data available the
   // null result indicates that there's no data.
   public static final Double NO_DATA_AVAILABLE_RESULT = null;
+
+  // pagination
+  public static final int PAGINATION_DEFAULT_LIMIT = 20;
+  public static final int PAGINATION_DEFAULT_OFFSET = 0;
 }

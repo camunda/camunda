@@ -24,7 +24,11 @@ export default function EntityName({children, details, linkTo}) {
             <h1 className="name">{children}</h1>
           )}
         </Tooltip>
-        {details && <Popover icon="down">{details}</Popover>}
+        {details && (
+          <Popover icon="down" renderInPortal="detailsPopover">
+            {details}
+          </Popover>
+        )}
       </div>
     </div>
   );

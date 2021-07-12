@@ -159,14 +159,21 @@ test('user permissions', async (t) => {
 
   await t.expect(Dashboard.editButton.exists).notOk();
 
-  // delete collection
+  // bulk deleting users
   await t.click(e.usernameDropdown);
   await t.click(e.logoutButton);
 
   await login(t, 'user2');
 
   await t.click(Homepage.collectionItem);
+  await t.click(e.userTab);
+  await t.click(Homepage.selectAllCheckbox);
+  await t.click(Homepage.bulkMenu);
+  await t.click(Homepage.del(Homepage.bulkMenu));
+  await t.click(Homepage.modalConfirmbutton);
+  await t.expect(Homepage.listItem.count).eql(1);
 
+  // delete collection
   await t.click(e.collectionContextMenu);
   await t.click(e.deleteCollectionButton);
   await t.click(Homepage.confirmButton);
@@ -220,10 +227,18 @@ test('add, edit and delete sources', async (t) => {
     .takeElementScreenshot(e.sourcesList, 'homepage/sources.png')
     .maximizeWindow();
 
-  //delete source
+  // delete source
   await t.hover(e.decisionItem);
   await t.click(Homepage.contextMenu(e.decisionItem));
   await t.click(e.remove(e.decisionItem));
   await t.click(e.confirmModalButton);
   await t.expect(e.decisionItem.exists).notOk();
+
+  // bulk deleting sources
+  await t.click(Homepage.listItemCheckbox(e.processItem.nth(0)));
+  await t.click(Homepage.listItemCheckbox(e.processItem.nth(1)));
+  await t.click(Homepage.bulkMenu);
+  await t.click(Homepage.del(Homepage.bulkMenu));
+  await t.click(Homepage.modalConfirmbutton);
+  await t.expect(Homepage.listItem.exists).notOk();
 });

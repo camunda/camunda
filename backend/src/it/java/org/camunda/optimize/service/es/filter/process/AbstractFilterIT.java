@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDa
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -78,6 +79,15 @@ public abstract class AbstractFilterIT extends AbstractIT {
     );
   }
 
+  protected ReportResultResponseDto<List<MapResultEntryDto>> evaluateUserTaskReportWithFilter(final ProcessDefinitionEngineDto processDefinition,
+                                                                                              final List<ProcessFilterDto<?>> filterList) {
+    return this.evaluateUserTaskReportWithFilter(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion()),
+      filterList
+    );
+  }
+
   protected ReportResultResponseDto<List<RawDataProcessInstanceDto>> evaluateReportWithFilter(final String processDefinitionKey,
                                                                                               final String processDefinitionVersion,
                                                                                               final List<ProcessFilterDto<?>> filter) {
@@ -89,6 +99,19 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .setFilter(filter)
       .build();
     return reportClient.evaluateRawReport(reportData).getResult();
+  }
+
+  protected ReportResultResponseDto<List<MapResultEntryDto>> evaluateUserTaskReportWithFilter(final String processDefinitionKey,
+                                                                                              final String processDefinitionVersion,
+                                                                                              final List<ProcessFilterDto<?>> filter) {
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK)
+      .setFilter(filter)
+      .build();
+    return reportClient.evaluateMapReport(reportData).getResult();
   }
 
   protected ProcessReportDataDto getAutomaticGroupByDateReportData(final ProcessReportDataType type, final String key,

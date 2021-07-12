@@ -33,14 +33,8 @@ function createSingleTargetLineData(props) {
 }
 
 function createCombinedTargetLineData(props) {
-  const {
-    labels,
-    unitedResults,
-    reportsNames,
-    reportColors,
-    targetValue,
-    isDark,
-  } = extractCombinedData(props);
+  const {labels, unitedResults, reportsNames, reportColors, targetValue, isDark} =
+    extractCombinedData(props);
 
   const datasets = unitedResults.reduce((prevDataset, reportData, i) => {
     return [

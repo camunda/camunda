@@ -45,7 +45,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
   public static final String BUSINESS_KEY = ProcessInstanceDto.Fields.businessKey;
   public static final String STATE = ProcessInstanceDto.Fields.state;
-  public static final String ENGINE = ProcessInstanceDto.Fields.engine;
+  public static final String DATA_SOURCE = ProcessInstanceDto.Fields.dataSource;
   public static final String TENANT_ID = ProcessInstanceDto.Fields.tenantId;
 
   // FlowNode Instance Fields
@@ -164,8 +164,9 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .startObject(DURATION)
         .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)
       .endObject()
-      .startObject(ENGINE)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .startObject(DATA_SOURCE)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field("dynamic", true)
       .endObject()
       .startObject(TENANT_ID)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
@@ -198,7 +199,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
     // @formatter:on
   }
 
-  protected String getIndexPrefix(){
+  protected String getIndexPrefix() {
     return PROCESS_INSTANCE_INDEX_PREFIX;
   }
 

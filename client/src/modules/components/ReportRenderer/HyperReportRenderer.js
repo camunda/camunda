@@ -7,7 +7,6 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {ColorPicker} from 'components';
 import {formatters, getReportResult} from 'services';
 
 import CombinedReportRenderer from './CombinedReportRenderer';
@@ -24,8 +23,7 @@ export default function HyperReportRenderer({report, ...rest}) {
     return <ProcessReportRenderer {...rest} report={emptyReport} />;
   }
 
-  const firstEntryResult = result.data[0].value.filter(isVisible(report));
-  const colors = ColorPicker.getGeneratedColors(firstEntryResult.length);
+  const firstEntryResult = result.data[0].value;
   const newResultData = {};
 
   formatResult(report.data, firstEntryResult).forEach(({key, label}) => {
@@ -55,7 +53,7 @@ export default function HyperReportRenderer({report, ...rest}) {
     combined: true,
     data: {
       configuration: report.data.configuration,
-      reports: firstEntryResult.map(({key}, i) => ({id: key, color: colors[i]})),
+      reports: firstEntryResult.map(({key}) => ({id: key})),
       visualization: getVisualization(report.data.visualization),
     },
     result: {
@@ -100,20 +98,4 @@ function formatResult(data, result) {
   }
 
   return result;
-}
-
-function isVisible(report) {
-  const {hiddenNodes} = report.data.configuration;
-
-  return ({key}) => {
-    if (
-      ['flowNode', 'userTask'].includes(report.data.distributedBy.type) &&
-      hiddenNodes.active &&
-      hiddenNodes.keys.includes(key)
-    ) {
-      return false;
-    }
-
-    return true;
-  };
 }

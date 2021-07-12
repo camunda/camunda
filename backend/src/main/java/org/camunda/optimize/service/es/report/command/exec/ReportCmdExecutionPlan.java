@@ -60,7 +60,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final D reportData);
 
-  protected abstract String getIndexName(final ExecutionContext<D> context);
+  protected abstract String[] getIndexNames(final ExecutionContext<D> context);
 
   public <R extends ReportDefinitionDto<D>> CommandEvaluationResult<T> evaluate(final ReportEvaluationContext<R> reportEvaluationContext) {
     return evaluate(new ExecutionContext<>(reportEvaluationContext));
@@ -71,7 +71,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
     CountRequest unfilteredInstanceCountRequest =
-      new CountRequest(getIndexName(executionContext)).query(setupUnfilteredBaseQuery(reportData));
+      new CountRequest(getIndexNames(executionContext)).query(setupUnfilteredBaseQuery(reportData));
 
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
@@ -82,12 +82,11 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not evaluate %s %s %s report for definition with key [%s] and versions [%s]",
+          "Could not evaluate %s %s %s report for definitions [%s]",
           viewPart.getClass().getSimpleName(),
           groupByPart.getClass().getSimpleName(),
           distributedByPart.getClass().getSimpleName(),
-          reportData.getDefinitionKey(),
-          reportData.getDefinitionVersions()
+          reportData.getDefinitions()
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -95,7 +94,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       if (isInstanceIndexNotFoundException(e)) {
         log.info(
           "Could not evaluate report because required instance index {} does not exist. Returning empty result instead",
-          getIndexName(executionContext)
+          getIndexNames(executionContext)
         );
         return mapToReportResult.apply(new CompositeCommandResult(
           executionContext.getReportData(),
@@ -125,7 +124,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       .size(0);
     addAggregation(searchSourceBuilder, executionContext);
 
-    SearchRequest searchRequest = new SearchRequest(getIndexName(executionContext)).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);
     groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
     return searchRequest;
   }

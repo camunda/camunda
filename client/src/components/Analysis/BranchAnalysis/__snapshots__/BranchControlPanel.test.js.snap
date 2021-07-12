@@ -55,12 +55,9 @@ exports[`should display a sentence to describe what the user can do on this page
     >
       <Filter
         data={null}
+        definitions={Array []}
         filterLevel="instance"
-        flowNodeNames={null}
         onChange={[Function]}
-        processDefinitionKey=""
-        processDefinitionVersions={Array []}
-        tenantIds={Array []}
         variables={null}
         xml={null}
       />

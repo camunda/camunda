@@ -29,15 +29,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
 import static org.camunda.optimize.service.export.CsvExportService.DEFAULT_RECORD_LIMIT;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @RequiredArgsConstructor
 @Component
 public class SingleReportEvaluator {
-
-  public static final int DEFAULT_LIMIT = 20;
-  public static final int DEFAULT_OFFSET = 0;
 
   protected final ConfigurationService configurationService;
 
@@ -120,11 +119,11 @@ public class SingleReportEvaluator {
       offset = Optional.ofNullable(reportEvaluationContext.getPagination())
         .filter(pag -> pag.getOffset() != null)
         .map(PaginationDto::getOffset)
-        .orElse(DEFAULT_OFFSET);
+        .orElse(PAGINATION_DEFAULT_OFFSET);
       limit = Optional.ofNullable(reportEvaluationContext.getPagination())
         .filter(pag -> pag.getLimit() != null)
         .map(PaginationDto::getLimit)
-        .orElse(DEFAULT_LIMIT);
+        .orElse(PAGINATION_DEFAULT_LIMIT);
     }
     final PaginationDto completePagination = new PaginationDto();
     completePagination.setOffset(offset);

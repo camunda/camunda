@@ -28,8 +28,7 @@ public class DecisionReportDataBuilder {
 
   private DecisionReportDataType reportDataType;
 
-  private List<ReportDataDefinitionDto> definitions =
-    Collections.singletonList(ReportDataDefinitionDto.builder().build());
+  private List<ReportDataDefinitionDto> definitions = Collections.singletonList(new ReportDataDefinitionDto());
   private String variableId;
   private String variableName;
   private VariableType variableType;

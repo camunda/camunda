@@ -75,13 +75,13 @@ public class DateFilterQueryService {
 
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
     if (dateDto.getEnd() != null) {
-       final OffsetDateTime endDateWithCorrectTimezone =
-              dateDto.getEnd().atZoneSameInstant(timezone).toOffsetDateTime();
+      final OffsetDateTime endDateWithCorrectTimezone =
+        dateDto.getEnd().atZoneSameInstant(timezone).toOffsetDateTime();
       queryDate.lte(formatter.format(endDateWithCorrectTimezone));
     }
     if (dateDto.getStart() != null) {
       final OffsetDateTime startDateWithCorrectTimezone =
-       dateDto.getStart().atZoneSameInstant(timezone).toOffsetDateTime();
+        dateDto.getStart().atZoneSameInstant(timezone).toOffsetDateTime();
       queryDate.gte(formatter.format(startDateWithCorrectTimezone));
     }
     return Optional.of(queryDate);

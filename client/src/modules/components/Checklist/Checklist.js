@@ -25,6 +25,7 @@ export default function Checklist({
   },
   headerHidden,
   preItems,
+  customHeader,
 }) {
   const [query, setQuery] = useState('');
 
@@ -70,7 +71,7 @@ export default function Checklist({
     <div className="Checklist">
       {!headerHidden && (
         <div className="header">
-          {data.length > 1 && (
+          {data.length > 1 && !customHeader && (
             <LabeledInput
               className="selectAll"
               ref={(input) => {
@@ -84,6 +85,7 @@ export default function Checklist({
               onChange={({target: {checked}}) => (checked ? selectAll() : deselectAll())}
             />
           )}
+          {customHeader && <div className="customHeader">{customHeader}</div>}
           <div className="searchInputContainer">
             <Input
               value={query}
@@ -113,7 +115,7 @@ export default function Checklist({
             {filteredData.length === 0 && <p>{labels.empty}</p>}
             {query && filteredData.length > 1 && (
               <LabeledInput
-                className={classnames({highlight: allSelectedInView})}
+                className={classnames('selectAllInView', {highlight: allSelectedInView})}
                 type="checkbox"
                 checked={allSelectedInView}
                 label={t('common.multiSelect.selectAll')}

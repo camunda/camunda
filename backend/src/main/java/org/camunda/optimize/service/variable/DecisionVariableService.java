@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequ
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
-import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 public class DecisionVariableService {
 
   private final DecisionVariableReader decisionVariableReader;
-  private final TenantAuthorizationService tenantAuthorizationService;
+  private final DataSourceTenantAuthorizationService tenantAuthorizationService;
 
 
   public List<DecisionVariableNameResponseDto> getInputVariableNames(List<DecisionVariableNameRequestDto> variableRequestDtos) {
@@ -62,7 +62,8 @@ public class DecisionVariableService {
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER,
+                                                                requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return decisionVariableReader.getInputVariableValues(requestDto);
@@ -73,7 +74,8 @@ public class DecisionVariableService {
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER,
+                                                                requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return decisionVariableReader.getOutputVariableValues(requestDto);

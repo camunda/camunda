@@ -33,6 +33,7 @@ const exampleFilter = {
       type: 'fixed',
     },
   },
+  appliedTo: ['definition'],
 };
 
 beforeEach(() => {
@@ -66,7 +67,7 @@ it('should convert a start and end-date to two compatible variable filters', () 
       startDate: parseISO('2018-07-09'),
       endDate: parseISO('2018-07-12'),
     },
-    false
+    {identifier: 'definition'}
   );
 
   expect(spy).toHaveBeenCalledWith(exampleFilter);

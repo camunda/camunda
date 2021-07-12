@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.rest.pagination;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,7 @@ public class PaginationDto {
     return paginationDto;
   }
 
+  @JsonIgnore
   public boolean isValid() {
     return limit != null;
   }

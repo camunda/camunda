@@ -20,7 +20,7 @@ import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import DashboardTemplateModal from './modals/DashboardTemplateModal';
-import {loadEntities, importEntity} from './service';
+import {loadEntities, importEntity, removeEntities, checkConflicts} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -123,10 +123,18 @@ export class Home extends React.Component {
                 importEntity={() => this.fileInput.current.click()}
               />
             }
+            bulkActions={[
+              {
+                type: 'delete',
+                action: removeEntities,
+                checkConflicts,
+                conflictMessage: t('common.deleter.affectedMessage.bulk.report'),
+              },
+            ]}
             empty={t('home.empty')}
             isLoading={isLoading}
             sorting={sorting}
-            onSortingChange={this.loadList}
+            onChange={this.loadList}
             columns={[
               {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
               {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
@@ -184,6 +192,8 @@ export class Home extends React.Component {
                 }
 
                 return {
+                  id,
+                  entityType,
                   link: formatLink(id, entityType),
                   icon: entityType,
                   type: formatType(entityType, reportType, combined),

@@ -46,7 +46,7 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
   extends UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT {
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -131,11 +131,11 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
-        new FlowNodeStatusTestValues(100., 100., 100., 2L)
+        new FlowNodeStatusTestValues(100., 100., 100., 1L)
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
-        new FlowNodeStatusTestValues(100., 100., 100., 2L)
+        new FlowNodeStatusTestValues(100., 100., 100., 1L)
       ),
       Arguments.of(
         ProcessFilterBuilder.filter().canceledFlowNodesOnly().add().buildList(),

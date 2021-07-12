@@ -273,6 +273,31 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(actualContent).isEqualTo(expectedString);
   }
 
+  @ParameterizedTest
+  @MethodSource("getParametersForCustomDelimiter")
+  public void csvExportWorksWithCustomDelimiter(ProcessReportDataDto currentReport, String expectedCSV, char customDelimiter) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().setExportCsvDelimiter(customDelimiter);
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+
+    importAllEngineEntitiesFromScratch();
+
+    currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
+    currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
+    String reportId = createAndStoreDefaultReportDefinition(currentReport);
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    String actualContent = getResponseContentAsString(response);
+    String stringExpected = getExpectedContentAsString(processInstance, expectedCSV);
+
+    assertThat(actualContent).isEqualTo(stringExpected);
+  }
+
   private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance, String expectedCSV) {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${PI_ID}", processInstance.getId());
@@ -342,11 +367,20 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   private String replaceExpectedValuesForInstance(String expectedString, int rowNum,
                                                   ProcessInstanceEngineDto processInstance, OffsetDateTime startDate,
                                                   OffsetDateTime endDate, Long duration) {
-    expectedString = expectedString.replace("${PI_ID_" + rowNum + "}","\"" + String.valueOf(processInstance.getId()) + "\"");
-    expectedString = expectedString.replace("${PD_ID_" + rowNum + "}", "\"" + String.valueOf(processInstance.getDefinitionId()) + "\"");
-    expectedString = expectedString.replace("${START_DATE_" + rowNum + "}","\"" + String.valueOf(startDate) + "\"");
+    expectedString = expectedString.replace(
+      "${PI_ID_" + rowNum + "}",
+      "\"" + String.valueOf(processInstance.getId()) + "\""
+    );
+    expectedString = expectedString.replace(
+      "${PD_ID_" + rowNum + "}",
+      "\"" + String.valueOf(processInstance.getDefinitionId()) + "\""
+    );
+    expectedString = expectedString.replace("${START_DATE_" + rowNum + "}", "\"" + String.valueOf(startDate) + "\"");
     expectedString = expectedString.replace("${DURATION_" + rowNum + "}", "\"" + String.valueOf(duration) + "\"");
-    expectedString = expectedString.replace("${END_DATE_" + rowNum + "}", endDate == null ? "" : "\"" + String.valueOf(endDate) + "\"");
+    expectedString = expectedString.replace(
+      "${END_DATE_" + rowNum + "}",
+      endDate == null ? "" : "\"" + String.valueOf(endDate) + "\""
+    );
     return expectedString;
   }
 
@@ -416,6 +450,56 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
         createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
         "/csv/process/single/flownode_duration_group_by_flownodes_results.csv",
         "Flow Node Duration Grouped By Flow Node - Running and null duration"
+      )
+    );
+  }
+
+  private static Stream<Arguments> getParametersForCustomDelimiter() {
+    return Stream.of(
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build(),
+        "/csv/process/single/raw_process_data_grouped_by_none_semicolon_delimiter.csv",
+        ';'
+      ),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .build(),
+        "/csv/process/single/pi_frequency_group_by_none.csv",
+        ';'
+      ),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .build(),
+        "/csv/process/single/flownode_frequency_group_by_flownodes_semicolon_delimiter.csv",
+        ';'
+      ),
+      Arguments.of(
+        createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
+        "/csv/process/single/flownode_duration_group_by_flownodes_results_semicolon_delimiter.csv",
+        ';'
+      ),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build(),
+        "/csv/process/single/raw_process_data_grouped_by_none_tabs_delimiter.csv",
+        '\t'
       )
     );
   }

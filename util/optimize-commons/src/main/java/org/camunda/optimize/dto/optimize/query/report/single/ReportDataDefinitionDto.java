@@ -6,34 +6,67 @@
 package org.camunda.optimize.dto.optimize.query.report.single;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
+import java.util.UUID;
+
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
 @AllArgsConstructor
-@Builder
 @Data
 @FieldNameConstants
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 public class ReportDataDefinitionDto {
+  @NotEmpty
+  private String identifier = UUID.randomUUID().toString();
   private String key;
   private String name;
   private String displayName;
-  @Builder.Default
-  private List<String> versions = new ArrayList<>();
-  @Builder.Default
+  private List<String> versions = List.of(ALL_VERSIONS);
   private List<String> tenantIds = ReportConstants.DEFAULT_TENANT_IDS;
+
+  public ReportDataDefinitionDto(final String key) {
+    this.key = key;
+  }
+
+  public ReportDataDefinitionDto(final String key, final List<String> tenantIds) {
+    this.key = key;
+    this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto(final String key, final String name, final List<String> versions,
+                                 final List<String> tenantIds) {
+    this.key = key;
+    this.name = name;
+    this.versions = versions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto(final String key, final List<String> versions, final List<String> tenantIds) {
+    this.key = key;
+    this.versions = versions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto(final String identifier, final String key) {
+    this.identifier = identifier;
+    this.key = key;
+  }
+
+  public ReportDataDefinitionDto(final String identifier, final String key, final List<String> versions) {
+    this.identifier = identifier;
+    this.key = key;
+    this.versions = versions;
+  }
 
   @JsonIgnore
   public void setVersion(final String version) {
-    this.versions = Arrays.asList(version);
+    this.versions = List.of(version);
   }
 }

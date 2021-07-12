@@ -12,8 +12,11 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -27,6 +30,7 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -37,7 +41,6 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -70,8 +73,9 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .addUpgradeSteps(migrateDefinitions(dependencies))
       .addUpgradeStep(migrateProcessReports())
       .addUpgradeStep(migrateDecisionReports())
-      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, true))
-      .addUpgradeSteps(mergeUserTaskAndFlowNodeData(dependencies, false))
+      .addUpgradeStep(migrateDashboardFilters())
+      .addUpgradeSteps(migrateProcessInstances(dependencies, true))
+      .addUpgradeSteps(migrateProcessInstances(dependencies, false))
       .build();
   }
 
@@ -110,7 +114,6 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     );
   }
 
-  @NotNull
   private static String getUpdateImportSourceScript(final String importType) {
     //@formatter:off
     return
@@ -123,8 +126,8 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
     //@formatter:on
   }
 
-  private static List<UpgradeStep> mergeUserTaskAndFlowNodeData(final UpgradeExecutionDependencies dependencies,
-                                                                final boolean eventBased) {
+  private static List<UpgradeStep> migrateProcessInstances(final UpgradeExecutionDependencies dependencies,
+                                                           final boolean eventBased) {
     final List<String> indexIdentifiers = MappingMetadataUtil.retrieveProcessInstanceIndexIdentifiers(
       dependencies.getEsClient(),
       eventBased
@@ -138,9 +141,34 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       .map(indexIdentifier ->
              new UpdateIndexStep(
                eventBased ? new EventProcessInstanceIndex(indexIdentifier) : new ProcessInstanceIndex(indexIdentifier),
-               getMergeUserTaskFlowNodeMappingScript()
+               getMergeUserTaskFlowNodeMappingScript() + getDataSourceMigrationScript(eventBased)
              ))
       .collect(toList());
+  }
+
+  private static String getDataSourceMigrationScript(final boolean eventBased) {
+    return eventBased ? getUpdateImportSourceScript(DataImportSourceType.EVENTS.getId())
+      : getUpdateImportSourceScript(DataImportSourceType.ENGINE.getId());
+  }
+
+  private static UpgradeStep migrateDashboardFilters() {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("stateFilterData", new DashboardStateFilterDataDto(null));
+    params.put("dateFilterData", new DashboardDateFilterDataDto(null));
+
+    final String updateScript = "" +
+      "if(ctx._source.availableFilters != null) {\n" +
+      " for(filter in ctx._source.availableFilters) {\n" +
+      "   if(\"state\".equalsIgnoreCase(filter.type)) {\n" +
+      "     filter.data = params.stateFilterData;" +
+      "   } else if(\"startDate\".equalsIgnoreCase(filter.type) || \"endDate\".equalsIgnoreCase(filter.type)) {" +
+      "     filter.data = params.dateFilterData;" +
+      "   } else {\n" +
+      "     filter.data.defaultValues = null;" +
+      "   }\n  " +
+      " }\n" +
+      "}";
+    return new UpdateDataStep(new DashboardIndex(), matchAllQuery(), updateScript, params);
   }
 
   private static String getMergeUserTaskFlowNodeMappingScript() {
@@ -317,23 +345,50 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
   }
 
   private UpgradeStep migrateProcessReports() {
+    //@formatter:off
     final String script =
-      //@formatter:off
+      // Migrate definitions
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.processDefinitionKey;\n" +
+      "String appliedToValue = \"all\";\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
+      "  String identifier = UUID.randomUUID().toString();\n" +
       "  ctx._source.data.definitions.add([\n" +
+      "    \"identifier\" : identifier,\n" +
       "    \"key\" : definitionKey,\n" +
       "    \"name\" : ctx._source.data.processDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
       "    \"versions\" : ctx._source.data.processDefinitionVersions,\n" +
-      "    \"tenantIds\" : ctx._source.data.tenantIds\n" +
+      "    \"tenantIds\" : ctx._source.data.tenantIds != null ? ctx._source.data.tenantIds : Collections.singletonList(null)\n" +
       "  ]);\n" +
+      "  appliedToValue = identifier;\n" +
+      "}\n" +
+      "if (ctx._source.data.filter != null) {\n" +
+      "  ctx._source.data.filter.forEach(filter -> filter.appliedTo = [appliedToValue]);\n" +
       "}\n" +
       "ctx._source.data.remove(\"processDefinitionKey\");\n" +
       "ctx._source.data.remove(\"processDefinitionName\");\n" +
       "ctx._source.data.remove(\"processDefinitionVersions\");\n" +
-      "ctx._source.data.remove(\"tenantIds\");\n";
+      "ctx._source.data.remove(\"tenantIds\");\n" +
+
+      // Migrate config flowNode selection to executedFlowNode viewLevel filter
+      "if (ctx._source.data.configuration.hiddenNodes.active " +
+      " && ctx._source.data.configuration.hiddenNodes.keys != null " +
+      " && !ctx._source.data.configuration.hiddenNodes.keys.isEmpty()) {\n" +
+      "   def excludedFlowNodes = ctx._source.data.configuration.hiddenNodes.keys;\n" +
+      "   if (ctx._source.data.filter == null) {" +
+      "     ctx._source.data.filter = [];" +
+      "   }" +
+      "   ctx._source.data.filter.add([" +
+      "   \"type\" : \"executedFlowNodes\",\n" +
+      "   \"data\" : [\n" +
+      "     \"operator\" : \"not in\",\n" +
+      "     \"values\" : excludedFlowNodes\n" +
+      "   ],\n" +
+      "   \"filterLevel\" : \"view\"" +
+      "   ]);\n" +
+      "}\n" +
+      "ctx._source.data.configuration.remove(\"hiddenNodes\")";
     //@formatter:on
     return new UpdateIndexStep(new SingleProcessReportIndex(), script);
   }
@@ -343,14 +398,21 @@ public class Upgrade34to35PlanFactory implements UpgradePlanFactory {
       //@formatter:off
       "ctx._source.data.definitions = [];\n" +
       "String definitionKey = ctx._source.data.decisionDefinitionKey;\n" +
+      "String appliedToValue = \"all\";\n" +
       "if (definitionKey != null && !\"\".equals(definitionKey)) {\n" +
+      "  String identifier = UUID.randomUUID().toString();\n" +
       "  ctx._source.data.definitions.add([\n" +
+      "    \"identifier\" : identifier,\n" +
       "    \"key\" : definitionKey,\n" +
       "    \"name\" : ctx._source.data.decisionDefinitionName,\n" +
       "    \"displayName\" : null,\n" +
       "    \"versions\" : ctx._source.data.decisionDefinitionVersions,\n" +
-      "    \"tenantIds\" : ctx._source.data.tenantIds\n" +
+      "    \"tenantIds\" : ctx._source.data.tenantIds != null ? ctx._source.data.tenantIds : Collections.singletonList(null)\n" +
       "  ]);\n" +
+      "  appliedToValue = identifier;\n" +
+      "}\n" +
+      "if (ctx._source.data.filter != null) {\n" +
+      "  ctx._source.data.filter.forEach(filter -> filter.appliedTo = [appliedToValue]);\n" +
       "}\n" +
       "ctx._source.data.remove(\"decisionDefinitionKey\");\n" +
       "ctx._source.data.remove(\"decisionDefinitionName\");\n" +

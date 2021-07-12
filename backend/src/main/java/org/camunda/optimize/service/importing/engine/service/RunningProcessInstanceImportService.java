@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -14,6 +15,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.util.List;
 
@@ -26,8 +28,14 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
                                              final EngineContext engineContext,
                                              final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                              final RunningProcessInstanceWriter runningProcessInstanceWriter,
-                                             final CamundaEventImportService camundaEventService) {
-    super(elasticsearchImportJobExecutor, engineContext, businessKeyImportAdapterProvider);
+                                             final CamundaEventImportService camundaEventService,
+                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
+    super(
+      elasticsearchImportJobExecutor,
+      engineContext,
+      businessKeyImportAdapterProvider,
+      processDefinitionResolverService
+    );
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
@@ -52,7 +60,7 @@ public class RunningProcessInstanceImportService extends AbstractProcessInstance
       .businessKey(engineEntity.getBusinessKey())
       .startDate(engineEntity.getStartTime())
       .state(engineEntity.getState())
-      .engine(engineContext.getEngineAlias())
+      .dataSource(new EngineDataSourceDto(engineContext.getEngineAlias()))
       .tenantId(engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)))
       .build();
   }

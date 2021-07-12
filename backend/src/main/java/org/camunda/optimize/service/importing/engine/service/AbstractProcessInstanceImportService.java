@@ -12,6 +12,7 @@ import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
   protected final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected final EngineContext engineContext;
   protected final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   protected abstract ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
     List<ProcessInstanceDto> processInstances,
@@ -61,6 +63,14 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
   private List<ProcessInstanceDto> mapEngineEntitiesToOptimizeEntitiesAndApplyPlugins(
     final List<HistoricProcessInstanceDto> engineEntities) {
     return engineEntities.stream()
+      .map(instance -> processDefinitionResolverService.enrichEngineDtoWithDefinitionKey(
+        engineContext,
+        instance,
+        HistoricProcessInstanceDto::getProcessDefinitionKey,
+        HistoricProcessInstanceDto::getProcessDefinitionId,
+        HistoricProcessInstanceDto::setProcessDefinitionKey
+      ))
+      .filter(instance -> instance.getProcessDefinitionKey() != null)
       .map(this::mapEngineEntityToOptimizeEntity)
       .map(this::applyPlugins)
       .collect(toList());
@@ -73,5 +83,4 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
       ));
     return processInstanceDto;
   }
-
 }

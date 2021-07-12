@@ -12,7 +12,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
@@ -26,7 +25,7 @@ public class NoIncidentQueryFilter implements QueryFilter<NoIncidentFilterDataDt
   @Override
   public void addFilters(final BoolQueryBuilder query,
                          final List<NoIncidentFilterDataDto> noIncidentFilterData,
-                         final ZoneId timezone) {
+                         final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(noIncidentFilterData)) {
       List<QueryBuilder> filters = query.filter();
       final BoolQueryBuilder instancesWithNoIncidentFilter = boolQuery().mustNot(

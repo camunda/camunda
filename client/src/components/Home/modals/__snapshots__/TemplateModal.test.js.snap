@@ -7,6 +7,7 @@ Object {
     "definitions": Array [
       Object {
         "displayName": "Process Definition Name",
+        "identifier": "definition",
         "key": "processDefinition",
         "name": "Process Definition Name",
         "tenantIds": Array [

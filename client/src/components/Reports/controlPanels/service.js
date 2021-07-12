@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {get, post} from 'request';
+
 export function isDurationHeatmap({view, visualization, definitions}) {
   return (
     view &&
@@ -17,4 +19,26 @@ export function isDurationHeatmap({view, visualization, definitions}) {
 
 export function isProcessInstanceDuration({view}) {
   return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
+}
+
+export async function loadDefinitions(type, collectionId) {
+  const params = {};
+  if (collectionId) {
+    params.filterByCollectionScope = collectionId;
+  }
+
+  const response = await get(`api/definition/${type}/keys`, params);
+
+  return await response.json();
+}
+
+export async function loadTenants(type, definitions, collectionId) {
+  const payload = {definitions};
+  if (collectionId) {
+    payload.filterByCollectionScope = collectionId;
+  }
+
+  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, payload);
+
+  return await response.json();
 }

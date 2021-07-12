@@ -23,8 +23,9 @@ it('should still contain selected value after changing the filter', async () => 
     />
   );
 
-  toggleValue.mockImplementation((value) => () =>
-    node.setProps({selectedValues: node.instance().props.selectedValues.concat([value])})
+  toggleValue.mockImplementation(
+    (value) => () =>
+      node.setProps({selectedValues: node.instance().props.selectedValues.concat([value])})
   );
 
   setFilter.mockImplementation((filter) =>
@@ -53,12 +54,13 @@ it('it should not show the unselected value if it does not match the query', asy
     />
   );
 
-  toggleValue.mockImplementationOnce((value) => () =>
-    node.setProps({
-      selectedValues: node.instance().props.selectedValues.includes(value)
-        ? node.instance().props.selectedValues.filter((v) => v !== value)
-        : node.instance().props.selectedValues.concat([value]),
-    })
+  toggleValue.mockImplementationOnce(
+    (value) => () =>
+      node.setProps({
+        selectedValues: node.instance().props.selectedValues.includes(value)
+          ? node.instance().props.selectedValues.filter((v) => v !== value)
+          : node.instance().props.selectedValues.concat([value]),
+      })
   );
   setFilter.mockImplementation((filter) =>
     node.setProps({

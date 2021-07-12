@@ -24,10 +24,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.validation.ProcessFiltersMustReferenceExistingDefinitionsConstraint;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,12 +45,14 @@ import static java.util.Objects.nonNull;
 @FieldNameConstants
 @NoArgsConstructor
 @SuperBuilder
+@ProcessFiltersMustReferenceExistingDefinitionsConstraint
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
   @Builder.Default
+  @Valid
   protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
@@ -64,7 +68,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionKey(final String key) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setKey(key);
   }
@@ -73,7 +77,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionName(final String name) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setName(name);
   }
@@ -86,7 +90,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionVersions(final List<String> versions) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersions(versions);
   }
@@ -95,7 +99,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public void setProcessDefinitionVersion(final String version) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersion(version);
   }

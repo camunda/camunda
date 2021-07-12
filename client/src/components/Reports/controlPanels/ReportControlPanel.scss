@@ -10,24 +10,11 @@
   display: flex;
   flex-direction: column;
 
-  .scrollable {
+  .controlSections {
+    flex: 1;
     @include scrollable;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-
-    &.withDivider {
-      border-top: 1px solid var(--silver-darken-87);
-    }
-  }
-
-  .filter.header {
-    padding: 9px 20px 0 20px;
-    border-top: 1px solid var(--silver-darken-87);
-
-    .sectionTitle {
-      margin-bottom: 0;
-    }
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .sectionTitle {
@@ -41,6 +28,8 @@
     background: transparent;
     text-align: left;
     border: none;
+    cursor: pointer;
+    position: relative;
 
     .Icon {
       color: var(--black);
@@ -77,16 +66,17 @@
     &.hidden {
       padding-bottom: 0;
 
-      ul,
-      &.filter,
-      .DefinitionSelection {
+      > :not(.sectionTitle) {
         display: none;
+      }
+
+      &:last-child {
+        border-bottom: 1px solid var(--silver-darken-87);
       }
     }
   }
 
-  .source,
-  section.filter {
+  .source {
     border-top: none;
   }
 
@@ -131,7 +121,6 @@
 
       &.addMeasure {
         margin-top: 5px;
-        width: 200px;
         margin-left: 79px;
 
         font-size: 12px;

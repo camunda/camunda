@@ -586,7 +586,7 @@ public class EngineContext {
         engineAlias
       );
       log.error(message, e);
-      throw new OptimizeRuntimeException(message);
+      throw new OptimizeRuntimeException(message, e);
     }
   }
 

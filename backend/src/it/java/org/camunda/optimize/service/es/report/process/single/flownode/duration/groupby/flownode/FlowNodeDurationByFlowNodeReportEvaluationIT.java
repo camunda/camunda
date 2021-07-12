@@ -8,13 +8,16 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -27,6 +30,7 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -34,6 +38,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
@@ -45,17 +50,22 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel.VIEW;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -67,7 +77,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -103,7 +113,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessesInstances() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -126,6 +136,45 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SERVICE_TASK_ID)).isPresent();
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), SERVICE_TASK_ID).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10., 30., 20.));
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key1, SERVICE_TASK_ID));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    changeActivityDuration(processInstanceDto1, 10.);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key2, SERVICE_TASK_ID_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    changeActivityDuration(processInstanceDto2, 30.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(processDefinition2.getKey()));
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+        .groupedByContains(SERVICE_TASK_ID, calculateExpectedValueGivenDurationsDefaultAggr(10.))
+        .groupedByContains(SERVICE_TASK_ID_2, calculateExpectedValueGivenDurationsDefaultAggr(30.))
+        .groupedByContains(END_EVENT, calculateExpectedValueGivenDurationsDefaultAggr(10., 30.))
+        .groupedByContains(START_EVENT, calculateExpectedValueGivenDurationsDefaultAggr(10., 30.))
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -586,7 +635,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
     ProcessInstanceEngineDto runningInstance =
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeFlowNodeStartDate(
       runningInstance.getId(),
       USER_TASK_1,
@@ -871,6 +920,160 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(10.));
   }
 
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_USER},
+        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_2, 30.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelFilterByAssigneeOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                           final String[] filterValues,
+                                                                           final List<Tuple> expectedResult) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
+    );
+    changeActivityDuration(processInstanceDto, START_EVENT, 10.);
+    changeActivityDuration(processInstanceDto, USER_TASK_1, 20.);
+    changeActivityDuration(processInstanceDto, USER_TASK_2, 30.);
+    changeActivityDuration(processInstanceDto, END_EVENT, 40.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().assignee().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add().buildList();
+    reportData.setFilter(assigneeFilter);
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    assertThat(result.getFirstMeasureData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Collections.singletonList(Tuple.tuple(USER_TASK_2, 30.))
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(USER_TASK_2, 30.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(USER_TASK_1, 20.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Arrays.asList(
+          Tuple.tuple(START_EVENT, 10.),
+          Tuple.tuple(END_EVENT, 40.)
+        )
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelFilterByCandidateGroupOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                                 final String[] filterValues,
+                                                                                 final List<Tuple> expectedResult) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
+      .startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeActivityDuration(processInstanceDto, START_EVENT, 10.);
+    changeActivityDuration(processInstanceDto, USER_TASK_1, 20.);
+    changeActivityDuration(processInstanceDto, USER_TASK_2, 30.);
+    changeActivityDuration(processInstanceDto, END_EVENT, 40.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    final List<ProcessFilterDto<?>> assigneeFilter = ProcessFilterBuilder
+      .filter().candidateGroups().ids(filterValues).operator(filterOperator)
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add().buildList();
+    reportData.setFilter(assigneeFilter);
+    // set sorting to allow asserting in the same order for all scenarios
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = reportClient.evaluateMapReport(reportData)
+      .getResult();
+
+    // then
+    assertThat(result.getFirstMeasureData())
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactlyInAnyOrderElementsOf(expectedResult);
+  }
+
   @Test
   public void viewLevelFlowNodeDurationFilterOnlyIncludesFlowNodesMatchingFilter() {
     // given
@@ -968,7 +1171,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() {
@@ -980,6 +1183,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   private ProcessDefinitionEngineDto deploySimpleUserTaskDefinition() {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram());
+  }
+
+  private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {

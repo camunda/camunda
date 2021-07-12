@@ -120,11 +120,11 @@ public class ExportRestService {
         .data(
           ProcessReportDataDto.builder()
             .definitions(Arrays.asList(
-              ReportDataDefinitionDto.builder()
-                .key(request.getProcessDefinitionKey())
-                .versions(request.getProcessDefinitionVersions())
-                .tenantIds(request.getTenantIds())
-                .build()
+              new ReportDataDefinitionDto(
+                request.getProcessDefinitionKey(),
+                request.getProcessDefinitionVersions(),
+                request.getTenantIds()
+              )
             ))
             .filter(request.getFilter())
             .configuration(SingleReportConfigurationDto.builder()

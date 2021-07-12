@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -18,17 +19,24 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponse
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
@@ -42,6 +50,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   private static final String TEST_GROUP_B_ID = "anotherTestGroup";
   private static final String TEST_GROUP_B_NAME = "Just Another Testing Group";
   private static final String USER_MISS_PIGGY_ID = "missPiggy";
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer =
+    LogCapturer.create().forLevel(Level.DEBUG).captureForType(CollectionRoleService.class);
 
   @Test
   public void partialCollectionUpdateDoesNotAffectRoles() {
@@ -760,6 +773,166 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     assertThat(actualRoles).isEqualTo(expectedRoles);
   }
 
+  @Test
+  public void bulkDeleteCollectionRolesNoAuthentication() {
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteCollectionRolesRequest(Collections.emptyList(), null)
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteCollectionRolesEmptyList() {
+    // when
+    Response response = createAndExecuteBuildDeleteCollectionRolesRequest(Collections.emptyList(), null);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteCollectionRolesNullList() {
+    // when
+    String collectionId = collectionClient.createNewCollection();
+    Response response = createAndExecuteBuildDeleteCollectionRolesRequest(null, collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteCollectionRolesCollectionDoesntExist() {
+    // when
+    Response response = createAndExecuteBuildDeleteCollectionRolesRequest(Collections.emptyList(), "doesntExist");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteCollectionRolesNoUserAuthorizationToCollection() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_MISS_PIGGY_ID);
+    authorizationClient.createGroupAndGrantOptimizeAccess(TEST_GROUP_ID, TEST_GROUP_NAME);
+    String collectionId = collectionClient.createNewCollection();
+
+    final CollectionRoleRequestDto roleDto1 = new CollectionRoleRequestDto(
+      new IdentityDto(TEST_GROUP_ID, IdentityType.GROUP), RoleType.VIEWER
+    );
+
+    final CollectionRoleRequestDto roleDto2 = new CollectionRoleRequestDto(
+      new IdentityDto(USER_MISS_PIGGY_ID, IdentityType.USER), RoleType.VIEWER
+    );
+    collectionClient.addRolesToCollection(collectionId, roleDto1, roleDto2);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteCollectionRolesRequest(Arrays.asList(roleDto1.getId(), roleDto2.getId()), collectionId)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void bulkDeleteCollectionRoles() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createGroupAndGrantOptimizeAccess(TEST_GROUP_ID, TEST_GROUP_NAME);
+    String collectionId = collectionClient.createNewCollection();
+
+    final CollectionRoleRequestDto groupViewerRole = new CollectionRoleRequestDto(
+      new IdentityDto(TEST_GROUP_ID, IdentityType.GROUP), RoleType.VIEWER
+    );
+
+    final CollectionRoleRequestDto userViewerRole = new CollectionRoleRequestDto(
+      new IdentityDto(USER_KERMIT_ID, IdentityType.USER), RoleType.VIEWER
+    );
+
+    collectionClient.addRolesToCollection(collectionId, groupViewerRole, userViewerRole);
+
+    // when
+    Response response = createAndExecuteBuildDeleteCollectionRolesRequest(Arrays.asList(
+      groupViewerRole.getId(),
+      userViewerRole.getId()
+    ), collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    final List<CollectionRoleResponseDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
+    assertThat(actualRoles.size()).isEqualTo(1);
+    assertThat(actualRoles).extracting(role -> role.getIdentity().getId()).containsExactly(DEFAULT_USERNAME);
+  }
+
+  @Test
+  public void bulkDeleteDoesNotDeleteLastManager() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    final List<CollectionRoleResponseDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
+    final CollectionRoleResponseDto demoManagerRole = expectedRoles.get(0);
+    final CollectionRoleRequestDto groupViewerRole = new CollectionRoleRequestDto(
+      new IdentityDto(TEST_GROUP_ID, IdentityType.GROUP), RoleType.VIEWER
+    );
+
+    // when
+    Response response = createAndExecuteBuildDeleteCollectionRolesRequest(Arrays.asList(
+      demoManagerRole.getId(),
+      groupViewerRole.getId()
+    ), collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+
+    final List<CollectionRoleResponseDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
+    assertThat(actualRoles).isEqualTo(expectedRoles);
+    assertThat(actualRoles).extracting(role -> role.getIdentity().getId()).containsExactly(DEFAULT_USERNAME);
+    String message = String.format(
+      "Could not delete role with id %s, because the user with that id is a manager.",
+      demoManagerRole.getId()
+    );
+    logCapturer.assertContains(message);
+  }
+
+  @Test
+  public void bulkDeleteDoesNotAbortWhenRoleIdDoesNotExist() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createGroupAndGrantOptimizeAccess(TEST_GROUP_ID, TEST_GROUP_NAME);
+    String collectionId = collectionClient.createNewCollection();
+
+    final CollectionRoleRequestDto groupViewerRole = new CollectionRoleRequestDto(
+      new IdentityDto(TEST_GROUP_ID, IdentityType.GROUP), RoleType.VIEWER
+    );
+
+    final CollectionRoleRequestDto userViewerRole = new CollectionRoleRequestDto(
+      new IdentityDto(USER_KERMIT_ID, IdentityType.USER), RoleType.VIEWER
+    );
+
+    collectionClient.addRolesToCollection(collectionId, groupViewerRole, userViewerRole);
+
+    // when
+    Response response = createAndExecuteBuildDeleteCollectionRolesRequest(Arrays.asList(
+      groupViewerRole.getId(),
+      "doesNotExist",
+      userViewerRole.getId()
+    ), collectionId);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    final List<CollectionRoleResponseDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
+    assertThat(actualRoles.size()).isEqualTo(1);
+    assertThat(actualRoles).extracting(role -> role.getIdentity().getId()).containsExactly(DEFAULT_USERNAME);
+    logCapturer.assertContains("Could not delete role with id doesNotExist. The role is already deleted.");
+  }
+
   private void updateRoleOnCollection(final String collectionId,
                                       final String roleEntryId,
                                       final CollectionRoleUpdateRequestDto updateDto) {
@@ -777,5 +950,12 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .buildDeleteRoleToCollectionRequest(collectionId, roleEntryId)
       .execute();
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  private Response createAndExecuteBuildDeleteCollectionRolesRequest(List<String> collectionRoles, String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteCollectionRolesRequest(collectionRoles, collectionId)
+      .execute();
   }
 }

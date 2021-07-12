@@ -10,12 +10,14 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
@@ -39,11 +41,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -78,8 +80,14 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
         filter(USER_TASKS_AGGREGATION, createUserTaskFlowNodeTypeFilter())
           .subAggregation(
             filter(
+              // it's possible to do report evaluations over several definitions versions. However, only the most recent
+              // one is used to decide which user tasks should be taken into account. To make sure that we only fetch
+              // assignees related to this definition version we filter for userTasks that only occur in the latest
+              // version.
               FILTERED_USER_TASKS_AGGREGATION,
-              createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+              ModelElementFilterQueryUtil.createInclusiveFlowNodeIdFilterQuery(
+                context.getReportData(), getUserTaskIds(context.getReportData())
+              )
             ).subAggregation(identityTermsAggregation)));
 
     return Collections.singletonList(groupByIdentityAggregation);
@@ -107,16 +115,16 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
   protected abstract IdentityType getIdentityType();
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
-      .map(Map::keySet)
-      .orElse(Collections.emptySet());
+    return definitionService.extractUserTaskIdAndNames(
+      reportData.getDefinitions().stream()
+        .map(definitionDto -> definitionService.getDefinition(
+          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    ).keySet();
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,
@@ -125,22 +133,29 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
     final Terms byIdentityAggregation = filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
-      final List<DistributedByResult> singleResult =
+      final String key = identityBucket.getKeyAsString();
+      List<DistributedByResult> distributedByResults =
         distributedByPart.retrieveResult(response, identityBucket.getAggregations(), context);
 
-      if (identityBucket.getKeyAsString().equals(GROUP_BY_IDENTITY_MISSING_KEY)) {
-        // ensure missing identity bucket is excluded if its empty
-        final boolean resultIsEmpty = singleResult.isEmpty() || singleResult.stream()
-          .map(DistributedByResult::getViewResult)
-          .map(CompositeCommandResult.ViewResult::getViewMeasures)
-          .flatMap(Collection::stream)
-          .allMatch(viewMeasure -> viewMeasure.getValue() == null || viewMeasure.getValue() == 0.0);
-        if (resultIsEmpty) {
-          continue;
-        }
+      if (GROUP_BY_IDENTITY_MISSING_KEY.equals(key)) {
+        distributedByResults.forEach(result -> result.getViewResult().getViewMeasures().forEach(measure -> {
+          if (AggregationType.SUM.equals(measure.getAggregationType()) && (measure.getValue() != null && measure.getValue() == 0)) {
+            measure.setValue(null);
+          }
+        }));
       }
-      final String key = identityBucket.getKeyAsString();
-      groupedData.add(GroupByResult.createGroupByResult(key, resolveIdentityName(key), singleResult));
+
+      // ensure missing identity bucket is excluded if its empty
+      final boolean resultIsEmpty = distributedByResults.isEmpty() || distributedByResults.stream()
+        .map(DistributedByResult::getViewResult)
+        .map(CompositeCommandResult.ViewResult::getViewMeasures)
+        .flatMap(Collection::stream)
+        .allMatch(viewMeasure -> viewMeasure.getValue() == null || viewMeasure.getValue() == 0.0);
+      if (resultIsEmpty) {
+        continue;
+      }
+
+      groupedData.add(GroupByResult.createGroupByResult(key, resolveIdentityName(key), distributedByResults));
     }
     return groupedData;
   }

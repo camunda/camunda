@@ -79,7 +79,7 @@ public class ProcessGroupByDuration extends ProcessGroupByPart {
                                                     final QueryBuilder baseQuery) {
     return minMaxStatsService.getScriptedMinMaxStats(
       baseQuery,
-      getIndexName(context),
+      getIndexNames(context),
       null,
       getDurationScript()
     );

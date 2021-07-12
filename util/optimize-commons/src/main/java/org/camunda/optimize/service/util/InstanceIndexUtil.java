@@ -8,6 +8,9 @@ package org.camunda.optimize.service.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -26,12 +29,30 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
 
+  public static String[] getDecisionInstanceIndexAliasName(final DecisionReportDataDto reportDataDto) {
+    // for decision reports only one (the first) definition is supported
+    return reportDataDto.getDefinitions().stream().findFirst()
+      .map(ReportDataDefinitionDto::getKey)
+      .map(InstanceIndexUtil::getDecisionInstanceIndexAliasName)
+      .map(value -> new String[]{value})
+      .orElse(new String[]{DECISION_INSTANCE_MULTI_ALIAS});
+  }
+
   public static String getDecisionInstanceIndexAliasName(final String decisionDefinitionKey) {
     if (decisionDefinitionKey == null) {
       return DECISION_INSTANCE_MULTI_ALIAS;
     } else {
       return new DecisionInstanceIndex(decisionDefinitionKey).getIndexName();
     }
+  }
+
+  public static String[] getProcessInstanceIndexAliasNames(final ProcessReportDataDto reportDataDto) {
+    return !reportDataDto.getDefinitions().isEmpty()
+      ? reportDataDto.getDefinitions().stream()
+      .map(ReportDataDefinitionDto::getKey)
+      .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
+      .toArray(String[]::new)
+      : new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
   }
 
   public static String getProcessInstanceIndexAliasName(final String processDefinitionKey) {

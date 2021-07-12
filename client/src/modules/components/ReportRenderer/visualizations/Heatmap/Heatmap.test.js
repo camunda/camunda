@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {Button, HeatmapOverlay} from 'components';
+import {DownloadButton, HeatmapOverlay} from 'components';
 import {formatters, loadRawData, getTooltipText, processResult} from 'services';
 
 import {Heatmap} from './Heatmap';
@@ -258,12 +258,9 @@ it('should invoke report evaluation when clicking the download instances button'
     },
   };
 
-  window.URL.createObjectURL = jest.fn();
-
   formatters.duration.mockReturnValueOnce('1ms').mockReturnValueOnce('2ms');
   const node = shallow(
     <Heatmap
-      mightFail={jest.fn().mockImplementation((a, b) => b(a))}
       report={update(report, {
         data: {
           view: {properties: {$set: ['duration']}},
@@ -276,7 +273,7 @@ it('should invoke report evaluation when clicking the download instances button'
 
   const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
 
-  await tooltip.find(Button).props().onClick();
+  await tooltip.find(DownloadButton).prop('retriever');
 
   expect(loadRawData).toHaveBeenCalledWith('config');
 });

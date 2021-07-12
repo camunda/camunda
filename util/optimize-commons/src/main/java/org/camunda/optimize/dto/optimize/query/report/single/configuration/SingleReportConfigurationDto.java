@@ -43,8 +43,6 @@ public class SingleReportConfigurationDto implements Combinable {
   private Set<UserTaskDurationTime> userTaskDurationTimes =
     new LinkedHashSet<>(Collections.singletonList(UserTaskDurationTime.TOTAL));
   @Builder.Default
-  private HiddenNodesDto hiddenNodes = new HiddenNodesDto();
-  @Builder.Default
   private Boolean showInstanceCount = false;
   @Builder.Default
   private Boolean pointMarkers = true;

@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Table, Button, Icon, NoDataNotice, LoadingIndicator} from 'components';
+import {Table, Icon, NoDataNotice, LoadingIndicator, DownloadButton} from 'components';
 import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
 import {t} from 'translation';
 import './VariablesTable.scss';
@@ -32,21 +32,19 @@ export default class VariablesTable extends React.Component {
     return data.map((row) => [
       <div className="outliersCount">
         {row.instanceCount} {t(`common.instance.label${row.instanceCount !== 1 ? '-plural' : ''}`)}
-        <a
+        <DownloadButton
           href={getInstancesDownloadUrl({
             ...this.props.config,
             flowNodeId: id,
             higherOutlierBound: higherOutlier.boundValue,
             variableName: row.variableName,
             variableTerm: row.variableTerm,
-            fileName: `${row.variableName}_Outliers.csv`,
           })}
+          fileName={`${row.variableName}_Outliers.csv`}
         >
-          <Button>
-            <Icon type="save" />
-            {t('common.instanceIds')}
-          </Button>
-        </a>
+          <Icon type="save" />
+          {t('common.instanceIds')}
+        </DownloadButton>
       </div>,
       +(row.outlierToAllInstancesRatio * 100).toFixed(2),
       +(row.outlierRatio * 100).toFixed(2),

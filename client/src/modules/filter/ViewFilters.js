@@ -6,42 +6,27 @@
 
 import React from 'react';
 
-import {Dropdown} from 'components';
+import {Dropdown, Tooltip} from 'components';
 import {t} from 'translation';
 
 export default function ViewFilters({
-  filterByTypeOnly,
   openNewFilterModal,
   processDefinitionIsNotSelected,
+  definitions,
 }) {
-  return (
+  const dropdown = (
     <Dropdown
       label={t('common.add')}
       id="ControlPanel__filters"
       className="ViewFilters Filter__dropdown"
+      disabled={definitions?.length > 1}
     >
-      <Dropdown.Submenu label={t('common.filter.types.flowNodeStatus')}>
-        <Dropdown.Option onClick={filterByTypeOnly('runningFlowNodesOnly')}>
-          {t('common.filter.types.runningFlowNodesOnly')}
-        </Dropdown.Option>
-        <Dropdown.Option onClick={filterByTypeOnly('completedFlowNodesOnly')}>
-          {t('common.filter.types.completedFlowNodesOnly')}
-        </Dropdown.Option>
-        <Dropdown.Option onClick={filterByTypeOnly('canceledFlowNodesOnly')}>
-          {t('common.filter.types.canceledFlowNodesOnly')}
-        </Dropdown.Option>
-        <Dropdown.Option onClick={filterByTypeOnly('completedOrCanceledFlowNodesOnly')}>
-          {t('common.filter.types.completedOrCanceledFlowNodesOnly')}
-        </Dropdown.Option>
-      </Dropdown.Submenu>
-      <Dropdown.Submenu label={t('common.filter.types.incident')}>
-        <Dropdown.Option onClick={filterByTypeOnly('includesOpenIncident')}>
-          {t('common.filter.types.openIncident')}
-        </Dropdown.Option>
-        <Dropdown.Option onClick={filterByTypeOnly('includesResolvedIncident')}>
-          {t('common.filter.types.resolvedIncident')}
-        </Dropdown.Option>
-      </Dropdown.Submenu>
+      <Dropdown.Option onClick={openNewFilterModal('flowNodeStatus')}>
+        {t('common.filter.types.flowNodeStatus')}
+      </Dropdown.Option>
+      <Dropdown.Option onClick={openNewFilterModal('incident')}>
+        {t('common.filter.types.incident')}
+      </Dropdown.Option>
       <Dropdown.Option
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('flowNodeDuration')}
@@ -60,6 +45,21 @@ export default function ViewFilters({
       >
         {t('report.groupBy.userGroup')}
       </Dropdown.Option>
+      <Dropdown.Option
+        disabled={processDefinitionIsNotSelected}
+        onClick={openNewFilterModal('executedFlowNodes')}
+      >
+        {t('common.filter.types.flowNodeSelection')}
+      </Dropdown.Option>
     </Dropdown>
   );
+
+  if (definitions?.length > 1) {
+    return (
+      <Tooltip content={t('common.filter.tooltip.disabledView')}>
+        <div>{dropdown}</div>
+      </Tooltip>
+    );
+  }
+  return dropdown;
 }

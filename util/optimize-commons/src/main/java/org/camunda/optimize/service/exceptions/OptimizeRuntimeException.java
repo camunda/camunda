@@ -8,7 +8,7 @@ package org.camunda.optimize.service.exceptions;
 
 public class OptimizeRuntimeException extends RuntimeException {
 
-  public OptimizeRuntimeException () {
+  public OptimizeRuntimeException() {
     super();
   }
 

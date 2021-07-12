@@ -80,12 +80,14 @@ public class SettingsRestServiceIT extends AbstractIT {
 
   private void addSuperUserAndPermissions(final SuperUserType superUserType) {
     if (superUserType == SuperUserType.USER) {
-      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+      embeddedOptimizeExtension.getConfigurationService()
+        .getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
     } else {
       authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
       authorizationClient.createGroupAndAddUser(GROUP_ID, DEFAULT_USERNAME);
       authorizationClient.grantGroupOptimizeAccess(GROUP_ID);
-      embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+      embeddedOptimizeExtension.getConfigurationService()
+        .getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
     }
   }
 

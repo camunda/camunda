@@ -14,8 +14,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class ReportExportAuthorizationIT extends AbstractExportImportIT {
@@ -68,7 +66,7 @@ public class ReportExportAuthorizationIT extends AbstractExportImportIT {
   public void exportReportAsJson_asSuperuser_withoutDefinitionAuth(final ReportType reportType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
     final String reportId = createSimpleReport(reportType);
 
     // when

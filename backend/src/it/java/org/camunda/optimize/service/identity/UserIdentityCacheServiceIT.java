@@ -9,21 +9,39 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.MaxEntryLimitHitException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpRequest;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_ENDPOINT;
 import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
@@ -33,6 +51,8 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockserver.model.HttpRequest.request;
 
 public class UserIdentityCacheServiceIT extends AbstractIT {
 
@@ -399,7 +419,7 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
 
       authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
       authorizationClient.addKermitUserWithoutAuthorizations();
-      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
 
       userIdentityCacheService.synchronizeIdentities();
 
@@ -422,11 +442,112 @@ public class UserIdentityCacheServiceIT extends AbstractIT {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("identitiesAndAuthorizationResponse")
+  public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataResponseDto expectedIdentity,
+                                                        final ErrorResponseMock mockedResp) {
+    // given
+    UserIdentityCacheService userIdentityCacheService = getUserIdentityCacheService();
+
+    switch (expectedIdentity.getType()) {
+      case USER:
+        authorizationClient.addUserAndGrantOptimizeAccess(expectedIdentity.getId());
+        assertThat(
+          userIdentityCacheService.getUserIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      case GROUP:
+        authorizationClient.createGroupAndGrantOptimizeAccess(expectedIdentity.getId(), expectedIdentity.getId());
+        assertThat(
+          userIdentityCacheService.getGroupIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported identity type: " + expectedIdentity.getType());
+    }
+
+    // synchronizing identities to make sure that the newly created identities are accessible in optimize
+    userIdentityCacheService.synchronizeIdentities();
+
+    String collectionId = collectionClient.createNewCollection();
+    CollectionRoleRequestDto roleDto = new CollectionRoleRequestDto(expectedIdentity, RoleType.EDITOR);
+    collectionClient.addRolesToCollection(collectionId, roleDto);
+
+    final HttpRequest engineAuthorizationsRequest = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + AUTHORIZATION_ENDPOINT);
+
+    ClientAndServer engineMockServer = useAndGetEngineMockServer();
+
+    mockedResp.mock(engineAuthorizationsRequest, Times.once(), engineMockServer);
+
+    // when
+    assertThrows(Exception.class, userIdentityCacheService::synchronizeIdentities);
+
+    // then
+    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
+
+    assertThat(roles).extracting(CollectionRoleResponseDto::getId).contains(roleDto.getId());
+    engineMockServer.verify(engineAuthorizationsRequest);
+  }
+
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void syncRetryBackoff(final ErrorResponseMock mockedResp) throws InterruptedException {
+    // given
+    ConfigurationService configurationService = embeddedOptimizeExtension.getConfigurationService();
+
+    // any date, which is not sunday 00:00, so the cron is not triggered
+    LocalDateUtil.setCurrentTime(OffsetDateTime.parse("1997-01-27T18:00:00+01:00"));
+    configurationService.getUserIdentityCacheConfiguration().setCronTrigger("* 0 * * 0");
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    final HttpRequest engineAuthorizationsRequest = request()
+      .withPath(engineIntegrationExtension.getEnginePath() + AUTHORIZATION_ENDPOINT);
+
+    ClientAndServer engineMockServer = useAndGetEngineMockServer();
+
+    mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
+
+    final ScheduledExecutorService identitySyncThread = Executors.newSingleThreadScheduledExecutor();
+
+    // when
+    try {
+      identitySyncThread.execute(getUserIdentityCacheService()::syncIdentitiesWithRetry);
+      Thread.sleep(1000);
+      engineMockServer.verify(engineAuthorizationsRequest);
+
+      engineMockServer.clear(engineAuthorizationsRequest);
+    } finally {
+      identitySyncThread.shutdown();
+    }
+
+    // then
+    boolean termination = identitySyncThread.awaitTermination(30, TimeUnit.SECONDS);
+    assertThat(termination).isTrue();
+    engineMockServer.verify(engineAuthorizationsRequest);
+  }
+
   private UserIdentityCacheService getUserIdentityCacheService() {
     return embeddedOptimizeExtension.getUserIdentityCacheService();
   }
 
   private UserIdentityCacheConfiguration getIdentitySyncConfiguration() {
     return embeddedOptimizeExtension.getConfigurationService().getUserIdentityCacheConfiguration();
+  }
+
+  private static Stream<IdentityWithMetadataResponseDto> identities() {
+    return Stream.of(
+      new UserDto("testUser", DEFAULT_FIRSTNAME, DEFAULT_LASTNAME, "testUser" + DEFAULT_EMAIL_DOMAIN),
+      new GroupDto(KERMIT_GROUP_NAME, KERMIT_GROUP_NAME, 0L)
+    );
+  }
+
+  private static Stream<Arguments> identitiesAndAuthorizationResponse() {
+    return identities().flatMap(identity -> MockServerUtil.engineMockedErrorResponses()
+      .map(errorResponse -> Arguments.of(identity, errorResponse)));
+  }
+
+  private static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
   }
 }

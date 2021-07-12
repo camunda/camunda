@@ -100,6 +100,7 @@ public class VariableAggregationService {
       .timezone(context.getTimezone())
       .subAggregations(context.getSubAggregations())
       .dateAggregationName(VARIABLES_AGGREGATION)
+      .filterContext(context.getFilterContext())
       .build();
 
     return dateAggregationService.createDateVariableAggregation(dateAggContext);
@@ -152,7 +153,7 @@ public class VariableAggregationService {
       context.getVariablePath(),
       context.getNestedVariableNameField(),
       context.getNestedVariableValueFieldLabel(),
-      context.getIndexName(),
+      context.getIndexNames(),
       context.getBaseQueryForMinMaxStats()
     );
   }
@@ -162,7 +163,7 @@ public class VariableAggregationService {
                                               final String variablePath,
                                               final String nestedVariableNameField,
                                               final String nestedVariableValueFieldLabel,
-                                              final String indexName,
+                                              final String[] indexNames,
                                               final QueryBuilder baseQuery) {
     final BoolQueryBuilder filterQuery = boolQuery().must(
       termQuery(nestedVariableNameField, variableName)
@@ -170,7 +171,7 @@ public class VariableAggregationService {
     if (VariableType.getNumericTypes().contains(variableType)) {
       return minMaxStatsService.getSingleFieldMinMaxStats(
         baseQuery,
-        indexName,
+        indexNames,
         nestedVariableValueFieldLabel,
         variablePath,
         filterQuery
@@ -178,7 +179,7 @@ public class VariableAggregationService {
     } else if (VariableType.DATE.equals(variableType)) {
       return minMaxStatsService.getSingleFieldMinMaxStats(
         baseQuery,
-        indexName,
+        indexNames,
         nestedVariableValueFieldLabel,
         OPTIMIZE_DATE_FORMAT,
         variablePath,

@@ -63,11 +63,12 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
 
   @Override
   protected void assertEvaluateReportWithFlowNodeStatusFilter(final ReportResultResponseDto<List<HyperMapResultEntryDto>> result,
-                                                              final List<ProcessFilterDto<?>> processFilter) {
+                                                              final List<ProcessFilterDto<?>> processFilter,
+                                                              final long expectedInstanceCount) {
     if (isSingleFilterOfType(processFilter, RunningFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
@@ -79,7 +80,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     } else if (isSingleFilterOfType(processFilter, CompletedOrCanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
@@ -89,7 +90,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
     } else if (isSingleFilterOfType(processFilter, CanceledFlowNodesOnlyFilterDto.class)) {
       // @formatter:off
       HyperMapAsserter.asserter()
-        .processInstanceCount(2L)
+        .processInstanceCount(expectedInstanceCount)
         .processInstanceCountWithoutFilters(2L)
         .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
           .groupByContains(USER_TASK_1)
@@ -104,7 +105,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_ForOneProcessWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+  protected void assertHyperMap_ForOneProcessInstanceWithUnassignedTasks(final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -135,7 +136,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_ForSeveralProcesses(final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
+  protected void assertHyperMap_ForSeveralProcessInstances(final ReportResultResponseDto<List<HyperMapResultEntryDto>>actualResult) {
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -178,7 +179,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   }
 
   @Override
-  protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
+  protected void assertHyperMap_ForSeveralProcessInstancesWithAllAggregationTypes(
     final ReportResultResponseDto<List<HyperMapResultEntryDto>> result) {
     assertThat(result.getMeasures())
       .extracting(MeasureResponseDto::getAggregationType)

@@ -180,6 +180,10 @@ plugin:
     # Looks in the given base package list for authentication extractor plugins.
     # If empty, the standard Optimize authentication mechanism is used.
     basePackages: []
+  elasticsearchCustomHeader:
+    # Look in the given base package list for Elasticsearch custom header fetching plugins.
+    # If empty, ES requests are not influenced.
+    basePackages: []
 
 email:
   # A switch to control email sending process.

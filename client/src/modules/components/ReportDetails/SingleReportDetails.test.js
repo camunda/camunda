@@ -18,9 +18,15 @@ import {SingleReportDetails} from './SingleReportDetails';
 
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
-    {id: 'sales', name: 'Sales'},
-    {id: 'consulting', name: 'Consulting'},
-    {id: 'snacks', name: 'Snacks'},
+    {
+      key: 'aKey',
+      versions: ['2', '1'],
+      tenants: [
+        {id: 'sales', name: 'Sales'},
+        {id: 'consulting', name: 'Consulting'},
+        {id: 'snacks', name: 'Snacks'},
+      ],
+    },
   ]),
 }));
 
@@ -105,14 +111,14 @@ it('should have special handling for variable views', () => {
   runLastEffect();
 
   expect(node).toIncludeText('Variable x');
-  expect(node.find('dd.nowrap')).toExist();
+  expect(node.find('h4.nowrap')).toExist();
 });
 
-it('should open raw data modal which button is clicked', () => {
+it('should open raw data modal when button is clicked', () => {
   const node = shallow(<SingleReportDetails {...props} />);
   runLastEffect();
 
-  node.find('.modalsButtons').find(Button).at(0).simulate('click');
+  node.find('.rawDataButton').simulate('click');
 
   expect(node.find(RawDataModal)).toExist();
 });
@@ -121,7 +127,7 @@ it('should open diagram modal when button is clicked', () => {
   const node = shallow(<SingleReportDetails {...props} />);
   runLastEffect();
 
-  node.find('.modalsButtons').find(Button).at(1).simulate('click');
+  node.find('.definition').find(Button).simulate('click');
 
   expect(node.find(DiagramModal)).toExist();
 });

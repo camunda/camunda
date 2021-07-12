@@ -19,18 +19,27 @@ export default function DateFilter({
   setFilter,
   icon = 'filter',
   children,
-  resetTrigger,
   emptyText = t('common.select'),
   title,
 }) {
-  const [showDatePicker, setShowDatePicker] = useState(filter?.type === 'fixed');
+  const isFixed = filter?.type === 'fixed';
+
+  const [showDatePicker, setShowDatePicker] = useState(isFixed);
+  const [autoOpen, setAutoOpen] = useState(false);
 
   useEffect(() => {
-    setShowDatePicker(false);
-  }, [resetTrigger]);
+    setShowDatePicker(isFixed);
+    setAutoOpen(false);
+  }, [isFixed]);
 
   function setRelativeFilter(unit, past) {
-    setFilter({type: 'relative', start: {value: past ? 1 : 0, unit}, end: null});
+    setFilter({
+      type: 'relative',
+      start: {value: past ? 1 : 0, unit},
+      end: null,
+      excludeUndefined: false,
+      includeUndefined: false,
+    });
   }
 
   function isFilter(unit, past) {
@@ -38,7 +47,7 @@ export default function DateFilter({
   }
 
   function getFilterName(filter) {
-    if (!filter) {
+    if (!filter || filter?.type === 'fixed') {
       return emptyText;
     }
 
@@ -80,7 +89,7 @@ export default function DateFilter({
         {title}
         {children}
       </div>
-      {showDatePicker ? (
+      {showDatePicker && filter?.type !== 'relative' ? (
         <Popover
           title={
             <>
@@ -88,7 +97,7 @@ export default function DateFilter({
               {getFixedDateFilterName(filter)}
             </>
           }
-          autoOpen
+          autoOpen={autoOpen}
         >
           <DatePicker
             forceOpen
@@ -99,6 +108,8 @@ export default function DateFilter({
                   type: 'fixed',
                   start: format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                   end: format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  excludeUndefined: false,
+                  includeUndefined: false,
                 });
               }
             }}
@@ -127,6 +138,7 @@ export default function DateFilter({
             onClick={() => {
               setFilter();
               setShowDatePicker(true);
+              setAutoOpen(true);
             }}
           >
             {t('common.filter.dateModal.unit.fixed')}

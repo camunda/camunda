@@ -160,6 +160,23 @@ it('should forbid pie charts and heatmap for distributed userTask reports', () =
   expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
 });
 
+it('should forbid heatmap for multi-definition reports', () => {
+  const report = {
+    data: {
+      definitions: [{}, {}],
+      distributedBy: {type: 'none', value: null},
+      configuration: {aggregationTypes: ['avg'], userTaskDurationTimes: ['total']},
+    },
+  };
+  const view = {entity: 'userTask', properties: ['frequency']};
+  const groupBy = {type: 'userTasks', value: null};
+
+  expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
+  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
+  expect(isAllowed(report, view, groupBy, 'pie')).toBeTruthy();
+  expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
+});
+
 it('should find a selected option based on property', () => {
   expect(
     findSelectedOption(view, 'data', {properties: ['frequency'], entity: 'processInstance'})

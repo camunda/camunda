@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {Link} from 'react-router-dom';
+import classnames from 'classnames';
 
 import {Input, Icon, Tooltip} from 'components';
 
@@ -14,14 +15,14 @@ import ListItemAction from './ListItemAction';
 import './ListItem.scss';
 
 export default function ListItem({
+  isSelected,
+  onSelectionChange,
   data: {type, name, link, icon, meta = [], actions, warning},
   hasWarning,
   singleAction,
 }) {
   const content = (
     <>
-      {' '}
-      <Input type="checkbox" />
       <Icon type={icon} />
       <div className="name">
         <span className="type">{type}</span>
@@ -48,6 +49,14 @@ export default function ListItem({
   );
 
   return (
-    <li className="ListItem">{link ? <Link to={link}>{content}</Link> : <div>{content}</div>}</li>
+    <li
+      className={classnames('ListItem', {
+        active: isSelected,
+        selectable: actions?.length > 0,
+      })}
+    >
+      <Input type="checkbox" checked={isSelected} onChange={onSelectionChange} />
+      {link ? <Link to={link}>{content}</Link> : <div>{content}</div>}
+    </li>
   );
 }

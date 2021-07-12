@@ -118,13 +118,13 @@ public class MapResultAsserter {
 
     }
 
-    public MeasureAdder groupedByContains(String distributedByKey, Double result) {
-      measure.getData().add(new MapResultEntryDto(distributedByKey, result, distributedByKey));
+    public MeasureAdder groupedByContains(String groupByKey, Double result) {
+      measure.getData().add(new MapResultEntryDto(groupByKey, result, groupByKey));
       return this;
     }
 
-    public MeasureAdder groupedByContains(String distributedByKey, Double result, String label) {
-      measure.getData().add(new MapResultEntryDto(distributedByKey, result, label));
+    public MeasureAdder groupedByContains(String groupByKey, Double result, String label) {
+      measure.getData().add(new MapResultEntryDto(groupByKey, result, label));
       return this;
     }
 

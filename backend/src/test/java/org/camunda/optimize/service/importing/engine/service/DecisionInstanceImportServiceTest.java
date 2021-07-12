@@ -73,8 +73,12 @@ public class DecisionInstanceImportServiceTest {
           .tenantId("")
           .build()));
     this.underTest = new DecisionInstanceImportService(
-      elasticsearchImportJobExecutor, engineContext, decisionInstanceWriter,
-      decisionDefinitionResolverService, decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
+      elasticsearchImportJobExecutor,
+      engineContext,
+      decisionInstanceWriter,
+      decisionDefinitionResolverService,
+      decisionInputImportAdapterProvider,
+      decisionOutputImportAdapterProvider
     );
   }
 

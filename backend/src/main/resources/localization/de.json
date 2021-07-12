@@ -249,6 +249,9 @@
     "downloadCSV": "CSV herunterladen",
     "measure": "Maß",
     "addMeasure": "Maß hinzufügen",
+    "displayName": "Anzeigename",
+    "displayNamePlaceholder": "Optionalen Anzeigenamen hinzufügen",
+    "noSources": "Keine Datenquelle",
     "templates": {
       "blank": "Leerer Bericht",
       "heatmap": "Heatmap: Prozessknoten Anzahl",
@@ -361,8 +364,12 @@
       "evaluation": "Gesamtanzahl</br> Evaluierungen: <b>{count}</b>"
     },
     "definition": {
+      "add": "{type} hinzufügen",
+      "search": "Nach {type} suchen",
       "process": "Prozessdefinition",
-      "decision": "Entscheidungsdefinition"
+      "process-plural": "Prozessdefinitionen",
+      "decision": "Entscheidungsdefinition",
+      "decision-plural": "Entscheidungsdefinitionen"
     },
     "noDefinitionMessage": {
       "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
@@ -412,7 +419,8 @@
         "variable": "Var",
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar"
-      }
+      },
+      "pageError": "Nur die ersten 10.000 Instanzen können angezeigt werden"
     },
     "progressBar": {
       "invalid": "Ungültige Konfiguration",
@@ -456,14 +464,6 @@
         "total": "Summe"
       },
       "userTaskDistributedBy": "Aufteilung",
-      "visibleNodes": {
-        "legend": "Anzuzeigende Prozessknoten anpassen",
-        "btn": "Prozessknoten auswählen....",
-        "modal": {
-          "title": "Prozessknoten auswählen",
-          "description": "Ausgewählte Knoten erscheinen in der Visualisierung."
-        }
-      },
       "colorPicker": {
         "legend": "Farbe"
       },
@@ -709,6 +709,7 @@
     "close": "Schließen",
     "add": "Hinzufügen",
     "copy": "Kopieren",
+    "addACopy": "Kopie hinzufügen",
     "change": "Ändern",
     "export": "Exportieren",
     "importJSON": "JSON Importieren",
@@ -747,6 +748,14 @@
     "selected": "Ausgewählt",
     "documentation": "Dokumentation",
     "open": "Öffnen",
+    "process": {
+      "label": "Prozess",
+      "label-plural": "Prozesse"
+    },
+    "decision": {
+      "label": "Entscheidung",
+      "label-plural": "Entscheidungen"
+    },
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
@@ -776,6 +785,10 @@
       "label": "Benutzeraufgabe",
       "label-plural": "Benutzeraufgaben"
     },
+    "itemSelected": {
+      "label": "ausgewähltes Element",
+      "label-plural": "ausgewählte Elemente"
+    },
     "multiSelect": {
       "selectAll": "Alles in Ansicht auswählen",
       "available": "Verfügbare Elemente",
@@ -793,7 +806,8 @@
       "viewRawData": "Rohdaten",
       "viewModel": {
         "decision": "Entscheidungstabelle",
-        "process": "Prozessmodell"
+        "process": "Prozessmodell",
+        "model": "Modell"
       },
       "namePlaceholder": {
         "Report": "Berichtsname",
@@ -842,18 +856,57 @@
     },
     "filter": {
       "label": "Filter",
+      "definitionSelection": {
+        "allProcesses": "Alle enthaltenen Prozesse"
+      },
       "tooltip": {
         "instance": "Prozessinstanzfilter geben Daten von Prozessinstanzen zurück, die der Filteranforderung entsprechen. Wenn der Filter auf einem Prozessknoten basiert, zeigen die zurückgegebenen Daten alle Fälle an, in denen dieser Prozessknoten ausgelöst wurde.",
-        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten."
+        "view": "Prozessknoten-Filter geben nur Daten von Prozessknoten zurück, bei denen der Prozessknoten oder seine Eigenschaft den Filteranforderungen entsprechen. Am nützlichsten in Prozessknoten- und Benutzeraufgaben-Ansichten.",
+        "disabledView": "Berichte mit mehreren Definitionen unterstützen keine Prozessknoten-Daten Filter."
+      },
+      "state": {
+        "modalPretext": {
+          "instanceState": "Nur Instanzen mit diesem Status anzeigen:",
+          "incidentInstances": "Nur Instanzen anzeigen mit…",
+          "incident": "Nur Daten von Prozessknotenanzeigen mit…",
+          "flowNodeStatus": "Nur Prozessknoten mit diesem Status anzeigen:"
+        },
+        "instancesOnly": "Nur <b>{type}</b> Instanzen",
+        "flowNodesOnly": "Nur <b>{type}</b> Prozessknoten",
+        "incidents": "<b>{type}</b> Zwischenfälle",
+        "previewLabels": {
+          "runningInstancesOnly": "laufende",
+          "completedInstancesOnly": "abgeschlossene",
+          "canceledInstancesOnly": "abgebrochene",
+          "nonCanceledInstancesOnly": "nicht abgebrochene",
+          "suspendedInstancesOnly": "suspendierte",
+          "nonSuspendedInstancesOnly": "nicht suspendierte",
+          "runningFlowNodesOnly": "laufende",
+          "completedFlowNodesOnly": "abgeschlossene",
+          "canceledFlowNodesOnly": "abgebrochene",
+          "completedOrCanceledFlowNodesOnly": "abgeschlossene oder abgebrochene",
+          "includesOpenIncident": "Offene",
+          "includesResolvedIncident": "Gelöste",
+          "doesNotIncludeIncident": "Keine"
+        },
+        "modalLabels": {
+          "runningInstancesOnly": "Laufend",
+          "completedInstancesOnly": "Abgeschlossen",
+          "canceledInstancesOnly": "Abgebrochen",
+          "nonCanceledInstancesOnly": "Nicht Abgebrochen",
+          "suspendedInstancesOnly": "Suspendiert",
+          "nonSuspendedInstancesOnly": "Nicht Suspendiert",
+          "runningFlowNodesOnly": "Laufend",
+          "completedFlowNodesOnly": "Abgeschlossen",
+          "canceledFlowNodesOnly": "Abgebrochen",
+          "completedOrCanceledFlowNodesOnly": "Abgeschlossen oder Abgebrochen",
+          "includesOpenIncident": "Offenen Zwischenfällen",
+          "includesResolvedIncident": "Gelösten Zwischenfällen",
+          "doesNotIncludeIncident": "Keinen Zwischenfällen"
+        }
       },
       "types": {
         "instanceState": "Instanzstatus",
-        "runningInstancesOnly": "Nur laufende Instanzen",
-        "completedInstancesOnly": "Nur abgeschlossene Instanzen",
-        "canceledInstancesOnly": "Nur abgebrochene Instanzen",
-        "nonCanceledInstancesOnly": "Nur nicht abgebrochene Instanzen",
-        "suspendedInstancesOnly": "Nur suspendierte Instanzen",
-        "nonSuspendedInstancesOnly": "Nur nicht suspendierte Instanzen",
         "date": "Datum",
         "assignee": "Bearbeiter",
         "candidateGroup": "Potenzielle Gruppe",
@@ -869,18 +922,16 @@
         "inputVariable": "Eingangsvariable",
         "outputVariable": "Ausgabevariable",
         "incident": "Zwischenfälle",
-        "includesOpenIncident": "mit offenen Zwischenfällen",
-        "includesResolvedIncident": "mit gelösten Zwischenfällen",
-        "openIncident": "Offene Zwischenfälle",
-        "resolvedIncident": "Gelöste Zwischenfälle",
-        "doesNotIncludeIncident": "ohne Zwischenfälle",
+        "processIncident": "Prozessinstanzzwischenfall",
+        "viewIncident": "Prozessknotenzwischenfälle",
+        "openIncident": "mit offenen Zwischenfällen",
+        "resolvedIncident": "mit gelösten Zwischenfällen",
         "flowNodeStatus": "Prozessknoten-Status",
-        "runningFlowNodesOnly": "Nur laufende Prozessknoten",
-        "completedFlowNodesOnly": "Nur abgeschlossene Prozessknoten",
-        "canceledFlowNodesOnly": "Nur abgebrochene Prozessknoten",
-        "completedOrCanceledFlowNodesOnly": "Nur abgeschlossene oder abgebrochene Prozessknoten"
+        "flowNodeSelection": "Prozessknotenauswahl"
       },
       "list": {
+        "appliedTo": "Angewendet auf",
+        "invalidDefinition": "Datenquelle hat keine Versions- oder Mandantenselektion.",
         "operators": {
           "isBetween": "liegt zwischen",
           "between": "zwischen",
@@ -1005,12 +1056,15 @@
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "instanceFilter": "Prozessinstanzen Filter",
       "decisionFilter": "Entscheidungsevaluierungen Filter",
-      "flowNodeFilter": "Prozessknoten-Daten Filter"
+      "flowNodeFilter": "Prozessknoten-Daten Filter",
+      "excludedFlowNodes": "Ausgeschlossene Prozessknoten"
     },
     "definitionSelection": {
       "latest": "Neueste",
       "multiple": "Mehrere",
       "noDefinition": "Keine Definitionen gefunden",
+      "limitReached": "Prozessdefinitionsgrenze erreicht. Nur zehn Prozesse erlaubt.",
+      "viewLevelWarning": "Berichte mit mehreren Definitionen unterstützen keine Prozessknoten-Daten Filter. Existierende Prozessknoten-Daten Filter werden entfernt.",
       "select": {
         "process": "Prozess auswählen",
         "decision": "Entscheidung auswählen"
@@ -1042,7 +1096,8 @@
         "collection": "Sammlung",
         "process": "Prozess",
         "processEvents": "Prozessevents",
-        "ingestedEvents": "Events"
+        "ingestedEvents": "Events",
+        "items": "Elemente"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -1063,9 +1118,14 @@
           "combined_report": "Der Bericht wird aus diesen kombinierten Berichten entfernt:",
           "dashboard": "Der Bericht wird aus diesen Dashboards entfernt:",
           "alert": "Diese Alarme werden gelöscht:"
+        },
+        "bulk": {
+          "report": "Alle ausgewählten Berichte werden von zugehörigen Dashboards und kombinierten Berichten entfernt und ihre Alarme werden gelöscht.",
+          "process": "Das Entfernen von Datenquellen löscht alle zugehörigen Berichte und deren Alarme."
         }
       },
-      "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"
+      "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?",
+      "areYouSureSelected": "Sind Sie sicher, dass Sie die ausgewählten Elemente löschen möchten?"
     },
     "unit": {
       "automatic": "Automatisch",

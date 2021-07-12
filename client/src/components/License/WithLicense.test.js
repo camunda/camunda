@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {addHandler} from 'request';
 
 import WithLicense from './WithLicense';
+import License from './License';
 
 jest.mock('react', () => ({...jest.requireActual('react'), useEffect: (fn) => fn()}));
 
@@ -39,5 +40,5 @@ it('should should instead render the License page if a response has a 403 status
   const content = node.renderProp('render')();
 
   expect(content).not.toIncludeText('child content');
-  expect(content.find('License')).toExist();
+  expect(content.find(License)).toExist();
 });

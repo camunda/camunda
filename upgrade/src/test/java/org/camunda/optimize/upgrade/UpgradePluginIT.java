@@ -8,9 +8,12 @@ package org.camunda.optimize.upgrade;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.model.Header;
+import org.mockserver.model.NottableString;
 import org.mockserver.verify.VerificationTimes;
 
 import java.util.Arrays;
@@ -31,6 +34,8 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     setUpUpgradeDependenciesWithConfiguration(configurationService);
+    // clear all mock recordings that happen during setup
+    esMockServer.clear(request());
 
     // given
     performUpgrade();
@@ -39,6 +44,10 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     esMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer fixedToken")),
       VerificationTimes.atLeast(2)
+    );
+    // ensure there was no request without the header
+    esMockServer.verify(
+      request().withHeader(NottableString.not("Authorization")), VerificationTimes.exactly(0)
     );
   }
 
@@ -94,7 +103,11 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
         .toVersion(INTERMEDIATE_VERSION)
         .addUpgradeSteps(ImmutableList.of(
           new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1),
-          buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1)
+          buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1),
+          buildUpdateTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1),
+          new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2),
+          buildDeleteTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2),
+          new DeleteIndexIfExistsStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)
         ))
         .build()
     );

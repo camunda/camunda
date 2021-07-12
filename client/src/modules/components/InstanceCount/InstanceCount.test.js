@@ -9,14 +9,13 @@ import {shallow} from 'enzyme';
 
 import update from 'immutability-helper';
 
-import {getFlowNodeNames, loadVariables, loadInputVariables, loadOutputVariables} from 'services';
+import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 
 import {InstanceCount} from './InstanceCount';
 
 jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
-    getFlowNodeNames: jest.fn().mockReturnValue({nodeA: 'Flow Node A'}),
     loadInputVariables: jest
       .fn()
       .mockReturnValue([{id: 'input1', name: 'Input 1', type: 'String'}]),
@@ -28,7 +27,6 @@ jest.mock('services', () => {
 });
 
 beforeEach(() => {
-  getFlowNodeNames.mockClear();
   loadInputVariables.mockClear();
   loadOutputVariables.mockClear();
   loadVariables.mockClear();
@@ -120,15 +118,6 @@ it('should disable the popover if the noInfo prop is set', () => {
   expect(node.find('Popover').prop('disabled')).toBe(true);
 });
 
-it('should load flow node names for process reports', () => {
-  const node = shallow(<InstanceCount {...props} />);
-
-  node.find('span').first().simulate('click');
-
-  expect(getFlowNodeNames).toHaveBeenCalledWith('aKey', '1', 'tenantId');
-  expect(node.find('FilterList').prop('flowNodeNames')).toEqual({nodeA: 'Flow Node A'});
-});
-
 it('should load variable names for process reports', async () => {
   const node = shallow(<InstanceCount {...props} />);
 
@@ -146,6 +135,18 @@ it('should load variable names for process reports', async () => {
 
   expect(loadVariables).toHaveBeenCalledWith(payload);
   expect(node.find('FilterList').prop('variables')).toEqual([{name: 'variable1', type: 'String'}]);
+});
+
+it('should not load variables if definition is incomplete', async () => {
+  const node = shallow(
+    <InstanceCount {...props} report={update(props.report, {data: {definitions: {$set: []}}})} />
+  );
+
+  node.find('span').first().simulate('click');
+
+  await flushPromises();
+
+  expect(loadVariables).not.toHaveBeenCalled();
 });
 
 it('should load variable names for decision reports', async () => {
@@ -177,18 +178,16 @@ it('should load variable names for decision reports', async () => {
   expect(node.find('FilterList').prop('variables')).toMatchSnapshot();
 });
 
-it('should not load data twice', () => {
-  const node = shallow(<InstanceCount {...props} />);
-
-  node.find('span').first().simulate('click');
-  node.find('span').first().simulate('click');
-
-  expect(getFlowNodeNames).toHaveBeenCalledTimes(1);
-});
-
 it('should substitute the popover title with an icon if requested', () => {
   const node = shallow(<InstanceCount {...props} useIcon="someIcon" />);
 
   expect(node.find('Popover').prop('title')).toBe(false);
   expect(node.find('Popover').prop('icon')).toBe('someIcon');
+});
+
+it('should show instance count and filter list headings if showHeader prop is added', () => {
+  const node = shallow(<InstanceCount {...props} showHeader />);
+
+  expect(node.find('Popover .countString')).toExist();
+  expect(node.find('.filterListHeading')).toExist();
 });

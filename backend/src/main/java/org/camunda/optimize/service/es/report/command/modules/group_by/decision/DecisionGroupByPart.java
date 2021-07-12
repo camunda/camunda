@@ -8,13 +8,12 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.decision
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
-
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 
 public abstract class DecisionGroupByPart extends GroupByPart<DecisionReportDataDto> {
 
   @Override
-  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
-    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
+  protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
+    return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
   }
 }

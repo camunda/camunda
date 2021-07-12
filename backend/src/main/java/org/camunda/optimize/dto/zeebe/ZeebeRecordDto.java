@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.zeebe;
 
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -21,11 +22,11 @@ import lombok.experimental.FieldNameConstants;
 @Setter
 @FieldNameConstants
 @NoArgsConstructor
-public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent> {
+public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent> implements Record<VALUE> {
 
   private long position;
   private long sourceRecordPosition;
-  private String key;
+  private long key;
   private long timestamp;
   private int partitionId;
   private RecordType recordType;
@@ -35,5 +36,15 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   private ValueType valueType;
   private VALUE value;
   private INTENT intent;
+
+  @Override
+  public Record<VALUE> clone() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
 
 }

@@ -1,82 +1,72 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should disable editing and pass a warning to the filter item if at least one flow node does not exist 1`] = `
-<ul
-  className="FilterList"
+<li
+  className="listItem"
 >
-  <li
-    className="listItem"
-    key="0"
+  <ActionItem
+    onClick={[Function]}
+    type="Decision Instance Filter"
+    warning="Flow Node(s) does not exist"
   >
-    <ActionItem
-      onClick={[Function]}
-      type="Decision Instance Filter"
-      warning="Flow Node(s) does not exist"
-    >
-      <NodeListPreview
-        nodes={
-          Array [
-            Object {
-              "id": "flowNodeThatDoesNotExist",
-              "name": undefined,
-            },
-          ]
-        }
-        operator="in"
-        type="executedFlowNodes"
-      />
-    </ActionItem>
-  </li>
-</ul>
+    <NodeListPreview
+      nodes={
+        Array [
+          Object {
+            "id": "flowNodeThatDoesNotExist",
+            "name": undefined,
+          },
+        ]
+      }
+      operator="in"
+      type="executedFlowNodes"
+    />
+  </ActionItem>
+</li>
 `;
 
 exports[`should disable editing and pass a warning to the filter item if at least one flow node does not exist 2`] = `
-<ul
-  className="FilterList"
+<li
+  className="listItem"
 >
-  <li
-    className="listItem"
-    key="0"
+  <ActionItem
+    onClick={[Function]}
+    type="Decision Instance Filter"
+    warning="Flow Node(s) does not exist"
   >
-    <ActionItem
-      onClick={[Function]}
-      type="Decision Instance Filter"
-      warning="Flow Node(s) does not exist"
+    <span
+      className="parameterName"
     >
-      <span
-        className="parameterName"
-      >
-        Flow Node Duration
-      </span>
-      <span
-        className="filterText"
+      Flow Node Duration
+    </span>
+    <span
+      className="filterText"
+    >
+      <div
+        className="filterValues"
       >
         <div
-          className="filterValues"
+          className="flowNode"
+          key="flowNodeThatDoesNotExist"
         >
-          <div
-            className="flowNode"
-            key="flowNodeThatDoesNotExist"
-          >
-            <b>
-              flowNodeThatDoesNotExist
-            </b>
-            <span>
-               
-              is less than
-               
-            </span>
-            <b>
-              18
-               
-              hours
-            </b>
-          </div>
+          <b>
+            flowNodeThatDoesNotExist
+          </b>
+          <span>
+             
+            is less than
+             
+          </span>
+          <b>
+            18
+             
+            hours
+          </b>
         </div>
-      </span>
-    </ActionItem>
-  </li>
-</ul>
+      </div>
+    </span>
+  </ActionItem>
+</li>
 `;
 
 exports[`should disable editing and pass a warning to variablePreview if variable does not exist 1`] = `
@@ -110,52 +100,46 @@ exports[`should disable editing and pass a warning to variablePreview if variabl
 `;
 
 exports[`should display a flow node duration filter 1`] = `
-<ul
-  className="FilterList"
+<li
+  className="listItem"
 >
-  <li
-    className="listItem"
-    key="0"
+  <ActionItem
+    onClick={[Function]}
+    type="Decision Instance Filter"
   >
-    <ActionItem
-      onClick={[Function]}
-      type="Decision Instance Filter"
-      warning={false}
+    <span
+      className="parameterName"
     >
-      <span
-        className="parameterName"
-      >
-        Flow Node Duration
-      </span>
-      <span
-        className="filterText"
+      Flow Node Duration
+    </span>
+    <span
+      className="filterText"
+    >
+      <div
+        className="filterValues"
       >
         <div
-          className="filterValues"
+          className="flowNode"
+          key="a"
         >
-          <div
-            className="flowNode"
-            key="a"
-          >
-            <b>
-              flow node name
-            </b>
-            <span>
-               
-              is less than
-               
-            </span>
-            <b>
-              18
-               
-              hours
-            </b>
-          </div>
+          <b>
+            flow node name
+          </b>
+          <span>
+             
+            is less than
+             
+          </span>
+          <b>
+            18
+             
+            hours
+          </b>
         </div>
-      </span>
-    </ActionItem>
-  </li>
-</ul>
+      </div>
+    </span>
+  </ActionItem>
+</li>
 `;
 
 exports[`should display date preview if the filter is a date filter 1`] = `

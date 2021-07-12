@@ -14,15 +14,8 @@ import {convertFilterToState} from './service';
 import './DateFilterPreview.scss';
 
 export default function DateFilterPreview({filter, filterType, variableName}) {
-  const {
-    type,
-    unit,
-    customNum,
-    startDate,
-    endDate,
-    includeUndefined,
-    excludeUndefined,
-  } = convertFilterToState(filter);
+  const {type, unit, customNum, startDate, endDate, includeUndefined, excludeUndefined} =
+    convertFilterToState(filter);
 
   const bolden = (text) => <b>{text}</b>;
 

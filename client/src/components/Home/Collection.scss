@@ -114,7 +114,7 @@
     flex: 1;
   }
 
-  .hidden {
+  > input.hidden {
     display: none;
   }
 }

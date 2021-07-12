@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
+@FieldNameConstants
 public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
   @JsonUnwrapped
   private ReportDefinitionDto definitionDto;

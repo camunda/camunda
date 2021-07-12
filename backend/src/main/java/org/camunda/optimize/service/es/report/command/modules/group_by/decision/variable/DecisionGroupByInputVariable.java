@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
 import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
 import org.camunda.optimize.service.util.DecisionVariableHelper;
+import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -22,7 +23,6 @@ import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -67,8 +67,8 @@ public class DecisionGroupByInputVariable extends AbstractGroupByVariable<Decisi
   }
 
   @Override
-  protected String getIndexName(final ExecutionContext<DecisionReportDataDto> context) {
-    return getDecisionInstanceIndexAliasName(context.getReportData().getDecisionDefinitionKey());
+  protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
+    return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
   }
 
   @Override

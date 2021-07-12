@@ -47,8 +47,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
 
 public class ProcessReportDataBuilderHelper {
-  private List<ReportDataDefinitionDto> definitions =
-    Collections.singletonList(ReportDataDefinitionDto.builder().build());
+  private List<ReportDataDefinitionDto> definitions = Collections.singletonList(new ReportDataDefinitionDto());
 
   private ProcessViewEntity viewEntity = null;
   private ViewProperty viewProperty = ViewProperty.RAW_DATA;

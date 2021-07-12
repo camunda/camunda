@@ -14,6 +14,7 @@ import {ReactComponent as minus} from './minus.svg';
 import {ReactComponent as diagramReset} from './diagram-reset.svg';
 import {ReactComponent as share} from './share.svg';
 import {ReactComponent as edit} from './edit.svg';
+import {ReactComponent as editSmall} from './edit-small.svg';
 import {ReactComponent as close} from './close.svg';
 import {ReactComponent as stop} from './stop.svg';
 import {ReactComponent as link} from './link.svg';
@@ -22,6 +23,7 @@ import {ReactComponent as save} from './save.svg';
 import {ReactComponent as contextMenu} from './context-menu.svg';
 import {ReactComponent as openInCockpit} from './open-in-cockpit.svg';
 import {ReactComponent as copyDocument} from './copy-document.svg';
+import {ReactComponent as copySmall} from './copy-small.svg';
 import {ReactComponent as checkSmall} from './check-small.svg';
 import {ReactComponent as left} from './left.svg';
 import {ReactComponent as up} from './up.svg';
@@ -72,6 +74,7 @@ const icons = {
   'diagram-reset': diagramReset,
   share,
   edit,
+  'edit-small': editSmall,
   close,
   stop,
   link,
@@ -80,6 +83,7 @@ const icons = {
   'context-menu': contextMenu,
   'open-in-cockpit': openInCockpit,
   'copy-document': copyDocument,
+  'copy-small': copySmall,
   'check-small': checkSmall,
   left,
   up,

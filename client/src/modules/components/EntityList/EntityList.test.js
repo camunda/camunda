@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
@@ -19,6 +19,7 @@ const props = {
   action: <button>Click Me</button>,
   data: [
     {
+      id: 'aCollectionId',
       name: 'aCollectionName',
       meta: ['Some info', 'Some additional info', 'Some other info'],
       icon: 'iconType',
@@ -26,12 +27,14 @@ const props = {
       actions: [{icon: 'edit', text: 'Edit', action: jest.fn()}],
     },
     {
+      id: 'aDashboardId',
       name: 'aDashboard',
       meta: ['Some info', 'Some additional info', 'Some other info'],
       icon: 'iconType',
       type: 'Dashboard',
     },
     {
+      id: 'aReportId',
       name: 'aReport',
       meta: ['Some info', 'Some additional info', 'Some other info', 'special info'],
       icon: 'iconType',
@@ -104,14 +107,14 @@ it('should have a sorting menu if at least one column is sortable', () => {
   expect(node.find('.sortMenu')).toExist();
 });
 
-it('should always call onsorting change with default order from the sorting menu', () => {
+it('should always call onChange with default order from the sorting menu', () => {
   const spy = jest.fn();
   const node = shallow(
     <EntityList
       {...props}
       columns={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']}
       sorting={{key: 'name', order: 'asc'}}
-      onSortingChange={spy}
+      onChange={spy}
     />
   );
 
@@ -160,13 +163,13 @@ it('should indicate which column is sorted', () => {
   expect(node.find('.columnHeaders div').at(2)).toHaveClassName('sorted');
 });
 
-it('should call onSortingChange when clicking on the header column', () => {
+it('should call onChange when clicking on the header column', () => {
   const spy = jest.fn();
   const node = shallow(
     <EntityList
       {...props}
       columns={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
-      onSortingChange={spy}
+      onChange={spy}
     />
   );
 
@@ -182,11 +185,107 @@ it('should reverse the order when clicking on a header column that is already so
       {...props}
       columns={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
       sorting={{key: 'sortKey', order: 'asc'}}
-      onSortingChange={spy}
+      onChange={spy}
     />
   );
 
   node.find('.columnHeaders span').simulate('click');
 
   expect(spy).toHaveBeenCalledWith('sortKey', 'desc');
+});
+
+it('should select and deselect a list item', () => {
+  const node = shallow(<EntityList {...props} />);
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: true}});
+
+  expect(node.find({isSelected: true})).toExist();
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: false}});
+
+  expect(node.find({isSelected: true})).not.toExist();
+});
+
+it('should select/deselect all selectable events in view', () => {
+  const customProps = {
+    ...props,
+    data: [
+      props.data[0],
+      {...props.data[1], actions: [{icon: 'delete', text: 'Delete'}]},
+      props.data[2],
+    ],
+  };
+
+  const node = shallow(<EntityList {...customProps} columns={['Name']} />);
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: true}});
+
+  expect(node.find({isSelected: true}).length).toBe(2);
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: false}});
+
+  expect(node.find({isSelected: true})).not.toExist();
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: true}});
+
+  node.find('SearchField').simulate('change', 'adashboard');
+
+  expect(node.find('.columnHeaders').find({type: 'checkbox'}).prop('checked')).toBe(false);
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: true}});
+
+  node.find('SearchField').simulate('change', '');
+
+  expect(node.find({isSelected: true}).length).toBe(2);
+
+  node.find('SearchField').simulate('change', 'aCollectionName');
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: false}});
+
+  node.find('SearchField').simulate('change', '');
+
+  expect(node.find({isSelected: true}).length).toBe(1);
+});
+
+it('should should reset the selection on data change', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={[
+        'Name',
+        {name: 'sortable', key: 'sortKey', defaultOrder: 'asc'},
+        {name: 'Another Column', key: 'sortKey2', defaultOrder: 'desc'},
+      ]}
+    />
+  );
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: true}});
+
+  runLastEffect();
+
+  expect(node.find({isSelected: true})).not.toExist();
 });

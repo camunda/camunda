@@ -22,16 +22,19 @@ import org.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroup
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.es.reader.AssigneeAndCandidateGroupsReader;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +56,7 @@ public class AssigneeCandidateGroupService {
   private static final IdentityType[] CANDIDATE_GROUP_IDENTITY_TYPES = {IdentityType.GROUP};
   private static final String PROCESS_DEFINITION_KEY = "process definition key";
 
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
   private final UserTaskIdentityCacheService identityCacheService;
   private final ReportService reportService;
@@ -191,15 +194,19 @@ public class AssigneeCandidateGroupService {
       reports.stream()
         .filter(CombinedReportDefinitionRequestDto.class::isInstance)
         .map(CombinedReportDefinitionRequestDto.class::cast)
-        .flatMap(report ->
-                   reportService.getAllAuthorizedReportsForIds(userId, report.getData().getReportIds()).stream())
+        .flatMap(report -> reportService
+          .getAllAuthorizedReportsForIds(userId, report.getData().getReportIds()).stream()
+        )
         .collect(Collectors.toList()));
     return reports.stream()
       .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
       .map(SingleProcessReportDefinitionRequestDto.class::cast)
+      .map(ReportDefinitionDto::getData)
+      .map(SingleReportDataDto::getDefinitions)
+      .flatMap(Collection::stream)
       .collect(toMap(
-        r -> r.getData().getProcessDefinitionKey(),
-        r -> Sets.newHashSet(r.getData().getTenantIds()),
+        ReportDataDefinitionDto::getKey,
+        definition -> new HashSet<>(definition.getTenantIds()),
         (u, v) -> {
           u.addAll(v);
           return u;

@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.OpenIncidentElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.util.List;
 
@@ -20,10 +21,15 @@ public class OpenIncidentImportService extends AbstractIncidentImportService {
 
   private final OpenIncidentWriter openIncidentWriter;
 
-  public OpenIncidentImportService(OpenIncidentWriter openIncidentWriter,
-                                   ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                   EngineContext engineContext) {
-    super(elasticsearchImportJobExecutor, engineContext);
+  public OpenIncidentImportService(final OpenIncidentWriter openIncidentWriter,
+                                   final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                   final EngineContext engineContext,
+                                   final ProcessDefinitionResolverService processDefinitionResolverService) {
+    super(
+      elasticsearchImportJobExecutor,
+      engineContext,
+      processDefinitionResolverService
+    );
     this.openIncidentWriter = openIncidentWriter;
   }
 

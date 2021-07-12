@@ -43,6 +43,7 @@ public class CsvExportServiceTest {
   @BeforeEach
   public void init() {
     when(configurationService.getExportCsvLimit()).thenReturn(100);
+    when(configurationService.getExportCsvDelimiter()).thenReturn(',');
   }
 
   @Test

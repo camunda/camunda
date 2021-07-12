@@ -5,20 +5,23 @@
  */
 
 import {formatters} from 'services';
+import {ColorPicker} from 'components';
 
-import {getCombinedChartProps} from './service';
 import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
+import {getAxisIdx, getLabel} from '../service';
+import {getCombinedChartProps} from './service';
 
 export default function createCombinedChartData(props) {
   const {
-    labels,
-    unitedResults,
-    reportsNames,
-    reportColors,
-    targetValue,
-    isDark,
-    visualization,
-  } = extractCombinedData(props);
+    report: {result},
+  } = props;
+
+  if (result.measures) {
+    return createMultiMeasureChartData(props);
+  }
+
+  const {labels, unitedResults, reportsNames, reportColors, targetValue, isDark, visualization} =
+    extractCombinedData(props);
 
   const datasets = unitedResults.map((report, index) => {
     return {
@@ -38,12 +41,62 @@ export default function createCombinedChartData(props) {
   return {labels, datasets};
 }
 
-export function extractCombinedData({report, theme, targetValue}) {
+function createMultiMeasureChartData(props) {
+  const {
+    report: {
+      result: {measures},
+    },
+  } = props;
+
+  let labels = [];
+  const datasets = [];
+  const colors = ColorPicker.getGeneratedColors(measures.length * measures[0].data[0].value.length);
+
+  measures.forEach((measure, idx) => {
+    const {
+      labels: measureLabels,
+      unitedResults,
+      reportsNames,
+      targetValue,
+      isDark,
+      visualization,
+    } = extractCombinedData(props, idx);
+
+    unitedResults.forEach((report, index) => {
+      datasets.push({
+        yAxisID: 'axis-' + getAxisIdx(measures, idx),
+        label:
+          reportsNames &&
+          reportsNames[index] + (measures.length > 1 ? ' - ' + getLabel(measure) : ''),
+        data: report.map(({value}) => value),
+        formatter: formatters[measure.property],
+        ...createDatasetOptions({
+          type: visualization,
+          data: report,
+          targetValue,
+          datasetColor: colors[idx * unitedResults.length + index],
+          isStriped: true,
+          isDark,
+        }),
+      });
+    });
+
+    labels = measureLabels;
+  });
+
+  return {labels, datasets};
+}
+
+export function extractCombinedData({report, theme, targetValue}, measureIdx = 0) {
   const {result, data: combinedReportData} = report;
 
   const data = {...Object.values(result.data)[0].data, ...combinedReportData};
 
-  const {reportsNames, resultArr, reportColors} = getCombinedChartProps(result.data, data);
+  const {reportsNames, resultArr, reportColors} = getCombinedChartProps(
+    result.data,
+    data,
+    measureIdx
+  );
 
   const isDark = theme === 'dark';
   const labelsMap = {};

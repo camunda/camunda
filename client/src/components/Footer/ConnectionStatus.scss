@@ -1,0 +1,39 @@
+.ConnectionStatus {
+  .error {
+    font-size: 0.7em;
+  }
+
+  .status {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    .statusItem {
+      display: inline-block;
+      margin-right: 10px;
+      white-space: nowrap;
+
+      &:before {
+        content: '';
+        display: inline-block;
+        width: 0.65em;
+        height: 0.65em;
+        border-radius: 100%;
+        margin-right: 4px;
+        background-color: var(--red-darken-38);
+      }
+
+      &.is-connected:before {
+        background-color: var(--green-base-44);
+      }
+
+      &.is-in-progress:before {
+        width: 0.8em;
+        height: 0.8em;
+        background-size: cover;
+        background-color: var(--white);
+        background-image: url(./loading.svg);
+      }
+    }
+  }
+}

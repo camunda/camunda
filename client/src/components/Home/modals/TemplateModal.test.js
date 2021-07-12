@@ -66,6 +66,7 @@ it('should include the selected parameters in the link state when creating a rep
     versions: ['1'],
     tenantIds: [null],
     name: 'Process Definition Name',
+    identifier: 'definition',
   });
 
   runLastEffect();

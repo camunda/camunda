@@ -325,8 +325,7 @@ public class ConfigurationValidatorTest {
 
   private UIConfiguration createUIConfiguration(final String pathToLogoIcon) {
     HeaderCustomization headerCustomization = new HeaderCustomization();
-    headerCustomization.setPathToLogoIcon(
-      pathToLogoIcon);
+    headerCustomization.setPathToLogoIcon(pathToLogoIcon);
     headerCustomization.setBackgroundColor("#FFFFFF");
     UIConfiguration uiConfiguration = new UIConfiguration();
     uiConfiguration.setHeader(headerCustomization);

@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -16,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportIte
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
@@ -48,8 +48,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class ProcessReportImportIT extends AbstractExportImportIT {
@@ -401,10 +399,29 @@ public class ProcessReportImportIT extends AbstractExportImportIT {
     final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
 
     // when
-    final Response response = importClient.importEntityIntoCollection(
-      collectionId,
-      exportedReportDto
-    );
+    final Response response = importClient.importEntityIntoCollection(collectionId, exportedReportDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+  }
+
+  @Test
+  public void importReportIntoCollection_multiDefinitionPartiallyMissingScope() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    createAndSaveDefinition(key1, DefinitionType.PROCESS, null);
+    createAndSaveDefinition(key2, DefinitionType.PROCESS, null);
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.addScopeEntryToCollection(collectionId, new CollectionScopeEntryDto(DefinitionType.PROCESS, key1));
+
+    final SingleProcessReportDefinitionExportDto exportedReportDto = createSimpleProcessExportDto();
+    exportedReportDto.getData().setDefinitions(List.of(
+      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
+    ));
+
+    // when
+    final Response response = importClient.importEntityIntoCollection(collectionId, exportedReportDto);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());

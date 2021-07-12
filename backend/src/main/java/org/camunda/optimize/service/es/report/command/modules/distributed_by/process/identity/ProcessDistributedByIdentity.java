@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
 import org.camunda.optimize.service.DefinitionService;
@@ -32,11 +33,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
+import static org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil.createInclusiveFlowNodeIdFilterQuery;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
@@ -63,23 +65,26 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     viewPart.createAggregations(context).forEach(identityTermsAggregation::subAggregation);
     return Collections.singletonList(
       AggregationBuilders.filter(
+        // it's possible to do report evaluations over several definitions versions. However, only the most recent
+        // one is used to decide which user tasks should be taken into account. To make sure that we only fetch
+        // assignees related to this definition version we filter for userTasks that only occur in the latest version.
         FILTERED_USER_TASKS_AGGREGATION,
-        createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+        createInclusiveFlowNodeIdFilterQuery(context.getReportData(), getUserTaskIds(context.getReportData()))
       ).subAggregation(identityTermsAggregation)
     );
   }
 
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
-      .map(Map::keySet)
-      .orElse(Collections.emptySet());
+    return definitionService.extractUserTaskIdAndNames(
+      reportData.getDefinitions().stream()
+        .map(definitionDto -> definitionService.getDefinition(
+          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    ).keySet();
   }
 
   protected abstract String getIdentityField();
@@ -98,10 +103,19 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
     List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
 
     for (Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
-      final CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
+      CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
         response, identityBucket.getAggregations(), context
       );
+
       final String key = identityBucket.getKeyAsString();
+      if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
+        for (CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
+          if (viewMeasure.getAggregationType() == AggregationType.SUM && (viewMeasure.getValue() != null && viewMeasure.getValue() == 0)) {
+            viewMeasure.setValue(null);
+          }
+        }
+      }
+
       distributedByIdentity.add(createDistributedByResult(key, resolveIdentityName(key), viewResult));
     }
 

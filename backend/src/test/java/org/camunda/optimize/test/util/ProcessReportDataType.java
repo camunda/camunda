@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public enum ProcessReportDataType {
 
   RAW_DATA,
-
+  
   PROC_INST_DUR_GROUP_BY_NONE,
   PROC_INST_DUR_GROUP_BY_NONE_WITH_PART,
   PROC_INST_DUR_GROUP_BY_START_DATE,

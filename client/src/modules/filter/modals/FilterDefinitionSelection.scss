@@ -1,0 +1,21 @@
+.FilterDefinitionSelection {
+  padding-bottom: 20px;
+  border-bottom: solid 1px var(--silver-darken-87);
+  margin-bottom: 20px;
+
+  .Labeled .label.before {
+    font-size: 14px;
+  }
+
+  .MultiSelect .Tag {
+    font-size: 12px;
+
+    .tagText {
+      padding-top: 2px;
+    }
+
+    svg {
+      vertical-align: middle;
+    }
+  }
+}

@@ -14,28 +14,21 @@ import {loadProcessDefinitionXml, loadDecisionDefinitionXml} from 'services';
 
 import './DiagramModal.scss';
 
-export function DiagramModal({name, report, close, mightFail}) {
-  const {
-    reportType,
-    data: {
-      definitions: [{key}],
-    },
-  } = report;
-
+export function DiagramModal({definition, type, close, mightFail}) {
   const [xml, setXml] = useState(null);
 
   useEffect(() => {
-    mightFail(report.data.configuration?.xml ?? loadXML(report), setXml, showError);
-  }, [mightFail, report]);
+    mightFail(loadXML(type, definition), setXml, showError);
+  }, [mightFail, definition, type]);
 
   return (
     <Modal className="DiagramModal" open size="max" onClose={close}>
-      <Modal.Header>{name}</Modal.Header>
+      <Modal.Header>{definition.name || definition.key}</Modal.Header>
       <Modal.Content>
         {!xml && <LoadingIndicator />}
 
-        {reportType === 'decision' ? (
-          <DMNDiagram xml={xml} decisionDefinitionKey={key} />
+        {type === 'decision' ? (
+          <DMNDiagram xml={xml} decisionDefinitionKey={definition.key} />
         ) : (
           <BPMNDiagram xml={xml} />
         )}
@@ -51,12 +44,12 @@ export function DiagramModal({name, report, close, mightFail}) {
 
 export default withErrorHandling(DiagramModal);
 
-function loadXML({reportType, data}) {
+function loadXML(reportType, definition) {
   if (reportType === 'decision') {
-    const {key, versions, tenantIds} = data.definitions[0];
+    const {key, versions, tenantIds} = definition;
     return loadDecisionDefinitionXml(key, versions[0], tenantIds[0]);
   } else {
-    const {key, versions, tenantIds} = data.definitions[0];
+    const {key, versions, tenantIds} = definition;
     return loadProcessDefinitionXml(key, versions[0], tenantIds[0]);
   }
 }

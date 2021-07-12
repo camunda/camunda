@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createDatasetOptions} from './createDefaultChartOptions';
 import {formatters, processResult} from 'services';
-import {t} from 'translation';
+
+import {getAxisIdx, getLabel} from '../service';
+import {createDatasetOptions} from './createDefaultChartOptions';
 
 const {formatReportResult} = formatters;
 
@@ -15,26 +16,7 @@ export default function createDefaultChartData(props) {
   let labels = [];
 
   const {result} = props.report;
-
   const measures = result.measures;
-
-  function getAxisIdx({property}) {
-    if (measures.every(({property}) => property === measures[0].property)) {
-      // if every measure has the same prop, there is only one axis
-      return 0;
-    }
-    return property === 'frequency' ? 0 : 1;
-  }
-
-  function getLabel({property, aggregationType, userTaskDurationTime}) {
-    return (
-      (userTaskDurationTime
-        ? `${t('report.config.userTaskDuration.' + userTaskDurationTime)} `
-        : '') +
-      t('report.view.' + (property === 'frequency' ? 'count' : 'duration')) +
-      (aggregationType ? ` - ${t('report.config.aggregationShort.' + aggregationType)}` : '')
-    );
-  }
 
   measures.forEach((measure, idx) => {
     const {
@@ -47,7 +29,7 @@ export default function createDefaultChartData(props) {
     } = extractDefaultChartData(props, idx);
 
     datasets.push({
-      yAxisID: 'axis-' + getAxisIdx(measure),
+      yAxisID: 'axis-' + getAxisIdx(measures, idx),
       label: getLabel(measure),
       data: formattedResult.map(({value}) => value),
       formatter: formatters[measure.property],

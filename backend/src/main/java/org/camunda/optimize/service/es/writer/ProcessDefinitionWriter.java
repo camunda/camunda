@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -36,7 +35,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Slf4j
 public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
-  private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
+  private static final Set<String> FIELDS_TO_UPDATE = Set.of(
     PROCESS_DEFINITION_KEY,
     PROCESS_DEFINITION_VERSION,
     PROCESS_DEFINITION_VERSION_TAG,

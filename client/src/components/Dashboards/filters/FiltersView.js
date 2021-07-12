@@ -5,9 +5,12 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import equals from 'fast-deep-equal';
 
 import {Button} from 'components';
 import {t} from 'translation';
+
+import {getDefaultFilter} from '../service';
 
 import InstanceStateFilter from './InstanceStateFilter';
 import DateFilter from './DateFilter';
@@ -41,10 +44,9 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 emptyText={t('common.off')}
                 title={t('dashboard.filter.types.' + type)}
                 icon="calender"
-                resetTrigger={resetTrigger}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== dateFilter);
+                  const rest = filter.filter((filter) => !equals(filter, dateFilter));
                   if (newFilter) {
                     setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
                   } else {
@@ -66,12 +68,17 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 filter={variableFilter?.data.data}
                 config={data}
                 reports={reports}
+                resetTrigger={resetTrigger}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== variableFilter);
+                  const rest = filter.filter((filter) => !equals(filter, variableFilter));
                   if (newFilter) {
                     setFilter([
                       ...rest,
-                      {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
+                      {
+                        type,
+                        data: {data: newFilter, name: data.name, type: data.type},
+                        filterLevel: 'instance',
+                      },
                     ]);
                   } else {
                     setFilter(rest);
@@ -88,9 +95,10 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 config={data}
                 filter={identityFilter?.data}
                 reports={reports}
+                resetTrigger={resetTrigger}
                 type={type}
                 setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => filter !== identityFilter);
+                  const rest = filter.filter((filter) => !equals(filter, identityFilter));
                   if (newFilter) {
                     setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
                   } else {
@@ -105,7 +113,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
       })}
       <Button
         onClick={() => {
-          setFilter([]);
+          setFilter(getDefaultFilter(availableFilters));
           setResetTrigger(true);
         }}
       >

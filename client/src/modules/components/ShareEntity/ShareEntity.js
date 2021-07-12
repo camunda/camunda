@@ -58,6 +58,8 @@ export default class ShareEntity extends React.Component {
     }
     if (this.state.includeFilters) {
       query.set('filter', JSON.stringify(this.props.filter));
+    } else if (this.props.defaultFilter) {
+      query.set('filter', JSON.stringify(this.props.defaultFilter));
     }
     const queryString = query.toString();
 

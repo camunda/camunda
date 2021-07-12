@@ -10,12 +10,13 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedIncidentFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.OpenIncidentFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.importing.engine.service.incident.CompletedIncidentImportService;
 import org.camunda.optimize.service.importing.engine.service.incident.OpenIncidentImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -30,15 +31,18 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
 
   private final CompletedIncidentWriter completedIncidentWriter;
   private final OpenIncidentWriter openIncidentWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public IncidentEngineImportMediatorFactory(final CompletedIncidentWriter completedIncidentWriter,
                                              final OpenIncidentWriter openIncidentWriter,
                                              final BeanFactory beanFactory,
                                              final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                             final ConfigurationService configurationService) {
+                                             final ConfigurationService configurationService,
+                                             final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.completedIncidentWriter = completedIncidentWriter;
     this.openIncidentWriter = openIncidentWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -60,7 +64,8 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
       new CompletedIncidentImportService(
         completedIncidentWriter,
         elasticsearchImportJobExecutor,
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -78,7 +83,8 @@ public class IncidentEngineImportMediatorFactory extends AbstractEngineImportMed
       new OpenIncidentImportService(
         openIncidentWriter,
         elasticsearchImportJobExecutor,
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

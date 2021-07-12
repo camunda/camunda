@@ -7,11 +7,15 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -30,6 +34,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
@@ -42,10 +47,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.CALL_ACTIVITY;
@@ -118,7 +127,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "doubleVar",
       VariableType.DOUBLE
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -171,7 +181,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
     reportData.getConfiguration().getCustomBucket().setActive(true);
     reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
     reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -231,7 +242,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     HyperMapAsserter.MeasureAdder asserter = HyperMapAsserter.asserter()
@@ -280,17 +292,23 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       VariableType.DATE
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
-    assertThat(result.getFirstMeasureData()).isNotNull().hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(result.getFirstMeasureData()).isNotNull()
+      .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
     // the bucket span covers the earliest and the latest date variable value
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData().get(0).getKey()));
+    final OffsetDateTime startOfFirstBucket = OffsetDateTime.from(formatter.parse(result.getFirstMeasureData()
+                                                                                    .get(0)
+                                                                                    .getKey()));
     final OffsetDateTime startOfLastBucket = OffsetDateTime
-      .from(formatter.parse(result.getFirstMeasureData().get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
+      .from(formatter.parse(result.getFirstMeasureData()
+                              .get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1)
+                              .getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue =
       dateVarValue.plusMinutes(numberOfInstances).truncatedTo(ChronoUnit.MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVarValue.truncatedTo(ChronoUnit.MILLIS);
@@ -343,7 +361,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "testVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then
     //@formatter:off
@@ -381,7 +400,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes the not executed node (endEvent)
     assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), "aStringValue"))
@@ -393,6 +413,53 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
             .filteredOn(e -> END_EVENT.equals(e.getKey()))
             .extracting(MapResultEntryDto::getValue)
             .containsOnlyNulls();
+        }
+      );
+  }
+
+  @Test
+  public void resultContainsFlowNodesFromMultipleProcesses() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final String variableName = "stringVar";
+    final Map<String, Object> variables = Collections.singletonMap(variableName, "aStringValue");
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key1, SERVICE_TASK_ID_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId(), variables);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(key2, SERVICE_TASK_ID_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId(), variables);
+
+    final Double expectedDuration = 20.;
+    changeActivityDuration(processInstanceDto1, expectedDuration);
+    changeActivityDuration(processInstanceDto2, expectedDuration);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(key1, ALL_VERSIONS, variableName, VariableType.STRING);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
+
+    // then the result includes the not executed node (endEvent)
+    assertThat(result.getMeasures()).hasSize(1);
+    assertThat(MapResultUtil.getDataEntryForKey(result.getFirstMeasureData(), "aStringValue"))
+      .isPresent()
+      .get()
+      .satisfies(
+        entry -> {
+          assertThat(entry.getValue())
+          .containsExactlyInAnyOrder(
+            new MapResultEntryDto(START_EVENT, 20.0, START_EVENT),
+            new MapResultEntryDto(SERVICE_TASK_ID_1, 20.0, SERVICE_TASK_ID_1),
+            new MapResultEntryDto(SERVICE_TASK_ID_2, 20.0, SERVICE_TASK_ID_2),
+            new MapResultEntryDto(END_EVENT, 20.0, END_EVENT)
+          );
         }
       );
   }
@@ -423,7 +490,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result takes the multi instance process durations into account correctly
     //@formatter:off
@@ -462,7 +530,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
@@ -500,7 +569,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version with instance durations from all versions
     // @formatter:off
@@ -538,7 +608,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance durations from all specified versions (1 and 2)
@@ -579,7 +650,8 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
       "stringVar",
       VariableType.STRING
     );
-    final ReportResultResponseDto<List<HyperMapResultEntryDto>>result = reportClient.evaluateHyperMapReport(reportData).getResult();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = reportClient.evaluateHyperMapReport(reportData)
+      .getResult();
 
     // then the result includes all flownodes of the latest version specified in the report (2)
     // with instance durations from all specified versions (1 and 2)
@@ -591,6 +663,168 @@ public class FlowNodeDurationByVariableByFlowNodeReportEvaluationIT extends Abst
         .groupByContains("aStringValue")
           .distributedByContains(END_EVENT, 15., END_EVENT)
           .distributedByContains(START_EVENT, 15., START_EVENT)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private static Stream<Arguments> viewLevelAssigneeFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME},
+        Map.of(USER_TASK_1, 2000.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER, null},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_USER},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{DEFAULT_USERNAME, SECOND_USER},
+        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelAssigneeFilterScenarios")
+  public void viewLevelAssigneeFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                         final String[] filterValues,
+                                                                         final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USER_FIRST_NAME, SECOND_USER_LAST_NAME);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
+    final ProcessInstanceEngineDto processInstance =
+      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER, SECOND_USERS_PASSWORD, processInstance.getId()
+    );
+
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 4000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .assignee()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .groupByContains("1.00")
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private static Stream<Arguments> viewLevelCandidateGroupFilterScenarios() {
+    return Stream.of(
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID},
+        Map.of(USER_TASK_1, 2000.)
+      ),
+      Arguments.of(
+        FilterOperator.IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID, null},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., USER_TASK_2, 3000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 1000., USER_TASK_1, 2000., END_EVENT, 4000.)
+      ),
+      Arguments.of(
+        NOT_IN,
+        new String[]{FIRST_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_ID},
+        Map.of(START_EVENT, 1000., END_EVENT, 4000.)
+      )
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("viewLevelCandidateGroupFilterScenarios")
+  public void viewLevelCandidateGroupFilterOnlyIncludesFlowNodesMatchingFilter(final FilterOperator filterOperator,
+                                                                               final String[] filterValues,
+                                                                               final Map<String, Double> expectedResults) {
+    // given
+    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME);
+    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME);
+    final ProcessInstanceEngineDto processInstance =
+      deployAndStartTwoUserTasksDefinition(Collections.singletonMap("doubleVar", 1.0));
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 1000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_1, 2000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), USER_TASK_2, 3000);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 4000);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion(),
+      "doubleVar",
+      VariableType.DOUBLE
+    );
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .candidateGroups()
+        .ids(filterValues)
+        .operator(filterOperator)
+        .filterLevel(FilterApplicationLevel.VIEW)
+        .add()
+        .buildList());
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result =
+      reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE)
+      .groupByContains("1.00")
+        .distributedByContains(END_EVENT, expectedResults.getOrDefault(END_EVENT, null))
+        .distributedByContains(START_EVENT, expectedResults.getOrDefault(START_EVENT, null))
+        .distributedByContains(USER_TASK_1, expectedResults.getOrDefault(USER_TASK_1, null))
+        .distributedByContains(USER_TASK_2, expectedResults.getOrDefault(USER_TASK_2, null))
       .doAssert(result);
     // @formatter:on
   }

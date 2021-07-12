@@ -6,6 +6,14 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
 >
   <EntityList
     action={false}
+    bulkActions={
+      Array [
+        Object {
+          "action": [Function],
+          "type": "delete",
+        },
+      ]
+    }
     columns={
       Array [
         "Name",
@@ -18,7 +26,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": false,
           "className": "user",
+          "entityType": "user",
           "icon": "user",
+          "id": "USER:kermit",
           "meta": Array [
             false,
             "Manager",
@@ -30,7 +40,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": false,
           "className": "group",
+          "entityType": "user",
           "icon": "user-group",
+          "id": "GROUP:sales",
           "meta": Array [
             "2 Users",
             "Manager",
@@ -44,6 +56,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     empty="No results found"
     isLoading={false}
     name="Users and User Groups"
+    onChange={[Function]}
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
@@ -95,6 +108,14 @@ exports[`should match snapshot 1`] = `
         Add
       </ForwardRef(Button)>
     }
+    bulkActions={
+      Array [
+        Object {
+          "action": [Function],
+          "type": "delete",
+        },
+      ]
+    }
     columns={
       Array [
         "Name",
@@ -118,7 +139,9 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "user",
+          "entityType": "user",
           "icon": "user",
+          "id": "USER:kermit",
           "meta": Array [
             false,
             "Manager",
@@ -141,7 +164,9 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "group",
+          "entityType": "user",
           "icon": "user-group",
+          "id": "GROUP:sales",
           "meta": Array [
             "2 Users",
             "Manager",
@@ -155,6 +180,7 @@ exports[`should match snapshot 1`] = `
     empty="No results found"
     isLoading={false}
     name="Users and User Groups"
+    onChange={[Function]}
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}

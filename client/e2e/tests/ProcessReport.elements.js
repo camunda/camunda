@@ -75,15 +75,14 @@ export const filterOption = (text) =>
   Selector('.Filter__dropdown.is-open .DropdownOption').withText(text);
 export const subFilterOption = (text) =>
   Selector('.Filter__dropdown.is-open .Submenu .DropdownOption').withText(text);
+export const modalOption = (text) =>
+  Selector('.Modal__content label').withText(text).find('.Input');
 export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child');
 export const limitPrecisionInput = Selector('.precision input');
-export const showFlowNodesSwitch = Selector('.VisibleNodesFilter .Switch');
-export const showFlowNodes = Selector('.Button').withText('Select Flow Nodes...');
-export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
 export const distributedBySelect = Selector('.label').withText('Distribution').nextSibling();
@@ -93,8 +92,8 @@ export const chartGoalInput = Selector('input[placeholder="Goal value"]');
 export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
-export const definitionSelection = Selector('.Popover.DefinitionSelection');
-export const definitionSelectionDialog = Selector('.Popover.DefinitionSelection .Popover__dialog');
+export const definitionEditor = Selector('.DefinitionList .Popover__button');
+export const definitionSelectionDialog = Selector('.DefinitionList .Popover__dialog');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Selector('input[type="radio"]').nth(0);
 export const versionLatest = Selector('input[type="radio"]').nth(1);
@@ -106,7 +105,7 @@ export const modalContainer = Selector('.Modal__content-container');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
 export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
-export const modalButton = (text) => Selector('.EntityName .modalsButtons .Button').withText(text);
+export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
 export const closeModalButton = Selector('.Modal .Button').withText('Close');
@@ -121,3 +120,4 @@ export const sectionToggle = (sectionName) =>
   Selector('.ReportControlPanel .sectionTitle')
     .withText(new RegExp(sectionName, 'i')) // we are using CSS text-transform uppercase, which is handled inconsistently across browsers: https://github.com/DevExpress/testcafe/issues/3335
     .find('.sectionToggle');
+export const deselectAllButton = Selector('.Button').withText('Deselect All');

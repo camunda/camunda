@@ -29,9 +29,11 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -69,7 +71,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   private static final String USER_TASK_2 = "userTask2";
 
   @Test
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -102,7 +104,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessInstances() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
@@ -125,6 +127,43 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_1).get().getValue()).isEqualTo(2.);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2).get().getValue()).isEqualTo(2.);
     assertThat(result.getInstanceCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.FREQUENCY)
+        .groupedByContains(USER_TASK_1, 1.)
+        .groupedByContains(USER_TASK_2, 1.)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -405,6 +444,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     List<ProcessFilterDto<?>> processFilter;
     Map<String, Double> expectedFrequencyValues;
     Integer expectedDataSize;
+    long expectedInstanceCount;
   }
 
   private static Map<String, Double> getExpectedResultsMap(Double userTask1Results, Double userTask2Results) {
@@ -418,15 +458,15 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     return Stream.of(
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().runningFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., 1.), 2
+        getExpectedResultsMap(1., 1.), 2,2L
       ),
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., null), 1
+        getExpectedResultsMap(1., null), 1, 1L
       ),
       new FlowNodeStatusTestValues(
         ProcessFilterBuilder.filter().completedOrCanceledFlowNodesOnly().add().buildList(),
-        getExpectedResultsMap(1., null), 1
+        getExpectedResultsMap(1., null), 1, 1L
       )
     );
   }
@@ -460,7 +500,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     Optional.ofNullable(flowNodeStatusTestValues.getExpectedFrequencyValues().get(USER_TASK_2))
       .ifPresent(expectedValue -> assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), USER_TASK_2))
         .isPresent().get().extracting(MapResultEntryDto::getValue).isEqualTo(expectedValue));
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCount()).isEqualTo(flowNodeStatusTestValues.getExpectedInstanceCount());
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
   @Test

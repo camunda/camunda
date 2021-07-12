@@ -8,6 +8,8 @@ import React from 'react';
 import classnames from 'classnames';
 import {Modal, Button, Typeahead, Labeled} from 'components';
 
+import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+
 import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
 import {StringInput} from './string';
@@ -22,6 +24,7 @@ export default class VariableFilter extends React.Component {
     filter: {},
     variables: [],
     selectedVariable: null,
+    applyTo: null,
   };
 
   componentDidMount = async () => {
@@ -41,8 +44,18 @@ export default class VariableFilter extends React.Component {
       });
     }
 
+    const validDefinitions = this.props.definitions?.filter(
+      (definition) => definition.versions.length && definition.tenantIds.length
+    );
+
+    const applyTo =
+      validDefinitions?.find(
+        ({identifier}) => this.props.filterData?.appliedTo[0] === identifier
+      ) || validDefinitions?.[0];
+
     this.setState({
-      variables: await this.props.config.getVariables(),
+      variables: await this.props.config.getVariables(applyTo),
+      applyTo,
     });
   };
 
@@ -82,7 +95,7 @@ export default class VariableFilter extends React.Component {
   };
 
   render() {
-    const {selectedVariable, variables, filter, valid} = this.state;
+    const {selectedVariable, variables, filter, valid, applyTo} = this.state;
     const {
       close,
       className,
@@ -92,6 +105,7 @@ export default class VariableFilter extends React.Component {
       config,
       filterData,
       forceEnabled,
+      definitions,
     } = this.props;
 
     const ValueInput = this.getInputComponentForVariable(selectedVariable);
@@ -104,11 +118,30 @@ export default class VariableFilter extends React.Component {
           })}
         </Modal.Header>
         <Modal.Content>
+          {definitions && (
+            <FilterSingleDefinitionSelection
+              availableDefinitions={definitions}
+              applyTo={applyTo}
+              setApplyTo={async (applyTo) => {
+                this.setState({
+                  applyTo,
+                  valid: false,
+                  filter: {},
+                  variables: [],
+                  selectedVariable: null,
+                });
+
+                this.setState({
+                  variables: await config.getVariables(applyTo),
+                });
+              }}
+            />
+          )}
           {getPretext?.(selectedVariable)}
           <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
             <Typeahead
               onChange={this.selectVariable}
-              initialValue={variables.length > 0 && this.getId(selectedVariable)}
+              value={variables.length > 0 && this.getId(selectedVariable)}
               placeholder={t('common.filter.variableModal.inputPlaceholder')}
               noValuesMessage={t('common.filter.variableModal.noVariables')}
             >
@@ -125,6 +158,7 @@ export default class VariableFilter extends React.Component {
             setValid={this.setValid}
             changeFilter={this.changeFilter}
             filter={filter}
+            definition={applyTo}
           />
           {getPosttext?.(selectedVariable)}
         </Modal.Content>
@@ -152,11 +186,11 @@ export default class VariableFilter extends React.Component {
 
     const variable = this.state.selectedVariable;
     const InputComponent = this.getInputComponentForVariable(variable);
-    const {filter} = this.state;
+    const {filter, applyTo} = this.state;
     const {addFilter, filterType} = this.props;
 
     InputComponent.addFilter
-      ? InputComponent.addFilter(addFilter, filterType, variable, filter)
+      ? InputComponent.addFilter(addFilter, filterType, variable, filter, applyTo)
       : addFilter({
           type: filterType,
           data: {
@@ -164,6 +198,7 @@ export default class VariableFilter extends React.Component {
             type: variable.type,
             data: filter,
           },
+          appliedTo: [applyTo?.identifier],
         });
   };
 }

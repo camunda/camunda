@@ -276,7 +276,7 @@ export class ReportEdit extends React.Component {
                 <Configuration
                   type={data.visualization}
                   onChange={this.updateReport}
-                  loading={loadingReportData}
+                  disabled={loadingReportData}
                   report={report}
                 />
               </div>

@@ -94,7 +94,18 @@ export function convertStateToFilter({
   return {...filter, ...commonProps};
 }
 
-export function isValid({type, unit, customNum, valid, includeUndefined, excludeUndefined}) {
+export function isValid({
+  type,
+  unit,
+  customNum,
+  valid,
+  includeUndefined,
+  excludeUndefined,
+  applyTo,
+}) {
+  if (applyTo?.length === 0) {
+    return false;
+  }
   switch (type) {
     case 'today':
     case 'yesterday':

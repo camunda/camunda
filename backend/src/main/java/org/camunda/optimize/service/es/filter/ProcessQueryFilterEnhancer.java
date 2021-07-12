@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Dura
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowNodeDurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NoIncidentFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
@@ -35,13 +36,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Star
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.UserTaskFlowNodesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.service.es.filter.util.modelelement.FlowNodeFilterQueryUtil;
 import org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil;
-import org.camunda.optimize.service.es.filter.util.modelelement.UserTaskFilterQueryUtil;
+import org.camunda.optimize.service.es.filter.util.modelelement.ModelElementFilterQueryUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -80,62 +79,102 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final InstancesContainingUserTasksFilter instancesContainingUserTasksFilter;
 
   @Override
-  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
+  public void addFilterToQuery(final BoolQueryBuilder query,
+                               final List<ProcessFilterDto<?>> filters,
+                               final FilterContext filterContext) {
     if (!CollectionUtils.isEmpty(filters)) {
-      startDateQueryFilter.addFilters(query, extractFilters(filters, StartDateFilterDto.class), timezone);
-      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class), timezone);
-      variableQueryFilter.addFilters(query, extractFilters(filters, VariableFilterDto.class), timezone);
-      executedFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutedFlowNodeFilterDto.class), timezone);
+      startDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, StartDateFilterDto.class), filterContext
+      );
+      endDateQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, EndDateFilterDto.class), filterContext
+      );
+      variableQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, VariableFilterDto.class), filterContext
+      );
+      executedFlowNodeQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, ExecutedFlowNodeFilterDto.class), filterContext
+      );
       executingFlowNodeQueryFilter.addFilters(
-        query, extractFilters(filters, ExecutingFlowNodeFilterDto.class), timezone);
-      canceledFlowNodeQueryFilter.addFilters(query, extractFilters(filters, CanceledFlowNodeFilterDto.class), timezone);
-      durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, ExecutingFlowNodeFilterDto.class), filterContext
+      );
+      canceledFlowNodeQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, CanceledFlowNodeFilterDto.class), filterContext
+      );
+      durationQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, DurationFilterDto.class), filterContext
+      );
       runningInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, RunningInstancesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, RunningInstancesOnlyFilterDto.class), filterContext
+      );
       completedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, CompletedInstancesOnlyFilterDto.class), filterContext
+      );
       canceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CanceledInstancesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, CanceledInstancesOnlyFilterDto.class), filterContext
+      );
       nonCanceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, NonCanceledInstancesOnlyFilterDto.class), filterContext
+      );
       suspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, SuspendedInstancesOnlyFilterDto.class), filterContext
+      );
       nonSuspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class), timezone);
-      flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class), timezone);
-      assigneeQueryFilter.addFilters(query, extractFilters(filters, AssigneeFilterDto.class), timezone);
-      candidateGroupQueryFilter.addFilters(query, extractFilters(filters, CandidateGroupFilterDto.class), timezone);
-      openIncidentQueryFilter.addFilters(query, extractFilters(filters, OpenIncidentFilterDto.class), timezone);
-      resolvedIncidentQueryFilter.addFilters(query, extractFilters(filters, ResolvedIncidentFilterDto.class), timezone);
-      noIncidentQueryFilter.addFilters(query, extractFilters(filters, NoIncidentFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, NonSuspendedInstancesOnlyFilterDto.class), filterContext
+      );
+      flowNodeDurationQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, FlowNodeDurationFilterDto.class), filterContext
+      );
+      assigneeQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, AssigneeFilterDto.class), filterContext
+      );
+      candidateGroupQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, CandidateGroupFilterDto.class), filterContext
+      );
+      openIncidentQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, OpenIncidentFilterDto.class), filterContext
+      );
+      resolvedIncidentQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, ResolvedIncidentFilterDto.class), filterContext
+      );
+      noIncidentQueryFilter.addFilters(
+        query, extractInstanceFilters(filters, NoIncidentFilterDto.class), filterContext
+      );
       runningFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, RunningFlowNodesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, RunningFlowNodesOnlyFilterDto.class), filterContext
+      );
       completedFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedFlowNodesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, CompletedFlowNodesOnlyFilterDto.class), filterContext
+      );
       canceledFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CanceledFlowNodesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, CanceledFlowNodesOnlyFilterDto.class), filterContext
+      );
       completedOrCanceledFlowNodesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class), filterContext
+      );
       instancesContainingUserTasksFilter.addFilters(
-        query, extractFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), timezone);
+        query, extractInstanceFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), filterContext
+      );
     }
-    addInstanceFilterForViewLevelMatching(query, filters);
+    addInstanceFilterForViewLevelMatching(query, filters, filterContext.isUserTaskReport());
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
-  public <T extends FilterDataDto> List<T> extractFilters(final List<ProcessFilterDto<?>> filter,
-                                                          final Class<? extends ProcessFilterDto<T>> clazz) {
+  public <T extends FilterDataDto> List<T> extractInstanceFilters(final List<ProcessFilterDto<?>> filter,
+                                                                  final Class<? extends ProcessFilterDto<T>> clazz) {
     return filter
       .stream()
       .filter(clazz::isInstance)
+      .filter(f -> FilterApplicationLevel.INSTANCE.equals(f.getFilterLevel()))
       .map(dateFilter -> (T) dateFilter.getData())
       .collect(Collectors.toList());
   }
 
   private void addInstanceFilterForViewLevelMatching(final BoolQueryBuilder query,
-                                                     final List<ProcessFilterDto<?>> filters) {
-    UserTaskFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
-    FlowNodeFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
+                                                     final List<ProcessFilterDto<?>> filters,
+                                                     final boolean isUserTaskReport) {
+    ModelElementFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters, isUserTaskReport)
+      .ifPresent(query::filter);
     IncidentFilterQueryUtil.addInstanceFilterForRelevantViewLevelFilters(filters).ifPresent(query::filter);
   }
 

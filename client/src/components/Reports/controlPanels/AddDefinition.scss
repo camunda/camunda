@@ -1,0 +1,17 @@
+.AddDefinition {
+  position: absolute;
+  right: 48px;
+  top: 10px;
+}
+
+.AddDefinition__Modal {
+  .MessageBox {
+    font-size: 12px;
+  }
+
+  .Checklist {
+    .selectAllInView {
+      display: none;
+    }
+  }
+}

@@ -78,12 +78,18 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   private void initAuthorizationsCache() {
     userAuthorizationLoadingCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
-      .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
+      .expireAfterAccess(
+        configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(),
+        TimeUnit.MINUTES
+      )
       .build(this::fetchAuthorizationsForUserId);
 
     groupAuthorizationLoadingCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
-      .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
+      .expireAfterAccess(
+        configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(),
+        TimeUnit.MINUTES
+      )
       .build(this::fetchAuthorizationsForGroupId);
   }
 

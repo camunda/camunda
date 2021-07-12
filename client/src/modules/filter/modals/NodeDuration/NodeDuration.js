@@ -17,50 +17,92 @@ import {
   ClickBehavior,
 } from 'components';
 import {t} from 'translation';
+import {loadProcessDefinitionXml} from 'services';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
+
+import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
+
 import {isValidInput} from './service';
 import NodesTable from './NodesTable';
 
 import './NodeDuration.scss';
 
-export default class NodeDuration extends React.Component {
+export class NodeDuration extends React.Component {
   state = {
     focus: null,
     values: {},
     nodeNames: {},
     loading: false,
+    applyTo: null,
+    xml: null,
   };
 
   async componentDidMount() {
     this.setState({loading: true});
-    const {values, nodeNames} = await this.constructValues();
+
+    const validDefinitions = this.props.definitions.filter(
+      (definition) => definition.versions.length && definition.tenantIds.length
+    );
+
+    const applyTo =
+      validDefinitions.find(({identifier}) => this.props.filterData?.appliedTo[0] === identifier) ||
+      validDefinitions[0];
+
+    const {values, nodeNames, xml} = await this.constructValues(
+      applyTo,
+      this.props.filterData?.data
+    );
     this.setState({
       focus: null,
       values,
       nodeNames,
       loading: false,
+      applyTo,
+      xml,
     });
   }
 
-  constructValues = async () => {
-    const viewer = new Viewer();
-    await viewer.importXML(this.props.xml);
-    const predefinedValues = this.props.filterData?.data || {};
-    const values = {};
-    const nodeNames = {};
+  async componentDidUpdate(prevProps, prevState) {
+    if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
+      this.setState({loading: true});
 
-    const set = new Set();
-    viewer
-      .get('elementRegistry')
-      .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
-      .map((element) => element.businessObject)
-      .forEach((element) => set.add(element));
+      const {values, nodeNames, xml} = await this.constructValues(this.state.applyTo);
+      this.setState({
+        focus: null,
+        values,
+        nodeNames,
+        loading: false,
+        xml,
+      });
+    }
+  }
 
-    set.forEach((element) => {
-      values[element.id] = copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
-      nodeNames[element.id] = element.name || element.id;
-    });
+  constructValues = ({key, versions, tenantIds}, predefinedValues = {}) => {
+    return this.props.mightFail(
+      loadProcessDefinitionXml(key, versions[0], tenantIds[0]),
+      async (xml) => {
+        const viewer = new Viewer();
+        await viewer.importXML(xml);
+        const values = {};
+        const nodeNames = {};
 
-    return {values, nodeNames};
+        const set = new Set();
+        viewer
+          .get('elementRegistry')
+          .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
+          .map((element) => element.businessObject)
+          .forEach((element) => set.add(element));
+
+        set.forEach((element) => {
+          values[element.id] = copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
+          nodeNames[element.id] = element.name || element.id;
+        });
+
+        return {values, nodeNames, xml};
+      },
+      showError
+    );
   };
 
   cleanUpValues = () => {
@@ -109,11 +151,14 @@ export default class NodeDuration extends React.Component {
     this.props.addFilter({
       type: 'flowNodeDuration',
       data,
+      appliedTo: [this.state.applyTo.identifier],
     });
   };
 
   render() {
-    const {loading, focus, nodeNames, values} = this.state;
+    const {close, filterData, definitions} = this.props;
+    const {loading, focus, nodeNames, values, applyTo, xml} = this.state;
+
     let errorMessage = !this.hasSomethingChanged() ? t('report.heatTarget.noChangeWarning') : '';
     if (!this.areAllFieldsNumbers()) {
       errorMessage += t('report.heatTarget.invalidValue');
@@ -126,33 +171,43 @@ export default class NodeDuration extends React.Component {
     }
 
     return (
-      <Modal size="max" open onClose={this.props.close} className="NodeDuration">
+      <Modal size="max" open onClose={close} className="NodeDuration">
         <Modal.Header>{t('common.filter.types.flowNodeDuration')} </Modal.Header>
         <Modal.Content className="content-container">
+          <FilterSingleDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo}
+            setApplyTo={(applyTo) => this.setState({applyTo})}
+          />
           {loading && <LoadingIndicator />}
-          <div className="diagram-container">
-            <BPMNDiagram xml={this.props.xml}>
-              <ClickBehavior onClick={({id}) => this.updateFocus(id)} selectedNodes={activeNodes} />
-              <TargetValueBadge values={values} />
-            </BPMNDiagram>
-          </div>
           {!loading && (
-            <NodesTable
-              focus={focus}
-              updateFocus={this.updateFocus}
-              nodeNames={nodeNames}
-              values={values}
-              onChange={(values) => this.setState({values})}
-            />
+            <>
+              <div className="diagram-container">
+                <BPMNDiagram xml={xml}>
+                  <ClickBehavior
+                    onClick={({id}) => this.updateFocus(id)}
+                    selectedNodes={activeNodes}
+                  />
+                  <TargetValueBadge values={values} />
+                </BPMNDiagram>
+              </div>
+              <NodesTable
+                focus={focus}
+                updateFocus={this.updateFocus}
+                nodeNames={nodeNames}
+                values={values}
+                onChange={(values) => this.setState({values})}
+              />
+            </>
           )}
           {!this.validChanges() && !loading && <Message error>{errorMessage}</Message>}
         </Modal.Content>
         <Modal.Actions>
-          <Button main onClick={this.props.close}>
+          <Button main onClick={close}>
             {t('common.cancel')}
           </Button>
           <Button main primary onClick={this.confirmModal} disabled={empty || !this.validChanges()}>
-            {this.props.filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
+            {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>
       </Modal>
@@ -169,3 +224,5 @@ function copyObjectIfExistsAndStringifyValue(obj) {
   }
   return obj;
 }
+
+export default withErrorHandling(NodeDuration);

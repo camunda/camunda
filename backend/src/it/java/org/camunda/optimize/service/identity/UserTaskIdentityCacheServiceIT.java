@@ -103,7 +103,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
 
     final UserTaskIdentityCacheService assigneeIdentityCacheService = getUserTaskIdentityCacheService();
     assertThatThrownBy(assigneeIdentityCacheService::synchronizeIdentities)
-    // then
+      // then
       .isInstanceOf(MaxEntryLimitHitException.class);
     assertThat(assigneeIdentityCacheService.getUserIdentityById(ASSIGNEE_ID_JOHN)).isPresent();
     assertThat(assigneeIdentityCacheService.getUserIdentityById(ASSIGNEE_ID_JEAN)).isNotPresent();
@@ -155,7 +155,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public void assingeeIsPresentWithoutMetadataAfterSyncIfMetadataDisabled() {
+  public void assigneeIsPresentWithoutMetadataAfterSyncIfMetadataDisabled() {
     // given
     getUserTaskIdentityCacheService().resetCache();
     startSimpleUserTaskProcessWithAssigneeAndImport(ASSIGNEE_ID_JOHN);
@@ -203,6 +203,23 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
 
     // then
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isNotPresent();
+  }
+
+  @Test
+  public void assigneeNotInEngineIsPresentAfterSync() {
+    // given
+    getUserTaskIdentityCacheService().resetCache();
+    final String userId = "aUserId";
+
+    // when
+    startSimpleUserTaskProcessWithAssigneeAndImport(userId);
+
+    // then
+    assertThat(getUserTaskIdentityCacheService().getUserIdentityById(userId))
+      .isPresent()
+      .get()
+      .extracting(UserDto::getId, UserDto::getFirstName, UserDto::getLastName, UserDto::getEmail)
+      .containsExactly(userId, null, null, null);
   }
 
   @Test
@@ -292,6 +309,23 @@ public class UserTaskIdentityCacheServiceIT extends AbstractIT {
       .get()
       .extracting(GroupDto::getName)
       .isEqualTo(CANDIDATE_GROUP_NAME_CREW_MEMBERS);
+  }
+
+  @Test
+  public void candidateGroupNotInEngineIsPresentAfterSync() {
+    // given
+    getUserTaskIdentityCacheService().resetCache();
+    final String groupId = "aGroupId";
+
+    // when
+    startSimpleUserTaskProcessWithCandidateGroupAndImport(groupId);
+
+    // then
+    assertThat(getUserTaskIdentityCacheService().getGroupIdentityById(groupId))
+      .isPresent()
+      .get()
+      .extracting(GroupDto::getId, GroupDto::getName)
+      .containsExactly(groupId, groupId);
   }
 
   @Test

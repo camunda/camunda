@@ -29,8 +29,10 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.MapResultAsserter;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.util.BpmnModels;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +84,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public void reportEvaluationForOneProcess() {
+  public void reportEvaluationForOneProcessInstance() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto =
@@ -124,7 +126,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
   @Test
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public void reportEvaluationForOneProcess_whenCandidateCacheEmptyLabelEqualsKey() {
+  public void reportEvaluationForOneProcessInstance_whenCandidateCacheEmptyLabelEqualsKey() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto =
@@ -153,7 +155,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   @Test
-  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+  public void reportEvaluationForOneProcessInstanceWithUnassignedTasks() {
     // given
     // set current time to now for easier evaluation of duration of unassigned tasks
     OffsetDateTime now = OffsetDateTime.now();
@@ -185,11 +187,11 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       .containsExactly(getUserTaskDurationTime());
 
     final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
-    assertMap_ForOneProcessWithUnassignedTasks(setDuration, result);
+    assertMap_ForOneProcessInstanceWithUnassignedTasks(setDuration, result);
   }
 
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final Double setDuration,
-                                                            final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(final Double setDuration,
+                                                                    final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
@@ -244,7 +246,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() {
+  public void reportEvaluationForSeveralProcessesInstances() {
     // given
     // set current time to now for easier evaluation of duration of unassigned tasks
     OffsetDateTime now = OffsetDateTime.now();
@@ -269,10 +271,10 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       .getResult();
 
     // then
-    assertMap_ForSeveralProcesses(result);
+    assertMap_ForSeveralProcessesInstances(result);
   }
 
-  protected void assertMap_ForSeveralProcesses(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_ForSeveralProcessesInstances(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).hasSize(3);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), FIRST_CANDIDATE_GROUP_ID)).isPresent().get()
       .extracting(MapResultEntryDto::getValue)
@@ -290,6 +292,54 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       .withFailMessage(getIncorrectValueForKeyAssertionMsg(DISTRIBUTE_BY_IDENTITY_MISSING_KEY))
       .isEqualTo(UNASSIGNED_TASK_DURATION);
     assertThat(result.getInstanceCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+
+    final ProcessDefinitionEngineDto processDefinition1 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key1, USER_TASK_1));
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto1.getId(), FIRST_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    changeDuration(processInstanceDto1, SET_DURATIONS[0]);
+    final ProcessDefinitionEngineDto processDefinition2 = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram(key2, USER_TASK_2));
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension
+      .addCandidateGroupForAllRunningUserTasks(processInstanceDto2.getId(), SECOND_CANDIDATE_GROUP_ID);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
+    changeDuration(processInstanceDto2, SET_DURATIONS[1]);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition1);
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> actualResult = evaluationResponse.getResult();
+    // @formatter:off
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
+      .groupedByContains(
+        FIRST_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[0]), FIRST_CANDIDATE_GROUP_NAME
+      )
+      .groupedByContains(
+        SECOND_CANDIDATE_GROUP_ID, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), SECOND_CANDIDATE_GROUP_NAME
+      )
+      .doAssert(actualResult);
+    // @formatter:on
   }
 
   @Test
@@ -421,7 +471,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     assertDurationMapReportResults(
       result,
       ImmutableMap.of(
-        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0]},
+        FIRST_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
         SECOND_CANDIDATE_GROUP_ID, new Double[]{SET_DURATIONS[1]},
         DISTRIBUTE_BY_IDENTITY_MISSING_KEY, new Double[]{UNASSIGNED_TASK_DURATION}
       )
@@ -655,7 +705,10 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       .getResult();
 
     // then
-    assertDurationMapReportResults(result, ImmutableMap.of(FIRST_CANDIDATE_GROUP_ID, new Double[]{100., 300., 600.}));
+    assertDurationMapReportResults(
+      result,
+      ImmutableMap.of(FIRST_CANDIDATE_GROUP_ID, new Double[]{100., 300., 600.})
+    );
   }
 
   @Test
@@ -1156,7 +1209,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 
   private AggregationType[] getSupportedAggregationTypes() {
-    return AggregationType.getAggregationTypesAsListWithoutSum().toArray(new AggregationType[0]);
+    return AggregationType.values();
   }
 
   private ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
@@ -1229,13 +1282,13 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
 
     Arrays.stream(getSupportedAggregationTypes()).forEach(aggType -> {
       List<MapResultEntryDto> measureResult = resultByAggregationType.get(aggType);
-      expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
-        MapResultUtil.getEntryForKey(measureResult, userTaskKey))
-        .isPresent().get()
-        .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
-      );
-    });
+        expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(
+          MapResultUtil.getEntryForKey(measureResult, userTaskKey))
+          .isPresent().get()
+          .extracting(MapResultEntryDto::getValue)
+          .isEqualTo(calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey)).get(aggType))
+        );
+      });
   }
 
   protected String getIncorrectValueForKeyAssertionMsg(final String key) {

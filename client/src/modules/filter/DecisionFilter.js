@@ -122,6 +122,8 @@ export default class DecisionFilter extends React.Component {
   };
 
   render() {
+    const {definitions} = this.props;
+
     const FilterModal = this.getFilterModal(this.state.newFilterType);
     const EditFilterModal = this.getFilterModal(
       this.state.editFilter ? this.state.editFilter.type : null
@@ -156,18 +158,21 @@ export default class DecisionFilter extends React.Component {
         )}
         {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
+          definitions={definitions}
           openEditFilterModal={this.openEditFilterModal}
           data={filters}
           deleteFilter={this.deleteFilter}
           variables={this.props.variables}
         />
         <FilterModal
+          definitions={definitions}
           addFilter={this.addFilter}
           close={this.closeModal}
           filterType={this.state.newFilterType}
           config={this.getFilterConfig(this.state.newFilterType)}
         />
         <EditFilterModal
+          definitions={definitions}
           addFilter={this.editFilter}
           filterData={this.state.editFilter}
           close={this.closeModal}

@@ -249,6 +249,9 @@
     "downloadCSV": "Download CSV",
     "measure": "Measure",
     "addMeasure": "Add measure",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Add optional display name",
+    "noSources": "No Data Sources",
     "templates": {
       "blank": "Blank report",
       "heatmap": "Heatmap: Flownode count",
@@ -361,8 +364,12 @@
       "evaluation": "Total Evaluation</br> Count: <b>{count}</b>"
     },
     "definition": {
+      "add": "Add {type}",
+      "search": "Search for {type}",
       "process": "Process Definition",
-      "decision": "Decision Definition"
+      "process-plural": "Process Definitions",
+      "decision": "Decision Definition",
+      "decision-plural": "Decision Definitions"
     },
     "noDefinitionMessage": {
       "process": "Select a <b>Process Definition</b>.",
@@ -412,7 +419,8 @@
         "variable": "Var",
         "inputVariable": "InputVar",
         "outputVariable": "OutputVar"
-      }
+      },
+      "pageError": "Only the first 10,000 instances can be displayed"
     },
     "progressBar": {
       "invalid": "Invalid Configuration",
@@ -456,14 +464,6 @@
         "total": "Total"
       },
       "userTaskDistributedBy": "Distribution",
-      "visibleNodes": {
-        "legend": "Customize Node Display",
-        "btn": "Select Flow Nodes...",
-        "modal": {
-          "title": "Select Flow Nodes",
-          "description": "Selected nodes appear in the visualization."
-        }
-      },
       "colorPicker": {
         "legend": "Color"
       },
@@ -709,6 +709,7 @@
     "close": "Close",
     "add": "Add",
     "copy": "Copy",
+    "addACopy": "Add a copy",
     "export": "Export",
     "importJSON": "Import JSON",
     "change": "Change",
@@ -747,6 +748,14 @@
     "selected": "Selected",
     "documentation": "documentation",
     "open": "Open",
+    "process": {
+      "label": "Process",
+      "label-plural": "Processes"
+    },
+    "decision": {
+      "label": "Decision",
+      "label-plural": "Decisions"
+    },
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"
@@ -776,6 +785,10 @@
       "label": "User Task",
       "label-plural": "User Tasks"
     },
+    "itemSelected": {
+      "label": "item selected",
+      "label-plural": "items selected"
+    },
     "multiSelect": {
       "selectAll": "Select all in view",
       "available": "Available items",
@@ -793,7 +806,8 @@
       "viewRawData": "View Raw data",
       "viewModel": {
         "decision": "View Decision Table",
-        "process": "View Process Model"
+        "process": "View Process Model",
+        "model": "View Model"
       },
       "namePlaceholder": {
         "Report": "Report name",
@@ -842,18 +856,57 @@
     },
     "filter": {
       "label": "Filters",
+      "definitionSelection": {
+        "allProcesses": "All included processes"
+      },
       "tooltip": {
         "instance": "Process instance Filters return data from process instances matching the filter requirement. If the filter is based on a Flow Node, the returned data will show all instances where this Flow Node was triggered.",
-        "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views."
+        "view": "Flow Node filters return data from Flow Nodes only, where the Flow Node or its property matches the filter requirement. Most useful in Flow Node and User Task views.",
+        "disabledView": "Reports with multiple definitions do not support Flow Node data filters."
+      },
+      "state": {
+        "modalPretext": {
+          "instanceState": "Only display instances which are…",
+          "incidentInstances": "Only display instances with…",
+          "incident": "Only display data from Flow Nodes with…",
+          "flowNodeStatus": "Only display data from Flow Nodes which are…"
+        },
+        "instancesOnly": "<b>{type}</b> Instances only",
+        "flowNodesOnly": "<b>{type}</b> Flow Nodes only",
+        "incidents": "<b>{type}</b> Incidents",
+        "previewLabels": {
+          "runningInstancesOnly": "Running",
+          "completedInstancesOnly": "Completed",
+          "canceledInstancesOnly": "Canceled",
+          "nonCanceledInstancesOnly": "Non Canceled",
+          "suspendedInstancesOnly": "Suspended",
+          "nonSuspendedInstancesOnly": "Non Suspended",
+          "runningFlowNodesOnly": "Running",
+          "completedFlowNodesOnly": "Completed",
+          "canceledFlowNodesOnly": "Canceled",
+          "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
+          "includesOpenIncident": "Open",
+          "includesResolvedIncident": "Resolved",
+          "doesNotIncludeIncident": "No"
+        },
+        "modalLabels": {
+          "runningInstancesOnly": "Running",
+          "completedInstancesOnly": "Completed",
+          "canceledInstancesOnly": "Canceled",
+          "nonCanceledInstancesOnly": "Non Canceled",
+          "suspendedInstancesOnly": "Suspended",
+          "nonSuspendedInstancesOnly": "Non Suspended",
+          "runningFlowNodesOnly": "Running",
+          "completedFlowNodesOnly": "Completed",
+          "canceledFlowNodesOnly": "Canceled",
+          "completedOrCanceledFlowNodesOnly": "Completed or Canceled",
+          "includesOpenIncident": "Open Incidents",
+          "includesResolvedIncident": "Resolved Incidents",
+          "doesNotIncludeIncident": "Without Incidents"
+        }
       },
       "types": {
-        "instanceState": "Instance state",
-        "runningInstancesOnly": "Running Instances Only",
-        "completedInstancesOnly": "Completed Instances Only",
-        "canceledInstancesOnly": "Canceled Instances Only",
-        "nonCanceledInstancesOnly": "Non Canceled Instances Only",
-        "suspendedInstancesOnly": "Suspended Instances Only",
-        "nonSuspendedInstancesOnly": "Non Suspended Instances Only",
+        "instanceState": "Process Instance State",
         "date": "Date",
         "assignee": "Assignee",
         "candidateGroup": "Candidate Group",
@@ -869,18 +922,16 @@
         "inputVariable": "Input Variable",
         "outputVariable": "Output Variable",
         "incident": "Incident",
-        "includesOpenIncident": "With Open Incidents",
-        "includesResolvedIncident": "With Resolved Incidents",
+        "processIncident": "Process Instance Incident",
+        "viewIncident": "Flow Node Incidents",
         "openIncident": "Open Incidents",
         "resolvedIncident": "Resolved Incidents",
-        "doesNotIncludeIncident": "Without Incidents",
-        "flowNodeStatus": "Flow Node Status",
-        "runningFlowNodesOnly": "Running Flow Nodes Only",
-        "completedFlowNodesOnly": "Completed Flow Nodes Only",
-        "canceledFlowNodesOnly": "Canceled Flow Nodes Only",
-        "completedOrCanceledFlowNodesOnly": "Completed or Canceled Flow Nodes Only"
+        "flowNodeStatus": "Flow Node State",
+        "flowNodeSelection": "Flow Node Selection"
       },
       "list": {
+        "appliedTo": "Applied to",
+        "invalidDefinition": "Data Source is missing version or tenant selection.",
         "operators": {
           "isBetween": "is between",
           "between": "between",
@@ -1005,12 +1056,15 @@
       "incompatibleFilters": "No data shown due to incompatible filters",
       "instanceFilter": "Process Instance Filter",
       "decisionFilter": "Decision Instance Filter",
-      "flowNodeFilter": "Flow Node Data Filter"
+      "flowNodeFilter": "Flow Node Data Filter",
+      "excludedFlowNodes": "excluded Flow Nodes"
     },
     "definitionSelection": {
       "latest": "Latest",
       "multiple": "Multiple",
       "noDefinition": "No definitions found",
+      "limitReached": "Process definition limit reached. Only ten processes allowed.",
+      "viewLevelWarning": "Reports with multiple definitions do not support Flow Node data filters. Existing Flow Node data filters will be removed.",
       "select": {
         "process": "Select Process",
         "decision": "Select Decision"
@@ -1042,7 +1096,8 @@
         "collection": "Collection",
         "process": "Process",
         "processEvents": "process events",
-        "ingestedEvents": "Events"
+        "ingestedEvents": "Events",
+        "items": "Items"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",
@@ -1063,9 +1118,14 @@
           "combined_report": "This will remove the Report from the Combined Report(s):",
           "dashboard": "This will remove the Report from the Dashboard(s):",
           "alert": "The following Alert(s) will also be deleted:"
+        },
+        "bulk": {
+          "report": "Any selected Reports will be removed from associated Dashboards and Combined Reports. Their Alerts will be deleted.",
+          "process": "Removing Data Sources deletes all associated Reports and their Alerts."
         }
       },
-      "areYouSure": "Are you sure you want to proceed?"
+      "areYouSure": "Are you sure you want to proceed?",
+      "areYouSureSelected": "Are you sure you want to delete the selected items?"
     },
     "unit": {
       "automatic": "automatic",

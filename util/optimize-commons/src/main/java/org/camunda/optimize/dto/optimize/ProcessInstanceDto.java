@@ -25,7 +25,7 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 
 @Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
 @FieldNameConstants
@@ -46,7 +46,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
   @Builder.Default
   private List<IncidentDto> incidents = new ArrayList<>();
-  private String engine;
+  private DataSourceDto dataSource;
   private String tenantId;
 
   @JsonIgnore

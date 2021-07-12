@@ -148,9 +148,9 @@ public class ImportIndexIT extends AbstractImportIT {
     // create incident data
     ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
-    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
+    incidentClient.resolveOpenIncidents(processInstanceEngineDto.getId());
     processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
   }
 }

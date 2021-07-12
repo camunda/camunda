@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
@@ -115,15 +117,16 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
-      .orElse(Collections.emptyMap());
+    return definitionService.extractUserTaskIdAndNames(
+      reportData.getDefinitions().stream()
+        .map(definitionDto -> definitionService.getDefinition(
+          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    );
   }
 
   @Override

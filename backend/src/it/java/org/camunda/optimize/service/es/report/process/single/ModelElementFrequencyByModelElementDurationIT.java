@@ -45,6 +45,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class ModelElementFrequencyByModelElementDurationIT extends AbstractProcessDefinitionIT {
 
@@ -176,6 +177,38 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
       .containsExactly(Tuple.tuple(
         createDurationBucketKey(durationInMilliseconds),
         getExpectedNumberOfModelElements()
+      ));
+  }
+
+  @Test
+  public void multipleProcessDefinitions() {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final int durationInMilliseconds = 1000;
+    final ProcessDefinitionEngineDto definition1 = deploySimpleOneUserTasksDefinition(key1);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition1.getId(), durationInMilliseconds);
+    final ProcessDefinitionEngineDto definition2 =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key2, USER_TASK_2));
+    startProcessInstanceCompleteTaskAndModifyDuration(definition2.getId(), durationInMilliseconds);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(definition1.getKey(), definition1.getVersionAsString());
+    reportData.getDefinitions().add(createReportDataDefinitionDto(key2));
+    AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<MapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getFirstMeasureData())
+      .hasSize(1)
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .containsExactly(Tuple.tuple(
+        createDurationBucketKey(durationInMilliseconds),
+        getExpectedNumberOfModelElements(2)
       ));
   }
 

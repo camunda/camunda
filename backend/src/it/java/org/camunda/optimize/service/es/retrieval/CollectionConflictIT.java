@@ -13,10 +13,14 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -111,6 +115,36 @@ public class CollectionConflictIT extends AbstractIT {
   }
 
   @Test
+  public void deleteSingleScopeFailsWithConflictForMultiDefinitionProcessReportIfUsedByWhenForceNotSet() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    final String definitionKey1 = DEFAULT_DEFINITION_KEY;
+    final CollectionScopeEntryDto scopeEntry1 = new CollectionScopeEntryDto(PROCESS, definitionKey1, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
+    final String definitionKey2 = "key2";
+    final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, definitionKey2, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
+
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(new ReportDataDefinitionDto(definitionKey1), new ReportDataDefinitionDto(definitionKey2)))
+      .build();
+    final String singleReportId = reportClient.createSingleProcessReport(reportData, collectionId);
+    final String alertId = alertClient.createAlertForReport(singleReportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
+
+    // when
+    final ConflictResponseDto conflictResponse = deleteScopeFailsWithConflict(collectionId, scopeEntry2.getId(), false);
+
+    // then
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.ALERT, new String[]{alertId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
+  }
+
+  @Test
   public void deleteSingleScopeConflictsContainCombinedReportIds() {
     // given
     String collectionId = collectionClient.createNewCollection();
@@ -162,7 +196,12 @@ public class CollectionConflictIT extends AbstractIT {
     final CollectionScopeEntryDto scopeEntry1 =
       new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
-    final String singleReportId = reportClient.createSingleReport(collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String singleReportId = reportClient.createSingleReport(
+      collectionId,
+      definitionType,
+      DEFAULT_DEFINITION_KEY,
+      DEFAULT_TENANTS
+    );
     dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
     final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);
@@ -184,7 +223,12 @@ public class CollectionConflictIT extends AbstractIT {
     final CollectionScopeEntryDto scopeEntry1 =
       new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry1);
-    final String singleReportId = reportClient.createSingleReport(collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String singleReportId = reportClient.createSingleReport(
+      collectionId,
+      definitionType,
+      DEFAULT_DEFINITION_KEY,
+      DEFAULT_TENANTS
+    );
     alertClient.createAlertForReport(singleReportId);
     final CollectionScopeEntryDto scopeEntry2 = new CollectionScopeEntryDto(PROCESS, "someKey", DEFAULT_TENANTS);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry2);

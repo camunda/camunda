@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +33,7 @@ public class CollectionScopeEntryDto {
   private String id;
   private DefinitionType definitionType;
   private String definitionKey;
-  private List<String> tenants = new ArrayList<>();
+  private List<String> tenants = ReportConstants.DEFAULT_TENANT_IDS;
 
   public CollectionScopeEntryDto(final String id) {
     this(DefinitionType.valueOf(id.split(ID_SEGMENT_SEPARATOR)[0].toUpperCase()), id.split(ID_SEGMENT_SEPARATOR)[1]);
@@ -47,7 +47,7 @@ public class CollectionScopeEntryDto {
   }
 
   public CollectionScopeEntryDto(final DefinitionType definitionType, final String definitionKey) {
-    this(definitionType, definitionKey, new ArrayList<>());
+    this(definitionType, definitionKey, ReportConstants.DEFAULT_TENANT_IDS);
   }
 
   public CollectionScopeEntryDto(final DefinitionType definitionType,

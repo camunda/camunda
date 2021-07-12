@@ -9,9 +9,11 @@ import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
 import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, reportConfig} from 'services';
-import {DefinitionSelection, Button} from 'components';
+import {Button} from 'components';
 
+import {DefinitionList} from './DefinitionList';
 import ReportSelect from './ReportSelect';
+import AddDefinition from './AddDefinition';
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
@@ -131,7 +133,7 @@ it('should not show an "Always show tooltips" button for other visualizations', 
   expect(node).not.toIncludeText('Tooltips');
 });
 
-it('should load the flownode names and hand them to the filter and process part', async () => {
+it('should load the flownode names and hand them to the process part', async () => {
   const node = shallow(
     <ReportControlPanel
       {...props}
@@ -146,7 +148,6 @@ it('should load the flownode names and hand them to the filter and process part'
   node.update();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
-  expect(node.find('Filter').at(0).prop('flowNodeNames')).toEqual(getFlowNodeNames());
   expect(node.find('ProcessPart').prop('flowNodeNames')).toEqual(getFlowNodeNames());
 });
 
@@ -247,11 +248,14 @@ it('should load the process definition xml when a new definition is selected', a
 
   loadProcessDefinitionXml.mockClear();
 
-  await node.find(DefinitionSelection).prop('onChange')({
-    key: 'newDefinition',
-    versions: ['1'],
-    tenantIds: ['a', 'b'],
-  });
+  await node.find(DefinitionList).prop('onChange')(
+    {
+      key: 'newDefinition',
+      versions: ['1'],
+      tenantIds: ['a', 'b'],
+    },
+    0
+  );
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
 });
@@ -269,7 +273,8 @@ it('should reset variable groupBy report when changing to a definition that does
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
+
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
@@ -293,7 +298,7 @@ it('should reset variable view report when changing to a definition that does no
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].view).toEqual({$set: null});
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
@@ -316,13 +321,13 @@ it('should reset distributed by variable report when changing to a definition th
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].distributedBy).toEqual({$set: {type: 'none', value: null}});
 });
 
 it('should not reset variable report when changing to a definition that has the same variable', async () => {
-  loadVariables.mockReturnValueOnce([{name: 'doubleVar'}]);
+  loadVariables.mockReturnValue([{name: 'doubleVar'}]);
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -335,7 +340,7 @@ it('should not reset variable report when changing to a definition that has the 
     />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
   expect(spy.mock.calls[0][0].groupBy).toEqual(undefined);
 });
 
@@ -359,7 +364,7 @@ it('should reset heatmap target value on definition change if flow nodes does no
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
 });
@@ -383,7 +388,7 @@ it('should reset process part on definition change if flow nodes does not exist'
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.processPart).toBeDefined();
 });
@@ -409,9 +414,25 @@ it('should not reset heatmap target value on definition change if flow nodes exi
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).not.toBeDefined();
+});
+
+it('should reset heatmap visualization when copying a definition', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={update(report, {data: {visualization: {$set: 'heat'}}})}
+      updateReport={spy}
+    />
+  );
+
+  node.find(DefinitionList).prop('onCopy')(0);
+
+  expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: 'table'});
 });
 
 it('should not reset process part on definition change if flow nodes exist', async () => {
@@ -433,7 +454,7 @@ it('should not reset process part on definition change if flow nodes exist', asy
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.processPart).not.toBeDefined();
 });
@@ -465,10 +486,10 @@ it('should show not show a measure selection where it does not make sense', () =
 it('should allow collapsing sections', () => {
   const node = shallow(<ReportControlPanel {...props} />);
 
-  node.find('.source').find(Button).simulate('click');
+  node.find('.source .sectionTitle').simulate('click');
   expect(node.find('.source')).toHaveClassName('hidden');
 
-  node.find('.source').find(Button).simulate('click');
+  node.find('.source .sectionTitle').simulate('click');
   expect(node.find('.source')).not.toHaveClassName('hidden');
 });
 
@@ -491,7 +512,7 @@ it('should reset columnOrder only when changing definition', async () => {
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({key: 'differentDefinition'});
+  await node.find(DefinitionList).prop('onChange')({key: 'differentDefinition'}, 0);
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).toEqual({
     columnOrder: {$set: []},
@@ -517,13 +538,13 @@ it('should not reset columnOrder when changing version', async () => {
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({key: 'same'});
+  await node.find(DefinitionList).prop('onChange')({key: 'same'}, 0);
 
   expect(spy.mock.calls[0][0].configuration.tableColumns).not.toBeDefined();
 });
 
 it('should add new variables to includedColumns when switching definition/version', async () => {
-  loadVariables.mockReturnValueOnce([{name: 'existingVariable'}, {name: 'newVariable'}]);
+  loadVariables.mockReturnValue([{name: 'existingVariable'}, {name: 'newVariable'}]);
   const reportWithConfig = update(report, {
     data: {
       configuration: {
@@ -539,7 +560,7 @@ it('should add new variables to includedColumns when switching definition/versio
     <ReportControlPanel {...props} updateReport={spy} report={reportWithConfig} />
   );
 
-  await node.find(DefinitionSelection).prop('onChange')({});
+  await node.find(DefinitionList).prop('onChange')({}, 0);
 
   expect(spy.mock.calls[0][0].configuration.tableColumns.includedColumns).toEqual({
     $set: ['variable:existingVariable', 'variable:newVariable'],
@@ -563,4 +584,79 @@ it('should call updateReport with correct payload when adding measures', () => {
     {...props, updateReport: spy}
   );
   expect(spy).toHaveBeenCalledWith(reportUpdateMock, true);
+});
+
+describe('filter handling when changing definitions', () => {
+  const report = update(props.report, {
+    data: {
+      definitions: {
+        $set: [
+          {
+            key: 'aKey',
+            versions: ['aVersion'],
+            tenantIds: [],
+            identifier: 'def1',
+          },
+          {
+            key: 'aKey',
+            versions: ['aVersion'],
+            tenantIds: [],
+            identifier: 'def2',
+          },
+        ],
+      },
+      filter: {
+        $set: [
+          {filterLevel: 'instance', type: 'runningInstancesOnly', appliedTo: ['def1', 'def2']},
+        ],
+      },
+    },
+  });
+
+  it('should remove removed definitions from filters', async () => {
+    const spy = jest.fn();
+    const node = shallow(<ReportControlPanel {...props} report={report} updateReport={spy} />);
+
+    await node.find(DefinitionList).prop('onRemove')(0);
+
+    expect(spy.mock.calls[0][0].filter).toEqual({
+      $set: [{filterLevel: 'instance', type: 'runningInstancesOnly', appliedTo: ['def2']}],
+    });
+  });
+
+  it('should remove filters if they contain no definitions after definition removal', async () => {
+    const spy = jest.fn();
+    const node = shallow(
+      <ReportControlPanel
+        {...props}
+        report={update(report, {data: {filter: {0: {appliedTo: {$set: ['def1']}}}}})}
+        updateReport={spy}
+      />
+    );
+
+    await node.find(DefinitionList).prop('onRemove')(0);
+
+    expect(spy.mock.calls[0][0].filter).toEqual({
+      $set: [],
+    });
+  });
+
+  it('should remove existing view level filters when adding definitions', async () => {
+    const spy = jest.fn();
+    const node = shallow(
+      <ReportControlPanel
+        {...props}
+        report={update(report, {
+          data: {filter: {0: {appliedTo: {$set: ['def1']}, filterLevel: {$set: 'view'}}}},
+        })}
+        updateReport={spy}
+      />
+    );
+
+    await node.find(AddDefinition).prop('onAdd')([{}]);
+
+    expect(spy.mock.calls[0][0].filter).toEqual({
+      $set: [],
+    });
+  });
 });

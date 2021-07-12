@@ -28,14 +28,14 @@ exports[`should render a table with correct data 1`] = `
             50
              
             instances
-            <a>
-              <ForwardRef(Button)>
-                <Icon
-                  type="save"
-                />
-                Instance IDs
-              </ForwardRef(Button)>
-            </a>
+            <DownloadButtonErrorHandler
+              fileName="department_Outliers.csv"
+            >
+              <Icon
+                type="save"
+              />
+              Instance IDs
+            </DownloadButtonErrorHandler>
           </div>,
           1,
           10,

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 
 import java.io.IOException;
@@ -40,6 +41,8 @@ public class ESVersionChecker {
     supportedVersions.add("7.9.0");
     supportedVersions.add("7.10.0");
     supportedVersions.add("7.11.0");
+    supportedVersions.add("7.12.0");
+    supportedVersions.add("7.13.0");
   }
 
   private static final Comparator<String> MAJOR_COMPARATOR = Comparator.comparingInt(major -> Integer.parseInt(
@@ -51,8 +54,9 @@ public class ESVersionChecker {
   private static final Comparator<String> LATEST_VERSION_COMPARATOR =
     MAJOR_COMPARATOR.thenComparing(MINOR_COMPARATOR).thenComparing(PATCH_COMPARATOR);
 
-  public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {
-    String currentVersion = getCurrentESVersion(esClient);
+  public static void checkESVersionSupport(final RestHighLevelClient esClient,
+                                           final RequestOptions requestOptions) throws IOException {
+    String currentVersion = getCurrentESVersion(esClient, requestOptions);
 
     if (!isCurrentVersionSupported(currentVersion)) {
       String latestSupportedES = getLatestSupportedESVersion();
@@ -72,10 +76,11 @@ public class ESVersionChecker {
       Integer.parseInt(getMinorVersionFrom(latestSupportedES)) < Integer.parseInt(getMinorVersionFrom(currentVersion));
   }
 
-  private static String getCurrentESVersion(RestHighLevelClient esClient) throws IOException {
-    String responseJson = EntityUtils.toString(esClient.getLowLevelClient()
-                                                 .performRequest(new Request("GET", "/"))
-                                                 .getEntity());
+  private static String getCurrentESVersion(final RestHighLevelClient esClient,
+                                            final RequestOptions requestOptions) throws IOException {
+    final Request request = new Request("GET", "/");
+    request.setOptions(requestOptions);
+    final String responseJson = EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
     ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
 
     return node.get("version").get("number").toString().replace("\"", "");

@@ -12,7 +12,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
@@ -32,8 +31,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
-                         final ZoneId timezone) {
+  public void addFilters(final BoolQueryBuilder query,
+                         final List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
+                         final FilterContext filterContext) {
     List<QueryBuilder> filters = query.filter();
     for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
@@ -47,7 +47,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
         boolQueryBuilder.should(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            termQuery(nestedActivityIdFieldLabel(), value),
+            termQuery(nestedFlowNodeIdFieldLabel(), value),
             ScoreMode.None
           )
         );
@@ -57,19 +57,19 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
         boolQueryBuilder.mustNot(
           nestedQuery(
             FLOW_NODE_INSTANCES,
-            termQuery(nestedActivityIdFieldLabel(), value),
+            termQuery(nestedFlowNodeIdFieldLabel(), value),
             ScoreMode.None
           )
         );
       }
     } else {
       log.error("Could not filter for flow nodes. " +
-        "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
+                  "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
     }
     return boolQueryBuilder;
   }
 
-  private String nestedActivityIdFieldLabel() {
+  private String nestedFlowNodeIdFieldLabel() {
     return FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID;
   }
 }

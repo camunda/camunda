@@ -6,10 +6,11 @@
 package org.camunda.optimize.service.es.reader;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 
 @AllArgsConstructor
 @Component
@@ -17,7 +18,7 @@ public class DecisionInstanceReader {
   private final DefinitionInstanceReader definitionInstanceReader;
 
   public Set<String> getExistingDecisionDefinitionKeysFromInstances() {
-    return definitionInstanceReader.getAllExistingDefinitionKeys(DefinitionType.DECISION);
+    return definitionInstanceReader.getAllExistingDefinitionKeys(DECISION);
   }
 
 }

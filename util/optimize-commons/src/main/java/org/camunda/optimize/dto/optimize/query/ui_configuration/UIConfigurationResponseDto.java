@@ -24,6 +24,7 @@ public class UIConfigurationResponseDto {
   private boolean sharingEnabled;
   private boolean tenantsAvailable;
   private String optimizeVersion;
+  private boolean optimizeCloudEnvironment;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private List<String> webhooks;
   private boolean logoutHidden;

@@ -12,7 +12,9 @@ import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
@@ -23,6 +25,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 @AllArgsConstructor
 @Path("/alert")
@@ -61,5 +64,14 @@ public class AlertRestService {
                           @PathParam("id") String alertId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.deleteAlert(alertId, userId);
+  }
+
+  @POST
+  @Path("/delete")
+  @Produces(MediaType.APPLICATION_JSON)
+  public void deleteAlerts(@Context ContainerRequestContext requestContext,
+                           @NotNull @RequestBody List<String> alertIds) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    alertService.deleteAlerts(alertIds, userId);
   }
 }

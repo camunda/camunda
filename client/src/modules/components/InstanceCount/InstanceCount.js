@@ -6,20 +6,18 @@
 
 import React, {useState} from 'react';
 import equals from 'fast-deep-equal';
-import update from 'immutability-helper';
 
 import {Popover} from 'components';
 import {FilterList} from 'filter';
-import {getFlowNodeNames, loadVariables, loadInputVariables, loadOutputVariables} from 'services';
+import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter}) {
+export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter, showHeader}) {
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [flowNodeNames, setFlowNodeNames] = useState();
   const [variables, setVariables] = useState();
 
   const {data, reportType} = report;
@@ -31,9 +29,11 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
   const hasFilter = data.filter?.length > 0;
 
   function loadRequiredData() {
-    if (reportType === 'process') {
-      mightFail(getFlowNodeNames(key, versions?.[0], tenantIds?.[0]), setFlowNodeNames, showError);
+    if (!key) {
+      return;
+    }
 
+    if (reportType === 'process') {
       const payload = [
         {
           processDefinitionKey: key,
@@ -67,7 +67,7 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
 
     data.filter.forEach((filter) => {
       const additionalFilterIdx = unappliedAdditionalFilters.findIndex((additionalFilter) =>
-        equals(additionalFilter, sanitize(filter))
+        equals(additionalFilter, filter)
       );
       if (additionalFilterIdx !== -1) {
         additionalFilters.push(filter);
@@ -99,22 +99,30 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
             icon={useIcon}
             title={!useIcon && t('report.instanceCount.appliedFilters')}
             disabled={noInfo}
+            renderInPortal="instanceCountPopover"
           >
-            <div className="countString">
-              {typeof instanceCount === 'number' &&
-                t(`report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}`, {
-                  count: instanceCount,
-                  totalCount,
-                })}
-            </div>
+            {showHeader && (
+              <div className="countString">
+                {typeof instanceCount === 'number' &&
+                  t(
+                    `report.instanceCount.${reportType}.label${totalCount !== 1 ? '-plural' : ''}`,
+                    {
+                      count: instanceCount,
+                      totalCount,
+                    }
+                  )}
+              </div>
+            )}
             {reportFilters.length > 0 && (
               <>
-                <div className="filterListHeading">
-                  {t('report.instanceCount.reportFiltersHeading')}
-                </div>
+                {showHeader && (
+                  <div className="filterListHeading">
+                    {t('report.instanceCount.reportFiltersHeading')}
+                  </div>
+                )}
                 <FilterList
+                  definitions={data.definitions}
                   data={reportFilters}
-                  flowNodeNames={flowNodeNames}
                   variables={variables}
                   expanded
                 />
@@ -126,8 +134,8 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
                   {t('report.instanceCount.additionalFiltersHeading')}
                 </div>
                 <FilterList
+                  definitions={data.definitions}
                   data={additionalFilters}
-                  flowNodeNames={flowNodeNames}
                   variables={variables}
                   expanded
                 />
@@ -150,21 +158,6 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
       </span>
     </div>
   );
-}
-
-// dashboard filters don't have the concept of include/exclude undefined, however this field is returned
-// from the backend when the filter is applied. In order to compare the set dashboard filters with what
-// is returned, we remove the includeUndefined and excludeUndefined fields from the filter
-function sanitize(filter) {
-  if (filter.data?.data) {
-    // date variables have two nested data fields
-    return update(filter, {data: {data: {$unset: ['includeUndefined', 'excludeUndefined']}}});
-  }
-  if (filter.data) {
-    // normal date filters have one level of data
-    return update(filter, {data: {$unset: ['includeUndefined', 'excludeUndefined']}});
-  }
-  return filter;
 }
 
 export default withErrorHandling(InstanceCount);

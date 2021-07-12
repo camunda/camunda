@@ -17,12 +17,13 @@ const orders = {
 };
 
 export default function AggregationType({report, onChange}) {
-  const {configuration, distributedBy} = report;
+  const {configuration} = report;
   const {aggregationTypes} = report.configuration;
 
   const isDurationReport = report?.view?.properties.includes('duration');
   const isUserTaskReport = report?.view?.entity === 'userTask';
   const isVariableReport = report?.view?.entity === 'variable';
+  const isIncidentReport = report?.view?.entity === 'incident';
 
   function isLastAggregation(field, type) {
     return configuration[field].length === 1 && configuration[field][0] === type;
@@ -46,10 +47,6 @@ export default function AggregationType({report, onChange}) {
       },
     };
 
-    if (distributedBy.type !== 'none') {
-      changes.visualization = {$set: 'table'};
-    }
-
     return onChange(changes, true);
   }
 
@@ -72,7 +69,7 @@ export default function AggregationType({report, onChange}) {
 
   if (isDurationReport || isVariableReport) {
     const availableAggregations = [];
-    if (isVariableReport) {
+    if (!isIncidentReport) {
       availableAggregations.push('sum');
     }
     availableAggregations.push('min', 'avg');
@@ -93,10 +90,11 @@ export default function AggregationType({report, onChange}) {
     return (
       <Popover
         className="AggregationType"
+        renderInPortal="AggregationType"
         title={
           <>
             <span className="content">{popoverTitle}</span>
-            <Icon className="editIcon" type="edit" />
+            <Icon className="editIcon" type="edit-small" />
           </>
         }
       >

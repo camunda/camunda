@@ -369,8 +369,9 @@ public class ElasticsearchWriterUtil {
 
   private static TaskResponse getTaskResponse(final OptimizeElasticsearchClient esClient,
                                               final String taskId) throws IOException {
-    final Response response = esClient.getHighLevelClient().getLowLevelClient()
-      .performRequest(new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId));
+    final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+    request.setOptions(esClient.requestOptions());
+    final Response response = esClient.getHighLevelClient().getLowLevelClient().performRequest(request);
     final ObjectMapper objectMapper = new ObjectMapperFactory(
       dateTimeFormatter,
       ConfigurationServiceBuilder.createDefaultConfiguration()

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -218,7 +219,7 @@ public class ProcessVariableUpdateWriter extends AbstractProcessInstanceDataWrit
     throws JsonProcessingException {
     final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
       .processInstanceId(processInstanceId)
-      .engine(engineAlias)
+      .dataSource(new EngineDataSourceDto(engineAlias))
       .tenantId(tenantId)
       .build();
     procInst.getVariables().addAll(variables);

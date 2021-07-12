@@ -595,6 +595,31 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
+  public void removeProcessDefinitionKeyFromAllHistoricProcessInstances() {
+    removeDefinitionKeyFromHistoricEntities("ACT_HI_PROCINST", "PROC_DEF_KEY_");
+  }
+
+  @SneakyThrows
+  public void removeProcessDefinitionKeyFromAllHistoricVariableUpdates() {
+    String sql = "UPDATE ACT_HI_DETAIL SET PROC_DEF_KEY_ = NULL WHERE TYPE_ = 'VariableUpdate';";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void removeProcessDefinitionKeyFromAllHistoricIncidents() {
+    removeDefinitionKeyFromHistoricEntities("ACT_HI_INCIDENT", "PROC_DEF_KEY_");
+  }
+
+  @SneakyThrows
+  public void removeProcessDefinitionKeyFromAllHistoricFlowNodes() {
+    FLOW_NODE_INSTANCE_TABLES.forEach(
+      table -> removeDefinitionKeyFromHistoricEntities(table, "PROC_DEF_KEY_")
+    );
+  }
+
   public int countDecisionDefinitions() throws SQLException {
     String sql = "select count(*) as total from act_re_decision_def;";
     ResultSet statement = connection.createStatement().executeQuery(sql);
@@ -609,6 +634,15 @@ public class EngineDatabaseExtension implements Extension {
     ResultSet statement = connection.createStatement().executeQuery(sql);
     statement.next();
     return statement.getInt("total");
+  }
+
+  @SneakyThrows
+  private void removeDefinitionKeyFromHistoricEntities(final String table,
+                                                       final String defKeyField) {
+    String sql = String.format("UPDATE %s SET %s = NULL;", table, defKeyField);
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.executeUpdate();
+    connection.commit();
   }
 
   @SneakyThrows

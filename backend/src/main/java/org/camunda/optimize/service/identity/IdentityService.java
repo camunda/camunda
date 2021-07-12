@@ -8,6 +8,7 @@ package org.camunda.optimize.service.identity;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -15,7 +16,6 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.IdentityAuthorizationService;
@@ -33,10 +33,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 
 @Component
+@Slf4j
 public class IdentityService implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
   private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS =
@@ -69,12 +71,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public boolean isSuperUserIdentity(final String userId) {
-    return configurationService.getSuperUserIds().contains(userId)||
+    return configurationService.getAuthConfiguration().getSuperUserIds().contains(userId) ||
       isInSuperUserGroup(userId);
   }
 
   private boolean isInSuperUserGroup(final String userId) {
-    final List<String> authorizedGroupIds = configurationService.getSuperGroupIds();
+    final List<String> authorizedGroupIds =
+      configurationService.getAuthConfiguration().getSuperGroupIds();
     return getAllGroupsOfUser(userId)
       .stream()
       .map(IdentityDto::getId)
@@ -94,17 +97,15 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
     return getUserById(userOrGroupId)
-      .map(userDto -> (IdentityWithMetadataResponseDto) userDto)
-      .map(Optional::of)
-      .orElseGet(() -> Optional.ofNullable(getGroupById(userOrGroupId).orElse(null)));
+      .map(IdentityWithMetadataResponseDto.class::cast)
+      .or(() -> getGroupById(userOrGroupId));
   }
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForIdAsUser(final String userId,
                                                                                       final String userOrGroupId) {
     return getUserById(userOrGroupId)
-      .map(userDto -> (IdentityWithMetadataResponseDto) userDto)
-      .map(Optional::of)
-      .orElseGet(() -> Optional.ofNullable(getGroupById(userOrGroupId).orElse(null)))
+      .map(IdentityWithMetadataResponseDto.class::cast)
+      .or(() -> getGroupById(userOrGroupId))
       .map(identityDto -> {
         if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
           throw new ForbiddenException(String.format(
@@ -122,7 +123,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
         () -> {
           if (applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userId)) {
             final Optional<UserDto> userDto = engineContextFactory.getConfiguredEngines().stream()
-              .map(engineContext -> engineContext.getUserById(userId))
+              .map(engineContext -> getIdentityIdIfExistsFromEngine(
+                engineContext.getEngineAlias(), userId, () -> engineContext.getUserById(userId)
+              ))
               .filter(Optional::isPresent)
               .map(Optional::get)
               .findFirst();
@@ -142,7 +145,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
         () -> {
           if (applicationAuthorizationService.isGroupAuthorizedToAccessOptimize(groupId)) {
             final Optional<GroupDto> groupDto = engineContextFactory.getConfiguredEngines().stream()
-              .map(engineContext -> engineContext.getGroupById(groupId))
+              .map(engineContext -> getIdentityIdIfExistsFromEngine(
+                engineContext.getEngineAlias(), groupId, () -> engineContext.getGroupById(groupId)
+              ))
               .filter(Optional::isPresent)
               .map(Optional::get)
               .findFirst();
@@ -229,7 +234,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   private void initUserGroupCache() {
     userGroupsCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
-      .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
+      .expireAfterAccess(
+        configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(), TimeUnit.MINUTES
+      )
       .build(this::fetchUserGroups);
   }
 
@@ -242,11 +249,23 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   private List<GroupDto> fetchUserGroups(final String userId) {
     final Set<GroupDto> result = new HashSet<>();
     applicationAuthorizationService.getAuthorizedEnginesForUser(userId)
-      .forEach(engineAlias -> {
-        final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
-        result.addAll(engineContext.getAllGroupsOfUser(userId));
-      });
+      .forEach(
+        engineAlias -> engineContextFactory.getConfiguredEngineByAlias(engineAlias)
+          .ifPresent(engineContext -> result.addAll(engineContext.getAllGroupsOfUser(userId)))
+      );
     return new ArrayList<>(result);
+  }
+
+  private <T extends IdentityDto> Optional<T> getIdentityIdIfExistsFromEngine(
+    final String engineAlias,
+    final String identityId,
+    final Supplier<Optional<T>> optionalSupplier) {
+    try {
+      return optionalSupplier.get();
+    } catch (final Exception ex) {
+      log.warn("Failed fetching identity with id {} from engine {}.", identityId, engineAlias);
+      return Optional.empty();
+    }
   }
 
 }

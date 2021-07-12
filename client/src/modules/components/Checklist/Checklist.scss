@@ -9,8 +9,10 @@
     align-items: center;
     justify-content: flex-end;
 
-    .selectAll {
+    .selectAll,
+    .customHeader {
       flex-grow: 1;
+      align-self: flex-end;
     }
 
     .Input[type='text'] {

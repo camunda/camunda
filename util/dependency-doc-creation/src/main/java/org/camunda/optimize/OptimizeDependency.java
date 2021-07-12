@@ -45,14 +45,21 @@ public class OptimizeDependency {
   }
 
   public String toMarkDown() {
-    return "* " + projectName +
-      "@" + projectVersion + ", " +
-      "[(" + licenseName +")]" +
-      "(" + licenseLink + ")\n";
+    if (validString(licenseLink)) {
+      return "* " + projectName +
+        "@" + projectVersion + ", " +
+        "[(" + licenseName +")]" +
+        "(" + licenseLink + ")\n";
+    } else {
+      return "* " + projectName +
+        "@" + projectVersion + ", " +
+        "(" + licenseName +")\n";
+    }
+
   }
 
   public boolean isProperLicense() {
-    return validString(licenseName) && validString(licenseLink) && validString(projectName);
+    return validString(licenseName) && validString(projectName);
   }
 
   private boolean validString(String str) {

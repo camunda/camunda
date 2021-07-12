@@ -286,6 +286,38 @@ public class CombinedProcessCsvExportServiceIT extends AbstractIT {
     assertThat(actualContent.trim()).isEmpty();
   }
 
+  @Test
+  public void combinedReportCsvExportWorksWithSemiColonDelimiter() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().setExportCsvDelimiter(';');
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    final OffsetDateTime endDate = startDate.plus(1, ChronoUnit.MILLIS);
+    ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), startDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance1.getId(), endDate);
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), startDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance2.getId(), endDate);
+    String singleReportId1 = createNewSingleDurationNumberReport(processInstance1);
+    String singleReportId2 = createNewSingleDurationNumberReport(processInstance2);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
+    importAllEngineEntitiesFromScratch();
+
+
+    // when
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    String actualContent = getResponseContentAsString(response);
+    String stringExpected =
+      FileReaderUtil.readFileWithWindowsLineSeparator(
+        "/csv/process/combined/combined_semicolon_delimiter.csv"
+      );
+    assertThat(actualContent).isEqualTo(stringExpected);
+  }
+
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()

@@ -57,6 +57,12 @@ public class AlertClient {
       .execute();
   }
 
+  public Response bulkDeleteAlerts(List<String> alertIds) {
+    return getRequestExecutor()
+      .buildBulkDeleteAlertsRequest(alertIds)
+      .execute();
+  }
+
   public void deleteAlert(String alertId) {
     final Response response = deleteAlertAsUser(alertId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());

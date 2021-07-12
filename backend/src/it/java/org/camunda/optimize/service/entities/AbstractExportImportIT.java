@@ -14,11 +14,12 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -26,6 +27,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.configuration.Com
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportCountChartDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportDurationChartDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
@@ -95,7 +97,7 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   @BeforeEach
   public void setUp() {
     // only superusers are authorized to export reports
-    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(DEFAULT_USERNAME);
   }
 
   @SuppressWarnings(UNUSED)
@@ -265,15 +267,28 @@ public abstract class AbstractExportImportIT extends AbstractIT {
 
   protected void createAndSaveDefinition(final DefinitionType definitionType,
                                          final String tenantId) {
-    createAndSaveDefinition(definitionType, tenantId, DEFINITION_VERSION);
+    createAndSaveDefinition(DEFINITION_KEY, definitionType, tenantId);
+  }
+
+  protected void createAndSaveDefinition(final String key,
+                                         final DefinitionType definitionType,
+                                         final String tenantId) {
+    createAndSaveDefinition(key, definitionType, tenantId, DEFINITION_VERSION);
   }
 
   protected void createAndSaveDefinition(final DefinitionType definitionType,
                                          final String tenantId,
                                          final String version) {
+    createAndSaveDefinition(DEFINITION_KEY, definitionType, tenantId, version);
+  }
+
+  protected void createAndSaveDefinition(final String key,
+                                         final DefinitionType definitionType,
+                                         final String tenantId,
+                                         final String version) {
     switch (definitionType) {
       case PROCESS:
-        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(tenantId, version);
+        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(key, tenantId, version);
         elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
           PROCESS_DEFINITION_INDEX_NAME,
           processDefinition.getId(),
@@ -352,9 +367,13 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     dashboard.setOwner("owner");
     dashboard.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     dashboard.setLastModified(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
+    DashboardStartDateFilterDto startDateFilter = new DashboardStartDateFilterDto();
+    startDateFilter.setData(new DashboardDateFilterDataDto(null));
+    DashboardEndDateFilterDto endDateFilter = new DashboardEndDateFilterDto();
+    endDateFilter.setData(new DashboardDateFilterDataDto(null));
     dashboard.setAvailableFilters(Arrays.asList(
-      new DashboardStartDateFilterDto(),
-      new DashboardEndDateFilterDto()
+      startDateFilter,
+      endDateFilter
     ));
 
     return dashboard;
@@ -427,16 +446,19 @@ public abstract class AbstractExportImportIT extends AbstractIT {
     return new DashboardDefinitionExportDto(reportDefToImport);
   }
 
-  protected static DashboardDefinitionExportDto createDashboardExportDtoWithResources(
-    final List<String> resourceIds) {
+  protected static DashboardDefinitionExportDto createDashboardExportDtoWithResources(final List<String> resourceIds) {
     final DashboardDefinitionRestDto dashboard = createDashboardDefinition(resourceIds);
     return new DashboardDefinitionExportDto(dashboard);
   }
 
   private static ProcessDefinitionOptimizeDto createProcessDefinition(final String tenantId, final String version) {
+    return createProcessDefinition(DEFINITION_KEY, tenantId, version);
+  }
+
+  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String key, final String tenantId, final String version) {
     return ProcessDefinitionOptimizeDto.builder()
       .id(IdGenerator.getNextId())
-      .key(DEFINITION_KEY)
+      .key(key)
       .name(DEFINITION_NAME)
       .version(version)
       .versionTag(version)
@@ -462,16 +484,18 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   private static ProcessReportDataDto createSimpleProcessReportData() {
     return TemplatedProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(DEFINITION_KEY)
-      .setProcessDefinitionVersion(DEFINITION_VERSION)
+      // using definition key as identifier to ensure we have consistent identifiers
+      .definitions(List.of(new ReportDataDefinitionDto(DEFINITION_KEY, DEFINITION_KEY, List.of(DEFINITION_VERSION))))
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
   }
 
   private static DecisionReportDataDto createSimpleDecisionReportData() {
     final DecisionReportDataDto decisionReportData = new DecisionReportDataDto();
-    decisionReportData.setDecisionDefinitionKey(DEFINITION_KEY);
-    decisionReportData.setDecisionDefinitionVersion(DEFINITION_VERSION);
+    // using definition key as identifier to ensure we have consistent identifiers
+    decisionReportData.setDefinitions(List.of(
+      new ReportDataDefinitionDto(DEFINITION_KEY, DEFINITION_KEY, List.of(DEFINITION_VERSION))
+    ));
     return decisionReportData;
   }
 
@@ -511,12 +535,12 @@ public abstract class AbstractExportImportIT extends AbstractIT {
   }
 
   protected void setAuthorizedSuperGroup() {
-    embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperUserIds(Collections.emptyList());
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_DECISION_DEFINITION);
-    embeddedOptimizeExtension.getConfigurationService().getSuperGroupIds().add(GROUP_ID);
+    embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperGroupIds().add(GROUP_ID);
   }
 }

@@ -5,10 +5,10 @@
  */
 
 import React from 'react';
-
-import FilterList from './FilterList';
-
 import {shallow} from 'enzyme';
+
+import FlowNodeResolver from './FlowNodeResolver';
+import FilterList from './FilterList';
 
 jest.mock('services', () => {
   return {
@@ -19,6 +19,17 @@ jest.mock('services', () => {
     },
   };
 });
+
+const props = {
+  definitions: [
+    {
+      identifier: 'definition',
+      versions: ['all'],
+      tenantIds: [null],
+    },
+  ],
+  openEditFilterModal: () => {},
+};
 
 it('should render an unordered list', () => {
   const node = shallow(<FilterList data={[]} />);
@@ -40,7 +51,7 @@ it('should display date preview if the filter is a date filter', () => {
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  const node = shallow(<FilterList data={data} />);
   expect(node).toMatchSnapshot();
 });
 
@@ -56,12 +67,11 @@ it('should use the variables prop to resolve variable names', () => {
           values: ['varValue'],
         },
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(
-    <FilterList variables={{inputVariable: []}} data={data} openEditFilterModal={jest.fn()} />
-  );
+  const node = shallow(<FilterList {...props} variables={{inputVariable: []}} data={data} />);
 
   expect(node.find('VariablePreview').prop('variableName')).toBe('Missing variable');
 
@@ -92,10 +102,11 @@ it('should disable editing and pass a warning to variablePreview if variable doe
           values: ['varValue'],
         },
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(<FilterList data={data} variables={[]} openEditFilterModal={jest.fn()} />);
+  const node = shallow(<FilterList {...props} data={data} variables={[]} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -115,14 +126,15 @@ it('should use the DateFilterPreview component for date variables', () => {
           end: endDate,
         },
       },
+      appliedTo: ['definition'],
     },
   ];
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  const node = shallow(<FilterList {...props} data={data} />);
 
   expect(node.find('ActionItem').find('DateFilterPreview')).toExist();
 });
 
-it('should display nodeListPreview for flow node filter', async () => {
+it('should display nodeListPreview for flow node filter', () => {
   const data = [
     {
       type: 'executedFlowNodes',
@@ -130,23 +142,39 @@ it('should display nodeListPreview for flow node filter', async () => {
         operator: 'in',
         values: ['flowNode'],
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(
-    <FilterList
-      id={'qwe'}
-      data={data}
-      openEditFilterModal={jest.fn()}
-      flowNodeNames={{flowNode: 'flow node name'}}
-    />
-  );
+  let node = shallow(<FilterList {...props} data={data} />);
+
+  node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'flowNode', name: 'flow node name'}],
     operator: 'in',
     type: 'executedFlowNodes',
   });
+});
+
+it('should display excluded flow nodes for view level flow node selection filter', () => {
+  const data = [
+    {
+      type: 'executedFlowNodes',
+      filterLevel: 'view',
+      data: {
+        operator: 'no in',
+        values: ['flowNode1', 'flownode2'],
+      },
+      appliedTo: ['definition'],
+    },
+  ];
+
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
+
+  expect(node.find('.parameterName')).toIncludeText('Flow Node Selection');
+  expect(node.find('.filterText')).toIncludeText('2 excluded Flow Nodes');
 });
 
 it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {
@@ -157,12 +185,12 @@ it('should disable editing and pass a warning to the filter item if at least one
         operator: 'in',
         values: ['flowNodeThatDoesNotExist'],
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(
-    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{}} />
-  );
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({}));
 
   expect(node).toMatchSnapshot();
 });
@@ -174,10 +202,12 @@ it('should display a flow node filter with executing nodes', () => {
       data: {
         values: ['flowNode1'],
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({}));
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'flowNode1', name: undefined}],
@@ -195,10 +225,11 @@ it('should display a duration filter', () => {
         value: 18,
         unit: 'hours',
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+  const node = shallow(<FilterList {...props} data={data} />);
   const actionItem = node.find('ActionItem').dive();
 
   expect(actionItem).toIncludeText('Duration is less than');
@@ -212,12 +243,12 @@ it('should display a flow node duration filter', () => {
       data: {
         a: {operator: '<', value: 18, unit: 'hours'},
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(
-    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{a: 'flow node name'}} />
-  );
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({a: 'flow node name'}));
 
   expect(node).toMatchSnapshot();
 });
@@ -229,17 +260,12 @@ it('should show flow node duration filter in expanded state if specified', () =>
       data: {
         a: {operator: '<', value: 18, unit: 'hours'},
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(
-    <FilterList
-      data={data}
-      openEditFilterModal={jest.fn()}
-      flowNodeNames={{a: 'flow node name'}}
-      expanded
-    />
-  );
+  let node = shallow(<FilterList {...props} data={data} expanded />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({a: 'flow node name'}));
 
   expect(node.find('b')).toExist();
 });
@@ -251,12 +277,12 @@ it('should disable editing and pass a warning to the filter item if at least one
       data: {
         flowNodeThatDoesNotExist: {operator: '<', value: 18, unit: 'hours'},
       },
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(
-    <FilterList data={data} openEditFilterModal={jest.fn()} flowNodeNames={{}} />
-  );
+  let node = shallow(<FilterList {...props} data={data} />);
+  node = shallow(node.find(FlowNodeResolver).prop('render')({}));
 
   expect(node).toMatchSnapshot();
 });
@@ -266,12 +292,15 @@ it('should display a running instances only filter', () => {
     {
       type: 'runningInstancesOnly',
       data: null,
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
+  const node = shallow(<FilterList {...props} data={data} />);
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Running Instances Only');
+  expect(node.find('.filterText').prop('dangerouslySetInnerHTML').__html).toBe(
+    '<b>Running</b> Instances only'
+  );
 });
 
 it('should display a completed instances only filter', () => {
@@ -279,10 +308,40 @@ it('should display a completed instances only filter', () => {
     {
       type: 'completedInstancesOnly',
       data: null,
+      appliedTo: ['definition'],
     },
   ];
 
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
+  const node = shallow(<FilterList {...props} data={data} />);
 
-  expect(node.find('ActionItem').dive()).toIncludeText('Completed Instances Only');
+  expect(node.find('.filterText').prop('dangerouslySetInnerHTML').__html).toBe(
+    '<b>Completed</b> Instances only'
+  );
+});
+
+describe('apply to handling', () => {
+  const data = [
+    {
+      type: 'completedInstancesOnly',
+      data: null,
+      appliedTo: ['definition1'],
+    },
+  ];
+
+  it('should show how many definitions the filter applies to', () => {
+    const node = shallow(
+      <FilterList
+        data={data}
+        definitions={[{identifier: 'definition1'}, {identifier: 'definition2'}]}
+      />
+    );
+
+    expect(node.find('.appliedTo')).toIncludeText('Applied to: 1 Process');
+  });
+
+  it('should not show how many definitions the filter applies to if there is only one definition', () => {
+    const node = shallow(<FilterList data={data} definitions={[{identifier: 'definition1'}]} />);
+
+    expect(node.find('.appliedTo')).not.toExist();
+  });
 });

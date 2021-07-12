@@ -6,11 +6,19 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import update from 'immutability-helper';
+import deepEqual from 'fast-deep-equal';
 
-import {DefinitionSelection, Icon, Button} from 'components';
+import {Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
-import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
+import {
+  getFlowNodeNames,
+  reportConfig,
+  loadProcessDefinitionXml,
+  loadVariables,
+  getRandomId,
+} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 
@@ -19,7 +27,9 @@ import AggregationType from './AggregationType';
 import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
+import {DefinitionList} from './DefinitionList';
 import Measure from './Measure';
+import AddDefinition from './AddDefinition';
 import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
@@ -34,7 +44,6 @@ export default withErrorHandling(
       this.state = {
         variables: null,
         flowNodeNames: null,
-        scrolled: false,
         showSource: true,
         showSetup: true,
         showFilter: false,
@@ -43,8 +52,11 @@ export default withErrorHandling(
 
     componentDidMount() {
       const data = this.props.report.data;
-      this.loadVariables(data?.definitions?.[0]);
-      this.loadFlowNodeNames(data?.definitions?.[0]);
+
+      if (data?.definitions?.length) {
+        this.loadVariables(data.definitions);
+        this.loadFlowNodeNames(data.definitions[0]);
+      }
     }
 
     loadFlowNodeNames = ({key, versions, tenantIds}) => {
@@ -59,22 +71,20 @@ export default withErrorHandling(
       }
     };
 
-    loadVariables = ({key, versions, tenantIds}) => {
-      if (key && versions && tenantIds) {
-        return new Promise((resolve, reject) => {
-          this.props.mightFail(
-            loadVariables([
-              {
-                processDefinitionKey: key,
-                processDefinitionVersions: versions,
-                tenantIds,
-              },
-            ]),
-            (variables) => this.setState({variables}, resolve),
-            (error) => reject(showError(error))
-          );
-        });
-      }
+    loadVariables = (definitions) => {
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          loadVariables(
+            definitions.map(({key, versions, tenantIds}) => ({
+              processDefinitionKey: key,
+              processDefinitionVersions: versions,
+              tenantIds,
+            }))
+          ),
+          (variables) => this.setState({variables}, resolve),
+          (error) => reject(showError(error))
+        );
+      });
     };
 
     loadXml = ({key, versions, tenantIds}) => {
@@ -129,46 +139,153 @@ export default withErrorHandling(
       }
     };
 
-    changeDefinition = async ({key, versions, tenantIds, name}) => {
+    copyDefinition = async (idx) => {
+      const {data} = this.props.report;
+      const definitionToCopy = data.definitions[idx];
+
+      const newDefinition = {
+        ...definitionToCopy,
+        tenantIds: [...definitionToCopy.tenantIds],
+        versions: [...definitionToCopy.versions],
+        displayName: definitionToCopy.displayName + ` (${t('common.copyLabel')})`,
+        identifier: getRandomId(),
+      };
+
+      const change = {
+        definitions: {$splice: [[idx, 0, newDefinition]]},
+        filter: {$set: data.filter.filter(({filterLevel}) => filterLevel !== 'view')}, // view level filters not allowed for multi-definition reports
+      };
+      if (data.visualization === 'heat') {
+        change.visualization = {$set: 'table'};
+      }
+
+      this.props.setLoading(true);
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    addDefinition = async (newDefinitions) => {
+      let change = {definitions: {$push: newDefinitions}};
+
+      this.props.setLoading(true);
+      const data = this.props.report.data;
+
+      const {definitions} = update(data, change);
+      change = {
+        ...change,
+        ...(await this.processDefinitionUpdate(definitions)),
+        filter: {$set: data.filter.filter(({filterLevel}) => filterLevel !== 'view')}, // view level filters not allowed for multi-definition reports
+      };
+      change.configuration = change.configuration || {};
+      if (data.definitions.length === 1) {
+        // if we add the second definition, we need to make sure that it's not a heatmap report
+        if (data.visualization === 'heat') {
+          change.visualization = {$set: 'table'};
+        }
+      }
+
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    removeDefinition = async (idx) => {
+      let change = {
+        definitions: {$splice: [[idx, 1]]},
+      };
+
+      this.props.setLoading(true);
+      const data = this.props.report.data;
+
+      const {definitions} = update(data, change);
+      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+
+      if (data.definitions.length === 1) {
+        // removing the last definition will reset view and groupby options
+        change = {
+          ...change,
+          view: {$set: null},
+          groupBy: {$set: null},
+          visualization: {$set: null},
+          distributedBy: {$set: {type: 'none', value: null}},
+        };
+      }
+
+      const newFilters = [];
+      const identifierOfRemovedDefinition = data.definitions[idx].identifier;
+      data.filter.forEach((filter) => {
+        if (filter.appliedTo.includes(identifierOfRemovedDefinition)) {
+          if (filter.appliedTo.length > 1) {
+            // if the filter contains at least one other definition, we remove the removed definition from the list
+            newFilters.push({
+              ...filter,
+              appliedTo: filter.appliedTo.filter(
+                (identifier) => identifier !== identifierOfRemovedDefinition
+              ),
+            });
+          }
+        } else {
+          newFilters.push(filter);
+        }
+      });
+      change.filter = {$set: newFilters};
+
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    changeDefinition = async (changedDefinition, idx) => {
+      this.props.setLoading(true);
+
+      let change = {
+        definitions: {
+          [idx]: {$set: changedDefinition},
+        },
+      };
+
+      const {definitions} = update(this.props.report.data, change);
+      change = {...change, ...(await this.processDefinitionUpdate(definitions))};
+
+      await this.props.updateReport(change, true);
+      this.props.setLoading(false);
+    };
+
+    processDefinitionUpdate = async (newDefinitions) => {
+      if (!newDefinitions?.length) {
+        return {};
+      }
+
       const {
         configuration: {
           tableColumns: {columnOrder, includedColumns, excludedColumns},
           processPart,
           heatmapTargetValue: {values},
         },
-        definitions: [{key: definitionKey}],
+        definitions,
       } = this.props.report.data;
+
       const targetFlowNodes = Object.keys(values);
+      const change = {};
 
-      const definitionData = {
-        key,
-        versions,
-        tenantIds,
-        name: name,
-        displayName: name,
-      };
-
-      this.props.setLoading(true);
       const [xml] = await Promise.all([
-        this.loadXml(definitionData),
-        this.loadVariables(definitionData),
-        this.loadFlowNodeNames(definitionData),
+        this.loadXml(newDefinitions[0]),
+        this.loadVariables(newDefinitions),
+        this.loadFlowNodeNames(newDefinitions[0]),
       ]);
 
-      const change = {
-        definitions: {
-          $set: [definitionData],
-        },
-        configuration: {xml: {$set: xml}},
-      };
+      change.configuration = {xml: {$set: xml}};
 
       const variableConfig = this.getVariableConfig();
       if (variableConfig && !this.variableExists(variableConfig.name)) {
         variableConfig.reset(change);
       }
 
-      if (columnOrder.length && key !== definitionKey) {
-        change.configuration.tableColumns = {columnOrder: {$set: []}};
+      if (columnOrder.length) {
+        const previousDefinitionKeys = definitions.map(({key}) => key);
+        const newDefinitionKeys = newDefinitions.map(({key}) => key);
+
+        if (!deepEqual(previousDefinitionKeys, newDefinitionKeys)) {
+          change.configuration.tableColumns = {columnOrder: {$set: []}};
+        }
       }
 
       if (includedColumns.length) {
@@ -196,8 +313,7 @@ export default withErrorHandling(
         change.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
       }
 
-      await this.props.updateReport(change, true);
-      this.props.setLoading(false);
+      return change;
     };
 
     updateReport = (type, newValue) => {
@@ -206,165 +322,171 @@ export default withErrorHandling(
 
     render() {
       const {data, result} = this.props.report;
-      const {showSource, showSetup, showFilter, scrolled, flowNodeNames, variables} = this.state;
+      const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
 
-      const {key, versions, tenantIds} = data.definitions?.[0] ?? {};
+      const {key} = data.definitions?.[0] ?? {};
 
       const shouldDisplayMeasure = ['frequency', 'duration'].includes(data.view?.properties[0]);
       const shouldAllowAddingMeasure = data.view?.properties.length === 1 && shouldDisplayMeasure;
 
       return (
         <div className="ReportControlPanel">
-          <section className={classnames('select', 'source', {hidden: !showSource})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showSource: !showSource});
-              }}
-            >
-              <Icon type="data-source" />
-              {t('common.dataSource')}
-              <span className={classnames('sectionToggle', {open: showSource})}>
-                <Icon type="down" />
-              </span>
-            </Button>
-            <DefinitionSelection
-              type="process"
-              definitionKey={key}
-              versions={versions}
-              tenants={tenantIds}
-              xml={data.configuration.xml}
-              onChange={this.changeDefinition}
-              renderDiagram
-            />
-          </section>
-          <section className={classnames('reportSetup', {hidden: !showSetup})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showSetup: !showSetup});
-              }}
-            >
-              <Icon type="report" />
-              {t('report.reportSetup')}
-              <span className={classnames('sectionToggle', {open: showSetup})}>
-                <Icon type="down" />
-              </span>
-            </Button>
-            <ul>
-              <li className="select">
-                <span className="label">{t(`report.view.label`)}</span>
-                <ReportSelect
-                  type="process"
-                  field="view"
-                  value={data.view}
-                  report={this.props.report}
-                  variables={{variable: variables}}
-                  disabled={!key}
-                  onChange={(newValue) => this.updateReport('view', newValue)}
-                />
-                {data.view?.entity === 'variable' && (
-                  <AggregationType report={data} onChange={this.props.updateReport} />
-                )}
-              </li>
-              {shouldDisplayMeasure && (
-                <Measure
-                  report={data}
-                  updateMeasure={(newMeasures) =>
-                    this.updateReport('view', {...data.view, properties: newMeasures})
+          <div className="controlSections">
+            <section className={classnames('select', 'source', {hidden: !showSource})}>
+              <div
+                tabIndex="0"
+                className="sectionTitle"
+                onClick={() => {
+                  this.setState({showSource: !showSource});
+                }}
+                onKeyDown={(evt) => {
+                  if (
+                    (evt.key === ' ' || evt.key === 'Enter') &&
+                    evt.target === evt.currentTarget
+                  ) {
+                    this.setState({showSource: !showSource});
                   }
-                  updateAggregation={this.props.updateReport}
-                />
-              )}
-              {shouldAllowAddingMeasure && (
-                <li className="addMeasure">
-                  <Button
-                    onClick={() =>
-                      this.updateReport('view', {
-                        ...data.view,
-                        properties: ['frequency', 'duration'],
-                      })
-                    }
-                  >
-                    + {t('report.addMeasure')}
-                  </Button>
-                </li>
-              )}
-              <li className="select">
-                <span className="label">{t(`report.groupBy.label`)}</span>
-                <ReportSelect
+                }}
+              >
+                <Icon type="data-source" />
+                {t('common.dataSource')}
+                <AddDefinition
                   type="process"
-                  field="groupBy"
-                  value={data.groupBy}
-                  report={this.props.report}
-                  variables={{variable: variables}}
-                  disabled={!key || !data.view}
-                  onChange={(newValue) => this.updateReport('groupBy', newValue)}
-                  previous={[data.view]}
+                  definitions={data.definitions}
+                  onAdd={this.addDefinition}
                 />
-              </li>
-              <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
-              {isDurationHeatmap(data) && (
+                <span className={classnames('sectionToggle', {open: showSource})}>
+                  <Icon type="down" />
+                </span>
+              </div>
+              <DefinitionList
+                type="process"
+                definitions={data.definitions}
+                onCopy={this.copyDefinition}
+                onChange={this.changeDefinition}
+                onRemove={this.removeDefinition}
+              />
+            </section>
+            <section className={classnames('reportSetup', {hidden: !showSetup})}>
+              <Button
+                className="sectionTitle"
+                onClick={() => {
+                  this.setState({showSetup: !showSetup});
+                }}
+              >
+                <Icon type="report" />
+                {t('report.reportSetup')}
+                <span className={classnames('sectionToggle', {open: showSetup})}>
+                  <Icon type="down" />
+                </span>
+              </Button>
+              <ul>
                 <li className="select">
-                  <span className="label">{t('report.heatTarget.label')}</span>
-                  <TargetValueComparison
+                  <span className="label">{t(`report.view.label`)}</span>
+                  <ReportSelect
+                    type="process"
+                    field="view"
+                    value={data.view}
                     report={this.props.report}
-                    onChange={this.props.updateReport}
+                    variables={{variable: variables}}
+                    disabled={!key}
+                    onChange={(newValue) => this.updateReport('view', newValue)}
                   />
+                  {data.view?.entity === 'variable' && (
+                    <AggregationType report={data} onChange={this.props.updateReport} />
+                  )}
                 </li>
-              )}
-              {isProcessInstanceDuration(data) && (
-                <li>
-                  <ProcessPart
-                    flowNodeNames={flowNodeNames}
-                    xml={data.configuration.xml}
-                    processPart={data.configuration.processPart}
-                    update={(newPart) => {
-                      const change = {configuration: {processPart: {$set: newPart}}};
-                      if (data.configuration.aggregationTypes.includes('median')) {
-                        const newAggregations = data.configuration.aggregationTypes.filter(
-                          (type) => type !== 'median'
-                        );
-                        if (newAggregations.length === 0) {
-                          newAggregations.push('avg');
-                        }
-
-                        change.configuration.aggregationTypes = {$set: newAggregations};
+                {shouldDisplayMeasure && (
+                  <Measure
+                    report={data}
+                    updateMeasure={(newMeasures) =>
+                      this.updateReport('view', {...data.view, properties: newMeasures})
+                    }
+                    updateAggregation={this.props.updateReport}
+                  />
+                )}
+                {shouldAllowAddingMeasure && (
+                  <li className="addMeasure">
+                    <Button
+                      onClick={() =>
+                        this.updateReport('view', {
+                          ...data.view,
+                          properties: ['frequency', 'duration'],
+                        })
                       }
-                      this.props.updateReport(change, true);
-                    }}
+                    >
+                      + {t('report.addMeasure')}
+                    </Button>
+                  </li>
+                )}
+                <li className="select">
+                  <span className="label">{t(`report.groupBy.label`)}</span>
+                  <ReportSelect
+                    type="process"
+                    field="groupBy"
+                    value={data.groupBy}
+                    report={this.props.report}
+                    variables={{variable: variables}}
+                    disabled={!key || !data.view}
+                    onChange={(newValue) => this.updateReport('groupBy', newValue)}
+                    previous={[data.view]}
                   />
                 </li>
-              )}
-            </ul>
-          </section>
-          <div className="filter header">
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showFilter: !showFilter});
-              }}
-            >
-              <Icon type="filter" />
-              {t('common.filter.label')}
-              <span className={classnames('sectionToggle', {open: showFilter})}>
-                <Icon type="down" />
-              </span>
-              {data.filter?.length > 0 && <span className="filterCount">{data.filter.length}</span>}
-            </Button>
-          </div>
-          <div
-            className={classnames('scrollable', {withDivider: scrolled || !showFilter})}
-            onScroll={(evt) => this.setState({scrolled: evt.target.scrollTop > 0})}
-          >
+                <DistributedBy report={this.props.report} onChange={this.props.updateReport} />
+                {isDurationHeatmap(data) && (
+                  <li className="select">
+                    <span className="label">{t('report.heatTarget.label')}</span>
+                    <TargetValueComparison
+                      report={this.props.report}
+                      onChange={this.props.updateReport}
+                    />
+                  </li>
+                )}
+                {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
+                  <li>
+                    <ProcessPart
+                      flowNodeNames={flowNodeNames}
+                      xml={data.configuration.xml}
+                      processPart={data.configuration.processPart}
+                      update={(newPart) => {
+                        const change = {configuration: {processPart: {$set: newPart}}};
+                        if (data.configuration.aggregationTypes.includes('median')) {
+                          const newAggregations = data.configuration.aggregationTypes.filter(
+                            (type) => type !== 'median'
+                          );
+                          if (newAggregations.length === 0) {
+                            newAggregations.push('avg');
+                          }
+
+                          change.configuration.aggregationTypes = {$set: newAggregations};
+                        }
+                        this.props.updateReport(change, true);
+                      }}
+                    />
+                  </li>
+                )}
+              </ul>
+            </section>
             <section className={classnames('filter', {hidden: !showFilter})}>
+              <Button
+                className="sectionTitle"
+                onClick={() => {
+                  this.setState({showFilter: !showFilter});
+                }}
+              >
+                <Icon type="filter" />
+                {t('common.filter.label')}
+                <span className={classnames('sectionToggle', {open: showFilter})}>
+                  <Icon type="down" />
+                </span>
+                {data.filter?.length > 0 && (
+                  <span className="filterCount">{data.filter.length}</span>
+                )}
+              </Button>
               <Filter
-                flowNodeNames={flowNodeNames}
                 data={data.filter}
                 onChange={this.props.updateReport}
-                processDefinitionKey={key}
-                processDefinitionVersions={versions}
-                tenantIds={tenantIds}
+                definitions={data.definitions}
                 xml={data.configuration.xml}
                 variables={variables}
               />

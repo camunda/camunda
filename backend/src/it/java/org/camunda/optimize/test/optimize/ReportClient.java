@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
@@ -43,6 +44,7 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -202,15 +204,25 @@ public class ReportClient {
     return createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
+  public SingleProcessReportDefinitionRequestDto createSingleProcessReportDefinitionDto(final String collectionId,
+                                                                                        final List<String> tenants) {
+    return createSingleProcessReportDefinitionDto(collectionId, Collections.emptySet(), tenants);
+  }
 
-  public SingleProcessReportDefinitionRequestDto createSingleProcessReportDefinitionDto(String collectionId,
-                                                                                        String definitionKey,
-                                                                                        List<String> tenants) {
+  public SingleProcessReportDefinitionRequestDto createSingleProcessReportDefinitionDto(final String collectionId,
+                                                                                        final String definitionKey,
+                                                                                        final List<String> tenants) {
+    return createSingleProcessReportDefinitionDto(collectionId, Collections.singleton(definitionKey), tenants);
+  }
+
+  public SingleProcessReportDefinitionRequestDto createSingleProcessReportDefinitionDto(final String collectionId,
+                                                                                        final Set<String> definitionKeys,
+                                                                                        final List<String> tenants) {
     ProcessReportDataDto numberReport = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(definitionKey)
-      .setProcessDefinitionVersion(RANDOM_VERSION)
-      .setTenantIds(tenants)
+      .definitions(
+        definitionKeys.stream().map(key -> new ReportDataDefinitionDto(key, tenants)).collect(Collectors.toList())
+      )
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
@@ -252,11 +264,17 @@ public class ReportClient {
   public SingleDecisionReportDefinitionRequestDto createSingleDecisionReportDefinitionDto(final String collectionId,
                                                                                           final String definitionKey,
                                                                                           final List<String> tenants) {
+    return createSingleDecisionReportDefinitionDto(collectionId, Collections.singleton(definitionKey), tenants);
+  }
+
+  public SingleDecisionReportDefinitionRequestDto createSingleDecisionReportDefinitionDto(final String collectionId,
+                                                                                          final Set<String> definitionKeys,
+                                                                                          final List<String> tenants) {
     DecisionReportDataDto rawDataReport = DecisionReportDataBuilder
       .create()
-      .setDecisionDefinitionKey(definitionKey)
-      .setDecisionDefinitionVersion(RANDOM_VERSION)
-      .setTenantIds(tenants)
+      .definitions(
+        definitionKeys.stream().map(key -> new ReportDataDefinitionDto(key, tenants)).collect(Collectors.toList())
+      )
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleDecisionReportDefinitionRequestDto decisionReportDefinition = new SingleDecisionReportDefinitionRequestDto();
@@ -279,11 +297,16 @@ public class ReportClient {
       .getId();
   }
 
-  public String createSingleProcessReport(ProcessReportDataDto data) {
+  public String createSingleProcessReport(final ProcessReportDataDto data) {
+    return createSingleProcessReport(data, null);
+  }
+
+  public String createSingleProcessReport(final ProcessReportDataDto data, final String collectionId) {
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(TEST_REPORT_NAME);
     singleProcessReportDefinitionDto.setData(data);
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
@@ -369,14 +392,13 @@ public class ReportClient {
     }
   }
 
-  private Response createSingleProcessReportAsUserRawResponse(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto,
-                                                              final String user, final String pw) {
+  public Response createSingleProcessReportAsUserRawResponse(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto,
+                                                             final String user, final String pw) {
     return getRequestExecutor()
       .withUserAuthentication(user, pw)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute();
   }
-
 
   public String createSingleProcessReportAsUser(final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto,
                                                 final String user, final String pw) {
@@ -474,7 +496,7 @@ public class ReportClient {
       .execute(SingleProcessReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public SingleDecisionReportDefinitionRequestDto getDecisionReportById(final String id) {
+  public SingleDecisionReportDefinitionRequestDto getSingleDecisionReportById(final String id) {
     return getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(SingleDecisionReportDefinitionRequestDto.class, Response.Status.OK.getStatusCode());
@@ -484,6 +506,13 @@ public class ReportClient {
     return getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public Response getReportByIdAsUserRawResponse(final String id, final String username, final String password) {
+    return getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildGetReportRequest(id)
+      .execute();
   }
 
   public void deleteReport(final String reportId) {

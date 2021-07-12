@@ -24,6 +24,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class UIConfigurationRestServiceIT extends AbstractIT {
+
   private final String WEBHOOK_1_NAME = "webhook1";
   private final String WEBHOOK_2_NAME = "webhook2";
 
@@ -221,6 +222,15 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
       .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isMetadataTelemetryEnabled());
     assertThat(response.isSettingsManuallyConfirmed())
       .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isManuallyConfirmed());
+  }
+
+  @Test
+  public void getIsCloudEnvironment() {
+    // when
+    final UIConfigurationResponseDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.isOptimizeCloudEnvironment()).isFalse();
   }
 
   private void setWebappsEndpoint(String webappsEndpoint) {

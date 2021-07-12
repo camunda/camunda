@@ -9,10 +9,14 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
+
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which
@@ -42,16 +46,19 @@ import java.util.List;
   @JsonSubTypes.Type(value = RunningFlowNodesOnlyFilterDto.class, name = "runningFlowNodesOnly"),
   @JsonSubTypes.Type(value = CompletedFlowNodesOnlyFilterDto.class, name = "completedFlowNodesOnly"),
   @JsonSubTypes.Type(value = CanceledFlowNodesOnlyFilterDto.class, name = "canceledFlowNodesOnly"),
-  @JsonSubTypes.Type(value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-    name = "completedOrCanceledFlowNodesOnly")
+  @JsonSubTypes.Type(value = CompletedOrCanceledFlowNodesOnlyFilterDto.class, name = "completedOrCanceledFlowNodesOnly")
 })
 @Data
 @NoArgsConstructor
+@FieldNameConstants
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
   @NotNull
   protected FilterApplicationLevel filterLevel;
+
+  @NotEmpty
+  protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
 
   protected ProcessFilterDto(final DATA data, FilterApplicationLevel filterLevel) {
     this.data = data;

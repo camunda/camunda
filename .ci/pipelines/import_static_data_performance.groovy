@@ -115,6 +115,7 @@ pipeline {
                 NUMBER_OF_PROCESS_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_count' | jq '.count') || true
                 NUMBER_OF_ACTIVITY_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0,"aggs": {"flowNodes": {"nested": {"path": "flowNodeInstances"}}}}' | jq '.aggregations.flowNodes.doc_count') || true
                 NUMBER_OF_USER_TASKS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size":0,"aggs":{"flowNodes":{"nested":{"path":"flowNodeInstances"},"aggs":{"user_task_flow_nodes":{"filter":{"bool":{"must":[{"term":{"flowNodeInstances.flowNodeType":{"value":"userTask","boost":1.0}}}],"adjust_pure_negative":true,"boost":1.0}}}}}}}' | jq '.aggregations.flowNodes.user_task_flow_nodes.doc_count') || true
+                NUMBER_OF_INCOMPLETE_USER_TASKS=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size":0,"aggs":{"flowNodes":{"nested":{"path":"flowNodeInstances"},"aggs":{"user_task_incomplete_flow_nodes":{"filter":{"bool":{"must":[{"term":{"flowNodeInstances.flowNodeType":{"value":"userTask","boost":1.0}}}],"must_not":[{"exists":{"field":"flowNodeInstances.flowNodeInstanceId"}}],"adjust_pure_negative":true,"boost":1.0}}}}}}}' | jq '.aggregations.flowNodes.user_task_incomplete_flow_nodes.doc_count') || true
                 NUMBER_OF_VARIABLES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{"size": 0, "aggs": {"variables": {"nested": { "path": "variables" },  "aggs": { "variable_count": { "value_count": { "field": "variables.id" } } } } } }' | jq '.aggregations.variables.doc_count') || true
                 NUMBER_OF_DECISION_INSTANCES=\$(curl -s -X GET 'http://elasticsearch.${NAMESPACE}:9200/optimize-decision-instance/_count' | jq '.count') || true
 
@@ -126,16 +127,18 @@ pipeline {
                 EXPECTED_NUMBER_OF_VARIABLES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_varinst where var_type_ in (\'string\', \'double\', \'integer\', \'long\', \'short\', \'date\', \'boolean\' ) and CASE_INST_ID_  is  null;") || true
                 EXPECTED_NUMBER_OF_DECISION_INSTANCES=\$(psql -qAt -h postgres.${NAMESPACE} -U camunda -d engine -c "select count(*) from act_hi_decinst;") || true
 
+                echo "NUMBER_OF_DECISION_INSTANCES"
+                test "\$NUMBER_OF_DECISION_INSTANCES" = "\${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true
                 echo "NUMBER_OF_PROCESS_INSTANCES"
                 test "\$NUMBER_OF_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
                 echo "NUMBER_OF_ACTIVITY_INSTANCES"
                 test "\$NUMBER_OF_ACTIVITY_INSTANCES" = "\${EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES}" || error=true
-                echo "NUMBER_OF_USER_TASKS"
-                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
                 echo "NUMBER_OF_VARIABLES"
                 test "\$NUMBER_OF_VARIABLES" = "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
-                echo "NUMBER_OF_DECISION_INSTANCES"
-                test "\$NUMBER_OF_DECISION_INSTANCES" = "\${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true
+                echo "NUMBER_OF_USER_TASKS"
+                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true                
+                echo "NUMBER_OF_INCOMPLETE_USER_TASKS"
+                test "\$NUMBER_OF_INCOMPLETE_USER_TASKS" = "0" || error=true
 
                 # Fail the build if there was an error
                 if [ \$error ]

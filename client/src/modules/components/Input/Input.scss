@@ -112,8 +112,12 @@ input[type='radio'] {
     border-color: var(--blue-darken-55);
 
     &:focus {
-      box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55),
-        var(--blue-lighten-75) 0px 0px 0px 2px;
+      box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55);
+
+      &.focus-visible {
+        box-shadow: inset 0px 0px 0px 4px var(--blue-darken-55),
+          var(--blue-lighten-75) 0px 0px 0px 2px;
+      }
     }
 
     &:not(:focus) {

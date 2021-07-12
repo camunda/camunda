@@ -49,7 +49,9 @@ public class AuthenticationCookieRefreshFilter extends GenericFilterBean {
             final LocalDateTime now = LocalDateUtil.getCurrentLocalDateTime();
             return expiresAt.isAfter(now)
               // token reached last third of lifeTime => refresh
-              && Duration.between(now, expiresAt).toMinutes() <= (configurationService.getTokenLifeTimeMinutes() / 3);
+              &&
+              Duration.between(now, expiresAt).toMinutes()
+                <= (configurationService.getAuthConfiguration().getTokenLifeTimeMinutes() / 3);
           })
           .orElse(false)
         )
@@ -62,4 +64,5 @@ public class AuthenticationCookieRefreshFilter extends GenericFilterBean {
 
     chain.doFilter(request, response);
   }
+
 }

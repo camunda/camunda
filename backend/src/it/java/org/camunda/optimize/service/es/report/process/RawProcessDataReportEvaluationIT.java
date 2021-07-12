@@ -52,14 +52,15 @@ import java.util.stream.IntStream;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_LIMIT;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PAGINATION_DEFAULT_OFFSET;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
-import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_LIMIT;
-import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_OFFSET;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -174,6 +175,30 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       assertThat(expectedProcessInstanceIds).contains(actualProcessInstanceId);
       expectedProcessInstanceIds.remove(actualProcessInstanceId);
     }
+  }
+
+  @Test
+  public void reportEvaluationForNoInstances() {
+    // given
+    final ProcessDefinitionEngineDto definition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram("aUniqueDefinitionKey"));
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataBuilderHelper()
+      .processDefinitionKey(definition.getKey())
+      .processDefinitionVersions(Collections.singletonList(ALL_VERSIONS))
+      .viewProperty(ViewProperty.RAW_DATA)
+      .visualization(ProcessVisualization.TABLE)
+      .build();
+
+    // when
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      reportClient.evaluateRawReport(reportData, null);
+    final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isZero();
+    assertThat(result.getPagination()).isNotNull();
   }
 
   @Test
@@ -609,12 +634,20 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     final ProcessInstanceEngineDto completedInstanceOneWeek =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceOneWeek.getId());
-    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(completedInstanceOneWeek.getId(), twoWeeksAgo, oneWeekAgo);
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      completedInstanceOneWeek.getId(),
+      twoWeeksAgo,
+      oneWeekAgo
+    );
 
     final ProcessInstanceEngineDto completedInstanceOneDay =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(completedInstanceOneDay.getId());
-    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(completedInstanceOneDay.getId(), threeDaysAgo, twoDaysAgo);
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      completedInstanceOneDay.getId(),
+      threeDaysAgo,
+      twoDaysAgo
+    );
 
     final ProcessInstanceEngineDto runningInstanceOneDay =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -1144,7 +1177,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactly(processInstance2.getId());
     assertThat(result.getPagination().getLimit()).isEqualTo(1);
-    assertThat(result.getPagination().getOffset()).isEqualTo(DEFAULT_OFFSET);
+    assertThat(result.getPagination().getOffset()).isEqualTo(PAGINATION_DEFAULT_OFFSET);
   }
 
   @Test
@@ -1168,7 +1201,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(30L);
     assertThat(result.getData()).hasSize(20);
-    assertThat(result.getPagination().getLimit()).isEqualTo(DEFAULT_LIMIT);
+    assertThat(result.getPagination().getLimit()).isEqualTo(PAGINATION_DEFAULT_LIMIT);
     assertThat(result.getPagination().getOffset()).isZero();
   }
 

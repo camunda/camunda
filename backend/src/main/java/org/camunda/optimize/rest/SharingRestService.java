@@ -79,7 +79,7 @@ public class SharingRestService {
                                                DashboardShareRestDto createSharingDto) {
     if (configurationService.getSharingEnabled()) {
       String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-      return sharingService.crateNewDashboardShare(createSharingDto, userId);
+      return sharingService.createNewDashboardShare(createSharingDto, userId);
     } else {
       throw new SharingNotAllowedException("Sharing of dashboards is disabled per Optimize configuration");
     }

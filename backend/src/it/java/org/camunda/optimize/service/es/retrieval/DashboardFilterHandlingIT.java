@@ -11,15 +11,16 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardBooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -681,18 +682,20 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
   private DashboardVariableFilterDto createDateVarDashboardFilter() {
     final DashboardVariableFilterDto variableFilter = new DashboardVariableFilterDto();
-    variableFilter.setData(new DashboardVariableFilterDataDto(VariableType.DATE, DATE_VAR, null));
+    variableFilter.setData(new DashboardDateVariableFilterDataDto(DATE_VAR));
     return variableFilter;
   }
 
   private DashboardVariableFilterDto createBoolVarDashboardFilter() {
     final DashboardVariableFilterDto variableFilter = new DashboardVariableFilterDto();
-    variableFilter.setData(new DashboardVariableFilterDataDto(VariableType.BOOLEAN, BOOL_VAR, null));
+    variableFilter.setData(new DashboardBooleanVariableFilterDataDto(BOOL_VAR));
     return variableFilter;
   }
 
   private DashboardStateFilterDto createStateDashboardFilter() {
-    return new DashboardStateFilterDto();
+    DashboardStateFilterDto stateFilterDto = new DashboardStateFilterDto();
+    stateFilterDto.setData(new DashboardStateFilterDataDto(null));
+    return stateFilterDto;
   }
 
 }

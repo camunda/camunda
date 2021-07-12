@@ -15,6 +15,8 @@ const props = {
   availableFilters: [],
   setAvailableFilters: jest.fn(),
   reports: [{id: 'reportId'}],
+  filter: [],
+  setFilter: jest.fn(),
 };
 
 jest.mock('./service', () => ({
@@ -23,6 +25,7 @@ jest.mock('./service', () => ({
 
 beforeEach(() => {
   props.setAvailableFilters.mockClear();
+  props.setFilter.mockClear();
   getVariableNames.mockClear();
 });
 

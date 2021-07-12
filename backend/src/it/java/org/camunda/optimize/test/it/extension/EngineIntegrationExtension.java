@@ -180,7 +180,12 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public void claimAllRunningUserTasksWithAssignee(final String assigneeId, final String processInstanceId) {
-    engineClient.claimAllRunningUserTasksWithAssignee(assigneeId, DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+    engineClient.claimAllRunningUserTasksWithAssignee(
+      assigneeId,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceId
+    );
   }
 
   public void claimAllRunningUserTasks(final String user, final String password, final String processInstanceId) {
@@ -360,8 +365,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @SneakyThrows
-  public void failExternalTasks(final String processInstanceId) {
-    engineClient.failExternalTasks(processInstanceId);
+  public void failExternalTasks(final String businessKey) {
+    engineClient.failExternalTasks(businessKey);
   }
 
   public void completeExternalTasks(final String processInstanceId) {
@@ -406,6 +411,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   public ProcessInstanceEngineDto startProcessInstance(String processDefinitionId, Map<String, Object> variables) {
     return engineClient.startProcessInstance(processDefinitionId, variables, "aBusinessKey");
+  }
+
+  public ProcessInstanceEngineDto startProcessInstance(final String processDefinitionId, final String businessKey) {
+    return engineClient.startProcessInstance(processDefinitionId, new HashMap<>(), businessKey);
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String procDefId,

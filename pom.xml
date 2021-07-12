@@ -23,11 +23,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.4.0</project.previousVersion>
+    <project.previousVersion>3.5.0</project.previousVersion>
 
     <camunda.engine.version>7.15.0</camunda.engine.version>
     <camunda.maven.artifacts.version>7.15.0-ee</camunda.maven.artifacts.version>
-    <zeebe.version>1.0.0</zeebe.version>
+    <zeebe.version>1.1.0</zeebe.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <!-- maven plugins -->
@@ -43,19 +43,19 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.14.1</elasticsearch.log4j.version>
     <guava.version>30.1.1-jre</guava.version>
-    <spring.version>5.3.7</spring.version>
-    <mockito.version>3.10.0</mockito.version>
+    <spring.version>5.3.8</spring.version>
+    <mockito.version>3.11.2</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
     <junit.jupiter.version>5.7.2</junit.jupiter.version>
     <junit.platform.version>1.7.2</junit.platform.version>
     <mockserver.version>5.11.2</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.19.0</assertj.version>
+    <assertj.version>3.20.2</assertj.version>
 
     <lombok.version>1.18.20</lombok.version>
     <logback.version>1.2.3</logback.version>
-    <slf4j.version>1.7.30</slf4j.version>
+    <slf4j.version>1.7.31</slf4j.version>
 
     <version.node>v14.15.4</version.node>
     <version.yarn>v1.7.0</version.yarn>
@@ -339,7 +339,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

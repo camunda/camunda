@@ -16,15 +16,16 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
 
 @Component
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeProcessDefinitionFetcher extends AbstractZeebeRecordFetcher<ZeebeProcessDefinitionRecordDto> {
+
+  private static final Set<Intent> INTENTS = Set.of(ProcessIntent.CREATED);
 
   public ZeebeProcessDefinitionFetcher(final int partitionId,
                                        final OptimizeElasticsearchClient esClient,
@@ -35,7 +36,7 @@ public class ZeebeProcessDefinitionFetcher extends AbstractZeebeRecordFetcher<Ze
 
   @Override
   protected String getBaseIndexName() {
-    return ZEEBE_PROCESS_INDEX_NAME;
+    return ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
   }
 
   @Override
@@ -44,8 +45,8 @@ public class ZeebeProcessDefinitionFetcher extends AbstractZeebeRecordFetcher<Ze
   }
 
   @Override
-  protected List<Intent> getIntentsForRecordType() {
-    return Collections.singletonList(ProcessIntent.CREATED);
+  protected Set<Intent> getIntentsForRecordType() {
+    return INTENTS;
   }
 
   @Override

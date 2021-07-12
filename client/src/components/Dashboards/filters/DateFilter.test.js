@@ -21,6 +21,8 @@ const todayFilter = {
   type: 'relative',
   start: {value: 0, unit: 'days'},
   end: null,
+  includeUndefined: false,
+  excludeUndefined: false,
 };
 
 beforeEach(() => {

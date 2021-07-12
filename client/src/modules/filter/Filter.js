@@ -17,6 +17,8 @@ import {
   NodeFilter,
   DurationFilter,
   NodeDuration,
+  StateFilter,
+  NodeSelection,
 } from './modals';
 import FilterList from './FilterList';
 import {loadValues, filterSameTypeExistingFilters} from './service';
@@ -46,6 +48,11 @@ export default class Filter extends React.Component {
 
   getFilterModal = (type) => {
     switch (type) {
+      case 'instanceState':
+      case 'incident':
+      case 'incidentInstances':
+      case 'flowNodeStatus':
+        return StateFilter;
       case 'startDate':
       case 'endDate':
         return DateFilter;
@@ -58,6 +65,10 @@ export default class Filter extends React.Component {
       case 'executedFlowNodes':
       case 'executingFlowNodes':
       case 'canceledFlowNodes':
+        const {newFilterLevel, editFilter} = this.state;
+        if (newFilterLevel === 'view' || editFilter?.filterLevel === 'view') {
+          return NodeSelection;
+        }
         return NodeFilter;
       case 'assignee':
       case 'candidateGroup':
@@ -69,15 +80,20 @@ export default class Filter extends React.Component {
 
   getFilterConfig = (type) => {
     if (type === 'variable') {
-      const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
       return {
-        getVariables: async () =>
-          await loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
-        getValues: async (name, type, numResults, valueFilter) =>
+        getVariables: async (definition) =>
+          await loadVariables([
+            {
+              processDefinitionKey: definition.key,
+              processDefinitionVersions: definition.versions,
+              tenantIds: definition.tenantIds,
+            },
+          ]),
+        getValues: async (name, type, numResults, valueFilter, definition) =>
           await loadValues(
-            this.props.processDefinitionKey,
-            this.props.processDefinitionVersions,
-            this.props.tenantIds,
+            definition.key,
+            definition.versions,
+            definition.tenantIds,
             name,
             type,
             0,
@@ -114,43 +130,27 @@ export default class Filter extends React.Component {
     );
   };
 
-  definitionConfig = () => {
-    const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props;
-    return {
-      processDefinitionKey,
-      processDefinitionVersions,
-      tenantIds,
-    };
-  };
-
   processDefinitionIsNotSelected = () => {
-    return (
-      !this.props.processDefinitionKey ||
-      this.props.processDefinitionKey === '' ||
-      !this.props.processDefinitionVersions ||
-      this.props.processDefinitionVersions.length === 0
-    );
-  };
+    const {definitions} = this.props;
 
-  filterByTypeOnly = (filterLevel) => (type) => () => {
-    this.addFilter({
-      type,
-      data: null,
-      filterLevel,
-    });
+    return (
+      !definitions?.length || // no definitions are selected
+      definitions.every((definition) => !definition.versions.length || !definition.tenantIds.length) // every definition is missing either version or tenant selection
+    );
   };
 
   render() {
-    const FilterModal = this.getFilterModal(this.state.newFilterType);
-    const EditFilterModal = this.getFilterModal(
-      this.state.editFilter ? this.state.editFilter.type : null
-    );
+    const {filterLevel, data, definitions} = this.props;
+    const {newFilterType, editFilter} = this.state;
 
-    const displayAllFilters = !this.props.filterLevel;
-    const displayInstanceFilters = displayAllFilters || this.props.filterLevel === 'instance';
-    const displayViewFilters = displayAllFilters || this.props.filterLevel === 'view';
+    const FilterModal = this.getFilterModal(newFilterType);
+    const EditFilterModal = this.getFilterModal(editFilter ? editFilter.type : null);
 
-    const filters = this.props.data.filter(
+    const displayAllFilters = !filterLevel;
+    const displayInstanceFilters = displayAllFilters || filterLevel === 'instance';
+    const displayViewFilters = displayAllFilters || filterLevel === 'view';
+
+    const filters = data.filter(
       ({filterLevel}) => filterLevel === this.props.filterLevel || displayAllFilters
     );
 
@@ -172,7 +172,6 @@ export default class Filter extends React.Component {
             <InstanceFilters
               processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
               openNewFilterModal={this.openNewFilterModal('instance')}
-              filterByTypeOnly={this.filterByTypeOnly('instance')}
             />
           </div>
         )}
@@ -190,9 +189,9 @@ export default class Filter extends React.Component {
               </Tooltip>
             </div>
             <ViewFilters
+              definitions={definitions}
               processDefinitionIsNotSelected={this.processDefinitionIsNotSelected()}
               openNewFilterModal={this.openNewFilterModal('view')}
-              filterByTypeOnly={this.filterByTypeOnly('view')}
             />
           </div>
         )}
@@ -203,29 +202,28 @@ export default class Filter extends React.Component {
         )}
         {filters.length > 1 && <p className="linkingTip">{t('common.filter.linkingTip')}</p>}
         <FilterList
-          {...this.definitionConfig()}
-          flowNodeNames={this.props.flowNodeNames}
+          definitions={definitions}
           openEditFilterModal={this.openEditFilterModal}
           data={filters}
           deleteFilter={this.deleteFilter}
           variables={this.props.variables}
         />
         <FilterModal
+          definitions={definitions}
           addFilter={this.addFilter}
           close={this.closeModal}
           xml={this.props.xml}
-          {...this.definitionConfig()}
-          filterType={this.state.newFilterType}
-          config={this.getFilterConfig(this.state.newFilterType)}
+          filterType={newFilterType}
+          config={this.getFilterConfig(newFilterType)}
         />
         <EditFilterModal
+          definitions={definitions}
           addFilter={this.editFilter}
-          filterData={this.state.editFilter}
+          filterData={editFilter}
           close={this.closeModal}
           xml={this.props.xml}
-          {...this.definitionConfig()}
-          filterType={this.state.editFilter && this.state.editFilter.type}
-          config={this.getFilterConfig(this.state.editFilter && this.state.editFilter.type)}
+          filterType={editFilter?.type}
+          config={this.getFilterConfig(editFilter?.type)}
         />
       </div>
     );

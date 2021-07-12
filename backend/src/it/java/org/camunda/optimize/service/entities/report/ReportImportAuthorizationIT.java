@@ -135,12 +135,12 @@ public class ReportImportAuthorizationIT extends AbstractExportImportIT {
     // given
     createAndSaveDefinition(reportType.toDefinitionType(), null);
     if (superUserType == SuperUserType.USER) {
-      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.emptyList());
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.emptyList());
     } else {
-      embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperUserIds(Collections.emptyList());
       authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
       authorizationClient.createGroupAndAddUser(GROUP_ID, DEFAULT_USERNAME);
-      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
     }
     final String collectionId = collectionClient.createNewCollectionWithScope(
       DEFAULT_USERNAME,
@@ -189,12 +189,12 @@ public class ReportImportAuthorizationIT extends AbstractExportImportIT {
   private void createAuthorizationForSuperUser(final SuperUserType superUserType) {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     if (superUserType == SuperUserType.USER) {
-      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.emptyList());
-      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.emptyList());
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().getSuperUserIds().add(KERMIT_USER);
     } else {
-      embeddedOptimizeExtension.getConfigurationService().setSuperUserIds(Collections.emptyList());
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperUserIds(Collections.emptyList());
       authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-      embeddedOptimizeExtension.getConfigurationService().setSuperGroupIds(Collections.singletonList(GROUP_ID));
+      embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setSuperGroupIds(Collections.singletonList(GROUP_ID));
     }
   }
 

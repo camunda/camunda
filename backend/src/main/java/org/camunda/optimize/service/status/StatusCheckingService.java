@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -41,7 +42,7 @@ public class StatusCheckingService {
   private final EngineContextFactory engineContextFactory;
   private final ImportSchedulerManagerService importSchedulerManagerService;
 
-  private LoadingCache<EngineContext, Boolean> engineConnectionCache = CacheBuilder.newBuilder()
+  private final LoadingCache<EngineContext, Boolean> engineConnectionCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.MINUTES)
     .build(new CacheLoader<EngineContext, Boolean>() {
       @Override
@@ -58,15 +59,29 @@ public class StatusCheckingService {
     return getStatusResponse(false);
   }
 
-  public boolean isConnectedToEsAndAtLeastOneEngine() {
-    if (isConnectedToElasticSearch()) {
-      for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-        if (isConnectedToEngine(engineContext, true)) {
-          return true;
-        }
-      }
+  public boolean isConnectedToElasticSearch() {
+    boolean isConnected = false;
+    try {
+      ClusterHealthRequest request = new ClusterHealthRequest();
+      ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
+        .health(request, esClient.requestOptions());
+
+      isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
+        && healthResponse.getStatus() != ClusterHealthStatus.RED;
+    } catch (Exception ignored) {
+      // do nothing
     }
-    return false;
+    return isConnected;
+  }
+
+  public boolean isConnectedToAtLeastOnePlatformEngineOrCloud() {
+    final Collection<EngineContext> configuredEngines = engineContextFactory.getConfiguredEngines();
+    // if there is no engine configured == cloud
+    return configuredEngines.isEmpty()
+      // else there must be as least one connected Camunda Platform engine
+      || configuredEngines
+      .stream()
+      .anyMatch(engineContext -> isConnectedToEngine(engineContext, true));
   }
 
   private StatusResponseDto getStatusResponse(final boolean skipCache) {
@@ -112,21 +127,6 @@ public class StatusCheckingService {
         .target(engineEndpoint).request(MediaType.APPLICATION_JSON).get()) {
         isConnected = response.getStatus() == Response.Status.OK.getStatusCode();
       }
-    } catch (Exception ignored) {
-      // do nothing
-    }
-    return isConnected;
-  }
-
-  private boolean isConnectedToElasticSearch() {
-    boolean isConnected = false;
-    try {
-      ClusterHealthRequest request = new ClusterHealthRequest();
-      ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
-        .health(request, esClient.requestOptions());
-
-      isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
-        && healthResponse.getStatus() != ClusterHealthStatus.RED;
     } catch (Exception ignored) {
       // do nothing
     }

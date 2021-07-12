@@ -10,14 +10,15 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningUserTaskInstanceFetcher;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.RunningUserTaskInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.CompletedUserTaskInstanceImportService;
 import org.camunda.optimize.service.importing.engine.service.RunningUserTaskInstanceImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
@@ -29,15 +30,18 @@ import java.util.List;
 public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public UserTaskInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
-                                                     final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter) {
+                                                     final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
+                                                     final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -59,7 +63,8 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
       new RunningUserTaskInstanceImportService(
         runningUserTaskInstanceWriter,
         elasticsearchImportJobExecutor,
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -77,7 +82,8 @@ public class UserTaskInstanceEngineImportMediatorFactory extends AbstractEngineI
       new CompletedUserTaskInstanceImportService(
         completedUserTaskInstanceWriter,
         elasticsearchImportJobExecutor,
-        engineContext
+        engineContext,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -70,6 +71,7 @@ import static org.camunda.optimize.service.es.schema.index.AlertIndex.THRESHOLD_
 
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class AlertService implements ReportReferencingService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -340,6 +342,19 @@ public class AlertService implements ReportReferencingService {
     unscheduleJob(toDelete);
   }
 
+  public void deleteAlerts(List<String> alertIds, String userId) {
+    List<String> alertIdsToDelete = new ArrayList<>();
+    for (String alertId : alertIds) {
+      try {
+        verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
+        alertIdsToDelete.add(alertId);
+      } catch (NotFoundException e) {
+        log.debug("Cannot find alert with id [{}], it may have been deleted already", alertId);
+      }
+    }
+    alertWriter.deleteAlerts(alertIdsToDelete);
+  }
+
   private void unscheduleJob(AlertDefinitionDto toDelete) {
     String alertId = toDelete.getId();
     try {
@@ -460,8 +475,7 @@ public class AlertService implements ReportReferencingService {
       .collect(toSet());
   }
 
-  private void verifyUserAuthorizedToEditAlertOrFail(
-    final AlertCreationRequestDto alertDto, final String userId) {
+  private void verifyUserAuthorizedToEditAlertOrFail(final AlertCreationRequestDto alertDto, final String userId) {
     AuthorizedReportDefinitionResponseDto reportDefinitionDto = reportService.getReportDefinition(
       alertDto.getReportId(),
       userId

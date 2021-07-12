@@ -6,9 +6,11 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+
 import {loadRawData} from 'services';
+import {DownloadButton} from 'components';
+
 import {InstancesButton} from './InstancesButton';
-import {Button} from 'components';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -27,14 +29,12 @@ const props = {
     processDefinitionVersions: ['1'],
     tenantIds: ['sales'],
   },
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-it('invoke loadRawData on button Click', () => {
+it('invoke loadRawData on button Click', async () => {
   const node = shallow(<InstancesButton {...props} />);
 
-  window.URL.createObjectURL = jest.fn();
-  node.find(Button).simulate('click');
+  await node.find(DownloadButton).prop('retriever');
 
   expect(loadRawData).toHaveBeenCalledWith({
     filter: [

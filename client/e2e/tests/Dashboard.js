@@ -43,7 +43,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
 test('create a report and add it to the Dashboard', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -92,7 +92,7 @@ test('cancel changes', async (t) => {
 
 test('sharing', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -125,22 +125,22 @@ test('sharing header parameters', async (t) => {
 
   const shareUrl = await e.shareUrl.value;
 
-  await t.navigateTo(shareUrl + '?mode=embed');
+  await t.navigateTo(shareUrl + '&mode=embed');
 
   await t.expect(e.shareOptimizeIcon.visible).ok();
   await t.expect(e.shareTitle.visible).ok();
   await t.expect(e.shareLink.visible).ok();
 
-  await t.navigateTo(shareUrl + '?mode=embed&header=hidden');
+  await t.navigateTo(shareUrl + '&mode=embed&header=hidden');
 
   await t.expect(e.shareHeader.exists).notOk();
 
-  await t.navigateTo(shareUrl + '?header=titleOnly');
+  await t.navigateTo(shareUrl + '&header=titleOnly');
 
   await t.expect(e.shareTitle.exists).ok();
   await t.expect(e.shareLink.exists).notOk();
 
-  await t.navigateTo(shareUrl + '?mode=embed&header=linkOnly');
+  await t.navigateTo(shareUrl + '&mode=embed&header=linkOnly');
 
   await t.expect(e.shareTitle.exists).notOk();
   await t.expect(e.shareLink.exists).ok();
@@ -148,7 +148,7 @@ test('sharing header parameters', async (t) => {
 
 test('sharing with filters', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -179,7 +179,7 @@ test('sharing with filters', async (t) => {
 
 test('remove a report from a dashboard', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -223,7 +223,7 @@ test('deleting', async (t) => {
 
 test('filters', async (t) => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -256,12 +256,13 @@ test('filters', async (t) => {
     crop: {bottom: 250},
   });
 
+  await t.click(e.instanceStateFilter);
+  await t.click(e.switchElement('Running'));
+
   await u.save(t);
 
   await t.expect(e.report.visible).ok();
-
-  await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Running'));
+  await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
   await t.click(e.selectionFilter);
   await t.click(e.switchElement('Software License Costs'));
@@ -278,4 +279,26 @@ test('filters', async (t) => {
   await t.maximizeWindow();
 
   await t.expect(e.report.visible).ok();
+
+  await u.gotoOverview(t);
+  await t.click(Homepage.dashboardItem);
+  await t.expect(e.report.visible).ok();
+  await t.expect(e.instanceStateFilter.textContent).contains('Running');
+
+  await t.click(e.editButton);
+  await t.click(e.instanceStateFilter);
+  await t.click(e.switchElement('Running'));
+  await t.click(e.switchElement('Suspended'));
+
+  await u.save(t);
+
+  await t.click(e.shareButton);
+  await t.click(e.shareSwitch);
+
+  const shareUrl = await e.shareUrl.value;
+
+  await t.navigateTo(shareUrl);
+
+  await t.expect(e.report.visible).ok();
+  await t.expect(e.report.textContent).contains('No data');
 });

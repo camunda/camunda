@@ -18,10 +18,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.validation.DecisionFiltersMustReferenceExistingDefinitionsConstraint;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 
+import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,9 +34,11 @@ import java.util.List;
 @FieldNameConstants
 @NoArgsConstructor
 @SuperBuilder
+@DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
 
   @Builder.Default
+  @Valid
   protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
@@ -50,7 +54,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionKey(final String key) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setKey(key);
   }
@@ -59,7 +63,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionName(String name) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setName(name);
   }
@@ -72,7 +76,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionVersions(final List<String> versions) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersions(versions);
   }
@@ -81,7 +85,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   public void setDecisionDefinitionVersion(final String version) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
-      definitions.add(ReportDataDefinitionDto.builder().build());
+      definitions.add(new ReportDataDefinitionDto());
     }
     definitions.get(0).setVersion(version);
   }

@@ -10,21 +10,19 @@ import {
   Icon,
   BPMNDiagram,
   TargetValueBadge,
-  Button,
   LoadingIndicator,
   HeatmapOverlay,
   Select,
+  DownloadButton,
 } from 'components';
 import {loadRawData, formatters, getTooltipText, processResult} from 'services';
-import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
 import {t} from 'translation';
 
 import {getConfig, calculateTargetValueHeat} from './service';
 
 import './Heatmap.scss';
 
-export function Heatmap({report, mightFail, context}) {
+export function Heatmap({report, context}) {
   const [selectedMeasure, setSelectedMeasure] = useState(0);
 
   const {
@@ -88,26 +86,17 @@ export function Heatmap({report, mightFail, context}) {
             <div>
               <span className="text" dangerouslySetInnerHTML={{__html: tooltipHTML}} />
               {context !== 'shared' && (
-                <Button
-                  onClick={async () => {
-                    mightFail(
-                      loadRawData(getConfig(report.data, id)),
-                      (data) => {
-                        const hiddenElement = document.createElement('a');
-                        hiddenElement.href = window.URL.createObjectURL(data);
-                        hiddenElement.download =
-                          t('report.heatTarget.exceededInstances', {
-                            name: formatters.formatFileName(name),
-                          }) + '.csv';
-                        hiddenElement.click();
-                      },
-                      showError
-                    );
-                  }}
+                <DownloadButton
+                  retriever={loadRawData(getConfig(report.data, id))}
+                  fileName={
+                    t('report.heatTarget.exceededInstances', {
+                      name: formatters.formatFileName(name),
+                    }) + '.csv'
+                  }
                 >
                   <Icon type="save" />
                   {t('common.instanceIds')}
-                </Button>
+                </DownloadButton>
               )}
             </div>
           );
@@ -178,7 +167,7 @@ export function Heatmap({report, mightFail, context}) {
   );
 }
 
-export default withErrorHandling(Heatmap);
+export default Heatmap;
 
 function getMeasureString(measure) {
   let property = measure.property;

@@ -14,6 +14,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
@@ -23,7 +24,8 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsR
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,14 +60,14 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Slf4j
 public class DefinitionService implements ConfigurationReloadable {
   private final DefinitionReader definitionReader;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestProcessDefinitionCache;
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestDecisionDefinitionCache;
 
   public DefinitionService(final DefinitionReader definitionReader,
-                           final DefinitionAuthorizationService definitionAuthorizationService,
+                           final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
                            final TenantService tenantService,
                            final CamundaActivityEventReader camundaActivityEventReader,
                            final ConfigurationService configurationService) {
@@ -363,6 +366,25 @@ public class DefinitionService implements ConfigurationReloadable {
       .collect(toList());
   }
 
+  public Map<String, String> extractFlowNodeIdAndNames(final List<ProcessDefinitionOptimizeDto> definitions) {
+    return definitions.stream()
+      .map(ProcessDefinitionOptimizeDto::getFlowNodeData)
+      .map(BpmnModelUtil::extractFlowNodeNames)
+      .map(Map::entrySet)
+      .flatMap(Collection::stream)
+      // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
+      .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+  }
+
+  public Map<String, String> extractUserTaskIdAndNames(final List<ProcessDefinitionOptimizeDto> definitions) {
+    return definitions.stream()
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .map(Map::entrySet)
+      .flatMap(Collection::stream)
+      // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
+      .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+  }
+
   private Map<String, DefinitionOptimizeResponseDto> fetchLatestProcessDefinition(final String definitionKey) {
     return fetchLatestDefinition(DefinitionType.PROCESS, definitionKey);
   }
@@ -437,23 +459,32 @@ public class DefinitionService implements ConfigurationReloadable {
     final Set<String> authorizedTenantIds) {
     final TenantIdWithDefinitionsDto notDefinedTenantEntry = definitionsGroupedByTenant.get(TENANT_NOT_DEFINED.getId());
     if (notDefinedTenantEntry != null) {
-      authorizedTenantIds.forEach(authorizedTenantId ->
-        // definitions of the not defined tenant need to be added to all other tenant entries
-        // as technically there can be data on shared definitions for any of them
-        definitionsGroupedByTenant.compute(authorizedTenantId, (tenantId, tenantIdWithDefinitionsDto) -> {
-          if (tenantIdWithDefinitionsDto == null) {
-            tenantIdWithDefinitionsDto = new TenantIdWithDefinitionsDto(tenantId, new ArrayList<>());
-          }
+      authorizedTenantIds.forEach(
+        authorizedTenantId ->
+          // definitions of the not defined tenant need to be added to all other tenant
+          // entries
+          // as technically there can be data on shared definitions for any of them
+          definitionsGroupedByTenant.compute(
+            authorizedTenantId,
+            (tenantId, tenantIdWithDefinitionsDto) -> {
+              if (tenantIdWithDefinitionsDto == null) {
+                tenantIdWithDefinitionsDto = new TenantIdWithDefinitionsDto(
+                  tenantId,
+                  new ArrayList<>()
+                );
+              }
 
-          final List<SimpleDefinitionDto> mergedDefinitionList = mergeTwoCollectionsWithDistinctValues(
-            tenantIdWithDefinitionsDto.getDefinitions(),
-            notDefinedTenantEntry.getDefinitions()
-          );
+              final List<SimpleDefinitionDto> mergedDefinitionList =
+                mergeTwoCollectionsWithDistinctValues(
+                  tenantIdWithDefinitionsDto.getDefinitions(),
+                  notDefinedTenantEntry.getDefinitions()
+                );
 
-          tenantIdWithDefinitionsDto.setDefinitions(mergedDefinitionList);
+              tenantIdWithDefinitionsDto.setDefinitions(mergedDefinitionList);
 
-          return tenantIdWithDefinitionsDto;
-        })
+              return tenantIdWithDefinitionsDto;
+            }
+          )
       );
     }
   }

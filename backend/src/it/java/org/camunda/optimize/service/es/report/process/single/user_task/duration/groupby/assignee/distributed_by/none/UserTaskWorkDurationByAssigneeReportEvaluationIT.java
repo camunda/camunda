@@ -66,7 +66,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForOneProcessWithUnassignedTasks(final double setDuration,
+  protected void assertMap_ForOneProcessInstanceWithUnassignedTasks(final double setDuration,
                                                             final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).isNotNull();
     assertThat(result.getFirstMeasureData()).hasSize(1);
@@ -79,7 +79,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertMap_ForSeveralProcesses(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
+  protected void assertMap_forSeveralProcessInstances(final ReportResultResponseDto<List<MapResultEntryDto>> result) {
     assertThat(result.getFirstMeasureData()).hasSize(2);
     assertThat(MapResultUtil.getEntryForKey(result.getFirstMeasureData(), DEFAULT_USERNAME)).isPresent().get()
       .satisfies(mapResultEntryDto -> assertThat(mapResultEntryDto.getValue())
@@ -129,7 +129,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
     assertDurationMapReportResultsForAllAggregationTypes(
       result,
       ImmutableMap.of(
-        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0]},
+        DEFAULT_USERNAME, new Double[]{SET_DURATIONS[0], SET_DURATIONS[0]},
         SECOND_USER, new Double[]{SET_DURATIONS[1]}
       )
     );

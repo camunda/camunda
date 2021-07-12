@@ -4,11 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
 import {withUser} from 'HOC';
+import {isOptimizeCloudEnvironment} from 'config';
 
 export function CreateNewButton({
   createCollection,
@@ -18,6 +19,14 @@ export function CreateNewButton({
   importEntity,
   user,
 }) {
+  const [isOptimizeCloud, setIsOptimizeCloud] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setIsOptimizeCloud(await isOptimizeCloudEnvironment());
+    })();
+  }, []);
+
   return (
     <Dropdown main primary label={t('home.createBtn.default')} className="CreateNewButton">
       {!collection && (
@@ -33,9 +42,11 @@ export function CreateNewButton({
         <Dropdown.Option link="report/new-combined/edit">
           {t('home.createBtn.report.combined')}
         </Dropdown.Option>
-        <Dropdown.Option link="report/new-decision/edit">
-          {t('home.createBtn.report.decision')}
-        </Dropdown.Option>
+        {!isOptimizeCloud && (
+          <Dropdown.Option link="report/new-decision/edit">
+            {t('home.createBtn.report.decision')}
+          </Dropdown.Option>
+        )}
       </Dropdown.Submenu>
       {user?.authorizations.includes('import_export') && (
         <Dropdown.Option onClick={importEntity}>{t('common.importJSON')}</Dropdown.Option>

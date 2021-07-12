@@ -54,6 +54,10 @@ export default class Modal extends React.Component {
   setFocus = () => {
     const container = this.container.current;
     if (container && this.props.open) {
+      if (this.props.noAutoFocus) {
+        return container.focus();
+      }
+
       // focus the default element in the modal, in order:
       // - the first text input
       // - the first primary button

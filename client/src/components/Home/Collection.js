@@ -16,7 +16,7 @@ import {Icon, Dropdown, EntityList, Deleter, Tooltip} from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 
-import {loadCollectionEntities, importEntity} from './service';
+import {loadCollectionEntities, importEntity, removeEntities, checkConflicts} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
@@ -188,10 +188,18 @@ export class Collection extends React.Component {
                   />
                 )
               }
+              bulkActions={[
+                {
+                  type: 'delete',
+                  action: async (selected) => await removeEntities(selected, collection),
+                  checkConflicts: async (selected) => await checkConflicts(selected, collection),
+                  conflictMessage: t('common.deleter.affectedMessage.bulk.report'),
+                },
+              ]}
               empty={t('home.empty')}
               isLoading={isLoading}
               sorting={sorting}
-              onSortingChange={this.loadEntities}
+              onChange={this.loadEntities}
               columns={[
                 {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
                 {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
@@ -248,6 +256,8 @@ export class Collection extends React.Component {
                   }
 
                   return {
+                    id,
+                    entityType,
                     className: entityType,
                     link: formatLink(id, entityType),
                     icon: entityType,

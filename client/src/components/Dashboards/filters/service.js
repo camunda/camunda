@@ -36,3 +36,28 @@ export async function getAssigneeNames(type, listOfIds) {
 
   return await response.json();
 }
+
+export function isOfType(filter, availableFilter) {
+  switch (filter.type) {
+    case 'runningInstancesOnly':
+    case 'completedInstancesOnly':
+    case 'canceledInstancesOnly':
+    case 'nonCanceledInstancesOnly':
+    case 'suspendedInstancesOnly':
+    case 'nonSuspendedInstancesOnly':
+      return availableFilter.type === 'state';
+    case 'startDate':
+    case 'endDate':
+    case 'assignee':
+    case 'candidateGroup':
+      return availableFilter.type === filter.type;
+    case 'variable':
+      return (
+        availableFilter.type === 'variable' &&
+        availableFilter.data.type === filter.data.type &&
+        availableFilter.data.name === filter.data.name
+      );
+    default:
+      return false;
+  }
+}

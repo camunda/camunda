@@ -33,6 +33,7 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
   extends ModelElementFrequencyByModelElementDurationByModelElementIT {
 
   protected static final ImmutableList<String> USER_TASKS = ImmutableList.of(USER_TASK_1);
+  protected static final ImmutableList<String> USER_TASKS_2 = ImmutableList.of(USER_TASK_2);
 
   protected abstract void changeRunningInstanceReferenceDate(final ProcessInstanceEngineDto runningProcessInstance,
                                                              final OffsetDateTime startTime);
@@ -63,6 +64,11 @@ public abstract class AbstractUserTaskFrequencyByUserTaskDurationByUserTaskIT
   @Override
   protected List<String> getExpectedModelElements() {
     return USER_TASKS;
+  }
+
+  @Override
+  protected List<String> getSecondProcessExpectedModelElements() {
+    return USER_TASKS_2;
   }
 
   @Test

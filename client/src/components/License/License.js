@@ -8,29 +8,30 @@ import React, {useState, useEffect} from 'react';
 
 import {Form, Labeled, Button, MessageBox} from 'components';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
 
 import {Header, Footer} from '..';
 import {validateLicense, storeLicense} from './service';
 
 import './License.scss';
 
-export default function License() {
+export function License({mightFail, error, resetError}) {
   const [licenseInfo, setLicenseInfo] = useState(null);
   const [licenseText, setLicenseText] = useState('');
   const [willReload, setWillReload] = useState(false);
 
   useEffect(() => {
-    (async () => setLicenseInfo(await validateLicense()))();
-  }, []);
+    mightFail(validateLicense(), setLicenseInfo);
+  }, [mightFail]);
 
   return (
     <>
       <Header noActions />
       <main className="License">
-        {licenseInfo && (
-          <MessageBox type={licenseInfo.errorCode ? 'error' : 'success'}>
-            {licenseInfo.errorCode ? (
-              t('apiErrors.' + licenseInfo.errorCode)
+        {(licenseInfo || error) && (
+          <MessageBox type={error ? 'error' : 'success'}>
+            {error ? (
+              error.message
             ) : (
               <>
                 {t('license.licensedFor')} {licenseInfo.customerId}.{' '}
@@ -48,17 +49,15 @@ export default function License() {
         )}
         <Form
           compact
-          onSubmit={async (evt) => {
+          onSubmit={(evt) => {
             evt.preventDefault();
 
-            const result = await storeLicense(licenseText);
-
-            if (!result.errorCode) {
+            mightFail(storeLicense(licenseText), (license) => {
+              resetError();
+              setLicenseInfo(license);
               setTimeout(() => (window.location.href = './'), 10000);
               setWillReload(true);
-            }
-
-            setLicenseInfo(result);
+            });
           }}
         >
           <Labeled label={t('license.licenseKey')}>
@@ -76,3 +75,5 @@ export default function License() {
     </>
   );
 }
+
+export default withErrorHandling(License);

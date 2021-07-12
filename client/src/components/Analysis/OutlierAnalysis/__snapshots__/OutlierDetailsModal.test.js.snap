@@ -18,7 +18,7 @@ exports[`should render a modal with a button group showing duration chart 1`] = 
           className="description"
         >
           4 instances took 110% longer than average.
-          <InstancesButtonErrorHandler
+          <InstancesButton
             name="test"
           />
         </p>

@@ -4,23 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown} from 'components';
+import {isOptimizeCloudEnvironment} from 'config';
 
 import {CreateNewButton} from './CreateNewButton';
 
-it('should match snapshot', () => {
+jest.mock('config', () => ({
+  isOptimizeCloudEnvironment: jest.fn().mockReturnValue(false),
+}));
+
+it('should match snapshot', async () => {
   const node = shallow(<CreateNewButton />);
+
+  await runLastEffect();
 
   expect(node).toMatchSnapshot();
 });
 
-it('should not show the collection option if it is in a collection', () => {
+it('should not show the collection option if it is in a collection', async () => {
   const node = shallow(<CreateNewButton collection="123" />);
 
+  await runLastEffect();
+
   expect(node).toMatchSnapshot();
+});
+
+it('should not show decision option in cloud environment', async () => {
+  isOptimizeCloudEnvironment.mockReturnValueOnce(true);
+
+  const node = shallow(<CreateNewButton />);
+
+  await runLastEffect();
+
+  expect(node.find({link: 'report/new-decision/edit'})).not.toExist();
 });
 
 it('should call the createCollection prop', () => {

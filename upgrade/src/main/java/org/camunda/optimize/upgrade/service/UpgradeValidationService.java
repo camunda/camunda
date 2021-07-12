@@ -35,9 +35,10 @@ public class UpgradeValidationService {
     }
   }
 
-  public void validateESVersion(final OptimizeElasticsearchClient restClient, final String toVersion) {
+  public void validateESVersion(final OptimizeElasticsearchClient restClient,
+                                final String toVersion) {
     try {
-      checkESVersionSupport(restClient.getHighLevelClient());
+      checkESVersionSupport(restClient.getHighLevelClient(), restClient.requestOptions());
     } catch (Exception e) {
       String errorMessage =
         "It was not possible to upgrade Optimize to version " + toVersion + ".\n" +

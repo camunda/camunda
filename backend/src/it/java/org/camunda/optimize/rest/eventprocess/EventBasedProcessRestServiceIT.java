@@ -14,8 +14,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
@@ -24,25 +22,17 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,19 +46,16 @@ import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -77,23 +64,16 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
@@ -110,7 +90,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     return Stream.of(
       Arguments.of(GET, "/eventBasedProcess", null),
       Arguments.of(GET, "/eventBasedProcess/someId/delete-conflicts", null),
-      Arguments.of(POST, "/eventBasedProcess/delete-conflicts", null),
+      Arguments.of(POST, "/eventBasedProcess/delete-conflicts", Collections.emptyList()),
       Arguments.of(POST, "/eventBasedProcess", null),
       Arguments.of(
         PUT, "/eventBasedProcess/someId", EventProcessMappingRequestDto.builder().name("someName").build()
@@ -1127,443 +1107,11 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(errorResponse.getErrorCode()).isEqualTo("notFoundError");
   }
 
-  @Test
-  public void getDeleteConflictsForEventProcessMapping_withoutAuthorization() {
-    // when
-    Response response = eventProcessClient
-      .createGetDeleteConflictsForEventProcessMappingRequest("doesNotMatter")
-      .withoutAuthentication()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void checkDeleteConflictsForBulkDeleteOfEventProcessMappings_withUnauthorizedUser() {
-    // when
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildCheckBulkDeleteConflictsForEventProcessMappingRequest(new ArrayList<>())
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-  }
-
-  @Test
-  public void getDeleteConflictsForEventProcessMapping_returnsOnlyConflictedItems() {
-    // given a published event process with various dependent resources created using its definition
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
-
-    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
-    );
-
-    String conflictedReportId = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        eventProcessDefinitionKey,
-        Collections.emptyList()
-      ));
-    String nonConflictedReportId = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        DEFAULT_DEFINITION_KEY,
-        Collections.emptyList()
-      ));
-    String conflictedCombinedReportId =
-      reportClient.createCombinedReport(collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId));
-
-    String conflictedAlertId = alertClient.createAlertForReport(conflictedReportId);
-    alertClient.createAlertForReport(nonConflictedReportId);
-
-    String conflictedDashboardId = dashboardClient.createDashboard(
-      collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId)
-    );
-
-    // when
-    ConflictResponseDto conflictResponseDto =
-      eventProcessClient.getDeleteConflictsForEventProcessMapping(eventProcessDefinitionKey);
-
-    // then
-    assertThat(conflictResponseDto.getConflictedItems())
-      .extracting(ConflictedItemDto.Fields.id, ConflictedItemDto.Fields.type)
-      .containsExactlyInAnyOrder(
-        new Tuple(conflictedReportId, ConflictedItemType.REPORT),
-        new Tuple(conflictedCombinedReportId, ConflictedItemType.COMBINED_REPORT),
-        new Tuple(conflictedDashboardId, ConflictedItemType.DASHBOARD),
-        new Tuple(conflictedAlertId, ConflictedItemType.ALERT)
-      );
-  }
-
-  @Test
-  public void bulkDeleteConflictsForEventProcessMapping_alertConflict() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
-
-    String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    String reportId1 = reportClient.createSingleReport(
-      collectionId,
-      PROCESS,
-      eventProcessDefinitionKey1,
-      Collections.emptyList()
-    );
-    alertClient.createAlertForReport(reportId1);
-
-    // when
-    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
-      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
-
-    // then
-    assertThat(response).isTrue();
-  }
-
-  @Test
-  public void bulkDeleteConflictsForEventProcessMapping_combinedReportConflict() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey2);
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey3);
-
-    String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    String reportId1 = reportClient.createSingleReport(
-      collectionId,
-      PROCESS,
-      eventProcessDefinitionKey1,
-      Collections.emptyList()
-    );
-    String reportId2 = reportClient.createSingleReport(
-      collectionId,
-      PROCESS,
-      eventProcessDefinitionKey1,
-      Collections.emptyList()
-    );
-
-    reportClient.createCombinedReport(collectionId, Arrays.asList(reportId1, reportId2));
-
-    // when
-    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
-      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
-
-    // then
-    assertThat(response).isTrue();
-  }
-
-  @Test
-  public void bulkDeleteConflictsForEventProcessMapping_dashboardConflict() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
-
-    String reportId1 = reportClient.createSingleReport(
-      collectionId,
-      PROCESS,
-      eventProcessDefinitionKey1,
-      Collections.emptyList()
-    );
-    String reportId2 = reportClient.createEmptySingleProcessReport();
-    dashboardClient.createDashboard(collectionId, Arrays.asList(reportId1, reportId2));
-
-    // when
-    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
-      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
-
-    // then
-    assertThat(response).isTrue();
-  }
-
-  @Test
-  public void bulkDeleteConflictsForEventProcessMapping_noConflicts() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey1 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    // when
-    boolean response = eventProcessClient.eventProcessMappingRequestBulkDeleteHasConflicts(
-      Arrays.asList(eventProcessDefinitionKey1, eventProcessDefinitionKey2, eventProcessDefinitionKey3));
-
-    // then
-    assertThat(response).isFalse();
-  }
-
-  @Test
-  public void deleteEventProcessMapping() {
-    // given
-    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
-      eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
-    );
-
-    // when
-    Response response = eventProcessClient
-      .createDeleteEventProcessMappingRequest(storedEventProcessMappingId).execute();
-
-    // then the delete response code is correct
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-
-    // then the process no longer exists
-    Response getResponse = eventProcessClient
-      .createGetEventProcessMappingRequest(storedEventProcessMappingId).execute();
-    assertThat(getResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
-  }
-
-  @Test
-  public void deletePublishedEventProcessMapping() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    publishMappingAndExecuteImport(eventProcessId);
-    final EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessId);
-    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
-
-    // when
-    eventProcessClient.deleteEventProcessMapping(eventProcessId);
-    embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
-
-    // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
-    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
-  }
-
-  @Test
-  public void deletePublishedEventProcessMapping_dependentResourcesGetCleared() {
-    // given a published event process with various dependent resources created using its definition
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-
-    publishMappingAndExecuteImport(eventProcessDefinitionKey);
-    EventProcessPublishStateDto publishState = getEventProcessPublishStateDto(eventProcessDefinitionKey);
-    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isTrue();
-
-    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
-    );
-
-    String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        eventProcessDefinitionKey,
-        Collections.emptyList()
-      ));
-    String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        DEFAULT_DEFINITION_KEY,
-        Collections.emptyList()
-      ));
-    String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, null, Collections.emptyList()));
-    reportClient.createCombinedReport(
-      collectionId,
-      Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
-    );
-
-    alertClient.createAlertForReport(reportWithEventProcessDefKey);
-    String alertIdToRemain = alertClient.createAlertForReport(reportIdWithDefaultDefKey);
-
-    String dashboardId = dashboardClient.createDashboard(
-      collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey)
-    );
-
-    // when the event process is deleted
-    eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKey);
-    embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().runImportRound();
-
-    // then the event process is deleted and the associated resources are cleaned up
-    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.NOT_FOUND.getStatusCode());
-    assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting("definitionDto.id")
-      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(alertClient.getAlertsForCollectionAsDefaultUser(collectionId))
-      .extracting("id")
-      .containsExactly(alertIdToRemain);
-    assertThat(getAllCollectionDefinitions())
-      .hasSize(1)
-      .extracting("data.scope")
-      .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports())
-      .extracting("id")
-      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isEmpty();
-    assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
-  }
-
-  @Test
-  public void eventProcessMappingNotDeleted_ifEsFailsToDeleteReportsUsingMapping() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
-    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
-    );
-    String reportUsingMapping = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(
-        collectionId,
-        eventProcessDefinitionKey,
-        Collections.emptyList()
-      ));
-
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
-      .withMethod(POST);
-    esMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
-
-    // when
-    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-
-    // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
-    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.OK.getStatusCode());
-    assertThat(collectionClient.getReportsForCollection(collectionId))
-      .extracting("definitionDto.id")
-      .containsExactlyInAnyOrder(reportUsingMapping);
-  }
-
-  @Test
-  public void eventProcessMappingNotDeleted_ifEsFailsToDeleteMappingAsScopeEntry() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
-    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    collectionClient.addScopeEntryToCollection(
-      collectionId,
-      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
-    );
-
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
-      .withMethod(POST);
-    esMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
-
-    // when
-    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-
-    // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
-    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.OK.getStatusCode());
-    assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
-      .extracting(CollectionScopeEntryDto::getDefinitionKey)
-      .contains(eventProcessDefinitionKey);
-  }
-
-  @Test
-  public void eventProcessMappingNotDeleted_ifEsFailsToDeletePublishState() {
-    // given
-    EventProcessMappingDto eventProcessMappingDto =
-      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
-    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
-
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
-    final HttpRequest requestMatcher = request()
-      .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
-      .withMethod(POST);
-    esMockServer
-      .when(requestMatcher, Times.once())
-      .error(HttpError.error().withDropConnection(true));
-
-    // when
-    eventProcessClient.createDeleteEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-
-    // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
-    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey)
-      .execute(Response.Status.OK.getStatusCode());
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isNotEmpty();
-  }
-
-  @Test
-  public void deleteEventProcessMapping_notExists() {
-    // when
-    Response response = eventProcessClient
-      .createDeleteEventProcessMappingRequest("doesNotExist")
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
-  }
-
   @NonNull
   private OffsetDateTime getPublishedDateForEventProcessMappingOrFail(final String eventProcessId) {
     return getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Failed reading first publish date"))
       .getPublishDateTime();
-  }
-
-  private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource() {
-    return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-      Collections.singletonMap(
-        USER_TASK_ID_THREE,
-        createEventMappingsDto(
-          createMappedEventDto(),
-          createMappedEventDto()
-        )
-      ),
-      "process name",
-      simpleDiagramXml
-    );
   }
 
   private static EventTypeDto createMappedEventDtoWithLabel(String eventLabel) {
@@ -1591,55 +1139,17 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 
-  @SneakyThrows
-  private List<CollectionDefinitionDto> getAllCollectionDefinitions() {
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      COLLECTION_INDEX_NAME);
-    return Arrays
-      .stream(searchResponse.getHits().getHits())
-      .map(doc -> {
-        try {
-          return elasticSearchIntegrationTestExtension.getObjectMapper()
-            .readValue(doc.getSourceAsString(), CollectionDefinitionDto.class);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      })
-      .collect(Collectors.toList());
-  }
-
-  private EventProcessPublishStateDto getEventProcessPublishStateDto(final String processMappingId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(processMappingId)
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fetch publish state for process mapping"));
-  }
-
-  private boolean eventInstanceIndexForPublishStateExists(final EventProcessPublishStateDto publishState) {
-    Map<String, List<AliasMetadata>> currentIndices = new HashMap<>();
-    try {
-      currentIndices = getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
-    } catch (ElasticsearchStatusException ex) {
-      if (InstanceIndexUtil.isInstanceIndexNotFoundException(ex)) {
-        return false;
-      }
-    }
-    return currentIndices.containsKey(
-      embeddedOptimizeExtension.getIndexNameService()
-        .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(publishState.getId())));
-  }
-
-  private void publishMappingAndExecuteImport(final String eventProcessId) {
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
-    // we execute the import cycle so the event instance index gets created
-    executeImportCycle();
-  }
-
-  private String createNewCollectionWithScope(String eventProcessDefinitionKey) {
-    return collectionClient.createNewCollectionWithScope(
-      DEFAULT_USERNAME,
-      DEFAULT_PASSWORD,
-      PROCESS,
-      eventProcessDefinitionKey,
-      Collections.emptyList()
+  private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource() {
+    return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+      Collections.singletonMap(
+        USER_TASK_ID_THREE,
+        createEventMappingsDto(
+          createMappedEventDto(),
+          createMappedEventDto()
+        )
+      ),
+      "process name",
+      simpleDiagramXml
     );
   }
 

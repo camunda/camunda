@@ -27,6 +27,7 @@ export class BranchAnalysis extends React.Component {
       config: {
         processDefinitionKey: '',
         processDefinitionVersions: [],
+        identifier: 'definition',
         tenantIds: [],
         filter: [],
       },
@@ -98,6 +99,7 @@ export class BranchAnalysis extends React.Component {
           config.processDefinitionKey,
           config.processDefinitionVersions,
           config.tenantIds,
+          config.identifier,
           config.filter
         ),
       });

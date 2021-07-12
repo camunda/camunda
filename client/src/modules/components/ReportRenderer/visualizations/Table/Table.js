@@ -8,9 +8,10 @@ import React, {useState, useEffect, useCallback} from 'react';
 import update from 'immutability-helper';
 
 import {getReportResult} from 'services';
-import {Table as TableRenderer, LoadingIndicator} from 'components';
+import {Table as TableRenderer, LoadingIndicator, NoDataNotice} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getWebappEndpoints} from 'config';
+import {t} from 'translation';
 
 import ColumnRearrangement from './ColumnRearrangement';
 import processCombinedData from './processCombinedData';
@@ -31,6 +32,7 @@ export function Table(props) {
 
   const [camundaEndpoints, setCamundaEndpoints] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (needEndpoint) {
@@ -51,9 +53,15 @@ export function Table(props) {
     async ({pageIndex, pageSize}) => {
       const offset = pageSize * pageIndex;
 
-      setLoading(true);
-      await loadReport({offset, limit: pageSize});
-      setLoading(false);
+      // The backend currently cannot display more than the first 10000 instances
+      // TODO: Remove this when OPT-5247 is done
+      const maxExceeded = offset >= 10000;
+      setError(maxExceeded);
+      if (!maxExceeded) {
+        setLoading(true);
+        await loadReport({offset, limit: pageSize});
+        setLoading(false);
+      }
     },
     [loadReport]
   );
@@ -74,6 +82,9 @@ export function Table(props) {
       tableData.defaultPageSize = result.pagination.limit;
       tableData.defaultPage = result.pagination.offset / result.pagination.limit;
       tableData.totalEntries = result.instanceCount;
+      if (error) {
+        tableData.error = <NoDataNotice type="error">{t('report.table.pageError')}</NoDataNotice>;
+      }
     } else {
       tableData = processDefaultData(props);
       tableData.loading = loading;

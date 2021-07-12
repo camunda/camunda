@@ -57,7 +57,7 @@
     }
 
     &:not(:valid) ~ .searchClear {
-      display: block;
+      display: flex;
     }
   }
 

@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,17 +28,18 @@ public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<Decision
   private final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter;
 
   @Override
-  public void addFilterToQuery(final BoolQueryBuilder query, final List<DecisionFilterDto<?>> filter,
-                               final ZoneId timezone) {
+  public void addFilterToQuery(final BoolQueryBuilder query,
+                               final List<DecisionFilterDto<?>> filter,
+                               final FilterContext filterContext) {
     if (filter != null) {
       evaluationDateQueryFilter.addFilters(
-        query, extractFilters(filter, EvaluationDateFilterDto.class), timezone
+        query, extractFilters(filter, EvaluationDateFilterDto.class), filterContext
       );
       decisionInputVariableQueryFilter.addFilters(
-        query, extractFilters(filter, InputVariableFilterDto.class), timezone
+        query, extractFilters(filter, InputVariableFilterDto.class), filterContext
       );
       decisionOutputVariableQueryFilter.addFilters(
-        query, extractFilters(filter, OutputVariableFilterDto.class), timezone
+        query, extractFilters(filter, OutputVariableFilterDto.class), filterContext
       );
     }
   }

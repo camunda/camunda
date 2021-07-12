@@ -6,11 +6,14 @@
 package org.camunda.optimize.plugin.elasticsearch;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClientConfiguration;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
+import org.mockserver.model.NottableString;
 import org.mockserver.model.RequestDefinition;
 import org.mockserver.verify.VerificationTimes;
 
@@ -46,10 +49,34 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
   }
 
   @Test
+  public void fixedCustomHeadersAddedToElasticsearchRequestDuringClientSetup() {
+    // given
+    String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
+    addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    // clear all mock recordings that happen during setup
+    esMockServer.clear(request());
+
+    // when
+    embeddedOptimizeExtension.getApplicationContext().getBean(OptimizeElasticsearchClientConfiguration.class)
+      .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
+
+    // then
+    esMockServer.verify(
+      request().withHeader(new Header("Authorization", "Bearer fixedToken")), VerificationTimes.atLeast(1)
+    );
+    // ensure there was no request without the header
+    esMockServer.verify(
+      request().withHeader(NottableString.not("Authorization")), VerificationTimes.exactly(0)
+    );
+  }
+
+  @Test
   public void dynamicCustomHeadersAddedToElasticsearchRequest() {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
+    embeddedOptimizeExtension.reloadConfiguration();
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
@@ -71,10 +98,11 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
   public void multipleCustomHeadersAddedToElasticsearchRequest() {
     // given
     String[] basePackages = {
-      "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic",
+      "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed",
       "org.camunda.optimize.testplugin.elasticsearch.custom"
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
+    embeddedOptimizeExtension.reloadConfiguration();
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
 
     // when
@@ -82,15 +110,15 @@ public class ElasticsearchCustomHeaderSupplierPluginIT extends AbstractIT {
 
     // then
     esMockServer.verify(request().withHeaders(
-      new Header("Authorization", "Bearer dynamicToken_0"),
+      new Header("Authorization", "Bearer fixedToken"),
       new Header("CustomHeader", "customValue")
-    ), VerificationTimes.once());
+    ), VerificationTimes.atLeast(1));
   }
 
   private void addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
+    // We don't need to reload the configuration as the MockServer initialization already does this immediately after
     configurationService.setElasticsearchCustomHeaderPluginBasePackages(basePackagesList);
-    embeddedOptimizeExtension.reloadConfiguration();
   }
 
 }

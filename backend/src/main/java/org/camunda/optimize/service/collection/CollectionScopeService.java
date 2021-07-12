@@ -28,11 +28,12 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -64,7 +65,7 @@ public class CollectionScopeService {
 
   private final TenantService tenantService;
   private final DefinitionService definitionService;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final ReportReader reportReader;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
@@ -238,8 +239,8 @@ public class CollectionScopeService {
 
   private List<SingleReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(final String collectionId,
                                                                                   final String scopeEntryId) {
-    CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
-    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
+    final CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
+    final List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)
@@ -249,9 +250,9 @@ public class CollectionScopeService {
 
   private boolean reportInSameScopeAsGivenScope(final CollectionScopeEntryDto scopeEntry,
                                                 final SingleReportDefinitionDto<?> report) {
-    final CollectionScopeEntryDto scopeOfReport =
-      new CollectionScopeEntryDto(report.getDefinitionType(), report.getData().getDefinitionKey());
-    return scopeOfReport.equals(scopeEntry);
+    return report.getData().getDefinitions().stream()
+      .map(definition -> new CollectionScopeEntryDto(report.getDefinitionType(), definition.getKey()))
+      .anyMatch(entry -> entry.equals(scopeEntry));
   }
 
   public void updateScopeEntry(final String userId,
@@ -336,6 +337,26 @@ public class CollectionScopeService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     return collectionScopeIds.stream()
       .anyMatch(scopeEntryId -> !getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId).isEmpty());
+  }
+
+  public void bulkDeleteCollectionScopes(String userId, String collectionId, List<String> collectionScopeIds) {
+    List<String> collectionScopesToDelete = new ArrayList<>();
+    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+    for (String collectionScopeId : collectionScopeIds) {
+      final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+        getAllReportsAffectedByScopeDeletion(collectionId, collectionScopeId);
+      try {
+        deleteReports(userId, reportsAffectedByScopeDeletion);
+        collectionScopesToDelete.add(collectionScopeId);
+      } catch (OptimizeRuntimeException e) {
+        log.debug(
+          "There was an error while deleting reports associated to collection scope with id {}. The scope cannot be " +
+            "deleted.",
+          collectionScopeId
+        );
+      }
+    }
+    collectionWriter.removeScopeEntries(collectionId, collectionScopesToDelete, userId);
   }
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,

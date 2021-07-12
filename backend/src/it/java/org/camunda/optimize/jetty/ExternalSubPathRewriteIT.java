@@ -22,6 +22,19 @@ import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURAT
 
 public class ExternalSubPathRewriteIT extends AbstractIT {
 
+  @Test
+  public void externalPrefixRequestIsRedirectedToPathWithTrailingSlash() {
+    // when
+    Response response = embeddedOptimizeExtension
+      .rootTarget(EXTERNAL_SUB_PATH)
+      .request()
+      .get();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FOUND.getStatusCode());
+    assertThat(response.getLocation().getPath()).isEqualTo(EXTERNAL_SUB_PATH + "/");
+  }
+
   @ParameterizedTest
   @MethodSource("publicResources")
   public void externalPrefixRequestServesPublicResources(final String resourcePath) {
@@ -50,7 +63,7 @@ public class ExternalSubPathRewriteIT extends AbstractIT {
   private static Stream<String> publicResources() {
     return Stream.of(
       // accessing the root of the webserver via the external sub-path should work
-      EXTERNAL_SUB_PATH,
+      EXTERNAL_SUB_PATH + "/",
       // explicitly accessing resources like the index.html via the external sub-path should work
       EXTERNAL_SUB_PATH + INDEX_HTML_PAGE,
       // accessing an unsecured REST API endpoint via the external sub-path should work

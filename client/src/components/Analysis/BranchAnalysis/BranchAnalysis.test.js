@@ -81,7 +81,7 @@ it('should load updated frequency data when the filter changed', async () => {
   loadFrequencyData.mockClear();
   await node.instance().updateConfig({filter: ['someFilter']});
 
-  expect(loadFrequencyData.mock.calls[0][3]).toEqual(['someFilter']);
+  expect(loadFrequencyData.mock.calls[0][4]).toEqual(['someFilter']);
 });
 
 it('should not try to load frequency data if no process definition is selected', () => {

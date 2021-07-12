@@ -90,7 +90,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -1469,8 +1468,8 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  public void failExternalTasks(final String processInstanceId) {
-    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasks(processInstanceId);
+  public void failExternalTasks(final String businessKey) {
+    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasksWithBusinessKey(businessKey);
     for (ExternalTaskEngineDto externalTask : externalTasks) {
       HttpPost executeJobRequest = new HttpPost(getExternalTaskFailureUri(externalTask.getId()));
       executeJobRequest.addHeader("Content-Type", "application/json");
@@ -1489,7 +1488,7 @@ public class SimpleEngineClient {
         if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
           throw new OptimizeRuntimeException(
             String.format(
-              "Could not execute external task with id %s. Status-code: %s",
+              "Could not fail external task with id %s. Status-code: %s",
               externalTask.getId(),
               response.getStatusLine().getStatusCode()
             )
@@ -1535,38 +1534,15 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  private List<ExternalTaskEngineDto> fetchAndLockExternalTasks(final String processInstanceId) {
+  public List<ExternalTaskEngineDto> fetchAndLockExternalTasksWithBusinessKey(final String businessKey) {
     HttpPost post = new HttpPost(getExternalTaskFetchAndLockUri());
     post.addHeader("Content-Type", "application/json");
-    post.setEntity(new StringEntity(
-      // @formatter:off
-      String.format(
-        "{\n" +
-          "\"workerId\": \"" + "%s" + "\",\n" +
-          "\"maxTasks\": " + 100 + ",\n" +
-          "\"topics\": [" +
-            "{\"" +
-              "topicName\": \"%s\", " +
-              "\"lockDuration\": 1000000" +
-            "}" +
-          "]\n" +
-        "}",
-        DEFAULT_WORKER,
-        DEFAULT_TOPIC
-      )
-      /// @formatter:on
-    ));
+    post.setEntity(createFetchAndLockEntity(businessKey));
     try (CloseableHttpResponse response = client.execute(post)) {
       if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        // @formatter:off
-        final List<ExternalTaskEngineDto> externalTaskEngineDtos =
-          objectMapper.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {});
-        // @formatter:on
-        return externalTaskEngineDtos
-          .stream()
-          .filter(task -> Objects.equals(task.getProcessInstanceId(), processInstanceId))
-          .collect(Collectors.toList());
+        return objectMapper.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {
+        });
       } else {
         throw new OptimizeRuntimeException(
           String.format(
@@ -2082,6 +2058,30 @@ public class SimpleEngineClient {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     return authorizationDto;
+  }
+
+  @SneakyThrows
+  private StringEntity createFetchAndLockEntity(final String businessKey) {
+    final String businessKeyPart = businessKey == null
+      ? ""
+      : String.format(",\n\"businessKey\": \"%s\"\n", businessKey);
+    return new StringEntity(
+      // @formatter:off
+      String.format(
+        "{\n" +
+          "\"workerId\": \"" + "%s" + "\",\n" +
+          "\"maxTasks\": " + 100 + ",\n" +
+          "\"topics\": [{" +
+          "\"topicName\": \"%s\", \n" +
+            "\"lockDuration\": 1000000" +
+              businessKeyPart +
+          "}]\n" +
+        "}",
+        DEFAULT_WORKER,
+        DEFAULT_TOPIC
+      )
+      // @formatter:on
+    );
   }
 
   private void assertOnlyOneDeployment(final List<ProcessDefinitionEngineDto> procDefs) {

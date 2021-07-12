@@ -43,14 +43,25 @@ exports[`should inform if the actual value is less than 1% of the target value 1
       }
     }
   />
-  <ForwardRef(Button)
-    onClick={[Function]}
+  <DownloadButtonErrorHandler
+    fileName="Exceeded-instances-test.csv"
+    retriever={
+      Object {
+        "result": Object {
+          "data": Array [
+            Object {
+              "processInstanceId": "test",
+            },
+          ],
+        },
+      }
+    }
   >
     <Icon
       type="save"
     />
     Instance IDs
-  </ForwardRef(Button)>
+  </DownloadButtonErrorHandler>
 </div>
 `;
 
@@ -64,14 +75,25 @@ exports[`should show a tooltip with information about actual and target value 1`
       }
     }
   />
-  <ForwardRef(Button)
-    onClick={[Function]}
+  <DownloadButtonErrorHandler
+    fileName="Exceeded-instances-test.csv"
+    retriever={
+      Object {
+        "result": Object {
+          "data": Array [
+            Object {
+              "processInstanceId": "test",
+            },
+          ],
+        },
+      }
+    }
   >
     <Icon
       type="save"
     />
     Instance IDs
-  </ForwardRef(Button)>
+  </DownloadButtonErrorHandler>
 </div>
 `;
 
@@ -85,13 +107,24 @@ exports[`should show a tooltip with information if no actual value is available 
       }
     }
   />
-  <ForwardRef(Button)
-    onClick={[Function]}
+  <DownloadButtonErrorHandler
+    fileName="Exceeded-instances-test.csv"
+    retriever={
+      Object {
+        "result": Object {
+          "data": Array [
+            Object {
+              "processInstanceId": "test",
+            },
+          ],
+        },
+      }
+    }
   >
     <Icon
       type="save"
     />
     Instance IDs
-  </ForwardRef(Button)>
+  </DownloadButtonErrorHandler>
 </div>
 `;

@@ -39,7 +39,13 @@ jest.mock('./service', () => ({
   deleteEvents: jest.fn(),
 }));
 
-jest.mock('debouncePromise', () => () => (fn, delay, ...args) => fn(...args));
+jest.mock(
+  'debouncePromise',
+  () =>
+    () =>
+    (fn, delay, ...args) =>
+      fn(...args)
+);
 jest.mock('debounce', () => (fn) => fn);
 
 const props = {

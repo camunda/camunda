@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.writer.activity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -89,7 +90,7 @@ public abstract class AbstractActivityInstanceWriter extends AbstractProcessInst
 
       final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
         .processInstanceId(processInstanceId)
-        .engine(activityInstances.get(0).getEngineAlias())
+        .dataSource(new EngineDataSourceDto(activityInstances.get(0).getEngineAlias()))
         .processDefinitionKey(activityInstances.get(0).getProcessDefinitionKey())
         .flowNodeInstances(flowNodeInstanceDtos)
         .build();

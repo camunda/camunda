@@ -12,20 +12,20 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardAssigneeFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardCandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardEndDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardStateFilterDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardIdentityFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardIdentityFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DashboardVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -257,6 +257,15 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public AuthorizedDashboardDefinitionResponseDto getDashboardDefinition(final String dashboardId,
                                                                          final String userId) {
     final DashboardDefinitionRestDto dashboard = getDashboardDefinitionAsService(dashboardId);
+    RoleType currentUserRole = getUserRoleType(userId, dashboard);
+    return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
+  }
+
+  public void verifyUserHasAccessToDashboardCollection(String userId, DashboardDefinitionRestDto dashboard) {
+    getUserRoleType(userId, dashboard);
+  }
+
+  private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
     if (dashboard.getCollectionId() != null) {
       currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())
@@ -269,11 +278,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
     if (currentUserRole == null) {
       throw new ForbiddenException(String.format(
-        "User [%s] is not authorized to access dashboard [%s].", userId, dashboardId
+        "User [%s] is not authorized to access dashboard [%s].", userId, dashboard.getId()
       ));
     }
-
-    return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
+    return currentUserRole;
   }
 
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
@@ -349,10 +357,23 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         availableFilters
           .stream()
           .collect(groupingBy(filter -> filter.getClass().getSimpleName()));
+      validateFiltersHaveData(availableFilters);
       validateDateAndStateFilters(filtersByClass);
       validateIdentityFilters(filtersByClass);
       validateVariableFilters(filtersByClass);
       validateVariableFiltersExistInReports(userId, reportsInDashboard, filtersByClass);
+    }
+  }
+
+  private void validateFiltersHaveData(final List<DashboardFilterDto<?>> availableFilters) {
+    final List<DashboardFilterDto<?>> filtersWithoutData = availableFilters
+      .stream()
+      .filter(filter -> filter.getData() == null)
+      .collect(Collectors.toList());
+    if (!filtersWithoutData.isEmpty()) {
+      throw new BadRequestException(String.format(
+        "All filters need to supply Filter data, but Filters %s supplied no data field.", filtersWithoutData)
+      );
     }
   }
 
@@ -426,15 +447,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             byClass.getKey(),
             byClass.getValue()
           )
-          );
-        }
-        final List<DashboardFilterDto<?>> filtersWithData = byClass.getValue()
-          .stream()
-          .filter(filter -> filter.getData() != null)
-          .collect(Collectors.toList());
-        if (!filtersWithData.isEmpty()) {
-          throw new BadRequestException(String.format(
-            "Filters %s supplied additional data but are not a filter with data", filtersWithData)
           );
         }
       });

@@ -13,6 +13,7 @@ import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getTwoParallelExternalTaskProcess;
@@ -44,7 +45,7 @@ public class IncidentClient {
     BpmnModelInstance incidentProcess = getExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(incidentProcess, tenantId);
-    createOpenIncident(processInstanceEngineDto.getId());
+    createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
     return processInstanceEngineDto;
   }
 
@@ -67,7 +68,7 @@ public class IncidentClient {
     BpmnModelInstance incidentProcess = getTwoParallelExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    createOpenIncident(processInstanceEngineDto.getId());
+    createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
     return processInstanceEngineDto;
   }
 
@@ -84,9 +85,11 @@ public class IncidentClient {
   }
 
   public ProcessInstanceEngineDto startProcessInstanceAndCreateOpenIncident(String processDefinitionId) {
+    // start instance with unique businessKey to avoid side effects when businessKey is used as identifier when
+    // creating incidents
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    createOpenIncident(processInstanceEngineDto.getId());
+      engineIntegrationExtension.startProcessInstance(processDefinitionId, "businessKey" + UUID.randomUUID());
+    createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
     return processInstanceEngineDto;
   }
 
@@ -98,9 +101,11 @@ public class IncidentClient {
   }
 
   public ProcessInstanceEngineDto startProcessInstanceAndCreateDeletedIncident(String processDefinitionId) {
+    // start instance with unique businessKey to avoid side effects when businessKey is used as identifier when
+    // creating incidents
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    createOpenIncident(processInstanceEngineDto.getId());
+      engineIntegrationExtension.startProcessInstance(processDefinitionId, "businessKey" + UUID.randomUUID());
+    createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
     return processInstanceEngineDto;
   }
@@ -111,14 +116,24 @@ public class IncidentClient {
 
   public ProcessInstanceEngineDto startProcessInstanceWithCustomIncident(final String processDefinitionId,
                                                                          final String customIncidentType) {
+    // start instance with unique businessKey to avoid side effects when businessKey is used as identifier when
+    // creating incidents
     final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.startProcessInstance(processDefinitionId);
+      engineIntegrationExtension.startProcessInstance(processDefinitionId, "businessKey" + UUID.randomUUID());
     engineIntegrationExtension.createIncident(processInstanceEngineDto.getId(), customIncidentType);
     return processInstanceEngineDto;
   }
 
-  public void createOpenIncident(final String processInstanceId) {
-    engineIntegrationExtension.failExternalTasks(processInstanceId);
+  public void createOpenIncidentForInstancesWithBusinessKey(final String businessKey) {
+    // Note: To create an incident, first tasks are locked and then they are failed.
+    // The businessKey is required to lock only the tasks of the workers with that businessKey (the instanceId
+    // cannot be used for this). Otherwise, all tasks are locked and no further incidents can be created for other
+    // instances.
+    engineIntegrationExtension.failExternalTasks(businessKey);
+  }
+
+  public void resolveOpenIncidents(final String processInstanceId) {
+    engineIntegrationExtension.completeExternalTasks(processInstanceId);
   }
 
 }

@@ -11,6 +11,8 @@ import {UserTypeahead} from 'components';
 
 import {AssigneeFilter} from './AssigneeFilter';
 
+import {getAssigneeNames} from './service';
+
 const props = {
   filter: null,
   type: 'assignee',
@@ -33,6 +35,7 @@ jest.mock('./service', () => ({
 
 beforeEach(() => {
   props.setFilter.mockClear();
+  getAssigneeNames.mockClear();
 });
 
 it('should show the operator when no value is selected', () => {
@@ -102,4 +105,33 @@ it('should show an input field for custom values', () => {
     operator: 'not in',
     values: ['user1'],
   });
+});
+
+it('should load all names, both explicitely added ones as well as default ones', () => {
+  shallow(
+    <AssigneeFilter
+      {...props}
+      config={{
+        operator: 'not in',
+        values: ['user1', 'user2', null],
+        defaultValues: ['user1', 'additionalUser'],
+        allowCustomValues: true,
+      }}
+    />
+  );
+  getAssigneeNames.mockReturnValueOnce([
+    {id: 'user1', name: 'User 1', type: 'user'},
+    {id: 'user2', name: 'User 2', type: 'user'},
+    {id: null, name: null, type: 'user'},
+    {id: 'additionalUser', name: 'Additional User', type: 'user'},
+  ]);
+
+  runLastEffect();
+
+  expect(getAssigneeNames).toHaveBeenCalledWith('assignee', [
+    'user1',
+    'user2',
+    null,
+    'additionalUser',
+  ]);
 });

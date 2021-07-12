@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
@@ -59,7 +60,7 @@ public class AssigneeAndCandidateGroupsReader {
                                         @NonNull final Consumer<List<String>> assigneeBatchConsumer,
                                         final int batchSize) {
     consumeUserTaskFieldTermsInBatches(
-      termQuery(ProcessInstanceDto.Fields.engine, engineAlias),
+      termQuery(ProcessInstanceDto.Fields.dataSource + "." + DataSourceDto.Fields.name, engineAlias),
       USER_TASK_ASSIGNEE,
       assigneeBatchConsumer,
       batchSize
@@ -71,7 +72,7 @@ public class AssigneeAndCandidateGroupsReader {
                                               final int batchSize) {
 
     consumeUserTaskFieldTermsInBatches(
-      termQuery(ProcessInstanceDto.Fields.engine, engineAlias),
+      termQuery(ProcessInstanceDto.Fields.dataSource + "." + DataSourceDto.Fields.name, engineAlias),
       USER_TASK_CANDIDATE_GROUPS,
       candidateGroupBatchConsumer,
       batchSize

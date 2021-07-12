@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.service;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -14,6 +15,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -27,8 +29,14 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
                                                final EngineContext engineContext,
                                                final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                                final CompletedProcessInstanceWriter completedProcessInstanceWriter,
-                                               final CamundaEventImportService camundaEventService) {
-    super(elasticsearchImportJobExecutor, engineContext, businessKeyImportAdapterProvider);
+                                               final CamundaEventImportService camundaEventService,
+                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
+    super(
+      elasticsearchImportJobExecutor,
+      engineContext,
+      businessKeyImportAdapterProvider,
+      processDefinitionResolverService
+    );
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
@@ -56,7 +64,7 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
       .endDate(engineEntity.getEndTime())
       .duration(engineEntity.getStartTime().until(engineEntity.getEndTime(), ChronoUnit.MILLIS))
       .state(engineEntity.getState())
-      .engine(engineContext.getEngineAlias())
+      .dataSource(new EngineDataSourceDto(engineContext.getEngineAlias()))
       .tenantId(engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null)))
       .build();
   }

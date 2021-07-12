@@ -15,7 +15,6 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -30,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
@@ -87,7 +88,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
       .getFilter()
       .stream()
       .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
-    // If a view level filter exists, the data should not be enriched as the missing data has been
+    // If a view level filter exists, the data should not be enriched as the missing data could been
     // omitted by the filters
     if (!viewLevelFilterExists) {
       // If no view level filter exists, we enrich data with flow nodes that haven't been executed, but should still
@@ -99,15 +100,16 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
-    return BpmnModelUtil.extractFlowNodeNames(
-      definitionService.getDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-        .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeData())
-        .orElse(Collections.emptyList()));
+    return definitionService.extractFlowNodeIdAndNames(
+      reportData.getDefinitions().stream()
+        .map(definitionDto -> definitionService.getDefinition(
+          DefinitionType.PROCESS, definitionDto.getKey(), definitionDto.getVersions(), definitionDto.getTenantIds()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    );
   }
 
   @Override

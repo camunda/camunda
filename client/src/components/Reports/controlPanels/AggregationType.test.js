@@ -51,7 +51,7 @@ it('should render an user task duration selection for user task duration reports
   expect(node).toMatchSnapshot();
 });
 
-it('should render an additional sum field for variable reports', () => {
+it('should render sum field for variable reports', () => {
   const node = shallow(
     <AggregationType
       report={{
@@ -63,6 +63,20 @@ it('should render an additional sum field for variable reports', () => {
   );
 
   expect(node.find('Switch').first()).toHaveProp('label', 'Sum');
+});
+
+it('should hide sum field for incident reports', () => {
+  const node = shallow(
+    <AggregationType
+      report={{
+        view: {entity: 'incident', properties: ['duration']},
+        distributedBy: {type: 'none'},
+        configuration: {aggregationTypes: ['avg']},
+      }}
+    />
+  );
+
+  expect(node.find('Switch').first()).not.toHaveProp('label', 'Sum');
 });
 
 it('should reevaluate the report when changing the aggregation type', () => {
@@ -110,27 +124,4 @@ it('should hide median aggregation if processpart is defined', () => {
   );
 
   expect(node.find({label: 'Median'})).not.toExist();
-});
-
-it('should reset the visualization to table if the report is distributed', () => {
-  const spy = jest.fn();
-
-  const node = shallow(
-    <AggregationType
-      report={{
-        view: {properties: ['duration']},
-        distributedBy: {type: 'assignee'},
-        configuration: {aggregationTypes: ['avg']},
-        visualization: 'bar',
-      }}
-      onChange={spy}
-    />
-  );
-
-  node
-    .find('Switch')
-    .last()
-    .simulate('change', {target: {checked: true}});
-
-  expect(spy.mock.calls[0][0].visualization).toEqual({$set: 'table'});
 });

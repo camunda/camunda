@@ -37,7 +37,14 @@ export default function withErrorHandling(Component) {
     }
 
     render() {
-      return <Component mightFail={this.mightFail} error={this.state.error} {...this.props} />;
+      return (
+        <Component
+          mightFail={this.mightFail}
+          error={this.state.error}
+          resetError={() => this.setState({error: false})}
+          {...this.props}
+        />
+      );
     }
   }
 
