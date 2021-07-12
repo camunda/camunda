@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
@@ -92,10 +91,6 @@ public final class BpmnVariableMappingBehavior {
       if (temporaryVariables != null) {
         variableBehavior.mergeLocalDocument(
             elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
-
-        if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-          variablesState.removeTemporaryVariables(elementInstanceKey);
-        }
       }
 
       // apply the output mappings
@@ -112,10 +107,6 @@ public final class BpmnVariableMappingBehavior {
       // merge/propagate the event variables by default
       variableBehavior.mergeDocument(
           elementInstanceKey, processDefinitionKey, processInstanceKey, temporaryVariables);
-
-      if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-        variablesState.removeTemporaryVariables(elementInstanceKey);
-      }
 
     } else if (isConnectedToEventBasedGateway(element)
         || element.getElementType() == BpmnElementType.BOUNDARY_EVENT) {

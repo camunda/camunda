@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
@@ -149,9 +148,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private Either<String, ProcessInstanceIntent> getFailedCommandIntent(
       final ElementInstance elementInstance) {
     final var instanceState = elementInstance.getState();
-    if (!MigratedStreamProcessors.isMigrated(elementInstance.getValue().getBpmnElementType())) {
-      return Either.right(instanceState);
-    }
     switch (instanceState) {
       case ELEMENT_ACTIVATING:
         return Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);

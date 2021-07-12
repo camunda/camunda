@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class EventTriggerBehavior {
@@ -122,35 +120,20 @@ public class EventTriggerBehavior {
   }
 
   private boolean terminateChildInstances(final BpmnElementContext flowScopeContext) {
-    // we need to go to the parent and delete all childs to trigger the interrupting event sub
+    // we need to go to the parent and delete all children to trigger the interrupting event sub
     // process
-    final var childInstances =
-        elementInstanceState.getChildren(flowScopeContext.getElementInstanceKey()).stream()
-            .map(
-                childInstance ->
-                    flowScopeContext.copy(
-                        childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
-            .collect(Collectors.toList());
-
-    for (final BpmnElementContext childInstanceContext : childInstances) {
-
-      if (ProcessInstanceLifecycle.canTerminate(childInstanceContext.getIntent())) {
-        if (!MigratedStreamProcessors.isMigrated(childInstanceContext.getBpmnElementType())) {
-          transitionToTerminating(childInstanceContext);
-        } else {
-          commandWriter.appendFollowUpCommand(
-              childInstanceContext.getElementInstanceKey(),
-              ProcessInstanceIntent.TERMINATE_ELEMENT,
-              childInstanceContext.getRecordValue());
-        }
-
-      } else if (!MigratedStreamProcessors.isMigrated(childInstanceContext.getBpmnElementType())
-          && childInstanceContext.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
-        // clean up the state because the completed event will not be processed
-        eventScopeInstanceState.deleteInstance(childInstanceContext.getElementInstanceKey());
-        elementInstanceState.removeInstance(childInstanceContext.getElementInstanceKey());
-      }
-    }
+    elementInstanceState.getChildren(flowScopeContext.getElementInstanceKey()).stream()
+        .filter(child -> ProcessInstanceLifecycle.canTerminate(child.getState()))
+        .map(
+            childInstance ->
+                flowScopeContext.copy(
+                    childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
+        .forEach(
+            childInstanceContext ->
+                commandWriter.appendFollowUpCommand(
+                    childInstanceContext.getElementInstanceKey(),
+                    ProcessInstanceIntent.TERMINATE_ELEMENT,
+                    childInstanceContext.getRecordValue()));
 
     final var elementInstance =
         elementInstanceState.getInstance(flowScopeContext.getElementInstanceKey());
@@ -164,12 +147,7 @@ public class EventTriggerBehavior {
   // it is currently duplication of BpmnTransitionBehavior
   // ideally this class/behavior will be merged with others
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
-    final var transitionedContext =
-        transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      registerStateTransition(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-    }
-    return transitionedContext;
+    return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
   }
 
   public void registerStateTransition(
@@ -212,12 +190,8 @@ public class EventTriggerBehavior {
       final BpmnElementContext context, final ProcessInstanceIntent transition) {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      verifyTransition(context, transition);
-      stateWriter.appendFollowUpEvent(key, transition, value);
-    } else {
-      stateWriter.appendFollowUpEvent(key, transition, value);
-    }
+
+    stateWriter.appendFollowUpEvent(key, transition, value);
     return context.copy(key, value, transition);
   }
 

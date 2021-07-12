@@ -15,13 +15,11 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -147,7 +145,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
         if (parentInstance == null) {
-          handleMissingParentInstance(instance.getValue().getBpmnElementType(), parentKey);
+          handleMissingParentInstance(parentKey);
           return;
         }
         parentInstance.decrementChildCount();
@@ -215,18 +213,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
   }
 
-  private void handleMissingParentInstance(
-      final BpmnElementType elementType, final long parentKey) {
-    if (MigratedStreamProcessors.isMigrated(elementType)) {
-      final var errorMsg =
-          "Expected to find parent instance for element instance with key %d, but none was found.";
-      throw new IllegalStateException(String.format(errorMsg, parentKey));
-    } else {
-      /// todo(zell): bring it back https://github.com/camunda-cloud/zeebe/issues/6202
-      // For now it is fine that parents might be not existing since they are already deleted,
-      // due to the migration - should only be the case for non migrated elements.
-      return;
-    }
+  private void handleMissingParentInstance(final long parentKey) {
+    final var errorMsg =
+        "Expected to find parent instance for element instance with key %d, but none was found.";
+    throw new IllegalStateException(String.format(errorMsg, parentKey));
   }
 
   private void writeElementInstance(final ElementInstance instance) {

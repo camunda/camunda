@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMes
 import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.camunda.zeebe.engine.processing.message.MessageNameException;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -93,11 +92,6 @@ public final class CatchEventBehavior {
 
     unsubscribeFromTimerEvents(context, commandWriter);
     unsubscribeFromMessageEvents(context, sideEffects);
-
-    // todo: remove after all are migrated
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
-    }
   }
 
   public void subscribeToEvents(
@@ -139,12 +133,6 @@ public final class CatchEventBehavior {
             extractedMessageNames.get((event.getId())),
             sideEffects);
       }
-    }
-
-    // todo: remove after all are migrated
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType()) && !events.isEmpty()) {
-      eventScopeInstanceState.createIfNotExists(
-          context.getElementInstanceKey(), supplier.getInterruptingElementIds());
     }
   }
 
