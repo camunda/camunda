@@ -289,7 +289,7 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public PartitionContext createPartitionContext() {
+  public PartitionContext getPartitionContext() {
     return this;
   }
 

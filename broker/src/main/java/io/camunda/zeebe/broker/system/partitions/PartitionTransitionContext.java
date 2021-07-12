@@ -28,5 +28,5 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   List<PartitionListener> getPartitionListeners();
 
-  PartitionContext createPartitionContext();
+  PartitionContext getPartitionContext();
 }

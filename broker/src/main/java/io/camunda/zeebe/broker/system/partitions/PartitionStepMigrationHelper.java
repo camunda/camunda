@@ -22,7 +22,7 @@ public class PartitionStepMigrationHelper {
     return new WrappedPartitionTransitionStep(transitionStep);
   }
 
-  static class WrappedPartitionBootstrapStep implements PartitionStep {
+  private static class WrappedPartitionBootstrapStep implements PartitionStep {
 
     private final PartitionBootstrapStep bootstrapStep;
 
@@ -63,7 +63,7 @@ public class PartitionStepMigrationHelper {
     }
   }
 
-  static class WrappedPartitionTransitionStep implements PartitionStep {
+  private static class WrappedPartitionTransitionStep implements PartitionStep {
 
     private final PartitionTransitionStep transitionStep;
 
