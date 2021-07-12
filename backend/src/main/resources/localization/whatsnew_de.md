@@ -1,12 +1,17 @@
-## Multi-Measure- und Multi-Aggregation-Berichte
+## Multi-Prozess Berichte
 
-Betrachten Sie Dauer und Anzahl von Prozessinstanzen in einem einzigen Bericht. Es ist ebenfalls möglich verschiedene Aggregationswerte anzuzeigen.
+Bis zu 10 Prozess-Definitionen können ab sofort in einem einzelnen Prozess-Bericht analysiert werden.
 
-## Dashboard-Berichte nach Assignee oder Kandidatengruppe filtern
+## Standardwerte für Dashboard-Filter
 
-Prozessinstanz- und Prozessknotenberichte zeigen Instanzen an, in denen der gewählten Assignee- oder Kandidatengruppe vorhanden war.
-Benutzeraufgabenberichte zeigen nur Daten von Flow Nodes an, die die Filteranforderung erfüllen.
+Standardwerte für Dashboard-Filter werden unmittelbar beim Öffnen von Dashboards angewandt.
 
-## Prozessknoten Statusfilter
+## Summen-Aggregation in Dauer-Berichten
 
-Die Konfigurationseinstellung des Prozessknoten Status wurde zu einem vollwertigen Filter migriert.  Finden Sie diesen mit den anderen Filtern und zeigen Sie Berichtsdaten basierend auf dem Status eines Prozessknotens an.
+Anzeigen der Gesamtdauer von allen Prozess- oder Prozessknoten-Instanzen mittels der Summen-Aggregation in
+Prozess-Instanz, Prozessknoten oder Benutzeraufgaben-Berichten.
+
+## Neuer Filter: Prozessknotenauswahl
+
+Der Prozessknotenauswahl-Filter erlaubt das Ein-/Ausblenden von Prozessknoten in
+Prozesskonten-/Benutzeraufgaben-Berichten.

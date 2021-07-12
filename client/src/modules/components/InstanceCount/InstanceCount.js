@@ -29,6 +29,10 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
   const hasFilter = data.filter?.length > 0;
 
   function loadRequiredData() {
+    if (!key) {
+      return;
+    }
+
     if (reportType === 'process') {
       const payload = [
         {

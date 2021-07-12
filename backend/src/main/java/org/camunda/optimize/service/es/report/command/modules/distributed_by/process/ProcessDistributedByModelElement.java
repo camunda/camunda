@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
@@ -30,7 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
 @RequiredArgsConstructor
@@ -75,12 +80,26 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
   private void addMissingDistributions(final Map<String, String> modelElementNames,
                                        final List<DistributedByResult> distributedByModelElements,
                                        final ExecutionContext<ProcessReportDataDto> context) {
-    // enrich data model elements that haven't been executed, but should still show up in the result
-    modelElementNames.keySet().forEach(modelElementKey -> distributedByModelElements.add(
-      DistributedByResult.createDistributedByResult(
-        modelElementKey, modelElementNames.get(modelElementKey), getViewPart().createEmptyResult(context)
-      )
-    ));
+    final Set<String> excludedFlowNodes = context.getReportData()
+      .getFilter()
+      .stream()
+      .filter(filter -> filter instanceof ExecutedFlowNodeFilterDto
+        && FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
+      .map(ExecutedFlowNodeFilterDto.class::cast)
+      .map(ExecutedFlowNodeFilterDto::getData)
+      .filter(data -> NOT_IN.equals(data.getOperator()))
+      .flatMap(data -> data.getValues().stream())
+      .collect(toSet());
+
+    // If view level executedFlowNodeFilter exist, we can filter the distributedBy buckets accordingly and only
+    // enrich those which have not been excluded by the filter. Otherwise, enrich result with all missing modelElements.
+    modelElementNames.keySet()
+      .stream()
+      .filter(key -> !excludedFlowNodes.contains(key))
+      .forEach(key -> distributedByModelElements.add(
+        DistributedByResult.createDistributedByResult(
+          key, modelElementNames.get(key), getViewPart().createEmptyResult(context)
+        )));
   }
 
   private Map<String, String> getModelElementNames(final ProcessReportDataDto reportData) {

@@ -88,7 +88,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
       .getFilter()
       .stream()
       .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
-    // If a view level filter exists, the data should not be enriched as the missing data has been
+    // If a view level filter exists, the data should not be enriched as the missing data could been
     // omitted by the filters
     if (!viewLevelFilterExists) {
       // If no view level filter exists, we enrich data with flow nodes that haven't been executed, but should still

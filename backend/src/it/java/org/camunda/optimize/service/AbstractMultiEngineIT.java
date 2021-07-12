@@ -12,9 +12,9 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.camunda.optimize.util.SuppressionConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.camunda.optimize.util.SuppressionConstants.*;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class AbstractMultiEngineIT extends AbstractIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
@@ -41,12 +41,20 @@ public class AbstractMultiEngineIT extends AbstractIT {
   protected static final String PROCESS_KEY_2 = "TestProcess2";
   protected static final String DECISION_KEY_1 = "TestDecision1";
   protected static final String DECISION_KEY_2 = "TestDecision2";
-  protected final String SECOND_ENGINE_ALIAS = "secondTestEngine";
+  protected static final String SECOND_ENGINE_ALIAS = "secondTestEngine";
+  protected static final String WILDCARD_SUB_PATH = "/.*";
 
   @RegisterExtension
   @Order(5)
   public EngineIntegrationExtension secondaryEngineIntegrationExtension =
     new EngineIntegrationExtension("anotherEngine");
+
+  protected AuthorizationClient defaultEngineAuthorizationClient = new AuthorizationClient(
+    engineIntegrationExtension
+  );
+  protected AuthorizationClient secondaryEngineAuthorizationClient = new AuthorizationClient(
+    secondaryEngineIntegrationExtension
+  );
 
   private ConfigurationService configurationService;
 

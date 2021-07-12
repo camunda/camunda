@@ -137,6 +137,18 @@ it('should load variable names for process reports', async () => {
   expect(node.find('FilterList').prop('variables')).toEqual([{name: 'variable1', type: 'String'}]);
 });
 
+it('should not load variables if definition is incomplete', async () => {
+  const node = shallow(
+    <InstanceCount {...props} report={update(props.report, {data: {definitions: {$set: []}}})} />
+  );
+
+  node.find('span').first().simulate('click');
+
+  await flushPromises();
+
+  expect(loadVariables).not.toHaveBeenCalled();
+});
+
 it('should load variable names for decision reports', async () => {
   const decisionReport = update(props.report, {
     reportType: {$set: 'decision'},

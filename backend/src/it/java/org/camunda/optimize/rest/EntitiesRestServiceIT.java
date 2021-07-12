@@ -71,7 +71,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  public void getEntities_ReturnsMyUsersReports() {
+  public void getEntities_returnsMyUsersReports() {
     // given
     addSingleReportToOptimize("B Report", ReportType.PROCESS);
     addSingleReportToOptimize("A Report", ReportType.DECISION);

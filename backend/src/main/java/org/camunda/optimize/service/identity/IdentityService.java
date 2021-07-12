@@ -8,6 +8,7 @@ package org.camunda.optimize.service.identity;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -32,10 +33,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 
 @Component
+@Slf4j
 public class IdentityService implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
   private static final List<AuthorizationType> SUPERUSER_AUTHORIZATIONS =
@@ -94,17 +97,15 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForId(final String userOrGroupId) {
     return getUserById(userOrGroupId)
-      .map(userDto -> (IdentityWithMetadataResponseDto) userDto)
-      .map(Optional::of)
-      .orElseGet(() -> Optional.ofNullable(getGroupById(userOrGroupId).orElse(null)));
+      .map(IdentityWithMetadataResponseDto.class::cast)
+      .or(() -> getGroupById(userOrGroupId));
   }
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityWithMetadataForIdAsUser(final String userId,
                                                                                       final String userOrGroupId) {
     return getUserById(userOrGroupId)
-      .map(userDto -> (IdentityWithMetadataResponseDto) userDto)
-      .map(Optional::of)
-      .orElseGet(() -> Optional.ofNullable(getGroupById(userOrGroupId).orElse(null)))
+      .map(IdentityWithMetadataResponseDto.class::cast)
+      .or(() -> getGroupById(userOrGroupId))
       .map(identityDto -> {
         if (!isUserAuthorizedToAccessIdentity(userId, identityDto)) {
           throw new ForbiddenException(String.format(
@@ -122,7 +123,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
         () -> {
           if (applicationAuthorizationService.isUserAuthorizedToAccessOptimize(userId)) {
             final Optional<UserDto> userDto = engineContextFactory.getConfiguredEngines().stream()
-              .map(engineContext -> engineContext.getUserById(userId))
+              .map(engineContext -> getIdentityIdIfExistsFromEngine(
+                engineContext.getEngineAlias(), userId, () -> engineContext.getUserById(userId)
+              ))
               .filter(Optional::isPresent)
               .map(Optional::get)
               .findFirst();
@@ -142,7 +145,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
         () -> {
           if (applicationAuthorizationService.isGroupAuthorizedToAccessOptimize(groupId)) {
             final Optional<GroupDto> groupDto = engineContextFactory.getConfiguredEngines().stream()
-              .map(engineContext -> engineContext.getGroupById(groupId))
+              .map(engineContext -> getIdentityIdIfExistsFromEngine(
+                engineContext.getEngineAlias(), groupId, () -> engineContext.getGroupById(groupId)
+              ))
               .filter(Optional::isPresent)
               .map(Optional::get)
               .findFirst();
@@ -249,6 +254,18 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
           .ifPresent(engineContext -> result.addAll(engineContext.getAllGroupsOfUser(userId)))
       );
     return new ArrayList<>(result);
+  }
+
+  private <T extends IdentityDto> Optional<T> getIdentityIdIfExistsFromEngine(
+    final String engineAlias,
+    final String identityId,
+    final Supplier<Optional<T>> optionalSupplier) {
+    try {
+      return optionalSupplier.get();
+    } catch (final Exception ex) {
+      log.warn("Failed fetching identity with id {} from engine {}.", identityId, engineAlias);
+      return Optional.empty();
+    }
   }
 
 }

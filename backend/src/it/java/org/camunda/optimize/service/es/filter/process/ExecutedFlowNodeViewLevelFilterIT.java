@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
@@ -53,6 +54,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FRE
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
@@ -107,7 +109,7 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
   }
 
   // This stream does not include endDate reports as these scenarios are covered by the equivalent startDate report.
-  // Similar also for candidateGroup reports. Only testing map reports because the filter is applied on groupBy level.
+  // Similar also for candidateGroup reports.
   private static Stream<Arguments> flowNodeAndUserTaskMapReportTypeAndExpectedResults() {
     return Stream.of(
       Arguments.of(COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE, Arrays.asList(
@@ -197,8 +199,8 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("flowNodeAndUserTaskMapReportTypeAndExpectedResults")
-  public void notInFlowNodeIdFilterWorks_viewLevel(final ProcessReportDataType reportType,
-                                                   final List<Tuple> expectedResults) {
+  public void notInExecutedFlowNodeFilterWorks_groupByReports(final ProcessReportDataType reportType,
+                                                              final List<Tuple> expectedResults) {
     // given one instance with start, userTask1 and userTask2 and one instance with start and userTask1
     setupInstanceData();
 
@@ -218,7 +220,35 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void notInFlowNodeIdFilterWorks_incidentReport() {
+  public void notInExecutedFlowNodeFilterWorks_distributedByReport() {
+    // given one instance with start, userTask1 and userTask2 and one instance with start and userTask1
+    setupInstanceData();
+
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(DEF_KEY)
+      .setProcessDefinitionVersion(LATEST_VERSION)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_VARIABLE_BY_FLOW_NODE)
+      .setVariableName("stringVar")
+      .setVariableType(VariableType.STRING)
+      .setFilter(createNotInExecutedFlowNodeFilter(new String[]{USER_TASK_2}))
+      .build();
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> resultDto = reportClient
+      .evaluateHyperMapReport(reportData).getResult();
+
+    // then both instances are in the result as well as all flowNodes except the filtered out userTask2 bucket
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2);
+    assertThat(
+      resultDto.getFirstMeasureData().stream()
+        .flatMap(hyperMapResultEntryDto -> hyperMapResultEntryDto.getValue().stream())
+        .map(MapResultEntryDto::getKey)
+        .distinct()
+    ).containsExactlyInAnyOrder(START_EVENT, USER_TASK_1, END_EVENT);
+  }
+
+  @Test
+  public void notInExecutedFlowNodeFilterWorks_incidentReport() {
     // given
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getTwoExternalTaskProcess(DEF_KEY));
@@ -269,7 +299,7 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("flowNodeAndUserTaskMapReportTypeAndExpectedResults")
-  public void notInFlowNodeIdFilterWorks_viewLevelFilteringAlsoAffectsInstanceCount(final ProcessReportDataType reportType) {
+  public void notInExecutedFlowNodeFilterWorks_viewLevelFilteringAlsoAffectsInstanceCount(final ProcessReportDataType reportType) {
     // given one instance with start, userTask1 and userTask2 and one instance with start and userTask1
     setupInstanceData();
 
@@ -286,7 +316,7 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
   }
 
   @Test
-  public void notInFlowNodeIdFilterWorks_viewLevelFilteringAlsoAffectsInstanceCount_nonFlowNodeReport() {
+  public void notInExecutedFlowNodeFilterWorks_viewLevelFilteringAlsoAffectsInstanceCount_nonFlowNodeReport() {
     // given one instance with start, userTask1 and userTask2 and one instance with start and userTask1
     setupInstanceData();
 
@@ -304,14 +334,7 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
 
   private ReportResultResponseDto<List<MapResultEntryDto>> evaluateReportWithNotInExecutedFlowNodeFilter(final ProcessReportDataType reportType,
                                                                                                          final String[] idsToFilter) {
-    final List<ProcessFilterDto<?>> flowNodeIdFilter = ProcessFilterBuilder
-      .filter()
-      .executedFlowNodes()
-      .notInOperator()
-      .ids(idsToFilter)
-      .filterLevel(FilterApplicationLevel.VIEW)
-      .add()
-      .buildList();
+    final List<ProcessFilterDto<?>> flowNodeIdFilter = createNotInExecutedFlowNodeFilter(idsToFilter);
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(DEF_KEY)
@@ -324,6 +347,17 @@ public class ExecutedFlowNodeViewLevelFilterIT extends AbstractFilterIT {
       .setFilter(flowNodeIdFilter)
       .build();
     return reportClient.evaluateMapReport(reportData).getResult();
+  }
+
+  private List<ProcessFilterDto<?>> createNotInExecutedFlowNodeFilter(final String[] idsToFilter) {
+    return ProcessFilterBuilder
+      .filter()
+      .executedFlowNodes()
+      .notInOperator()
+      .ids(idsToFilter)
+      .filterLevel(FilterApplicationLevel.VIEW)
+      .add()
+      .buildList();
   }
 
 }

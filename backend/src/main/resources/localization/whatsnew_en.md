@@ -1,13 +1,16 @@
-## Multi-Measure and Multi-Aggregation Reports
+## Multi Process Reports
 
-Add an additional measure to your selected process view to display counts and durations in a single Report.
-Edit duration displays to show various aggregation values.
+Add up to 10 Process Definitions to a Report to get an overview of your Processes at a glance.
 
-## Filter Dashboard Reports by Assignee or Candidate Group
+## Default filtered views for Dashboards
 
-Process Instance and Flow Node Reports will display instances where the selected Assignee or Candidate group was present.
-User Task Reports focus further to display data only from Flow Nodes which meet the filter requirement.
+Define default values when setting up filters that will be applied immediately when viewing a Dashboard.
 
-## Flow Node Status Filter
+## Sum Aggregation on Duration Reports
 
-The configuration setting of Flow Node status has been migrated to a fully fledged Filter.  Find this with the other filters and show Report data based on the status of a Flow Node.
+Show the total time spent on Processes or specific Flow Nodes by using the new Sum aggregation option in Process
+Instance, Flow Node and User Task Duration Reports.
+
+## New Filter: Flow Node Selection
+
+Use this filter to exclude Flow Nodes from the data set and visualisations.

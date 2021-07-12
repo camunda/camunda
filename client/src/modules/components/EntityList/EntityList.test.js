@@ -237,6 +237,35 @@ it('should select/deselect all selectable events in view', () => {
     .simulate('change', {target: {checked: false}});
 
   expect(node.find({isSelected: true})).not.toExist();
+
+  node
+    .find('ListItem')
+    .at(0)
+    .simulate('selectionChange', {target: {checked: true}});
+
+  node.find('SearchField').simulate('change', 'adashboard');
+
+  expect(node.find('.columnHeaders').find({type: 'checkbox'}).prop('checked')).toBe(false);
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: true}});
+
+  node.find('SearchField').simulate('change', '');
+
+  expect(node.find({isSelected: true}).length).toBe(2);
+
+  node.find('SearchField').simulate('change', 'aCollectionName');
+
+  node
+    .find('.columnHeaders')
+    .find({type: 'checkbox'})
+    .simulate('change', {target: {checked: false}});
+
+  node.find('SearchField').simulate('change', '');
+
+  expect(node.find({isSelected: true}).length).toBe(1);
 });
 
 it('should should reset the selection on data change', () => {
