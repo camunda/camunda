@@ -130,9 +130,7 @@ public final class ReplayStateMachine {
         return;
       }
 
-      if (!readMetadata()) {
-        return; // failure on reading metadata
-      }
+      readMetadata();
       readRecordValue();
 
       processRetryStrategy
@@ -201,18 +199,19 @@ public final class ReplayStateMachine {
     actor.submit(this::replayNextEvent);
   }
 
-  private boolean readMetadata() {
+  /**
+   * Reads the metadata of the current read event.
+   *
+   * @throws ProcessingException if an error occurs during reading the metadata
+   */
+  private void readMetadata() throws ProcessingException {
     try {
       metadata.reset();
       currentEvent.readMetadata(metadata);
     } catch (final Exception e) {
       final var errorMsg = String.format(ERROR_MSG_EXPECTED_TO_READ_METADATA, currentEvent);
-      LOG.error(errorMsg, currentEvent, e);
-      final var replayException = new ProcessingException(errorMsg, currentEvent, null, e);
-      recoveryFuture.completeExceptionally(replayException);
-      return false;
+      throw new ProcessingException(errorMsg, currentEvent, null, e);
     }
-    return true;
   }
 
   private void readRecordValue() {
