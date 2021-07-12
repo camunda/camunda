@@ -28,42 +28,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
-/**
- * Represents the state machine to replay events.
- *
- * <pre>
- * +------------------+   +-------------+           +------------------------+
- * |                  |   |             |           |                        |
- * |  startRecover()  |--->  scanLog()  |---------->|  replayNextEvent()     |
- * |                  |   |             |           |                        |
- * +------------------+   +---+---------+           +-----^------+-----------+
- *                            |                           |      |
- * +-----------------+        | no source events          |      |
- * |                 |        |                           |      |
- * |  onRecovered()  <--------+                           |      |    +--------------------+
- * |                 |                                    |      |    |                    |
- * +--------^--------+                hasNext             |      +--->|  replayEvent()     |
- *          |            +--------------------------------+           |                    |
- *          |            |                                            +----+----------+----+
- *          |            |                                                 |          |
- *   +------+------------+-----+                                           |          |
- *   |                         |               no event processor          |          |
- *   |  onRecordReplayed()     |<------------------------------------------+          |
- *   |                         |                                                      |
- *   +---------^---------------+                                                      |
- *             |                                                                      |
- *             |      +--------------------------+       +----------------------+     |
- *             |      |                          |       |                      |     |
- *             +------+  updateStateUntilDone()  <-------+  replayUntilDone()   |<----+
- *                    |                          |       |                      |
- *                    +------^------------+------+       +---^------------+-----+
- *                           |            |                  |            |
- *                           +------------+                  +------------+
- *                             exception                       exception
- * </pre>
- *
- * See https://textik.com/#773271ce7ea2096a
- */
+/** Represents the state machine to replay events and rebuild the state. */
 public final class ReplayStateMachine {
 
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
