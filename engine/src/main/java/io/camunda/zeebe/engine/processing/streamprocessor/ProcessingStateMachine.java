@@ -127,7 +127,7 @@ public final class ProcessingStateMachine {
   private final RecordProcessorMap recordProcessorMap;
   private final TypedEventImpl typedEvent;
   private final StreamProcessorMetrics metrics;
-  private final Consumer<TypedRecord> onProcessedListener;
+  private final Consumer<TypedRecord<?>> onProcessedListener;
   private final Consumer<LoggedEvent> onSkippedListener;
 
   // current iteration

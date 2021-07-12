@@ -56,7 +56,9 @@ public final class StateReplication implements SnapshotReplication {
 
   @Override
   public void consume(final Consumer<SnapshotChunk> consumer) {
-    executorService = Executors.newSingleThreadExecutor(this::createReplicationThread);
+    if (executorService == null) {
+      executorService = Executors.newSingleThreadExecutor(this::createReplicationThread);
+    }
     messagingService.subscribe(
         replicationTopic,
         message -> {
@@ -70,6 +72,15 @@ public final class StateReplication implements SnapshotReplication {
           consumer.accept(chunk);
         },
         executorService);
+  }
+
+  @Override
+  public void stopConsuming() {
+    messagingService.unsubscribe(replicationTopic);
+    if (executorService != null) {
+      executorService.shutdownNow();
+      executorService = null;
+    }
   }
 
   @Override

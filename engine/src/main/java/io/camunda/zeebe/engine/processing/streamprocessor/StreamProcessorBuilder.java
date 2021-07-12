@@ -61,7 +61,7 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder onProcessedListener(final Consumer<TypedRecord> onProcessed) {
+  public StreamProcessorBuilder onProcessedListener(final Consumer<TypedRecord<?>> onProcessed) {
     processingContext.onProcessedListener(onProcessed);
     return this;
   }

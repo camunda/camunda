@@ -222,6 +222,11 @@ public final class ReplicateStateControllerTest {
     }
 
     @Override
+    public void stopConsuming() {
+      chunkConsumer = null;
+    }
+
+    @Override
     public void close() {}
   }
 }

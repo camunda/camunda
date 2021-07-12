@@ -795,7 +795,7 @@ public final class StreamProcessorTest {
    *
    * <p>It is necessary to always call {@link #expect(int)} before {@link #accept(TypedRecord)}}
    */
-  private static final class AwaitableProcessedListener implements Consumer<TypedRecord> {
+  private static final class AwaitableProcessedListener implements Consumer<TypedRecord<?>> {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
