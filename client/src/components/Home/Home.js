@@ -12,7 +12,7 @@ import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {EntityList, Deleter} from 'components';
+import {EntityList, Deleter, BulkDeleter} from 'components';
 import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
 
 import Copier from './Copier';
@@ -124,12 +124,11 @@ export class Home extends React.Component {
               />
             }
             bulkActions={[
-              {
-                type: 'delete',
-                action: removeEntities,
-                checkConflicts,
-                conflictMessage: t('common.deleter.affectedMessage.bulk.report'),
-              },
+              <BulkDeleter
+                deleteEntities={removeEntities}
+                checkConflicts={checkConflicts}
+                conflictMessage={t('common.deleter.affectedMessage.bulk.report')}
+              />,
             ]}
             empty={t('home.empty')}
             isLoading={isLoading}

@@ -3,7 +3,7 @@
 exports[`should show conflict message if a conflict has happend 1`] = `
 <React.Fragment>
   <React.Fragment>
-    test
+    testMessage
     <br />
      
     <br />

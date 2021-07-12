@@ -7,10 +7,11 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, Modal} from 'components';
+import {Button, EntityList, Deleter, BulkDeleter, Modal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {formatters} from 'services';
+import {areTenantsAvailable} from 'config';
 
 import {
   getSources,
@@ -21,12 +22,11 @@ import {
   checkSourcesConflicts,
   removeSources,
 } from './service';
-
 import AddSourceModal from './modals/AddSourceModal';
 import EditSourceModal from './modals/EditSourceModal';
-import {areTenantsAvailable} from 'config';
 
 import './SourcesList.scss';
+
 const {formatTenantName} = formatters;
 
 export default withErrorHandling(
@@ -117,13 +117,15 @@ export default withErrorHandling(
               )
             }
             bulkActions={[
-              {
-                type: 'delete',
-                action: async (selectedSources) => await removeSources(collection, selectedSources),
-                checkConflicts: async (selectedSources) =>
-                  await checkSourcesConflicts(collection, selectedSources),
-                conflictMessage: t('common.deleter.affectedMessage.bulk.process'),
-              },
+              <BulkDeleter
+                deleteEntities={async (selectedSources) =>
+                  await removeSources(collection, selectedSources)
+                }
+                checkConflicts={async (selectedSources) =>
+                  await checkSourcesConflicts(collection, selectedSources)
+                }
+                conflictMessage={t('common.deleter.affectedMessage.bulk.process')}
+              />,
             ]}
             onChange={() => {
               this.getSources();
