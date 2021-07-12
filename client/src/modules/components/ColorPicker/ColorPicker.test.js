@@ -41,5 +41,5 @@ it('should generate correct amount of colors', () => {
 it('should should repeat generated colors if they are not enough', () => {
   const colors = ColorPicker.getGeneratedColors(200);
   expect(colors.length).toBe(200);
-  expect(colors[64]).toBe(colors[0]);
+  expect(colors[63]).toBe(colors[0]);
 });
