@@ -2146,7 +2146,7 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@mswjs/cookies@^0.1.5":
+"@mswjs/cookies@^0.1.6":
   version "0.1.6"
   resolved "https://registry.yarnpkg.com/@mswjs/cookies/-/cookies-0.1.6.tgz#176f77034ab6d7373ae5c94bcbac36fee8869249"
   integrity sha512-A53XD5TOfwhpqAmwKdPtg1dva5wrng2gH5xMvklzbd9WLTSVU953eCRa8rtrrm6G7Cy60BOGsBRN89YQK0mlKA==
@@ -12449,12 +12449,12 @@ msw-storybook-addon@^1.1.0:
   dependencies:
     "@storybook/addons" "^6.0.0"
 
-msw@^0.30.1:
-  version "0.30.1"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.30.1.tgz#2dfae38359827c353b04bbab193cc91459894a77"
-  integrity sha512-9EiOrF5vEJ60pDtT8FqOO3bLkJO/t4rJQB92kV6lXvZZwKAeqqA6XME5HQZ9BRj9dzVfDJ26jcxJkA6SlP147A==
+msw@^0.31.0:
+  version "0.31.0"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.31.0.tgz#5d54e55a6cd9c07eb885c3df11adb13cfd9c49ba"
+  integrity sha512-uUZ8sPr14xOL2ymcr7pdNvDqzqXKrAlvMXwAb1BdYPbwsVQhz4fJKVtI4IdSQQE9A2iUaHMdS6ayqfQQ53CE3w==
   dependencies:
-    "@mswjs/cookies" "^0.1.5"
+    "@mswjs/cookies" "^0.1.6"
     "@mswjs/interceptors" "^0.11.1"
     "@open-draft/until" "^1.0.3"
     "@types/cookie" "^0.4.0"
