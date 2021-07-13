@@ -26,7 +26,7 @@ fixture('Multi Instance Flow Node Selection')
     await t.navigateTo(`/instances/${processInstanceId}`);
   });
 
-test('Should select multi instance flow nodes', async (t) => {
+test.skip('Should select multi instance flow nodes', async (t) => {
   await t.expect(screen.queryByTestId('instance-history').exists).ok();
 
   const withinInstanceHistory = within(

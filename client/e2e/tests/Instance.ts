@@ -177,7 +177,7 @@ test('Instance with an incident - diagram', async (t) => {
   await t.expect(screen.queryByTestId('modal').exists).notOk();
 });
 
-test('Instance with an incident - resolve incidents', async (t) => {
+test.skip('Instance with an incident - resolve incidents', async (t) => {
   const {
     initialData: {instanceWithIncidentToResolve},
   } = t.fixtureCtx;
