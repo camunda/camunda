@@ -20,7 +20,6 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.channels.FileChannel;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -502,14 +501,10 @@ public final class FileBasedSnapshotStore extends Actor
   private void tryAtomicDirectoryMove(final Path directory, final Path destination)
       throws IOException {
     try {
-      Files.move(directory, destination, StandardCopyOption.ATOMIC_MOVE);
+      FileUtil.moveDurably(directory, destination, StandardCopyOption.ATOMIC_MOVE);
     } catch (final AtomicMoveNotSupportedException e) {
-      LOGGER.warn("Atomic move not supported. Moving the snapshot files non-atomically.");
-      Files.move(directory, destination);
-    }
-
-    try (var channel = FileChannel.open(destination)) {
-      channel.force(true);
+      LOGGER.warn("Atomic move not supported. Moving the snapshot files non-atomically", e);
+      FileUtil.moveDurably(directory, destination);
     }
   }
 
