@@ -5,17 +5,5 @@
  */
 package org.camunda.optimize.dto.optimize;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
-
-@Getter
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
-public class EventsDataSourceDto extends DataSourceDto {
-
-  public EventsDataSourceDto() {
-    super(DataImportSourceType.EVENTS, null);
-  }
-
+public interface SchedulerConfig {
 }

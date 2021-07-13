@@ -3,26 +3,27 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize;
+package org.camunda.optimize.dto.optimize.datasource;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
 
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ZeebeDataSourceDto extends DataSourceDto {
 
-  private int partitionCount;
+  private int partitionId;
 
   public ZeebeDataSourceDto() {
     super(DataImportSourceType.ZEEBE, null);
   }
 
-  public ZeebeDataSourceDto(final String name, final int partitionCount) {
+  public ZeebeDataSourceDto(final String name, final int partitionId) {
     super(DataImportSourceType.ZEEBE, name);
-    this.partitionCount = partitionCount;
+    this.partitionId = partitionId;
   }
 
 }

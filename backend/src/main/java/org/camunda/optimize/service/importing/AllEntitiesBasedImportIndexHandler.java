@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.util.EsHelper;

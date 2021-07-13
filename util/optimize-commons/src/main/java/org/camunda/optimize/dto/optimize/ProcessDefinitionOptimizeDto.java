@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 
 import java.util.ArrayList;
 import java.util.HashMap;

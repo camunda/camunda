@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
@@ -38,15 +39,15 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
   }
 
   @Override
-  public List<ImportMediator> createMediators(final int partitionId) {
+  public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
     return Collections.singletonList(
       new ZeebeProcessInstanceImportMediator(
-        importIndexHandlerRegistry.getZeebeProcessInstanceImportIndexHandler(partitionId),
+        importIndexHandlerRegistry.getZeebeProcessInstanceImportIndexHandler(zeebeDataSourceDto.getPartitionId()),
         beanFactory.getBean(
           ZeebeProcessInstanceFetcher.class,
-          partitionId,
+          zeebeDataSourceDto.getPartitionId(),
           esClient,
           objectMapper,
           configurationService
@@ -55,11 +56,12 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
           elasticsearchImportJobExecutor,
           zeebeProcessInstanceWriter,
           configurationService.getConfiguredZeebe().getName(),
-          partitionId
+          zeebeDataSourceDto.getPartitionId()
         ),
         configurationService,
         new BackoffCalculator(configurationService)
       )
     );
   }
+
 }

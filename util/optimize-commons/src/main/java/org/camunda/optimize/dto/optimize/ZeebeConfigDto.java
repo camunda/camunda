@@ -3,11 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.importing.index;
+package org.camunda.optimize.dto.optimize;
 
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-public interface ImportIndexDto extends OptimizeDto {
-  String getEngine();
-  String getEsTypeIndexRefersTo();
+@Data
+@AllArgsConstructor
+public class ZeebeConfigDto implements SchedulerConfig {
+
+  private String name;
+  private int partitionCount;
+
 }

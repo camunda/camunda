@@ -29,6 +29,7 @@ import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessDefiniti
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,11 +62,17 @@ public class ImportIndexHandlerRegistry {
     return getEngineHandlers(engineAlias, EngineImportIndexHandlerProvider::getTimestampBasedEngineHandlers);
   }
 
-  public List<EngineImportIndexHandler<?, ?>> getAllHandlers() {
+  public List<EngineImportIndexHandler<?, ?>> getAllEngineImportHandlers() {
     return engineImportIndexHandlerProviderMap.values()
       .stream()
       .flatMap(provider -> provider.getAllHandlers().stream())
       .collect(Collectors.toList());
+  }
+
+  public List<PositionBasedImportIndexHandler> getPositionBasedHandlers(Integer partitionId) {
+    return Optional.ofNullable(zeebeImportIndexHandlerProviderMap.get(partitionId))
+      .map(ZeebeImportIndexHandlerProvider::getPositionBasedEngineHandlers)
+      .orElse(Collections.emptyList());
   }
 
   public CompletedProcessInstanceImportIndexHandler getCompletedProcessInstanceImportIndexHandler(String engineAlias) {

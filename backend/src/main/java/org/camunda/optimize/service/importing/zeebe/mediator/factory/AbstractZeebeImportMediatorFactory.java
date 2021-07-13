@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -23,5 +24,5 @@ public abstract class AbstractZeebeImportMediatorFactory {
   protected final ObjectMapper objectMapper;
   protected final OptimizeElasticsearchClient esClient;
 
-  public abstract List<ImportMediator> createMediators(int partitionId);
+  public abstract List<ImportMediator> createMediators(ZeebeDataSourceDto dataSourceDto);
 }

@@ -49,7 +49,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     waitUntilNumberOfDefinitionsExported(1);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
@@ -85,7 +85,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     waitUntilNumberOfDefinitionsExported(1);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
@@ -120,7 +120,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -140,7 +140,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -157,7 +157,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
@@ -180,14 +180,14 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
     waitUntilNumberOfDefinitionsExported(2);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(1)
       .extracting(DefinitionOptimizeResponseDto::getName).containsExactlyInAnyOrder(firstProcessName);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromLastIndex();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)

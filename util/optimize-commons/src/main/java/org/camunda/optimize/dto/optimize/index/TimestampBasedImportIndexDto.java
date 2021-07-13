@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.importing.index;
+package org.camunda.optimize.dto.optimize.index;
 
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;

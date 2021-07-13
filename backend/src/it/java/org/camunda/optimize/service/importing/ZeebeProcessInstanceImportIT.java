@@ -11,7 +11,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
-import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -25,9 +24,6 @@ import org.camunda.optimize.service.util.importing.ZeebeConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +34,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -51,8 +46,6 @@ import static org.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
@@ -67,7 +60,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -142,7 +135,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -153,7 +146,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromLastIndex();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -168,7 +161,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when we increase the page size
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(10);
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then we get the rest of the process data
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -191,7 +184,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -270,7 +263,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(6);
 
     // when
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -349,7 +342,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     zeebeExtension.getZeebeClock().setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
     waitUntilMinimumProcessInstanceEventsExportedCount(5);
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
@@ -446,7 +439,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -471,7 +464,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -495,7 +488,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
     // when
     waitUntilProcessInstanceEventsExported();
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -519,7 +512,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", true));
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK, Map.of("loop", false));
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
-    importAllZeebeEntities();
+    importAllZeebeEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -555,32 +548,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(1);
   }
 
-  @SneakyThrows
-  private void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
-    final String expectedIndex =
-      zeebeExtension.getZeebeRecordPrefix() + "-" + ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
-    final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    Awaitility.given().ignoreExceptions()
-      .await()
-      .timeout(5, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .indices()
-          .exists(new GetIndexRequest(expectedIndex), esClient.requestOptions())
-      ).isTrue());
-    final CountRequest definitionCountRequest = new CountRequest(expectedIndex).query(getQueryForProcessableEvents());
-    Awaitility.given().ignoreExceptions()
-      .await()
-      .timeout(10, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(
-        esClient
-          .getHighLevelClient()
-          .count(definitionCountRequest, esClient.requestOptions())
-          .getCount())
-        .isGreaterThanOrEqualTo(minExportedEventCount));
-  }
-
   private long getExpectedDurationForEvents(final List<ZeebeProcessInstanceRecordDto> eventsForElement) {
     final ZeebeProcessInstanceRecordDto startOfElement = eventsForElement.stream()
       .filter(event -> event.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING))
@@ -607,15 +574,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         event.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED))
       .findFirst().orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(endOfElement.getTimestamp()), ZoneId.systemDefault());
-  }
-
-  private BoolQueryBuilder getQueryForProcessableEvents() {
-    return boolQuery().must(termsQuery(
-      ZeebeProcessInstanceRecordDto.Fields.intent,
-      ProcessInstanceIntent.ELEMENT_ACTIVATING,
-      ProcessInstanceIntent.ELEMENT_COMPLETED,
-      ProcessInstanceIntent.ELEMENT_TERMINATED
-    ));
   }
 
 }

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.engine.service.zeebe;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ZeebeDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;

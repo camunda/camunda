@@ -68,10 +68,8 @@ public class ImportIndexIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
-    for (Long index : indexes) {
-      assertThat(index).isGreaterThan(0L);
-    }
+    assertThat(embeddedOptimizeExtension.getImportIndexes())
+      .allSatisfy(index -> assertThat(index).isPositive());
   }
 
   @Test

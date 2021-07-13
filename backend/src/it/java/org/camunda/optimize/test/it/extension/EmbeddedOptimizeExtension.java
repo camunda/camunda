@@ -33,13 +33,16 @@ import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.identity.IdentityService;
 import org.camunda.optimize.service.identity.UserIdentityCacheService;
 import org.camunda.optimize.service.identity.UserTaskIdentityCacheService;
+import org.camunda.optimize.service.importing.AbstractImportScheduler;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
+import org.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.DefinitionXmlImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.StorePositionBasedIndexesImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
@@ -213,14 +216,9 @@ public class EmbeddedOptimizeExtension
     try {
       resetImportStartIndexes();
     } catch (Exception e) {
-      //nothing to do
+      // nothing to do
     }
     importAllEngineEntitiesFromLastIndex();
-  }
-
-  @SneakyThrows
-  public void importAllZeebeEntitiesFromScratch() {
-    getImportSchedulerManager().getZeebeImportScheduler().runImportRound(true).get();
   }
 
   public void importAllEngineEntitiesFromLastIndex() {
@@ -228,6 +226,21 @@ public class EmbeddedOptimizeExtension
       log.debug("scheduling import round");
       scheduleImportAndWaitUntilIsFinished(scheduler);
     }
+  }
+
+  @SneakyThrows
+  public void importAllZeebeEntitiesFromScratch() {
+    try {
+      resetImportStartIndexes();
+    } catch (Exception e) {
+      // nothing to do
+    }
+    importAllZeebeEntitiesFromLastIndex();
+  }
+
+  @SneakyThrows
+  public void importAllZeebeEntitiesFromLastIndex() {
+    getImportSchedulerManager().getZeebeImportScheduler().runImportRound(true).get();
   }
 
   @SneakyThrows
@@ -298,11 +311,15 @@ public class EmbeddedOptimizeExtension
 
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    for (EngineImportScheduler scheduler : getImportSchedulerManager().getEngineImportSchedulers()) {
+    List<AbstractImportScheduler<?>> importSchedulers =
+      new ArrayList<>(getImportSchedulerManager().getEngineImportSchedulers());
+    importSchedulers.add(getImportSchedulerManager().getZeebeImportScheduler());
+    for (AbstractImportScheduler<?> scheduler : importSchedulers) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()
           .stream()
-          .filter(med -> med instanceof StoreIndexesEngineImportMediator)
+          .filter(med -> med instanceof StoreIndexesEngineImportMediator
+            || med instanceof StorePositionBasedIndexesImportMediator)
           .map(mediator -> {
             mediator.resetBackoff();
             return mediator.runImport();
@@ -447,7 +464,6 @@ public class EmbeddedOptimizeExtension
 
   public List<Long> getImportIndexes() {
     List<Long> indexes = new LinkedList<>();
-
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
       getIndexHandlerRegistry()
         .getAllEntitiesBasedHandlers(engineAlias)
@@ -459,14 +475,24 @@ public class EmbeddedOptimizeExtension
           indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
         });
     }
-
     return indexes;
   }
 
   public void resetImportStartIndexes() {
-    for (EngineImportIndexHandler<?, ?> engineImportIndexHandler : getIndexHandlerRegistry().getAllHandlers()) {
+    for (EngineImportIndexHandler<?, ?> engineImportIndexHandler :
+      getIndexHandlerRegistry().getAllEngineImportHandlers()) {
       engineImportIndexHandler.resetImportIndex();
     }
+    getAllPositionBasedImportHandlers().forEach(PositionBasedImportIndexHandler::resetImportIndex);
+  }
+
+  public List<PositionBasedImportIndexHandler> getAllPositionBasedImportHandlers() {
+    List<PositionBasedImportIndexHandler> positionBasedHandlers = new LinkedList<>();
+    for (int partitionId = 1; partitionId <=
+      getConfigurationService().getConfiguredZeebe().getPartitionCount(); partitionId++) {
+      positionBasedHandlers.addAll(getIndexHandlerRegistry().getPositionBasedHandlers(partitionId));
+    }
+    return positionBasedHandlers;
   }
 
   public void resetInstanceDataWriters() {

@@ -67,6 +67,7 @@ public class ElasticsearchConstants {
   public static final String REPORT_SHARE_INDEX_NAME = "report-share";
   public static final String DASHBOARD_SHARE_INDEX_NAME = "dashboard-share";
   public static final String TIMESTAMP_BASED_IMPORT_INDEX_NAME = "timestamp-based-import-index";
+  public static final String POSITION_BASED_IMPORT_INDEX_NAME = "position-based-import-index";
   public static final String METADATA_INDEX_NAME = "metadata";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
   public static final String TENANT_INDEX_NAME = "tenant";

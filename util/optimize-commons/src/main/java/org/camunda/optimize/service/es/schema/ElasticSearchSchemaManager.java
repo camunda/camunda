@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitio
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
@@ -448,6 +449,7 @@ public class ElasticSearchSchemaManager {
       new EventProcessPublishStateIndex(),
       new ImportIndexIndex(),
       new TimestampBasedImportIndex(),
+      new PositionBasedImportIndex(),
       new CombinedReportIndex(),
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex()

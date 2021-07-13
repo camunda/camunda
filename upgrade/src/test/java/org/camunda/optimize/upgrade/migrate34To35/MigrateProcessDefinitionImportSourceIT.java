@@ -7,8 +7,8 @@ package org.camunda.optimize.upgrade.migrate34To35;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
-import org.camunda.optimize.dto.optimize.EventsDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EventsDataSourceDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;

@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.EngineDataSourceDto;
+import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
 
