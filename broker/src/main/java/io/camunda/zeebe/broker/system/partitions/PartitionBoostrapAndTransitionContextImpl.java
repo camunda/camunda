@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -72,6 +73,7 @@ public class PartitionBoostrapAndTransitionContextImpl
   private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
+  private AtomixLogStorage logStorage;
 
   private long currentTerm;
   private Role currentRole;
@@ -311,6 +313,14 @@ public class PartitionBoostrapAndTransitionContextImpl
 
   public void setCurrentRole(final Role currentRole) {
     this.currentRole = currentRole;
+  }
+
+  public AtomixLogStorage getLogStorage() {
+    return logStorage;
+  }
+
+  public void setLogStorage(final AtomixLogStorage logStorage) {
+    this.logStorage = logStorage;
   }
 
   @Override

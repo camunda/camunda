@@ -24,8 +24,6 @@ public class LogStreamPartitionStep implements PartitionStep {
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'AtomixLogStoragePartitionStep' on partition %d.";
 
-  private AtomixLogStorage logStorage;
-
   @Override
   public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
     final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
@@ -56,9 +54,10 @@ public class LogStreamPartitionStep implements PartitionStep {
 
   @Override
   public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
+    final var logStorage = context.getLogStorage();
     if (logStorage != null) {
       context.getRaftPartition().getServer().removeCommitListener(logStorage);
-      logStorage = null;
+      context.setLogStorage(null);
     }
     context.getComponentHealthMonitor().removeComponent(context.getLogStream().getLogName());
     final ActorFuture<Void> future = context.getLogStream().closeAsync();
@@ -95,8 +94,9 @@ public class LogStreamPartitionStep implements PartitionStep {
     if (raftTerm != context.getCurrentTerm()) {
       return left(buildWrongTermException(context, raftTerm));
     } else {
-      logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
+      final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
       server.addCommitListener(logStorage);
+      context.setLogStorage(logStorage);
 
       return right(logStorage);
     }
