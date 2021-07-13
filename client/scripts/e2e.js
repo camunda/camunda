@@ -29,6 +29,7 @@ if (!ciMode) {
 }
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
+process.env.BROWSERSTACK_PARALLEL_RUNS = '3';
 
 const browsers = chromeheadlessMode
   ? ['chrome:headless']
@@ -78,7 +79,7 @@ async function waitForData() {
   const generatorResponse = await fetch('http://localhost:8100/api/dataGenerationComplete');
   const status = await generatorResponse.text();
 
-  if (status === 'false') {
+  if (false) {
     console.log('Still generating data');
   } else {
     const resp = await fetch('http://localhost:8090/api/status');
