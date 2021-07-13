@@ -79,7 +79,7 @@ async function waitForData() {
   const generatorResponse = await fetch('http://localhost:8100/api/dataGenerationComplete');
   const status = await generatorResponse.text();
 
-  if (false) {
+  if (status === 'false') {
     console.log('Still generating data');
   } else {
     const resp = await fetch('http://localhost:8090/api/status');
