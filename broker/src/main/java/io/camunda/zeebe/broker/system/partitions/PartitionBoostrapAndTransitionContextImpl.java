@@ -108,48 +108,56 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public ExporterDirector getExporterDirector() {
-    return exporterDirector;
+  public StateControllerImpl getSnapshotController() {
+    return stateController;
+  }
+
+  public void setSnapshotController(final StateControllerImpl controller) {
+    stateController = controller;
   }
 
   @Override
-  public void setExporterDirector(final ExporterDirector exporterDirector) {
-    this.exporterDirector = exporterDirector;
-  }
-
-  @Override
-  public PartitionBoostrapAndTransitionContextImpl createTransitionContext() {
+  public PartitionContext getPartitionContext() {
     return this;
   }
 
   @Override
-  public ScheduledTimer getMetricsTimer() {
-    return metricsTimer;
+  public int getPartitionId() {
+    return partitionId;
   }
 
   @Override
-  public void setMetricsTimer(final ScheduledTimer metricsTimer) {
-    this.metricsTimer = metricsTimer;
+  public RaftPartition getRaftPartition() {
+    return raftPartition;
   }
 
   @Override
-  public ActorControl getActorControl() {
-    return actorControl;
+  public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
+    return partitionListeners.stream()
+        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
+        .collect(Collectors.toList());
   }
 
   @Override
-  public void setActorControl(final ActorControl actorControl) {
-    this.actorControl = actorControl;
+  public List<ActorFuture<Void>> notifyListenersOfBecomingFollower(final long newTerm) {
+    return partitionListeners.stream()
+        .map(l -> l.onBecomingFollower(getPartitionId(), newTerm))
+        .collect(Collectors.toList());
   }
 
   @Override
-  public ZeebeDb getZeebeDb() {
-    return zeebeDb;
+  public void notifyListenersOfBecomingInactive() {
+    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(), getCurrentTerm()));
   }
 
   @Override
-  public void setZeebeDb(final ZeebeDb zeebeDb) {
-    this.zeebeDb = zeebeDb;
+  public Role getCurrentRole() {
+    return currentRole;
+  }
+
+  @Override
+  public long getCurrentTerm() {
+    return currentTerm;
   }
 
   @Override
@@ -160,35 +168,6 @@ public class PartitionBoostrapAndTransitionContextImpl
   @Override
   public void setComponentHealthMonitor(final HealthMonitor criticalComponentsHealthMonitor) {
     this.criticalComponentsHealthMonitor = criticalComponentsHealthMonitor;
-  }
-
-  @Override
-  public AsyncSnapshotDirector getSnapshotDirector() {
-    return snapshotDirector;
-  }
-
-  @Override
-  public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
-    this.snapshotDirector = snapshotDirector;
-  }
-
-  @Override
-  public LogDeletionService getLogDeletionService() {
-    return logDeletionService;
-  }
-
-  @Override
-  public void setLogDeletionService(final LogDeletionService logDeletionService) {
-    this.logDeletionService = logDeletionService;
-  }
-
-  @Override
-  public StateControllerImpl getSnapshotController() {
-    return stateController;
-  }
-
-  public void setSnapshotController(final StateControllerImpl controller) {
-    stateController = controller;
   }
 
   @Override
@@ -210,13 +189,13 @@ public class PartitionBoostrapAndTransitionContextImpl
   public void setStateController(final StateControllerImpl stateController) {}
 
   @Override
-  public StreamProcessor getStreamProcessor() {
-    return streamProcessor;
+  public LogDeletionService getLogDeletionService() {
+    return logDeletionService;
   }
 
   @Override
-  public void setStreamProcessor(final StreamProcessor streamProcessor) {
-    this.streamProcessor = streamProcessor;
+  public void setLogDeletionService(final LogDeletionService logDeletionService) {
+    this.logDeletionService = logDeletionService;
   }
 
   @Override
@@ -230,72 +209,65 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public int getNodeId() {
-    return nodeId;
+  public ZeebeDb getZeebeDb() {
+    return zeebeDb;
   }
 
   @Override
-  public int getPartitionId() {
-    return partitionId;
+  public void setZeebeDb(final ZeebeDb zeebeDb) {
+    this.zeebeDb = zeebeDb;
   }
 
   @Override
-  public PartitionMessagingService getMessagingService() {
-    return messagingService;
+  public StreamProcessor getStreamProcessor() {
+    return streamProcessor;
   }
 
   @Override
-  public ActorSchedulingService getActorSchedulingService() {
-    return actorSchedulingService;
+  public void setStreamProcessor(final StreamProcessor streamProcessor) {
+    this.streamProcessor = streamProcessor;
   }
 
   @Override
-  public BrokerCfg getBrokerCfg() {
-    return brokerCfg;
+  public AsyncSnapshotDirector getSnapshotDirector() {
+    return snapshotDirector;
   }
 
   @Override
-  public ConstructableSnapshotStore getConstructableSnapshotStore() {
-    return constructableSnapshotStore;
+  public void setSnapshotDirector(final AsyncSnapshotDirector snapshotDirector) {
+    this.snapshotDirector = snapshotDirector;
   }
 
   @Override
-  public ReceivableSnapshotStore getReceivableSnapshotStore() {
-    return receivableSnapshotStore;
+  public ScheduledTimer getMetricsTimer() {
+    return metricsTimer;
   }
 
   @Override
-  public RaftPartition getRaftPartition() {
-    return raftPartition;
+  public void setMetricsTimer(final ScheduledTimer metricsTimer) {
+    this.metricsTimer = metricsTimer;
   }
 
   @Override
-  public TypedRecordProcessorsFactory getTypedRecordProcessorsFactory() {
-    return typedRecordProcessorsFactory;
-  }
-
-  public int getMaxFragmentSize() {
-    return maxFragmentSize;
-  }
-
-  @Override
-  public ExporterRepository getExporterRepository() {
-    return exporterRepository;
+  public void triggerSnapshot() {
+    if (getSnapshotDirector() != null) {
+      getSnapshotDirector().forceSnapshot();
+    }
   }
 
   @Override
-  public List<PartitionListener> getPartitionListeners() {
-    return partitionListeners;
+  public ExporterDirector getExporterDirector() {
+    return exporterDirector;
   }
 
   @Override
-  public PartitionContext getPartitionContext() {
+  public void setExporterDirector(final ExporterDirector exporterDirector) {
+    this.exporterDirector = exporterDirector;
+  }
+
+  @Override
+  public PartitionBoostrapAndTransitionContextImpl createTransitionContext() {
     return this;
-  }
-
-  @Override
-  public PartitionProcessingState getPartitionProcessingState() {
-    return partitionProcessingState;
   }
 
   @Override
@@ -309,11 +281,6 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public boolean shouldExport() {
-    return !partitionProcessingState.isExportingPaused();
-  }
-
-  @Override
   public void pauseProcessing() throws IOException {
     partitionProcessingState.pauseProcessing();
   }
@@ -321,6 +288,11 @@ public class PartitionBoostrapAndTransitionContextImpl
   @Override
   public void resumeProcessing() throws IOException {
     partitionProcessingState.resumeProcessing();
+  }
+
+  @Override
+  public boolean shouldExport() {
+    return !partitionProcessingState.isExportingPaused();
   }
 
   @Override
@@ -333,18 +305,8 @@ public class PartitionBoostrapAndTransitionContextImpl
     return partitionProcessingState.resumeExporting();
   }
 
-  @Override
-  public long getCurrentTerm() {
-    return currentTerm;
-  }
-
   public void setCurrentTerm(final long currentTerm) {
     this.currentTerm = currentTerm;
-  }
-
-  @Override
-  public Role getCurrentRole() {
-    return currentRole;
   }
 
   public void setCurrentRole(final Role currentRole) {
@@ -352,29 +314,38 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public List<ActorFuture<Void>> notifyListenersOfBecomingFollower(final long newTerm) {
-    return partitionListeners.stream()
-        .map(l -> l.onBecomingFollower(getPartitionId(), newTerm))
-        .collect(Collectors.toList());
+  public BrokerCfg getBrokerCfg() {
+    return brokerCfg;
   }
 
   @Override
-  public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
-    return partitionListeners.stream()
-        .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream()))
-        .collect(Collectors.toList());
+  public int getNodeId() {
+    return nodeId;
   }
 
   @Override
-  public void notifyListenersOfBecomingInactive() {
-    partitionListeners.forEach(l -> l.onBecomingInactive(getPartitionId(), getCurrentTerm()));
+  public ActorSchedulingService getActorSchedulingService() {
+    return actorSchedulingService;
   }
 
   @Override
-  public void triggerSnapshot() {
-    if (getSnapshotDirector() != null) {
-      getSnapshotDirector().forceSnapshot();
-    }
+  public PartitionMessagingService getMessagingService() {
+    return messagingService;
+  }
+
+  @Override
+  public ConstructableSnapshotStore getConstructableSnapshotStore() {
+    return constructableSnapshotStore;
+  }
+
+  @Override
+  public ReceivableSnapshotStore getReceivableSnapshotStore() {
+    return receivableSnapshotStore;
+  }
+
+  @Override
+  public CommandResponseWriter getCommandResponseWriter() {
+    return commandResponseWriterSupplier.get();
   }
 
   @Override
@@ -383,7 +354,36 @@ public class PartitionBoostrapAndTransitionContextImpl
   }
 
   @Override
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriterSupplier.get();
+  public TypedRecordProcessorsFactory getTypedRecordProcessorsFactory() {
+    return typedRecordProcessorsFactory;
+  }
+
+  @Override
+  public ExporterRepository getExporterRepository() {
+    return exporterRepository;
+  }
+
+  @Override
+  public List<PartitionListener> getPartitionListeners() {
+    return partitionListeners;
+  }
+
+  @Override
+  public PartitionProcessingState getPartitionProcessingState() {
+    return partitionProcessingState;
+  }
+
+  @Override
+  public ActorControl getActorControl() {
+    return actorControl;
+  }
+
+  @Override
+  public void setActorControl(final ActorControl actorControl) {
+    this.actorControl = actorControl;
+  }
+
+  public int getMaxFragmentSize() {
+    return maxFragmentSize;
   }
 }
