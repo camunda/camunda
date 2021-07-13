@@ -90,7 +90,7 @@
     "react-scripts": "4.0.3",
     "testcafe": "^1.15.0",
     "typescript": "~4.3.5",
-    "zeebe-node": "1.3.2"
+    "zeebe-node": "1.3.4"
   },
   "lint-staged": {
     "*": [
