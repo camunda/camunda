@@ -31,10 +31,12 @@ public class LogStreamPartitionStep implements PartitionStep {
     final var logStorageOrException = buildAtomixLogStorage(context);
 
     if (logStorageOrException.isRight()) {
-      buildLogstream(context, logStorageOrException.get())
+      final var logStorage = logStorageOrException.get();
+      buildLogstream(context, logStorage)
           .onComplete(
               ((logStream, err) -> {
                 if (err == null) {
+                  context.setLogStorage(logStorage);
                   context.setLogStream(logStream);
 
                   context
@@ -96,7 +98,6 @@ public class LogStreamPartitionStep implements PartitionStep {
     } else {
       final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
       server.addCommitListener(logStorage);
-      context.setLogStorage(logStorage);
 
       return right(logStorage);
     }
