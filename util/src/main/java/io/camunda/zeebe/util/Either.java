@@ -7,10 +7,19 @@
  */
 package io.camunda.zeebe.util;
 
+import io.camunda.zeebe.util.collection.Tuple;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 
 /**
  * Represents either a {@link Left} or a {@link Right}. By convention, right is used for success and
@@ -78,6 +87,79 @@ public interface Either<L, R> {
    */
   static <L, R> Either<L, R> left(final L left) {
     return new Left<>(left);
+  }
+
+  /**
+   * Returns a collector for {@code Either<L,R>} that collects them into {@code
+   * Either<List<L>,List<R>} and favors {@link Left} over {@link Right}.
+   *
+   * <p>This is commonly used to collect a stream of either objects where a right is considered a
+   * success and a left is considered an error. If any error has occurred, we're generally only
+   * interested in the errors and not in the successes. Otherwise, we'd like to collect all success
+   * values.
+   *
+   * <p>This collector groups all the lefts into one {@link List} and all the rights into another.
+   * When all elements of the stream have been collected and any lefts were encountered, it outputs
+   * a left of the list of encountered left values. Otherwise, it outputs a right of all right
+   * values it encountered.
+   *
+   * <p>Examples:
+   *
+   * <pre>{@code
+   * Stream.of(Either.right(1), Either.right(2), Either.right(3))
+   *   .collect(Either.collector()) // => a Right
+   *   .get(); // => List.of(1,2,3)
+   *
+   * Stream.of(Either.right(1), Either.left("oops"), Either.right(3))
+   *   .collect(Either.collector()) // => a Left
+   *   .getLeft(); // => List.of("oops")
+   * }</pre>
+   *
+   * @param <L> the type of the left values
+   * @param <R> the type of the right values
+   * @return a collector that favors left over right
+   */
+  static <L, R>
+      Collector<Either<L, R>, Tuple<List<L>, List<R>>, Either<List<L>, List<R>>> collector() {
+    return new Collector<>() {
+      @Override
+      public Supplier<Tuple<List<L>, List<R>>> supplier() {
+        return () -> new Tuple<>(new ArrayList<>(), new ArrayList<>());
+      }
+
+      @Override
+      public BiConsumer<Tuple<List<L>, List<R>>, Either<L, R>> accumulator() {
+        return (accumulated, next) ->
+            next.ifRightOrLeft(
+                right -> accumulated.getRight().add(right),
+                left -> accumulated.getLeft().add(left));
+      }
+
+      @Override
+      public BinaryOperator<Tuple<List<L>, List<R>>> combiner() {
+        return (a, b) -> {
+          a.getLeft().addAll(b.getLeft());
+          a.getRight().addAll(b.getRight());
+          return a;
+        };
+      }
+
+      @Override
+      public Function<Tuple<List<L>, List<R>>, Either<List<L>, List<R>>> finisher() {
+        return accumulator -> {
+          if (!accumulator.getLeft().isEmpty()) {
+            return left(accumulator.getLeft());
+          } else {
+            return right(accumulator.getRight());
+          }
+        };
+      }
+
+      @Override
+      public Set<Characteristics> characteristics() {
+        return Collections.emptySet();
+      }
+    };
   }
 
   /**
@@ -219,6 +301,7 @@ public interface Either<L, R> {
       return (Either<T, R>) this;
     }
 
+    @Override
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return right.apply(value);
     }
@@ -307,6 +390,7 @@ public interface Either<L, R> {
       return Either.left(left.apply(value));
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
       return (Either<L, T>) this;
