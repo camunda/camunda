@@ -150,6 +150,11 @@ public final class FailingSnapshotChunkReplicationTest {
     }
 
     @Override
+    public void stopConsuming() {
+      chunkConsumer = null;
+    }
+
+    @Override
     public void close() {}
   }
 
@@ -169,6 +174,11 @@ public final class FailingSnapshotChunkReplicationTest {
                 chunkConsumer.accept(
                     replicatedChunks.size() > 1 ? new DisruptedSnapshotChunk(snapshot) : snapshot));
       }
+    }
+
+    @Override
+    public void stopConsuming() {
+      chunkConsumer = null;
     }
 
     @Override

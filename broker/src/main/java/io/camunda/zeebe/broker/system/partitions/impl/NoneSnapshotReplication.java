@@ -20,5 +20,8 @@ public final class NoneSnapshotReplication implements SnapshotReplication {
   public void consume(final Consumer<SnapshotChunk> consumer) {}
 
   @Override
+  public void stopConsuming() {}
+
+  @Override
   public void close() {}
 }

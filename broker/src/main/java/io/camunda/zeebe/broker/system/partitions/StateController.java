@@ -40,4 +40,6 @@ public interface StateController extends AutoCloseable {
    * @return valid snapshots count
    */
   int getValidSnapshotsCount();
+
+  void stopConsumeReplicatedSnapshots();
 }

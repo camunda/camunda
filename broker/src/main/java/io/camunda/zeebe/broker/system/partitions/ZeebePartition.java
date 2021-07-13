@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.sched.Actor;
+import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
@@ -38,6 +39,7 @@ public final class ZeebePartition extends Actor
   private final String actorName;
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
+  private final RoleMetrics roleMetrics;
   private final ZeebePartitionHealth zeebePartitionHealth;
 
   private final PartitionContext context;
@@ -46,11 +48,12 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> currentTransitionFuture;
 
   public ZeebePartition(
-      final PartitionTransitionContext transitionContext, final PartitionTransition transition) {
-    context = transitionContext.toPartitionContext();
+      final PartitionBoostrapAndTransitionContextImpl transitionContext,
+      final PartitionTransition transition) {
+    context = transitionContext.getPartitionContext();
     this.transition = transition;
 
-    transitionContext.setActor(actor);
+    transitionContext.setActorControl(actor);
     transitionContext.setDiskSpaceAvailable(true);
 
     actorName =
@@ -61,6 +64,7 @@ public final class ZeebePartition extends Actor
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
+    roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
   }
 
   /**
@@ -104,10 +108,13 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> leaderTransition(final long newTerm) {
+    final var installStartTime = ActorClock.currentTimeMillis();
     final var leaderTransitionFuture = transition.toLeader(newTerm);
     leaderTransitionFuture.onComplete(
         (success, error) -> {
           if (error == null) {
+            final var leaderTransitionLatency = ActorClock.currentTimeMillis() - installStartTime;
+            roleMetrics.setLeaderTransitionLatency(leaderTransitionLatency);
             final List<ActorFuture<Void>> listenerFutures =
                 context.notifyListenersOfBecomingLeader(newTerm);
             actor.runOnCompletion(

@@ -11,7 +11,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.sched.ActorSchedulingService;
-import io.camunda.zeebe.util.sched.channel.ActorConditions;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
@@ -68,13 +67,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
 
     final var logStreamService =
         new LogStreamImpl(
-            actorSchedulingService,
-            new ActorConditions(),
-            logName,
-            partitionId,
-            nodeId,
-            maxFragmentSize,
-            logStorage);
+            actorSchedulingService, logName, partitionId, nodeId, maxFragmentSize, logStorage);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService

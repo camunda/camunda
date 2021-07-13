@@ -28,7 +28,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.agrona.IoUtil;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -359,7 +358,7 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(
-      final int nodeId, final Path snapshotDir, final Path pendingDir) {
+      final int nodeId, final Path snapshotDir, final Path pendingDir) throws IOException {
     final var store =
         new FileBasedSnapshotStore(
             nodeId,
@@ -368,8 +367,8 @@ public class FileBasedReceivedSnapshotTest {
             snapshotDir,
             pendingDir);
 
-    IoUtil.ensureDirectoryExists(snapshotDir.toFile(), "snapshots directory");
-    IoUtil.ensureDirectoryExists(pendingDir.toFile(), "pending directory");
+    FileUtil.ensureDirectoryExists(snapshotDir);
+    FileUtil.ensureDirectoryExists(pendingDir);
     scheduler.submitActor(store);
 
     return store;

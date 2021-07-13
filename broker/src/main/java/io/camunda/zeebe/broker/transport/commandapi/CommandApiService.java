@@ -120,7 +120,7 @@ public final class CommandApiService extends Actor
     return new CommandResponseWriterImpl(serverTransport);
   }
 
-  public Consumer<TypedRecord> getOnProcessedListener(final int partitionId) {
+  public Consumer<TypedRecord<?>> getOnProcessedListener(final int partitionId) {
     final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
     return typedRecord -> {
       if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {

@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import org.agrona.IoUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -244,7 +243,11 @@ public class FileBasedTransientSnapshotTest {
     snapshot
         .take(
             path -> {
-              IoUtil.ensureDirectoryExists(path.toFile(), "snapshot dir");
+              try {
+                FileUtil.ensureDirectoryExists(path);
+              } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+              }
               return false;
             })
         .join();
@@ -338,12 +341,13 @@ public class FileBasedTransientSnapshotTest {
     return true;
   }
 
-  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir) {
+  private FileBasedSnapshotStore createStore(final Path snapshotDir, final Path pendingDir)
+      throws IOException {
     final var store =
         new FileBasedSnapshotStore(1, 1, new SnapshotMetrics("1-1"), snapshotDir, pendingDir);
 
-    IoUtil.ensureDirectoryExists(snapshotDir.toFile(), "snapshots directory");
-    IoUtil.ensureDirectoryExists(pendingDir.toFile(), "pending directory");
+    FileUtil.ensureDirectoryExists(snapshotDir);
+    FileUtil.ensureDirectoryExists(pendingDir);
     scheduler.submitActor(store);
 
     return store;

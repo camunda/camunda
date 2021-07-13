@@ -34,7 +34,6 @@ import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.LongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -56,17 +55,14 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final AppenderMetrics appenderMetrics;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
-  private final LongConsumer commitPositionListener;
 
   public LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
-      final int maxBlockSize,
-      final LongConsumer commitPositionListener) {
+      final int maxBlockSize) {
     appenderMetrics = new AppenderMetrics(Integer.toString(partitionId));
-    this.commitPositionListener = commitPositionListener;
     env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
@@ -232,7 +228,6 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   void notifyCommitPosition(final long highestPosition, final long startTime) {
     actor.run(
         () -> {
-          commitPositionListener.accept(highestPosition);
           appenderMetrics.setLastCommittedPosition(highestPosition);
           appenderMetrics.commitLatency(startTime, ActorClock.currentTimeMillis());
         });

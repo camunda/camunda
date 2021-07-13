@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -58,6 +59,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceEventAppliers(state);
 
     register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
+    register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBlackListState()));
     registerDeploymentAppliers(state);
 
     registerMessageAppliers(state);

@@ -27,9 +27,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class MetaStore implements AutoCloseable {
   private final FileChannel configurationChannel;
   private final File confFile;
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
-  private FileChannel metaFileChannel;
+  private final FileChannel metaFileChannel;
 
   public MetaStore(final RaftStorage storage) throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
@@ -66,8 +66,12 @@ public class MetaStore implements AutoCloseable {
     // persisted on disk.
     final File metaFile = new File(storage.directory(), String.format("%s.meta", storage.prefix()));
     if (!metaFile.exists()) {
-      metaFileChannel = IoUtil.createEmptyFile(metaFile, 32, true);
-      metaFileChannel.close();
+      Files.write(
+          metaFile.toPath(),
+          new byte[32], // write zeros to prevent reading junk values
+          StandardOpenOption.CREATE_NEW,
+          StandardOpenOption.WRITE,
+          StandardOpenOption.SYNC);
     }
 
     metaFileChannel =
@@ -80,11 +84,15 @@ public class MetaStore implements AutoCloseable {
     confFile = new File(storage.directory(), String.format("%s.conf", storage.prefix()));
 
     if (!confFile.exists()) {
-      configurationChannel = IoUtil.createEmptyFile(confFile, 32, true);
-    } else {
-      configurationChannel =
-          FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
+      Files.write(
+          confFile.toPath(),
+          new byte[32], // write zeros to prevent reading junk values
+          StandardOpenOption.CREATE_NEW,
+          StandardOpenOption.WRITE,
+          StandardOpenOption.SYNC);
     }
+    configurationChannel =
+        FileChannel.open(confFile.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
 
     // Read existing meta info and rewrite with the current version
     initializeMetaBuffer();

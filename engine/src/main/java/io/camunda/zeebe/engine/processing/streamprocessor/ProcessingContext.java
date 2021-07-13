@@ -46,7 +46,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private EventApplier eventApplier;
 
   private BooleanSupplier abortCondition;
-  private Consumer<TypedRecord> onProcessedListener = record -> {};
+  private Consumer<TypedRecord<?>> onProcessedListener = record -> {};
   private Consumer<LoggedEvent> onSkippedListener = record -> {};
   private int maxFragmentSize;
 
@@ -111,7 +111,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return commandResponseWriter;
   }
 
-  public ProcessingContext onProcessedListener(final Consumer<TypedRecord> onProcessedListener) {
+  public ProcessingContext onProcessedListener(final Consumer<TypedRecord<?>> onProcessedListener) {
     this.onProcessedListener = onProcessedListener;
     return this;
   }
@@ -202,7 +202,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return eventApplier;
   }
 
-  public Consumer<TypedRecord> getOnProcessedListener() {
+  public Consumer<TypedRecord<?>> getOnProcessedListener() {
     return onProcessedListener;
   }
 

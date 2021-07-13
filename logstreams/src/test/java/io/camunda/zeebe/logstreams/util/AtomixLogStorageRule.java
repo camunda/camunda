@@ -131,6 +131,7 @@ public final class AtomixLogStorageRule extends ExternalResource
     raftLog.setCommitIndex(entry.index());
 
     listener.onCommit(entry);
+    storage.onCommit(entry.index());
     if (positionListener != null) {
       positionListener.accept(highestPosition);
     }
