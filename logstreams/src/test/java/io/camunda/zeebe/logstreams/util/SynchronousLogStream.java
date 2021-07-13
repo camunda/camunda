@@ -40,10 +40,10 @@ public interface SynchronousLogStream extends AutoCloseable {
   void close();
 
   /** @return the current commit position, or a negative value if no entry is committed. */
-  long getCommitPosition();
+  long getLastWrittenPosition();
 
   /** sets the new commit position * */
-  void setCommitPosition(long position);
+  void setLastWrittenPosition(long position);
 
   LogStreamReader newLogStreamReader();
 

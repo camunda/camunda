@@ -118,7 +118,7 @@ public final class LogStreamRule extends ExternalResource {
   private void openLogStream() {
     logStream =
         SyncLogStream.builder(builder).withActorSchedulingService(actorSchedulerRule.get()).build();
-    logStorageRule.setPositionListener(logStream::setCommitPosition);
+    logStorageRule.setPositionListener(logStream::setLastWrittenPosition);
   }
 
   public LogStreamReader newLogStreamReader() {

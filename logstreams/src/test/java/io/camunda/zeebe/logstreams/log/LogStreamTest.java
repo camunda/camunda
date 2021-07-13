@@ -102,7 +102,7 @@ public final class LogStreamTest {
     writer.value(wrapString("value")).tryWrite();
     writer.value(wrapString("value")).tryWrite();
     final long positionBeforeClose = writer.value(wrapString("value")).tryWrite();
-    TestUtil.waitUntil(() -> logStream.getCommitPosition() >= positionBeforeClose);
+    TestUtil.waitUntil(() -> logStream.getLastWrittenPosition() >= positionBeforeClose);
 
     // when
     logStream.close();
@@ -159,7 +159,7 @@ public final class LogStreamTest {
     }
 
     final long writtenEventPosition = position;
-    waitUntil(() -> logStream.getCommitPosition() >= writtenEventPosition);
+    waitUntil(() -> logStream.getLastWrittenPosition() >= writtenEventPosition);
 
     return position;
   }
