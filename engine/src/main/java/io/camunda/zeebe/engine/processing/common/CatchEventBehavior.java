@@ -61,7 +61,6 @@ public final class CatchEventBehavior {
   private final ProcessMessageSubscriptionRecord subscription =
       new ProcessMessageSubscriptionRecord();
   private final TimerRecord timerRecord = new TimerRecord();
-  private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
 
@@ -110,12 +109,12 @@ public final class CatchEventBehavior {
         extractMessageNames(events, context);
     // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident. This works the same for timers
-    final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
-        extractMessageCorrelationKeys(events, context);
+    final Either<Failure, Map<DirectBuffer, DirectBuffer>> extractedCorrelationKeys =
+        evaluateMessageCorrelationKeys(events, context);
     final Either<Failure, Map<DirectBuffer, Timer>> evaluatedTimers =
         evaluateTimers(events, context.getElementInstanceKey());
 
-    if (evaluatedTimers.isLeft()) {
+    if (extractedCorrelationKeys.isLeft() || evaluatedTimers.isLeft()) {
       // todo: don't throw here, but return an either
       throw new EvaluationException(evaluatedTimers.getLeft().getMessage());
     }
@@ -135,7 +134,7 @@ public final class CatchEventBehavior {
         subscribeToMessageEvent(
             context,
             event,
-            extractedCorrelationKeys.get(event.getId()),
+            extractedCorrelationKeys.get().get(event.getId()),
             extractedMessageNames.get((event.getId())),
             sideEffects);
       }
@@ -255,15 +254,6 @@ public final class CatchEventBehavior {
     return true;
   }
 
-  private String extractCorrelationKey(
-      final ExecutableMessage message, final long variableScopeKey) {
-
-    final Expression correlationKeyExpression = message.getCorrelationKeyExpression();
-
-    return expressionProcessor.evaluateMessageCorrelationKeyExpression(
-        correlationKeyExpression, variableScopeKey);
-  }
-
   private Either<Failure, String> extractMessageName(
       final ExecutableMessage message, final long scopeKey) {
 
@@ -298,24 +288,21 @@ public final class CatchEventBehavior {
         closeOnCorrelate);
   }
 
-  private Map<DirectBuffer, DirectBuffer> extractMessageCorrelationKeys(
+  /**
+   * Evaluates all message correlation keys for events
+   *
+   * @param events All catch events to evaluate to message correlation keys
+   * @param context element context used to determine the evaluation scope
+   * @return either the first failure it encounters or a mapping of event-ids to correlation keys
+   */
+  private Either<Failure, Map<DirectBuffer, DirectBuffer>> evaluateMessageCorrelationKeys(
       final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
-    extractedCorrelationKeys.clear();
-
-    // TODO (4799): extract general variable scope behavior of boundary events
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isMessage()) {
-        final long variableScopeKey =
-            event.getElementType() == BpmnElementType.BOUNDARY_EVENT
-                ? context.getFlowScopeKey()
-                : context.getElementInstanceKey();
-        final String correlationKey = extractCorrelationKey(event.getMessage(), variableScopeKey);
-
-        extractedCorrelationKeys.put(event.getId(), BufferUtil.wrapString(correlationKey));
-      }
-    }
-
-    return extractedCorrelationKeys;
+    return events.stream()
+        .filter(ExecutableCatchEvent::isMessage)
+        .map(e -> evaluateCorrelationKey(e, context).map(key -> Tuple.of(e.getId(), key)))
+        .collect(Either.collector())
+        .mapLeft(failures -> failures.get(0))
+        .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
   }
 
   /**
@@ -333,6 +320,18 @@ public final class CatchEventBehavior {
         .collect(Either.collector())
         .mapLeft(failures -> failures.get(0))
         .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
+  }
+
+  private Either<Failure, DirectBuffer> evaluateCorrelationKey(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    final var expression = event.getMessage().getCorrelationKeyExpression();
+    final long scopeKey =
+        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+            ? context.getFlowScopeKey()
+            : context.getElementInstanceKey();
+    return expressionProcessor
+        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
+        .map(BufferUtil::wrapString);
   }
 
   /** @return either a failure or an evaluated timer */

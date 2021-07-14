@@ -20,7 +20,9 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -215,24 +217,24 @@ public final class ExpressionProcessor {
   }
 
   /**
-   * Evaluates the given expression and returns the result as String. If the evaluation fails or the
-   * result is not a string or number (the latter of which is automatically converted to a string),
-   * then an exception is thrown.
+   * Evaluates the given expression and returns the result as String. If the evaluation result is a
+   * number it is automatically converted to a string.
    *
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
-   * @return the evaluation result as String
-   * @throws MessageCorrelationKeyException if the evaluation fails or the result is not a string or
-   *     number
+   * @return either the evaluation result as String, or a failure if the evaluation fails
    */
-  public String evaluateMessageCorrelationKeyExpression(
+  public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
       final Expression expression, final long scopeKey) {
-
-    final var evaluationResult = evaluateExpression(expression, scopeKey);
-
-    final var resultHandler = new CorrelationKeyResultHandler(scopeKey);
-    return resultHandler.apply(evaluationResult);
+    final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, expectedTypes, scopeKey))
+        .map(
+            result ->
+                result.getType() == ResultType.NUMBER
+                    ? Long.toString(result.getNumber().longValue())
+                    : result.getString());
   }
 
   /**
@@ -264,6 +266,22 @@ public final class ExpressionProcessor {
               scopeKey));
     }
     return Either.right(result);
+  }
+
+  private Either<Failure, EvaluationResult> typeCheck(
+      final EvaluationResult result,
+      final Collection<ResultType> expectedResultTypes,
+      final long scopeKey) {
+    final var defaultFailure =
+        new Failure(
+            String.format(
+                "Expected result of expression '%s' to be one of '%s', but was '%s'",
+                result.getExpression(), expectedResultTypes, result.getType()),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey);
+    return expectedResultTypes.stream()
+        .map(type -> typeCheck(result, type, scopeKey))
+        .reduce(Either.left(defaultFailure), (a, b) -> b.isRight() ? b : a);
   }
 
   private EvaluationResult evaluateExpression(
