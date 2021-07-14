@@ -65,7 +65,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
-            streamWriter,
             zeebeState.getKeyGenerator(),
             stateBehavior,
             new ProcessEngineMetrics(zeebeState.getPartitionId()),
@@ -74,17 +73,17 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             zeebeState.getElementInstanceState());
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
-            stateBehavior,
             catchEventBehavior,
             eventTriggerBehavior,
-            stateWriter,
             commandWriter,
             sideEffects,
-            zeebeState);
+            zeebeState,
+            zeebeState.getKeyGenerator());
     incidentBehavior =
         new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), stateWriter);
     eventPublicationBehavior =
-        new BpmnEventPublicationBehavior(zeebeState, eventTriggerBehavior, writers);
+        new BpmnEventPublicationBehavior(
+            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
     processResultSenderBehavior = new BpmnProcessResultSenderBehavior(zeebeState, responseWriter);
     bufferedMessageStartEventBehavior =
         new BpmnBufferedMessageStartEventBehavior(

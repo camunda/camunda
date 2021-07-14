@@ -9,40 +9,32 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
 
-  private final MutableElementInstanceState elementInstanceState;
-  private final MutableEventScopeInstanceState eventScopeInstanceState;
-  private final MutableVariableState variablesState;
+  private final ElementInstanceState elementInstanceState;
+  private final VariableState variablesState;
   private final JobState jobState;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
-  public BpmnStateBehavior(
-      final MutableZeebeState zeebeState, final VariableBehavior variableBehavior) {
+  public BpmnStateBehavior(final ZeebeState zeebeState, final VariableBehavior variableBehavior) {
     this.variableBehavior = variableBehavior;
 
     processState = zeebeState.getProcessState();
     elementInstanceState = zeebeState.getElementInstanceState();
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     variablesState = zeebeState.getVariableState();
     jobState = zeebeState.getJobState();
   }
@@ -53,25 +45,6 @@ public final class BpmnStateBehavior {
 
   public ElementInstance getElementInstance(final long elementInstanceKey) {
     return elementInstanceState.getInstance(elementInstanceKey);
-  }
-
-  public void updateElementInstance(final ElementInstance elementInstance) {
-    elementInstanceState.updateInstance(elementInstance);
-  }
-
-  public void updateElementInstance(
-      final BpmnElementContext context, final Consumer<ElementInstance> modifier) {
-    elementInstanceState.updateInstance(context.getElementInstanceKey(), modifier);
-  }
-
-  public void updateFlowScopeInstance(
-      final BpmnElementContext context, final Consumer<ElementInstance> modifier) {
-    elementInstanceState.updateInstance(context.getFlowScopeKey(), modifier);
-  }
-
-  public void updateElementInstance(
-      final long elementInstanceKey, final Consumer<ElementInstance> modifier) {
-    elementInstanceState.updateInstance(elementInstanceKey, modifier);
   }
 
   public JobState getJobState() {
@@ -95,7 +68,7 @@ public final class BpmnStateBehavior {
               activePaths, flowScopeInstance));
     }
 
-    return hasActivePaths(context, activePaths);
+    return activePaths == 0;
   }
 
   public boolean canBeCompleted(final BpmnElementContext context) {
@@ -116,32 +89,11 @@ public final class BpmnStateBehavior {
               activePaths, flowScopeInstance));
     }
 
-    return hasActivePaths(context, activePaths);
-  }
-
-  private boolean hasActivePaths(final BpmnElementContext context, final long activePaths) {
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      return activePaths == 1;
-    } else {
-      // todo (#6202): change the name of this method to `wasLastActiveExecutionPathInScope`
-      // previously, the last active token was decreased after this method was called,
-      // this made sure the token does not drop to 0 before the flowscope is set to completing.
-      // However, the token must now be consumed when the ELEMENT_COMPLETED is written (by the event
-      // applier). So either the number of active paths in the flowscope have to be already
-      // decreased or the container scope must be completed before the child element is completed.
-      // The only reasonable choice is to decrease the active paths before the flowscope is
-      // completed. As a result, this method has changed it's semantics.
-      return activePaths == 0;
-    }
+    return activePaths == 0;
   }
 
   public ElementInstance getFlowScopeInstance(final BpmnElementContext context) {
     return elementInstanceState.getInstance(context.getFlowScopeKey());
-  }
-
-  public void removeElementInstance(final BpmnElementContext context) {
-    eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
-    elementInstanceState.removeInstance(context.getElementInstanceKey());
   }
 
   public List<BpmnElementContext> getChildInstances(final BpmnElementContext context) {
@@ -151,21 +103,6 @@ public final class BpmnStateBehavior {
                 context.copy(
                     childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
         .collect(Collectors.toList());
-  }
-
-  public void createElementInstanceInFlowScope(
-      final BpmnElementContext context,
-      final long elementInstanceKey,
-      final ProcessInstanceRecord record) {
-    final ElementInstance flowScopeInstance = getFlowScopeInstance(context);
-    elementInstanceState.newInstance(
-        flowScopeInstance, elementInstanceKey, record, ProcessInstanceIntent.ELEMENT_ACTIVATING);
-  }
-
-  public ElementInstance createElementInstance(
-      final long childInstanceKey, final ProcessInstanceRecord childRecord) {
-    return elementInstanceState.newInstance(
-        childInstanceKey, childRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
   public BpmnElementContext getFlowScopeContext(final BpmnElementContext context) {
@@ -247,13 +184,6 @@ public final class BpmnStateBehavior {
     final var variables = variablesState.getVariablesAsDocument(sourceScopeKey);
     variableBehavior.mergeDocument(
         targetProcessInstanceKey, targetProcess.getKey(), targetProcessInstanceKey, variables);
-  }
-
-  public void propagateTemporaryVariables(
-      final BpmnElementContext sourceContext, final BpmnElementContext targetContext) {
-    final var variables =
-        variablesState.getVariablesAsDocument(sourceContext.getElementInstanceKey());
-    variablesState.setTemporaryVariables(targetContext.getElementInstanceKey(), variables);
   }
 
   public boolean isInterrupted(final BpmnElementContext flowScopeContext) {
