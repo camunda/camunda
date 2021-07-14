@@ -380,6 +380,11 @@ const theme = Object.freeze({
           backgroundColor: DARK_COLORS.ui03,
         },
       },
+      filtersPanel: {
+        modalIcon: {
+          color: LIGHT_COLORS.ui02,
+        },
+      },
       disclaimer: {
         container: {
           color: rgba(SEMANTIC_COLORS.white, 0.7),
@@ -1360,6 +1365,11 @@ const theme = Object.freeze({
           borderColor: LIGHT_COLORS.ui05,
           color: LIGHT_COLORS.ui06,
           backgroundColor: LIGHT_COLORS.ui04,
+        },
+      },
+      filtersPanel: {
+        modalIcon: {
+          color: DARK_COLORS.ui04,
         },
       },
       disclaimer: {

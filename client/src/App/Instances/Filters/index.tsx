@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {Form, Field} from 'react-final-form';
 import {useHistory} from 'react-router-dom';
 import {isEqual} from 'lodash';
@@ -14,6 +14,8 @@ import {
   VariableRow,
   ResetButtonContainer,
   Fields,
+  JSONEditorButton,
+  ModalIcon,
 } from './styled';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
@@ -47,9 +49,12 @@ import {
 } from 'modules/utils/filter';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {FiltersPanel} from './FiltersPanel';
+import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 
 const Filters: React.FC = () => {
   const history = useHistory();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
   const initialValues: FiltersType = {
     active: true,
     incidents: true,
@@ -228,6 +233,27 @@ const Filters: React.FC = () => {
                     </InjectAriaInvalid>
                   )}
                 </Field>
+
+                <JSONEditorButton
+                  type="button"
+                  title="Open JSON editor modal"
+                  onClick={() => setIsModalVisible(true)}
+                  size="large"
+                  iconButtonTheme="default"
+                  icon={<ModalIcon />}
+                />
+                <JSONEditorModal
+                  title={`Edit Variable Value`}
+                  value={values?.variableValue}
+                  onClose={() => {
+                    setIsModalVisible(false);
+                  }}
+                  onSave={(value) => {
+                    form.change('variableValue', value);
+                    setIsModalVisible(false);
+                  }}
+                  isModalVisible={isModalVisible}
+                />
                 <VariableError names={['variableName', 'variableValue']} />
               </VariableRow>
               <Row>

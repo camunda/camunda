@@ -16,7 +16,7 @@ import {
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {InjectAriaInvalid} from 'modules/components/InjectAriaInvalid';
-import {JSONEditorModal} from '../JSONEditorModal';
+import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();

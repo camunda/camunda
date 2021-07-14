@@ -16,7 +16,7 @@ import {validateValueComplete} from './validators';
 import {Field, useForm, useFormState} from 'react-final-form';
 import {useRef, useState} from 'react';
 import {EditButtons} from './EditButtons';
-import {JSONEditorModal} from './JSONEditorModal';
+import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 
 type Props = {
   variableName: string;

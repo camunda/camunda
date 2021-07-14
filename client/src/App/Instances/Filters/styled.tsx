@@ -7,6 +7,8 @@
 import styled, {css} from 'styled-components';
 import Panel from 'modules/components/Panel';
 import {Input} from 'modules/components/Input';
+import {ReactComponent as DefaultModal} from 'modules/components/Icon/modal.svg';
+import IconButton from 'modules/components/IconButton';
 
 const FiltersForm = styled.form`
   width: 100%;
@@ -40,7 +42,7 @@ const Row = styled.div`
 const VariableRow = styled(Row)`
   display: flex;
   ${Input} {
-    width: calc(50% - 10px);
+    width: calc(50% - 22px);
   }
 
   ${Input}:focus {
@@ -53,7 +55,7 @@ const VariableRow = styled(Row)`
     border-bottom-right-radius: 0;
   }
 
-  ${Input}:last-child:not(:focus) {
+  ${Input}:nth-child(2):not(:focus) {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
   }
@@ -78,4 +80,31 @@ const Fields = styled.div`
   flex-grow: 1;
 `;
 
-export {FiltersForm, Row, VariableRow, ResetButtonContainer, Fields};
+const JSONEditorButton = styled(IconButton)`
+  svg {
+    margin-top: 4px;
+  }
+`;
+
+const ModalIcon = styled(DefaultModal)`
+  ${({theme}) => {
+    const colors = theme.colors.filtersPanel.modalIcon;
+
+    return css`
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      color: ${colors.color};
+    `;
+  }}
+`;
+
+export {
+  FiltersForm,
+  Row,
+  VariableRow,
+  ResetButtonContainer,
+  Fields,
+  JSONEditorButton,
+  ModalIcon,
+};

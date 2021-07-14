@@ -7,7 +7,7 @@
 import {Router, Route} from 'react-router-dom';
 import {History, createMemoryHistory} from 'history';
 import userEvent from '@testing-library/user-event';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {Filters} from './index';
@@ -283,6 +283,28 @@ describe('Filters', () => {
         )
       ).toEqual(expect.objectContaining(MOCK_VALUES))
     );
+  });
+
+  it('should have JSON editor for variable value filter', async () => {
+    render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+
+    userEvent.click(
+      screen.getByRole('button', {name: /open json editor modal/i})
+    );
+
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: /close/i,
+      })
+    ).toBeEnabled();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: /save/i})
+    ).toBeEnabled();
+    expect(
+      within(screen.getByTestId('modal')).getByTestId('json-editor-container')
+    ).toBeInTheDocument();
   });
 
   describe('Validations', () => {
