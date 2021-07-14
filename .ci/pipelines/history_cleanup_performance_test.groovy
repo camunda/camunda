@@ -135,18 +135,13 @@ pipeline {
 
   post {
     changed {
-      sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
+      sendEmailNotification()
     }
     always {
       container('gcloud') {
         sh ("bash .ci/podSpecs/performanceTests/kill.sh \"${NAMESPACE}\"")
       }
-      // Retrigger the build if the slave disconnected
-      script {
-        if (agentDisconnected()) {
-          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
+      retriggerBuildIfDisconnected()
     }
   }
 }

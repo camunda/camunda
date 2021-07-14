@@ -4,6 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
+
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
 String basePodSpec() {
@@ -264,20 +265,10 @@ pipeline {
 
   post {
     changed {
-      // Do not send email if the slave disconnected
-      script {
-        if (!agentDisconnected()){
-          sendNotification(currentBuild.result,null,null,[[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']])
-        }
-      }
+      sendEmailNotification()
     }
     always {
-      // Retrigger the build if the slave disconnected
-      script {
-        if (agentDisconnected()) {
-          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
-        }
-      }
+      retriggerBuildIfDisconnected()
     }
   }
 }
