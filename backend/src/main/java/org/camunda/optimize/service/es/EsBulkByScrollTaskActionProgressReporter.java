@@ -25,7 +25,8 @@ public class EsBulkByScrollTaskActionProgressReporter {
   private final String action;
   private final OptimizeElasticsearchClient esClient;
 
-  public EsBulkByScrollTaskActionProgressReporter(String loggerName, OptimizeElasticsearchClient esClient, String action) {
+  public EsBulkByScrollTaskActionProgressReporter(String loggerName, OptimizeElasticsearchClient esClient,
+                                                  String action) {
     this.logger = LoggerFactory.getLogger(loggerName);
     this.esClient = esClient;
     this.action = action;
@@ -41,9 +42,8 @@ public class EsBulkByScrollTaskActionProgressReporter {
         ListTasksRequest request = new ListTasksRequest()
           .setActions(action)
           .setDetailed(true);
-
         try {
-          ListTasksResponse response = esClient.getHighLevelClient().tasks().list(request, esClient.requestOptions());
+          ListTasksResponse response = esClient.getTaskList(request);
           final List<BulkByScrollTask.Status> currentTasksStatus = response
             .getTasks()
             .stream()

@@ -63,8 +63,7 @@ public class StatusCheckingService {
     boolean isConnected = false;
     try {
       ClusterHealthRequest request = new ClusterHealthRequest();
-      ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
-        .health(request, esClient.requestOptions());
+      final ClusterHealthResponse healthResponse = esClient.getClusterHealth(request);
 
       isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
         && healthResponse.getStatus() != ClusterHealthStatus.RED;

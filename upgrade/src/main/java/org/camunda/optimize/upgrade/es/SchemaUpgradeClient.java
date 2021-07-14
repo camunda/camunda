@@ -232,7 +232,7 @@ public class SchemaUpgradeClient {
   public void createIndexFromTemplate(final String indexNameWithSuffix) {
     CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
     try {
-      getHighLevelRestClient().indices().create(createIndexRequest, elasticsearchClient.requestOptions());
+      elasticsearchClient.createIndex(createIndexRequest);
     } catch (ElasticsearchStatusException e) {
       if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug("Index {} from template already exists.", indexNameWithSuffix);
@@ -329,8 +329,7 @@ public class SchemaUpgradeClient {
     request.setScript(createDefaultScriptWithSpecificDtoParams(updateScript, parameters, objectMapper));
     final String taskId;
     try {
-      taskId = getHighLevelRestClient().submitUpdateByQueryTask(request, elasticsearchClient.requestOptions())
-        .getTask();
+      taskId = elasticsearchClient.submitUpdateTask(request).getTask();
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Could not create updateBy task for [%s] with query [%s]!",
@@ -352,8 +351,7 @@ public class SchemaUpgradeClient {
     request.setQuery(query);
     final String taskId;
     try {
-      taskId = getHighLevelRestClient().submitDeleteByQueryTask(request, elasticsearchClient.requestOptions())
-        .getTask();
+      taskId = elasticsearchClient.submitDeleteTask(request).getTask();
     } catch (Exception e) {
       final String errorMessage = String.format(
         "Could not create deleteBy task for [%s] with query [%s]!", aliasName, query
@@ -392,12 +390,8 @@ public class SchemaUpgradeClient {
 
   private boolean areDocCountsEqual(final String sourceIndex, final String targetIndex) {
     try {
-      final long sourceIndexDocCount = elasticsearchClient.getHighLevelClient()
-        .count(new CountRequest(sourceIndex), elasticsearchClient.requestOptions())
-        .getCount();
-      final long targetIndexDocCount = elasticsearchClient.getHighLevelClient()
-        .count(new CountRequest(targetIndex), elasticsearchClient.requestOptions())
-        .getCount();
+      final long sourceIndexDocCount = elasticsearchClient.countWithoutPrefix(new CountRequest(sourceIndex));
+      final long targetIndexDocCount = elasticsearchClient.countWithoutPrefix(new CountRequest(targetIndex));
       return sourceIndexDocCount == targetIndexDocCount;
     } catch (Exception e) {
       log.warn(
@@ -411,11 +405,8 @@ public class SchemaUpgradeClient {
                                                    final String targetIndex) {
 
     try {
-      final ListTasksResponse tasksResponse = elasticsearchClient.getHighLevelClient().tasks()
-        .list(
-          new ListTasksRequest().setDetailed(true).setActions("indices:data/write/reindex"),
-          elasticsearchClient.requestOptions()
-        );
+      final ListTasksResponse tasksResponse = elasticsearchClient.getTaskList(
+        new ListTasksRequest().setDetailed(true).setActions("indices:data/write" + "/reindex"));
       return tasksResponse.getTasks().stream()
         .filter(taskInfo ->
                   taskInfo.getDescription() != null
@@ -460,7 +451,7 @@ public class SchemaUpgradeClient {
   }
 
   private String submitReindexTask(final ReindexRequest reindexRequest) throws IOException {
-    return getHighLevelRestClient().submitReindexTask(reindexRequest, elasticsearchClient.requestOptions()).getTask();
+    return elasticsearchClient.submitReindexTask(reindexRequest).getTask();
   }
 
   private void waitUntilTaskIsFinished(final String taskId,

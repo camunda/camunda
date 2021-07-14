@@ -195,7 +195,7 @@ public class ElasticsearchWriterUtil {
 
     final String taskId;
     try {
-      taskId = esClient.getHighLevelClient().submitUpdateByQueryTask(request, esClient.requestOptions()).getTask();
+      taskId = esClient.submitUpdateTask(request).getTask();
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Could not create updateBy task for [%s] with query [%s]!",
@@ -234,7 +234,7 @@ public class ElasticsearchWriterUtil {
 
     final String taskId;
     try {
-      taskId = esClient.getHighLevelClient().submitDeleteByQueryTask(request, esClient.requestOptions()).getTask();
+      taskId = esClient.submitDeleteTask(request).getTask();
     } catch (IOException e) {
       final String errorMessage = String.format(
         "Could not create delete task for [%s] with query [%s]!",
@@ -370,15 +370,13 @@ public class ElasticsearchWriterUtil {
   private static TaskResponse getTaskResponse(final OptimizeElasticsearchClient esClient,
                                               final String taskId) throws IOException {
     final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
-    request.setOptions(esClient.requestOptions());
-    final Response response = esClient.getHighLevelClient().getLowLevelClient().performRequest(request);
+    final Response response = esClient.performRequest(request);
     final ObjectMapper objectMapper = new ObjectMapperFactory(
       dateTimeFormatter,
       ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
     return objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
-
 
   private static void validateTaskResponse(final TaskResponse taskResponse) {
     if (taskResponse.getError() != null) {
