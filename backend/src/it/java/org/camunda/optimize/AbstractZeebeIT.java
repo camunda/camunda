@@ -46,6 +46,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
   public void after() {
     // Clear all potential existing Zeebe records in Optimize
     elasticSearchIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(zeebeExtension.getZeebeRecordPrefix());
+    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
   }
 
   protected void importAllZeebeEntitiesFromScratch() {

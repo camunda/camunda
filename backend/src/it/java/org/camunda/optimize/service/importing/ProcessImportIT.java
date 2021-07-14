@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -17,13 +18,21 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.util.BpmnModels;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.GetAliasesResponse;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -53,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
@@ -65,6 +75,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
@@ -92,6 +103,11 @@ public class ProcessImportIT extends AbstractImportIT {
   public void cleanUpExistingProcessInstanceIndices() {
     elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
     elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
+  }
+
+  @AfterEach
+  public void unblockIndex() {
+    blockAllProcInstIndices(false);
   }
 
   @Test
@@ -445,7 +461,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void failingJobDoesNotUpdateImportIndex() throws IOException {
+  public void failingJobDoesNotUpdateImportIndex() {
     // given
     ProcessInstanceEngineDto dto1 = deployAndStartSimpleServiceTask();
     OffsetDateTime endTime = engineIntegrationExtension.getHistoricProcessInstance(dto1.getId()).getEndTime();
@@ -453,30 +469,25 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
     importAllEngineEntitiesFromLastIndex();
 
-    elasticSearchIntegrationTestExtension.blockProcInstIndex(dto1.getProcessDefinitionKey(), true);
+    blockProcInstIndex(dto1.getProcessDefinitionKey(), true);
 
     ProcessInstanceEngineDto dto2 = deployAndStartSimpleServiceTask();
 
     Thread thread = new Thread(this::importAllEngineEntitiesFromLastIndex);
     thread.start();
 
-    OffsetDateTime lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
+    OffsetDateTime lastImportTimestamp = getLastProcessInstanceImportTimestamp();
     assertThat(lastImportTimestamp).isEqualTo(endTime);
 
-    elasticSearchIntegrationTestExtension.blockProcInstIndex(dto1.getProcessDefinitionKey(), false);
+    blockProcInstIndex(dto1.getProcessDefinitionKey(), false);
     endTime = engineIntegrationExtension.getHistoricProcessInstance(dto2.getId()).getEndTime();
 
     importAllEngineEntitiesFromLastIndex();
     importAllEngineEntitiesFromLastIndex();
 
-    lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
+    lastImportTimestamp = getLastProcessInstanceImportTimestamp();
 
     assertThat(lastImportTimestamp).isEqualTo(endTime);
-  }
-
-  @AfterEach
-  public void unblockIndex() throws IOException {
-    elasticSearchIntegrationTestExtension.blockAllProcInstIndices(false);
   }
 
   @Test
@@ -1151,6 +1162,55 @@ public class ProcessImportIT extends AbstractImportIT {
   private void deploySimpleProcess() {
     BpmnModelInstance processModel = getSingleServiceTaskProcess();
     engineIntegrationExtension.deployProcessAndGetId(processModel);
+  }
+
+  @SneakyThrows
+  private OffsetDateTime getLastProcessInstanceImportTimestamp() {
+    return elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
+      PROCESS_INSTANCE_MULTI_ALIAS,
+      EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS
+    );
+  }
+
+  @SneakyThrows
+  private void blockAllProcInstIndices(boolean block) {
+    final GetAliasesResponse aliases;
+    try {
+      aliases = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+        .getAlias(new GetAliasesRequest(PROCESS_INSTANCE_INDEX_PREFIX + "*"));
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + PROCESS_INSTANCE_INDEX_PREFIX);
+    }
+    final List<String> procInstanceIndexKeys = aliases.getAliases()
+      .values()
+      .stream()
+      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetadata::alias))
+      .map(fullAliasName ->
+             fullAliasName.substring(fullAliasName.lastIndexOf(PROCESS_INSTANCE_INDEX_PREFIX) + PROCESS_INSTANCE_INDEX_PREFIX
+               .length()))
+      .collect(toList());
+    for (String key : procInstanceIndexKeys) {
+      blockProcInstIndex(key, block);
+    }
+  }
+
+  @SneakyThrows
+  private void blockProcInstIndex(final String definitionKey, boolean block) {
+    String settingKey = "index.blocks.read_only";
+    Settings settings =
+      Settings.builder()
+        .put(settingKey, block)
+        .build();
+    UpdateSettingsRequest request = new UpdateSettingsRequest(
+      elasticSearchIntegrationTestExtension.getIndexNameService()
+        .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(definitionKey))
+    );
+    request.settings(settings);
+    final OptimizeElasticsearchClient esClient =
+      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    esClient.getHighLevelClient()
+      .indices()
+      .putSettings(request, esClient.requestOptions());
   }
 
   protected boolean indexExist(final String indexName) {

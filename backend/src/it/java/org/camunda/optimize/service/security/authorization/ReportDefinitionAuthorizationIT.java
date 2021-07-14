@@ -10,6 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -19,18 +20,26 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +52,9 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
@@ -164,7 +175,11 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     ReportDefinitionDto<SingleReportDataDto> definition = constructReportWithDefinition(definitionResourceType);
-    Response response = reportClient.evaluateReportAsUserAndReturnResponse(definition.getData(), KERMIT_USER, KERMIT_USER);
+    Response response = reportClient.evaluateReportAsUserAndReturnResponse(
+      definition.getData(),
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
@@ -397,9 +412,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
-    elasticSearchIntegrationTestExtension.updateEventProcessRoles(
-      PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER))
-    );
+    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
     Response response = embeddedOptimizeExtension
@@ -432,9 +445,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
-    elasticSearchIntegrationTestExtension.updateEventProcessRoles(
-      PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER))
-    );
+    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
     Response response = embeddedOptimizeExtension
@@ -462,9 +473,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
-    elasticSearchIntegrationTestExtension.updateEventProcessRoles(
-      PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER))
-    );
+    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
     ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -496,9 +505,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // given
     elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
-    elasticSearchIntegrationTestExtension.updateEventProcessRoles(
-      PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER))
-    );
+    updateEventProcessRoles(PROCESS_KEY, Collections.singletonList(new IdentityDto(KERMIT_USER, IdentityType.USER)));
 
     // when
     Response response = embeddedOptimizeExtension
@@ -617,9 +624,17 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        return reportClient.createSingleProcessReportAsUser(new SingleProcessReportDefinitionRequestDto(), user, password);
+        return reportClient.createSingleProcessReportAsUser(
+          new SingleProcessReportDefinitionRequestDto(),
+          user,
+          password
+        );
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        return reportClient.createNewDecisionReportAsUser(new SingleDecisionReportDefinitionRequestDto(), user, password);
+        return reportClient.createNewDecisionReportAsUser(
+          new SingleDecisionReportDefinitionRequestDto(),
+          user,
+          password
+        );
     }
   }
 
@@ -642,7 +657,8 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        SingleProcessReportDefinitionRequestDto processReportDefinitionDto = new SingleProcessReportDefinitionRequestDto();
+        SingleProcessReportDefinitionRequestDto processReportDefinitionDto =
+          new SingleProcessReportDefinitionRequestDto();
         ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(definitionKey)
@@ -653,7 +669,8 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
         processReportDefinitionDto.setData(processReportDataDto);
         return processReportDefinitionDto;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        SingleDecisionReportDefinitionRequestDto decisionReportDefinitionDto = new SingleDecisionReportDefinitionRequestDto();
+        SingleDecisionReportDefinitionRequestDto decisionReportDefinitionDto =
+          new SingleDecisionReportDefinitionRequestDto();
         DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.create()
           .setDecisionDefinitionKey(getDefinitionKey(resourceType))
           .setDecisionDefinitionVersion("1")
@@ -676,6 +693,40 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       case DECISION:
         return reportClient.updateDecisionReport(id, updatedReport, false, user, password);
     }
+  }
+
+  private void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
+    try {
+      UpdateRequest request = new UpdateRequest(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId)
+        .script(new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          "ctx._source.roles = params.updatedRoles;",
+          Collections.singletonMap(
+            "updatedRoles",
+            elasticSearchIntegrationTestExtension.getObjectMapper()
+              .convertValue(normalizeToSimpleIdentityDtos(identityDtos), Object.class)
+          )
+        ))
+        .setRefreshPolicy(IMMEDIATE);
+      final UpdateResponse updateResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+        .update(request);
+      if (updateResponse.getShardInfo().getFailed() > 0) {
+        throw new OptimizeIntegrationTestException(String.format(
+          "Was not able to update event process roles with id [%s].", eventProcessId
+        ));
+      }
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to update event process roles.", e);
+    }
+  }
+
+  private List<EventProcessRoleRequestDto<IdentityDto>> normalizeToSimpleIdentityDtos(final List<IdentityDto> identityDtos) {
+    return identityDtos.stream()
+      .filter(Objects::nonNull)
+      .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
+      .map(EventProcessRoleRequestDto::new)
+      .collect(Collectors.toList());
   }
 
 }

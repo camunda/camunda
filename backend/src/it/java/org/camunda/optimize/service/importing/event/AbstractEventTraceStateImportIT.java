@@ -12,9 +12,12 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCount
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 
+import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
@@ -58,10 +61,13 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractIT {
 
   @SneakyThrows
   protected Long getLastProcessedEntityTimestampFromElasticsearch(String definitionKey) {
-    return elasticSearchIntegrationTestExtension
-      .getLastProcessedEventTimestampForEventIndexSuffix(definitionKey)
-      .toInstant()
-      .toEpochMilli();
+    final OffsetDateTime lastImportTimestampOfTimestampBasedImportIndex =
+      elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
+      // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
+      ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase(),
+      ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE
+    );
+    return lastImportTimestampOfTimestampBasedImportIndex.toInstant().toEpochMilli();
   }
 
 }

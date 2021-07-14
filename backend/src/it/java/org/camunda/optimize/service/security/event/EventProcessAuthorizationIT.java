@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.event;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
@@ -28,6 +29,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
 
@@ -134,7 +136,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     // given
     embeddedOptimizeExtension.getConfigurationService()
       .getEventBasedProcessAccessUserIds().clear();
-    
+
     // when
     EventProcessMappingDto updateDto =
       eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml);
@@ -299,12 +301,17 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   }
 
   private CamundaEventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {
-    elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
-      processDefinitionKey,
-      null,
-      "1"
+    final ProcessDefinitionOptimizeDto processDefinitionDto = ProcessDefinitionOptimizeDto.builder()
+      .id(processDefinitionKey + "-" + "1")
+      .key(processDefinitionKey)
+      .name(null)
+      .version("1")
+      .bpmn20Xml(processDefinitionKey + "1")
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME, processDefinitionDto.getId(), processDefinitionDto
     );
-
     return createSimpleCamundaEventSourceEntry(processDefinitionKey);
   }
+
 }

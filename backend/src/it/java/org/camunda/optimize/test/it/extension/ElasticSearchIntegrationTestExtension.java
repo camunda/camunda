@@ -13,7 +13,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.Iterables;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -41,28 +40,21 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -71,8 +63,6 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -96,13 +86,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -115,17 +102,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -160,8 +143,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     this(customIndexPrefix, true);
   }
 
-  public ElasticSearchIntegrationTestExtension(final String customIndexPrefix,
-                                               final boolean haveToClean) {
+  private ElasticSearchIntegrationTestExtension(final String customIndexPrefix,
+                                                final boolean haveToClean) {
     this.customIndexPrefix = customIndexPrefix;
     this.haveToClean = haveToClean;
     initEsClient();
@@ -191,25 +174,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
-  private void initEsClient() {
-    if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
-      prefixAwareRestHighLevelClient = CLIENT_CACHE.get(customIndexPrefix);
-    } else {
-      createClientAndAddToCache(customIndexPrefix, createConfigurationService());
-    }
-  }
-
-  private static ClientAndServer initMockServer() {
-    log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
-    final ElasticsearchConnectionNodeConfiguration esConfig =
-      IntegrationTestConfigurationUtil.createItConfigurationService().getFirstElasticsearchConnectionNode();
-    return MockServerUtil.createProxyMockServer(
-      esConfig.getHost(),
-      esConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
-    );
-  }
-
   public ClientAndServer useEsMockServer() {
     log.debug("Using ElasticSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
@@ -223,18 +187,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
     }
     return mockServerClient;
-  }
-
-  private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
-    final ElasticsearchConnectionNodeConfiguration esConfig =
-      configurationService.getFirstElasticsearchConnectionNode();
-    log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
-    prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
-      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService)
-    );
-    adjustClusterSettings();
-    CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);
   }
 
   public ObjectMapper getObjectMapper() {
@@ -279,6 +231,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
+  @SneakyThrows
   public void addEntriesToElasticsearch(String indexName, Map<String, Object> idToEntryMap) {
     StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
       .forEach(batch -> {
@@ -294,72 +247,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       });
   }
 
-  @SneakyThrows
-  private void executeBulk(final BulkRequest bulkRequest) {
-    getOptimizeElasticClient().bulk(bulkRequest);
-  }
-
-  @SneakyThrows
-  private String writeJsonString(final Map.Entry<String, Object> idAndObject) {
-    return OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
-  }
-
-  public OffsetDateTime getLastProcessedEventTimestampForEventIndexSuffix(final String eventIndexSuffix) throws
-                                                                                                         IOException {
-    return getLastImportTimestampOfTimestampBasedImportIndex(
-      // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
-      ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + eventIndexSuffix.toLowerCase(),
-      ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE
-    );
-  }
-
-  public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
-    return getLastImportTimestampOfTimestampBasedImportIndex(
-      PROCESS_INSTANCE_MULTI_ALIAS,
-      EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS
-    );
-  }
-
-  private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)
-    throws IOException {
-    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
-    GetResponse response = prefixAwareRestHighLevelClient.get(getRequest);
-    if (response.isExists()) {
-      return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class)
-        .getTimestampOfLastEntity();
-    } else {
-      throw new NotFoundException(String.format(
-        "Timestamp based import index does not exist: esType: {%s}, engine: {%s}",
-        esType,
-        engine
-      ));
-    }
-  }
-
-  public void blockAllProcInstIndices(boolean block) throws IOException {
-    List<String> procInstanceIndexKeys = retrieveAllDynamicIndexKeysForPrefix(PROCESS_INSTANCE_INDEX_PREFIX);
-    for (String key : procInstanceIndexKeys) {
-      blockProcInstIndex(key, block);
-    }
-  }
-
-  public void blockProcInstIndex(final String definitionKey, boolean block) throws IOException {
-    String settingKey = "index.blocks.read_only";
-    Settings settings =
-      Settings.builder()
-        .put(settingKey, block)
-        .build();
-
-    UpdateSettingsRequest request = new UpdateSettingsRequest(
-      getIndexNameService().getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(definitionKey))
-    );
-    request.settings(settings);
-
-    getOptimizeElasticClient().getHighLevelClient()
-      .indices()
-      .putSettings(request, getOptimizeElasticClient().requestOptions());
-  }
-
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
     try {
       return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
@@ -371,9 +258,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
-  private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames);
-    return mapHits(response.getHits(), type, getObjectMapper());
+  public OptimizeIndexNameService getIndexNameService() {
+    return getOptimizeElasticClient().getIndexNameService();
   }
 
   public SearchResponse getSearchResponseForAllDocumentsOfIndex(final String indexName) {
@@ -412,12 +298,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public Integer getActivityCount() {
-    return getActivityCount(QueryBuilders.matchAllQuery());
-  }
-
-  private Integer getActivityCount(final QueryBuilder processInstanceQuery) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(processInstanceQuery)
+      .query(matchAllQuery())
       .fetchSource(false)
       .size(0)
       .aggregation(
@@ -486,49 +368,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return Long.valueOf(totalVariableCount).intValue();
   }
 
-  public Integer getVariableInstanceCount(String variableName) {
-    final QueryBuilder query = nestedQuery(
-      VARIABLES,
-      boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
-      ScoreMode.None
-    );
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .fetchSource(false)
-      .size(0);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(PROCESS_INSTANCE_MULTI_ALIAS)
-      .source(searchSourceBuilder);
-
-    String VARIABLE_COUNT_AGGREGATION = VARIABLES + "_count";
-    String NESTED_VARIABLE_AGGREGATION = "nestedAggregation";
-    searchSourceBuilder.aggregation(
-      nested(
-        NESTED_VARIABLE_AGGREGATION,
-        VARIABLES
-      )
-        .subAggregation(
-          count(VARIABLE_COUNT_AGGREGATION)
-            .field(getNestedVariableIdField())
-        )
-    );
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest);
-    } catch (IOException | ElasticsearchStatusException e) {
-      throw new OptimizeIntegrationTestException(
-        "Cannot evaluate variable instance count in process instance indices.",
-        e
-      );
-    }
-
-    Nested nestedAgg = searchResponse.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
-    ValueCount countAggregator = nestedAgg.getAggregations().get(VARIABLE_COUNT_AGGREGATION);
-    return Long.valueOf(countAggregator.getValue()).intValue();
-  }
-
   public void deleteAllOptimizeData() {
     DeleteByQueryRequest request = new DeleteByQueryRequest(getIndexNameService().getIndexPrefix() + "*")
       .setQuery(matchAllQuery())
@@ -575,8 +414,26 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     getOptimizeElasticClient().deleteIndex(indexMapping);
   }
 
-  private OptimizeIndexNameService getIndexNameService() {
-    return getOptimizeElasticClient().getIndexNameService();
+  public void deleteAllVariableUpdateInstanceIndices() {
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
+    );
+  }
+
+  public boolean indexExists(final String indexOrAliasName) {
+    final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
+    try {
+      return getOptimizeElasticClient().exists(request);
+    } catch (IOException e) {
+      final String message = String.format(
+        "Could not check if [%s] index already exist.", String.join(",", indexOrAliasName)
+      );
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public OptimizeElasticsearchClient getOptimizeElasticClient() {
+    return prefixAwareRestHighLevelClient;
   }
 
   public void cleanAndVerify() {
@@ -585,6 +442,182 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   public void disableCleanup() {
     haveToClean = false;
+  }
+
+  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
+    return getAllDocumentsOfIndexAs(DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class);
+  }
+
+  public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
+    return getAllDocumentsOfIndicesAs(
+      new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME},
+      ProcessDefinitionOptimizeDto.class
+    );
+  }
+
+  public List<TenantDto> getAllTenants() {
+    return getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
+  }
+
+  public List<EventDto> getAllStoredExternalEvents() {
+    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventDto.class);
+  }
+
+  public List<DecisionInstanceDto> getAllDecisionInstances() {
+    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_MULTI_ALIAS, DecisionInstanceDto.class);
+  }
+
+  public List<ProcessInstanceDto> getAllProcessInstances() {
+    return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
+  }
+
+  @SneakyThrows
+  public List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinition(final String processDefinitionKey) {
+    return getAllDocumentsOfIndexAs(
+      new CamundaActivityEventIndex(processDefinitionKey).getIndexName(), CamundaActivityEventDto.class
+    );
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
+    return addEventProcessDefinitionDtoToElasticsearch(key, "eventProcess-" + key);
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final String name) {
+    return addEventProcessDefinitionDtoToElasticsearch(
+      key,
+      name,
+      null,
+      Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
+    );
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final IdentityDto identityDto) {
+    return addEventProcessDefinitionDtoToElasticsearch(
+      key,
+      "eventProcess-" + key,
+      null,
+      Collections.singletonList(identityDto)
+    );
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final String name,
+                                                                               final String version,
+                                                                               final List<IdentityDto> identityDtos) {
+    final List<EventProcessRoleRequestDto<IdentityDto>> roles = identityDtos.stream()
+      .filter(Objects::nonNull)
+      .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
+      .map(EventProcessRoleRequestDto::new)
+      .collect(Collectors.toList());
+    final EsEventProcessMappingDto eventProcessMappingDto = EsEventProcessMappingDto.builder()
+      .id(key)
+      .roles(roles)
+      .build();
+    addEntryToElasticsearch(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
+
+    final String versionValue = Optional.ofNullable(version).orElse("1");
+    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
+      .id(key + "-" + version)
+      .key(key)
+      .name(name)
+      .version(versionValue)
+      .bpmn20Xml(key + versionValue)
+      .deleted(false)
+      .flowNodeData(new ArrayList<>())
+      .userTaskNames(Collections.emptyMap())
+      .build();
+    addEntryToElasticsearch(
+      EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(), eventProcessDefinitionDto
+    );
+    return eventProcessDefinitionDto;
+  }
+
+  public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)
+    throws IOException {
+    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
+    GetResponse response = prefixAwareRestHighLevelClient.get(getRequest);
+    if (response.isExists()) {
+      return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class)
+        .getTimestampOfLastEntity();
+    } else {
+      throw new NotFoundException(String.format(
+        "Timestamp based import index does not exist: esType: {%s}, engine: {%s}",
+        esType,
+        engine
+      ));
+    }
+  }
+
+  @SneakyThrows
+  public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
+    return getAllDocumentsOfIndexAs(
+      VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class
+    );
+  }
+
+  public void deleteAllExternalEventIndices() {
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(EXTERNAL_EVENTS_INDEX_NAME + "_*")
+    );
+  }
+
+  @SneakyThrows
+  public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
+    getOptimizeElasticClient().getHighLevelClient()
+      .indices()
+      .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), getOptimizeElasticClient().requestOptions());
+  }
+
+  private void deleteCamundaEventIndicesAndEventCountsAndTraces() {
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"),
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"),
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_TRACE_STATE_INDEX_PREFIX + "*")
+    );
+  }
+
+  private void deleteAllEventProcessInstanceIndices() {
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
+    );
+  }
+
+  private void initEsClient() {
+    if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
+      prefixAwareRestHighLevelClient = CLIENT_CACHE.get(customIndexPrefix);
+    } else {
+      createClientAndAddToCache(customIndexPrefix, createConfigurationService());
+    }
+  }
+
+  private static ClientAndServer initMockServer() {
+    log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
+    final ElasticsearchConnectionNodeConfiguration esConfig =
+      IntegrationTestConfigurationUtil.createItConfigurationService().getFirstElasticsearchConnectionNode();
+    return MockServerUtil.createProxyMockServer(
+      esConfig.getHost(),
+      esConfig.getHttpPort(),
+      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
+    );
+  }
+
+  private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
+    final ElasticsearchConnectionNodeConfiguration esConfig =
+      configurationService.getFirstElasticsearchConnectionNode();
+    log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
+    prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
+      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+      new OptimizeIndexNameService(configurationService)
+    );
+    adjustClusterSettings();
+    CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);
+  }
+
+  private <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames);
+    return mapHits(response.getHits(), type, getObjectMapper());
   }
 
   private ConfigurationService createConfigurationService() {
@@ -651,222 +684,14 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
-  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
-    return getAllDocumentsOfIndexAs(DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class);
-  }
-
-  public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
-    return getAllDocumentsOfIndicesAs(
-      new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME},
-      ProcessDefinitionOptimizeDto.class
-    );
-  }
-
-  public List<TenantDto> getAllTenants() {
-    return getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
-  }
-
-  public List<EventDto> getAllStoredExternalEvents() {
-    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventDto.class);
-  }
-
-  public List<DecisionInstanceDto> getAllDecisionInstances() {
-    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_MULTI_ALIAS, DecisionInstanceDto.class);
-  }
-
-  public List<ProcessInstanceDto> getAllProcessInstances() {
-    return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
+  @SneakyThrows
+  private String writeJsonString(final Map.Entry<String, Object> idAndObject) {
+    return OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
   }
 
   @SneakyThrows
-  public List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinition(final String processDefinitionKey) {
-    return getAllDocumentsOfIndexAs(
-      new CamundaActivityEventIndex(processDefinitionKey).getIndexName(), CamundaActivityEventDto.class
-    );
+  private void executeBulk(final BulkRequest bulkRequest) {
+    getOptimizeElasticClient().bulk(bulkRequest);
   }
 
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
-    return addEventProcessDefinitionDtoToElasticsearch(key, "eventProcess-" + key);
-  }
-
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
-                                                                               final String name) {
-    return addEventProcessDefinitionDtoToElasticsearch(
-      key,
-      name,
-      null,
-      Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
-    );
-  }
-
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
-                                                                               final IdentityDto identityDto) {
-    return addEventProcessDefinitionDtoToElasticsearch(key, "eventProcess-" + key, identityDto);
-  }
-
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
-                                                                               final String name,
-                                                                               final IdentityDto identityDto) {
-    return addEventProcessDefinitionDtoToElasticsearch(key, name, null, Collections.singletonList(identityDto));
-  }
-
-  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
-                                                                               final String name,
-                                                                               final String version,
-                                                                               final List<IdentityDto> identityDtos) {
-    final EsEventProcessMappingDto eventProcessMappingDto = EsEventProcessMappingDto.builder()
-      .id(key)
-      .roles(normalizeToSimpleIdentityDtos(identityDtos))
-      .build();
-    addEntryToElasticsearch(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
-
-    final String versionValue = Optional.ofNullable(version).orElse("1");
-    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
-      .id(key + "-" + version)
-      .key(key)
-      .name(name)
-      .version(versionValue)
-      .bpmn20Xml(key + versionValue)
-      .deleted(false)
-      .flowNodeData(new ArrayList<>())
-      .userTaskNames(Collections.emptyMap())
-      .build();
-    addEntryToElasticsearch(
-      EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(), eventProcessDefinitionDto
-    );
-    return eventProcessDefinitionDto;
-  }
-
-  public ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
-                                                                          final String name,
-                                                                          final String version) {
-    final ProcessDefinitionOptimizeDto processDefinitionDto = ProcessDefinitionOptimizeDto.builder()
-      .id(key + "-" + version)
-      .key(key)
-      .name(name)
-      .version(version)
-      .bpmn20Xml(key + version)
-      .build();
-    addEntryToElasticsearch(
-      PROCESS_DEFINITION_INDEX_NAME, processDefinitionDto.getId(), processDefinitionDto
-    );
-    return processDefinitionDto;
-  }
-
-  public void updateEventProcessRoles(final String eventProcessId, final List<IdentityDto> identityDtos) {
-    try {
-      UpdateRequest request = new UpdateRequest(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId)
-        .script(new Script(
-          ScriptType.INLINE,
-          Script.DEFAULT_SCRIPT_LANG,
-          "ctx._source.roles = params.updatedRoles;",
-          Collections.singletonMap(
-            "updatedRoles",
-            OBJECT_MAPPER.convertValue(normalizeToSimpleIdentityDtos(identityDtos), Object.class)
-          )
-        ))
-        .setRefreshPolicy(IMMEDIATE);
-      final UpdateResponse updateResponse = getOptimizeElasticClient().update(request);
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        final String errorMessage = String.format(
-          "Was not able to update event process roles with id [%s].", eventProcessId
-        );
-        log.error(errorMessage);
-        throw new OptimizeIntegrationTestException(errorMessage);
-      }
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Unable to update event process roles.", e);
-    }
-  }
-
-  @SneakyThrows
-  public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
-    return getAllDocumentsOfIndexAs(
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class
-    );
-  }
-
-  public void deleteAllExternalEventIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(EXTERNAL_EVENTS_INDEX_NAME + "_*")
-    );
-  }
-
-  private void deleteCamundaEventIndicesAndEventCountsAndTraces() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"),
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"),
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_TRACE_STATE_INDEX_PREFIX + "*")
-    );
-  }
-
-  @SneakyThrows
-  public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
-    getOptimizeElasticClient().getHighLevelClient()
-      .indices()
-      .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), getOptimizeElasticClient().requestOptions());
-  }
-
-  private void deleteAllEventProcessInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
-    );
-  }
-
-  public void deleteAllVariableUpdateInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(
-      getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
-    );
-  }
-
-  public boolean indexExists(final String indexOrAliasName) {
-    final GetIndexRequest request = new GetIndexRequest(indexOrAliasName);
-    try {
-      return getOptimizeElasticClient().exists(request);
-    } catch (IOException e) {
-      final String message = String.format(
-        "Could not check if [%s] index already exist.", String.join(",", indexOrAliasName)
-      );
-      throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  public OptimizeElasticsearchClient getOptimizeElasticClient() {
-    return prefixAwareRestHighLevelClient;
-  }
-
-  public String getEsVersion() {
-    try {
-      return prefixAwareRestHighLevelClient.getHighLevelClient()
-        .info(prefixAwareRestHighLevelClient.requestOptions())
-        .getVersion()
-        .getNumber();
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not retrieve elasticsearch version.", e);
-    }
-  }
-
-  private List<EventProcessRoleRequestDto<IdentityDto>> normalizeToSimpleIdentityDtos(final List<IdentityDto> identityDtos) {
-    return identityDtos.stream()
-      .filter(Objects::nonNull)
-      .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
-      .map(EventProcessRoleRequestDto::new)
-      .collect(Collectors.toList());
-  }
-
-  private List<String> retrieveAllDynamicIndexKeysForPrefix(final String dynamicIndexPrefix) {
-    final GetAliasesResponse aliases;
-    try {
-      aliases = getOptimizeElasticClient().getAlias(new GetAliasesRequest(dynamicIndexPrefix + "*"));
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix);
-    }
-    return aliases.getAliases()
-      .values()
-      .stream()
-      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetadata::alias))
-      .map(fullAliasName ->
-             fullAliasName.substring(fullAliasName.lastIndexOf(dynamicIndexPrefix) + dynamicIndexPrefix.length()))
-      .collect(toList());
-  }
 }
