@@ -438,7 +438,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -463,7 +464,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         zeebeExtension.deployProcess(createStartEndProcess("secondProcess")).getBpmnProcessId());
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -487,7 +489,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
 
     // when
-    waitUntilProcessInstanceEventsExported();
+    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
+    waitUntilMinimumProcessInstanceEventsExportedCount(7);
     importAllZeebeEntitiesFromScratch();
 
     // then
