@@ -26,7 +26,7 @@ fixture('Multi Instance Flow Node Selection')
     await t.navigateTo(`/instances/${processInstanceId}`);
   });
 
-test.skip('Should select multi instance flow nodes', async (t) => {
+test('Should select multi instance flow nodes', async (t) => {
   await t.expect(screen.queryByTestId('instance-history').exists).ok();
 
   const withinInstanceHistory = within(
@@ -133,7 +133,7 @@ test.skip('Should select multi instance flow nodes', async (t) => {
     .eql(25);
 
   await t
-    .click(withinIncidentsTable.queryAllByRole('row', {name: /Task B/}).nth(0))
+    .click(withinIncidentsTable.queryAllByText(/Task B/).nth(0))
     .expect(selectedIncidentsTableRows.count)
     .eql(1);
 

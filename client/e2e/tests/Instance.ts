@@ -177,7 +177,7 @@ test('Instance with an incident - diagram', async (t) => {
   await t.expect(screen.queryByTestId('modal').exists).notOk();
 });
 
-test.skip('Instance with an incident - resolve incidents', async (t) => {
+test('Instance with an incident - resolve incidents', async (t) => {
   const {
     initialData: {instanceWithIncidentToResolve},
   } = t.fixtureCtx;
@@ -220,12 +220,12 @@ test.skip('Instance with an incident - resolve incidents', async (t) => {
   await t
     .click(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /where to go\?/i})
+        withinIncidentsTable.queryByRole('row', {name: /Condition error/i})
       ).queryByRole('button', {name: 'Retry Incident'})
     )
     .expect(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /where to go\?/i})
+        withinIncidentsTable.queryByRole('row', {name: /Condition error/i})
       ).queryByTestId('operation-spinner').exists
     )
     .ok()
@@ -267,12 +267,12 @@ test.skip('Instance with an incident - resolve incidents', async (t) => {
   await t
     .click(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /is cool\?/i})
+        withinIncidentsTable.queryByRole('row', {name: /Extract value error/i})
       ).queryByRole('button', {name: 'Retry Incident'})
     )
     .expect(
       within(
-        withinIncidentsTable.queryByRole('row', {name: /is cool\?/i})
+        withinIncidentsTable.queryByRole('row', {name: /Extract value error/i})
       ).queryByTestId('operation-spinner').exists
     )
     .ok();
