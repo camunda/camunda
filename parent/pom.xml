@@ -101,7 +101,7 @@
     <version.json-smart>2.4.7</version.json-smart>
     <version.byte-buddy>1.11.6</version.byte-buddy>
     <version.revapi>0.24.3</version.revapi>
-    <version.commons-io>2.10.0</version.commons-io>
+    <version.commons-io>2.11.0</version.commons-io>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.0.0</plugin.version.antrun>
