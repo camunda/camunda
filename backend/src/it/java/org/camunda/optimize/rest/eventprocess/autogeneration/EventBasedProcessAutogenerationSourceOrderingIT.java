@@ -852,6 +852,7 @@ public class EventBasedProcessAutogenerationSourceOrderingIT extends AbstractEve
 
   private void deployDefinitionAndStartInstance(final BpmnModelInstance firstModelInstance) {
     deployDefinitionWithTenantAndStartInstance(firstModelInstance, null);
+    importAllEngineEntitiesFromLastIndex();
   }
 
   private void deployDefinitionWithTenantAndStartInstance(final BpmnModelInstance firstModelInstance,

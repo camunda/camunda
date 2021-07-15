@@ -50,11 +50,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAll;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToLatest;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -104,7 +104,7 @@ public class CorrelatedCamundaProcessInstanceReader {
                .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
       .size(0);
 
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(getInstanceIndexNames(eventSources)).source(searchSourceBuilder);
     addCorrelationValuesAggregation(searchSourceBuilder, camundaSources);
 
     SearchResponse searchResponse;
@@ -152,7 +152,7 @@ public class CorrelatedCamundaProcessInstanceReader {
                .filter(matchesSourceQuery)
                .must(functionScoreQuery(matchAllQuery(), ScoreFunctionBuilders.randomFunction())))
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_MULTI_ALIAS)
+    SearchRequest searchRequest = new SearchRequest(getInstanceIndexNames(camundaSources))
       .source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
@@ -304,6 +304,12 @@ public class CorrelatedCamundaProcessInstanceReader {
       tenantQuery.should(termsQuery(TENANT_ID, nonNullTenants));
     }
     return tenantQuery;
+  }
+
+  private String[] getInstanceIndexNames(final List<CamundaEventSourceEntryDto> eventSources) {
+    return eventSources.stream()
+      .map(source -> getProcessInstanceIndexAliasName(source.getConfiguration().getProcessDefinitionKey()))
+      .toArray(String[]::new);
   }
 
 }
