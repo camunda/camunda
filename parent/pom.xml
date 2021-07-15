@@ -73,7 +73,7 @@
     <version.prometheus>0.11.0</version.prometheus>
     <version.protobuf>3.17.3</version.protobuf>
     <version.protobuf-common>2.3.2</version.protobuf-common>
-    <version.micrometer>1.7.1</version.micrometer>
+    <version.micrometer>1.7.2</version.micrometer>
     <version.rocksdbjni>6.20.3</version.rocksdbjni>
     <version.sbe>1.23.0</version.sbe>
     <version.scala-parser>2.0.0</version.scala-parser>
@@ -99,7 +99,7 @@
     <version.jqwik>1.5.3</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.7</version.json-smart>
-    <version.byte-buddy>1.11.6</version.byte-buddy>
+    <version.byte-buddy>1.11.7</version.byte-buddy>
     <version.revapi>0.24.4</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
 
