@@ -8,7 +8,7 @@ def masterBranchName = 'master'
 def isMasterBranch = env.BRANCH_NAME == masterBranchName
 def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
-def latestStableBranchName = 'stable/0.26'
+def latestStableBranchName = 'stable/1.1'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 def generationVersion = 'Zeebe 0.26.4'
 
