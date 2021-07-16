@@ -4,6 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
+
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-11-slim" }
 
 static String gCloudAndMavenAgent() {
@@ -85,7 +86,7 @@ pipeline {
     stage('Prepare') {
       steps {
         container('gcloud') {
-          sh ("""
+          sh("""
                 # install jq
                 apk add --no-cache jq gettext
                 # kubectl
@@ -95,7 +96,7 @@ pipeline {
             """)
         }
         container('maven') {
-          sh ("""apt-get update && apt-get install -y jq netcat""")
+          sh("""apt-get update && apt-get install -y jq netcat""")
         }
       }
     }
@@ -121,10 +122,9 @@ pipeline {
     }
     always {
       container('gcloud') {
-        sh ("bash .ci/podSpecs/clusterTests/kill.sh \"${NAMESPACE}\"")
+        sh("bash .ci/podSpecs/clusterTests/kill.sh \"${NAMESPACE}\"")
       }
       retriggerBuildIfDisconnected()
-      }
     }
   }
 }
