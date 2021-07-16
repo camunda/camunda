@@ -149,7 +149,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("jdk-11-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-11-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -185,7 +185,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK15_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-15"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-15-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -203,7 +203,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-JDK16_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-16"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+              yaml mavenIntegrationTestAgent(OPENJDK_MAVEN_DOCKER_IMAGE("openjdk-16-slim"), "${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
