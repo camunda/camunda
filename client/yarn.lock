@@ -12172,10 +12172,10 @@ ms@^2.1.1:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-msw-storybook-addon@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/msw-storybook-addon/-/msw-storybook-addon-1.1.0.tgz#fd65012279100377aaa1521a0a6293a361ceb0b9"
-  integrity sha512-7whJpcYUfXA0VLe0hWxlUCKHXIwveUphvwmrZDrJ0T+Abjkti0G4fhyXWRq+T0w3zcB3aGV0yGCPLzj8suEzBw==
+msw-storybook-addon@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/msw-storybook-addon/-/msw-storybook-addon-1.2.0.tgz#5ed97091183b7cbe6d115892a721edd27118336e"
+  integrity sha512-76AxcIdpU2sEymVZ5octNNOmI02NQ5OfXvjFU8uthv35QvjCHzeH4KXdB8nwnnIFECDGEzNt2cIimnZsFfZpKg==
   dependencies:
     "@storybook/addons" "^6.0.0"
 
