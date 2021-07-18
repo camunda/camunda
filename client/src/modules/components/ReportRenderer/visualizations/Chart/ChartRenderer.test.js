@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ChartRenderer from './ChartRenderer';
-import Chart from 'chart.js';
+import {Chart} from 'chart.js';
 
 const chartData = {
   type: 'visualization_type',

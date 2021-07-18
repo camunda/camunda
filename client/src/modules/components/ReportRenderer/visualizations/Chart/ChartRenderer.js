@@ -5,12 +5,30 @@
  */
 
 import React from 'react';
-import Chart from 'chart.js';
+import {Chart, registerables} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 import './ChartRenderer.scss';
 
-Chart.defaults.global.defaultFontFamily =
+Chart.defaults.font.defaultFontFamily =
   "'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
+Chart.register(...registerables);
+
+Chart.register(ChartDataLabels);
+Chart.defaults.set('plugins.datalabels', {
+  align: 'end',
+  anchor: 'end',
+  backgroundColor: 'black',
+  borderRadius: 4,
+  color: 'white',
+  font: {
+    weight: 'bold',
+  },
+  padding: 6,
+  display: false,
+  clamp: true,
+});
 
 export default class ChartRenderer extends React.Component {
   storeContainer = (container) => {

@@ -6,9 +6,10 @@
 
 import {isDurationReport, formatters} from 'services';
 
-import {generateLegendLabels} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
+import {getColorFor} from '../colorsUtils';
+import {generateLegendLabels} from './service';
 
 export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
   const {
@@ -30,27 +31,25 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     groupBy?.type === 'duration' && findMaxDurationAcrossReports(result, 'label');
 
   const tooltipCallbacks = {
-    label: (tooltipItem, data) => {
-      return formatTooltip(
-        tooltipItem,
-        data,
+    label: ({dataset, dataIndex}) =>
+      formatTooltip({
+        dataset,
+        dataIndex,
         configuration,
-        data.datasets[tooltipItem.datasetIndex].formatter ?? formatter,
-        result.instanceCount,
-        isDuration
-      );
-    },
-    labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
-    afterTitle: (data, {datasets}) =>
-      !isNumber && data.length && datasets[data[data.length - 1].datasetIndex].label,
+        formatter: dataset.formatter ?? formatter,
+        instanceCount: result.instanceCount,
+        isDuration,
+        showLabel: !isNumber,
+      }),
+    labelColor: (tooltipItem) => getTooltipLabelColor(tooltipItem, visualization),
   };
 
   if (isPersistedTooltips) {
     tooltipCallbacks.title = () => '';
     tooltipCallbacks.afterTitle = () => '';
   } else if (groupedByDurationMaxValue) {
-    tooltipCallbacks.title = (data, {labels}) =>
-      data.length && formatters.duration(labels[data[0].index]);
+    tooltipCallbacks.title = (tooltipItems) =>
+      tooltipItems?.[0]?.label && formatters.duration(tooltipItems[0].label);
   }
 
   return {
@@ -66,27 +65,39 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       autoSkip: canBeInterpolated(groupBy),
       groupedByDurationMaxValue,
     }),
-    legend: {
-      display: true,
-      labels: {
-        generateLabels: generateLegendLabels,
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          generateLabels: generateLegendLabels,
+          color: getColorFor('label', isDark),
+        },
+        // prevent hiding datasets when clicking on their legends
+        onClick: (e) => e.native.stopPropagation(),
       },
-      // prevent hiding datasets when clicking on their legends
-      onClick: (e) => e.stopPropagation(),
+      tooltip: {
+        enabled: !isPersistedTooltips,
+        callbacks: tooltipCallbacks,
+      },
+      datalabels: {
+        display: isPersistedTooltips,
+        formatter: (_, {dataset, dataIndex}) =>
+          formatTooltip({
+            dataset,
+            dataIndex,
+            configuration,
+            formatter: dataset.formatter ?? formatter,
+            instanceCount: result.instanceCount,
+            isDuration,
+            showLabel: false,
+          }),
+      },
     },
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
     // plugin property
     showAllTooltips: isPersistedTooltips,
-    tooltips: {
-      ...(isPersistedTooltips && {
-        yAlign: 'bottom',
-        xAlign: 'center',
-        displayColors: false,
-      }),
-      callbacks: tooltipCallbacks,
-    },
   };
 }
 

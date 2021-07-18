@@ -8,7 +8,6 @@ import {parseISO} from 'date-fns';
 
 import {drawHorizentalLine} from './service';
 import zoomIn from './zoomIn';
-import showAllTooltips from './showAllTooltips';
 import drawPieEmptyState from './drawPieEmptyState';
 
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
@@ -16,7 +15,6 @@ export default function createPlugins({updateReport, report: {combined, data, re
     {
       afterDatasetsDraw: drawHorizentalLine,
     },
-    showAllTooltips,
     drawPieEmptyState,
   ];
 

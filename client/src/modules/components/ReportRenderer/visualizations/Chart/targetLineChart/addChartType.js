@@ -4,17 +4,16 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import ChartRenderer from 'chart.js';
+import {Chart as ChartRenderer, LineController} from 'chart.js';
+import {clipArea, valueOrDefault, unclipArea} from 'chart.js/helpers';
+
 import {calculateLinePosition} from '../service';
 
 // add a new chart type "targetLine" to the ChartRenderer library
 // see https://www.chartjs.org/docs/latest/developers/charts.html#extending-existing-chart-types for documentation
 
-ChartRenderer.defaults.targetLine = ChartRenderer.defaults.line;
-
-ChartRenderer.controllers.targetLine = ChartRenderer.controllers.line.extend({
-  draw: function () {
-    const helpers = ChartRenderer.helpers;
+class targetLine extends LineController {
+  draw() {
     const dataset = this.getDataset();
     const prop = dataset.renderArea;
     const lineAt = calculateLinePosition(this.chart);
@@ -27,23 +26,28 @@ ChartRenderer.controllers.targetLine = ChartRenderer.controllers.line.extend({
 
     area[prop] = lineAt;
 
-    helpers.canvas.clipArea(chart.ctx, area);
+    clipArea(chart.ctx, area);
 
-    if (helpers.valueOrDefault(dataset.showLine, chart.options.showLines)) {
-      meta.dataset.draw();
+    if (valueOrDefault(dataset.showLine, chart.options.showLine)) {
+      meta.dataset.draw(chart.ctx, area);
     }
 
-    helpers.canvas.unclipArea(chart.ctx);
+    unclipArea(chart.ctx);
 
     for (let i = 0; i < ilen; i++) {
       if (
         (points[i].getCenterPoint().y < lineAt && prop === 'bottom') ||
         (points[i].getCenterPoint().y >= lineAt && prop === 'top')
       ) {
-        points[i].draw(area);
+        points[i].draw(chart.ctx, area);
       }
     }
 
     this.chart.chartArea[prop] = prevValue;
-  },
-});
+  }
+}
+targetLine.id = 'targetLine';
+targetLine.defaults = LineController.defaults;
+
+// Stores the controller so that the chart initialization routine can look it up
+ChartRenderer.register(targetLine);

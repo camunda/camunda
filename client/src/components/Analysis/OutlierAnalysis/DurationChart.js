@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import Chart from 'chart.js';
+import {Chart} from 'chart.js';
 
 import {t} from 'translation';
 
@@ -44,41 +44,44 @@ export default class DurationChart extends React.Component {
         responsive: true,
         animation: false,
         maintainAspectRatio: false,
-        legend: {
-          display: false,
-        },
-        tooltips: {
-          intersect: false,
-          mode: 'x',
-          callbacks: {
-            title: this.createTooltipTitle,
-            label: ({xLabel}) =>
-              ' ' + t('analysis.outlier.tooltip.tookDuration') + ' ' + duration(xLabel),
+        plugins: {
+          legend: {
+            display: false,
           },
-          filter: (tooltipItem, data) => +tooltipItem.value > 0,
+          tooltip: {
+            intersect: false,
+            mode: 'x',
+            callbacks: {
+              title: this.createTooltipTitle,
+              label: ({label}) =>
+                t('analysis.outlier.tooltip.tookDuration') + ' ' + duration(label),
+            },
+            filter: (tooltipItem) => +tooltipItem.formattedValue > 0,
+          },
         },
         scales: {
-          xAxes: [
-            {
-              ticks: {
-                ...createDurationFormattingOptions(null, maxDuration),
-              },
-              scaleLabel: {
-                display: true,
-                labelString: t('analysis.outlier.detailsModal.axisLabels.duration'),
-                fontStyle: 'bold',
-              },
+          xAxis: {
+            title: {
+              display: true,
+              text: t('analysis.outlier.detailsModal.axisLabels.duration'),
+              font: {weight: 'bold'},
             },
-          ],
-          yAxes: [
-            {
-              scaleLabel: {
-                display: true,
-                labelString: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),
-                fontStyle: 'bold',
-              },
+            ticks: {
+              ...createDurationFormattingOptions(null, maxDuration),
             },
-          ],
+          },
+          yAxis: {
+            title: {
+              display: true,
+              text: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),
+              font: {weight: 'bold'},
+            },
+            ticks: {
+              // this is needed due to this bug: https://github.com/chartjs/Chart.js/issues/9390
+              // TODO: Remove this after updating chart.js to 3.5
+              callback: (v) => v,
+            },
+          },
         },
       },
     });
@@ -89,13 +92,13 @@ export default class DurationChart extends React.Component {
       return;
     }
     let key = 'common.instance';
-    if (this.props.data[data[0].index].outlier) {
+    if (this.props.data[data[0].dataIndex].outlier) {
       key = 'analysis.outlier.tooltip.outlier';
     }
 
-    const unitLabel = t(`${key}.label${+data[0].value !== 1 ? '-plural' : ''}`);
+    const unitLabel = t(`${key}.label${+data[0].formattedValue !== 1 ? '-plural' : ''}`);
 
-    return data[0].value + ' ' + unitLabel;
+    return data[0].formattedValue + ' ' + unitLabel;
   };
 
   render() {

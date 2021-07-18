@@ -14,7 +14,7 @@ import {getColorFor, determineBarColor} from '../colorsUtils';
 
 const {createDurationFormattingOptions, duration} = formatters;
 
-export default function createDefaultChartOptions({report, targetValue, theme}) {
+export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, view, groupBy, configuration, definitions},
     result,
@@ -64,29 +64,34 @@ export default function createDefaultChartOptions({report, targetValue, theme}) 
   }
 
   const tooltipCallbacks = {
-    label: (tooltipItem, data) => {
-      const {label, formatter} = data.datasets[tooltipItem.datasetIndex];
-      return (
-        label +
-        ': ' +
-        formatTooltip(tooltipItem, data, configuration, formatter, result.instanceCount, isDuration)
-      );
-    },
-    labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
+    label: ({dataset, dataIndex}) =>
+      formatTooltip({
+        dataset,
+        dataIndex,
+        configuration,
+        formatter: dataset.formatter ?? formatter,
+        instanceCount: result.instanceCount,
+        isDuration,
+        showLabel: true,
+      }),
+    labelColor: (tooltipItem) => getTooltipLabelColor(tooltipItem, visualization),
   };
 
   if (isPersistedTooltips) {
     tooltipCallbacks.title = () => '';
   } else if (groupedByDurationMaxValue) {
-    tooltipCallbacks.title = (data, {labels}) => data.length && duration(labels[data[0].index]);
+    tooltipCallbacks.title = (tooltipItems) =>
+      tooltipItems?.[0]?.label && duration(tooltipItems[0].label);
   }
 
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
-    tooltipCallbacks.title = (data, {labels}) => data.length && labels[data[0].index];
+    tooltipCallbacks.title = (tooltipItems) => {
+      return tooltipItems?.[0].label;
+    };
   }
 
   if (visualization === 'pie' && groupedByDurationMaxValue) {
-    options.legend.labels.generateLabels = (chart) => {
+    options.plugins.legend.labels.generateLabels = (chart) => {
       // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
       // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
       const data = chart.data;
@@ -116,15 +121,26 @@ export default function createDefaultChartOptions({report, targetValue, theme}) 
     responsive: true,
     maintainAspectRatio: false,
     animation: false,
-    // plugin property
-    showAllTooltips: isPersistedTooltips,
-    tooltips: {
-      ...(isPersistedTooltips && {
-        yAlign: 'bottom',
-        xAlign: 'center',
-        displayColors: false,
-      }),
-      callbacks: tooltipCallbacks,
+    plugins: {
+      ...options.plugins,
+      tooltip: {
+        enabled: !isPersistedTooltips,
+        callbacks: tooltipCallbacks,
+      },
+      datalabels: {
+        ...options.plugins.datalabels,
+        display: isPersistedTooltips,
+        formatter: (_, {dataset, dataIndex}) =>
+          formatTooltip({
+            dataset,
+            dataIndex,
+            configuration,
+            formatter: dataset.formatter ?? formatter,
+            instanceCount: result.instanceCount,
+            isDuration,
+            showLabel: true,
+          }),
+      },
     },
   };
 }
@@ -146,112 +162,131 @@ export function createBarOptions({
     measures.some(({property}) => property === prop)
   );
 
-  const yAxes = [
-    {
-      gridLines: {
+  const yAxes = {
+    'axis-0': {
+      grid: {
         color: getColorFor('grid', isDark),
       },
-      scaleLabel: {
+      title: {
         display: !!configuration.yLabel,
-        labelString: configuration.yLabel,
-        fontStyle: 'bold',
+        text: configuration.yLabel,
+        color: getColorFor('label', isDark),
+        font: {
+          weight: 'bold',
+        },
       },
       ticks: {
         ...(maxDuration && !hasMultipleAxes
           ? createDurationFormattingOptions(targetLine, maxDuration)
           : {}),
         beginAtZero: true,
-        fontColor: getColorFor('label', isDark),
-        suggestedMax: targetLine,
+        color: getColorFor('label', isDark),
       },
+      suggestedMax: targetLine,
       id: 'axis-0',
+      axis: 'y',
     },
-  ];
+  };
 
   if (hasMultipleAxes) {
-    yAxes[0].scaleLabel = {
+    yAxes['axis-0'].title = {
       display: true,
-      labelString: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
-      fontStyle: 'bold',
+      text: `${t('common.' + entity + '.label')} ${t('report.view.count')}`,
     };
 
-    yAxes.push({
-      gridLines: {
+    yAxes['axis-1'] = {
+      grid: {
         drawOnChartArea: false,
       },
-      scaleLabel: {
+      title: {
         display: true,
-        labelString: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
-        fontStyle: 'bold',
+        text: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
+        color: getColorFor('label', isDark),
+        font: {
+          weight: 'bold',
+        },
       },
       ticks: {
         ...createDurationFormattingOptions(targetLine, maxDuration),
         beginAtZero: true,
-        fontColor: getColorFor('label', isDark),
-        suggestedMax: targetLine,
+        color: getColorFor('label', isDark),
       },
+      suggestedMax: targetLine,
       position: 'right',
       id: 'axis-1',
-    });
+      axis: 'y',
+    };
   }
 
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
-    legend: {
-      display: measures.length > 1,
-      onClick: (e) => e.stopPropagation(),
-      labels: {
-        boxWidth: 12,
-      },
-    },
     layout: {
       padding: {top: isPersistedTooltips ? 30 : 0},
     },
     scales: {
-      yAxes,
-      xAxes: [
-        {
-          gridLines: {
-            color: getColorFor('grid', isDark),
-          },
-          scaleLabel: {
-            display: !!configuration.xLabel,
-            labelString: configuration.xLabel,
-            fontStyle: 'bold',
-          },
-          ticks: {
-            fontColor: getColorFor('label', isDark),
-            autoSkip,
-            callback: function (label, idx, allLabels) {
-              const width = this.maxWidth / allLabels.length;
-              const widthPerCharacter = 7;
-
-              if (stacked && label.length > width / widthPerCharacter) {
-                return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
-              }
-
-              return label;
-            },
-            ...(groupedByDurationMaxValue
-              ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
-              : {}),
-          },
-          stacked,
+      ...yAxes,
+      xAxes: {
+        axis: 'x',
+        grid: {
+          color: getColorFor('grid', isDark),
         },
-      ],
+        title: {
+          display: !!configuration.xLabel,
+          text: configuration.xLabel,
+          color: getColorFor('label', isDark),
+          font: {
+            weight: 'bold',
+          },
+        },
+        ticks: {
+          color: getColorFor('label', isDark),
+          autoSkip,
+          callback: function (value, idx, allLabels) {
+            const label = this.getLabelForValue(value);
+            const width = this.maxWidth / allLabels.length;
+            const widthPerCharacter = 7;
+
+            if (stacked && label.length > width / widthPerCharacter) {
+              return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
+            }
+
+            return label;
+          },
+          ...(groupedByDurationMaxValue
+            ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
+            : {}),
+        },
+        stacked,
+      },
     },
     spanGaps: true,
     // plugin property
     lineAt: targetLine,
+    tension: 0.4,
+    plugins: {
+      legend: {
+        display: measures.length > 1,
+        onClick: (e) => e.native.stopPropagation(),
+        labels: {
+          color: getColorFor('label', isDark),
+          boxWidth: 12,
+        },
+      },
+    },
   };
 }
 
 function createPieOptions(isDark) {
   return {
     emptyBackgroundColor: getColorFor('emptyPie', isDark),
-    legend: {
-      display: true,
-      labels: {fontColor: getColorFor('label', isDark)},
+    plugins: {
+      legend: {
+        display: true,
+        labels: {color: getColorFor('label', isDark)},
+      },
+      datalabels: {
+        align: 'start',
+      },
     },
   };
 }

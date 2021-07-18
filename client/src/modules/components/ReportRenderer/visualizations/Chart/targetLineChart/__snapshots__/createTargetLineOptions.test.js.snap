@@ -14,6 +14,9 @@ Object {
     "backgroundColor": "transparent",
     "borderColor": "testColor",
     "borderWidth": 2,
+    "datalabels": Object {
+      "display": false,
+    },
     "isTarget": true,
     "legendColor": "testColor",
     "pointBorderColor": "#A62A31",

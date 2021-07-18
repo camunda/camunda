@@ -25,7 +25,7 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
   selectionRight.classList.add('selectionIndicator');
   selectionRight.classList.add('right');
 
-  function onHover({offsetX}) {
+  function onHover({native: {offsetX}}) {
     const {left, right} = this.chartArea;
 
     if (offsetX >= left && offsetX <= right) {
@@ -42,7 +42,6 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
       startPosition = currentPosition;
       startMouse = offsetX;
       triggered = false;
-
       document.body.addEventListener('mousemove', mousemove);
       document.body.addEventListener('mouseup', mouseup);
     }

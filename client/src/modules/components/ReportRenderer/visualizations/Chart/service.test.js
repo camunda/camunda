@@ -7,35 +7,48 @@
 import {formatTooltip, calculateLinePosition, getTooltipLabelColor} from './service';
 
 it('should include the relative value in tooltips', () => {
-  const response = formatTooltip(
-    {index: 0, datasetIndex: 0},
-    {datasets: [{data: [2.5]}]},
-    {},
-    (v) => v,
-    5,
-    false
-  );
+  const response = formatTooltip({
+    dataset: {data: [2.5]},
+    dataIndex: 0,
+    configuration: {},
+    formatter: (v) => v,
+    instanceCount: 5,
+    isDuration: false,
+  });
 
   expect(response).toBe('2.5\u00A0(50%)');
 });
 
 it('should return undefined tooltip for target line dataset', () => {
-  const response = formatTooltip(
-    {index: 0, datasetIndex: 0},
-    {datasets: [{data: [2.5], isTarget: true}]},
-    {},
-    (v) => v,
-    5,
-    false
-  );
+  const response = formatTooltip({
+    dataset: {data: [2.5], isTarget: true},
+    dataIndex: 0,
+    configuration: {},
+    formatter: (v) => v,
+    instanceCount: 5,
+    isDuration: false,
+  });
 
   expect(response).toBe(undefined);
 });
 
+it('should display a label before the data if specified', () => {
+  const response = formatTooltip({
+    dataset: {data: [2], label: 'testLabel'},
+    dataIndex: 0,
+    configuration: {},
+    formatter: (v) => v,
+    instanceCount: 5,
+    isDuration: true,
+    showLabel: true,
+  });
+
+  expect(response).toBe('testLabel: 2');
+});
+
 it('should generate correct colors in label tooltips for pie charts ', () => {
   const response = getTooltipLabelColor(
-    {index: 0, datasetIndex: 0},
-    {data: {datasets: [{backgroundColor: ['testColor1'], legendColor: 'testColor2'}]}},
+    {dataIndex: 0, dataset: {backgroundColor: ['testColor1'], legendColor: 'testColor2'}},
     'pie'
   );
 
@@ -47,8 +60,7 @@ it('should generate correct colors in label tooltips for pie charts ', () => {
 
 it('should generate correct colors in label tooltips for bar charts', () => {
   const response = getTooltipLabelColor(
-    {index: 0, datasetIndex: 0},
-    {data: {datasets: [{backgroundColor: ['testColor1'], legendColor: 'testColor2'}]}},
+    {dataIndex: 0, dataset: {backgroundColor: ['testColor1'], legendColor: 'testColor2'}},
     'bar'
   );
 
@@ -62,16 +74,13 @@ it('should calculate the correct position for the target value line', () => {
   expect(
     calculateLinePosition({
       scales: {
-        test: {
+        'axis-0': {
           max: 100,
           height: 100,
           top: 0,
         },
       },
       options: {
-        scales: {
-          yAxes: [{id: 'test'}],
-        },
         lineAt: 20,
       },
     })

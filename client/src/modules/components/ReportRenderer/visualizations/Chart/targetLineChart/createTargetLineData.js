@@ -23,13 +23,13 @@ export default function createTargetLineData(props) {
 function createSingleTargetLineData(props) {
   const {labels, formattedResult, targetValue, color, isDark} = extractDefaultChartData(props);
 
-  const datasets = createSingleTargetLineDataset(
+  const datasets = createSingleTargetLineDataset({
     targetValue,
-    formattedResult,
+    data: formattedResult,
     color,
-    false,
-    isDark
-  );
+    isCombined: false,
+    isDark,
+  });
 
   return {labels, datasets};
 }
@@ -50,21 +50,21 @@ function createCombinedTargetLineData(props) {
   const datasets = unitedResults.reduce((prevDataset, reportData, i) => {
     return [
       ...prevDataset,
-      ...createSingleTargetLineDataset(
+      ...createSingleTargetLineDataset({
         targetValue,
-        reportData,
-        colors[i],
-        reportsNames[i],
-        true,
-        isDark
-      ),
+        data: reportData,
+        color: colors[i],
+        reportName: reportsNames[i],
+        isCombined: true,
+        isDark,
+      }),
     ];
   }, []);
 
   return {labels, datasets};
 }
 
-function createSingleTargetLineDataset(targetValue, data, color, reportName, isCombined, isDark) {
+function createSingleTargetLineDataset({targetValue, data, color, reportName, isCombined, isDark}) {
   const allValues = data.map(({value}) => value);
   const {targetOptions, normalLineOptions} = getTargetLineOptions(
     color,

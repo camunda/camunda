@@ -6,7 +6,7 @@
 
 import React from 'react';
 import equal from 'fast-deep-equal';
-import ChartRenderer from 'chart.js';
+import {Chart as ChartRenderer} from 'chart.js';
 
 import {loadCorrelationData} from './service';
 
@@ -216,7 +216,7 @@ export default class Statistics extends React.Component {
     let isInside = false;
     const {viewer} = this.props;
     return new ChartRenderer(node, {
-      type: 'horizontalBar',
+      type: 'bar',
       data: {
         labels: Object.keys(this.state.data.followingNodes),
         datasets: [
@@ -232,13 +232,15 @@ export default class Statistics extends React.Component {
         responsive: true,
         animation: false,
         maintainAspectRatio: false,
-        legend: {
-          display: false,
-        },
-        tooltips: {
-          callbacks: {
-            label: ({index, datasetIndex}, {datasets}) =>
-              datasets[datasetIndex].data[index] + labelSuffix,
+        indexAxis: 'y',
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: ({dataset, dataIndex}) => dataset.data[dataIndex] + labelSuffix,
+            },
           },
         },
         hover: {

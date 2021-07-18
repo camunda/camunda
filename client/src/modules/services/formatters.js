@@ -256,7 +256,14 @@ export function createDurationFormattingOptions(targetLine, dataMinStep) {
   }
 
   return {
-    callback: (v) => +(v / niceStepSize.base).toFixed(2) + niceStepSize.unit,
+    callback: function (v) {
+      let label = this.getLabelForValue(v);
+      if (typeof label === 'string') {
+        label = parseFloat(label.replace(/,/g, ''));
+      }
+
+      return +(label / niceStepSize.base).toFixed(2) + niceStepSize.unit;
+    },
     stepSize: niceStepSize.value,
   };
 }
