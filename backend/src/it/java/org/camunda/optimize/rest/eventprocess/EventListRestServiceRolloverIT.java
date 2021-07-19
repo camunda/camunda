@@ -137,59 +137,6 @@ public class EventListRestServiceRolloverIT extends AbstractEventRestServiceRoll
   }
 
   @Test
-  public void getEventCountsWithRolledOverEventIndices_longSearchTermMatchesPrefix() {
-    // given an event for each index
-    ingestEventAndRolloverIndex(impostorSabotageNav);
-    ingestEventAndRolloverIndex(impostorMurderedMedBay);
-    ingestEventAndRolloverIndex(normieTaskNav);
-    final String searchTerm = "navigationRo";
-
-    // when
-    final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEventListRequest(new EventSearchRequestDto(
-        searchTerm,
-        new SortRequestDto(TIMESTAMP, DESC),
-        new PaginationRequestDto(20, 0)
-      ))
-      .executeAndGetPage(DeletableEventDto.class, Response.Status.OK.getStatusCode());
-
-    // then only the results matching the search term are included
-    assertThat(eventsPage.getSortBy()).isEqualTo(TIMESTAMP);
-    assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
-    assertThat(eventsPage.getTotal()).isEqualTo(2);
-    assertThat(eventsPage.getResults())
-      .isSortedAccordingTo(
-        Comparator.comparing(DeletableEventDto::getTimestamp, Comparator.nullsFirst(naturalOrder())).reversed())
-      .hasSize(2)
-      .extracting(DeletableEventDto::getId)
-      .containsExactly(normieTaskNav.getId(), impostorSabotageNav.getId());
-  }
-
-  @Test
-  public void getEventCountsWithRolledOverEventIndices_longSearchTermDoesNotMatchPrefix() {
-    // given an event for each index
-    ingestEventAndRolloverIndex(impostorSabotageNav);
-    ingestEventAndRolloverIndex(impostorMurderedMedBay);
-    ingestEventAndRolloverIndex(normieTaskNav);
-    final String searchTerm = "vigationRoom";
-
-    // when
-    final Page<DeletableEventDto> eventsPage = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEventListRequest(new EventSearchRequestDto(
-        searchTerm,
-        new SortRequestDto(TIMESTAMP, DESC),
-        new PaginationRequestDto(20, 0)
-      ))
-      .executeAndGetPage(DeletableEventDto.class, Response.Status.OK.getStatusCode());
-
-    // then no results are returned
-    assertThat(eventsPage.getSortBy()).isEqualTo(TIMESTAMP);
-    assertThat(eventsPage.getSortOrder()).isEqualTo(DESC);
-    assertThat(eventsPage.getTotal()).isZero();
-    assertThat(eventsPage.getResults()).isEmpty();
-  }
-
-  @Test
   public void getEventCountsWithRolledOverEventIndices_paginateThroughResults() {
     // given an event for each index
     ingestEventAndRolloverIndex(impostorSabotageNav);
