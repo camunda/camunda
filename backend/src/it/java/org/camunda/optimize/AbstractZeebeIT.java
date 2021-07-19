@@ -36,10 +36,12 @@ public abstract class AbstractZeebeIT extends AbstractIT {
   protected ZeebeExtension zeebeExtension = new ZeebeExtension();
 
   @BeforeEach
-  public void setup() {
+  public void setupZeebeImportAndReloadConfiguration() {
     final String embeddedZeebePrefix = zeebeExtension.getZeebeRecordPrefix();
     // set the new record prefix for the next test
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setEnabled(true);
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setName(embeddedZeebePrefix);
+    embeddedOptimizeExtension.reloadConfiguration();
   }
 
   @AfterEach
@@ -100,4 +102,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     ));
   }
 
+  protected String getConfiguredZeebeName() {
+    return embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().getName();
+  }
 }

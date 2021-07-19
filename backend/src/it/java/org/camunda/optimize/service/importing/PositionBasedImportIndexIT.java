@@ -52,6 +52,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
     // when
     embeddedOptimizeExtension.stopOptimize();
     embeddedOptimizeExtension.startOptimize();
+    setupZeebeImportAndReloadConfiguration();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then

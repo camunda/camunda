@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -101,7 +102,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
       .collect(Collectors.toList());
   }
 
-  public ZeebeImportScheduler getZeebeImportScheduler() {
+  public Optional<ZeebeImportScheduler> getZeebeImportScheduler() {
     final List<ZeebeImportScheduler> zeebeSchedulers = importSchedulers
       .stream()
       .filter(ZeebeImportScheduler.class::isInstance)
@@ -110,7 +111,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     if (zeebeSchedulers.size() > 1) {
       throw new IllegalStateException("There should only be a single Zeebe Import Scheduler");
     }
-    return zeebeSchedulers.get(0);
+    return zeebeSchedulers.stream().findFirst();
   }
 
   public void subscribeImportObserver(final StatusNotifier job) {

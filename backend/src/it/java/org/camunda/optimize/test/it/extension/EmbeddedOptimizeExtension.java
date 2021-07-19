@@ -240,7 +240,9 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   public void importAllZeebeEntitiesFromLastIndex() {
-    getImportSchedulerManager().getZeebeImportScheduler().runImportRound(true).get();
+    getImportSchedulerManager().getZeebeImportScheduler()
+      .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
+      .runImportRound(true).get();
   }
 
   @SneakyThrows
@@ -311,9 +313,10 @@ public class EmbeddedOptimizeExtension
 
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    List<AbstractImportScheduler<?>> importSchedulers =
-      new ArrayList<>(getImportSchedulerManager().getEngineImportSchedulers());
-    importSchedulers.add(getImportSchedulerManager().getZeebeImportScheduler());
+    final List<AbstractImportScheduler<?>> importSchedulers = new ArrayList<>(
+      getImportSchedulerManager().getEngineImportSchedulers()
+    );
+    getImportSchedulerManager().getZeebeImportScheduler().ifPresent(importSchedulers::add);
     for (AbstractImportScheduler<?> scheduler : importSchedulers) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()

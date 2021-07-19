@@ -16,7 +16,6 @@ engines:
       endpoint: 'http://localhost:8080/camunda/'
       enabled: true
 zeebe:
-  enabled: true
   partitionCount: 2
 import:
   data:

@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.util.importing.ZeebeConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -64,7 +63,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
         assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(simpleProcess));
         assertThat(importedDef.getName()).isEqualTo(processName);
         assertThat(importedDef.getDataSource().getType()).isEqualTo(DataImportSourceType.ZEEBE);
-        assertThat(importedDef.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(importedDef.getTenantId()).isNull();
         assertThat(importedDef.isDeleted()).isFalse();
         assertThat(importedDef.getUserTaskNames()).isEmpty();
@@ -100,7 +99,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractZeebeIT {
         assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(noNameStartEventProcess));
         assertThat(importedDef.getName()).isEqualTo(deployedProcess.getBpmnProcessId());
         assertThat(importedDef.getDataSource().getType()).isEqualTo(DataImportSourceType.ZEEBE);
-        assertThat(importedDef.getDataSource().getName()).isEqualTo(ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX);
+        assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
         assertThat(importedDef.getTenantId()).isNull();
         assertThat(importedDef.isDeleted()).isFalse();
         assertThat(importedDef.getUserTaskNames()).isEmpty();
