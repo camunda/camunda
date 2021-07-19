@@ -125,7 +125,7 @@ public final class TestStreams {
         name,
         partitionId,
         listLogStorage,
-        logStream -> listLogStorage.setPositionListener(logStream::setCommitPosition));
+        logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
   public SynchronousLogStream createLogStream(
@@ -134,7 +134,7 @@ public final class TestStreams {
         name,
         partitionId,
         listLogStorage,
-        logStream -> listLogStorage.setPositionListener(logStream::setCommitPosition));
+        logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
   private SynchronousLogStream createLogStream(
@@ -160,8 +160,7 @@ public final class TestStreams {
   }
 
   public long getLastWrittenPosition(final String name) {
-    // the position of a written record is directly committed, we can use it as a synonym
-    return getLogStream(name).getCommitPosition();
+    return getLogStream(name).getLastWrittenPosition();
   }
 
   public SynchronousLogStream getLogStream(final String name) {

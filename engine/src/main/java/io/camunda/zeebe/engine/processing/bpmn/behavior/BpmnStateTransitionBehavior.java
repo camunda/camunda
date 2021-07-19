@@ -17,14 +17,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCal
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.streamprocessor.MigratedStreamProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -42,7 +40,6 @@ public final class BpmnStateTransitionBehavior {
   private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final ProcessInstanceRecord followUpInstanceRecord = new ProcessInstanceRecord();
 
-  private final TypedStreamWriter streamWriter;
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
@@ -51,19 +48,17 @@ public final class BpmnStateTransitionBehavior {
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
-  private final MutableElementInstanceState elementInstanceState;
+  private final ElementInstanceState elementInstanceState;
 
   public BpmnStateTransitionBehavior(
-      final TypedStreamWriter streamWriter,
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
       final Writers writers,
-      final MutableElementInstanceState elementInstanceState) {
+      final ElementInstanceState elementInstanceState) {
     // todo (@korthout): replace streamWriter by writers
-    this.streamWriter = streamWriter;
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     this.metrics = metrics;
@@ -75,35 +70,33 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToActivating(final BpmnElementContext context) {
-    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var elementInstance = stateBehavior.getElementInstance(context);
-      if (elementInstance != null) {
-        verifyIncidentResolving(context, "#transitionToActivating");
-        // if the element already exists, then the Activate_Element command is processed as a result
-        // of resolving an incident. We don't have to transition again. Just update the context
-        return context.copy(
-            context.getElementInstanceKey(),
-            context.getRecordValue(),
-            ProcessInstanceIntent.ELEMENT_ACTIVATING);
-      }
 
-      // When the element instance key is not set (-1), then we process the ACTIVATE_ELEMENT
-      // command. We need to generate a new key in order to transition to ELEMENT_ACTIVATING, such
-      // that we can assign the new create element instance a correct key. It is expected that on
-      // the command the key is not set. But some elements (such as multi instance), need to
-      // generate the key before they write ACTIVATE command, to prepare the state (e.g. set
-      // variables) for the upcoming element instance.
-      if (context.getElementInstanceKey() == -1) {
-        final var newElementInstanceKey = keyGenerator.nextKey();
-        final var newContext =
-            context.copy(
-                newElementInstanceKey,
-                context.getRecordValue(),
-                ProcessInstanceIntent.ELEMENT_ACTIVATING);
-        return transitionTo(newContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
-      }
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    if (elementInstance != null) {
+      verifyIncidentResolving(context, "#transitionToActivating");
+      // if the element already exists, then the Activate_Element command is processed as a result
+      // of resolving an incident. We don't have to transition again. Just update the context
+      return context.copy(
+          context.getElementInstanceKey(),
+          context.getRecordValue(),
+          ProcessInstanceIntent.ELEMENT_ACTIVATING);
     }
-    return transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+    var transitionContext = context;
+
+    // When the element instance key is not set (-1), then we process the ACTIVATE_ELEMENT
+    // command. We need to generate a new key in order to transition to ELEMENT_ACTIVATING, such
+    // that we can assign the new create element instance a correct key. It is expected that on
+    // the command the key is not set. But some elements (such as multi instance), need to
+    // generate the key before they write ACTIVATE command, to prepare the state (e.g. set
+    // variables) for the upcoming element instance.
+    if (context.getElementInstanceKey() == -1) {
+      final var newElementInstanceKey = keyGenerator.nextKey();
+      transitionContext =
+          context.copy(newElementInstanceKey, context.getRecordValue(), context.getIntent());
+    }
+
+    return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
   /** @return context with updated intent */
@@ -116,19 +109,18 @@ public final class BpmnStateTransitionBehavior {
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
-    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      final var elementInstance = stateBehavior.getElementInstance(context);
-      if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
-        verifyIncidentResolving(context, "#transitionToCompleting");
-        // if the element is already completing, then the Complete_Element command is processed as a
-        // result of resolving an incident. We don't have to transition again. Just update the
-        // context
-        return context.copy(
-            context.getElementInstanceKey(),
-            context.getRecordValue(),
-            ProcessInstanceIntent.ELEMENT_COMPLETING);
-      }
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
+      verifyIncidentResolving(context, "#transitionToCompleting");
+      // if the element is already completing, then the Complete_Element command is processed as a
+      // result of resolving an incident. We don't have to transition again. Just update the
+      // context
+      return context.copy(
+          context.getElementInstanceKey(),
+          context.getRecordValue(),
+          ProcessInstanceIntent.ELEMENT_COMPLETING);
     }
+
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
   }
 
@@ -180,18 +172,15 @@ public final class BpmnStateTransitionBehavior {
     metrics.elementInstanceCompleted(context);
 
     if (endOfExecutionPath) {
-      if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-        // afterExecutionPathCompleted is not allowed to fail (incident would be unresolvable)
-        afterExecutionPathCompleted(element, completed);
-      }
+      // afterExecutionPathCompleted is not allowed to fail (incident would be unresolvable)
+      afterExecutionPathCompleted(element, completed);
     }
     return Either.right(completed);
   }
 
   /** @return context with updated intent */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
-    final var isMigrated = MigratedStreamProcessors.isMigrated(context.getBpmnElementType());
-    if (isMigrated && context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+    if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
       throw new IllegalStateException(
           String.format(
               ALREADY_MIGRATED_ERROR_MSG,
@@ -212,12 +201,8 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context, final ProcessInstanceIntent transition) {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
-    if (!MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      verifyTransition(context, transition);
-      streamWriter.appendFollowUpEvent(key, transition, value);
-    } else {
-      stateWriter.appendFollowUpEvent(key, transition, value);
-    }
+
+    stateWriter.appendFollowUpEvent(key, transition, value);
     return context.copy(key, value, transition);
   }
 
@@ -274,29 +259,17 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public void completeElement(final BpmnElementContext context) {
-
-    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      commandWriter.appendFollowUpCommand(
-          context.getElementInstanceKey(),
-          ProcessInstanceIntent.COMPLETE_ELEMENT,
-          context.getRecordValue());
-
-    } else {
-      transitionToCompleting(context);
-    }
+    commandWriter.appendFollowUpCommand(
+        context.getElementInstanceKey(),
+        ProcessInstanceIntent.COMPLETE_ELEMENT,
+        context.getRecordValue());
   }
 
   public void terminateElement(final BpmnElementContext context) {
-
-    if (MigratedStreamProcessors.isMigrated(context.getBpmnElementType())) {
-      commandWriter.appendFollowUpCommand(
-          context.getElementInstanceKey(),
-          ProcessInstanceIntent.TERMINATE_ELEMENT,
-          context.getRecordValue());
-
-    } else {
-      transitionToTerminating(context);
-    }
+    commandWriter.appendFollowUpCommand(
+        context.getElementInstanceKey(),
+        ProcessInstanceIntent.TERMINATE_ELEMENT,
+        context.getRecordValue());
   }
 
   public void activateChildInstance(
@@ -308,12 +281,7 @@ public final class BpmnStateTransitionBehavior {
         .setElementId(childElement.getId())
         .setBpmnElementType(childElement.getElementType());
 
-    if (MigratedStreamProcessors.isMigrated(childElement.getElementType())) {
-      commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
-    } else {
-      stateWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
-    }
+    commandWriter.appendNewCommand(ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
   }
 
   public long activateChildInstanceWithKey(
@@ -326,13 +294,8 @@ public final class BpmnStateTransitionBehavior {
         .setBpmnElementType(childElement.getElementType());
 
     final long childInstanceKey = keyGenerator.nextKey();
-    if (MigratedStreamProcessors.isMigrated(childElement.getElementType())) {
-      commandWriter.appendFollowUpCommand(
-          childInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
-    } else {
-      stateWriter.appendFollowUpEvent(
-          childInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, childInstanceRecord);
-    }
+    commandWriter.appendFollowUpCommand(
+        childInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
 
     return childInstanceKey;
   }
@@ -347,25 +310,8 @@ public final class BpmnStateTransitionBehavior {
         .setBpmnElementType(element.getElementType());
 
     final var elementInstanceKey = keyGenerator.nextKey();
-
-    if (MigratedStreamProcessors.isMigrated(element.getElementType())) {
-      commandWriter.appendFollowUpCommand(
-          elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, followUpInstanceRecord);
-    } else {
-      // For migrated processors the active sequence flow count is decremented in the
-      // *ActivatingApplier. For non migrated we do it here, otherwise we can't complete the process
-      // instance in the end. Counting the active sequence flows is necessary to not complete the
-      // process instance to early.
-      final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-      flowScopeInstance.decrementActiveSequenceFlows();
-      elementInstanceState.updateInstance(flowScopeInstance);
-
-      streamWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, followUpInstanceRecord);
-
-      stateBehavior.createElementInstanceInFlowScope(
-          context, elementInstanceKey, followUpInstanceRecord);
-    }
+    commandWriter.appendFollowUpCommand(
+        elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, followUpInstanceRecord);
   }
 
   /**
@@ -376,26 +322,14 @@ public final class BpmnStateTransitionBehavior {
    */
   public boolean terminateChildInstances(final BpmnElementContext context) {
 
-    final var childInstances = stateBehavior.getChildInstances(context);
-
-    for (final BpmnElementContext childInstanceContext : childInstances) {
-
-      if (ProcessInstanceLifecycle.canTerminate(childInstanceContext.getIntent())) {
-        if (!MigratedStreamProcessors.isMigrated(childInstanceContext.getBpmnElementType())) {
-          transitionToTerminating(childInstanceContext);
-        } else {
-          commandWriter.appendFollowUpCommand(
-              childInstanceContext.getElementInstanceKey(),
-              ProcessInstanceIntent.TERMINATE_ELEMENT,
-              childInstanceContext.getRecordValue());
-        }
-
-      } else if (childInstanceContext.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
-          && !MigratedStreamProcessors.isMigrated(childInstanceContext.getBpmnElementType())) {
-        // clean up the state because the completed event will not be processed
-        stateBehavior.removeElementInstance(childInstanceContext);
-      }
-    }
+    stateBehavior.getChildInstances(context).stream()
+        .filter(child -> ProcessInstanceLifecycle.canTerminate(child.getIntent()))
+        .forEach(
+            childInstanceContext ->
+                commandWriter.appendFollowUpCommand(
+                    childInstanceContext.getElementInstanceKey(),
+                    ProcessInstanceIntent.TERMINATE_ELEMENT,
+                    childInstanceContext.getRecordValue()));
 
     final var elementInstance = stateBehavior.getElementInstance(context);
     final var activeChildInstances = elementInstance.getNumberOfActiveElementInstances();
@@ -546,15 +480,8 @@ public final class BpmnStateTransitionBehavior {
     stateBehavior
         .getCalledChildInstance(context)
         .ifPresentOrElse(
-            child -> {
-              if (!MigratedStreamProcessors.isMigrated(child.getValue().getBpmnElementType())) {
-                // can't use transitionToTerminating because it would register the state transition
-                streamWriter.appendFollowUpEvent(
-                    child.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, child.getValue());
-              } else {
-                terminateElement(context.copy(child.getKey(), child.getValue(), child.getState()));
-              }
-            },
+            child ->
+                terminateElement(context.copy(child.getKey(), child.getValue(), child.getState())),
             () -> containerProcessor.onChildTerminated(element, context, null));
   }
 

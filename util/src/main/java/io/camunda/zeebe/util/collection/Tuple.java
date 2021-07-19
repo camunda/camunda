@@ -8,12 +8,17 @@
 package io.camunda.zeebe.util.collection;
 
 public final class Tuple<L, R> {
+
   private L left;
   private R right;
 
   public Tuple(final L left, final R right) {
     this.right = right;
     this.left = left;
+  }
+
+  public static <L, R> Tuple<L, R> of(final L left, final R right) {
+    return new Tuple<>(left, right);
   }
 
   public R getRight() {

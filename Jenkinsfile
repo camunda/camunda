@@ -10,7 +10,7 @@ def masterBranchName = 'master'
 def isMasterBranch = env.BRANCH_NAME == masterBranchName
 def developBranchName = 'develop'
 def isDevelopBranch = env.BRANCH_NAME == developBranchName
-def latestStableBranchName = 'stable/1.0'
+def latestStableBranchName = 'stable/1.1'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
 //for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
@@ -28,8 +28,8 @@ def itAgentUnstashDirectory = '.tmp/it'
 def itFlakyTestStashName = 'it-flakyTests'
 
 // the develop branch should be run at midnight to do a nightly build including QA test run
-// the latest stable branch is run an hour later at 01:00 AM.
-def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 1 * * *' : ''
+// the latest stable branch is run two hour later at 01:00 AM.
+def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 2 * * *' : ''
 
 // since we report the build status to CI analytics at the very end, when the build is finished, we
 // need to share the result of the flaky test analysis between different stages, so using a global

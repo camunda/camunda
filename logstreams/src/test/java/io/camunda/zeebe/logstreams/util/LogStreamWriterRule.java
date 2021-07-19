@@ -66,7 +66,7 @@ public final class LogStreamWriterRule extends ExternalResource {
               .until(logStreamWriter::tryWrite, position -> position >= 0);
     }
 
-    waitForPositionToBeCommitted(lastPosition);
+    waitForPositionToBeWritten(lastPosition);
     return lastPosition;
   }
 
@@ -77,7 +77,7 @@ public final class LogStreamWriterRule extends ExternalResource {
   public long writeEvent(final Consumer<LogEntryBuilder> writer) {
     final long position = writeEventInternal(writer);
 
-    waitForPositionToBeCommitted(position);
+    waitForPositionToBeWritten(position);
 
     return position;
   }
@@ -99,11 +99,11 @@ public final class LogStreamWriterRule extends ExternalResource {
     return logStreamWriter.tryWrite();
   }
 
-  public void waitForPositionToBeCommitted(final long position) {
+  public void waitForPositionToBeWritten(final long position) {
     Awaitility.await("until position " + position + " is committed")
         .atMost(Duration.ofSeconds(5))
         .pollDelay(Duration.ofNanos(0))
         .pollInSameThread()
-        .until(() -> logStream.getCommitPosition() >= position);
+        .until(() -> logStream.getLastWrittenPosition() >= position);
   }
 }
