@@ -1,4 +1,4 @@
-# Zeebe.io - Workflow Engine for Microservices Orchestration
+# Zeebe - Workflow Engine for Microservices Orchestration
 
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-cloud-zeebe)
