@@ -327,9 +327,6 @@ public class RetryElasticsearchClient {
     final long created = (Integer) statusMap.get("created");
     final long updated = (Integer) statusMap.get("updated");
     final long deleted = (Integer) statusMap.get("deleted");
-    if (created == 0 && updated == 0 && deleted == 0 && total > 0) {
-      return false;
-    }
     return !taskResponse.get().isCompleted() || (created + updated + deleted != total);
   }
 
@@ -344,8 +341,6 @@ public class RetryElasticsearchClient {
     Optional<GetTaskResponse> taskResponse = executeWithGivenRetries(Integer.MAX_VALUE ,"GetTaskInfo{" + nodeId + "},{" + smallTaskId + "}",
         () -> esClient.tasks().get(new GetTaskRequest(nodeId, smallTaskId), requestOptions), this::needsToPollAgain);
     if (taskResponse.isPresent()) {
-      executeWithRetries("DeleteTask " + taskId,
-          () -> esClient.delete(new DeleteRequest(".tasks").id(taskId), requestOptions));
       final long total = (Integer) getTaskStatusMap(taskResponse.get()).get("total");
       logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
