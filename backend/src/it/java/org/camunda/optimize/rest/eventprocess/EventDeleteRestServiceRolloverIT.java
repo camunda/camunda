@@ -23,45 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRolloverIT {
 
   @Test
-  public void deleteRolledOverEvents_deleteSingleEventNotUsedInEventInstance() {
-    // given an event for each index
-    ingestEventAndRolloverIndex(impostorSabotageNav);
-    ingestEventAndRolloverIndex(impostorMurderedMedBay);
-    ingestEventAndRolloverIndex(normieTaskNav);
-    final List<EventDto> savedEventsBeforeDelete = getAllStoredEvents();
-    final List<String> eventIdsToDelete = Collections.singletonList(savedEventsBeforeDelete.get(0).getId());
-
-    // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteEventsRequest(eventIdsToDelete)
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThatEventsHaveBeenDeleted(savedEventsBeforeDelete, eventIdsToDelete);
-  }
-
-  @Test
-  public void deleteRolledOverEvents_deleteSingleEventDoesNotExist() {
-    // given an event for each index
-    ingestEventAndRolloverIndex(impostorSabotageNav);
-    ingestEventAndRolloverIndex(impostorMurderedMedBay);
-    ingestEventAndRolloverIndex(normieTaskNav);
-    final List<CloudEventRequestDto> instanceEvents = Arrays.asList(impostorSabotageNav, impostorMurderedMedBay);
-    createAndSaveEventInstanceContainingEvents(instanceEvents, "indexId");
-    final List<EventDto> savedEventsBeforeDelete = getAllStoredEvents();
-
-    // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteEventsRequest(Collections.singletonList("eventDoesNotExist"))
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(getAllStoredEvents()).containsExactlyInAnyOrderElementsOf(savedEventsBeforeDelete);
-  }
-
-  @Test
   public void deleteRolledOverEvents_deleteSingleEventUsedInSingleEventInstance() {
     // given
     ingestEventAndRolloverIndex(impostorSabotageNav);
@@ -136,14 +97,6 @@ public class EventDeleteRestServiceRolloverIT extends AbstractEventRestServiceRo
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertEventInstancesDoNotContainAnyEventsOfIds(getAllStoredEventInstances(), eventIdsToDelete);
     assertThatEventsHaveBeenDeleted(allSavedEventsBeforeDelete, eventIdsToDelete);
-  }
-
-  private void assertThatEventsHaveBeenDeleted(final List<EventDto> allSavedEventsBeforeDelete,
-                                               final List<String> expectedDeletedEvenIds) {
-    assertThat(getAllStoredEvents())
-      .hasSize(allSavedEventsBeforeDelete.size() - expectedDeletedEvenIds.size())
-      .extracting(EventDto::getId)
-      .doesNotContainAnyElementsOf(expectedDeletedEvenIds);
   }
 
   private void assertEventInstanceContainsAllEventsOfIds(final EventProcessInstanceDto eventInstance,
