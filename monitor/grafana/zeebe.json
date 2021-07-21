@@ -74,7 +74,6 @@
   "annotations": {
     "list": [
       {
-        "$$hashKey": "object:47",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -89,7 +88,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1625552874210,
+  "iteration": 1626769482411,
   "links": [],
   "panels": [
     {
@@ -105,10 +104,11 @@
       "panels": [
         {
           "datasource": "$DS_PROMETHEUS",
-          "description": "Current partition leader",
+          "description": "Shows for each partition which broker is the leader",
           "fieldConfig": {
             "defaults": {
               "custom": {
+                "align": null,
                 "displayMode": "auto",
                 "filterable": false
               },
@@ -174,8 +174,8 @@
             "showHeader": true,
             "sortBy": [
               {
-                "desc": true,
-                "displayName": "Role"
+                "desc": false,
+                "displayName": "Partition"
               }
             ]
           },
@@ -221,9 +221,9 @@
                   "instance": 3,
                   "job": 4,
                   "namespace": 5,
-                  "partition": 8,
+                  "partition": 7,
                   "partitionGroupName": 6,
-                  "pod": 7,
+                  "pod": 8,
                   "service": 9
                 },
                 "renameByName": {
@@ -662,7 +662,6 @@
               "custom": {},
               "mappings": [
                 {
-                  "$$hashKey": "object:725",
                   "id": 0,
                   "op": "=",
                   "text": "0",
@@ -1235,14 +1234,12 @@
           "renderer": "flot",
           "seriesOverrides": [
             {
-              "$$hashKey": "object:235",
               "alias": "limit",
               "color": "#E02F44",
               "fill": 0,
               "linewidth": 2
             },
             {
-              "$$hashKey": "object:1073",
               "alias": "request",
               "color": "#56A64B",
               "fill": 0,
@@ -1296,7 +1293,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:323",
               "format": "decbytes",
               "label": null,
               "logBase": 1,
@@ -1305,7 +1301,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:324",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1419,7 +1414,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:7009",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1427,7 +1421,6 @@
               "type": "hidden"
             },
             {
-              "$$hashKey": "object:7010",
               "alias": "Position",
               "align": "center",
               "colorMode": null,
@@ -1443,7 +1436,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:7858",
               "alias": "Partition",
               "align": "center",
               "colorMode": null,
@@ -1503,7 +1495,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:7009",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1511,7 +1502,6 @@
               "type": "hidden"
             },
             {
-              "$$hashKey": "object:7010",
               "alias": "Position",
               "align": "center",
               "colorMode": null,
@@ -1527,7 +1517,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:7858",
               "alias": "Partition",
               "align": "center",
               "colorMode": null,
@@ -1587,7 +1576,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:7009",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1595,7 +1583,6 @@
               "type": "hidden"
             },
             {
-              "$$hashKey": "object:7010",
               "alias": "Position",
               "align": "center",
               "colorMode": null,
@@ -1611,7 +1598,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:7858",
               "alias": "Partition",
               "align": "center",
               "colorMode": null,
@@ -1794,7 +1780,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:7009",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1802,7 +1787,6 @@
               "type": "hidden"
             },
             {
-              "$$hashKey": "object:7010",
               "alias": "Position",
               "align": "center",
               "colorMode": null,
@@ -1818,7 +1802,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:7858",
               "alias": "Partition",
               "align": "center",
               "colorMode": null,
@@ -1878,7 +1861,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:7009",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1886,7 +1868,6 @@
               "type": "hidden"
             },
             {
-              "$$hashKey": "object:7010",
               "alias": "Position",
               "align": "center",
               "colorMode": null,
@@ -1902,7 +1883,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:7858",
               "alias": "Partition",
               "align": "center",
               "colorMode": null,
@@ -3123,7 +3103,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:2030",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3132,7 +3111,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:2031",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3398,14 +3376,12 @@
           "renderer": "flot",
           "seriesOverrides": [
             {
-              "$$hashKey": "object:235",
               "alias": "limit",
               "color": "#E02F44",
               "fill": 0,
               "linewidth": 2
             },
             {
-              "$$hashKey": "object:1073",
               "alias": "request",
               "color": "#56A64B",
               "fill": 0,
@@ -3459,7 +3435,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:323",
               "format": "decbytes",
               "label": null,
               "logBase": 1,
@@ -3468,7 +3443,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:324",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3851,7 +3825,6 @@
           "renderer": "flot",
           "seriesOverrides": [
             {
-              "$$hashKey": "object:407",
               "alias": "/.*limit.*/",
               "color": "#C4162A",
               "fill": 0,
@@ -3898,7 +3871,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:556",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3907,7 +3879,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:557",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4687,7 +4658,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:201",
               "format": "short",
               "label": "seconds",
               "logBase": 1,
@@ -4696,7 +4666,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:202",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -5713,7 +5682,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:334",
               "format": "percentunit",
               "label": null,
               "logBase": 1,
@@ -5722,7 +5690,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:335",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -5811,7 +5778,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:420",
               "format": "percentunit",
               "label": null,
               "logBase": 1,
@@ -5820,7 +5786,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:421",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -6677,7 +6642,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:922",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -6686,7 +6650,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:923",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -6703,7 +6666,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:8801",
               "text": "Current",
               "value": "current"
             }
@@ -6742,7 +6704,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:440",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -6750,7 +6711,6 @@
               "type": "date"
             },
             {
-              "$$hashKey": "object:441",
               "alias": "Commit index",
               "align": "right",
               "colorMode": null,
@@ -6786,7 +6746,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:8801",
               "text": "Current",
               "value": "current"
             }
@@ -6827,7 +6786,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:440",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -6835,7 +6793,6 @@
               "type": "date"
             },
             {
-              "$$hashKey": "object:441",
               "alias": "Commit index",
               "align": "right",
               "colorMode": null,
@@ -6871,7 +6828,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:8801",
               "text": "Current",
               "value": "current"
             }
@@ -6912,7 +6868,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:440",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -6920,7 +6875,6 @@
               "type": "date"
             },
             {
-              "$$hashKey": "object:441",
               "alias": "Commit index",
               "align": "right",
               "colorMode": null,
@@ -6956,7 +6910,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:2675",
               "text": "Current",
               "value": "current"
             }
@@ -6995,7 +6948,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:440",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -7003,7 +6955,6 @@
               "type": "date"
             },
             {
-              "$$hashKey": "object:441",
               "alias": "Last appended index",
               "align": "right",
               "colorMode": null,
@@ -7039,7 +6990,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:2675",
               "text": "Current",
               "value": "current"
             }
@@ -7080,7 +7030,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:440",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -7088,7 +7037,6 @@
               "type": "date"
             },
             {
-              "$$hashKey": "object:441",
               "alias": "Last appended index",
               "align": "right",
               "colorMode": null,
@@ -7124,7 +7072,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:2675",
               "text": "Current",
               "value": "current"
             }
@@ -7165,7 +7112,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:440",
               "alias": "Time",
               "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -7173,7 +7119,6 @@
               "type": "date"
             },
             {
-              "$$hashKey": "object:441",
               "alias": "Last appended index",
               "align": "right",
               "colorMode": null,
@@ -7408,7 +7353,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -7417,7 +7361,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7505,7 +7448,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:878",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7514,7 +7456,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:879",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7602,7 +7543,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:583",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -7611,7 +7551,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:584",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7699,7 +7638,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -7708,7 +7646,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7796,7 +7733,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -7805,7 +7741,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7893,7 +7828,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -7902,7 +7836,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -7990,7 +7923,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -7999,7 +7931,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8088,7 +8019,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -8097,7 +8027,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8185,7 +8114,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -8194,7 +8122,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8282,7 +8209,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -8291,7 +8217,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8379,7 +8304,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -8388,7 +8312,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8405,7 +8328,6 @@
         {
           "columns": [
             {
-              "$$hashKey": "object:9223",
               "text": "Current",
               "value": "current"
             }
@@ -8435,7 +8357,6 @@
           },
           "styles": [
             {
-              "$$hashKey": "object:3811",
               "alias": "Time",
               "align": "",
               "colorMode": null,
@@ -8453,7 +8374,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:7218",
               "alias": "Pod",
               "align": "",
               "colorMode": null,
@@ -8471,7 +8391,6 @@
               "unit": "short"
             },
             {
-              "$$hashKey": "object:9232",
               "alias": "Stopped",
               "align": "",
               "colorMode": null,
@@ -8491,12 +8410,10 @@
               "unit": "short",
               "valueMaps": [
                 {
-                  "$$hashKey": "object:9290",
                   "text": "Running",
                   "value": "0"
                 },
                 {
-                  "$$hashKey": "object:9320",
                   "text": "Stopped",
                   "value": "1"
                 }
@@ -8592,7 +8509,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -8601,7 +8517,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8689,7 +8604,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8698,7 +8612,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8786,7 +8699,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8795,7 +8707,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8883,7 +8794,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8892,7 +8802,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -8980,7 +8889,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:1139",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -8989,7 +8897,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:1140",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -9164,7 +9071,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:58",
               "format": "percentunit",
               "label": null,
               "logBase": 1,
@@ -9173,7 +9079,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:59",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -9334,7 +9239,6 @@
           },
           "yaxes": [
             {
-              "$$hashKey": "object:359",
               "format": "bytes",
               "label": null,
               "logBase": 1,
@@ -9343,7 +9247,6 @@
               "show": true
             },
             {
-              "$$hashKey": "object:360",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -9999,5 +9902,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 15
+  "version": 16
 }
