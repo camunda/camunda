@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {ColorPicker} from 'components';
+
 import {getTargetLineOptions} from './createTargetLineOptions';
 import {extractCombinedData} from '../combinedChart/createCombinedChartData';
 import {extractDefaultChartData} from '../defaultChart/createDefaultChartData';
@@ -33,8 +35,17 @@ function createSingleTargetLineData(props) {
 }
 
 function createCombinedTargetLineData(props) {
+  const {
+    report: {result},
+  } = props;
+
   const {labels, unitedResults, reportsNames, reportColors, targetValue, isDark} =
     extractCombinedData(props);
+
+  let colors = reportColors;
+  if (result.measures) {
+    colors = ColorPicker.getGeneratedColors(result.measures[0].data[0].value.length);
+  }
 
   const datasets = unitedResults.reduce((prevDataset, reportData, i) => {
     return [
@@ -42,7 +53,7 @@ function createCombinedTargetLineData(props) {
       ...createSingleTargetLineDataset(
         targetValue,
         reportData,
-        reportColors[i],
+        colors[i],
         reportsNames[i],
         true,
         isDark
