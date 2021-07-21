@@ -29,7 +29,7 @@ if (!ciMode) {
 }
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
-process.env.BROWSERSTACK_PARALLEL_RUNS = '3';
+process.env.BROWSERSTACK_NO_LOCAL = '1';
 
 const browsers = chromeheadlessMode
   ? ['chrome:headless']
