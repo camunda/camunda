@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.util.health.CriticalComponentsHealthMonitor;
@@ -100,19 +101,21 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
   private final MemberId nodeId;
-  private final PartitionGroup partitionGroup;
 
-  public BrokerHealthCheckService(
-      final BrokerInfo localBroker, final PartitionGroup partitionGroup) {
-    this.partitionGroup = partitionGroup;
+  public BrokerHealthCheckService(final BrokerInfo localBroker) {
     actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
     nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
     healthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
-    initializePartitionInstallStatus();
-    initializePartitionHealthStatus();
   }
 
-  private void initializePartitionHealthStatus() {
+  public void registerPartitionManager(final PartitionManager partitionManager) {
+    final var partitionGroup = partitionManager.getPartitionGroup();
+
+    initializePartitionInstallStatus(partitionGroup);
+    initializePartitionHealthStatus(partitionGroup);
+  }
+
+  private void initializePartitionHealthStatus(final PartitionGroup partitionGroup) {
     partitionGroup.getPartitionsWithMember(nodeId).stream()
         .map(partition -> partition.id().id())
         .forEach(
@@ -155,7 +158,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
         });
   }
 
-  private void initializePartitionInstallStatus() {
+  private void initializePartitionInstallStatus(final PartitionGroup partitionGroup) {
     partitionInstallStatus =
         partitionGroup.getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))

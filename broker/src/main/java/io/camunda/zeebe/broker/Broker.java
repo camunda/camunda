@@ -222,6 +222,7 @@ public final class Broker implements AutoCloseable {
     final StartProcess startContext = new StartProcess("Broker-" + localBroker.getNodeId());
 
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
+    startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
         "command api transport and handler",
@@ -249,7 +250,6 @@ public final class Broker implements AutoCloseable {
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep("zeebe partitions", () -> partitionsStep(brokerCfg, localBroker));
-    startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("register diskspace usage listeners", this::addDiskSpaceUsageListeners);
     startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
@@ -356,8 +356,7 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable monitoringServerStep(final BrokerInfo localBroker) {
-    healthCheckService =
-        new BrokerHealthCheckService(localBroker, partitionManager.getPartitionGroup());
+    healthCheckService = new BrokerHealthCheckService(localBroker);
     springBrokerBridge.registerBrokerHealthCheckServiceSupplier(() -> healthCheckService);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
@@ -398,6 +397,8 @@ public final class Broker implements AutoCloseable {
             brokerCfg, clusterServices, snapshotStoreFactory);
 
     partitionManager.start();
+
+    healthCheckService.registerPartitionManager(partitionManager);
 
     final ManagedPartitionGroup partitionGroup = partitionManager.getPartitionGroup();
 
