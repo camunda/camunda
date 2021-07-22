@@ -40,7 +40,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public final class AtomixRule extends ExternalResource {
+public final class AtomixClusterRule extends ExternalResource {
 
   private static final int TIMEOUT_IN_S = 90;
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();

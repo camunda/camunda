@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
-import io.atomix.core.AtomixRule;
+import io.atomix.core.AtomixClusterRule;
 import io.atomix.core.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.raft.RaftServer;
@@ -41,7 +41,7 @@ import org.junit.Test;
 
 public final class RaftRolesTest {
 
-  @Rule public AtomixRule atomixRule = new AtomixRule();
+  @Rule public AtomixClusterRule atomixClusterRule = new AtomixClusterRule();
 
   @Test
   public void testRoleChangedListener() throws Exception {
@@ -263,11 +263,13 @@ public final class RaftRolesTest {
             .withNumPartitions(partitionCount)
             .withPartitionSize(memberIds.size())
             .withMembers(memberIds)
-            .withDataDirectory(new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
+            .withDataDirectory(
+                new File(new File(atomixClusterRule.getDataDir(), "log"), "" + nodeId))
             .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
             .build();
 
-    final var atomixFuture = atomixRule.startAtomix(nodeId, nodeIds, AtomixClusterBuilder::build);
+    final var atomixFuture =
+        atomixClusterRule.startAtomix(nodeId, nodeIds, AtomixClusterBuilder::build);
 
     final AtomixCluster atomix;
     try {

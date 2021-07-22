@@ -32,17 +32,17 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class AtomixTest {
+public class AtomixClusterTest {
 
   private static final int TIMEOUT_IN_S = 90;
 
-  @Rule public final AtomixRule atomixRule = new AtomixRule();
+  @Rule public final AtomixClusterRule atomixClusterRule = new AtomixClusterRule();
 
   @Test
   public void testStopStartConsensus() throws Exception {
     // given
     final var atomix =
-        atomixRule
+        atomixClusterRule
             .startAtomix(
                 1,
                 Arrays.asList(1),
@@ -56,7 +56,9 @@ public class AtomixTest {
                           .setStorageConfig(
                               new RaftStorageConfig()
                                   .setDirectory(
-                                      new File(atomixRule.getDataDir(), "start-stop-consensus")
+                                      new File(
+                                              atomixClusterRule.getDataDir(),
+                                              "start-stop-consensus")
                                           .getPath())
                                   .setPersistedSnapshotStoreFactory(
                                       new NoopSnapshotStoreFactory()));
@@ -77,7 +79,7 @@ public class AtomixTest {
   public void shouldFailStartAfterStop() throws Exception {
     // given
     final var atomix =
-        atomixRule
+        atomixClusterRule
             .startAtomix(1, Arrays.asList(1), AtomixClusterBuilder::build)
             .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     atomix.stop().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
