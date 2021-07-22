@@ -13,6 +13,10 @@ const form: Form = {
   schema: JSON.stringify({
     components: [
       {
+        text: '# A sample text',
+        type: 'text',
+      },
+      {
         key: 'myVar',
         label: 'My variable',
         type: 'textfield',
@@ -24,6 +28,11 @@ const form: Form = {
         key: 'isCool',
         label: 'Is cool?',
         type: 'textfield',
+      },
+      {
+        key: 'button1',
+        label: 'Save',
+        type: 'button',
       },
     ],
     type: 'default',

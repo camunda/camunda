@@ -29,6 +29,17 @@ const Wrapper: React.FC = ({children}) => (
   </ApolloProvider>
 );
 
+function areArraysEqual(firstArray: any[], secondArray: any[]) {
+  return (
+    firstArray.length === secondArray.length &&
+    firstArray
+      .map((item) => secondArray.includes(item))
+      .every((result) => result)
+  );
+}
+
+const REQUESTED_VARIABLES = ['myVar', 'isCool'];
+
 describe('<FormJS />', () => {
   beforeEach(() => {
     mockServer.use(
@@ -43,8 +54,23 @@ describe('<FormJS />', () => {
 
   it('should render form for unclaimed task', async () => {
     mockServer.use(
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
       }),
     );
 
@@ -74,8 +100,23 @@ describe('<FormJS />', () => {
 
   it('should render form for claimed task', async () => {
     mockServer.use(
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
       }),
     );
 
@@ -105,8 +146,23 @@ describe('<FormJS />', () => {
 
   it('should render a prefilled form', async () => {
     mockServer.use(
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
       }),
     );
 
@@ -133,13 +189,43 @@ describe('<FormJS />', () => {
 
   it('should disable form submission', async () => {
     mockServer.use(
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(
+            ctx.data(mockGetSelectedVariablesEmptyVariables().result.data),
+          );
+        }
+
         return res.once(
-          ctx.data(mockGetSelectedVariablesEmptyVariables().result.data),
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
         );
       }),
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables('1').result.data));
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetSelectedVariables('1').result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
       }),
     );
 
@@ -181,8 +267,23 @@ describe('<FormJS />', () => {
 
   it('should submit prefilled form', async () => {
     mockServer.use(
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
       }),
     );
 
@@ -229,8 +330,23 @@ describe('<FormJS />', () => {
 
   it('should submit edited form', async () => {
     mockServer.use(
-      graphql.query('GetSelectedVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetSelectedVariables().result.data));
+      graphql.query('GetSelectedVariables', (req, res, ctx) => {
+        if (
+          areArraysEqual(
+            REQUESTED_VARIABLES,
+            req.body?.variables?.variableNames,
+          )
+        ) {
+          return res.once(ctx.data(mockGetSelectedVariables().result.data));
+        }
+
+        return res.once(
+          ctx.errors([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+        );
       }),
     );
 
