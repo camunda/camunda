@@ -79,6 +79,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
@@ -87,6 +88,9 @@ import io.camunda.zeebe.util.sched.ActorControl;
 import io.camunda.zeebe.util.sched.ActorScheduler;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
 import io.netty.util.NetUtil;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -364,6 +368,15 @@ public final class Broker implements AutoCloseable {
   }
 
   private AutoCloseable diskSpaceMonitorStep(final DataCfg data) {
+    /* the folder needs to be created at this point. If it doesn't exist, then the DiskSpaceUsageMonitor
+     * will calculate the wrong watermark, as a non-existing folder has a total size of 0
+     */
+    try {
+      FileUtil.ensureDirectoryExists(new File(data.getDirectory()).toPath());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create data directory", e);
+    }
+
     diskSpaceUsageMonitor = new DiskSpaceUsageMonitor(data);
     if (data.isDiskUsageMonitoringEnabled()) {
       scheduleActor(diskSpaceUsageMonitor);
