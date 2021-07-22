@@ -42,7 +42,6 @@
   <modules>
     <module>utils</module>
     <module>cluster</module>
-    <module>core</module>
   </modules>
 
   <properties>

@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.core.test.messaging;
+package io.atomix.cluster.messaging;
 
 import com.google.common.collect.Maps;
-import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.utils.net.Address;
 import java.util.Map;
 
-/** Test messaging service factory. */
-public class TestMessagingServiceFactory {
-  private final Map<Address, TestMessagingService> services = Maps.newConcurrentMap();
+/** Test unicast service factory. */
+public class TestUnicastServiceFactory {
+  private final Map<Address, TestUnicastService> services = Maps.newConcurrentMap();
 
   /**
    * Partitions the service at the given address.
@@ -31,7 +30,7 @@ public class TestMessagingServiceFactory {
    * @param address the address of the service to partition
    */
   public void partition(final Address address) {
-    final TestMessagingService service = services.get(address);
+    final TestUnicastService service = services.get(address);
     services.values().stream()
         .filter(s -> !s.address().equals(address))
         .forEach(
@@ -47,7 +46,7 @@ public class TestMessagingServiceFactory {
    * @param address the address of the service to heal
    */
   public void heal(final Address address) {
-    final TestMessagingService service = services.get(address);
+    final TestUnicastService service = services.get(address);
     services.values().stream()
         .filter(s -> !s.address().equals(address))
         .forEach(
@@ -64,8 +63,8 @@ public class TestMessagingServiceFactory {
    * @param address2 the second service
    */
   public void partition(final Address address1, final Address address2) {
-    final TestMessagingService service1 = services.get(address1);
-    final TestMessagingService service2 = services.get(address2);
+    final TestUnicastService service1 = services.get(address1);
+    final TestUnicastService service2 = services.get(address2);
     service1.partition(service2.address());
     service2.partition(service1.address());
   }
@@ -77,19 +76,19 @@ public class TestMessagingServiceFactory {
    * @param address2 the second service
    */
   public void heal(final Address address1, final Address address2) {
-    final TestMessagingService service1 = services.get(address1);
-    final TestMessagingService service2 = services.get(address2);
+    final TestUnicastService service1 = services.get(address1);
+    final TestUnicastService service2 = services.get(address2);
     service1.heal(service2.address());
     service2.heal(service1.address());
   }
 
   /**
-   * Returns a new test messaging service for the given address.
+   * Returns a new test unicast service for the given endpoint.
    *
-   * @param address the address for which to return a messaging service
-   * @return the messaging service for the given address
+   * @param address the address to which to bind
+   * @return the unicast service for the given endpoint
    */
-  public ManagedMessagingService newMessagingService(final Address address) {
-    return new TestMessagingService(address, services);
+  public ManagedUnicastService newUnicastService(final Address address) {
+    return new TestUnicastService(address, services);
   }
 }

@@ -49,7 +49,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix</artifactId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <classifier>tests</classifier>

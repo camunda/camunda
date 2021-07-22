@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.atomix.core;
+package io.atomix.cluster;
 
-import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.AtomixClusterBuilder;
-import io.atomix.cluster.ClusterConfig;
-import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;

@@ -14,8 +14,8 @@ import static org.junit.Assert.assertTrue;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.AtomixClusterBuilder;
-import io.atomix.core.AtomixClusterRule;
-import io.atomix.core.NoopSnapshotStoreFactory;
+import io.atomix.cluster.AtomixClusterRule;
+import io.atomix.cluster.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
