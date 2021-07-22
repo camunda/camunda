@@ -5,44 +5,33 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.atomix;
+package io.camunda.zeebe.broker.clustering;
 
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.AtomixClusterBuilder;
+import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
-import io.atomix.core.Atomix;
-import io.atomix.core.AtomixBuilder;
-import io.atomix.core.AtomixConfig;
-import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
-import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
-import io.camunda.zeebe.util.FileUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 
-public final class AtomixFactory {
-
-  public static final String GROUP_NAME = "raft-partition";
+public final class AtomixClusterFactory {
 
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-  private AtomixFactory() {}
+  private AtomixClusterFactory() {}
 
-  public static Atomix fromConfiguration(
-      final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
+  public static AtomixCluster fromConfiguration(final BrokerCfg configuration) {
     final var clusterCfg = configuration.getCluster();
     final var nodeId = clusterCfg.getNodeId();
     final var localMemberId = Integer.toString(nodeId);
@@ -66,8 +55,8 @@ public final class AtomixFactory {
             .withSyncInterval(membershipCfg.getSyncInterval())
             .build();
 
-    final AtomixBuilder atomixBuilder =
-        Atomix.builder(new AtomixConfig())
+    final AtomixClusterBuilder atomixBuilder =
+        new AtomixClusterBuilder(new ClusterConfig())
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
             .withMembershipProtocol(membershipProtocol)
@@ -79,18 +68,7 @@ public final class AtomixFactory {
                     networkCfg.getInternalApi().getAdvertisedPort()))
             .withMembershipProvider(discoveryProvider);
 
-    final DataCfg dataConfiguration = configuration.getData();
-    final String rootDirectory = dataConfiguration.getDirectory();
-    try {
-      FileUtil.ensureDirectoryExists(new File(rootDirectory).toPath());
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to create data directory", e);
-    }
-
-    final RaftPartitionGroup partitionGroup =
-        PartitionManager.buildRaftPartitionGroup(configuration, snapshotStoreFactory);
-
-    return atomixBuilder.withPartitionGroup(partitionGroup).build();
+    return atomixBuilder.build();
   }
 
   private static NodeDiscoveryProvider createDiscoveryProvider(

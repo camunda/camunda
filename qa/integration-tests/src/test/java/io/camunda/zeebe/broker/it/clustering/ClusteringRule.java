@@ -17,18 +17,19 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.AtomixClusterBuilder;
+import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
-import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.clustering.atomix.AtomixFactory;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
@@ -91,7 +92,8 @@ public final class ClusteringRule extends ExternalResource {
 
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
-  private static final String RAFT_PARTITION_PATH = AtomixFactory.GROUP_NAME + "/partitions/1";
+  private static final String RAFT_PARTITION_PATH =
+      PartitionManagerFactory.GROUP_NAME + "/partitions/1";
 
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -357,7 +359,7 @@ public final class ClusteringRule extends ExternalResource {
 
     // copied from StandaloneGateway
     final AtomixCluster atomixCluster =
-        Atomix.builder()
+        new AtomixClusterBuilder(new ClusterConfig())
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
             .withClusterId(clusterCfg.getClusterName())
@@ -585,7 +587,7 @@ public final class ClusteringRule extends ExternalResource {
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     final var raftPartition =
-        atomix.getPartitionGroup().getPartitions().stream()
+        broker.getPartitionManager().getPartitionGroup().getPartitions().stream()
             .filter(partition -> partition.members().contains(nodeId))
             .filter(partition -> partition.id().id() == partitionId)
             .map(RaftPartition.class::cast)
@@ -596,14 +598,14 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void disconnect(final Broker broker) {
-    final var atomix = broker.getAtomix();
+    final var atomix = broker.getAtomixCluster();
 
     ((NettyUnicastService) atomix.getUnicastService()).stop().join();
     ((NettyMessagingService) atomix.getMessagingService()).stop().join();
   }
 
   public void connect(final Broker broker) {
-    final var atomix = broker.getAtomix();
+    final var atomix = broker.getAtomixCluster();
 
     ((NettyUnicastService) atomix.getUnicastService()).start().join();
     ((NettyMessagingService) atomix.getMessagingService()).start().join();

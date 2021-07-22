@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.broker.it.health;
 
-import static io.camunda.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.time.Duration;
 import org.awaitility.Awaitility;
@@ -39,9 +39,10 @@ public class HealthMonitoringTest {
     final var raftPartition =
         (RaftPartition)
             leader
-                .getClusterServices()
+                .getPartitionManager()
                 .getPartitionGroup()
-                .getPartition(PartitionId.from(GROUP_NAME, START_PARTITION_ID));
+                .getPartition(
+                    PartitionId.from(PartitionManagerFactory.GROUP_NAME, START_PARTITION_ID));
     raftPartition.getServer().stop();
 
     // then

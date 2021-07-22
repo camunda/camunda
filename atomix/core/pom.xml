@@ -53,17 +53,6 @@
       <groupId>com.google.guava</groupId>
     </dependency>
 
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <artifactId>hamcrest</artifactId>
-      <groupId>org.hamcrest</groupId>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <artifactId>junit</artifactId>
@@ -72,15 +61,38 @@
     </dependency>
 
     <dependency>
-      <artifactId>zeebe-test-util</artifactId>
-      <groupId>io.camunda</groupId>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-common</artifactId>
       <scope>test</scope>
     </dependency>
+
 
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

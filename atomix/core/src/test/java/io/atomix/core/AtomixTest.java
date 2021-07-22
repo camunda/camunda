@@ -21,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import io.atomix.raft.partition.RaftPartitionGroup;
+import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import java.io.File;
@@ -61,8 +61,7 @@ public class AtomixTest {
                                   .setPersistedSnapshotStoreFactory(
                                       new NoopSnapshotStoreFactory()));
 
-                  final var raftPartitionGroup = new RaftPartitionGroup(groupConfig);
-                  return builder.withPartitionGroup(raftPartitionGroup).build();
+                  return builder.build();
                 })
             .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
@@ -79,7 +78,7 @@ public class AtomixTest {
     // given
     final var atomix =
         atomixRule
-            .startAtomix(1, Arrays.asList(1), AtomixBuilder::build)
+            .startAtomix(1, Arrays.asList(1), AtomixClusterBuilder::build)
             .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
     atomix.stop().get(TIMEOUT_IN_S, TimeUnit.SECONDS);
 
@@ -90,7 +89,7 @@ public class AtomixTest {
     } catch (final ExecutionException ex) {
       // then
       assertTrue(ex.getCause() instanceof IllegalStateException);
-      assertEquals("Atomix instance shutdown", ex.getCause().getMessage());
+      assertEquals("AtomixCluster instance shutdown", ex.getCause().getMessage());
     }
   }
 }

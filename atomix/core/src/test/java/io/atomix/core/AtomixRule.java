@@ -15,6 +15,9 @@
  */
 package io.atomix.core;
 
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.AtomixClusterBuilder;
+import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
@@ -43,13 +46,14 @@ public final class AtomixRule extends ExternalResource {
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File dataDir;
   private Map<Integer, Address> addressMap;
-  private List<Atomix> instances;
+  private List<AtomixCluster> instances;
 
   @Override
   public Statement apply(final Statement base, final Description description) {
     return temporaryFolder.apply(super.apply(base, description), description);
   }
 
+  @Override
   public void before() throws IOException {
     dataDir = temporaryFolder.newFolder();
     addressMap = new HashMap<>();
@@ -59,7 +63,7 @@ public final class AtomixRule extends ExternalResource {
   @Override
   protected void after() {
     final List<CompletableFuture<Void>> futures =
-        instances.stream().map(Atomix::stop).collect(Collectors.toList());
+        instances.stream().map(AtomixCluster::stop).collect(Collectors.toList());
     try {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
           .get(TIMEOUT_IN_S, TimeUnit.SECONDS);
@@ -73,7 +77,7 @@ public final class AtomixRule extends ExternalResource {
   }
 
   /** Creates an Atomix instance. */
-  public AtomixBuilder buildAtomix(
+  public AtomixClusterBuilder buildAtomix(
       final int id, final List<Integer> memberIds, final Properties properties) {
     final Collection<Node> nodes =
         memberIds.stream()
@@ -88,7 +92,7 @@ public final class AtomixRule extends ExternalResource {
                 })
             .collect(Collectors.toList());
 
-    return Atomix.builder(new AtomixConfig())
+    return new AtomixClusterBuilder(new ClusterConfig())
         .withClusterId("test")
         .withMemberId(String.valueOf(id))
         .withHost("localhost")
@@ -108,27 +112,27 @@ public final class AtomixRule extends ExternalResource {
   }
 
   /** Creates an Atomix instance. */
-  private Atomix createAtomix(
+  private AtomixCluster createAtomix(
       final int id,
       final List<Integer> bootstrapIds,
-      final Function<AtomixBuilder, Atomix> builderFunction) {
+      final Function<AtomixClusterBuilder, AtomixCluster> builderFunction) {
     return createAtomix(id, bootstrapIds, new Properties(), builderFunction);
   }
 
   /** Creates an Atomix instance. */
-  private Atomix createAtomix(
+  private AtomixCluster createAtomix(
       final int id,
       final List<Integer> bootstrapIds,
       final Properties properties,
-      final Function<AtomixBuilder, Atomix> builderFunction) {
+      final Function<AtomixClusterBuilder, AtomixCluster> builderFunction) {
     return builderFunction.apply(buildAtomix(id, bootstrapIds, properties));
   }
 
-  public CompletableFuture<Atomix> startAtomix(
+  public CompletableFuture<AtomixCluster> startAtomix(
       final int id,
       final List<Integer> persistentIds,
-      final Function<AtomixBuilder, Atomix> builderFunction) {
-    final Atomix atomix = createAtomix(id, persistentIds, builderFunction);
+      final Function<AtomixClusterBuilder, AtomixCluster> builderFunction) {
+    final AtomixCluster atomix = createAtomix(id, persistentIds, builderFunction);
     instances.add(atomix);
     return atomix.start().thenApply(v -> atomix);
   }

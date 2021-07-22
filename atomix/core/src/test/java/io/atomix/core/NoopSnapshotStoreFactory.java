@@ -20,7 +20,7 @@ import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.nio.file.Path;
 
-class NoopSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {
+public class NoopSnapshotStoreFactory implements ReceivableSnapshotStoreFactory {
 
   public NoopSnapshotStoreFactory() {}
 

@@ -5,14 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.clustering.atomix;
+package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.atomix.core.Atomix;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.Environment;
@@ -21,7 +20,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class AtomixFactoryTest {
+public final class PartitionManagerTest {
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private Environment environment;
 
@@ -37,11 +36,12 @@ public final class AtomixFactoryTest {
     brokerConfig.getExperimental().setDisableExplicitRaftFlush(true);
 
     // when
-    final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
+    final var partitionManager =
+        PartitionManagerFactory.fromBrokerConfiguration(
+            brokerConfig, mock(ClusterServices.class), mock(FileBasedSnapshotStoreFactory.class));
 
     // then
-    final var config = getPartitionGroupConfig(atomix);
+    final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isFalse();
   }
 
@@ -52,20 +52,17 @@ public final class AtomixFactoryTest {
     brokerConfig.getExperimental().setDisableExplicitRaftFlush(false);
 
     // when
-    final var atomix =
-        AtomixFactory.fromConfiguration(brokerConfig, mock(FileBasedSnapshotStoreFactory.class));
-
+    final var partitionManager =
+        PartitionManagerFactory.fromBrokerConfiguration(
+            brokerConfig, mock(ClusterServices.class), mock(FileBasedSnapshotStoreFactory.class));
     // then
-    final var config = getPartitionGroupConfig(atomix);
+    final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();
   }
 
-  private ManagedPartitionGroup getPartitionGroup(final Atomix atomix) {
-    return atomix.getPartitionGroup();
-  }
-
-  private RaftPartitionGroupConfig getPartitionGroupConfig(final Atomix atomix) {
-    return (RaftPartitionGroupConfig) getPartitionGroup(atomix).config();
+  private RaftPartitionGroupConfig getPartitionGroupConfig(
+      final PartitionManager partitionManager) {
+    return (RaftPartitionGroupConfig) partitionManager.getPartitionGroup().config();
   }
 
   private BrokerCfg newConfig() {

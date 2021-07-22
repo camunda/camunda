@@ -1,25 +1,21 @@
 /*
- * Copyright © 2020 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
-package io.atomix.core;
+package io.camunda.zeebe.broker.partitioning;
 
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.core.AtomixRule;
+import io.atomix.core.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -40,6 +36,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class RaftRolesTest {
 
@@ -51,7 +48,7 @@ public final class RaftRolesTest {
     final CompletableFuture<Void> roleChanged = new CompletableFuture<>();
 
     // when
-    final CompletableFuture<Atomix> joinFuture =
+    final CompletableFuture<Void> joinFuture =
         startSingleNodeSinglePartitionWithPartitionConsumer(
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
@@ -68,7 +65,7 @@ public final class RaftRolesTest {
     // given
     final CompletableFuture<Void> roleChanged = new CompletableFuture<>();
 
-    final CompletableFuture<Atomix> joinFuture =
+    final CompletableFuture<Void> joinFuture =
         startSingleNodeSinglePartitionWithPartitionConsumer(
             partition -> {
               final RaftPartition raftPartition = (RaftPartition) partition;
@@ -138,8 +135,8 @@ public final class RaftRolesTest {
 
     final int firstNodeId = 1;
     final int expectedFirstNodeLeadingPartition = 1;
-    final CompletableFuture<Atomix> nodeOneFuture =
-        startAtomixWithPartitionConsumer(
+    final CompletableFuture<Void> nodeOneFuture =
+        startPartitionManagerWithPartitionConsumer(
             firstNodeId,
             3,
             members,
@@ -163,8 +160,8 @@ public final class RaftRolesTest {
 
     final int secondNodeId = 2;
     final int expectedSecondNodeLeadingPartition = 2;
-    final CompletableFuture<Atomix> nodeTwoFuture =
-        startAtomixWithPartitionConsumer(
+    final CompletableFuture<Void> nodeTwoFuture =
+        startPartitionManagerWithPartitionConsumer(
             secondNodeId,
             3,
             members,
@@ -188,8 +185,8 @@ public final class RaftRolesTest {
 
     final int thirdNodeId = 3;
     final int expectedThirdNodeLeadingPartition = 3;
-    final CompletableFuture<Atomix> nodeThreeFuture =
-        startAtomixWithPartitionConsumer(
+    final CompletableFuture<Void> nodeThreeFuture =
+        startPartitionManagerWithPartitionConsumer(
             thirdNodeId,
             3,
             members,
@@ -236,21 +233,22 @@ public final class RaftRolesTest {
     assertEquals(6, followerRoles.size());
   }
 
-  private CompletableFuture<Atomix> startSingleNodeSinglePartitionWithPartitionConsumer(
+  private CompletableFuture<Void> startSingleNodeSinglePartitionWithPartitionConsumer(
       final Consumer<? super Partition> partitionConsumer) {
-    return startAtomixSinglePartitionWithPartitionConsumer(
+
+    return startPartitionManagerSinglePartitionWithPartitionConsumer(
         1, Collections.singletonList(1), partitionConsumer);
   }
 
-  private CompletableFuture<Atomix> startAtomixSinglePartitionWithPartitionConsumer(
+  private CompletableFuture<Void> startPartitionManagerSinglePartitionWithPartitionConsumer(
       final int nodeId,
       final List<Integer> nodeIds,
       final Consumer<? super Partition> partitionConsumer) {
 
-    return startAtomixWithPartitionConsumer(nodeId, 1, nodeIds, partitionConsumer);
+    return startPartitionManagerWithPartitionConsumer(nodeId, 1, nodeIds, partitionConsumer);
   }
 
-  private CompletableFuture<Atomix> startAtomixWithPartitionConsumer(
+  private CompletableFuture<Void> startPartitionManagerWithPartitionConsumer(
       final int nodeId,
       final int partitionCount,
       final List<Integer> nodeIds,
@@ -259,24 +257,23 @@ public final class RaftRolesTest {
     final List<String> memberIds =
         nodeIds.stream().map(Object::toString).collect(Collectors.toList());
 
-    return atomixRule.startAtomix(
-        nodeId,
-        nodeIds,
-        builder -> {
-          final RaftPartitionGroup partitionGroup =
-              RaftPartitionGroup.builder("normal")
-                  .withNumPartitions(partitionCount)
-                  .withPartitionSize(memberIds.size())
-                  .withMembers(memberIds)
-                  .withDataDirectory(
-                      new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
-                  .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
-                  .build();
+    final RaftPartitionGroup partitionGroup =
+        RaftPartitionGroup.builder("normal")
+            .withNumPartitions(partitionCount)
+            .withPartitionSize(memberIds.size())
+            .withMembers(memberIds)
+            .withDataDirectory(new File(new File(atomixRule.getDataDir(), "log"), "" + nodeId))
+            .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
+            .build();
 
-          final Atomix atomix = builder.withPartitionGroup(partitionGroup).build();
+    final var partitionManager =
+        new PartitionManager(
+            partitionGroup,
+            Mockito.mock(ClusterMembershipService.class),
+            Mockito.mock(ClusterCommunicationService.class));
 
-          atomix.getPartitionGroup().getPartitions().forEach(partitionConsumer);
-          return atomix;
-        });
+    partitionManager.getPartitionGroup().getPartitions().forEach(partitionConsumer);
+
+    return partitionManager.start();
   }
 }

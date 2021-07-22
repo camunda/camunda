@@ -7,47 +7,42 @@
  */
 package io.camunda.zeebe.broker.clustering;
 
+import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
-import io.atomix.core.Atomix;
-import io.atomix.primitive.partition.ManagedPartitionGroup;
 import java.util.concurrent.CompletableFuture;
 
-public final class ClusterServices {
+public class ClusterServices {
 
-  private final Atomix atomix;
+  private final AtomixCluster atomixCluster;
 
-  public ClusterServices(final Atomix atomix) {
-    this.atomix = atomix;
+  public ClusterServices(final AtomixCluster atomixCluster) {
+    this.atomixCluster = atomixCluster;
   }
 
   public CompletableFuture<Void> start() {
-    return atomix.start();
+    return atomixCluster.start();
   }
 
   public CompletableFuture<Void> stop() {
-    return atomix.stop();
+    return atomixCluster.stop();
   }
 
   public MessagingService getMessagingService() {
-    return atomix.getMessagingService();
+    return atomixCluster.getMessagingService();
   }
 
   public ClusterMembershipService getMembershipService() {
-    return atomix.getMembershipService();
+    return atomixCluster.getMembershipService();
   }
 
   public ClusterEventService getEventService() {
-    return atomix.getEventService();
+    return atomixCluster.getEventService();
   }
 
   public ClusterCommunicationService getCommunicationService() {
-    return atomix.getCommunicationService();
-  }
-
-  public ManagedPartitionGroup getPartitionGroup() {
-    return atomix.getPartitionGroup();
+    return atomixCluster.getCommunicationService();
   }
 }
