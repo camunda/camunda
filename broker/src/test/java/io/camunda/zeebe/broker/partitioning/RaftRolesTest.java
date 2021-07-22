@@ -12,8 +12,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.core.AtomixRule;
 import io.atomix.core.NoopSnapshotStoreFactory;
 import io.atomix.primitive.partition.Partition;
@@ -31,12 +31,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.agrona.LangUtil;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public final class RaftRolesTest {
 
@@ -266,14 +267,23 @@ public final class RaftRolesTest {
             .withSnapshotStoreFactory(new NoopSnapshotStoreFactory())
             .build();
 
-    final var partitionManager =
-        new PartitionManager(
-            partitionGroup,
-            Mockito.mock(ClusterMembershipService.class),
-            Mockito.mock(ClusterCommunicationService.class));
+    final var atomixFuture = atomixRule.startAtomix(nodeId, nodeIds, AtomixClusterBuilder::build);
 
-    partitionManager.getPartitionGroup().getPartitions().forEach(partitionConsumer);
+    final AtomixCluster atomix;
+    try {
+      atomix = atomixFuture.get();
 
-    return partitionManager.start();
+      final var partitionManager =
+          new PartitionManager(
+              partitionGroup, atomix.getMembershipService(), atomix.getCommunicationService());
+
+      partitionManager.getPartitionGroup().getPartitions().forEach(partitionConsumer);
+
+      return partitionManager.start();
+    } catch (final InterruptedException | ExecutionException e) {
+      LangUtil.rethrowUnchecked(e);
+      // won't be executed
+      return null;
+    }
   }
 }
