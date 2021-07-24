@@ -113,10 +113,9 @@ public abstract class ImportJobExecutor {
           );
         } catch (InterruptedException e) {
           logger.error(
-            "{}: Interrupted while waiting to submit a new job to the job executor!",
-            getClass().getSimpleName(),
-            e
+            "{}: Interrupted while waiting to submit a new job to the job executor!", getClass().getSimpleName(), e
           );
+          Thread.currentThread().interrupt();
         }
       }
     }

@@ -250,9 +250,7 @@ public class EmbeddedOptimizeExtension
     ProcessDefinitionResolverService processDefinitionResolverService =
       getApplicationContext().getBean(ProcessDefinitionResolverService.class);
     CamundaEventImportServiceFactory camundaEventServiceFactory =
-      getApplicationContext().getimport org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;Bean(CamundaEventImportServiceFactory.class);
+      getApplicationContext().getBean(CamundaEventImportServiceFactory.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       final RunningActivityInstanceImportService service =
@@ -348,6 +346,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;Bean
       .orElseThrow(() -> new OptimizeIntegrationTestException("Missing default engine configuration"));
   }
 
+  @SneakyThrows
   public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
     final CountDownLatch importIdleLatch = new CountDownLatch(
       getImportSchedulerManager().getEngineImportSchedulers().size());
@@ -378,7 +377,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;Bean
     try {
       importIdleLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
-      throw new OptimizeIntegrationTestException("Failed waiting for import to finish.");
+      Thread.currentThread().interrupt();
     }
   }
 

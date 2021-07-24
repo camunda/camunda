@@ -127,6 +127,7 @@ public class IngestionQoSFilter implements Filter {
       }
     } catch (InterruptedException e) {
       sendErrorResponse(response);
+      Thread.currentThread().interrupt();
     } finally {
       if (accepted) {
         passes.release();
