@@ -7,42 +7,18 @@
  */
 package io.camunda.zeebe.broker.clustering;
 
-import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
-import java.util.concurrent.CompletableFuture;
 
-public class ClusterServices {
+public interface ClusterServices {
 
-  private final AtomixCluster atomixCluster;
+  MessagingService getMessagingService();
 
-  public ClusterServices(final AtomixCluster atomixCluster) {
-    this.atomixCluster = atomixCluster;
-  }
+  ClusterMembershipService getMembershipService();
 
-  public CompletableFuture<Void> start() {
-    return atomixCluster.start();
-  }
+  ClusterEventService getEventService();
 
-  public CompletableFuture<Void> stop() {
-    return atomixCluster.stop();
-  }
-
-  public MessagingService getMessagingService() {
-    return atomixCluster.getMessagingService();
-  }
-
-  public ClusterMembershipService getMembershipService() {
-    return atomixCluster.getMembershipService();
-  }
-
-  public ClusterEventService getEventService() {
-    return atomixCluster.getEventService();
-  }
-
-  public ClusterCommunicationService getCommunicationService() {
-    return atomixCluster.getCommunicationService();
-  }
+  ClusterCommunicationService getCommunicationService();
 }

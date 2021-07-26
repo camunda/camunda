@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.bootstrap.CloseProcess;
 import io.camunda.zeebe.broker.bootstrap.StartProcess;
 import io.camunda.zeebe.broker.clustering.AtomixClusterFactory;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
@@ -138,7 +139,7 @@ public final class Broker implements AutoCloseable {
   private final List<PartitionListener> partitionListeners;
   private boolean isClosed = false;
 
-  private ClusterServices clusterServices;
+  private ClusterServicesImpl clusterServices;
   private CompletableFuture<Broker> startFuture;
   private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
@@ -279,7 +280,7 @@ public final class Broker implements AutoCloseable {
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     final var atomix = AtomixClusterFactory.fromConfiguration(brokerCfg);
     testCompanionObject.atomix = atomix;
-    clusterServices = new ClusterServices(atomix);
+    clusterServices = new ClusterServicesImpl(atomix);
 
     return () -> {
       clusterServices.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
