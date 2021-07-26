@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  */
 @Deprecated // will be split up according to interfaces
 public class PartitionBoostrapAndTransitionContextImpl
-    implements PartitionContext, PartitionBootstrapContext, PartitionTransitionContext {
+    implements PartitionContext, PartitionStartupContext, PartitionTransitionContext {
 
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;

@@ -14,7 +14,7 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 @Deprecated
 public class PartitionStepMigrationHelper {
 
-  public static PartitionStep fromBootstrapStep(final PartitionBootstrapStep bootstrapStep) {
+  public static PartitionStep fromBootstrapStep(final PartitionStartupStep bootstrapStep) {
     return new WrappedPartitionBootstrapStep(bootstrapStep);
   }
 
@@ -24,9 +24,9 @@ public class PartitionStepMigrationHelper {
 
   private static class WrappedPartitionBootstrapStep implements PartitionStep {
 
-    private final PartitionBootstrapStep bootstrapStep;
+    private final PartitionStartupStep bootstrapStep;
 
-    public WrappedPartitionBootstrapStep(final PartitionBootstrapStep bootstrapStep) {
+    public WrappedPartitionBootstrapStep(final PartitionStartupStep bootstrapStep) {
       this.bootstrapStep = bootstrapStep;
     }
 
@@ -41,8 +41,13 @@ public class PartitionStepMigrationHelper {
       return wrapInVoidFuture(bootstrapStep.close(context));
     }
 
+    @Override
+    public String getName() {
+      return bootstrapStep.getName();
+    }
+
     private ActorFuture<Void> wrapInVoidFuture(
-        final ActorFuture<PartitionBootstrapContext> wrappable) {
+        final ActorFuture<PartitionStartupContext> wrappable) {
       final var result = new CompletableActorFuture<Void>();
 
       wrappable.onComplete(
@@ -55,11 +60,6 @@ public class PartitionStepMigrationHelper {
           });
 
       return result;
-    }
-
-    @Override
-    public String getName() {
-      return bootstrapStep.getName();
     }
   }
 
