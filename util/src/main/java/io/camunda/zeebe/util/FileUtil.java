@@ -11,6 +11,8 @@ import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -20,15 +22,47 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
 import org.slf4j.Logger;
 
 public final class FileUtil {
-
-  public static final Logger LOG = Loggers.FILE_LOGGER;
+  private static final Logger LOG = Loggers.FILE_LOGGER;
 
   private FileUtil() {}
+
+  /**
+   * Ensures updates to the given path are flushed to disk, with the same guarantees as {@link
+   * FileChannel#force(boolean)}. This can be used for both directory and files. Note that if you
+   * already have a file channel open, then use the {@link FileChannel#force(boolean)} method
+   * directly. This method is mostly useful when flushing directories after file creation and/or
+   * file rename operations.
+   *
+   * @param path the path to synchronize
+   * @throws IOException can be thrown on opening and on flushing the file
+   */
+  public static void flush(final Path path) throws IOException {
+    try (final var channel = FileChannel.open(path, StandardOpenOption.READ)) {
+      channel.force(true);
+    }
+  }
+
+  /**
+   * Moves the given {@code source} file to the {@code target} location, flushing the target's
+   * parent directory afterwards to guarantee that the file will be visible and avoid the classic
+   * 0-length problem.
+   *
+   * @param source the file or directory to move
+   * @param target the new path the file or directory should have after
+   * @param options copy options, e.g. {@link java.nio.file.StandardCopyOption}
+   * @throws IOException on either move or flush error
+   */
+  public static void moveDurably(final Path source, final Path target, final CopyOption... options)
+      throws IOException {
+    Files.move(source, target, options);
+    flush(target.getParent());
+  }
 
   public static void deleteFolder(final String path) throws IOException {
     final Path directory = Paths.get(path);
@@ -58,7 +92,7 @@ public final class FileUtil {
   public static void deleteFolderIfExists(final Path folder) throws IOException {
     try {
       Files.walkFileTree(folder, new FolderDeleter(Files::deleteIfExists));
-    } catch (final NoSuchFileException ignored) {
+    } catch (final NoSuchFileException ignored) { // NOSONAR
       // ignored
     }
   }

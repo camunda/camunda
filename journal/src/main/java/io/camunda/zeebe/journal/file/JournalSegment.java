@@ -24,7 +24,6 @@ import io.camunda.zeebe.journal.JournalException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.Files;
 import java.util.Set;
 import org.agrona.IoUtil;
@@ -49,15 +48,14 @@ class JournalSegment implements AutoCloseable {
   public JournalSegment(
       final JournalSegmentFile file,
       final JournalSegmentDescriptor descriptor,
+      final MappedByteBuffer buffer,
       final long maxWrittenIndex,
-      final JournalIndex journalIndex) {
+      final JournalIndex index) {
     this.file = file;
     this.descriptor = descriptor;
-    index = journalIndex;
-    buffer =
-        IoUtil.mapExistingFile(
-            file.file(), MapMode.READ_WRITE, file.name(), 0, descriptor.maxSegmentSize());
-    buffer.order(ENDIANNESS);
+    this.buffer = buffer;
+    this.index = index;
+
     writer = createWriter(maxWrittenIndex);
   }
 
