@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.util.sched.future.ActorFuture;
 import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.CompletableFuture;
 
 @Deprecated
 public class PartitionStepMigrationHelper {
@@ -32,13 +33,13 @@ public class PartitionStepMigrationHelper {
 
     @Override
     public ActorFuture<Void> open(final PartitionBoostrapAndTransitionContextImpl context) {
-      return wrapInVoidFuture(bootstrapStep.open(context));
+      return wrapInVoidFuture(bootstrapStep.startup(context));
     }
 
     @Override
     public ActorFuture<Void> close(final PartitionBoostrapAndTransitionContextImpl context) {
 
-      return wrapInVoidFuture(bootstrapStep.close(context));
+      return wrapInVoidFuture(bootstrapStep.shutdown(context));
     }
 
     @Override
@@ -47,10 +48,10 @@ public class PartitionStepMigrationHelper {
     }
 
     private ActorFuture<Void> wrapInVoidFuture(
-        final ActorFuture<PartitionStartupContext> wrappable) {
+        final CompletableFuture<PartitionStartupContext> wrappable) {
       final var result = new CompletableActorFuture<Void>();
 
-      wrappable.onComplete(
+      wrappable.whenComplete(
           (success, error) -> {
             if (error != null) {
               result.completeExceptionally(error);

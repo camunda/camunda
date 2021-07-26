@@ -13,13 +13,17 @@ import io.camunda.zeebe.broker.system.partitions.PartitionStartupStep;
 import io.camunda.zeebe.broker.system.partitions.SnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.camunda.zeebe.broker.system.partitions.impl.StateReplication;
-import io.camunda.zeebe.util.sched.future.ActorFuture;
-import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.CompletableFuture;
 
 public class SnapshotReplicationPartitionStartupStep implements PartitionStartupStep {
 
   @Override
-  public ActorFuture<PartitionStartupContext> open(final PartitionStartupContext context) {
+  public String getName() {
+    return "SnapshotReplication";
+  }
+
+  @Override
+  public CompletableFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final SnapshotReplication replication =
         shouldReplicateSnapshots(context)
             ? new StateReplication(
@@ -27,11 +31,12 @@ public class SnapshotReplicationPartitionStartupStep implements PartitionStartup
             : new NoneSnapshotReplication();
 
     context.setSnapshotReplication(replication);
-    return CompletableActorFuture.completed(null);
+    return CompletableFuture.completedFuture(context);
   }
 
   @Override
-  public ActorFuture<PartitionStartupContext> close(final PartitionStartupContext context) {
+  public CompletableFuture<PartitionStartupContext> shutdown(
+      final PartitionStartupContext context) {
     try {
       if (context.getSnapshotReplication() != null) {
         context.getSnapshotReplication().close();
@@ -45,12 +50,7 @@ public class SnapshotReplicationPartitionStartupStep implements PartitionStartup
       context.setSnapshotReplication(null);
     }
 
-    return CompletableActorFuture.completed(null);
-  }
-
-  @Override
-  public String getName() {
-    return "SnapshotReplication";
+    return CompletableFuture.completedFuture(context);
   }
 
   private boolean shouldReplicateSnapshots(final PartitionStartupContext state) {
