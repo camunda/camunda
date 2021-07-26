@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerFactory;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
@@ -151,7 +152,7 @@ public final class Broker implements AutoCloseable {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final List<ZeebePartition> partitions = new ArrayList<>();
   private BrokerAdminService brokerAdminService;
-  private PartitionManager partitionManager;
+  private PartitionManagerImpl partitionManager;
 
   private final TestCompanionClass testCompanionObject = new TestCompanionClass();
 

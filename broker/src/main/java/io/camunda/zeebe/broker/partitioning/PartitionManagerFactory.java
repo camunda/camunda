@@ -28,14 +28,14 @@ public class PartitionManagerFactory {
 
   public static final String GROUP_NAME = "raft-partition";
 
-  public static PartitionManager fromBrokerConfiguration(
+  public static PartitionManagerImpl fromBrokerConfiguration(
       final BrokerCfg configuration,
       final ClusterServices clusterServices,
       final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final var partitionGroup = buildRaftPartitionGroup(configuration, snapshotStoreFactory);
 
-    return new PartitionManager(
+    return new PartitionManagerImpl(
         partitionGroup,
         clusterServices.getMembershipService(),
         clusterServices.getCommunicationService());

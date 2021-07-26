@@ -276,7 +276,7 @@ public final class RaftRolesTest {
       atomix = atomixFuture.get();
 
       final var partitionManager =
-          new PartitionManager(
+          new PartitionManagerImpl(
               partitionGroup, atomix.getMembershipService(), atomix.getCommunicationService());
 
       partitionManager.getPartitionGroup().getPartitions().forEach(partitionConsumer);
