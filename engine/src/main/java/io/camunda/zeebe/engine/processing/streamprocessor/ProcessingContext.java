@@ -132,8 +132,8 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  public ProcessingContext replayContinuously() {
-    replayMode = ReplayMode.CONTINUOUSLY;
+  public ProcessingContext replayMode(final ReplayMode replayMode) {
+    this.replayMode = replayMode;
     return this;
   }
 
@@ -224,7 +224,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     streamWriterProxy.wrap(noopTypedStreamWriter);
   }
 
-  public boolean shouldReplayContinuously() {
-    return replayMode == ReplayMode.CONTINUOUSLY;
+  public ReplayMode getReplayMode() {
+    return replayMode;
   }
 }

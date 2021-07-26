@@ -18,13 +18,13 @@ import org.junit.Test;
 
 public class ContinuouslyReplayTest {
 
-  private final ListLogStorage listLogStorage = new ListLogStorage();
+  private final ListLogStorage sharedStorage = new ListLogStorage();
 
   @Rule
   public final EngineRule replay =
-      EngineRule.withSharedStorage(listLogStorage).withContinuouslyReplay();
+      EngineRule.withSharedStorage(sharedStorage).withReplayMode(ReplayMode.CONTINUOUSLY);
 
-  @Rule public final EngineRule processing = EngineRule.withSharedStorage(listLogStorage);
+  @Rule public final EngineRule processing = EngineRule.withSharedStorage(sharedStorage);
 
   @Test
   public void shouldEndUpWithTheSameState() {

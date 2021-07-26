@@ -129,12 +129,12 @@ public final class TestStreams {
   }
 
   public SynchronousLogStream createLogStream(
-      final String name, final int partitionId, final ListLogStorage listLogStorage) {
+      final String name, final int partitionId, final ListLogStorage sharedStorage) {
     return createLogStream(
         name,
         partitionId,
-        listLogStorage,
-        logStream -> listLogStorage.setPositionListener(logStream::setLastWrittenPosition));
+        sharedStorage,
+        logStream -> sharedStorage.setPositionListener(logStream::setLastWrittenPosition));
   }
 
   private SynchronousLogStream createLogStream(

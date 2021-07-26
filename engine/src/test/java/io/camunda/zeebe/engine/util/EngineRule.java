@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandMes
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventImpl;
@@ -100,17 +101,17 @@ public final class EngineRule extends ExternalResource {
       new Int2ObjectHashMap<>();
 
   private long lastProcessedPosition = -1L;
-  private boolean shouldReplayContinuously;
+  private ReplayMode replayMode;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
   }
 
-  private EngineRule(final int partitionCount, final ListLogStorage listLogStorage) {
+  private EngineRule(final int partitionCount, final ListLogStorage sharedStorage) {
     this.partitionCount = partitionCount;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), listLogStorage);
+            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
   }
 
   public static EngineRule singlePartition() {
@@ -174,8 +175,8 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withContinuouslyReplay() {
-    shouldReplayContinuously = true;
+  public EngineRule withReplayMode(final ReplayMode replayMode) {
+    this.replayMode = replayMode;
     return this;
   }
 
@@ -190,32 +191,28 @@ public final class EngineRule extends ExternalResource {
           partitionReprocessingCompleteListeners.put(partitionId, reprocessingCompletedListener);
           environmentRule.startTypedStreamProcessor(
               partitionId,
-              (processingContext) -> {
-                if (shouldReplayContinuously) {
-                  processingContext.replayContinuously();
-                }
-
-                return EngineProcessors.createEngineProcessors(
-                        processingContext
-                            .onProcessedListener(
-                                record -> {
-                                  lastProcessedPosition = record.getPosition();
-                                  onProcessedCallback.accept(record);
-                                })
-                            .onSkippedListener(
-                                record -> {
-                                  lastProcessedPosition = record.getPosition();
-                                  onSkippedCallback.accept(record);
-                                }),
-                        partitionCount,
-                        new SubscriptionCommandSender(
-                            partitionId, new PartitionCommandSenderImpl()),
-                        deploymentDistributor,
-                        (key, partition) -> {},
-                        jobsAvailableCallback)
-                    .withListener(new ProcessingExporterTransistor())
-                    .withListener(reprocessingCompletedListener);
-              });
+              (processingContext) ->
+                  EngineProcessors.createEngineProcessors(
+                          processingContext
+                              .replayMode(replayMode)
+                              .onProcessedListener(
+                                  record -> {
+                                    lastProcessedPosition = record.getPosition();
+                                    onProcessedCallback.accept(record);
+                                  })
+                              .onSkippedListener(
+                                  record -> {
+                                    lastProcessedPosition = record.getPosition();
+                                    onSkippedCallback.accept(record);
+                                  }),
+                          partitionCount,
+                          new SubscriptionCommandSender(
+                              partitionId, new PartitionCommandSenderImpl()),
+                          deploymentDistributor,
+                          (key, partition) -> {},
+                          jobsAvailableCallback)
+                      .withListener(new ProcessingExporterTransistor())
+                      .withListener(reprocessingCompletedListener));
 
           // sequenialize the commands to avoid concurrency
           subscriptionHandlers.put(

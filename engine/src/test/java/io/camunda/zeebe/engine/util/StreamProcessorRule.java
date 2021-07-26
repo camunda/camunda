@@ -85,9 +85,9 @@ public final class StreamProcessorRule implements TestRule {
       final int startPartitionId,
       final int partitionCount,
       final ZeebeDbFactory dbFactory,
-      final ListLogStorage listLogStorage) {
+      final ListLogStorage sharedStorage) {
     this(startPartitionId, partitionCount, dbFactory, new TemporaryFolder());
-    sharedStorage = listLogStorage;
+    this.sharedStorage = sharedStorage;
   }
 
   public StreamProcessorRule(
