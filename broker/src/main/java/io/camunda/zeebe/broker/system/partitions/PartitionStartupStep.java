@@ -14,27 +14,27 @@ import io.camunda.zeebe.util.sched.future.ActorFuture;
  * opening/closing a component of the partition). The steps are opened in a pre-defined order and
  * will be closed in the reverse order.
  */
-public interface PartitionBootstrapStep {
+public interface PartitionStartupStep {
   /**
    * Performs some action required for the partition to function. This may include opening
-   * components (e.g., logstream), setting their values in {@link PartitionBootstrapContext}, etc.
-   * The subsequent partition steps will only be opened after the returned future is completed.
+   * components (e.g., logstream), setting their values in {@link PartitionStartupContext}, etc. The
+   * subsequent partition steps will only be opened after the returned future is completed.
    *
    * @param context the partition boostrap context
    * @return future
    */
-  ActorFuture<PartitionBootstrapContext> open(final PartitionBootstrapContext context);
+  ActorFuture<PartitionStartupContext> open(final PartitionStartupContext context);
 
   /**
    * Perform tear-down actions to clear the partition and prepare for another one to be installed.
-   * This includes closing components, clearing their values from {@link PartitionBootstrapContext}
-   * so they may be garbage-collected, etc. The subsequent partition steps will only be closed after
+   * This includes closing components, clearing their values from {@link PartitionStartupContext} so
+   * they may be garbage-collected, etc. The subsequent partition steps will only be closed after
    * the returned future is completed.
    *
    * @param context the partition bootstrap context
    * @return future
    */
-  ActorFuture<PartitionBootstrapContext> close(final PartitionBootstrapContext context);
+  ActorFuture<PartitionStartupContext> close(final PartitionStartupContext context);
 
   /** @return A log-friendly identification of the PartitionBootstrapStep. */
   String getName();
