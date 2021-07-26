@@ -280,10 +280,10 @@ public final class Broker implements AutoCloseable {
     testCompanionObject.atomix = atomix;
     clusterServices = new ClusterServices(atomix);
 
-    return () ->
-        clusterServices
-            .stop()
-            .get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
+    return () -> {
+      clusterServices.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
+      testCompanionObject.atomix = null;
+    };
   }
 
   private AutoCloseable commandApiTransportAndHandlerStep(
@@ -409,7 +409,7 @@ public final class Broker implements AutoCloseable {
         PartitionManagerFactory.fromBrokerConfiguration(
             brokerCfg, clusterServices, snapshotStoreFactory);
 
-    partitionManager.start();
+    partitionManager.start().join();
 
     healthCheckService.registerPartitionManager(partitionManager);
 
@@ -475,7 +475,14 @@ public final class Broker implements AutoCloseable {
             };
           });
     }
-    return partitionStartProcess.start();
+
+    final var partitionClosable = partitionStartProcess.start();
+    return () -> {
+      partitionClosable.close();
+      partitionManager.stop().join();
+      partitionManager = null;
+      // TODO shutdown snapshot store
+    };
   }
 
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {

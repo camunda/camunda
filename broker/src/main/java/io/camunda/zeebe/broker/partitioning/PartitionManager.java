@@ -22,8 +22,8 @@ import java.util.concurrent.CompletableFuture;
 public class PartitionManager {
 
   protected volatile CompletableFuture<Void> closeFuture;
-  private final ManagedPartitionService partitions;
-  private final ManagedPartitionGroup partitionGroup;
+  private ManagedPartitionService partitions;
+  private ManagedPartitionGroup partitionGroup;
 
   public PartitionManager(
       final RaftPartitionGroup partitionGroup,
@@ -51,7 +51,17 @@ public class PartitionManager {
 
   public synchronized CompletableFuture<Void> stop() {
     if (closeFuture == null) {
-      closeFuture = partitions.stop().thenApply(ps -> null);
+      closeFuture =
+          partitions
+              .stop()
+              .thenApply(
+                  ps -> {
+                    synchronized (this) {
+                      partitionGroup = null;
+                      partitions = null;
+                    }
+                    return null;
+                  });
     }
 
     return closeFuture;
