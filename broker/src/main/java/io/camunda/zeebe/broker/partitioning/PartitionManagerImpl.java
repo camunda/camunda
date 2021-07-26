@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
@@ -68,16 +66,16 @@ public final class PartitionManagerImpl implements PartitionManager {
     return closeFuture;
   }
 
-  @Override
-  public String toString() {
-    return toStringHelper(this).add("partitionGroup", partitionGroup).toString();
-  }
-
   /** Builds a partition service. */
   private ManagedPartitionService buildPartitionService(
       final ClusterMembershipService clusterMembershipService,
       final ClusterCommunicationService messagingService) {
 
     return new DefaultPartitionService(clusterMembershipService, messagingService, partitionGroup);
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionManagerImpl{" + "partitionGroup=" + partitionGroup + '}';
   }
 }
