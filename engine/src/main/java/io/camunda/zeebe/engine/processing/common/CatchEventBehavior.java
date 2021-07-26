@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.zeebe.el.Expression;
@@ -18,7 +17,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
-import io.camunda.zeebe.engine.processing.message.MessageNameException;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -42,7 +40,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.sched.clock.ActorClock;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -105,8 +102,8 @@ public final class CatchEventBehavior {
 
     // collect all message names from their respective variables, as this might fail and
     // we might need to raise an incident
-    final Map<DirectBuffer, DirectBuffer> extractedMessageNames =
-        extractMessageNames(events, context);
+    final Either<Failure, Map<DirectBuffer, DirectBuffer>> extractedMessageNames =
+        evaluateMessageNames(events, context);
     // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident. This works the same for timers
     final Either<Failure, Map<DirectBuffer, DirectBuffer>> extractedCorrelationKeys =
@@ -114,7 +111,9 @@ public final class CatchEventBehavior {
     final Either<Failure, Map<DirectBuffer, Timer>> evaluatedTimers =
         evaluateTimers(events, context.getElementInstanceKey());
 
-    if (extractedCorrelationKeys.isLeft() || evaluatedTimers.isLeft()) {
+    if (extractedMessageNames.isLeft()
+        || extractedCorrelationKeys.isLeft()
+        || evaluatedTimers.isLeft()) {
       // todo: don't throw here, but return an either
       throw new EvaluationException(evaluatedTimers.getLeft().getMessage());
     }
@@ -135,7 +134,7 @@ public final class CatchEventBehavior {
             context,
             event,
             extractedCorrelationKeys.get().get(event.getId()),
-            extractedMessageNames.get((event.getId())),
+            extractedMessageNames.get().get((event.getId())),
             sideEffects);
       }
     }
@@ -254,13 +253,6 @@ public final class CatchEventBehavior {
     return true;
   }
 
-  private Either<Failure, String> extractMessageName(
-      final ExecutableMessage message, final long scopeKey) {
-
-    final Expression messageNameExpression = message.getMessageNameExpression();
-    return expressionProcessor.evaluateStringExpression(messageNameExpression, scopeKey);
-  }
-
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long processInstanceKey,
@@ -322,6 +314,24 @@ public final class CatchEventBehavior {
         .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
   }
 
+  /**
+   * Evaluates all message names for events
+   *
+   * @param events All catch events to evaluate to message names
+   * @param context element context used to determine the evaluation scope
+   * @return either the first failure it encounters or a mapping of event-ids to message names
+   */
+  private Either<Failure, Map<DirectBuffer, DirectBuffer>> evaluateMessageNames(
+      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
+    return events.stream()
+        .filter(ExecutableCatchEvent::isMessage)
+        .map(e -> evaluateMessageName(e, scopeKey).map(name -> Tuple.of(e.getId(), name)))
+        .collect(Either.collector())
+        .mapLeft(failures -> failures.get(0))
+        .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
+  }
+
   private Either<Failure, DirectBuffer> evaluateCorrelationKey(
       final ExecutableCatchEvent event, final BpmnElementContext context) {
     final var expression = event.getMessage().getCorrelationKeyExpression();
@@ -340,24 +350,12 @@ public final class CatchEventBehavior {
     return event.getTimerFactory().apply(expressionProcessor, scopeKey);
   }
 
-  private Map<DirectBuffer, DirectBuffer> extractMessageNames(
-      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
-    final Map<DirectBuffer, DirectBuffer> extractedMessageNames = new HashMap<>();
-
-    final var scopeKey = context.getElementInstanceKey();
-    for (final ExecutableCatchEvent event : events) {
-      if (event.isMessage()) {
-        final Either<Failure, String> messageNameOrFailure =
-            extractMessageName(event.getMessage(), scopeKey);
-        messageNameOrFailure.ifRightOrLeft(
-            messageName -> extractedMessageNames.put(event.getId(), wrapString(messageName)),
-            failure -> {
-              // todo(#4323): deal with this exceptional case without throwing an exception
-              throw new MessageNameException(failure, event.getId());
-            });
-      }
-    }
-
-    return extractedMessageNames;
+  private Either<Failure, DirectBuffer> evaluateMessageName(
+      final ExecutableCatchEvent event, final long scopeKey) {
+    final ExecutableMessage message = event.getMessage();
+    final Expression messageNameExpression = message.getMessageNameExpression();
+    return expressionProcessor
+        .evaluateStringExpression(messageNameExpression, scopeKey)
+        .map(BufferUtil::wrapString);
   }
 }
