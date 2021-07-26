@@ -11286,10 +11286,10 @@ json5@^2.1.0, json5@^2.1.2, json5@^2.1.3, json5@^2.2.0:
   dependencies:
     minimist "^1.2.5"
 
-jsoneditor@^9.5.1:
-  version "9.5.1"
-  resolved "https://registry.yarnpkg.com/jsoneditor/-/jsoneditor-9.5.1.tgz#a84788838eb54ee54087cf289076b628281d2116"
-  integrity sha512-Kz6+Yk5L0tgrqCDMLio5QzLm0BdKMtBsWmRy3QQ1x9BhROB9OcPE2B3lHWRmgbi1GqSQ3/iKzI6YyAzZqZRiXA==
+jsoneditor@^9.5.2:
+  version "9.5.2"
+  resolved "https://registry.yarnpkg.com/jsoneditor/-/jsoneditor-9.5.2.tgz#960468319f248b7f933c07a18336e67a9ea78f03"
+  integrity sha512-kIUutoSX2S72Grjl+PHoR3oz5d42tpOfLicZrQrjB2RHO+UAq3RThqEpbH1AR61F4aauTYpOJwB1Altnf9Fdfg==
   dependencies:
     ace-builds "^1.4.12"
     ajv "^6.12.6"
