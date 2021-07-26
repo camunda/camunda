@@ -2157,10 +2157,10 @@
     "@types/set-cookie-parser" "^2.4.0"
     set-cookie-parser "^2.4.6"
 
-"@mswjs/interceptors@^0.12.1":
-  version "0.12.2"
-  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.12.2.tgz#c4c9695ff54feffed93f03db371dd508a104cc0b"
-  integrity sha512-JHo5Gvm1Oy2jucYP+kXj9dHRelE3gbYrgAFmpgIzIyjTavYsHO5OTW3IxY3uSHKaDnGrddlEbSHdHIvw4JOZUw==
+"@mswjs/interceptors@^0.12.3":
+  version "0.12.3"
+  resolved "https://registry.yarnpkg.com/@mswjs/interceptors/-/interceptors-0.12.3.tgz#8d4dc08042dc749a314bd31d363ddac3a0458e26"
+  integrity sha512-qHLEvukC8hHtECKwRpe8q2Y83J91+ckDN6PzHta3tL5X5VIjet062tvvv3ZStHHsm3Xo04TMbm7WyM0RQUpnNA==
   dependencies:
     "@open-draft/until" "^1.0.3"
     debug "^4.3.0"
@@ -10202,6 +10202,11 @@ is-negative-zero@^2.0.1:
   resolved "https://registry.yarnpkg.com/is-negative-zero/-/is-negative-zero-2.0.1.tgz#3de746c18dda2319241a53675908d8f766f11c24"
   integrity sha512-2z6JzQvZRa9A2Y7xC6dQQm4FSTSTNWjKIYYTt4246eMTJmIo0Q+ZyOsU66X8lxK1AbB92dFeglPLrhwpeRKO6w==
 
+is-node-process@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/is-node-process/-/is-node-process-1.0.1.tgz#4fc7ac3a91e8aac58175fe0578abbc56f2831b23"
+  integrity sha512-5IcdXuf++TTNt3oGl9EBdkvndXA8gmc4bz/Y+mdEpWh3Mcn/+kOw6hI7LD5CocqJWMzeb0I0ClndRVNdEPuJXQ==
+
 is-number-object@^1.0.4:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/is-number-object/-/is-number-object-1.0.5.tgz#6edfaeed7950cff19afedce9fbfca9ee6dd289eb"
@@ -12346,13 +12351,13 @@ msw-storybook-addon@^1.2.0:
   dependencies:
     "@storybook/addons" "^6.0.0"
 
-msw@^0.32.0:
-  version "0.32.0"
-  resolved "https://registry.yarnpkg.com/msw/-/msw-0.32.0.tgz#15752c04ebbf524819811676aed9e9e12de4353c"
-  integrity sha512-iR9GugFzJj77UQvQ++oBrT+JLHRC4rvPUJ6zTIf3X0Drv7pNgL2hzgXi8ZRAI3ZdqIBIoB/sHpSjb5kh7RCpaQ==
+msw@^0.33.0:
+  version "0.33.0"
+  resolved "https://registry.yarnpkg.com/msw/-/msw-0.33.0.tgz#6a842dd17a6e8a2aff176106fb18b50a7b37ab8e"
+  integrity sha512-lX0mBSE+kgXYMiqyjaYM+2kfxPg2ywbhZjPDwHk5bN/MqoEvGcj6cpL0j1OgLSitN1ve8F0ePCSrk2jhITRubw==
   dependencies:
     "@mswjs/cookies" "^0.1.6"
-    "@mswjs/interceptors" "^0.12.1"
+    "@mswjs/interceptors" "^0.12.3"
     "@open-draft/until" "^1.0.3"
     "@types/cookie" "^0.4.1"
     "@types/inquirer" "^7.3.3"
@@ -12363,6 +12368,7 @@ msw@^0.32.0:
     graphql "^15.5.1"
     headers-utils "^3.0.2"
     inquirer "^8.1.1"
+    is-node-process "^1.0.1"
     js-levenshtein "^1.1.6"
     node-fetch "^2.6.1"
     node-match-path "^0.6.3"
