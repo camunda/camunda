@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
  * Typically, a startup step will create resources and call setters on the context object, whereas a
  * shutdown step will shutdown resources and remove them from the context by setting them to {@code
  * null}. <br>
+ * Extending {@link AbstractStartupStep} is the recommended way to implement this interface<br>
  * Contract:
  *
  * <ul>
