@@ -101,19 +101,97 @@ public final class CatchEventBehavior {
         .map(r -> r.stream().map(EvalResult::event).collect(Collectors.toList()));
   }
 
+  private Either<Failure, EvalResult> evalExpressions(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    return evaluateMessageName(event, context)
+        .map(name -> new EvalResult(event).messageName(name))
+        .flatMap(result -> evaluateCorrelationKey(event, context).map(result::correlationKey))
+        .flatMap(result -> evaluateTimer(event, context).map(result::timer));
+  }
+
+  private Either<Failure, DirectBuffer> evaluateMessageName(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    if (!event.isMessage()) {
+      return Either.right(null);
+    }
+    final var scopeKey = context.getElementInstanceKey();
+    final ExecutableMessage message = event.getMessage();
+    final Expression messageNameExpression = message.getMessageNameExpression();
+    return expressionProcessor
+        .evaluateStringExpression(messageNameExpression, scopeKey)
+        .map(BufferUtil::wrapString);
+  }
+
+  private Either<Failure, DirectBuffer> evaluateCorrelationKey(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    if (!event.isMessage()) {
+      return Either.right(null);
+    }
+    final var expression = event.getMessage().getCorrelationKeyExpression();
+    final long scopeKey =
+        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+            ? context.getFlowScopeKey()
+            : context.getElementInstanceKey();
+    return expressionProcessor
+        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
+        .map(BufferUtil::wrapString)
+        .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
+  }
+
+  private Either<Failure, Timer> evaluateTimer(
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    if (!event.isTimer()) {
+      return Either.right(null);
+    }
+    final var scopeKey = context.getElementInstanceKey();
+    return event.getTimerFactory().apply(expressionProcessor, scopeKey);
+  }
+
   private void subscribeToMessageEvents(
       final BpmnElementContext context,
       final SideEffects sideEffects,
       final List<EvalResult> results) {
     results.stream()
         .filter(EvalResult::isMessage)
-        .forEach(
-            result -> {
-              final var event = result.event;
-              final var correlationKey = result.correlationKey;
-              final var messageName = result.messageName;
-              subscribeToMessageEvent(context, event, correlationKey, messageName, sideEffects);
-            });
+        .forEach(result -> subscribeToMessageEvent(context, sideEffects, result));
+  }
+
+  private void subscribeToMessageEvent(
+      final BpmnElementContext context, final SideEffects sideEffects, final EvalResult result) {
+    final var event = result.event;
+    final var correlationKey = result.correlationKey;
+    final var messageName = result.messageName;
+
+    final long processInstanceKey = context.getProcessInstanceKey();
+    final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
+    final long elementInstanceKey = context.getElementInstanceKey();
+
+    final int subscriptionPartitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
+
+    subscription.setSubscriptionPartitionId(subscriptionPartitionId);
+    subscription.setMessageName(messageName);
+    subscription.setElementInstanceKey(elementInstanceKey);
+    subscription.setProcessInstanceKey(processInstanceKey);
+    subscription.setBpmnProcessId(bpmnProcessId);
+    subscription.setCorrelationKey(correlationKey);
+    subscription.setElementId(event.getId());
+    subscription.setInterrupting(event.isInterrupting());
+
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
+
+    sideEffects.add(
+        () ->
+            sendOpenMessageSubscription(
+                subscriptionPartitionId,
+                processInstanceKey,
+                elementInstanceKey,
+                bpmnProcessId,
+                messageName,
+                correlationKey,
+                event.isInterrupting()));
   }
 
   private void subscribeToTimerEvents(
@@ -136,14 +214,6 @@ public final class CatchEventBehavior {
                   commandWriter,
                   sideEffects);
             });
-  }
-
-  private Either<Failure, EvalResult> evalExpressions(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
-    return evaluateMessageName(event, context)
-        .map(name -> new EvalResult(event).messageName(name))
-        .flatMap(result -> evaluateCorrelationKey(event, context).map(result::correlationKey))
-        .flatMap(result -> evaluateTimer(event, context).map(result::timer));
   }
 
   public void subscribeToTimerEvent(
@@ -193,45 +263,6 @@ public final class CatchEventBehavior {
         .setProcessDefinitionKey(timer.getProcessDefinitionKey());
 
     commandWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
-  }
-
-  private void subscribeToMessageEvent(
-      final BpmnElementContext context,
-      final ExecutableCatchEvent catchEvent,
-      final DirectBuffer correlationKey,
-      final DirectBuffer messageName,
-      final SideEffects sideEffects) {
-
-    final long processInstanceKey = context.getProcessInstanceKey();
-    final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
-    final long elementInstanceKey = context.getElementInstanceKey();
-
-    final int subscriptionPartitionId =
-        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
-
-    subscription.setSubscriptionPartitionId(subscriptionPartitionId);
-    subscription.setMessageName(messageName);
-    subscription.setElementInstanceKey(elementInstanceKey);
-    subscription.setProcessInstanceKey(processInstanceKey);
-    subscription.setBpmnProcessId(bpmnProcessId);
-    subscription.setCorrelationKey(correlationKey);
-    subscription.setElementId(catchEvent.getId());
-    subscription.setInterrupting(catchEvent.isInterrupting());
-
-    final var subscriptionKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
-        subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
-
-    sideEffects.add(
-        () ->
-            sendOpenMessageSubscription(
-                subscriptionPartitionId,
-                processInstanceKey,
-                elementInstanceKey,
-                bpmnProcessId,
-                messageName,
-                correlationKey,
-                catchEvent.isInterrupting()));
   }
 
   private void unsubscribeFromMessageEvents(
@@ -284,44 +315,6 @@ public final class CatchEventBehavior {
         messageName,
         correlationKey,
         closeOnCorrelate);
-  }
-
-  private Either<Failure, DirectBuffer> evaluateCorrelationKey(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
-    if (!event.isMessage()) {
-      return Either.right(null);
-    }
-    final var expression = event.getMessage().getCorrelationKeyExpression();
-    final long scopeKey =
-        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
-            ? context.getFlowScopeKey()
-            : context.getElementInstanceKey();
-    return expressionProcessor
-        .evaluateMessageCorrelationKeyExpression(expression, scopeKey)
-        .map(BufferUtil::wrapString)
-        .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
-  }
-
-  private Either<Failure, Timer> evaluateTimer(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
-    if (!event.isTimer()) {
-      return Either.right(null);
-    }
-    final var scopeKey = context.getElementInstanceKey();
-    return event.getTimerFactory().apply(expressionProcessor, scopeKey);
-  }
-
-  private Either<Failure, DirectBuffer> evaluateMessageName(
-      final ExecutableCatchEvent event, final BpmnElementContext context) {
-    if (!event.isMessage()) {
-      return Either.right(null);
-    }
-    final var scopeKey = context.getElementInstanceKey();
-    final ExecutableMessage message = event.getMessage();
-    final Expression messageNameExpression = message.getMessageNameExpression();
-    return expressionProcessor
-        .evaluateStringExpression(messageNameExpression, scopeKey)
-        .map(BufferUtil::wrapString);
   }
 
   private static class EvalResult {
