@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.camunda.zeebe.broker.system.management.deployment.PushDeploymentResponse;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;

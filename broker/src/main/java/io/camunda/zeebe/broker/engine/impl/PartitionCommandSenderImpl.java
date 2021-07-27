@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.broker.clustering.topology.TopologyManager;
-import io.camunda.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
+import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListenerImpl;
 import io.camunda.zeebe.engine.processing.message.command.PartitionCommandSender;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.sched.ActorControl;

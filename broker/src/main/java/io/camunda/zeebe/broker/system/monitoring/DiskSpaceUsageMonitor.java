@@ -12,6 +12,8 @@ import static io.camunda.zeebe.broker.Broker.LOG;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.util.sched.Actor;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +31,10 @@ public class DiskSpaceUsageMonitor extends Actor {
     monitoringDelay = dataCfg.getDiskUsageMonitoringInterval();
     minFreeDiskSpaceRequired = dataCfg.getFreeDiskSpaceCommandWatermark();
     final var directory = new File(dataCfg.getDirectory());
+
+    if (!directory.exists()) {
+      throw new UncheckedIOException(new IOException("Folder '" + directory + "' does not exist."));
+    }
     freeDiskSpaceSupplier = directory::getUsableSpace;
   }
 

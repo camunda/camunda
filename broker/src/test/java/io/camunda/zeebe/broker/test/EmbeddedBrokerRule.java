@@ -17,7 +17,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 
-import io.atomix.core.Atomix;
+import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -169,8 +169,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     return broker.getClusterServices();
   }
 
-  public Atomix getAtomix() {
-    return broker.getAtomix();
+  public AtomixCluster getAtomixCluster() {
+    return broker.getAtomixCluster();
   }
 
   public InetSocketAddress getGatewayAddress() {

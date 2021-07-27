@@ -57,7 +57,7 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   protected final ClusterConfig config;
 
-  protected AtomixClusterBuilder(final ClusterConfig config) {
+  public AtomixClusterBuilder(final ClusterConfig config) {
     this.config = checkNotNull(config);
   }
 
