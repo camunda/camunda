@@ -14,7 +14,6 @@ import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
-import io.camunda.zeebe.engine.processing.message.MessageCorrelationKeyException;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -23,7 +22,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -120,7 +118,8 @@ public final class ExpressionProcessor {
       final Expression expression, final long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      return Either.left(new Failure(result.getFailureMessage()));
+      return Either.left(
+          new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
     }
     switch (result.getType()) {
       case DURATION:
@@ -135,7 +134,9 @@ public final class ExpressionProcessor {
               new Failure(
                   String.format(
                       "Invalid duration format '%s' for expression '%s'",
-                      result.getString(), expression.getExpression())));
+                      result.getString(), expression.getExpression()),
+                  ErrorType.EXTRACT_VALUE_ERROR,
+                  scopeKey));
         }
       default:
         final var expected = List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
@@ -143,7 +144,9 @@ public final class ExpressionProcessor {
             new Failure(
                 String.format(
                     "Expected result of the expression '%s' to be one of '%s', but was '%s'",
-                    expression.getExpression(), expected, result.getType())));
+                    expression.getExpression(), expected, result.getType()),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
     }
   }
 
@@ -161,7 +164,8 @@ public final class ExpressionProcessor {
       final Expression expression, final Long scopeKey) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
-      return Either.left(new Failure(result.getFailureMessage()));
+      return Either.left(
+          new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
     }
     if (result.getType() == ResultType.DATE_TIME) {
       return Either.right(result.getDateTime());
@@ -174,7 +178,9 @@ public final class ExpressionProcessor {
             new Failure(
                 String.format(
                     "Invalid date-time format '%s' for expression '%s'",
-                    result.getString(), expression.getExpression())));
+                    result.getString(), expression.getExpression()),
+                ErrorType.EXTRACT_VALUE_ERROR,
+                scopeKey));
       }
     }
     final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
@@ -182,7 +188,9 @@ public final class ExpressionProcessor {
         new Failure(
             String.format(
                 "Expected result of the expression '%s' to be one of '%s', but was '%s'",
-                expression.getExpression(), expected, result.getType())));
+                expression.getExpression(), expected, result.getType()),
+            ErrorType.EXTRACT_VALUE_ERROR,
+            scopeKey));
   }
 
   /**
@@ -229,7 +237,17 @@ public final class ExpressionProcessor {
       final Expression expression, final long scopeKey) {
     final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
     return evaluateExpressionAsEither(expression, scopeKey)
-        .flatMap(result -> typeCheck(result, expectedTypes, scopeKey))
+        .flatMap(
+            result ->
+                typeCheck(result, expectedTypes, scopeKey)
+                    .mapLeft(
+                        failure ->
+                            new Failure(
+                                String.format(
+                                    "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
+                                    expression.getExpression(), result.getType()),
+                                ErrorType.EXTRACT_VALUE_ERROR,
+                                scopeKey)))
         .map(
             result ->
                 result.getType() == ResultType.NUMBER
@@ -316,38 +334,6 @@ public final class ExpressionProcessor {
   public static final class EvaluationException extends RuntimeException {
     public EvaluationException(final String message) {
       super(message);
-    }
-  }
-
-  protected static final class CorrelationKeyResultHandler
-      implements Function<EvaluationResult, String> {
-
-    private final long variableScopeKey;
-
-    protected CorrelationKeyResultHandler(final long variableScopeKey) {
-      this.variableScopeKey = variableScopeKey;
-    }
-
-    @Override
-    public String apply(final EvaluationResult evaluationResult) {
-      if (evaluationResult.isFailure()) {
-        throw new MessageCorrelationKeyException(
-            variableScopeKey, evaluationResult.getFailureMessage());
-      }
-      if (evaluationResult.getType() == ResultType.STRING) {
-        return evaluationResult.getString();
-      } else if (evaluationResult.getType() == ResultType.NUMBER) {
-
-        final Number correlationKeyNumber = evaluationResult.getNumber();
-
-        return Long.toString(correlationKeyNumber.longValue());
-      } else {
-        final String failureMessage =
-            String.format(
-                "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
-                evaluationResult.getExpression(), evaluationResult.getType().toString());
-        throw new MessageCorrelationKeyException(variableScopeKey, failureMessage);
-      }
     }
   }
 

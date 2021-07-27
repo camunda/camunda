@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.time.format.DateTimeParseException;
 
@@ -100,7 +101,8 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
                   .map(RepeatingInterval::parse);
             } catch (final DateTimeParseException e) {
               // todo(#4323): replace this caught exception with Either
-              return Either.left(new Failure(e.getMessage()));
+              return Either.left(
+                  new Failure(e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
             }
           });
 
