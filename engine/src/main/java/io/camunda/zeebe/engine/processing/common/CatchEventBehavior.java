@@ -109,7 +109,7 @@ public final class CatchEventBehavior {
     final Either<Failure, Map<DirectBuffer, DirectBuffer>> extractedCorrelationKeys =
         evaluateMessageCorrelationKeys(events, context);
     final Either<Failure, Map<DirectBuffer, Timer>> evaluatedTimers =
-        evaluateTimers(events, context.getElementInstanceKey());
+        evaluateTimers(events, context);
 
     if (extractedMessageNames.isLeft()
         || extractedCorrelationKeys.isLeft()
@@ -281,6 +281,23 @@ public final class CatchEventBehavior {
   }
 
   /**
+   * Evaluates all message names for events
+   *
+   * @param events All catch events to evaluate to message names
+   * @param context element context used to determine the evaluation scope
+   * @return either the first failure it encounters or a mapping of event-ids to message names
+   */
+  private Either<Failure, Map<DirectBuffer, DirectBuffer>> evaluateMessageNames(
+      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
+    return events.stream()
+        .filter(ExecutableCatchEvent::isMessage)
+        .map(e -> evaluateMessageName(e, context).map(key -> Tuple.of(e.getId(), key)))
+        .collect(Either.collector())
+        .mapLeft(failures -> failures.get(0))
+        .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
+  }
+
+  /**
    * Evaluates all message correlation keys for events
    *
    * @param events All catch events to evaluate to message correlation keys
@@ -301,32 +318,14 @@ public final class CatchEventBehavior {
    * Evaluates all timer events
    *
    * @param events All catch events to evaluate to timers, any non-timer catch events are skipped
-   * @param scopeKey scope at which to evaluate the respective timer expressions
+   * @param context element context used to determine the evaluation scope
    * @return either the first failure it encounters or a mapping of event-ids to timers
    */
   private Either<Failure, Map<DirectBuffer, Timer>> evaluateTimers(
-      final List<ExecutableCatchEvent> events, final long scopeKey) {
+      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
     return events.stream()
         .filter(ExecutableCatchEvent::isTimer)
-        .map(event -> evaluateTimer(event, scopeKey).map(timer -> Tuple.of(event.getId(), timer)))
-        .collect(Either.collector())
-        .mapLeft(failures -> failures.get(0))
-        .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
-  }
-
-  /**
-   * Evaluates all message names for events
-   *
-   * @param events All catch events to evaluate to message names
-   * @param context element context used to determine the evaluation scope
-   * @return either the first failure it encounters or a mapping of event-ids to message names
-   */
-  private Either<Failure, Map<DirectBuffer, DirectBuffer>> evaluateMessageNames(
-      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
-    final var scopeKey = context.getElementInstanceKey();
-    return events.stream()
-        .filter(ExecutableCatchEvent::isMessage)
-        .map(e -> evaluateMessageName(e, scopeKey).map(name -> Tuple.of(e.getId(), name)))
+        .map(e -> evaluateTimer(e, context).map(timer -> Tuple.of(e.getId(), timer)))
         .collect(Either.collector())
         .mapLeft(failures -> failures.get(0))
         .map(t -> t.stream().collect(toMap(Tuple::getLeft, Tuple::getRight)));
@@ -346,12 +345,14 @@ public final class CatchEventBehavior {
 
   /** @return either a failure or an evaluated timer */
   private Either<Failure, Timer> evaluateTimer(
-      final ExecutableCatchEvent event, final long scopeKey) {
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
     return event.getTimerFactory().apply(expressionProcessor, scopeKey);
   }
 
   private Either<Failure, DirectBuffer> evaluateMessageName(
-      final ExecutableCatchEvent event, final long scopeKey) {
+      final ExecutableCatchEvent event, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
     final ExecutableMessage message = event.getMessage();
     final Expression messageNameExpression = message.getMessageNameExpression();
     return expressionProcessor
