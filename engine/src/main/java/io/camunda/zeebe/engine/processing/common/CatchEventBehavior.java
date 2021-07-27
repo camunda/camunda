@@ -90,43 +90,52 @@ public final class CatchEventBehavior {
       final ExecutableCatchEventSupplier supplier,
       final SideEffects sideEffects,
       final TypedCommandWriter commandWriter) {
-
-    final List<ExecutableCatchEvent> events = supplier.getEvents();
-
-    final var failureOrEvalResult =
-        events.stream()
-            .filter(event -> event.isTimer() || event.isMessage())
-            .map(event -> evalExpressions(event, context))
-            .collect(Either.collector());
-
-    // todo introduce peek
-    failureOrEvalResult.ifRight(
-        results ->
-            results.forEach(
-                result -> {
-                  final var event = result.event;
-                  if (event.isMessage()) {
-                    final var correlationKey = result.correlationKey;
-                    final var messageName = result.messageName;
-                    subscribeToMessageEvent(
-                        context, event, correlationKey, messageName, sideEffects);
-                  } else if (event.isTimer()) {
-                    final var timer = result.timer;
-                    subscribeToTimerEvent(
-                        context.getElementInstanceKey(),
-                        context.getProcessInstanceKey(),
-                        context.getProcessDefinitionKey(),
-                        event.getId(),
-                        timer,
-                        commandWriter,
-                        sideEffects);
-                  }
-                }));
-
-    // we can only deal with the first failure, so it's enough to return that
-    return failureOrEvalResult
+    return supplier.getEvents().stream()
+        .filter(event -> event.isTimer() || event.isMessage())
+        .map(event -> evalExpressions(event, context))
+        .collect(Either.collector())
+        .peek(results -> subscribeToMessageEvents(context, sideEffects, results))
+        .peek(results -> subscribeToTimerEvents(context, sideEffects, commandWriter, results))
+        // we can only deal with the first failure, so it's enough to return that
         .mapLeft(f -> f.get(0))
         .map(r -> r.stream().map(EvalResult::event).collect(Collectors.toList()));
+  }
+
+  private void subscribeToMessageEvents(
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final List<EvalResult> results) {
+    results.stream()
+        .filter(EvalResult::isMessage)
+        .forEach(
+            result -> {
+              final var event = result.event;
+              final var correlationKey = result.correlationKey;
+              final var messageName = result.messageName;
+              subscribeToMessageEvent(context, event, correlationKey, messageName, sideEffects);
+            });
+  }
+
+  private void subscribeToTimerEvents(
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final TypedCommandWriter commandWriter,
+      final List<EvalResult> results) {
+    results.stream()
+        .filter(EvalResult::isTimer)
+        .forEach(
+            result -> {
+              final var event = result.event;
+              final var timer = result.timer;
+              subscribeToTimerEvent(
+                  context.getElementInstanceKey(),
+                  context.getProcessInstanceKey(),
+                  context.getProcessDefinitionKey(),
+                  event.getId(),
+                  timer,
+                  commandWriter,
+                  sideEffects);
+            });
   }
 
   private Either<Failure, EvalResult> evalExpressions(
@@ -342,6 +351,14 @@ public final class CatchEventBehavior {
 
     public ExecutableCatchEvent event() {
       return event;
+    }
+
+    public boolean isMessage() {
+      return event.isMessage();
+    }
+
+    public boolean isTimer() {
+      return event.isTimer();
     }
   }
 }
