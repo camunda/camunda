@@ -76,7 +76,7 @@ pipeline {
   environment {
     NEXUS = credentials("camunda-nexus")
     REGISTRY = credentials('repository-camunda-cloud')
-    NAMESPACE = "${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+    NAMESPACE = "optimize-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
   }
 
   options {

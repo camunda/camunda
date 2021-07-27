@@ -70,7 +70,7 @@ pipeline {
   environment {
     NEXUS = credentials("camunda-nexus")
     REGISTRY = credentials('repository-camunda-cloud')
-    NAMESPACE = "${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+    NAMESPACE = "optimize-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
   }
 
   options {
@@ -136,7 +136,7 @@ pipeline {
                 echo "NUMBER_OF_VARIABLES"
                 test "\$NUMBER_OF_VARIABLES" = "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
                 echo "NUMBER_OF_USER_TASKS"
-                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true                
+                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
                 echo "NUMBER_OF_INCOMPLETE_USER_TASKS"
                 test "\$NUMBER_OF_INCOMPLETE_USER_TASKS" = "0" || error=true
 
