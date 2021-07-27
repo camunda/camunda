@@ -65,3 +65,8 @@ it('should not crash, but be disabled if no tenants are provided', () => {
   const node = shallow(<TenantPopover selected={[]} />);
   expect(node.find('Popover').prop('disabled')).toBe(true);
 });
+
+it('should allow manual disabling', () => {
+  const node = shallow(<TenantPopover tenants={tenants} selected={[null]} disabled />);
+  expect(node.find('Popover').prop('disabled')).toBe(true);
+});

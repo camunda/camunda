@@ -64,6 +64,13 @@ jest.mock('services', () => {
     getCollection: jest.fn(),
   };
 });
+jest.mock(
+  'debouncePromise',
+  () =>
+    () =>
+    (fn, _, ...args) =>
+      fn(...args)
+);
 
 const spy = jest.fn();
 
@@ -223,9 +230,9 @@ it('should show a note if more than one version is selected', async () => {
   await flushPromises();
 
   expect(node.find('Message')).toMatchSnapshot();
-  node.setProps({versions: ['1', '2']});
+  await node.find(VersionPopover).simulate('change', ['1', '2']);
   expect(node.find('Message')).toExist();
-  node.setProps({versions: ['1']});
+  await node.find(VersionPopover).simulate('change', ['1']);
   expect(node.find('Message')).not.toExist();
 });
 
@@ -340,19 +347,13 @@ describe('tenants', () => {
 
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : -');
 
-    await node.setProps({
-      tenants: ['a'],
-    });
+    node.find('TenantPopover').simulate('change', ['a']);
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Tenant A');
 
-    await node.setProps({
-      tenants: ['a', 'b'],
-    });
+    node.find('TenantPopover').simulate('change', ['a', 'b']);
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Multiple');
 
-    await node.setProps({
-      tenants: ['a', 'b', 'c'],
-    });
+    node.find('TenantPopover').simulate('change', ['a', 'b', 'c']);
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : All');
   });
 
