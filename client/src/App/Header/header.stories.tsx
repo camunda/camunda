@@ -13,26 +13,15 @@ import Header from './index';
 import {rest} from 'msw';
 import {useEffect} from 'react';
 import {currentInstanceStore} from 'modules/stores/currentInstance';
+import {statistics} from 'modules/mocks/statistics';
+import {user} from 'modules/mocks/user';
 
 const mocks = [
   rest.get('/api/authentications/user', (_, res, ctx) => {
-    return res(
-      ctx.json({
-        username: 'demo',
-        firstname: null,
-        lastname: null,
-        canLogout: true,
-      })
-    );
+    return res(ctx.json(user));
   }),
   rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
-    return res(
-      ctx.json({
-        running: 1087,
-        active: 210,
-        withIncidents: 877,
-      })
-    );
+    return res(ctx.json(statistics));
   }),
 ];
 

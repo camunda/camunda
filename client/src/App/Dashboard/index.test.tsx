@@ -15,6 +15,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
+import {statistics} from 'modules/mocks/statistics';
 
 type Props = {
   children?: React.ReactNode;
@@ -36,13 +37,7 @@ describe('Dashboard', () => {
   it('should render', async () => {
     mockServer.use(
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 821,
-            active: 90,
-            withIncidents: 731,
-          })
-        )
+        res.once(ctx.json(statistics))
       ),
       rest.get('/api/incidents/byError', (_, res, ctx) =>
         res.once(ctx.json(mockIncidentsByError))
@@ -59,7 +54,7 @@ describe('Dashboard', () => {
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
     expect(screen.getByText('Operate Dashboard')).toBeInTheDocument();
     expect(
-      screen.getByText('821 Running Instances in total')
+      screen.getByText('1087 Running Instances in total')
     ).toBeInTheDocument();
     expect(screen.getByText('Instances by Process')).toBeInTheDocument();
     expect(screen.getByText('Incidents by Error Message')).toBeInTheDocument();

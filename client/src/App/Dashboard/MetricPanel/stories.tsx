@@ -13,6 +13,7 @@ import {MetricPanel} from './index';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {useEffect} from 'react';
+import {statistics} from 'modules/mocks/statistics';
 
 export default {
   title: 'Components/MetricPanel',
@@ -34,13 +35,7 @@ const Metrics: Story = () => {
 Metrics.parameters = {
   msw: [
     rest.get('/api/process-instances/core-statistics', (_, res, ctx) => {
-      return res(
-        ctx.json({
-          running: 1087,
-          active: 210,
-          withIncidents: 877,
-        })
-      );
+      return res(ctx.json(statistics));
     }),
   ],
 };

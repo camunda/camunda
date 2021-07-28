@@ -21,6 +21,7 @@ import {Instance} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
+import {statistics} from 'modules/mocks/statistics';
 import {createMemoryHistory} from 'history';
 import {useNotifications} from 'modules/notifications';
 
@@ -80,13 +81,7 @@ describe('Instance', () => {
         (_, rest, ctx) => rest(ctx.json({}))
       ),
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res(
-          ctx.json({
-            running: 821,
-            active: 90,
-            withIncidents: 731,
-          })
-        )
+        res(ctx.json(statistics))
       ),
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res(

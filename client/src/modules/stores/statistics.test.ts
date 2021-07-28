@@ -15,6 +15,7 @@ import {
   groupedProcessesMock,
   createInstance,
 } from 'modules/testUtils';
+import {statistics} from 'modules/mocks/statistics';
 
 const mockInstance = {
   id: '2251799813685625',
@@ -35,13 +36,7 @@ describe('stores/statistics', () => {
     // mock for initial fetch when statistics store is initialized
     mockServer.use(
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 936,
-            active: 725,
-            withIncidents: 211,
-          })
-        )
+        res.once(ctx.json(statistics))
       )
     );
   });
@@ -53,9 +48,9 @@ describe('stores/statistics', () => {
 
   it('should reset state', async () => {
     await statisticsStore.fetchStatistics();
-    expect(statisticsStore.state.running).toBe(936);
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    expect(statisticsStore.state.running).toBe(1087);
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
 
     statisticsStore.reset();
     expect(statisticsStore.state.running).toBe(0);
@@ -91,9 +86,9 @@ describe('stores/statistics', () => {
 
     await statisticsStore.fetchStatistics();
     expect(statisticsStore.state.status).toBe('fetched');
-    expect(statisticsStore.state.running).toBe(936);
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    expect(statisticsStore.state.running).toBe(1087);
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
   });
 
   it('should fetch statistics on init', async () => {
@@ -102,10 +97,10 @@ describe('stores/statistics', () => {
 
     expect(statisticsStore.state.status).toBe('first-fetch');
     await waitFor(() => {
-      expect(statisticsStore.state.running).toBe(936);
+      expect(statisticsStore.state.running).toBe(1087);
     });
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
   });
 
   it('should start polling when current instance exists', async () => {
@@ -116,30 +111,24 @@ describe('stores/statistics', () => {
     mockServer.use(
       // mock for when current instance is set
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 100,
-            active: 60,
-            withIncidents: 40,
-          })
-        )
+        res.once(ctx.json(statistics))
       )
     );
 
     // should not fetch statistics when current instance does not exist
     jest.runOnlyPendingTimers();
 
-    expect(statisticsStore.state.running).toBe(936);
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    expect(statisticsStore.state.running).toBe(1087);
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
 
     // should fetch statistics when current instance exists
     currentInstanceStore.setCurrentInstance(createInstance({id: '1'}));
     jest.runOnlyPendingTimers();
 
-    await waitFor(() => expect(statisticsStore.state.running).toBe(100));
-    expect(statisticsStore.state.active).toBe(60);
-    expect(statisticsStore.state.withIncidents).toBe(40);
+    await waitFor(() => expect(statisticsStore.state.running).toBe(1087));
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -152,9 +141,9 @@ describe('stores/statistics', () => {
 
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
-    expect(statisticsStore.state.running).toBe(936);
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    expect(statisticsStore.state.running).toBe(1087);
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
 
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
@@ -177,9 +166,9 @@ describe('stores/statistics', () => {
 
     await waitFor(() => expect(instancesStore.state.status).toBe('fetched'));
 
-    expect(statisticsStore.state.running).toBe(936);
-    expect(statisticsStore.state.active).toBe(725);
-    expect(statisticsStore.state.withIncidents).toBe(211);
+    expect(statisticsStore.state.running).toBe(1087);
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
 
     mockServer.use(
       rest.post('/api/process-instances', (_, res, ctx) =>
@@ -192,13 +181,7 @@ describe('stores/statistics', () => {
       ),
       // mock for when there are completed operations
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 100,
-            active: 60,
-            withIncidents: 40,
-          })
-        )
+        res.once(ctx.json(statistics))
       ),
       rest.post('/api/process-instances', (_, res, ctx) =>
         res.once(
@@ -216,9 +199,9 @@ describe('stores/statistics', () => {
       expect(instancesStore.state.filteredInstancesCount).toBe(2)
     );
 
-    await waitFor(() => expect(statisticsStore.state.running).toBe(100));
-    expect(statisticsStore.state.active).toBe(60);
-    expect(statisticsStore.state.withIncidents).toBe(40);
+    await waitFor(() => expect(statisticsStore.state.running).toBe(1087));
+    expect(statisticsStore.state.active).toBe(210);
+    expect(statisticsStore.state.withIncidents).toBe(877);
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -233,17 +216,11 @@ describe('stores/statistics', () => {
 
     statisticsStore.init();
 
-    await waitFor(() => expect(statisticsStore.state.running).toBe(936));
+    await waitFor(() => expect(statisticsStore.state.running).toBe(1087));
 
     mockServer.use(
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 1000,
-            active: 725,
-            withIncidents: 211,
-          })
-        )
+        res.once(ctx.json({...statistics, running: 1000}))
       )
     );
 

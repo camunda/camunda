@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {FlowNodeInstances} from './stores/flowNodeInstance';
+import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
 
 /**
  * flushes promises in queue

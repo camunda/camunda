@@ -19,13 +19,14 @@ import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
+import {statistics} from 'modules/mocks/statistics';
 
 // Header component fetches user information in the background, which is an async action and might complete after the tests finished.
 // Tests also depend on the statistics fetch to be completed, in order to test the results that are rendered in the screen.
 // So we have to use this function in all tests, in order to verify all the async actions are completed, when we want them to be completed.
 const waitForComponentToLoad = async () => {
   expect(await screen.findByText('firstname lastname')).toBeInTheDocument();
-  expect(await screen.findByTitle('View 731 Incidents')).toBeInTheDocument();
+  expect(await screen.findByTitle('View 877 Incidents')).toBeInTheDocument();
 };
 
 function createWrapper(history = createMemoryHistory()) {
@@ -49,13 +50,7 @@ describe('Header', () => {
         )
       ),
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 821,
-            active: 90,
-            withIncidents: 731,
-          })
-        )
+        res.once(ctx.json(statistics))
       ),
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(
@@ -122,13 +117,13 @@ describe('Header', () => {
 
     expect(
       within(screen.getByTestId('header-link-incidents')).getByTestId('badge')
-    ).toHaveTextContent('731');
+    ).toHaveTextContent('877');
     expect(
       within(screen.getByTestId('header-link-filters')).getByTestId('badge')
     ).toHaveTextContent('200');
     expect(
       within(screen.getByTestId('header-link-instances')).getByTestId('badge')
-    ).toHaveTextContent('821');
+    ).toHaveTextContent('1087');
   });
 
   it('should render user element', async () => {
@@ -244,13 +239,7 @@ describe('Header', () => {
 
     mockServer.use(
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 821,
-            active: 90,
-            withIncidents: 732,
-          })
-        )
+        res.once(ctx.json(statistics))
       ),
       rest.get('/api/process-instances/:id', (_, res, ctx) =>
         res.once(
@@ -264,7 +253,7 @@ describe('Header', () => {
 
     jest.runOnlyPendingTimers();
 
-    expect(await screen.findByTitle('View 732 Incidents')).toBeInTheDocument();
+    expect(await screen.findByTitle('View 877 Incidents')).toBeInTheDocument();
     expect(
       await screen.findByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();

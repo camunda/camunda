@@ -70,17 +70,6 @@ describe('Instances', () => {
       rest.post('/api/process-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockProcessStatistics))
       ),
-      rest.post('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            coreStatistics: {
-              running: 821,
-              active: 90,
-              withIncidents: 731,
-            },
-          })
-        )
-      ),
       rest.post('/api/batch-operations', (_, res, ctx) =>
         res.once(ctx.json(operations))
       )

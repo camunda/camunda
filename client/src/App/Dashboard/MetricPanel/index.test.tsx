@@ -19,6 +19,7 @@ import {MetricPanel} from './index';
 import {statisticsStore} from 'modules/stores/statistics';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {statistics} from 'modules/mocks/statistics';
 
 function createWrapper(history = createMemoryHistory()) {
   const Wrapper: React.FC = ({children}) => {
@@ -36,13 +37,7 @@ describe('<MetricPanel />', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/process-instances/core-statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            running: 821,
-            active: 90,
-            withIncidents: 731,
-          })
-        )
+        res.once(ctx.json(statistics))
       )
     );
 
@@ -65,7 +60,7 @@ describe('<MetricPanel />', () => {
       screen.getByTestId('instances-bar-skeleton'),
     ]);
     expect(
-      screen.getByText('821 Running Instances in total')
+      screen.getByText('1087 Running Instances in total')
     ).toBeInTheDocument();
   });
 
@@ -79,10 +74,10 @@ describe('<MetricPanel />', () => {
     expect(screen.getByText('Active Instances')).toBeInTheDocument();
     expect(
       await screen.findByTestId('incident-instances-badge')
-    ).toHaveTextContent('731');
+    ).toHaveTextContent('877');
     expect(
       await screen.findByTestId('active-instances-badge')
-    ).toHaveTextContent('90');
+    ).toHaveTextContent('210');
   });
 
   it('should go to the correct page when clicking on instances with incidents', async () => {
@@ -120,7 +115,7 @@ describe('<MetricPanel />', () => {
       '?gseUrl=https%3A%2F%2Fwww.testUrl.com&active=true'
     );
 
-    userEvent.click(await screen.findByText('821 Running Instances in total'));
+    userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe(
@@ -147,7 +142,7 @@ describe('<MetricPanel />', () => {
     });
 
     statisticsStore.fetchStatistics();
-    userEvent.click(await screen.findByText('821 Running Instances in total'));
+    userEvent.click(await screen.findByText('1087 Running Instances in total'));
 
     expect(MOCK_HISTORY.location.pathname).toBe('/instances');
     expect(MOCK_HISTORY.location.search).toBe('?incidents=true&active=true');
