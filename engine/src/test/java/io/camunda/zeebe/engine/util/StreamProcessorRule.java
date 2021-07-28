@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util;
 import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.processing.streamprocessor.ReplayMode;
 import io.camunda.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -63,6 +64,8 @@ public final class StreamProcessorRule implements TestRule {
   private final RuleChain chain;
   private TestStreams streams;
   private StreamProcessingComposite streamProcessingComposite;
+  private ListLogStorage sharedStorage = null;
+  private ReplayMode replayMode = ReplayMode.UNTIL_END;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -73,7 +76,7 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule(final int partitionId) {
-    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory());
+    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), new TemporaryFolder());
   }
 
   public StreamProcessorRule(final int partitionId, final TemporaryFolder temporaryFolder) {
@@ -81,8 +84,12 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule(
-      final int startPartitionId, final int partitionCount, final ZeebeDbFactory dbFactory) {
+      final int startPartitionId,
+      final int partitionCount,
+      final ZeebeDbFactory dbFactory,
+      final ListLogStorage sharedStorage) {
     this(startPartitionId, partitionCount, dbFactory, new TemporaryFolder());
+    this.sharedStorage = sharedStorage;
   }
 
   public StreamProcessorRule(
@@ -117,6 +124,11 @@ public final class StreamProcessorRule implements TestRule {
   public StreamProcessorRule withEventApplierFactory(
       final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
     streams.withEventApplierFactory(eventApplierFactory);
+    return this;
+  }
+
+  public StreamProcessorRule withReplayMode(final ReplayMode replayMode) {
+    this.replayMode = replayMode;
     return this;
   }
 
@@ -312,10 +324,15 @@ public final class StreamProcessorRule implements TestRule {
     @Override
     protected void before() {
       streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
+      streams.withReplayMode(replayMode);
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {
-        streams.createLogStream(getLogName(partitionId), partitionId++);
+        if (sharedStorage != null) {
+          streams.createLogStream(getLogName(partitionId), partitionId++, sharedStorage);
+        } else {
+          streams.createLogStream(getLogName(partitionId), partitionId++);
+        }
       }
 
       streamProcessingComposite =

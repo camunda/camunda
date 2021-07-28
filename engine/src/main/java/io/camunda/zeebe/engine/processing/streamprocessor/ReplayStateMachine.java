@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.engine.state.mutable.MutableLastProcessedPositionState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
@@ -70,8 +71,11 @@ public final class ReplayStateMachine {
   private long lastReadRecordPosition;
 
   private ActorFuture<Long> recoveryFuture;
-  private LoggedEvent currentEvent;
   private ZeebeDbTransaction zeebeDbTransaction;
+  private final ReplayMode replayMode;
+  private final LogStream logStream;
+
+  private State currentState = State.AWAIT_RECORD;
 
   public ReplayStateMachine(final ProcessingContext context) {
     actor = context.getActor();
@@ -87,6 +91,8 @@ public final class ReplayStateMachine {
     typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
     updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     processRetryStrategy = new EndlessRetryStrategy(actor);
+    replayMode = context.getReplayMode();
+    logStream = context.getLogStream();
   }
 
   /**
@@ -99,53 +105,78 @@ public final class ReplayStateMachine {
   ActorFuture<Long> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
     this.snapshotPosition = snapshotPosition;
-    lastSourceEventPosition = snapshotPosition;
+    lastSourceEventPosition =
+        snapshotPosition > 0 ? snapshotPosition : StreamProcessor.UNSET_POSITION;
 
     // start after snapshot
     logStreamReader.seekToNextEvent(snapshotPosition);
 
-    if (logStreamReader.hasNext()) {
-      LOG.info("Processor starts replay of events. [snapshot-position: {}]", snapshotPosition);
-      replayNextEvent();
-    } else if (snapshotPosition > 0) {
-      recoveryFuture.complete(snapshotPosition);
-    } else {
-      recoveryFuture.complete(StreamProcessor.UNSET_POSITION);
+    LOG.info(
+        "Processor starts replay of events. [snapshot-position: {}, replay-mode: {}]",
+        snapshotPosition,
+        replayMode);
+
+    replayNextEvent();
+
+    if (replayMode == ReplayMode.CONTINUOUSLY) {
+      logStream.registerRecordAvailableListener(this::recordAvailable);
     }
 
     return recoveryFuture;
   }
 
+  /**
+   * Will be called by the LogStream#RecordAvailableListener, we will schedule the next replay of
+   * the record
+   */
+  private void recordAvailable() {
+    actor.call(
+        () -> {
+          if (currentState == State.AWAIT_RECORD) {
+            replayNextEvent();
+          }
+        });
+  }
+
   private void replayNextEvent() {
+    LoggedEvent currentEvent = null;
     try {
+      if (logStreamReader.hasNext()) {
+        currentState = State.REPLAY_EVENT;
 
-      if (!logStreamReader.hasNext()) {
+        currentEvent = logStreamReader.next();
+        replayEvent(currentEvent);
+
+      } else if (replayMode == ReplayMode.UNTIL_END) {
         onRecordsReplayed();
-        return;
+
+      } else {
+        currentState = State.AWAIT_RECORD;
       }
-
-      currentEvent = logStreamReader.next();
-      if (!eventFilter.applies(currentEvent)) {
-        onRecordReplayed();
-        return;
-      }
-
-      readMetadata();
-      readRecordValue();
-
-      processRetryStrategy
-          .runWithRetry(this::tryToApplyCurrentEvent, abortCondition)
-          .onComplete(
-              (v, t) ->
-                  updateStateRetryStrategy
-                      .runWithRetry(this::tryToCommitStateChanges, abortCondition)
-                      .onComplete((bool, throwable) -> onRecordReplayed()));
 
     } catch (final RuntimeException e) {
       final var replayException =
           new ProcessingException("Unable to replay record", currentEvent, metadata, e);
       recoveryFuture.completeExceptionally(replayException);
     }
+  }
+
+  private void replayEvent(final LoggedEvent currentEvent) {
+    if (!eventFilter.applies(currentEvent)) {
+      onRecordReplayed(currentEvent);
+      return;
+    }
+
+    readMetadata(currentEvent);
+    final var currentTypedEvent = readRecordValue(currentEvent);
+
+    processRetryStrategy
+        .runWithRetry(() -> tryToApplyCurrentEvent(currentTypedEvent), abortCondition)
+        .onComplete(
+            (v, t) ->
+                updateStateRetryStrategy
+                    .runWithRetry(this::tryToCommitStateChanges, abortCondition)
+                    .onComplete((bool, throwable) -> onRecordReplayed(currentEvent)));
   }
 
   /**
@@ -171,7 +202,7 @@ public final class ReplayStateMachine {
    *
    * <p>It will schedule the next replay iteration.
    */
-  private void onRecordReplayed() {
+  private void onRecordReplayed(final LoggedEvent currentEvent) {
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
     final var currentRecordKey = currentEvent.getKey();
@@ -204,7 +235,7 @@ public final class ReplayStateMachine {
    *
    * @throws ProcessingException if an error occurs during reading the metadata
    */
-  private void readMetadata() throws ProcessingException {
+  private void readMetadata(final LoggedEvent currentEvent) throws ProcessingException {
     try {
       metadata.reset();
       currentEvent.readMetadata(metadata);
@@ -214,10 +245,11 @@ public final class ReplayStateMachine {
     }
   }
 
-  private void readRecordValue() {
+  private TypedRecord<?> readRecordValue(final LoggedEvent currentEvent) {
     final UnifiedRecordValue value =
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
+    return typedEvent;
   }
 
   /**
@@ -228,7 +260,7 @@ public final class ReplayStateMachine {
    * @return true on success
    * @throws Exception if the applying of the event fails
    */
-  private boolean tryToApplyCurrentEvent() throws Exception {
+  private boolean tryToApplyCurrentEvent(final TypedRecord<?> currentEvent) throws Exception {
     final boolean onRetry = zeebeDbTransaction != null;
     if (onRetry) {
       zeebeDbTransaction.rollback();
@@ -237,9 +269,9 @@ public final class ReplayStateMachine {
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     zeebeDbTransaction.run(
         () -> {
-          if (typedEvent.getSourceRecordPosition() > snapshotPosition) {
+          if (currentEvent.getSourceRecordPosition() > snapshotPosition) {
             eventApplier.applyState(
-                typedEvent.getKey(), typedEvent.getIntent(), typedEvent.getValue());
+                currentEvent.getKey(), currentEvent.getIntent(), currentEvent.getValue());
           }
           lastProcessedPositionState.markAsProcessed(currentEvent.getPosition());
         });
@@ -258,5 +290,10 @@ public final class ReplayStateMachine {
     zeebeDbTransaction.commit();
     zeebeDbTransaction = null;
     return true;
+  }
+
+  private enum State {
+    AWAIT_RECORD,
+    REPLAY_EVENT
   }
 }
