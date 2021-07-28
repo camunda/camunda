@@ -15,16 +15,19 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 	"strings"
+	"time"
+
+	"github.com/camunda-cloud/zeebe/clients/go/pkg/commands"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	createInstanceVersionFlag    int32
-	createInstanceVariablesFlag  string
-	createInstanceWithResultFlag []string
+	createInstanceVersionFlag        int32
+	createInstanceVariablesFlag      string
+	createInstanceWithResultFlag     []string
+	createInstanceRequestTimeoutFlag time.Duration
 )
 
 var createInstanceCmd = &cobra.Command{
@@ -42,7 +45,13 @@ var createInstanceCmd = &cobra.Command{
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		timeout := defaultTimeout
+
+		if createInstanceRequestTimeoutFlag != 0 {
+			timeout = createInstanceRequestTimeoutFlag
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
 		if createInstanceWithResultFlag == nil {
@@ -87,4 +96,8 @@ func init() {
 
 	// hack to use --withResult without values
 	createInstanceCmd.Flag("withResult").NoOptDefVal = " "
+
+	createInstanceCmd.
+		Flags().
+		DurationVar(&createInstanceRequestTimeoutFlag, "timeout", 0, "Specify the request timeout")
 }
