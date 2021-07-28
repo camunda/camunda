@@ -11,6 +11,8 @@ const chalk = require('chalk');
 const {spawn} = require('child_process');
 const kill = require('tree-kill');
 const fs = require('fs');
+const stream = require('stream');
+const path = require('path');
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
@@ -22,6 +24,12 @@ console.debug(
   'executing e2e script in [ci=' + ciMode + ', chromeheadlessMode=' + chromeheadlessMode + ']'
 );
 
+function spawnWithArgs(commandString, options) {
+  const args = commandString.split(' ');
+  const command = args.splice(0, 1)[0];
+  return spawn(command, args, options);
+}
+
 if (!ciMode) {
   // credentials for local testing, in CI we get credentials from jenkins
   process.env.BROWSERSTACK_USERNAME = 'optimize@camunda.com';
@@ -29,8 +37,41 @@ if (!ciMode) {
 }
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
-process.env.BROWSERSTACK_FORCE_LOCAL = '1';
-process.env.BROWSERSTACK_VERBOSE = '3';
+process.env.BROWSERSTACK_PARALLEL_RUNS = '3';
+process.env.BROWSERSTACK_PROJECT_NAME = 'Optimize E2E Tests';
+process.env.BROWSERSTACK_LOCAL_IDENTIFIER = 'TestCafe';
+
+// download browserstack local binary
+if (ciMode && !chromeheadlessMode) {
+  console.log('downloading browserstack local binary');
+
+  fetch('https://bstack-local-prod.s3.amazonaws.com/BrowserStackLocal-linux-x64').then(
+    (response) => {
+      if (!response.ok) {
+        throw new Error(`unexpected response ${response.statusText}`);
+      }
+
+      stream.pipeline(
+        response.body,
+        fs.createWriteStream('BrowserStackLocal'),
+        (err) => {
+          if (err) {
+            console.error('Pipeline failed.', err);
+          } else {
+            console.log('BrowserStackLocal file downloaded. Starting daemon.');
+            fs.chmodSync('BrowserStackLocal', 0o755); 
+            spawnWithArgs(
+              `./BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon start --parallel-runs 3`,
+              {
+                cwd: path.resolve(__dirname, '..'),
+              }
+            );
+          }
+        }
+      );
+    }
+  );
+}
 
 const browsers = chromeheadlessMode
   ? ['chrome:headless']
@@ -123,6 +164,14 @@ async function startTest() {
     }
   } finally {
     await testCafe.close();
+    if (ciMode && !chromeheadlessMode) {
+      spawnWithArgs(
+        `BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon stop`,
+        {
+          cwd: path.resolve(__dirname, '..'),
+        }
+      );
+    }
     kill(frontendProcess.pid, () => {
       kill(backendProcess.pid, () => {
         process.exit(hasFailures ? 3 : 0);
