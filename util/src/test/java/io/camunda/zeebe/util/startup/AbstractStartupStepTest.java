@@ -204,6 +204,50 @@ public class AbstractStartupStepTest {
     }
   }
 
+  static final class WaitingStartupStep extends AbstractStartupStep<Object> {
+
+    private final CountDownLatch startupCountdownLatch;
+    private final boolean completeWithException;
+
+    WaitingStartupStep(
+        final CountDownLatch startupCountdownLatch, final boolean completeWithException) {
+      this.startupCountdownLatch = startupCountdownLatch;
+      this.completeWithException = completeWithException;
+    }
+
+    @Override
+    protected CompletableFuture<Object> startupGuarded(final Object o) {
+      final var startupFuture = new CompletableFuture<>();
+      final var startupThread =
+          new Thread(
+              () -> {
+                try {
+                  startupCountdownLatch.await();
+                } catch (final InterruptedException e) {
+                  e.printStackTrace();
+                } finally {
+                  if (!completeWithException) {
+                    startupFuture.complete(o);
+                  } else {
+                    startupFuture.completeExceptionally(new Throwable("completed exceptionally"));
+                  }
+                }
+              });
+      startupThread.start();
+      return startupFuture;
+    }
+
+    @Override
+    protected CompletableFuture<Object> shutdownGuarded(final Object o) {
+      return CompletableFuture.completedFuture(o);
+    }
+
+    @Override
+    public String getName() {
+      return "WaitingStartupStep";
+    }
+  }
+
   private static final class AutomaticStartupStep extends AbstractStartupStep<Object> {
 
     @Override
@@ -245,50 +289,6 @@ public class AbstractStartupStepTest {
     @Override
     public String getName() {
       return "UselessStartupStep";
-    }
-  }
-
-  private static final class WaitingStartupStep extends AbstractStartupStep<Object> {
-
-    private final CountDownLatch startupCountdownLatch;
-    private final boolean completeWithException;
-
-    private WaitingStartupStep(
-        final CountDownLatch startupCountdownLatch, final boolean completeWithException) {
-      this.startupCountdownLatch = startupCountdownLatch;
-      this.completeWithException = completeWithException;
-    }
-
-    @Override
-    protected CompletableFuture<Object> startupGuarded(final Object o) {
-      final var startupFuture = new CompletableFuture<>();
-      final var startupThread =
-          new Thread(
-              () -> {
-                try {
-                  startupCountdownLatch.await();
-                } catch (final InterruptedException e) {
-                  e.printStackTrace();
-                } finally {
-                  if (!completeWithException) {
-                    startupFuture.complete(o);
-                  } else {
-                    startupFuture.completeExceptionally(new Throwable("completed exceptionally"));
-                  }
-                }
-              });
-      startupThread.start();
-      return startupFuture;
-    }
-
-    @Override
-    protected CompletableFuture<Object> shutdownGuarded(final Object o) {
-      return CompletableFuture.completedFuture(o);
-    }
-
-    @Override
-    public String getName() {
-      return "WaitingStartupStep";
     }
   }
 }
