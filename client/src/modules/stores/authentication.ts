@@ -7,23 +7,29 @@
 import {makeObservable, observable, action} from 'mobx';
 import {Notification} from 'modules/notifications';
 
+type Roles = Array<'view' | 'edit'>;
+
 type State = {
   isSessionValid: boolean;
   notification: Notification | undefined;
+  roles: Roles;
 };
 
 const DEFAULT_STATE: State = {
   isSessionValid: false,
   notification: undefined,
+  roles: ['view', 'edit'],
 };
 
-class SessionValidation {
+class Authentication {
   state: State = {...DEFAULT_STATE};
   constructor() {
     makeObservable(this, {
       state: observable,
       disableUserSession: action,
       enableUserSession: action,
+      setRoles: action,
+      reset: action,
     });
   }
 
@@ -38,9 +44,14 @@ class SessionValidation {
     this.state.notification = undefined;
   };
 
+  setRoles = (roles: Roles | undefined) => {
+    this.state.roles = roles ?? DEFAULT_STATE.roles;
+  };
+
   reset = () => {
     this.state = {...DEFAULT_STATE};
   };
 }
 
-export const sessionValidationStore = new SessionValidation();
+export const authenticationStore = new Authentication();
+export type {Roles};

@@ -9,7 +9,7 @@ import {Redirect, withRouter} from 'react-router-dom';
 
 import {get, setResponseInterceptor} from 'modules/request';
 import {useNotifications} from 'modules/notifications';
-import {sessionValidationStore} from 'modules/stores/sessionValidation';
+import {authenticationStore} from 'modules/stores/authentication';
 import {logoutUrl} from 'modules/api/header';
 import {Locations, RouterState} from 'modules/routes';
 import {Location} from 'history';
@@ -25,11 +25,12 @@ const Authentication: React.FC<Props> = observer((props) => {
   const [forceRedirect, setForceRedirect] = useState<boolean | null>(null);
 
   useEffect(() => {
-    requestUserEndpoint().then((status: number) => {
+    requestUserEndpoint().then(({status, roles}) => {
       if (status === 401 || status === 403) {
         setForceRedirect(true);
       } else {
-        sessionValidationStore.enableUserSession();
+        authenticationStore.enableUserSession();
+        authenticationStore.setRoles(roles);
         setForceRedirect(false);
       }
       setResponseInterceptor(({status, url}: Response) => {
@@ -50,7 +51,10 @@ const Authentication: React.FC<Props> = observer((props) => {
   const requestUserEndpoint = () => {
     // use user endpoint to check for authentication
     return get('/api/authentications/user')
-      .then((response) => response.status)
+      .then(async (response) => {
+        const body = await response.json();
+        return {status: response.status, roles: body.roles};
+      })
       .catch((error) => error.status);
   };
 
@@ -59,12 +63,12 @@ const Authentication: React.FC<Props> = observer((props) => {
     if (
       props.location.pathname !== '/' ||
       (props.location.pathname === '/' &&
-        sessionValidationStore.state.isSessionValid)
+        authenticationStore.state.isSessionValid)
     ) {
       notifications
         .displayNotification('info', {headline: 'Session expired'})
         .then((res) => {
-          sessionValidationStore.disableUserSession(res);
+          authenticationStore.disableUserSession(res);
         });
     }
 
@@ -80,7 +84,7 @@ const Authentication: React.FC<Props> = observer((props) => {
       />
     );
   } else if (state && state.isLoggedIn) {
-    sessionValidationStore.enableUserSession();
+    authenticationStore.enableUserSession();
     return props.children;
   } else if (state === undefined && forceRedirect === null) {
     // show empty page until we know if we need to redirect to login screen

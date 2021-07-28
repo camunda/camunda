@@ -12,6 +12,7 @@ import {Router, Route, Switch} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Authentication from './index';
 import {createMemoryHistory, History} from 'history';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const LOGIN_CONTENT = 'Login content';
 const PRIVATE_COMPONENT_CONTENT = 'Private component content';
@@ -49,6 +50,10 @@ function createWrapper(history: History) {
 }
 
 describe('Authentication', () => {
+  afterEach(() => {
+    authenticationStore.reset();
+  });
+
   it('should render component if user is logged in', async () => {
     const mockPathname = '/instances/1';
     const historyMock = createMemoryHistory({
@@ -69,6 +74,30 @@ describe('Authentication', () => {
       await screen.findByText(PRIVATE_COMPONENT_CONTENT)
     ).toBeInTheDocument();
     expect(historyMock.location.pathname).toBe(mockPathname);
+    expect(authenticationStore.state.roles).toEqual(['view', 'edit']);
+  });
+
+  it('should set user roles if defined', async () => {
+    const mockPathname = '/instances/1';
+    const historyMock = createMemoryHistory({
+      initialEntries: [mockPathname],
+    });
+
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json({roles: ['view']}))
+      )
+    );
+
+    render(<PrivateComponent />, {
+      wrapper: createWrapper(historyMock),
+    });
+
+    expect(
+      await screen.findByText(PRIVATE_COMPONENT_CONTENT)
+    ).toBeInTheDocument();
+    expect(historyMock.location.pathname).toBe(mockPathname);
+    expect(authenticationStore.state.roles).toEqual(['view']);
   });
 
   it('should redirect to login page if user is not authenticated (401)', async () => {
