@@ -101,7 +101,6 @@ public final class EngineRule extends ExternalResource {
       new Int2ObjectHashMap<>();
 
   private long lastProcessedPosition = -1L;
-  private ReplayMode replayMode;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -176,7 +175,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public EngineRule withReplayMode(final ReplayMode replayMode) {
-    this.replayMode = replayMode;
+    environmentRule.withReplayMode(replayMode);
     return this;
   }
 
@@ -194,7 +193,6 @@ public final class EngineRule extends ExternalResource {
               (processingContext) ->
                   EngineProcessors.createEngineProcessors(
                           processingContext
-                              .replayMode(replayMode)
                               .onProcessedListener(
                                   record -> {
                                     lastProcessedPosition = record.getPosition();

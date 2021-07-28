@@ -11,6 +11,9 @@ import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -27,16 +30,22 @@ public class ContinuouslyReplayTest {
   @Rule public final EngineRule processing = EngineRule.withSharedStorage(sharedStorage);
 
   @Test
-  public void shouldEndUpWithTheSameState() {
+  public void shouldBuildTheSameStateOnProcessingAndReplay() {
     // given
-
-    // when
     processing
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess().startEvent().endEvent().done())
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
         .deploy();
 
+    // when
+    final var processInstanceKey = processing.processInstance().ofBpmnProcessId("process").create();
+
     // then
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
     assertStates();
   }
 
