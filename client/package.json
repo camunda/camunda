@@ -70,7 +70,7 @@
     "@types/history": "^4.7.9",
     "@types/jest": "^26.0.24",
     "@types/node": "^15.14.0",
-    "@types/react": "^17.0.14",
+    "@types/react": "^17.0.15",
     "@types/react-dom": "^17.0.9",
     "@types/react-router-dom": "^5.1.8",
     "@types/styled-components": "^5.1.11",
