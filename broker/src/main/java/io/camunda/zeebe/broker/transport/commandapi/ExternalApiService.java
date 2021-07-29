@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
+import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -25,23 +26,25 @@ import io.camunda.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
-public final class CommandApiService extends Actor
+public final class ExternalApiService extends Actor
     implements PartitionListener, DiskSpaceUsageListener {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
-  private final CommandApiRequestHandler requestHandler;
+  private final CommandApiRequestHandler commandRequestHandler;
+  private final QueryApiRequestHandler queryRequestHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
   private final String actorName;
 
-  public CommandApiService(
+  public ExternalApiService(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
       final PartitionAwareRequestLimiter limiter) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
-    requestHandler = new CommandApiRequestHandler();
-    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    commandRequestHandler = new CommandApiRequestHandler();
+    queryRequestHandler = new QueryApiRequestHandler();
+    actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 
   @Override
@@ -78,8 +81,10 @@ public final class CommandApiService extends Actor
                     if (error == null) {
 
                       final var requestLimiter = limiter.getLimiter(partitionId);
-                      requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
-                      serverTransport.subscribe(partitionId, requestHandler);
+                      commandRequestHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      queryRequestHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      serverTransport.subscribe(partitionId, commandRequestHandler, "command");
+                      serverTransport.subscribe(partitionId, queryRequestHandler, "query");
                       future.complete(null);
                     } else {
                       Loggers.SYSTEM_LOGGER.error(
@@ -101,7 +106,8 @@ public final class CommandApiService extends Actor
   private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
     return actor.call(
         () -> {
-          requestHandler.removePartition(partitionId);
+          commandRequestHandler.removePartition(partitionId);
+          queryRequestHandler.removePartition(partitionId);
           cleanLeadingPartition(partitionId);
         });
   }
@@ -113,7 +119,8 @@ public final class CommandApiService extends Actor
 
   private void removeForPartitionId(final int partitionId) {
     limiter.removePartition(partitionId);
-    serverTransport.unsubscribe(partitionId);
+    serverTransport.unsubscribe(partitionId, "command");
+    serverTransport.unsubscribe(partitionId, "query");
   }
 
   public CommandResponseWriter newCommandResponseWriter() {
@@ -131,11 +138,13 @@ public final class CommandApiService extends Actor
 
   @Override
   public void onDiskSpaceNotAvailable() {
-    actor.run(requestHandler::onDiskSpaceNotAvailable);
+    actor.run(commandRequestHandler::onDiskSpaceNotAvailable);
+    actor.run(queryRequestHandler::onDiskSpaceNotAvailable);
   }
 
   @Override
   public void onDiskSpaceAvailable() {
-    actor.run(requestHandler::onDiskSpaceAvailable);
+    actor.run(commandRequestHandler::onDiskSpaceAvailable);
+    actor.run(queryRequestHandler::onDiskSpaceAvailable);
   }
 }

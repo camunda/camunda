@@ -72,7 +72,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StoragePartitionTran
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorPartitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionStep;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.commandapi.ExternalApiService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProcessingContext;
@@ -143,7 +143,7 @@ public final class Broker implements AutoCloseable {
   private CompletableFuture<Broker> startFuture;
   private TopologyManagerImpl topologyManager;
   private LeaderManagementRequestHandler managementRequestHandler;
-  private CommandApiService commandHandler;
+  private ExternalApiService externalApiService;
   private ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
@@ -231,8 +231,8 @@ public final class Broker implements AutoCloseable {
     startContext.addStep("monitoring services", () -> monitoringServerStep(localBroker));
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
-        "command api transport and handler",
-        () -> commandApiTransportAndHandlerStep(brokerCfg, localBroker));
+        "external api transport and request handler",
+        () -> externalApiTransportAndRequestHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     startContext.addStep("cluster services", () -> clusterServices.start().join());
@@ -288,13 +288,14 @@ public final class Broker implements AutoCloseable {
     };
   }
 
-  private AutoCloseable commandApiTransportAndHandlerStep(
+  public AutoCloseable externalApiTransportAndRequestHandlerStep(
       final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
+    // todo: change network.commandApi to externalApi or so
     final var messagingService =
         createMessagingService(brokerCfg.getCluster(), brokerCfg.getNetwork().getCommandApi());
     messagingService.start().join();
     LOG.debug(
-        "Bound command API to {}, using advertised address {} ",
+        "Bound external API to {}, using advertised address {} ",
         messagingService.bindingAddresses(),
         messagingService.address());
 
@@ -308,13 +309,13 @@ public final class Broker implements AutoCloseable {
       limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
     }
 
-    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
-    partitionListeners.add(commandHandler);
-    scheduleActor(commandHandler);
-    diskSpaceUsageListeners.add(commandHandler);
+    externalApiService = new ExternalApiService(serverTransport, localBroker, limiter);
+    partitionListeners.add(externalApiService);
+    scheduleActor(externalApiService);
+    diskSpaceUsageListeners.add(externalApiService);
 
     return () -> {
-      commandHandler.close();
+      externalApiService.close();
       serverTransport.close();
       messagingService.stop().join();
     };
@@ -453,8 +454,8 @@ public final class Broker implements AutoCloseable {
                     messagingService,
                     scheduler,
                     brokerCfg,
-                    () -> commandHandler.newCommandResponseWriter(),
-                    () -> commandHandler.getOnProcessedListener(partitionId),
+                    () -> externalApiService.newCommandResponseWriter(),
+                    () -> externalApiService.getOnProcessedListener(partitionId),
                     snapshotStoreFactory.getConstructableSnapshotStore(partitionId),
                     snapshotStoreFactory.getReceivableSnapshotStore(partitionId),
                     typedRecordProcessorsFactory,
