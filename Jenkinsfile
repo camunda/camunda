@@ -5,7 +5,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-11-slim";
+MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim";
 
 static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
@@ -375,8 +375,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-static-analysis_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              // SonarCloud will deprecate JDK 8 in October 2020, thus JDK 11 is used here.
-              yaml basePodSpec(1, 3, 'maven:3.6.3-jdk-11-slim')
+              yaml basePodSpec(1, 3)
             }
           }
           steps {
