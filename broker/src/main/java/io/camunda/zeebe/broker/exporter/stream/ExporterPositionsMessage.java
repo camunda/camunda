@@ -21,7 +21,7 @@ import org.agrona.collections.MutableInteger;
 public class ExporterPositionsMessage
     extends SbeBufferWriterReader<ExporterPositionsEncoder, ExporterPositionsDecoder> {
 
-  final Map<String, Long> exporterPositions = new HashMap<>();
+  private final Map<String, Long> exporterPositions = new HashMap<>();
   private final ExporterPositionsEncoder encoder = new ExporterPositionsEncoder();
   private final ExporterPositionsDecoder decoder = new ExporterPositionsDecoder();
 
