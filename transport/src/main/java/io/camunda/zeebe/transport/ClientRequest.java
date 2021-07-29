@@ -14,7 +14,5 @@ public interface ClientRequest extends BufferWriter {
   /** @return the partition id to which the request should be send to */
   int getPartitionId();
 
-  default String getRequestType() {
-    return "command";
-  }
+  String getRequestType();
 }
