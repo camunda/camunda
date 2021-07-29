@@ -1,4 +1,4 @@
-zbctl is command line interface designed to create and read resources inside zeebe broker.
+zbctl is a command line interface designed to create and read resources inside zeebe broker.
 It is designed for regular maintenance jobs such as:
 	* deploying processes,
 	* creating jobs and process instances
