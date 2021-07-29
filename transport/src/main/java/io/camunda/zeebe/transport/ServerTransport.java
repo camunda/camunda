@@ -16,14 +16,16 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    *
    * @param partitionId the partition, for which should be subscribed
    * @param requestHandler the handler which should be called.
+   * @param apiName
    */
-  ActorFuture<Void> subscribe(int partitionId, RequestHandler requestHandler);
+  ActorFuture<Void> subscribe(int partitionId, RequestHandler requestHandler, final String apiName);
 
   /**
    * Unsubscribe from the given partition, the registered handler will no longer be called on new
    * requests.
    *
    * @param partitionId the partition, from which we should unsubscribe
+   * @param apiName
    */
-  ActorFuture<Void> unsubscribe(int partitionId);
+  ActorFuture<Void> unsubscribe(int partitionId, final String apiName);
 }

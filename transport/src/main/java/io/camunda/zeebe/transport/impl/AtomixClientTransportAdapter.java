@@ -70,6 +70,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     final var partitionId = clientRequest.getPartitionId();
 
     final var requestFuture = new CompletableActorFuture<DirectBuffer>();
+    final var requestType = clientRequest.getRequestType();
     final var requestContext =
         new RequestContext(
             requestFuture,
@@ -78,7 +79,8 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
             requestBytes,
             responseValidator,
             shouldRetry,
-            timeout);
+            timeout,
+            requestType);
     actor.call(
         () -> {
           final var scheduledTimer = actor.runDelayed(timeout, () -> timeoutFuture(requestContext));

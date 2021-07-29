@@ -63,6 +63,8 @@ public class AtomixTransportTest {
   private static String serverAddress;
   private static TransportFactory transportFactory;
   private static NettyMessagingService nettyMessagingService;
+  private static final String DEFAULT_REQUEST_TYPE = "type";
+  private static final String API_NAME = DEFAULT_REQUEST_TYPE;
 
   @Parameter(0)
   public String testName;
@@ -161,7 +163,9 @@ public class AtomixTransportTest {
   public void shouldSubscribeToPartition() {
     // given
     final var incomingRequestFuture = new CompletableFuture<byte[]>();
-    serverTransport.subscribe(0, new DirectlyResponder(incomingRequestFuture::complete)).join();
+    serverTransport
+        .subscribe(0, new DirectlyResponder(incomingRequestFuture::complete), API_NAME)
+        .join();
 
     // when
     final var requestFuture =
@@ -178,7 +182,9 @@ public class AtomixTransportTest {
   public void shouldRetryOnInvalidResponse() throws Exception {
     // given
     final var retryLatch = new CountDownLatch(2);
-    serverTransport.subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown())).join();
+    serverTransport
+        .subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown()), API_NAME)
+        .join();
 
     // when
     clientTransport.sendRequestWithRetry(
@@ -199,7 +205,8 @@ public class AtomixTransportTest {
             new DirectlyResponder(
                 bytes -> {
                   throw new IllegalStateException("expected");
-                }))
+                }),
+            API_NAME)
         .join();
 
     // when
@@ -217,10 +224,12 @@ public class AtomixTransportTest {
   public void shouldUnsubscribeFromPartition() {
     // given
     final var incomingRequestFuture = new CompletableFuture<byte[]>();
-    serverTransport.subscribe(0, new DirectlyResponder(incomingRequestFuture::complete)).join();
+    serverTransport
+        .subscribe(0, new DirectlyResponder(incomingRequestFuture::complete), API_NAME)
+        .join();
 
     // when
-    serverTransport.unsubscribe(0).join();
+    serverTransport.unsubscribe(0, API_NAME).join();
 
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
@@ -263,7 +272,7 @@ public class AtomixTransportTest {
     // given
     final var nodeAddressRef = new AtomicReference<String>();
     final var retryLatch = new CountDownLatch(3);
-    serverTransport.subscribe(0, new DirectlyResponder()).join();
+    serverTransport.subscribe(0, new DirectlyResponder(), API_NAME).join();
 
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
@@ -287,7 +296,9 @@ public class AtomixTransportTest {
   public void shouldRetryAndSucceedAfterResponseIsValid() throws InterruptedException {
     // given
     final var retryLatch = new CountDownLatch(2);
-    serverTransport.subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown())).join();
+    serverTransport
+        .subscribe(0, new DirectlyResponder(bytes -> retryLatch.countDown()), API_NAME)
+        .join();
 
     final var responseValidation = new AtomicBoolean(false);
     final var requestFuture =
@@ -334,7 +345,7 @@ public class AtomixTransportTest {
 
     // when
     retryLatch.await(REQUEST_TIMEOUT.dividedBy(2).toMillis(), TimeUnit.MILLISECONDS);
-    serverTransport.subscribe(0, new DirectlyResponder());
+    serverTransport.subscribe(0, new DirectlyResponder(), API_NAME);
 
     // then
     final var response = requestFuture.join();
@@ -352,6 +363,11 @@ public class AtomixTransportTest {
     @Override
     public int getPartitionId() {
       return 0;
+    }
+
+    @Override
+    public String getRequestType() {
+      return DEFAULT_REQUEST_TYPE;
     }
 
     @Override
