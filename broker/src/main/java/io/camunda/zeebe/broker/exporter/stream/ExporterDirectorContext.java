@@ -103,7 +103,7 @@ public final class ExporterDirectorContext {
      * ACTIVE, means it is actively running the exporting and distributes the exporter positions to
      * the followers. This mode is used on the leader side.
      */
-    ACTIVE, // default, used on Leaders
+    ACTIVE,
     /**
      * PASSIVE, means it is not actively exporting records. It is consuming the distributed exporter
      * positions and stores them in the state. This mode is used on the follower side.
