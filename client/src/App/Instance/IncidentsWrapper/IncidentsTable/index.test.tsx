@@ -13,6 +13,7 @@ import {SORT_ORDER} from 'modules/constants';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
@@ -58,6 +59,10 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('IncidentsTable', () => {
+  afterEach(() => {
+    authenticationStore.reset();
+  });
+
   it('should render the right column headers', () => {
     render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
 
@@ -67,6 +72,19 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Creation Time')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
+  });
+
+  it('should render the right column headers for restricted user', () => {
+    authenticationStore.setRoles(['view']);
+
+    render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
+
+    expect(screen.getByText('Incident Type')).toBeInTheDocument();
+    expect(screen.getByText('Flow Node')).toBeInTheDocument();
+    expect(screen.getByText('Job Id')).toBeInTheDocument();
+    expect(screen.getByText('Creation Time')).toBeInTheDocument();
+    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(screen.queryByText('Operations')).not.toBeInTheDocument();
   });
 
   it('should render incident details', () => {
@@ -92,6 +110,9 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(mockProps.incidents[0].errorMessage)
     ).toBeInTheDocument();
+    expect(
+      withinRow.getByRole('button', {name: 'Retry Incident'})
+    ).toBeInTheDocument();
 
     withinRow = within(
       screen.getByTestId(`tr-incident-${mockProps.incidents[1].id}`)
@@ -113,6 +134,63 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(mockProps.incidents[1].errorMessage)
     ).toBeInTheDocument();
+    expect(
+      withinRow.getByRole('button', {name: 'Retry Incident'})
+    ).toBeInTheDocument();
+  });
+
+  it('should render incident details for restricted user', () => {
+    authenticationStore.setRoles(['view']);
+
+    render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
+    let withinRow = within(
+      screen.getByTestId(`tr-incident-${mockProps.incidents[0].id}`)
+    );
+
+    expect(
+      withinRow.getByText(mockProps.incidents[0].errorType)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(mockProps.incidents[0].flowNodeName)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(mockProps.incidents[0].jobId)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(
+        formatDate(mockProps.incidents[0].creationTime) || '--'
+      )
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(mockProps.incidents[0].errorMessage)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.queryByRole('button', {name: 'Retry Incident'})
+    ).not.toBeInTheDocument();
+
+    withinRow = within(
+      screen.getByTestId(`tr-incident-${mockProps.incidents[1].id}`)
+    );
+    expect(
+      withinRow.getByText(mockProps.incidents[1].errorType)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(mockProps.incidents[1].flowNodeName)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(mockProps.incidents[1].jobId)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(
+        formatDate(mockProps.incidents[1].creationTime) || '--'
+      )
+    ).toBeInTheDocument();
+    expect(
+      withinRow.getByText(mockProps.incidents[1].errorMessage)
+    ).toBeInTheDocument();
+    expect(
+      withinRow.queryByRole('button', {name: 'Retry Incident'})
+    ).not.toBeInTheDocument();
   });
 
   it('should display -- for jobId', () => {

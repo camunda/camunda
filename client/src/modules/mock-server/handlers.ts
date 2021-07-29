@@ -6,21 +6,6 @@
 
 import {RequestHandler, rest} from 'msw';
 
-const handlers: RequestHandler[] = [
-  rest.get('/api/authentications/user', async (req, res, ctx) => {
-    const response = await ctx.fetch(req);
-    const body = await response.json();
-    if (body.username === 'act') {
-      return res(
-        ctx.json({
-          ...body,
-          roles: ['view'],
-        })
-      );
-    } else {
-      return res(ctx.json(body));
-    }
-  }),
-];
+const handlers: RequestHandler[] = [];
 
 export {handlers};

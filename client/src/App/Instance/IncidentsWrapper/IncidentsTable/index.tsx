@@ -20,6 +20,7 @@ import {useInstancePageParams} from 'App/Instance/useInstancePageParams';
 import {ErrorMessageModal} from './ErrorMessageModal';
 
 import * as Styled from './styled';
+import {Restricted} from 'modules/components/Restricted';
 const {THead, TBody, TR, TD} = Table;
 
 type Props = {
@@ -91,9 +92,11 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
             <Styled.TH>
               <ColumnHeader label="Error Message" />
             </Styled.TH>
-            <Styled.TH>
-              <ColumnHeader label="Operations" />
-            </Styled.TH>
+            <Restricted scopes={['edit']}>
+              <Styled.TH>
+                <ColumnHeader label="Operations" />
+              </Styled.TH>
+            </Restricted>
           </TR>
         </THead>
 
@@ -156,13 +159,15 @@ const IncidentsTable: React.FC<Props> = observer(function IncidentsTable({
                         )}
                       </Styled.Flex>
                     </TD>
-                    <TD>
-                      <IncidentOperation
-                        instanceId={processInstanceId}
-                        incident={incident}
-                        showSpinner={incident.hasActiveOperation}
-                      />
-                    </TD>
+                    <Restricted scopes={['edit']}>
+                      <TD>
+                        <IncidentOperation
+                          instanceId={processInstanceId}
+                          incident={incident}
+                          showSpinner={incident.hasActiveOperation}
+                        />
+                      </TD>
+                    </Restricted>
                   </Styled.IncidentTR>
                 </Styled.Transition>
               );

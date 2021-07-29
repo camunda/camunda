@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import {formatDate} from 'modules/utils/date';
 import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
@@ -19,6 +17,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {useNotifications} from 'modules/notifications';
 import {Link} from 'modules/components/Link';
 import {Locations} from 'modules/routes';
+import {Restricted} from 'modules/components/Restricted';
 
 const InstanceHeader = observer(() => {
   const {instance} = currentInstanceStore.state;
@@ -98,19 +97,21 @@ const InstanceHeader = observer(() => {
           </tr>
         </tbody>
       </Styled.Table>
-      <Operations
-        instance={instance}
-        onOperation={() => currentInstanceStore.activateOperation()}
-        onFailure={() => {
-          currentInstanceStore.deactivateOperation();
-          notifications.displayNotification('error', {
-            headline: 'Operation could not be created',
-          });
-        }}
-        forceSpinner={
-          variablesStore.hasActiveOperation || instance?.hasActiveOperation
-        }
-      />
+      <Restricted scopes={['edit']}>
+        <Operations
+          instance={instance}
+          onOperation={() => currentInstanceStore.activateOperation()}
+          onFailure={() => {
+            currentInstanceStore.deactivateOperation();
+            notifications.displayNotification('error', {
+              headline: 'Operation could not be created',
+            });
+          }}
+          forceSpinner={
+            variablesStore.hasActiveOperation || instance?.hasActiveOperation
+          }
+        />
+      </Restricted>
     </>
   );
 });

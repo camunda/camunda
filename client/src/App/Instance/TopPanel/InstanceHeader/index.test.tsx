@@ -31,6 +31,7 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {MemoryRouter} from 'react-router';
 import {singleInstanceDiagramStore} from 'modules/stores/singleInstanceDiagram';
 import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const Wrapper: React.FC = ({children}) => {
   return (
@@ -48,6 +49,7 @@ describe('InstanceHeader', () => {
     variablesStore.reset();
     currentInstanceStore.reset();
     singleInstanceDiagramStore.reset();
+    authenticationStore.reset();
   });
 
   it('should show skeleton before instance data is available', async () => {
@@ -296,5 +298,61 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+  });
+
+  it('should show operation buttons when user has permission', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      )
+    );
+
+    authenticationStore.setRoles(['view', 'edit']);
+
+    render(<InstanceHeader />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    singleInstanceDiagramStore.init();
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/})
+    ).toBeInTheDocument();
+  });
+
+  it('should hide operation buttons when user has no permission', async () => {
+    mockServer.use(
+      rest.get('/api/process-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      ),
+      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
+        res.once(ctx.text(mockProcessXML))
+      )
+    );
+
+    authenticationStore.setRoles(['view']);
+
+    render(<InstanceHeader />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    singleInstanceDiagramStore.init();
+    currentInstanceStore.init(mockInstanceWithActiveOperation.id);
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /Cancel Instance/})
+    ).not.toBeInTheDocument();
   });
 });
