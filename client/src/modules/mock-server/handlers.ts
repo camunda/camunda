@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {RequestHandler, rest} from 'msw';
+import {RequestHandler} from 'msw';
 
 const handlers: RequestHandler[] = [];
 
