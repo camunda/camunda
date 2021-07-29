@@ -14,6 +14,7 @@ import org.mockserver.verify.VerificationTimes;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
+import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import java.io.IOException;
 import java.net.URI;
@@ -25,22 +26,24 @@ import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
 public class StatusWebSocketIT extends AbstractIT {
+  // use single web socket container instance, as every get call is by default creating new instances otherwise
+  private static final WebSocketContainer WEB_SOCKET_CONTAINER = ContainerProvider.getWebSocketContainer();
 
   @Test
   public void getImportStatus() throws Exception {
     // given
     final StatusClientSocket socket = new StatusClientSocket();
-    connectStatusClientSocket(socket);
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived).isTrue();
 
-    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived).isTrue();
+      // when
+      deployProcessAndTriggerImport();
 
-    // when
-    deployProcessAndTriggerImport();
-
-    // then
-    boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(statusCorrectlyReceived).isTrue();
+      // then
+      boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(statusCorrectlyReceived).isTrue();
+    }
   }
 
   @Test
@@ -48,34 +51,35 @@ public class StatusWebSocketIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().setMaxStatusConnections(0);
     final StatusClientSocket socket = new StatusClientSocket();
-    connectStatusClientSocket(socket);
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived).isFalse();
 
-    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived).isFalse();
+      // when
+      deployProcessAndTriggerImport();
 
-    // when
-    deployProcessAndTriggerImport();
-
-    // then
-    boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(statusCorrectlyReceived).isFalse();
+      // then
+      boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(statusCorrectlyReceived).isFalse();
+    }
   }
 
   @Test
   public void importStatusHasChanged() throws Exception {
     // given
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
-    connectStatusClientSocket(socket);
 
-    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived).isTrue();
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived).isTrue();
 
-    // when
-    deployProcessAndTriggerImport();
+      // when
+      deployProcessAndTriggerImport();
 
-    // then
-    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isTrue();
-    assertThat(socket.isImportStatusChanged()).isTrue();
+      // then
+      assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isTrue();
+      assertThat(socket.isImportStatusChanged()).isTrue();
+    }
   }
 
   @Test
@@ -85,15 +89,16 @@ public class StatusWebSocketIT extends AbstractIT {
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 
     // when status socket connects
-    connectStatusClientSocket(socket);
-    // then the initial status is received
-    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived).isTrue();
-    assertThat(socket.getImportStatus()).isFalse();
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      // then the initial status is received
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived).isTrue();
+      assertThat(socket.getImportStatus()).isFalse();
 
-    // then no update received as no import is running so no status change
-    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
-    assertThat(socket.getImportStatus()).isFalse();
+      // then no update received as no import is running so no status change
+      assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
+      assertThat(socket.getImportStatus()).isFalse();
+    }
   }
 
   @Test
@@ -104,32 +109,32 @@ public class StatusWebSocketIT extends AbstractIT {
     final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
 
     // when status socket connects
-    connectStatusClientSocket(socket);
-    // then the initial status is received
-    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived).isTrue();
-    assertThat(socket.getImportStatus()).isTrue();
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      // then the initial status is received
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived).isTrue();
+      assertThat(socket.getImportStatus()).isTrue();
 
-    // when another import cycle runs and the state doesn't change (still importing)
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      // when another import cycle runs and the state doesn't change (still importing)
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
-    // then no update is received
-    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
-    assertThat(socket.getImportStatus()).isTrue();
+      // then no update is received
+      assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
+      assertThat(socket.getImportStatus()).isTrue();
+    }
   }
 
   @Test
   public void importStatusStaysFalseIfImportIsDeactivated() throws Exception {
-    try {
-      // given
-      embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
-        .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
-      embeddedOptimizeExtension.reloadConfiguration();
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
+      .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
+    embeddedOptimizeExtension.reloadConfiguration();
 
-      final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
-      connectStatusClientSocket(socket);
-
-      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch()
+        .await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
       // when
@@ -158,29 +163,28 @@ public class StatusWebSocketIT extends AbstractIT {
       .withPath(engineIntegrationExtension.getEnginePath() + "/version");
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final StatusClientSocket socket = new StatusClientSocket();
-    connectStatusClientSocket(socket);
+    try (final Session ignored = connectStatusClientSocket(socket)) {
+      final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(initialStatusCorrectlyReceived).isTrue();
 
-    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived).isTrue();
+      // when
+      deployProcessAndTriggerImport();
 
-    // when
-    deployProcessAndTriggerImport();
-
-    // then
-    boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(statusCorrectlyReceived).isTrue();
-    // only one request to the engine was made
-    engineMockServer.verify(engineVersionRequestMatcher, VerificationTimes.exactly(1));
+      // then
+      boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+      assertThat(statusCorrectlyReceived).isTrue();
+      // only one request to the engine was made
+      engineMockServer.verify(engineVersionRequestMatcher, VerificationTimes.exactly(1));
+    }
   }
 
-  private void connectStatusClientSocket(Object statusClientSocket)
+  private Session connectStatusClientSocket(Object statusClientSocket)
     throws DeploymentException, IOException, URISyntaxException {
     final String dest = String.format(
       "ws://localhost:%d/ws/status",
       embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090)
     );
-    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-    container.connectToServer(statusClientSocket, new URI(dest));
+    return WEB_SOCKET_CONTAINER.connectToServer(statusClientSocket, new URI(dest));
   }
 
   private void deployProcessAndTriggerImport() {
