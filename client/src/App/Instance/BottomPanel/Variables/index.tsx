@@ -25,6 +25,7 @@ import {useInstancePageParams} from '../../useInstancePageParams';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useNotifications} from 'modules/notifications';
+import {Restricted} from 'modules/components/Restricted';
 
 const Variables: React.FC = observer(() => {
   const {
@@ -184,44 +185,48 @@ const Variables: React.FC = observer(() => {
                                   {hasActiveOperation ? (
                                     <Styled.Spinner data-testid="edit-variable-spinner" />
                                   ) : (
-                                    <Styled.EditButton
-                                      title="Enter edit mode"
-                                      type="button"
-                                      data-testid="edit-variable-button"
-                                      disabled={loadingItemId !== null}
-                                      onClick={async () => {
-                                        let value = variableValue;
-                                        if (isPreview) {
-                                          const variable =
-                                            await variablesStore.fetchVariable({
-                                              id,
-                                              onError: () => {
-                                                notifications.displayNotification(
-                                                  'error',
-                                                  {
-                                                    headline:
-                                                      'Variable could not be fetched',
-                                                  }
-                                                );
-                                              },
-                                            });
+                                    <Restricted scopes={['edit']}>
+                                      <Styled.EditButton
+                                        title="Enter edit mode"
+                                        type="button"
+                                        data-testid="edit-variable-button"
+                                        disabled={loadingItemId !== null}
+                                        onClick={async () => {
+                                          let value = variableValue;
+                                          if (isPreview) {
+                                            const variable =
+                                              await variablesStore.fetchVariable(
+                                                {
+                                                  id,
+                                                  onError: () => {
+                                                    notifications.displayNotification(
+                                                      'error',
+                                                      {
+                                                        headline:
+                                                          'Variable could not be fetched',
+                                                      }
+                                                    );
+                                                  },
+                                                }
+                                              );
 
-                                          if (variable === null) {
-                                            return;
+                                            if (variable === null) {
+                                              return;
+                                            }
+
+                                            value = variable.value;
                                           }
 
-                                          value = variable.value;
-                                        }
-
-                                        form.reset({
-                                          name: variableName,
-                                          value,
-                                        });
-                                      }}
-                                      size="large"
-                                      iconButtonTheme="default"
-                                      icon={<Styled.EditIcon />}
-                                    />
+                                          form.reset({
+                                            name: variableName,
+                                            value,
+                                          });
+                                        }}
+                                        size="large"
+                                        iconButtonTheme="default"
+                                        icon={<Styled.EditIcon />}
+                                      />
+                                    </Restricted>
                                   )}
                                 </Styled.EditButtonsTD>
                               )}
@@ -236,40 +241,42 @@ const Variables: React.FC = observer(() => {
             </InfiniteScroller>
           </>
         )}
-        <Styled.Footer
-          scrollBarWidth={
-            (scrollableContentRef?.current?.offsetWidth ?? 0) -
-            (scrollableContentRef?.current?.scrollWidth ?? 0)
-          }
-        >
-          {currentInstanceStore.isRunning && (
-            <>
-              {pendingItem !== null && <PendingVariable />}
-              {isAddMode && pendingItem === null && <NewVariable />}
-            </>
-          )}
+        <Restricted scopes={['edit']}>
+          <Styled.Footer
+            scrollBarWidth={
+              (scrollableContentRef?.current?.offsetWidth ?? 0) -
+              (scrollableContentRef?.current?.scrollWidth ?? 0)
+            }
+          >
+            {currentInstanceStore.isRunning && (
+              <>
+                {pendingItem !== null && <PendingVariable />}
+                {isAddMode && pendingItem === null && <NewVariable />}
+              </>
+            )}
 
-          {!isAddMode && pendingItem === null && (
-            <Styled.Button
-              type="button"
-              title="Add variable"
-              size="small"
-              onClick={() => {
-                form.reset({name: '', value: ''});
-              }}
-              disabled={
-                status === 'first-fetch' ||
-                !isViewMode ||
-                (flowNodeSelectionStore.isRootNodeSelected
-                  ? !currentInstanceStore.isRunning
-                  : !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
-                loadingItemId !== null
-              }
-            >
-              <Styled.Plus /> Add Variable
-            </Styled.Button>
-          )}
-        </Styled.Footer>
+            {!isAddMode && pendingItem === null && (
+              <Styled.Button
+                type="button"
+                title="Add variable"
+                size="small"
+                onClick={() => {
+                  form.reset({name: '', value: ''});
+                }}
+                disabled={
+                  status === 'first-fetch' ||
+                  !isViewMode ||
+                  (flowNodeSelectionStore.isRootNodeSelected
+                    ? !currentInstanceStore.isRunning
+                    : !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
+                  loadingItemId !== null
+                }
+              >
+                <Styled.Plus /> Add Variable
+              </Styled.Button>
+            )}
+          </Styled.Footer>
+        </Restricted>
       </Styled.VariablesContent>
     </>
   );

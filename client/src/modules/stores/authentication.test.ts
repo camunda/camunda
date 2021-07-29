@@ -18,4 +18,18 @@ describe('stores/authentication', () => {
     authenticationStore.setRoles(['view']);
     expect(authenticationStore.state.roles).toEqual(['view']);
   });
+
+  it('should see if user has permissions to specific scopes', () => {
+    expect(authenticationStore.hasPermission(['edit'])).toBe(true);
+    expect(authenticationStore.hasPermission(['view'])).toBe(true);
+    expect(authenticationStore.hasPermission(['edit', 'view'])).toBe(true);
+    authenticationStore.setRoles(undefined);
+    expect(authenticationStore.hasPermission(['edit'])).toBe(true);
+    expect(authenticationStore.hasPermission(['view'])).toBe(true);
+    expect(authenticationStore.hasPermission(['edit', 'view'])).toBe(true);
+    authenticationStore.setRoles(['view']);
+    expect(authenticationStore.hasPermission(['edit'])).toBe(false);
+    expect(authenticationStore.hasPermission(['view'])).toBe(true);
+    expect(authenticationStore.hasPermission(['edit', 'view'])).toBe(true);
+  });
 });

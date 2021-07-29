@@ -15,6 +15,7 @@ describe('Restricted', () => {
 
   it('should not render content that user has no permission for', () => {
     authenticationStore.setRoles(['view']);
+
     render(
       <Restricted scopes={['edit']}>
         <div>test content</div>
@@ -24,8 +25,9 @@ describe('Restricted', () => {
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
   });
 
-  it('should render content that user has permission for 2', () => {
+  it('should render content that user has permission for at least one scope', () => {
     authenticationStore.setRoles(['view']);
+
     render(
       <Restricted scopes={['view', 'edit']}>
         <div>test content</div>
@@ -37,6 +39,7 @@ describe('Restricted', () => {
 
   it('should render content that user has permission for', () => {
     authenticationStore.setRoles(['view', 'edit']);
+
     render(
       <Restricted scopes={['edit']}>
         <div>test content</div>
@@ -48,6 +51,7 @@ describe('Restricted', () => {
 
   it('should render content by default (user has no roles defined)', () => {
     authenticationStore.setRoles(undefined);
+
     render(
       <Restricted scopes={['edit']}>
         <div>test content</div>

@@ -27,6 +27,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {createInstance} from 'modules/testUtils';
 import {Form} from 'react-final-form';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -1065,5 +1066,57 @@ describe('Variables', () => {
     expect(
       within(screen.getByTestId('modal')).getByTestId('json-editor-container')
     ).toBeInTheDocument();
+  });
+
+  describe('Restricted user', () => {
+    beforeAll(() => {
+      authenticationStore.setRoles(['view']);
+    });
+
+    afterAll(() => {
+      authenticationStore.reset();
+    });
+
+    it('should not display Edit Variable button', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json([mockVariables[0]]))
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.queryByTitle(/enter edit mode/i)).not.toBeInTheDocument();
+    });
+
+    it('should not display Add Variable footer', async () => {
+      currentInstanceStore.setCurrentInstance(instanceMock);
+
+      mockServer.use(
+        rest.post(
+          '/api/process-instances/:instanceId/variables',
+          (_, res, ctx) => res.once(ctx.json([mockVariables[0]]))
+        )
+      );
+      variablesStore.fetchVariables({
+        fetchType: 'initial',
+        instanceId: '1',
+        payload: {pageSize: 10, scopeId: '1'},
+      });
+
+      render(<Variables />, {wrapper: Wrapper});
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
+
+      expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
+    });
   });
 });

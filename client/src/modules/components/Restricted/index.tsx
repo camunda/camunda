@@ -6,6 +6,7 @@
 
 import {authenticationStore, Roles} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
+import React from 'react';
 
 type Props = {
   children: React.ReactElement;
@@ -13,10 +14,7 @@ type Props = {
 };
 
 const Restricted: React.FC<Props> = observer(({children, scopes}) => {
-  const {roles} = authenticationStore.state;
-
-  const hasPermission = roles.some((role) => scopes.includes(role));
-  if (!hasPermission) {
+  if (!authenticationStore.hasPermission(scopes)) {
     return null;
   }
 

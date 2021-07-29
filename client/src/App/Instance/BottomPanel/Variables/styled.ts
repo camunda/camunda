@@ -55,8 +55,11 @@ const TableScroll = styled.div`
   overflow-x: hidden;
   height: 100%;
   min-width: fit-content;
-  margin-bottom: 40px;
   margin-top: 45px;
+  margin-bottom: 40px;
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
 const Placeholder = styled.span`

@@ -44,6 +44,10 @@ class Authentication {
     this.state.notification = undefined;
   };
 
+  hasPermission = (scopes: Roles) => {
+    return this.state.roles.some((role) => scopes.includes(role));
+  };
+
   setRoles = (roles: Roles | undefined) => {
     this.state.roles = roles ?? DEFAULT_STATE.roles;
   };
