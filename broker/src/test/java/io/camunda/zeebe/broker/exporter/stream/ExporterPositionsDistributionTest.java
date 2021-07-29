@@ -49,7 +49,7 @@ public class ExporterPositionsDistributionTest {
     exporterPositionsDistributionService.subscribeForExporterPositions(Runnable::run);
 
     // when
-    exporterPositionsDistributionService.publishExporterPositions(exporterPositionsMessage);
+    exporterPositionsDistributionService.distributeExporterPositions(exporterPositionsMessage);
 
     // then
     assertThat(exporterPositions).containsEntry("elastic", 123L).containsEntry("metric", 345L);

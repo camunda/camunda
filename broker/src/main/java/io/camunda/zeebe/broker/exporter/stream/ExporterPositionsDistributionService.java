@@ -46,7 +46,7 @@ public class ExporterPositionsDistributionService implements AutoCloseable {
     exporterPositions.forEach(exporterPositionConsumer);
   }
 
-  public void publishExporterPositions(final ExporterPositionsMessage exporterPositionsMessage) {
+  public void distributeExporterPositions(final ExporterPositionsMessage exporterPositionsMessage) {
     partitionMessagingService.broadcast(
         exporterPositionsTopic, exporterPositionsMessage.toByteBuffer());
   }

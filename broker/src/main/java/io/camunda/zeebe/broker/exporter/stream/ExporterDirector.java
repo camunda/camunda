@@ -298,17 +298,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         exporterPhase = ExporterPhase.PAUSED;
       }
 
-      actor.runAtFixedRate(Duration.ofSeconds(15), this::sendExporterState);
+      actor.runAtFixedRate(Duration.ofSeconds(15), this::distributeExporterPositions);
 
     } else {
       actor.close();
     }
   }
 
-  private void sendExporterState() {
+  private void distributeExporterPositions() {
     final var exportPositionsMessage = new ExporterPositionsMessage();
     state.visitPositions(exportPositionsMessage::putExporter);
-    exporterDistributionService.publishExporterPositions(exportPositionsMessage);
+    exporterDistributionService.distributeExporterPositions(exportPositionsMessage);
   }
 
   private void skipRecord(final LoggedEvent currentEvent) {
