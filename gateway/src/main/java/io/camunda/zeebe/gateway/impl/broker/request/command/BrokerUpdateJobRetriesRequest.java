@@ -5,26 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request.command;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
-public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> {
+public final class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerFailJobRequest(final long key, final int retries) {
-    super(ValueType.JOB, JobIntent.FAIL);
-    request.setKey(key);
+  public BrokerUpdateJobRetriesRequest(final long jobKey, final int retries) {
+    super(ValueType.JOB, JobIntent.UPDATE_RETRIES);
+    request.setKey(jobKey);
     requestDto.setRetries(retries);
-  }
-
-  public BrokerFailJobRequest setErrorMessage(final String errorMessage) {
-    requestDto.setErrorMessage(errorMessage);
-    return this;
   }
 
   @Override

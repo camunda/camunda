@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 

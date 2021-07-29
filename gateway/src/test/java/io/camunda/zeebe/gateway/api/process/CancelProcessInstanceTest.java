@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.api.process;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.protocol.record.ValueType;

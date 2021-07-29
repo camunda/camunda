@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.impl.job;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.util.sched.ScheduledTimer;

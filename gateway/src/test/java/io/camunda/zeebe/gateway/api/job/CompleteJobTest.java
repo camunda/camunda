@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.api.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;

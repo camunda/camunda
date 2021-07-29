@@ -5,28 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.impl.broker.request;
-
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+package io.camunda.zeebe.gateway.impl.broker.request.command;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
-public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecord> {
+public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerThrowErrorRequest(final long key, final String errorCode) {
-    super(ValueType.JOB, JobIntent.THROW_ERROR);
+  public BrokerCompleteJobRequest(final long key, final DirectBuffer variables) {
+    super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
-    requestDto.setErrorCode(wrapString(errorCode));
-  }
-
-  public BrokerThrowErrorRequest setErrorMessage(final String errorMessage) {
-    requestDto.setErrorMessage(errorMessage);
-    return this;
+    requestDto.setVariables(variables);
   }
 
   @Override

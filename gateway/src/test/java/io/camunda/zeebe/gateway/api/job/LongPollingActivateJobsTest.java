@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
