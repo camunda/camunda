@@ -172,7 +172,6 @@ public final class StartupProcess<CONTEXT> {
       final Throwable exception;
       if (collectedExceptions.size() == 1) {
         exception = collectedExceptions.get(0);
-        shutdownFuture.completeExceptionally(exception);
       } else {
         exception = new Exception("Exceptions occurred during shutdown");
         collectedExceptions.forEach(exception::addSuppressed);
