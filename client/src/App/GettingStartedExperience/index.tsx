@@ -18,14 +18,15 @@ const GettingStartedExperience: React.FC = () => {
   useEffect(() => {
     if (gseUrl !== null) {
       displayNotification('info', {
-        headline: 'To continue to getting started, go back to your',
+        headline: 'To continue getting started, head back to Console',
         isDismissable: false,
         navigation: {
-          label: 'Camunda Cloud Console.',
+          label: 'Open Console',
           navigationHandler: () => {
             window.location.href = gseUrl;
           },
         },
+        showCreationTime: false,
       });
     }
   }, [gseUrl, displayNotification]);

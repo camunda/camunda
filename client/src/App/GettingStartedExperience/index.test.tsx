@@ -45,11 +45,12 @@ describe('<GettingStartedExperience />', () => {
     });
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('info', {
-      headline: 'To continue to getting started, go back to your',
+      headline: 'To continue getting started, head back to Console',
       isDismissable: false,
       navigation: expect.objectContaining({
-        label: 'Camunda Cloud Console.',
+        label: 'Open Console',
       }),
+      showCreationTime: false,
     });
   });
 
@@ -62,10 +63,10 @@ describe('<GettingStartedExperience />', () => {
     });
 
     expect(mockDisplayNotification).not.toHaveBeenCalledWith('info', {
-      headline: 'To continue to getting started, go back to your',
+      headline: 'To continue getting started, head back to Console',
       isDismissable: false,
       navigation: expect.objectContaining({
-        label: 'Camunda Cloud Console.',
+        label: 'Open Console',
       }),
     });
   });
