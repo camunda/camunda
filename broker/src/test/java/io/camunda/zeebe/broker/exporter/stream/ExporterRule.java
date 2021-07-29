@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.sched.clock.ControlledActorClock;
 import io.camunda.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.time.Duration;
 import java.util.List;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -46,12 +47,13 @@ public final class ExporterRule implements TestRule {
   private final RuleChain chain;
 
   private final ZeebeDbFactory zeebeDbFactory;
+  private final ExporterMode exporterMode;
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
   private TestStreams streams;
   private PartitionMessagingService partitionMessagingService = new SimplePartitionMessageService();
   private ExporterDirector director;
-  private final ExporterMode exporterMode;
+  private Duration distributionInterval = Duration.ofSeconds(15);
 
   private ExporterRule(final ExporterMode exporterMode) {
     this.exporterMode = exporterMode;
@@ -76,6 +78,11 @@ public final class ExporterRule implements TestRule {
     return this;
   }
 
+  public ExporterRule withDistributionInterval(final Duration distributionInterval) {
+    this.distributionInterval = distributionInterval;
+    return this;
+  }
+
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
@@ -93,6 +100,7 @@ public final class ExporterRule implements TestRule {
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(capturedZeebeDb)
             .exporterMode(exporterMode)
+            .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
             .descriptors(exporterDescriptors);
 

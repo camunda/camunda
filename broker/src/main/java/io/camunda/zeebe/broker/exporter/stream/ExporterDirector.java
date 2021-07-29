@@ -78,6 +78,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsTopic;
   private final ExporterMode exporterMode;
+  private final Duration distributionInterval;
   private ExporterPositionsDistributionService exporterDistributionService;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
@@ -96,6 +97,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     partitionMessagingService = context.getPartitionMessagingService();
     exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
     exporterMode = context.getExporterMode();
+    distributionInterval = context.getDistributionInterval();
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -298,7 +300,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         exporterPhase = ExporterPhase.PAUSED;
       }
 
-      actor.runAtFixedRate(Duration.ofSeconds(15), this::distributeExporterPositions);
+      actor.runAtFixedRate(distributionInterval, this::distributeExporterPositions);
 
     } else {
       actor.close();

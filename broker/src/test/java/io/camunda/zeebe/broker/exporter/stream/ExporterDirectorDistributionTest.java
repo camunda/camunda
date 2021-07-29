@@ -30,12 +30,16 @@ public final class ExporterDirectorDistributionTest {
   private static final String EXPORTER_ID_1 = "exporter-1";
   private static final String EXPORTER_ID_2 = "exporter-2";
 
+  private static final Duration DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
+
   private final SimplePartitionMessageService simplePartitionMessageService =
       new SimplePartitionMessageService();
 
   @Rule
   public final ExporterRule activeExporters =
-      ExporterRule.activeExporter().withPartitionMessageService(simplePartitionMessageService);
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(simplePartitionMessageService)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL);
 
   @Rule
   public final ExporterRule passiveExporters =
@@ -107,7 +111,7 @@ public final class ExporterDirectorDistributionTest {
         .untilAsserted(() -> assertThat(exporter.getExportedRecords()).hasSize(1));
 
     // when
-    activeExporters.getClock().addTime(Duration.ofSeconds(30));
+    activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
 
     // then
     final ExportersState passiveExporterState = passiveExporters.getExportersState();
