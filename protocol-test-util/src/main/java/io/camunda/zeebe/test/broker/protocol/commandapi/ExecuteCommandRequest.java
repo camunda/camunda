@@ -105,6 +105,11 @@ public final class ExecuteCommandRequest implements ClientRequest {
   }
 
   @Override
+  public String getRequestType() {
+    return "command";
+  }
+
+  @Override
   public int getLength() {
     return MessageHeaderEncoder.ENCODED_LENGTH
         + ExecuteCommandRequestEncoder.BLOCK_LENGTH
