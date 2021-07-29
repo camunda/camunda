@@ -74,51 +74,35 @@ public final class ExporterDirectorDistributionTest {
   }
 
   @Test
-  public void shouldNotDistributeExporterPositions() {
+  public void shouldDistributeExporterPositions() {
     // given
     final ControlledTestExporter exporter = exporters.get(1);
     exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
     startExporters(exporterDescriptors);
 
-    // when
     final long position =
         activeExporters.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
 
-    // then
     Awaitility.await("director has read all records until now")
-        .atMost(Duration.ofSeconds(5))
         .untilAsserted(() -> assertThat(exporter.getExportedRecords()).hasSize(1));
 
-    final ExportersState activeExporterState = activeExporters.getExportersState();
+    final var activeExporterState = activeExporters.getExportersState();
     assertThat(activeExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
     assertThat(activeExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
 
-    final ExportersState passiveExporterState = passiveExporters.getExportersState();
+    final var passiveExporterState = passiveExporters.getExportersState();
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(-1);
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
-  }
-
-  @Test
-  public void shouldDistributeExporterPositionsAfterInterval() {
-    // given
-    final ControlledTestExporter exporter = exporters.get(1);
-    exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
-    startExporters(exporterDescriptors);
-    final long position =
-        activeExporters.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
-    Awaitility.await("director has read all records until now")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(exporter.getExportedRecords()).hasSize(1));
 
     // when
     activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
 
     // then
-    final ExportersState passiveExporterState = passiveExporters.getExportersState();
     Awaitility.await("Active Director has distributed positions and passive has received it")
-        .atMost(Duration.ofSeconds(5))
         .untilAsserted(
-            () -> assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position));
-    assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+            () -> {
+              assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+              assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+            });
   }
 }
