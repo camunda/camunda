@@ -82,7 +82,7 @@ public final class StubBrokerRule extends ExternalResource {
     serverTransport = transportFactory.createServerTransport(0, cluster.getMessagingService());
 
     channelHandler = new StubRequestHandler(msgPackHelper);
-    serverTransport.subscribe(1, channelHandler);
+    serverTransport.subscribe(1, channelHandler, "command");
 
     currentTopology.set(topology);
   }
