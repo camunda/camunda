@@ -40,7 +40,7 @@ import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.gateway.Gateway;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;

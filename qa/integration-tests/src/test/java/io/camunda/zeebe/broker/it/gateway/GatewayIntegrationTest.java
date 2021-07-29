@@ -13,7 +13,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.command.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.protocol.record.RejectionType;
