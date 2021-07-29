@@ -10,7 +10,9 @@ package io.camunda.zeebe.broker.transport.queryapi;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
+import io.camunda.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
 import io.camunda.zeebe.broker.transport.commandapi.ErrorResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.ServerOutput;
+import io.camunda.zeebe.transport.ServerTransport;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Queue;
@@ -58,10 +61,13 @@ public final class QueryApiRequestHandler implements RequestHandler {
   private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
   private boolean isDiskSpaceAvailable = true;
+  private final CommandResponseWriter responseWriter;
 
-  public QueryApiRequestHandler() {
+  public QueryApiRequestHandler(final ServerTransport serverTransport) {
     metrics = new BackpressureMetrics();
     initEventTypeMap();
+    // todo: either use a customized query response writer, or generalize the writer
+    responseWriter = new CommandResponseWriterImpl(serverTransport);
   }
 
   private void initEventTypeMap() {
@@ -140,7 +146,8 @@ public final class QueryApiRequestHandler implements RequestHandler {
       return;
     }
 
-    eventMetadata.recordType(RecordType.COMMAND);
+    // Queries are not records, they just retrieve records, specifically they retrieve event records
+    eventMetadata.recordType(RecordType.EVENT);
     final Intent eventIntent = Intent.fromProtocolValue(eventType, intent);
     eventMetadata.intent(eventIntent);
     eventMetadata.valueType(eventType);
@@ -161,8 +168,18 @@ public final class QueryApiRequestHandler implements RequestHandler {
 
     boolean written = false;
     try {
-      written = true;
+      written =
+          responseWriter
+              .key(key)
+              .intent(Intent.UNKNOWN)
+              .partitionId(partitionId)
+              .valueType(eventType)
+              .recordType(RecordType.EVENT)
+              .valueWriter(event)
+              .tryWriteResponse(partitionId, requestId);
+
       LOG.info("!!!!!!!!!!             OMG Query Request HANDLED             !!!!!!!!");
+
     } catch (final Exception ex) {
       LOG.error("Unexpected error on writing {} command", eventIntent, ex);
     } finally {

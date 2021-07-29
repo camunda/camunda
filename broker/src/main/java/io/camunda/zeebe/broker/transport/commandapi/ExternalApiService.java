@@ -43,7 +43,7 @@ public final class ExternalApiService extends Actor
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     commandRequestHandler = new CommandApiRequestHandler();
-    queryRequestHandler = new QueryApiRequestHandler();
+    queryRequestHandler = new QueryApiRequestHandler(serverTransport);
     actorName = buildActorName(localBroker.getNodeId(), "ExternalApiService");
   }
 
